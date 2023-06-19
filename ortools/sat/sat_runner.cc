@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
 #include "absl/log/flags.h"
@@ -132,6 +133,10 @@ ABSL_FLAG(bool, reduce_memory_usage, false,
           "This reduce the memory usage, but disable the solution cheking at "
           "the end.");
 
+ABSL_FLAG(bool, wcnf_use_strong_slack, true,
+          "If true, when we add a slack variable to reify a soft clause, we "
+          "enforce the fact that when it is true, the clause must be false.");
+
 namespace operations_research {
 namespace sat {
 namespace {
@@ -159,7 +164,7 @@ bool LoadBooleanProblem(const std::string& filename,
              absl::EndsWith(filename, ".cnf.gz") ||
              absl::EndsWith(filename, ".wcnf") ||
              absl::EndsWith(filename, ".wcnf.gz")) {
-    SatCnfReader reader;
+    SatCnfReader reader(absl::GetFlag(FLAGS_wcnf_use_strong_slack));
     if (absl::GetFlag(FLAGS_fu_malik) || absl::GetFlag(FLAGS_linear_scan) ||
         absl::GetFlag(FLAGS_wpm1) || absl::GetFlag(FLAGS_qmaxsat) ||
         absl::GetFlag(FLAGS_core_enc)) {

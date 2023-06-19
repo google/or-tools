@@ -21,7 +21,6 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <new>
 #include <random>
 #include <string>
 #include <thread>
@@ -880,8 +879,10 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // variable nodes by [num_lp_constraints..num_lp_constraints+num_variables).
   //
   // TODO(user): look into biconnected components.
-  const int num_lp_constraints = relaxation.linear_constraints.size();
-  const int num_lp_cut_generators = relaxation.cut_generators.size();
+  const int num_lp_constraints =
+      static_cast<int>(relaxation.linear_constraints.size());
+  const int num_lp_cut_generators =
+      static_cast<int>(relaxation.cut_generators.size());
   const int num_integer_variables =
       m->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
 
@@ -1482,7 +1483,8 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   // Add linear constraints to Feasibility Pump.
   const LinearRelaxation relaxation =
       ComputeLinearRelaxation(model_proto, model);
-  const int num_lp_constraints = relaxation.linear_constraints.size();
+  const int num_lp_constraints =
+      static_cast<int>(relaxation.linear_constraints.size());
   if (num_lp_constraints == 0) return;
   auto* feasibility_pump = model->GetOrCreate<FeasibilityPump>();
   for (int i = 0; i < num_lp_constraints; i++) {
@@ -2556,7 +2558,7 @@ class FullProblemSolver : public SubSolver {
 
       absl::MutexLock mutex_lock(&mutex_);
       previous_task_is_completed_ = true;
-      deterministic_time_since_last_synchronize_ +=
+      dtime_since_last_sync_ +=
           time_limit->GetElapsedDeterministicTime() - saved_dtime;
     };
   }
@@ -2566,10 +2568,9 @@ class FullProblemSolver : public SubSolver {
   // can have a deterministic parallel mode.
   void Synchronize() override {
     absl::MutexLock mutex_lock(&mutex_);
-    deterministic_time_ += deterministic_time_since_last_synchronize_;
-    shared_->time_limit->AdvanceDeterministicTime(
-        deterministic_time_since_last_synchronize_);
-    deterministic_time_since_last_synchronize_ = 0.0;
+    deterministic_time_ += dtime_since_last_sync_;
+    shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
+    dtime_since_last_sync_ = 0.0;
   }
 
   std::string StatisticsString() const override {
@@ -2625,114 +2626,182 @@ class FullProblemSolver : public SubSolver {
   bool solving_first_chunk_ = true;
 
   absl::Mutex mutex_;
-  double deterministic_time_since_last_synchronize_ ABSL_GUARDED_BY(mutex_) =
-      0.0;
+  double dtime_since_last_sync_ ABSL_GUARDED_BY(mutex_) = 0.0;
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
 class ObjectiveLbSolver : public SubSolver {
  public:
-  ObjectiveLbSolver(const std::string& name,
-                    const SatParameters& local_parameters,
-                    SharedClasses* shared)
-      : SubSolver(name, FULL_PROBLEM),
+  ObjectiveLbSolver(const SatParameters& local_parameters,
+                    NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
+      : SubSolver(local_parameters.name(), FULL_PROBLEM),
         local_params_(local_parameters),
+        helper_(helper),
         shared_(shared),
-        local_cp_model_(*shared->model_proto) {}
+        local_proto_(*shared->model_proto) {}
 
   ~ObjectiveLbSolver() override = default;
 
   bool IsDone() override {
     {
       absl::MutexLock mutex_lock(&mutex_);
-      if (!previous_task_is_completed_) return false;
+      if (task_in_flight_) return false;
     }
-    return false;
+    return shared_->SearchIsDone();
   }
 
   bool TaskIsAvailable() override {
-    if (shared_->SearchIsDone()) return false;
-
+    // We only support one task at the time.
     absl::MutexLock mutex_lock(&mutex_);
-    return previous_task_is_completed_;
-    return false;
+    return !task_in_flight_;
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     {
       absl::MutexLock mutex_lock(&mutex_);
-      previous_task_is_completed_ = false;
+      stop_current_chunk_ = false;
+      task_in_flight_ = true;
+      objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
     }
     return [this]() {
-      Model m;
-      *m.GetOrCreate<SatParameters>() = local_params_;
-      auto* local_time_limit = m.GetOrCreate<TimeLimit>();
-      shared_->time_limit->UpdateLocalLimit(local_time_limit);
+      if (!ResetModel()) return;
 
-      auto* obj = local_cp_model_.mutable_objective();
-      const IntegerValue lb = shared_->response->GetInnerObjectiveLowerBound();
-      obj->clear_domain();
-      obj->add_domain(lb.value());
-      obj->add_domain(lb.value());
-      if (obj->vars().size() == 1 && obj->coeffs(0) == 1) {
-        // In this case we can reduce the domain of the variable directly.
-        // This is better otherwise we will not propagate proper level zero
-        // bound before the linear relaxation is computed.
-        const int obj_var = obj->vars(0);
-        local_cp_model_.mutable_variables(obj_var)->clear_domain();
-        local_cp_model_.mutable_variables(obj_var)->add_domain(lb.value());
-        local_cp_model_.mutable_variables(obj_var)->add_domain(lb.value());
-      }
-
-      // We cannot export bounds since our model is more constrained, but we can
-      // import them.
-      if (shared_->bounds != nullptr) {
-        RegisterVariableBoundsLevelZeroImport(local_cp_model_,
-                                              shared_->bounds.get(), &m);
-      }
-
-      auto* local_response_manager = m.GetOrCreate<SharedResponseManager>();
-      local_response_manager->InitializeObjective(local_cp_model_);
-      local_response_manager->SetSynchronizationMode(true);
-
-      LoadCpModel(local_cp_model_, &m);
-      SolveLoadedCpModel(local_cp_model_, &m);
-      CpSolverResponse local_response = local_response_manager->GetResponse();
+      SolveLoadedCpModel(local_proto_, local_repo_.get());
+      const CpSolverResponse local_response =
+          local_repo_->GetOrCreate<SharedResponseManager>()->GetResponse();
 
       if (local_response.status() == CpSolverStatus::OPTIMAL ||
           local_response.status() == CpSolverStatus::FEASIBLE) {
-        shared_->response->NewSolution(local_response.solution(), name());
+        std::vector<int64_t> solution_values(local_response.solution().begin(),
+                                             local_response.solution().end());
+        if (local_params_.cp_model_presolve()) {
+          const int num_original_vars = shared_->model_proto->variables_size();
+          PostsolveResponseWrapper(local_params_, num_original_vars,
+                                   mapping_proto_, postsolve_mapping_,
+                                   &solution_values);
+        }
+        shared_->response->NewSolution(solution_values, Info());
       } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
-        shared_->response->UpdateInnerObjectiveBounds(name(), lb + 1,
+        absl::MutexLock mutex_lock(&mutex_);
+        shared_->response->UpdateInnerObjectiveBounds(Info(), objective_lb_ + 1,
                                                       kMaxIntegerValue);
       }
 
       absl::MutexLock mutex_lock(&mutex_);
-      previous_task_is_completed_ = true;
-      deterministic_time_since_last_synchronize_ +=
-          local_time_limit->GetElapsedDeterministicTime();
+      task_in_flight_ = false;
+      const double dtime =
+          local_repo_->GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime();
+      deterministic_time_ += dtime;
+      shared_->time_limit->AdvanceDeterministicTime(dtime);
     };
   }
 
   void Synchronize() override {
     absl::MutexLock mutex_lock(&mutex_);
-    deterministic_time_ += deterministic_time_since_last_synchronize_;
-    shared_->time_limit->AdvanceDeterministicTime(
-        deterministic_time_since_last_synchronize_);
-    deterministic_time_since_last_synchronize_ = 0.0;
+    if (!task_in_flight_) return;
+
+    // We are just waiting for the inner code to check the time limit or
+    // to return nicely.
+    if (stop_current_chunk_) return;
+
+    // TODO(user): Also stop if we have enough newly fixed / improved root level
+    // bounds so that we think it is worth represolving and restarting.
+    if (shared_->SearchIsDone()) {
+      stop_current_chunk_ = true;
+    }
+    if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
+      stop_current_chunk_ = true;
+    }
   }
 
   std::string StatisticsString() const override { return ""; }
 
  private:
+  std::string Info() {
+    return absl::StrCat(name_, " #vars=", local_proto_.variables().size(),
+                        " #csts=", local_proto_.constraints().size());
+  }
+
+  bool ResetModel() {
+    local_repo_ = std::make_unique<Model>(name_);
+    *local_repo_->GetOrCreate<SatParameters>() = local_params_;
+
+    auto* time_limit = local_repo_->GetOrCreate<TimeLimit>();
+    shared_->time_limit->UpdateLocalLimit(time_limit);
+    time_limit->RegisterExternalBooleanAsLimit(&stop_current_chunk_);
+
+    // We copy the model.
+    local_proto_ = *shared_->model_proto;
+    *local_proto_.mutable_variables() =
+        helper_->FullNeighborhood().delta.variables();
+
+    // We replace the objective by a constraint, objective == lb.
+    // TODO(user): We could use objective <= lb, it might be better or worse
+    // depending on the model. It is also a bit tricker to make sure a feasible
+    // solution is feasible.
+    // We modify local_proto_ to a pure feasibility problem.
+    // Not having the objective open up more presolve reduction.
+    if (local_proto_.objective().vars().size() == 1 &&
+        local_proto_.objective().coeffs(0) == 1) {
+      auto* obj_var =
+          local_proto_.mutable_variables(local_proto_.objective().vars(0));
+      obj_var->clear_domain();
+      absl::MutexLock mutex_lock(&mutex_);
+      obj_var->add_domain(objective_lb_.value());
+      obj_var->add_domain(objective_lb_.value());
+    } else {
+      auto* obj = local_proto_.add_constraints()->mutable_linear();
+      *obj->mutable_vars() = local_proto_.objective().vars();
+      *obj->mutable_coeffs() = local_proto_.objective().coeffs();
+      absl::MutexLock mutex_lock(&mutex_);
+      obj->add_domain(objective_lb_.value());
+      obj->add_domain(objective_lb_.value());
+    }
+
+    // Clear the objective.
+    local_proto_.clear_objective();
+
+    // Presolve if asked.
+    if (local_params_.cp_model_presolve()) {
+      mapping_proto_.Clear();
+      postsolve_mapping_.clear();
+      auto context = std::make_unique<PresolveContext>(
+          local_repo_.get(), &local_proto_, &mapping_proto_);
+      const CpSolverStatus presolve_status =
+          PresolveCpModel(context.get(), &postsolve_mapping_);
+      if (presolve_status == CpSolverStatus::INFEASIBLE) {
+        absl::MutexLock mutex_lock(&mutex_);
+        shared_->response->UpdateInnerObjectiveBounds(Info(), objective_lb_ + 1,
+                                                      kMaxIntegerValue);
+        return false;
+      }
+    }
+
+    LoadCpModel(local_proto_, local_repo_.get());
+    return true;
+  }
+
+  // This is fixed at construction.
   SatParameters local_params_;
+  NeighborhoodGeneratorHelper* helper_;
   SharedClasses* shared_;
-  CpModelProto local_cp_model_;
+
+  // TODO(user): Currently if the global solver stop, we will only set this
+  // to true in Synchronize() above which is usually called in multi-thread but
+  // not when this sub-solver is the only one.
+  std::atomic<bool> stop_current_chunk_;
+
+  // Local singleton repository and presolved local model.
+  std::unique_ptr<Model> local_repo_;
+  CpModelProto local_proto_;
+
+  // For postsolving a feasible solution or improving objective lb.
+  std::vector<int> postsolve_mapping_;
+  CpModelProto mapping_proto_;
 
   absl::Mutex mutex_;
-  double deterministic_time_since_last_synchronize_ ABSL_GUARDED_BY(mutex_) =
-      0.0;
-  bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
+  IntegerValue objective_lb_ ABSL_GUARDED_BY(mutex_);
+  bool task_in_flight_ ABSL_GUARDED_BY(mutex_) = false;
 };
 
 class FeasibilityPumpSolver : public SubSolver {
@@ -2803,7 +2872,7 @@ class FeasibilityPumpSolver : public SubSolver {
 
       {
         absl::MutexLock mutex_lock(&mutex_);
-        deterministic_time_since_last_synchronize_ +=
+        dtime_since_last_sync_ +=
             time_limit->GetElapsedDeterministicTime() - saved_dtime;
       }
 
@@ -2820,10 +2889,9 @@ class FeasibilityPumpSolver : public SubSolver {
 
   void Synchronize() override {
     absl::MutexLock mutex_lock(&mutex_);
-    deterministic_time_ += deterministic_time_since_last_synchronize_;
-    shared_->time_limit->AdvanceDeterministicTime(
-        deterministic_time_since_last_synchronize_);
-    deterministic_time_since_last_synchronize_ = 0.0;
+    deterministic_time_ += dtime_since_last_sync_;
+    shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
+    dtime_since_last_sync_ = 0.0;
   }
 
   // TODO(user): Display feasibility pump statistics.
@@ -2838,8 +2906,7 @@ class FeasibilityPumpSolver : public SubSolver {
   // constraints.
   bool solving_first_chunk_ ABSL_GUARDED_BY(mutex_) = true;
 
-  double deterministic_time_since_last_synchronize_ ABSL_GUARDED_BY(mutex_) =
-      0.0;
+  double dtime_since_last_sync_ ABSL_GUARDED_BY(mutex_) = 0.0;
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
@@ -2916,10 +2983,8 @@ class LnsSolver : public SubSolver {
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
           static_cast<double>(num_calls);
-      std::string source_info = name();
-      if (!neighborhood.source_info.empty()) {
-        absl::StrAppend(&source_info, "_", neighborhood.source_info);
-      }
+      std::string source_info =
+          neighborhood.source_info.empty() ? name() : neighborhood.source_info;
       const std::string lns_info = absl::StrFormat(
           "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", source_info, data.difficulty,
           task_id, data.deterministic_limit, fully_solved_proportion);
@@ -3247,6 +3312,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         }
       }));
 
+  // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
+  // Synchronize() is called before any LNS neighborhood solvers.
+  auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
+      &model_proto, &params, shared.response, shared.bounds.get());
+  NeighborhoodGeneratorHelper* helper = unique_helper.get();
+  subsolvers.push_back(std::move(unique_helper));
+
   int num_full_problem_solvers = 0;
   if (testing) {
     // Register something to find a first solution. Note that this is mainly
@@ -3278,8 +3350,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       ++num_full_problem_solvers;
 
       if (local_params.use_objective_shaving_search()) {
-        subsolvers.push_back(std::make_unique<ObjectiveLbSolver>(
-            local_params.name(), local_params, &shared));
+        subsolvers.push_back(
+            std::make_unique<ObjectiveLbSolver>(local_params, helper, &shared));
         continue;
       }
 
@@ -3295,36 +3367,28 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         std::make_unique<FeasibilityPumpSolver>(params, &shared));
   }
 
-  // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
-  // Synchronize() is called before any LNS neighborhood solvers.
-  auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
-      &model_proto, &params, shared.response, shared.bounds.get());
-  NeighborhoodGeneratorHelper* helper = unique_helper.get();
-  subsolvers.push_back(std::move(unique_helper));
-
   // By default we use the user provided parameters.
   // TODO(user): for now this is not deterministic so we disable it on
   // interleave search. Fix.
   if (!testing && params.use_rins_lns() && !params.interleave_search()) {
     // Note that we always create the SharedLPSolutionRepository. This meets
-    // the requirement of having at least one of
-    // SharedRelaxationSolutionRepository or SharedLPSolutionRepository to
+    // the requirement of having a SharedLPSolutionRepository to
     // create RINS/RENS lns generators.
 
-    // RINS.
+    // TODO(user):
+    // - Do we keep rens working after the first solution has been found
+    // - Do we create a variable number of these workers.
     incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
-            helper, shared.response, nullptr, shared.lp_solutions.get(),
-            /*incomplete_solutions=*/nullptr, "rins_lns"),
+            helper, shared.response, shared.lp_solutions.get(),
+            shared.incomplete_solutions.get(), "rins/rens"),
         params, helper, &shared));
 
-    // RENS.
-    incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
-        std::make_unique<RelaxationInducedNeighborhoodGenerator>(
-            helper, /*response_manager=*/nullptr, nullptr,
-            shared.lp_solutions.get(), shared.incomplete_solutions.get(),
-            "rens_lns"),
-        params, helper, &shared));
+    // incomplete_subsolvers.push_back(std::make_unique<LnsSolver>(
+    //     std::make_unique<RelaxationInducedNeighborhoodGenerator>(
+    //         helper, /*shared_response=*/nullptr, shared.lp_solutions.get(),
+    //         shared.incomplete_solutions.get(), "rens_lns"),
+    //     params, helper, &shared));
   }
 
   const bool feasibility_jump_possible =
@@ -3378,9 +3442,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     const int num_reserved_incomplete_solvers =
         params.test_feasibility_jump()
             ? 0
-            : std::min<int>(
+            : std::min(
                   max_num_incomplete_solvers_running_before_the_first_solution,
-                  incomplete_subsolvers.size());
+                  static_cast<int>(incomplete_subsolvers.size()));
     const int num_available = params.num_workers() - num_full_problem_solvers -
                               num_reserved_incomplete_solvers;
 
@@ -3531,10 +3595,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       }
     }
 
-    const int num_circuit =
-        helper->TypeToConstraints(ConstraintProto::kCircuit).size();
-    const int num_routes =
-        helper->TypeToConstraints(ConstraintProto::kRoutes).size();
+    const int num_circuit = static_cast<int>(
+        helper->TypeToConstraints(ConstraintProto::kCircuit).size());
+    const int num_routes = static_cast<int>(
+        helper->TypeToConstraints(ConstraintProto::kRoutes).size());
     if (num_circuit + num_routes > 0) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingRandomNeighborhoodGenerator>(
@@ -3671,7 +3735,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
 #endif  // __PORTABLE_PLATFORM__
 
-// If the option use_sat_inprocessing is true, then before postsolving a
+// If the option use_sat_inprocessing is true, then before post-solving a
 // solution, we need to make sure we add any new clause required for postsolving
 // to the mapping_model.
 void AddPostsolveClauses(const std::vector<int>& postsolve_mapping,
@@ -4215,7 +4279,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (params.stop_after_presolve() || shared_time_limit->LimitReached()) {
     int64_t num_terms = 0;
     for (const ConstraintProto& ct : new_cp_model_proto.constraints()) {
-      num_terms += UsedVariables(ct).size();
+      num_terms += static_cast<int>(UsedVariables(ct).size());
     }
     SOLVER_LOG(
         logger, "Stopped after presolve.",
@@ -4241,7 +4305,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     shared_response_manager->SetGapLimitsFromParameters(params);
   }
 
-  // Start counting the primal integral from the current determistic time and
+  // Start counting the primal integral from the current deterministic time and
   // initial objective domain gap that we just filled.
   shared_response_manager->UpdateGapIntegral();
 

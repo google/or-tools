@@ -15,13 +15,11 @@
 #define OR_TOOLS_SAT_RINS_H_
 
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/synchronization/mutex.h"
-#include "absl/types/optional.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -56,32 +54,31 @@ struct LPVariables {
 // outside the domains of these variables! This happens for RENS type of
 // neighborhood in the presence of holes in the domains because the LP
 // relaxation ignore those.
-struct RINSNeighborhood {
+struct ReducedDomainNeighborhood {
   // A variable will appear only once and not in both vectors.
   std::vector<std::pair</*model_var*/ int, /*value*/ int64_t>> fixed_vars;
   std::vector<
       std::pair</*model_var*/ int, /*domain*/ std::pair<int64_t, int64_t>>>
       reduced_domain_vars;
+  std::string source_info;
 };
 
 // Helper method to create a RINS neighborhood by fixing variables with same
 // values in relaxation solution and the current best solution in the
 // response_manager. Prioritizes repositories in following order to get a
-// relaxation solution.
+// neighborhood.
 //  1. incomplete_solutions
 //  2. lp_solutions
-//  3. relaxation_solutions
 //
-// If response_manager is not provided, this generates a RENS neighborhood by
+// If response_manager has no solution, this generates a RENS neighborhood by
 // ignoring the solutions and using the relaxation values. The domain of the
 // variables are reduced to integer values around relaxation values. If the
 // relaxation value is integer, then we fix the domain of the variable to that
 // value.
-RINSNeighborhood GetRINSNeighborhood(
+ReducedDomainNeighborhood GetRinsRensNeighborhood(
     const SharedResponseManager* response_manager,
-    const SharedRelaxationSolutionRepository* relaxation_solutions,
     const SharedLPSolutionRepository* lp_solutions,
-    SharedIncompleteSolutionManager* incomplete_solutions,
+    SharedIncompleteSolutionManager* incomplete_solutions, double difficulty,
     absl::BitGenRef random);
 
 // Adds the current LP solution to the pool.

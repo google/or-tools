@@ -1008,6 +1008,8 @@ template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
 template class GenericMinCostFlow<
     ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
+template class GenericMinCostFlow<::util::ReverseArcListGraph<int64_t, int64_t>,
+                                  int64_t, int64_t>;
 
 // A more memory-efficient version for large graphs.
 template class GenericMinCostFlow<

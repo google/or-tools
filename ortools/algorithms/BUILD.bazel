@@ -100,6 +100,31 @@ cc_library(
 )
 
 cc_library(
+    name = "weighted_set_covering_model",
+    srcs = ["weighted_set_covering_model.cc"],
+    hdrs = ["weighted_set_covering_model.h"],
+    deps = [
+        "//ortools/lp_data:base",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "weighted_set_covering",
+    srcs = ["weighted_set_covering.cc"],
+    hdrs = ["weighted_set_covering.h"],
+    deps = [
+        ":weighted_set_covering_model",
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+    ],
+)
+
+cc_library(
     name = "dense_doubly_linked_list",
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [

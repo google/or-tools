@@ -46,6 +46,7 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
+// TODO(user): move to or-tools/base/logging.h
 namespace absl {
 template <typename Sink>
 void AbslStringify(Sink& sink, absl::int128 v) {

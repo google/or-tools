@@ -8,6 +8,7 @@ RUN zypper refresh \
 && mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
 
+## .Net 6.0
 # see: https://dotnet.microsoft.com/download/dotnet-core/6.0
 RUN dotnet_sdk_version=6.0.100 \
 && wget -qO dotnet.tar.gz \
@@ -25,7 +26,7 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -version
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DUSE_DOTNET_CORE_31=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install -v
 

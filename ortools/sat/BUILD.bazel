@@ -238,7 +238,6 @@ cc_library(
         ":cp_model_search",
         ":sat_parameters_cc_proto",
         "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 

@@ -133,18 +133,6 @@ class SharedSolutionRepository {
   std::vector<Solution> new_solutions_ ABSL_GUARDED_BY(mutex_);
 };
 
-// This is currently only used to store feasible solution from our 'relaxation'
-// LNS generators which in turn are used to generate some RINS neighborhood.
-class SharedRelaxationSolutionRepository
-    : public SharedSolutionRepository<int64_t> {
- public:
-  explicit SharedRelaxationSolutionRepository(int num_solutions_to_keep)
-      : SharedSolutionRepository<int64_t>(num_solutions_to_keep) {}
-
-  void NewRelaxationSolution(absl::Span<const int64_t> solution_values,
-                             IntegerValue inner_objective_value);
-};
-
 class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
  public:
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)

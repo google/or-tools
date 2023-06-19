@@ -15,29 +15,21 @@
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/filelineiter.h"
-
-ABSL_FLAG(bool, wcnf_use_strong_slack, true,
-          "If true, when we add a slack variable to reify a soft clause, we "
-          "enforce the fact that when it is true, the clause must be false.");
 
 namespace operations_research {
 namespace sat {
@@ -89,7 +81,7 @@ struct CpModelProtoWrapper {
   // solution in cnf format, so it is not useful internally. Instead of adding
   // another field, we could use the variables names or the search heuristics
   // to encode this info.
-  void SetOriginalNumVariables(int num) {}
+  void SetOriginalNumVariables(int /*num*/) {}
 
   int LiteralToRef(int signed_value) {
     return signed_value > 0 ? signed_value - 1 : signed_value;
@@ -123,7 +115,9 @@ struct CpModelProtoWrapper {
 // It also support the wcnf input format for partial weighted max-sat problems.
 class SatCnfReader {
  public:
-  SatCnfReader() : interpret_cnf_as_max_sat_(false) {}
+  explicit SatCnfReader(bool wcnf_use_strong_slack = true)
+      : interpret_cnf_as_max_sat_(false),
+        wcnf_use_strong_slack_(wcnf_use_strong_slack) {}
 
   // If called with true, then a cnf file will be converted to the max-sat
   // problem: Try to minimize the number of unsatisfiable clauses.
@@ -195,29 +189,22 @@ class SatCnfReader {
     return problem_name;
   }
 
-  int64_t StringPieceAtoi(absl::string_view input) {
-    int64_t value;
-    // Hack: data() is not null terminated, but we do know that it points
-    // inside a string where numbers are separated by " " and since SimpleAtoi
-    // will stop at the first invalid char, this works.
-    CHECK(absl::SimpleAtoi(input, &value));
-    return value;
-  }
-
   void ProcessHeader(const std::string& line) {
     static const char kWordDelimiters[] = " ";
     words_ = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
     CHECK_EQ(words_[0], "p");
     if (words_[1] == "cnf" || words_[1] == "wcnf") {
-      num_variables_ = StringPieceAtoi(words_[2]);
-      num_clauses_ = StringPieceAtoi(words_[3]);
+      CHECK(absl::SimpleAtoi(words_[2], &num_variables_));
+      CHECK(absl::SimpleAtoi(words_[3], &num_clauses_));
       if (words_[1] == "wcnf") {
         is_wcnf_ = true;
-        hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
+        hard_weight_ = 0;
+        if (words_.size() > 4) {
+          CHECK(absl::SimpleAtoi(words_[4], &hard_weight_));
+        }
       }
     } else {
-      // TODO(user): The ToString() is only required for the open source. Fix.
       LOG(FATAL) << "Unknown file type: " << words_[1];
     }
   }
@@ -244,7 +231,8 @@ class SatCnfReader {
     bool first = true;
     bool end_marker_seen = false;
     for (const absl::string_view word : splitter) {
-      const int64_t signed_value = StringPieceAtoi(word);
+      int64_t signed_value;
+      CHECK(absl::SimpleAtoi(word, &signed_value));
       if (first && is_wcnf_) {
         // Mathematically, a soft clause of weight 0 can be removed.
         if (signed_value == 0) {
@@ -298,7 +286,7 @@ class SatCnfReader {
           objective_offset_ += weight;
         }
 
-        if (absl::GetFlag(FLAGS_wcnf_use_strong_slack)) {
+        if (wcnf_use_strong_slack_) {
           // Add the binary implications slack_literal true => all the other
           // clause literals are false.
           for (int i = 0; i + 1 < tmp_clause_.size(); ++i) {
@@ -310,6 +298,7 @@ class SatCnfReader {
   }
 
   bool interpret_cnf_as_max_sat_;
+  const bool wcnf_use_strong_slack_;
 
   int num_clauses_;
   int num_variables_;

@@ -17,4 +17,4 @@ svgwrite==1.4.3
 plotly==5.13.0
 
 # Notebook
-notebook==5.6.0
+notebook==6.4.12

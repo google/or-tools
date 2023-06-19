@@ -135,7 +135,7 @@ BooleanOrIntegerLiteral CpModelView::MedianValue(int var) const {
     // 5 values -> returns the second.
     // 4 values -> returns the second too.
     // Array is 0 based.
-    const int target = (encoding.size() + 1) / 2 - 1;
+    const int target = (static_cast<int>(encoding.size()) + 1) / 2 - 1;
     result.boolean_literal_index = encoding[target].literal.Index();
   }
   return result;
@@ -266,7 +266,8 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
         active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
                                          is_above_tolerance),
                           active_refs.end());
-        const int winner = absl::Uniform<int>(*random, 0, active_refs.size());
+        const int winner =
+            absl::Uniform(*random, 0, static_cast<int>(active_refs.size()));
         candidate = active_refs[winner].ref;
       }
 
@@ -525,7 +526,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_linearization_level(2);
     new_params.set_use_objective_shaving_search(true);
-    new_params.set_cp_model_presolve(false);
+    new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
     if (base_params.use_dual_scheduling_heuristics()) {
@@ -757,8 +758,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     // TODO(user): Find a better randomization for the seed so that changing
     // random_seed() has more impact?
     params.set_name(name);
-    params.set_random_seed(
-        ValidSumSeed(base_params.random_seed(), result.size() + 1));
+    params.set_random_seed(ValidSumSeed(base_params.random_seed(),
+                                        static_cast<int>(result.size()) + 1));
     result.push_back(params);
   }
 

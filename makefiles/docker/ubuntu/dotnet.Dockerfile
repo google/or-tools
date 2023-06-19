@@ -14,7 +14,6 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-ENV USE_DOTNET_CORE_31=OFF
 RUN make dotnet
 
 FROM build AS test
