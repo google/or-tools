@@ -138,7 +138,9 @@ bool_flag(
 
 config_setting(
     name = "use_xpress",
-    values = {"define": "USE_XPRESS="},
+    flag_values = {
+        ":with_xpress": "true",
+    },
 )
 
 proto_library(
