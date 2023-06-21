@@ -18,15 +18,18 @@ Graph representations:
   To be deprecated by `ebert_graph.h`.
 
 Paths:
-* [shortestpaths.h](./shortestpaths.h): entry point for shortest paths.
-  Includes [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) and
-  [Bellman-Ford](https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm)
-  algorithms. These implementations are being deprecated.
 
-* [hamiltonian_path.h](./hamiltonian_path.h): entry point for computing minimum
-  [Hamiltonian paths](https://en.wikipedia.org/wiki/Hamiltonian_path) and
-  cycles on directed graphs with costs on arcs, using a dynamic-programming
-  algorithm. (It does not need `ebert_graph.h` or `digraph.h`.)
+*   [shortest_paths.h](./shortest_paths.h): entry point for shortest paths.
+    Includes [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+    and
+    [Bellman-Ford](https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm)
+    algorithms.
+
+*   [hamiltonian_path.h](./hamiltonian_path.h): entry point for computing
+    minimum [Hamiltonian paths](https://en.wikipedia.org/wiki/Hamiltonian_path)
+    and cycles on directed graphs with costs on arcs, using a
+    dynamic-programming algorithm. (It does not need `ebert_graph.h` or
+    `digraph.h`.)
 
 Graph decompositions:
 * [connected_components.h](./connected_components.h): entry point for computing
