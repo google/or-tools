@@ -463,7 +463,6 @@ cc_binary(
     ],
 )
 
-
 cc_binary(
     name = "shift_minimization_sat",
     srcs = [
