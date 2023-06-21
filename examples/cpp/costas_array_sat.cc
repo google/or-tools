@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Costas Array Problem
 //
 // Finds an NxN matrix of 0s and 1s, with only one 1 per row,

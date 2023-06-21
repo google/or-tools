@@ -40,29 +40,29 @@ bool CheckConstraintSatisfaction(
 
 // Checks if the solution given from the Solver has not modified the values of
 // the variables that were initially assigned and denoted as hard in var.txt.
-bool CheckVariablePosition(const absl::btree_map<int, FapVariable>& data_variables,
-                           const std::vector<int>& variables,
-                           const absl::btree_map<int, int>& index_from_key);
+bool CheckVariablePosition(
+    const absl::btree_map<int, FapVariable>& data_variables,
+    const std::vector<int>& variables,
+    const absl::btree_map<int, int>& index_from_key);
 
 // Counts the number of different values in the variable vector.
 int NumberOfAssignedValues(const std::vector<int>& variables);
 
 // Prints the duration of the solving process.
-void PrintElapsedTime(const int64_t time1, const int64_t time2);
+void PrintElapsedTime(int64_t time1, int64_t time2);
 
 // Prints the solution found by the Hard Solver for feasible instances.
-void PrintResultsHard(SolutionCollector* const collector,
+void PrintResultsHard(SolutionCollector* collector,
                       const std::vector<IntVar*>& variables,
-                      IntVar* const objective_var,
+                      IntVar* objective_var,
                       const absl::btree_map<int, FapVariable>& data_variables,
                       const std::vector<FapConstraint>& data_constraints,
                       const absl::btree_map<int, int>& index_from_key,
                       const std::vector<int>& key_from_index);
 
 // Prints the solution found by the Soft Solver for unfeasible instances.
-void PrintResultsSoft(SolutionCollector* const collector,
-                      const std::vector<IntVar*>& variables,
-                      IntVar* const total_cost,
+void PrintResultsSoft(SolutionCollector* collector,
+                      const std::vector<IntVar*>& variables, IntVar* total_cost,
                       const absl::btree_map<int, FapVariable>& hard_variables,
                       const std::vector<FapConstraint>& hard_constraints,
                       const absl::btree_map<int, FapVariable>& soft_variables,

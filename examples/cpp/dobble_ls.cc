@@ -90,7 +90,7 @@ class SymbolsSharedByTwoCardsConstraint : public Constraint {
     }
   }
 
-  ~SymbolsSharedByTwoCardsConstraint() override {}
+  ~SymbolsSharedByTwoCardsConstraint() override = default;
 
   // Adds observers (named Demon) to variable events. These demons are
   // responsible for implementing the propagation algorithm of the
@@ -255,7 +255,7 @@ class DobbleOperator : public IntVarLocalSearchOperator {
     }
   }
 
-  ~DobbleOperator() override {}
+  ~DobbleOperator() override = default;
 
  protected:
   // OnStart() simply stores the current symbols per card in
@@ -314,7 +314,7 @@ class SwapSymbols : public DobbleOperator {
         current_symbol1_(-1),
         current_symbol2_(-1) {}
 
-  ~SwapSymbols() override {}
+  ~SwapSymbols() override = default;
 
   // Finds the next swap, returns false when it has finished.
   bool MakeOneNeighbor() override {
@@ -385,7 +385,7 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
     CHECK_GE(max_num_swaps, 2);
   }
 
-  ~SwapSymbolsOnCardPairs() override {}
+  ~SwapSymbolsOnCardPairs() override = default;
 
  protected:
   bool MakeOneNeighbor() override {
@@ -547,7 +547,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   void ClearBitset() { temporary_bitset_ = 0; }
 
   // For each touched card, compare against all others to compute the
-  // delta in term of cost. We use an bitset to avoid counting twice
+  // delta in term of cost. We use a bitset to avoid counting twice
   // between two cards appearing in the local search move.
   int ComputeNewCost(const std::vector<int>& touched_cards) {
     ClearBitset();

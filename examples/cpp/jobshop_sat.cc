@@ -34,7 +34,7 @@ ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 ABSL_FLAG(bool, use_optional_variables, false,
           "Whether we use optional variables for bounds of an optional "
           "interval or not.");
-ABSL_FLAG(bool, use_interval_makespan, true,
+ABSL_FLAG(bool, use_interval_makespan, false,
           "Whether we encode the makespan using an interval or not.");
 ABSL_FLAG(bool, use_variable_duration_to_encode_transition, false,
           "Whether we move the transition cost to the alternative duration.");
@@ -680,10 +680,10 @@ void Solve(const JsspInputProblem& problem) {
   // gives us a better lower bound on the makespan because this way we known
   // that it must be after all other intervals in each no-overlap constraint.
   //
-  // Otherwise, we will just add precence constraints between the last task of
+  // Otherwise, we will just add precedence constraints between the last task of
   // each job and the makespan variable. Alternatively, we could have added a
   // precedence relation between all tasks and the makespan for a similar
-  // propagation thanks to our "precedence" propagator in the dijsunctive but
+  // propagation thanks to our "precedence" propagator in the disjunctive but
   // that was slower than the interval trick when I tried.
   const IntVar makespan = cp_model.NewIntVar(Domain(0, horizon));
   IntervalVar makespan_interval;
@@ -751,6 +751,12 @@ void Solve(const JsspInputProblem& problem) {
     CHECK(google::protobuf::TextFormat::MergeFromString(
         absl::GetFlag(FLAGS_params), &parameters))
         << absl::GetFlag(FLAGS_params);
+  }
+
+  // Prefer objective_shaving_search over objective_lb_search.
+  if (parameters.num_workers() >= 16 && parameters.num_workers() < 24) {
+    parameters.add_ignore_subsolvers("objective_lb_search");
+    parameters.add_extra_subsolvers("objective_shaving_search");
   }
 
   const CpSolverResponse response =

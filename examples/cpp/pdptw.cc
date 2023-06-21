@@ -53,6 +53,7 @@
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/routing.h"

@@ -246,7 +246,7 @@ class Box {
   static constexpr int kAreaCost = 1;
   static constexpr int kFixedCost = 10;
 
-  Box() {}
+  Box() = default;
   Box(int x_min, int x_max, int y_min, int y_max)
       : x_min_(x_min), x_max_(x_max), y_min_(y_min), y_max_(y_max) {
     CHECK_GE(x_max, x_min);

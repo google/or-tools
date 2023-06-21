@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Traveling Salesman Sample.
 //
 // This is a sample using the routing library to solve a Traveling Salesman
@@ -25,14 +24,15 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
+#include <cstdint>
 #include <memory>
+#include <string>
 
-#include "absl/memory/memory.h"
+#include "absl/flags/parse.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -78,7 +78,7 @@ class RandomMatrix {
  public:
   explicit RandomMatrix(int size) : size_(size) {}
   void Initialize() {
-    matrix_ = absl::make_unique<int64_t[]>(size_ * size_);
+    matrix_ = std::make_unique<int64_t[]>(size_ * size_);
     const int64_t kDistanceMax = 100;
     random_engine_t randomizer(GetSeed());
     for (RoutingIndexManager::NodeIndex from(0); from < size_; ++from) {
@@ -123,7 +123,7 @@ void Tsp() {
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
     // has the following signature: ResultCallback2<int64_t, int64_t, int64_t>.
-    // The two arguments are the from and to node inidices.
+    // The two arguments are the from and to node indices.
     RandomMatrix matrix(absl::GetFlag(FLAGS_tsp_size));
     if (absl::GetFlag(FLAGS_tsp_use_random_matrix)) {
       matrix.Initialize();

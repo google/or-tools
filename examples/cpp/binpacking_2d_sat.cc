@@ -16,15 +16,12 @@
 // too), and tries to fit all rectangles in the minimum numbers of bins (they
 // have the size of the main rectangle.)
 
-#include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/packing/binpacking_2d_parser.h"
@@ -38,15 +35,13 @@ ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
 ABSL_FLAG(bool, symmetry_breaking, true, "Use symmetry breaking constraints");
-ABSL_FLAG(bool, global_area_constraint, false,
-          "Redundant constraint to link the global area covered");
 ABSL_FLAG(bool, alternate_model, true,
           "A different way to express the objective");
 
 namespace operations_research {
 namespace sat {
 
-// Load a 2D binpacking problem and solve it.
+// Load a 2D bin packing problem and solve it.
 void LoadAndSolve(const std::string& file_name, int instance) {
   packing::BinPacking2dParser parser;
   if (!parser.Load2BPFile(file_name, instance)) {
@@ -139,20 +134,6 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(FATAL) << num_dimensions << " dimensions not supported.";
   }
 
-  // Redundant constraint.
-  // The sum of areas in each bin is the sum of all items area.
-  if (absl::GetFlag(FLAGS_global_area_constraint)) {
-    LinearExpr sum_of_areas;
-    for (int item = 0; item < num_items; ++item) {
-      const int64_t item_area = problem.items(item).shapes(0).dimensions(0) *
-                                problem.items(item).shapes(0).dimensions(1);
-      for (int b = 0; b < max_bins; ++b) {
-        sum_of_areas += item_to_bin[item][b] * item_area;
-      }
-    }
-    cp_model.AddEquality(sum_of_areas, sum_of_items_area);
-  }
-
   if (absl::GetFlag(FLAGS_alternate_model)) {
     const IntVar obj = cp_model.NewIntVar(Domain(trivial_lb, max_bins));
     cp_model.Minimize(obj);
@@ -203,8 +184,6 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   // Setup parameters.
   SatParameters parameters;
   parameters.set_log_search_progress(true);
-  parameters.set_use_timetabling_in_no_overlap_2d(true);
-  parameters.set_use_energetic_reasoning_in_no_overlap_2d(true);
 
   // Parse the --params flag.
   if (!absl::GetFlag(FLAGS_params).empty()) {

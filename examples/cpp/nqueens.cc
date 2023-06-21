@@ -60,7 +60,7 @@ class NQueenSymmetry : public SymmetryBreaker {
       indices_[vars[i]] = i;
     }
   }
-  ~NQueenSymmetry() override {}
+  ~NQueenSymmetry() override = default;
 
  protected:
   int Index(IntVar* const var) const {
@@ -73,7 +73,7 @@ class NQueenSymmetry : public SymmetryBreaker {
   }
   int size() const { return size_; }
   int symmetric(int index) const { return size_ - 1 - index; }
-  Solver* const solver() const { return solver_; }
+  Solver* solver() const { return solver_; }
 
  private:
   Solver* const solver_;
@@ -87,7 +87,7 @@ class SX : public NQueenSymmetry {
  public:
   SX(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~SX() override {}
+  ~SX() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
@@ -101,7 +101,7 @@ class SY : public NQueenSymmetry {
  public:
   SY(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~SY() override {}
+  ~SY() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     AddIntegerVariableEqualValueClause(var, symmetric(value));
@@ -113,7 +113,7 @@ class SD1 : public NQueenSymmetry {
  public:
   SD1(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~SD1() override {}
+  ~SD1() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
@@ -127,7 +127,7 @@ class SD2 : public NQueenSymmetry {
  public:
   SD2(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~SD2() override {}
+  ~SD2() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
@@ -141,7 +141,7 @@ class R90 : public NQueenSymmetry {
  public:
   R90(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~R90() override {}
+  ~R90() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
@@ -155,7 +155,7 @@ class R180 : public NQueenSymmetry {
  public:
   R180(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~R180() override {}
+  ~R180() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);
@@ -169,7 +169,7 @@ class R270 : public NQueenSymmetry {
  public:
   R270(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  ~R270() override {}
+  ~R270() override = default;
 
   void VisitSetVariableValue(IntVar* const var, int64_t value) override {
     const int index = Index(var);

@@ -19,6 +19,7 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
 #define OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -33,7 +34,7 @@ class FapModelPrinter {
  public:
   FapModelPrinter(const absl::btree_map<int, FapVariable>& variables,
                   const std::vector<FapConstraint>& constraints,
-                  const std::string& objective, const std::vector<int>& values);
+                  absl::string_view objective, const std::vector<int>& values);
   ~FapModelPrinter();
 
   void PrintFapObjective();
@@ -51,7 +52,7 @@ class FapModelPrinter {
 
 FapModelPrinter::FapModelPrinter(const absl::btree_map<int, FapVariable>& variables,
                                  const std::vector<FapConstraint>& constraints,
-                                 const std::string& objective,
+                                 absl::string_view objective,
                                  const std::vector<int>& values)
     : variables_(variables),
       constraints_(constraints),

@@ -25,7 +25,7 @@
 // The solution of the problem can be based on various criteria:
 // - Simple satisfaction
 // - Minimizing the number of distinct frequencies used
-// - Minimizing the maximum frequency used, i.e minimizing the total width of
+// - Minimizing the maximum frequency used, i.e. minimizing the total width of
 // the spectrum
 // - Minimizing a weighted sum of violated constraints if the problem is
 //   inconsistent
@@ -57,7 +57,6 @@
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -101,7 +100,7 @@ class OrderingDecision : public Decision {
         variable2_(variable2),
         value_(value),
         operator_(std::move(operation)) {}
-  ~OrderingDecision() override {}
+  ~OrderingDecision() override = default;
 
   // Apply will be called first when the decision is executed.
   void Apply(Solver* const s) override {
@@ -143,16 +142,16 @@ class ConstraintDecision : public Decision {
   explicit ConstraintDecision(IntVar* const constraint_violation)
       : constraint_violation_(constraint_violation) {}
 
-  ~ConstraintDecision() override {}
+  ~ConstraintDecision() override = default;
 
   // Apply will be called first when the decision is executed.
-  void Apply(Solver* const s) override {
+  void Apply(Solver* const) override {
     // The constraint with which the builder is dealing, will be satisfied.
     constraint_violation_->SetValue(0);
   }
 
   // Refute will be called after a backtrack.
-  void Refute(Solver* const s) override {
+  void Refute(Solver* const) override {
     // The constraint with which the builder is dealing, will not be satisfied.
     constraint_violation_->SetValue(1);
   }
@@ -193,7 +192,7 @@ class OrderingBuilder : public DecisionBuilder {
     CHECK_EQ(variable_state_.size(), variables_.size());
   }
 
-  ~OrderingBuilder() override {}
+  ~OrderingBuilder() override = default;
 
   Decision* Next(Solver* const s) override {
     if (iter_ < size_) {
@@ -373,9 +372,10 @@ int64_t ValueEvaluator(
 
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
-int64_t VariableEvaluator(const std::vector<int>& key_from_index,
-                          const absl::btree_map<int, FapVariable>& data_variables,
-                          int64_t variable_index) {
+int64_t VariableEvaluator(
+    const std::vector<int>& key_from_index,
+    const absl::btree_map<int, FapVariable>& data_variables,
+    int64_t variable_index) {
   FapVariable variable =
       gtl::FindOrDie(data_variables, key_from_index[variable_index]);
   int64_t result = -(variable.degree * 100 / variable.domain_size);
@@ -383,10 +383,11 @@ int64_t VariableEvaluator(const std::vector<int>& key_from_index,
 }
 
 // Creates the variables of the solver from the parsed data.
-void CreateModelVariables(const absl::btree_map<int, FapVariable>& data_variables,
-                          Solver* solver, std::vector<IntVar*>* model_variables,
-                          absl::btree_map<int, int>* index_from_key,
-                          std::vector<int>* key_from_index) {
+void CreateModelVariables(
+    const absl::btree_map<int, FapVariable>& data_variables, Solver* solver,
+    std::vector<IntVar*>* model_variables,
+    absl::btree_map<int, int>* index_from_key,
+    std::vector<int>* key_from_index) {
   CHECK(solver != nullptr);
   CHECK(model_variables != nullptr);
   CHECK(index_from_key != nullptr);
@@ -630,9 +631,10 @@ void HardFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
 }
 
 // Splits variables of the instance to hard and soft.
-void SplitVariablesHardSoft(const absl::btree_map<int, FapVariable>& data_variables,
-                            absl::btree_map<int, FapVariable>* hard_variables,
-                            absl::btree_map<int, FapVariable>* soft_variables) {
+void SplitVariablesHardSoft(
+    const absl::btree_map<int, FapVariable>& data_variables,
+    absl::btree_map<int, FapVariable>* hard_variables,
+    absl::btree_map<int, FapVariable>* soft_variables) {
   for (const auto& it : data_variables) {
     if (it.second.initial_position != -1) {
       if (it.second.hard) {
@@ -730,8 +732,8 @@ void PenalizeConstraintsViolation(
 // equal to 0 denotes that the instance is feasible.
 int SoftFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
-                  absl::string_view data_objective,
-                  const std::vector<int>& values) {
+                  absl::string_view /*data_objective*/,
+                  const std::vector<int>& /*values*/) {
   Solver solver("SoftFapSolver");
   std::vector<SearchMonitor*> monitors;
 
@@ -834,7 +836,7 @@ int SoftFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
 
 void SolveProblem(const absl::btree_map<int, FapVariable>& variables,
                   const std::vector<FapConstraint>& constraints,
-                  const std::string& objective, const std::vector<int>& values,
+                  absl::string_view objective, const std::vector<int>& values,
                   bool soft) {
   // Print Instance!
   FapModelPrinter model_printer(variables, constraints, objective, values);

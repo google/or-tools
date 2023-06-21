@@ -53,17 +53,17 @@ void AnotherAssignment() {
       {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
   ForwardStarGraph graph(2 * kSize, kSize * kSize);
-  LinearSumAssignment<ForwardStarGraph> assignement(graph, kSize);
+  LinearSumAssignment<ForwardStarGraph> assignment(graph, kSize);
   for (int i = 0; i < kSize; ++i) {
     CHECK_EQ(kSize, matrice[i].size());
     for (int j = 0; j < kSize; ++j) {
       int arcIndex = graph.AddArc(i, j + kSize);
-      assignement.SetArcCost(arcIndex, matrice[i][j]);
+      assignment.SetArcCost(arcIndex, matrice[i][j]);
     }
   }
 
-  assignement.ComputeAssignment();
-  LOG(INFO) << "Cost : " << assignement.GetCost();
+  assignment.ComputeAssignment();
+  LOG(INFO) << "Cost : " << assignment.GetCost();
 }
 
 }  // namespace operations_research

@@ -20,11 +20,14 @@
 #define OR_TOOLS_EXAMPLES_PARSE_DIMACS_ASSIGNMENT_H_
 
 #include <algorithm>
+#include <cinttypes>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
@@ -44,7 +47,7 @@ class LinearSumAssignment;
 template <typename GraphType>
 class DimacsAssignmentParser {
  public:
-  explicit DimacsAssignmentParser(const std::string& filename)
+  explicit DimacsAssignmentParser(absl::string_view filename)
       : filename_(filename), graph_builder_(nullptr), assignment_(nullptr) {}
 
   // Reads an assignment problem description from the given file in
@@ -128,7 +131,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
   NodeIndex node_id;
   if (sscanf(line.c_str(), "%*c%d", &node_id) != 1) {
     state_.bad = true;
-    state_.reason = "Syntax error in node desciption.";
+    state_.reason = "Syntax error in node description.";
     state_.bad_line.reset(new std::string(line));
     return;
   }
@@ -158,15 +161,18 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
   }
   NodeIndex tail;
   NodeIndex head;
-  CostValue cost;
-  if (sscanf(line.c_str(), "%*c%d%d%lld", &tail, &head, &cost) != 3) {
+  // We don't use int64_t/CostValue here because of go/int64_t-cleanup.
+  int64_t cost;
+  if (sscanf(line.c_str(), "%*c%d%d%" SCNd64, &tail, &head, &cost) != 3) {
     state_.bad = true;
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new std::string(line));
   }
+  const CostValue cost_value{cost};
   ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
-  assignment_->SetArcCost(
-      arc, absl::GetFlag(FLAGS_assignment_maximize_cost) ? -cost : cost);
+  assignment_->SetArcCost(arc, absl::GetFlag(FLAGS_assignment_maximize_cost)
+                                   ? -cost_value
+                                   : cost_value);
 }
 
 // Parameters out of style-guide order because this function is used

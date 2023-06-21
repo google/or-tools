@@ -21,13 +21,13 @@
 
 #include <cstdlib>
 
-#include "absl/flags/parse.h"
-#include "absl/flags/usage.h"
 #include "examples/cpp/course_scheduling.h"
-#include "examples/cpp/course_scheduling.pb.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/init_google.h"
+#include "ortools/base/options.h"
 #include "ortools/base/timer.h"
+#include "ortools/scheduling/course_scheduling.pb.h"
 
 ABSL_FLAG(std::string, input, "",
           "Input file containing a CourseSchedulingModel in text format.");
@@ -105,8 +105,7 @@ void Main() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);
   operations_research::Main();
   return EXIT_SUCCESS;
 }

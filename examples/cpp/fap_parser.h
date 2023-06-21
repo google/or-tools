@@ -11,23 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Reading and parsing the data of Frequency Assignment Problem
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
-//
 
 #ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 #define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 
 namespace operations_research {
@@ -105,7 +107,7 @@ struct FapConstraint {
   bool hard = false;
 };
 
-// The FapComponent struct represents an component of the RLFAP graph.
+// The FapComponent struct represents a component of the RLFAP graph.
 // It models an independent sub-problem of the initial instance.
 struct FapComponent {
   // Fields:
@@ -124,7 +126,9 @@ class VariableParser {
   explicit VariableParser(const std::string& data_directory);
   ~VariableParser();
 
-  const absl::btree_map<int, FapVariable>& variables() const { return variables_; }
+  const absl::btree_map<int, FapVariable>& variables() const {
+    return variables_;
+  }
 
   void Parse();
 
@@ -146,7 +150,9 @@ class DomainParser {
   explicit DomainParser(const std::string& data_directory);
   ~DomainParser();
 
-  const absl::btree_map<int, std::vector<int> >& domains() const { return domains_; }
+  const absl::btree_map<int, std::vector<int> >& domains() const {
+    return domains_;
+  }
 
   void Parse();
 
@@ -198,9 +204,9 @@ class ParametersParser {
 
  private:
   const std::string filename_;
-  static constexpr int constraint_coefficient_no_ = 4;
-  static constexpr int variable_coefficient_no_ = 4;
-  static constexpr int coefficient_no_ = 8;
+  static constexpr int kConstraintCoefficientNo = 4;
+  static constexpr int kVariableCoefficientNo = 4;
+  static constexpr int kCoefficientNo = 8;
   std::string objective_;
   std::vector<int> constraint_weights_;
   std::vector<int> variable_weights_;
@@ -217,13 +223,12 @@ int strtoint32(const std::string& word) {
 // Function that finds the disjoint sub-graphs of the graph of the instance.
 void FindComponents(const std::vector<FapConstraint>& constraints,
                     const absl::btree_map<int, FapVariable>& variables,
-                    const int maximum_variable_id,
+                    int maximum_variable_id,
                     absl::flat_hash_map<int, FapComponent>* components);
 
 // Function that computes the impact of a constraint.
 int EvaluateConstraintImpact(const absl::btree_map<int, FapVariable>& variables,
-                             const int max_weight_cost,
-                             const FapConstraint constraint);
+                             int max_weight_cost, FapConstraint constraint);
 
 // Function that parses an instance of frequency assignment problem.
 void ParseInstance(const std::string& data_directory, bool find_components,
@@ -244,7 +249,7 @@ void ParseFileByLines(const std::string& filename,
 VariableParser::VariableParser(const std::string& data_directory)
     : filename_(data_directory + "/var.txt") {}
 
-VariableParser::~VariableParser() {}
+VariableParser::~VariableParser() = default;
 
 void VariableParser::Parse() {
   std::vector<std::string> lines;
@@ -258,12 +263,12 @@ void VariableParser::Parse() {
     CHECK_GE(tokens.size(), 2);
 
     FapVariable variable;
-    variable.domain_index = strtoint32(tokens[1].c_str());
+    variable.domain_index = strtoint32(tokens[1]);
     if (tokens.size() > 3) {
-      variable.initial_position = strtoint32(tokens[2].c_str());
-      variable.mobility_index = strtoint32(tokens[3].c_str());
+      variable.initial_position = strtoint32(tokens[2]);
+      variable.mobility_index = strtoint32(tokens[3]);
     }
-    gtl::InsertOrUpdate(&variables_, strtoint32(tokens[0].c_str()), variable);
+    gtl::InsertOrUpdate(&variables_, strtoint32(tokens[0]), variable);
   }
 }
 
@@ -271,7 +276,7 @@ void VariableParser::Parse() {
 DomainParser::DomainParser(const std::string& data_directory)
     : filename_(data_directory + "/dom.txt") {}
 
-DomainParser::~DomainParser() {}
+DomainParser::~DomainParser() = default;
 
 void DomainParser::Parse() {
   std::vector<std::string> lines;
@@ -284,12 +289,12 @@ void DomainParser::Parse() {
     }
     CHECK_GE(tokens.size(), 2);
 
-    const int key = strtoint32(tokens[0].c_str());
+    const int key = strtoint32(tokens[0]);
 
     std::vector<int> domain;
     domain.clear();
     for (int i = 2; i < tokens.size(); ++i) {
-      domain.push_back(strtoint32(tokens[i].c_str()));
+      domain.push_back(strtoint32(tokens[i]));
     }
 
     if (!domain.empty()) {
@@ -302,7 +307,7 @@ void DomainParser::Parse() {
 ConstraintParser::ConstraintParser(const std::string& data_directory)
     : filename_(data_directory + "/ctr.txt") {}
 
-ConstraintParser::~ConstraintParser() {}
+ConstraintParser::~ConstraintParser() = default;
 
 void ConstraintParser::Parse() {
   std::vector<std::string> lines;
@@ -316,31 +321,31 @@ void ConstraintParser::Parse() {
     CHECK_GE(tokens.size(), 5);
 
     FapConstraint constraint;
-    constraint.variable1 = strtoint32(tokens[0].c_str());
-    constraint.variable2 = strtoint32(tokens[1].c_str());
+    constraint.variable1 = strtoint32(tokens[0]);
+    constraint.variable2 = strtoint32(tokens[1]);
     constraint.type = tokens[2];
     constraint.operation = tokens[3];
-    constraint.value = strtoint32(tokens[4].c_str());
+    constraint.value = strtoint32(tokens[4]);
 
     if (tokens.size() > 5) {
-      constraint.weight_index = strtoint32(tokens[5].c_str());
+      constraint.weight_index = strtoint32(tokens[5]);
     }
     constraints_.push_back(constraint);
   }
 }
 
 // ParametersParser Implementation
-const int ParametersParser::constraint_coefficient_no_;
-const int ParametersParser::variable_coefficient_no_;
-const int ParametersParser::coefficient_no_;
+const int ParametersParser::kConstraintCoefficientNo;
+const int ParametersParser::kVariableCoefficientNo;
+const int ParametersParser::kCoefficientNo;
 
 ParametersParser::ParametersParser(const std::string& data_directory)
     : filename_(data_directory + "/cst.txt"),
       objective_(""),
-      constraint_weights_(constraint_coefficient_no_, 0),
-      variable_weights_(variable_coefficient_no_, 0) {}
+      constraint_weights_(kConstraintCoefficientNo, 0),
+      variable_weights_(kVariableCoefficientNo, 0) {}
 
-ParametersParser::~ParametersParser() {}
+ParametersParser::~ParametersParser() = default;
 
 void ParametersParser::Parse() {
   bool objective = true;
@@ -355,35 +360,33 @@ void ParametersParser::Parse() {
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
     if (objective) {
-      largest_token =
-          largest_token || (line.find("largest") != std::string::npos);
-      value_token = value_token || (line.find("value") != std::string::npos);
-      number_token = number_token || (line.find("number") != std::string::npos);
-      values_token = values_token || (line.find("values") != std::string::npos);
-      coefficient =
-          coefficient || (line.find("coefficient") != std::string::npos);
+      largest_token = largest_token || absl::StrContains(line, "largest");
+      value_token = value_token || absl::StrContains(line, "value");
+      number_token = number_token || absl::StrContains(line, "number");
+      values_token = values_token || absl::StrContains(line, "values");
+      coefficient = coefficient || absl::StrContains(line, "coefficient");
     }
 
     if (coefficient) {
-      CHECK_EQ(coefficient_no_,
-               constraint_coefficient_no_ + variable_coefficient_no_);
+      CHECK_EQ(kCoefficientNo,
+               kConstraintCoefficientNo + kVariableCoefficientNo);
       objective = false;
-      if (line.find("=") != std::string::npos) {
+      if (absl::StrContains(line, "=")) {
         std::vector<std::string> tokens =
             absl::StrSplit(line, ' ', absl::SkipEmpty());
         CHECK_GE(tokens.size(), 3);
-        coefficients.push_back(strtoint32(tokens[2].c_str()));
+        coefficients.push_back(strtoint32(tokens[2]));
       }
     }
   }
 
   if (coefficient) {
-    CHECK_EQ(coefficient_no_, coefficients.size());
-    for (int i = 0; i < coefficient_no_; i++) {
-      if (i < constraint_coefficient_no_) {
+    CHECK_EQ(kCoefficientNo, coefficients.size());
+    for (int i = 0; i < kCoefficientNo; i++) {
+      if (i < kConstraintCoefficientNo) {
         constraint_weights_[i] = coefficients[i];
       } else {
-        variable_weights_[i - constraint_coefficient_no_] = coefficients[i];
+        variable_weights_[i - kConstraintCoefficientNo] = coefficients[i];
       }
     }
   }
@@ -428,7 +431,7 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // If variable1 belongs to an existing component, variable2 should
       // also be included in the same component.
       const int component_index = in_component[variable_id1];
-      CHECK(gtl::ContainsKey(*components, component_index));
+      CHECK(components->contains(component_index));
       gtl::InsertOrUpdate(&((*components)[component_index].variables),
                           variable_id2, variable2);
       in_component[variable_id2] = component_index;
@@ -438,7 +441,7 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // If variable2 belongs to an existing component, variable1 should
       // also be included in the same component.
       const int component_index = in_component[variable_id2];
-      CHECK(gtl::ContainsKey(*components, component_index));
+      CHECK(components->contains(component_index));
       gtl::InsertOrUpdate(&((*components)[component_index].variables),
                           variable_id1, variable1);
       in_component[variable_id1] = component_index;
@@ -451,8 +454,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
           std::min(component_index1, component_index2);
       const int max_component_index =
           std::max(component_index1, component_index2);
-      CHECK(gtl::ContainsKey(*components, min_component_index));
-      CHECK(gtl::ContainsKey(*components, max_component_index));
+      CHECK(components->contains(min_component_index));
+      CHECK(components->contains(max_component_index));
       if (min_component_index != max_component_index) {
         // Update the component_index of maximum indexed component's variables.
         for (const auto& variable :

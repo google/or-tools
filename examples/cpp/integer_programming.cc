@@ -91,8 +91,8 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

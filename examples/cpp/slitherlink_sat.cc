@@ -14,35 +14,17 @@
 // Solve the Slitherlink problem:
 //    see https://en.wikipedia.org/wiki/Slitherlink
 
+#include <iostream>
 #include <string>
 #include <vector>
 
+#include "absl/flags/parse.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
-#include "ortools/sat/model.h"
-
-const std::vector<std::vector<int> > tiny = {{3, 3, 1}};
-
-const std::vector<std::vector<int> > small = {
-    {3, 2, -1, 3}, {-1, -1, -1, 2}, {3, -1, -1, -1}, {3, -1, 3, 1}};
-
-const std::vector<std::vector<int> > medium = {
-    {-1, 0, -1, 1, -1, -1, 1, -1},  {-1, 3, -1, -1, 2, 3, -1, 2},
-    {-1, -1, 0, -1, -1, -1, -1, 0}, {-1, 3, -1, -1, 0, -1, -1, -1},
-    {-1, -1, -1, 3, -1, -1, 0, -1}, {1, -1, -1, -1, -1, 3, -1, -1},
-    {3, -1, 1, 3, -1, -1, 3, -1},   {-1, 0, -1, -1, 3, -1, 3, -1}};
-
-const std::vector<std::vector<int> > big = {
-    {3, -1, -1, -1, 2, -1, 1, -1, 1, 2},
-    {1, -1, 0, -1, 3, -1, 2, 0, -1, -1},
-    {-1, 3, -1, -1, -1, -1, -1, -1, 3, -1},
-    {2, 0, -1, 3, -1, 2, 3, -1, -1, -1},
-    {-1, -1, -1, 1, 1, 1, -1, -1, 3, 3},
-    {2, 3, -1, -1, 2, 2, 3, -1, -1, -1},
-    {-1, -1, -1, 1, 2, -1, 2, -1, 3, 3},
-    {-1, 2, -1, -1, -1, -1, -1, -1, 2, -1},
-    {-1, -1, 1, 1, -1, 2, -1, 1, -1, 3},
-    {3, 3, -1, 1, -1, 2, -1, -1, -1, 2}};
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 
 namespace operations_research {
 namespace sat {
@@ -246,7 +228,31 @@ void SlitherLink(const std::vector<std::vector<int> >& data) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char** argv) {
+  absl::ParseCommandLine(argc, argv);
+  const std::vector<std::vector<int> > tiny = {{3, 3, 1}};
+
+  const std::vector<std::vector<int> > small = {
+      {3, 2, -1, 3}, {-1, -1, -1, 2}, {3, -1, -1, -1}, {3, -1, 3, 1}};
+
+  const std::vector<std::vector<int> > medium = {
+      {-1, 0, -1, 1, -1, -1, 1, -1},  {-1, 3, -1, -1, 2, 3, -1, 2},
+      {-1, -1, 0, -1, -1, -1, -1, 0}, {-1, 3, -1, -1, 0, -1, -1, -1},
+      {-1, -1, -1, 3, -1, -1, 0, -1}, {1, -1, -1, -1, -1, 3, -1, -1},
+      {3, -1, 1, 3, -1, -1, 3, -1},   {-1, 0, -1, -1, 3, -1, 3, -1}};
+
+  const std::vector<std::vector<int> > big = {
+      {3, -1, -1, -1, 2, -1, 1, -1, 1, 2},
+      {1, -1, 0, -1, 3, -1, 2, 0, -1, -1},
+      {-1, 3, -1, -1, -1, -1, -1, -1, 3, -1},
+      {2, 0, -1, 3, -1, 2, 3, -1, -1, -1},
+      {-1, -1, -1, 1, 1, 1, -1, -1, 3, 3},
+      {2, 3, -1, -1, 2, 2, 3, -1, -1, -1},
+      {-1, -1, -1, 1, 2, -1, 2, -1, 3, 3},
+      {-1, 2, -1, -1, -1, -1, -1, -1, 2, -1},
+      {-1, -1, 1, 1, -1, 2, -1, 1, -1, 3},
+      {3, 3, -1, 1, -1, 2, -1, -1, -1, 2}};
+
   std::cout << "Tiny problem" << std::endl;
   operations_research::sat::SlitherLink(tiny);
   std::cout << "Small problem" << std::endl;

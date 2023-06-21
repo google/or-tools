@@ -71,7 +71,7 @@ void ReadGlopParameters(GlopParameters* parameters) {
   if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string params;
     CHECK_OK(file::GetContents(absl::GetFlag(FLAGS_params_file), &params,
-			       file::Defaults()));
+                               file::Defaults()));
     CHECK(TextFormat::ParseFromString(params, parameters)) << params;
   }
   if (!absl::GetFlag(FLAGS_params).empty()) {

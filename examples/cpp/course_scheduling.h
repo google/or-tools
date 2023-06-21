@@ -29,7 +29,7 @@ namespace operations_research {
 class CourseSchedulingSolver {
  public:
   CourseSchedulingSolver() : solve_for_rooms_(false) {}
-  virtual ~CourseSchedulingSolver() {}
+  virtual ~CourseSchedulingSolver() = default;
 
   using ConflictPairs = absl::flat_hash_set<std::pair<int, int>>;
 

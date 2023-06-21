@@ -13,6 +13,8 @@
 
 // Constraint programming example that shows how to use the API.
 
+#include <vector>
+
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -55,8 +57,8 @@ void RunConstraintProgrammingExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  InitGoogle(argv[0], &argc, &argv, true);
   operations_research::RunConstraintProgrammingExample();
   return EXIT_SUCCESS;
 }

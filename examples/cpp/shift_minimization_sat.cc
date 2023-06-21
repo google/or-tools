@@ -16,7 +16,7 @@
 // https://publications.csiro.au/rpr/download?pid=csiro:EP104071&dsid=DS2)/
 //
 // Data files are in
-//    data/shift_scheduling/minization
+//    /cns/li-d/home/operations-research/shift_minization_scheduling
 //
 // The problem is the following:
 //   - There is a list of jobs. Each job has a start date and an end date. They
@@ -36,6 +36,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -105,7 +106,7 @@ class ShiftMinimizationParser {
  private:
   enum LoadStatus { NOT_STARTED, STARTED, JOBS_SEEN, WORKERS_SEEN };
 
-  int strtoint32(const std::string& word) {
+  int strtoint32(absl::string_view word) {
     int result;
     CHECK(absl::SimpleAtoi(word, &result));
     return result;
