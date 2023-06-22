@@ -124,7 +124,9 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   // Needed if we use one of the relaxation below.
   SchedulingDemandHelper* demands;
   if (add_timetabling_relaxation || add_energetic_relaxation) {
-    demands = model->TakeOwnership(new SchedulingDemandHelper(sizes, x, model));
+    demands =
+        model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
+            x, sizes);
   }
 
   // Propagator responsible for applying Timetabling filtering rule. It

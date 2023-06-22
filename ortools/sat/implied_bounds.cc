@@ -223,14 +223,17 @@ bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
   return true;
 }
 
-void ImpliedBounds::AddElementEncoding(
-    IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
-    int exactly_one_index) {
+void ElementEncodings::Add(IntegerVariable var,
+                           const std::vector<ValueLiteralPair>& encoding,
+                           int exactly_one_index) {
+  if (!var_to_index_to_element_encodings_.contains(var)) {
+    element_encoded_variables_.push_back(var);
+  }
   var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
 }
 
 const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-ImpliedBounds::GetElementEncodings(IntegerVariable var) {
+ElementEncodings::Get(IntegerVariable var) {
   const auto& it = var_to_index_to_element_encodings_.find(var);
   if (it == var_to_index_to_element_encodings_.end()) {
     return empty_element_encoding_;
@@ -239,18 +242,9 @@ ImpliedBounds::GetElementEncodings(IntegerVariable var) {
   }
 }
 
-const std::vector<IntegerVariable>& ImpliedBounds::GetElementEncodedVariables()
-    const {
+const std::vector<IntegerVariable>&
+ElementEncodings::GetElementEncodedVariables() const {
   return element_encoded_variables_;
-}
-
-std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
-  std::string result;
-  for (const ValueLiteralPair& term : enc) {
-    absl::StrAppend(&result, term.literal.DebugString(), ":",
-                    term.value.value(), " ");
-  }
-  return result;
 }
 
 // If a variable has a size of 2, it is most likely reduced to an affine
@@ -271,8 +265,7 @@ std::string EncodingStr(const std::vector<ValueLiteralPair>& enc) {
 std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
     const std::vector<ValueLiteralPair>& affine_var_encoding,
-    bool put_affine_left_in_result, Model* model) {
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+    bool put_affine_left_in_result, IntegerEncoder* integer_encoder) {
   IntegerVariable binary = size2_affine.var;
   std::vector<LiteralValueValue> terms;
   if (!integer_encoder->VariableIsFullyEncoded(binary)) return terms;
@@ -314,8 +307,8 @@ std::vector<LiteralValueValue> TryToReconcileEncodings(
 // Specialized case of encoding reconciliation when both variables have a domain
 // of size of 2.
 std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
-    const AffineExpression& left, const AffineExpression& right, Model* model) {
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+    const AffineExpression& left, const AffineExpression& right,
+    IntegerEncoder* integer_encoder) {
   std::vector<LiteralValueValue> terms;
   if (!integer_encoder->VariableIsFullyEncoded(left.var) ||
       !integer_encoder->VariableIsFullyEncoded(right.var)) {
@@ -359,19 +352,19 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
   return terms;
 }
 
-std::vector<LiteralValueValue> TryToDecomposeProduct(
-    const AffineExpression& left, const AffineExpression& right, Model* model) {
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  if (integer_trail->IsFixed(left) || integer_trail->IsFixed(right)) return {};
+std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
+    const AffineExpression& left, const AffineExpression& right) {
+  if (integer_trail_->IsFixed(left) || integer_trail_->IsFixed(right)) {
+    return {};
+  }
 
   // Fill in the encodings for the left variable.
-  ImpliedBounds* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      left_encodings = implied_bounds->GetElementEncodings(left.var);
+      left_encodings = element_encodings_->Get(left.var);
 
   // Fill in the encodings for the right variable.
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      right_encodings = implied_bounds->GetElementEncodings(right.var);
+      right_encodings = element_encodings_->Get(right.var);
 
   std::vector<int> compatible_keys;
   for (const auto& [index, encoding] : left_encodings) {
@@ -381,30 +374,30 @@ std::vector<LiteralValueValue> TryToDecomposeProduct(
   }
 
   if (compatible_keys.empty()) {
-    if (integer_trail->InitialVariableDomain(left.var).Size() == 2) {
+    if (integer_trail_->InitialVariableDomain(left.var).Size() == 2) {
       for (const auto& [index, right_encoding] : right_encodings) {
-        const std::vector<LiteralValueValue> result =
-            TryToReconcileEncodings(left, right, right_encoding,
-                                    /*put_affine_left_in_result=*/false, model);
+        const std::vector<LiteralValueValue> result = TryToReconcileEncodings(
+            left, right, right_encoding,
+            /*put_affine_left_in_result=*/false, integer_encoder_);
         if (!result.empty()) {
           return result;
         }
       }
     }
-    if (integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+    if (integer_trail_->InitialVariableDomain(right.var).Size() == 2) {
       for (const auto& [index, left_encoding] : left_encodings) {
-        const std::vector<LiteralValueValue> result =
-            TryToReconcileEncodings(right, left, left_encoding,
-                                    /*put_affine_left_in_result=*/true, model);
+        const std::vector<LiteralValueValue> result = TryToReconcileEncodings(
+            right, left, left_encoding,
+            /*put_affine_left_in_result=*/true, integer_encoder_);
         if (!result.empty()) {
           return result;
         }
       }
     }
-    if (integer_trail->InitialVariableDomain(left.var).Size() == 2 &&
-        integer_trail->InitialVariableDomain(right.var).Size() == 2) {
+    if (integer_trail_->InitialVariableDomain(left.var).Size() == 2 &&
+        integer_trail_->InitialVariableDomain(right.var).Size() == 2) {
       const std::vector<LiteralValueValue> result =
-          TryToReconcileSize2Encodings(left, right, model);
+          TryToReconcileSize2Encodings(left, right, integer_encoder_);
       if (!result.empty()) {
         return result;
       }
@@ -442,33 +435,32 @@ std::vector<LiteralValueValue> TryToDecomposeProduct(
 
 // TODO(user): Experiment with x * x where constants = 0, x is
 // fully encoded, and the domain is small.
-bool DetectLinearEncodingOfProducts(const AffineExpression& left,
-                                    const AffineExpression& right, Model* model,
-                                    LinearConstraintBuilder* builder) {
+bool ProductDecomposer::TryToLinearize(const AffineExpression& left,
+                                       const AffineExpression& right,
+                                       LinearConstraintBuilder* builder) {
   DCHECK(builder != nullptr);
   builder->Clear();
 
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  if (integer_trail->IsFixed(left)) {
-    if (integer_trail->IsFixed(right)) {
-      builder->AddConstant(integer_trail->FixedValue(left) *
-                           integer_trail->FixedValue(right));
+  if (integer_trail_->IsFixed(left)) {
+    if (integer_trail_->IsFixed(right)) {
+      builder->AddConstant(integer_trail_->FixedValue(left) *
+                           integer_trail_->FixedValue(right));
       return true;
     }
-    builder->AddTerm(right, integer_trail->FixedValue(left));
+    builder->AddTerm(right, integer_trail_->FixedValue(left));
     return true;
   }
 
-  if (integer_trail->IsFixed(right)) {
-    builder->AddTerm(left, integer_trail->FixedValue(right));
+  if (integer_trail_->IsFixed(right)) {
+    builder->AddTerm(left, integer_trail_->FixedValue(right));
     return true;
   }
 
   // Linearization is possible if both left and right have the same Boolean
   // variable.
   if (PositiveVariable(left.var) == PositiveVariable(right.var) &&
-      integer_trail->LowerBound(PositiveVariable(left.var)) == 0 &&
-      integer_trail->UpperBound(PositiveVariable(left.var)) == 1) {
+      integer_trail_->LowerBound(PositiveVariable(left.var)) == 0 &&
+      integer_trail_->UpperBound(PositiveVariable(left.var)) == 1) {
     const IntegerValue left_coeff =
         VariableIsPositive(left.var) ? left.coeff : -left.coeff;
     const IntegerValue right_coeff =
@@ -480,17 +472,16 @@ bool DetectLinearEncodingOfProducts(const AffineExpression& left,
     return true;
   }
 
-  const std::vector<LiteralValueValue> product =
-      TryToDecomposeProduct(left, right, model);
-  if (product.empty()) return false;
+  const std::vector<LiteralValueValue> decomposition =
+      TryToDecompose(left, right);
+  if (decomposition.empty()) return false;
 
   IntegerValue min_coefficient = kMaxIntegerValue;
-  for (const LiteralValueValue& term : product) {
+  for (const LiteralValueValue& term : decomposition) {
     min_coefficient =
         std::min(min_coefficient, term.left_value * term.right_value);
   }
-
-  for (const LiteralValueValue& term : product) {
+  for (const LiteralValueValue& term : decomposition) {
     const IntegerValue coefficient =
         term.left_value * term.right_value - min_coefficient;
     if (coefficient == 0) continue;

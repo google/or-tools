@@ -51,6 +51,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/adaptative_parameter_value.h"
+#include "ortools/util/integer_pq.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -239,7 +240,9 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
 
     // We replace intervals by their underlying integer variables. Note that
     // this is needed for a correct decomposition into independent part.
+    bool need_sort = false;
     for (const int interval : UsedIntervals(constraints[ct_index])) {
+      need_sort = true;
       for (const int var : UsedVariables(constraints[interval])) {
         if (IsConstant(var)) continue;
         constraint_to_var_[reduced_ct_index].push_back(var);
@@ -254,6 +257,9 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
 
     // Keep this constraint.
+    if (need_sort) {
+      gtl::STLSortAndRemoveDuplicates(&constraint_to_var_[reduced_ct_index]);
+    }
     for (const int var : constraint_to_var_[reduced_ct_index]) {
       var_to_constraint_[var].push_back(reduced_ct_index);
     }
@@ -1396,6 +1402,165 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
         }
       }
     }
+  }
+
+  return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
+Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  int max_width = 0;
+  int size_at_min_width_after_100;
+  int min_width_after_100 = std::numeric_limits<int>::max();
+  int num_zero_score = 0;
+  std::vector<int> relaxed_variables;
+
+  // Note(user): The algo is slower than the other graph generator, so we
+  // might not want to lock the graph for so long? it is just a reader lock
+  // though.
+  {
+    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+
+    const int num_active_vars =
+        helper_.ActiveVariablesWhileHoldingLock().size();
+    const int target_size = std::ceil(difficulty * num_active_vars);
+    if (target_size == 0) return helper_.FullNeighborhood();
+
+    const int num_vars = helper_.VarToConstraint().size();
+    const int num_constraints = helper_.ConstraintToVar().size();
+    if (num_constraints == 0 || num_vars == 0) {
+      return helper_.FullNeighborhood();
+    }
+
+    // We will grow this incrementally.
+    // Index in the graph are first variables then constraints.
+    const int num_nodes = num_vars + num_constraints;
+    std::vector<bool> added(num_nodes, false);
+    std::vector<bool> added_or_connected(num_nodes, false);
+
+    // We will process var/constraint node by minimum "score".
+    struct QueueElement {
+      int Index() const { return index; }
+      bool operator<(const QueueElement& o) const {
+        if (score == o.score) return tie_break < o.tie_break;
+        return score < o.score;
+      }
+
+      int index;
+      int score = 0;
+      double tie_break = 0.0;
+    };
+    std::vector<QueueElement> elements(num_nodes);
+    IntegerPriorityQueue<QueueElement> pq(num_nodes);
+
+    // Initialize elements.
+    for (int i = 0; i < num_nodes; ++i) {
+      elements[i].index = i;
+      elements[i].tie_break = absl::Uniform<double>(random, 0.0, 1.0);
+    }
+
+    // We start by a random node.
+    const int first_index = absl::Uniform<int>(random, 0, num_nodes);
+    elements[first_index].score =
+        first_index < num_vars
+            ? helper_.VarToConstraint()[first_index].size()
+            : helper_.ConstraintToVar()[first_index - num_vars].size();
+    pq.Add(elements[first_index]);
+    added_or_connected[first_index] = true;
+
+    // Pop max-degree from queue and update.
+    std::vector<int> to_update;
+    while (!pq.IsEmpty() && relaxed_variables.size() < target_size) {
+      // Just for logging.
+      if (relaxed_variables.size() > 100 && pq.Size() < min_width_after_100) {
+        min_width_after_100 = pq.Size();
+        size_at_min_width_after_100 = relaxed_variables.size();
+      }
+
+      const int index = pq.Top().index;
+      const int score = pq.Top().score;
+      pq.Pop();
+      added[index] = true;
+
+      // When the score is zero, we don't need to update anything since the
+      // frontier does not grow.
+      if (score == 0) {
+        if (index < num_vars) relaxed_variables.push_back(index);
+        ++num_zero_score;
+        continue;
+      }
+
+      // Note that while it might looks bad, the overall complexity of this is
+      // in O(num_edge) since we scan each index once and each newly connected
+      // vertex once.
+      int num_added = 0;
+      to_update.clear();
+      if (index < num_vars) {
+        relaxed_variables.push_back(index);
+        for (const int c : helper_.VarToConstraint()[index]) {
+          const int c_index = num_vars + c;
+          if (added_or_connected[c_index]) continue;
+          ++num_added;
+          added_or_connected[c_index] = true;
+          to_update.push_back(c_index);
+          for (const int v : helper_.ConstraintToVar()[c]) {
+            if (added[v]) continue;
+            if (added_or_connected[v]) {
+              to_update.push_back(v);
+              elements[v].score--;
+            } else {
+              elements[c_index].score++;
+            }
+          }
+        }
+      } else {
+        for (const int v : helper_.ConstraintToVar()[index - num_vars]) {
+          if (added_or_connected[v]) continue;
+          ++num_added;
+          added_or_connected[v] = true;
+          to_update.push_back(v);
+          for (const int c : helper_.VarToConstraint()[v]) {
+            if (added[num_vars + c]) continue;
+            if (added_or_connected[num_vars + c]) {
+              elements[num_vars + c].score--;
+              to_update.push_back(num_vars + c);
+            } else {
+              elements[v].score++;
+            }
+          }
+        }
+      }
+
+      // The score is exactly the frontier increase in size.
+      // This is the same as the min-degree heuristic for the elimination order.
+      // Except we only consider connected nodes.
+      CHECK_EQ(num_added, score);
+
+      gtl::STLSortAndRemoveDuplicates(&to_update);
+      for (const int index : to_update) {
+        DCHECK(!added[index]);
+        if (pq.Contains(index)) {
+          pq.ChangePriority(elements[index]);
+        } else {
+          pq.Add(elements[index]);
+        }
+      }
+
+      max_width = std::max(max_width, pq.Size());
+    }
+
+    // Just for logging.
+    if (pq.Size() < min_width_after_100) {
+      min_width_after_100 = pq.Size();
+      size_at_min_width_after_100 = relaxed_variables.size();
+    }
+
+    VLOG(2) << "#relaxed " << relaxed_variables.size() << " #zero_score "
+            << num_zero_score << " max_width " << max_width
+            << " (size,min_width)_after_100 (" << size_at_min_width_after_100
+            << "," << min_width_after_100 << ") "
+            << " final_width " << pq.Size();
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);

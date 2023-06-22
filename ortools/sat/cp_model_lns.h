@@ -507,6 +507,26 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
+// The idea here is to try to generate a random neighborhood incrementally in
+// such a way that we have at various point a "minimum connection" in term of
+// constraints or variable to the outside world.
+//
+// This is inspired by what would be a good neighborhood if one where to use
+// a tree decomposition of the constraint-variable graph with small treewidth.
+//
+// TODO(user): Doing the full heuristic treewidth decomposition is probably
+// better because when we grow the current neighborhood, just using local
+// connection to the current candidate is probably not enough to orient the
+// search towards a good final neighborhood.
+class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit DecompositionGraphNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
 // Pick a random subset of objective terms.
 class RelaxObjectiveVariablesGenerator : public NeighborhoodGenerator {
  public:

@@ -151,8 +151,8 @@ std::function<void(Model*)> Cumulative(
       helper = intervals->GetOrCreateHelper(vars);
     }
     SchedulingDemandHelper* demands_helper =
-        new SchedulingDemandHelper(demands, helper, model);
-    model->TakeOwnership(demands_helper);
+        model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
+            helper, demands);
 
     // For each variables that is after a subset of task ends (i.e. like a
     // makespan objective), we detect it and add a special constraint to

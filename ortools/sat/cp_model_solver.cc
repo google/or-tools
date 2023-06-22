@@ -1405,7 +1405,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   }
 
   ExtractEncoding(model_proto, model);
-  ExtractElementEncoding(model_proto, model);
   PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
   // Check the model is still feasible before continuing.
@@ -1536,7 +1535,11 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!sat_solver->FinishPropagation()) return unsat();
   }
 
-  // TODO(user): This should be done in the presolve instead.
+  // Note that this is already done in the presolve, but it is important to redo
+  // it here to collect literal => integer >= bound constraints that are used in
+  // many places. Without it, we don't detect them if they depends on long chain
+  // of implications.
+  //
   // TODO(user): We don't have a good deterministic time on all constraints,
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
@@ -1548,6 +1551,15 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
   if (sat_solver->ModelIsUnsat()) return unsat();
+
+  // Note that it is important to do that after the probing.
+  ExtractElementEncoding(model_proto, model);
+
+  // Compute decomposed energies on demands helper.
+  IntervalsRepository* repository = model->Mutable<IntervalsRepository>();
+  if (repository != nullptr) {
+    repository->InitAllDecomposedEnergies();
+  }
 
   // We need to know beforehand if the objective var can just be >= terms or
   // needs to be == terms.
@@ -3544,6 +3556,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         std::make_unique<ConstraintGraphNeighborhoodGenerator>(helper,
                                                                "graph_cst_lns"),
         params, helper, &shared));
+    subsolvers.push_back(std::make_unique<LnsSolver>(
+        std::make_unique<DecompositionGraphNeighborhoodGenerator>(
+            helper, "graph_dec_lns"),
+        params, helper, &shared));
 
     // Create the rnd_obj_lns worker if the number of terms in the objective is
     // big enough, and it is no more than half the number of variables in the
@@ -4352,6 +4368,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // parallel case. When this model will be destroyed, we will collect some
     // stats that are used to debug/improve internal algorithm.
     Model local_model;
+    local_model.Register<SolverLogger>(logger);
     local_model.Register<TimeLimit>(model->GetOrCreate<TimeLimit>());
     local_model.Register<SatParameters>(model->GetOrCreate<SatParameters>());
     local_model.Register<SharedStatistics>(
@@ -4369,6 +4386,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       QuickSolveWithHint(new_cp_model_proto, &local_model);
     }
     SolveLoadedCpModel(new_cp_model_proto, &local_model);
+
     // Export statistics.
     CpSolverResponse status_response;
     FillSolveStatsInResponse(&local_model, &status_response);

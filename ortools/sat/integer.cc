@@ -517,6 +517,14 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   reverse_equality_encoding_[literal.Index()].push_back({var, value});
 }
 
+bool IntegerEncoder::IsFixedOrHasAssociatedLiteral(IntegerLiteral i_lit) const {
+  if (!VariableIsPositive(i_lit.var)) i_lit = i_lit.Negated();
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(i_lit.var);
+  if (i_lit.bound <= domains_[index].Min()) return true;
+  if (i_lit.bound > domains_[index].Max()) return true;
+  return GetAssociatedLiteral(i_lit) != kNoLiteralIndex;
+}
+
 // TODO(user): Canonicalization might be slow.
 LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i_lit) const {
   IntegerValue bound;

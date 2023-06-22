@@ -728,8 +728,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
-      new SchedulingDemandHelper(demands, helper, model);
-  model->TakeOwnership(demands_helper);
+      repository->GetOrCreateDemandHelper(helper, demands);
 
   if (!makespan.has_value()) {
     makespan = DetectMakespanFromPrecedences(*helper, model);
@@ -767,8 +766,7 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
-      new SchedulingDemandHelper(demands, helper, model);
-  model->TakeOwnership(demands_helper);
+      repository->GetOrCreateDemandHelper(helper, demands);
 
   if (!makespan.has_value()) {
     makespan = DetectMakespanFromPrecedences(*helper, model);
@@ -902,12 +900,13 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
                            CapSub(y_max.value(), y_min.value())));
   if (max_area == kMaxIntegerValue) return;
 
+  auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
   LinearConstraintBuilder lc(model, IntegerValue(0), max_area);
   for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
     if (intervals_repository->IsPresent(x_intervals[i]) &&
         intervals_repository->IsPresent(y_intervals[i])) {
       const std::vector<LiteralValueValue> energy =
-          TryToDecomposeProduct(x_sizes[i], y_sizes[i], model);
+          product_decomposer->TryToDecompose(x_sizes[i], y_sizes[i]);
       if (!energy.empty()) {
         if (!lc.AddDecomposedProduct(energy)) return;
       } else {
@@ -1588,17 +1587,18 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
   if (!has_variable_part) return;
 
   SchedulingDemandHelper* x_demands_helper =
-      new SchedulingDemandHelper(x_helper->Sizes(), y_helper, m);
-  m->TakeOwnership(x_demands_helper);
+      intervals_repository->GetOrCreateDemandHelper(y_helper,
+                                                    x_helper->Sizes());
   SchedulingDemandHelper* y_demands_helper =
-      new SchedulingDemandHelper(y_helper->Sizes(), x_helper, m);
-  m->TakeOwnership(y_demands_helper);
+      intervals_repository->GetOrCreateDemandHelper(x_helper,
+                                                    y_helper->Sizes());
 
   std::vector<std::vector<LiteralValueValue>> energies;
   const int num_rectangles = x_helper->NumTasks();
+  auto* product_decomposer = m->GetOrCreate<ProductDecomposer>();
   for (int i = 0; i < num_rectangles; ++i) {
-    energies.push_back(
-        TryToDecomposeProduct(x_helper->Sizes()[i], y_helper->Sizes()[i], m));
+    energies.push_back(product_decomposer->TryToDecompose(
+        x_helper->Sizes()[i], y_helper->Sizes()[i]));
   }
 
   relaxation->cut_generators.push_back(CreateNoOverlap2dEnergyCutGenerator(
@@ -1656,25 +1656,17 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
 // it is harder to detect that if all literal are false then none of the implied
 // value can be taken.
 void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
-  auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* element_encodings = m->GetOrCreate<ElementEncodings>();
 
   int num_exactly_one_elements = 0;
 
   for (const IntegerVariable var :
-       implied_bounds->GetElementEncodedVariables()) {
+       element_encodings->GetElementEncodedVariables()) {
     for (const auto& [index, literal_value_list] :
-         implied_bounds->GetElementEncodings(var)) {
-      // We only want to deal with the case with duplicate values, because
-      // otherwise, the target will be fully encoded, and this is already
-      // covered by another function.
+         element_encodings->Get(var)) {
       IntegerValue min_value = kMaxIntegerValue;
-      {
-        absl::flat_hash_set<IntegerValue> values;
-        for (const auto& literal_value : literal_value_list) {
-          min_value = std::min(min_value, literal_value.value);
-          values.insert(literal_value.value);
-        }
-        if (values.size() == literal_value_list.size()) continue;
+      for (const auto& literal_value : literal_value_list) {
+        min_value = std::min(min_value, literal_value.value);
       }
 
       LinearConstraintBuilder linear_encoding(m, -min_value, -min_value);
@@ -1730,7 +1722,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     const IntegerVariable var = mapping->Integer(i);
     if (m->Get(IsFixed(var))) continue;
 
-    // We first try to linerize the values encoding.
+    // We first try to linearize the values encoding.
     AppendRelaxationForEqualityEncoding(
         var, *m, &relaxation, &num_tight_equality_encoding_relaxations,
         &num_loose_equality_encoding_relaxations);

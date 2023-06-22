@@ -376,6 +376,7 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
 void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* logger = m->GetOrCreate<SolverLogger>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
@@ -555,16 +556,15 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     mapping->already_loaded_ct_.insert(inequality.ct);
     mapping->is_half_encoding_ct_.insert(inequality.ct);
   }
-
   if (!inequalities.empty()) {
-    VLOG(1) << num_inequalities << " literals associated to VAR >= value, and "
-            << num_half_inequalities << " half-associations.";
+    SOLVER_LOG(logger, "[Encoding] ", num_inequalities,
+               " literals associated to VAR >= value, and ",
+               num_half_inequalities, " half-associations.");
   }
 
   // Detect Literal <=> X == value and associate them in the IntegerEncoder.
   //
   // TODO(user): Fully encode variable that are almost fully encoded?
-  int num_constraints = 0;
   int num_equalities = 0;
   int num_half_equalities = 0;
   int num_fully_encoded = 0;
@@ -573,9 +573,9 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     std::vector<EqualityDetectionHelper>& encoding = var_to_equalities[i];
     std::sort(encoding.begin(), encoding.end());
     if (encoding.empty()) continue;
-    num_constraints += encoding.size();
 
     absl::flat_hash_set<int64_t> values;
+    const IntegerVariable var = mapping->integers_[i];
     for (int j = 0; j + 1 < encoding.size(); j++) {
       if ((encoding[j].value != encoding[j + 1].value) ||
           (encoding[j].literal != encoding[j + 1].literal.Negated()) ||
@@ -585,8 +585,7 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
       }
 
       ++num_equalities;
-      encoder->AssociateToIntegerEqualValue(encoding[j].literal,
-                                            mapping->integers_[i],
+      encoder->AssociateToIntegerEqualValue(encoding[j].literal, var,
                                             IntegerValue(encoding[j].value));
       mapping->already_loaded_ct_.insert(encoding[j].ct);
       mapping->already_loaded_ct_.insert(encoding[j + 1].ct);
@@ -606,11 +605,28 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     // linear constraints, so we should be fine.
     for (const auto equality : encoding) {
       if (mapping->ConstraintIsAlreadyLoaded(equality.ct)) continue;
-      const class Literal eq = encoder->GetOrCreateLiteralAssociatedToEquality(
-          mapping->integers_[i], IntegerValue(equality.value));
       if (equality.is_equality) {
-        m->Add(Implication(equality.literal, eq));
+        // If we have just an half-equality, lets not create the <=> literal
+        // but just add two implications. If we don't create hole, we don't
+        // really need the reverse literal. This way it is also possible for
+        // the ExtractElementEncoding() to detect later that actually this
+        // literal is <=> to var == value, and this way we create one less
+        // Boolean for the same result.
+        //
+        // TODO(user): It is not 100% clear what is the best encoding and if
+        // we should create equivalent literal or rely on propagator instead
+        // to push bounds.
+        m->Add(Implication(
+            equality.literal,
+            encoder->GetOrCreateAssociatedLiteral(
+                IntegerLiteral::GreaterOrEqual(var, equality.value))));
+        m->Add(Implication(
+            equality.literal,
+            encoder->GetOrCreateAssociatedLiteral(
+                IntegerLiteral::LowerOrEqual(var, equality.value))));
       } else {
+        const Literal eq = encoder->GetOrCreateLiteralAssociatedToEquality(
+            var, equality.value);
         m->Add(Implication(equality.literal, eq.Negated()));
       }
 
@@ -620,37 +636,47 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
     }
 
     // Update stats.
-    if (VLOG_IS_ON(1)) {
-      if (encoder->VariableIsFullyEncoded(mapping->integers_[i])) {
-        ++num_fully_encoded;
-      } else {
-        ++num_partially_encoded;
-      }
+    if (encoder->VariableIsFullyEncoded(var)) {
+      ++num_fully_encoded;
+    } else {
+      ++num_partially_encoded;
     }
   }
 
-  if (num_constraints > 0) {
-    VLOG(1) << num_equalities << " literals associated to VAR == value, and "
-            << num_half_equalities << " half-associations.";
+  if (num_equalities > 0 || num_half_equalities > 0) {
+    SOLVER_LOG(logger, "[Encoding] ", num_equalities,
+               " literals associated to VAR == value, and ",
+               num_half_equalities, " half-associations.");
   }
   if (num_fully_encoded > 0) {
-    VLOG(1) << "num_fully_encoded_variables: " << num_fully_encoded;
+    SOLVER_LOG(logger,
+               "[Encoding] num_fully_encoded_variables:", num_fully_encoded);
   }
   if (num_partially_encoded > 0) {
-    VLOG(1) << "num_partially_encoded_variables: " << num_partially_encoded;
+    SOLVER_LOG(logger, "[Encoding] num_partially_encoded_variables:",
+               num_partially_encoded);
   }
 }
 
 void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
   int num_element_encoded = 0;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* logger = m->GetOrCreate<SolverLogger>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
   auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* element_encodings = m->GetOrCreate<ElementEncodings>();
 
   // Scan all exactly_one constraints and look for literal => var == value to
   // detect element encodings.
+  int num_support_clauses = 0;
+  int num_dedicated_propagator = 0;
+  std::vector<Literal> clause;
+  std::vector<Literal> selectors;
+  std::vector<AffineExpression> exprs;
+  std::vector<AffineExpression> negated_exprs;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
-
     if (ct.constraint_case() != ConstraintProto::kExactlyOne) continue;
 
     // Project the implied values onto each integer variable.
@@ -669,9 +695,9 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
     std::string encoded_variables_str;
 
     // Search for variable fully covered by the literals of the exactly_one.
-    for (const auto& [var, literal_value_list] : var_to_value_literal_list) {
-      if (literal_value_list.size() < ct.exactly_one().literals_size()) {
-        VLOG(2) << "X" << var.value() << " has " << literal_value_list.size()
+    for (auto& [var, encoding] : var_to_value_literal_list) {
+      if (encoding.size() < ct.exactly_one().literals_size()) {
+        VLOG(2) << "X" << var.value() << " has " << encoding.size()
                 << " implied values, and a domain of size "
                 << m->GetOrCreate<IntegerTrail>()
                        ->InitialVariableDomain(var)
@@ -680,11 +706,80 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
       }
 
       // We use the order of literals of the exactly_one.
-      implied_bounds->AddElementEncoding(var, literal_value_list, c);
+      ++num_element_encoded;
+      element_encodings->Add(var, encoding, c);
       if (VLOG_IS_ON(1)) {
         encoded_variables.push_back(var);
         absl::StrAppend(&encoded_variables_str, " X", var.value());
-        num_element_encoded++;
+      }
+
+      // Encode the holes propagation (but we don't create extra literal if they
+      // are not already there). If there are non-encoded values we also add the
+      // direct min/max propagation.
+      bool need_extra_propagation = false;
+      std::sort(encoding.begin(), encoding.end(),
+                ValueLiteralPair::CompareByValue());
+      for (int i = 0, j = 0; i < encoding.size(); i = j) {
+        j = i + 1;
+        const IntegerValue value = encoding[i].value;
+        while (j < encoding.size() && encoding[j].value == value) ++j;
+
+        if (j - i == 1) {
+          // Lets not create var >= value or var <= value if they do not exist.
+          if (!encoder->IsFixedOrHasAssociatedLiteral(
+                  IntegerLiteral::GreaterOrEqual(var, value)) ||
+              !encoder->IsFixedOrHasAssociatedLiteral(
+                  IntegerLiteral::LowerOrEqual(var, value))) {
+            need_extra_propagation = true;
+            continue;
+          }
+          encoder->AssociateToIntegerEqualValue(encoding[i].literal, var,
+                                                value);
+        } else {
+          // We do not create an extra literal if it doesn't exist.
+          if (encoder->GetAssociatedEqualityLiteral(var, value) ==
+              kNoLiteralIndex) {
+            need_extra_propagation = true;
+            continue;
+          }
+
+          // If all literal supporting a value are false, then the value must be
+          // false. Note that such a clause is only useful if there are more
+          // than one literal supporting the value, otherwise we should already
+          // have detected the equivalence.
+          ++num_support_clauses;
+          clause.clear();
+          for (int k = i; k < j; ++k) clause.push_back(encoding[k].literal);
+          const Literal eq_lit =
+              encoder->GetOrCreateLiteralAssociatedToEquality(var, value);
+          clause.push_back(eq_lit.Negated());
+
+          // TODO(user): It should be safe otherwise the exactly_one will have
+          // duplicate literal, but I am not sure that if presolve is off we can
+          // assume that.
+          sat_solver->AddProblemClause(clause, /*is_safe=*/false);
+        }
+      }
+      if (need_extra_propagation) {
+        ++num_dedicated_propagator;
+        selectors.clear();
+        exprs.clear();
+        negated_exprs.clear();
+        for (const auto [value, literal] : encoding) {
+          selectors.push_back(literal);
+          exprs.push_back(AffineExpression(value));
+          negated_exprs.push_back(AffineExpression(-value));
+        }
+        auto* constraint =
+            new GreaterThanAtLeastOneOfPropagator(var, exprs, selectors, {}, m);
+        constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
+        m->TakeOwnership(constraint);
+
+        // And the <= side.
+        constraint = new GreaterThanAtLeastOneOfPropagator(
+            NegationOf(var), negated_exprs, selectors, {}, m);
+        constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
+        m->TakeOwnership(constraint);
       }
     }
     if (encoded_variables.size() > 1 && VLOG_IS_ON(1)) {
@@ -694,7 +789,13 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
   }
 
   if (num_element_encoded > 0) {
-    VLOG(1) << "num_element_encoded: " << num_element_encoded;
+    SOLVER_LOG(logger,
+               "[Encoding] num_element_encoding: ", num_element_encoded);
+  }
+  if (num_support_clauses > 0) {
+    SOLVER_LOG(logger, "[Encoding] Added ", num_support_clauses,
+               " element support clauses, and ", num_dedicated_propagator,
+               " dedicated propagators.");
   }
 }
 
@@ -1370,7 +1471,8 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   const AffineExpression expr1 = mapping->Affine(ct.int_prod().exprs(1));
   if (VLOG_IS_ON(1)) {
     LinearConstraintBuilder builder(m);
-    if (DetectLinearEncodingOfProducts(expr0, expr1, m, &builder)) {
+    if (m->GetOrCreate<ProductDecomposer>()->TryToLinearize(expr0, expr1,
+                                                            &builder)) {
       VLOG(1) << "Product " << ct.DebugString() << " can be linearized";
     }
   }
@@ -1388,7 +1490,8 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   } else {
     if (VLOG_IS_ON(1)) {
       LinearConstraintBuilder builder(m);
-      if (DetectLinearEncodingOfProducts(num, denom, m, &builder)) {
+      if (m->GetOrCreate<ProductDecomposer>()->TryToLinearize(num, denom,
+                                                              &builder)) {
         VLOG(1) << "Division " << ct.DebugString() << " can be linearized";
       }
     }

@@ -1093,7 +1093,7 @@ int PrecedencesPropagator::
         offsets.push_back(arcs_[a].offset);
         selectors.push_back(Literal(arcs_[a].presence_literals.front()));
       }
-      model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors));
+      model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors, {}));
       if (!solver->FinishPropagation()) return num_added_constraints;
     }
   }
@@ -1151,8 +1151,11 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
         AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(model);
   }
 
-  VLOG(1) << "Added " << num_added_constraints
-          << " GreaterThanAtLeastOneOf() constraints.";
+  if (num_added_constraints > 0) {
+    SOLVER_LOG(model->GetOrCreate<SolverLogger>(), "[Precedences] Added ",
+               num_added_constraints,
+               " GreaterThanAtLeastOneOf() constraints.");
+  }
   return num_added_constraints;
 }
 

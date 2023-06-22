@@ -269,11 +269,6 @@ struct AffineExpression {
   IntegerLiteral GreaterOrEqual(IntegerValue bound) const;
   IntegerLiteral LowerOrEqual(IntegerValue bound) const;
 
-  // It is safe to call these with non-typed constants.
-  // This simplify the code when we need GreaterOrEqual(0) for instance.
-  IntegerLiteral GreaterOrEqual(int64_t bound) const;
-  IntegerLiteral LowerOrEqual(int64_t bound) const;
-
   AffineExpression Negated() const {
     if (var == kNoIntegerVariable) return AffineExpression(-constant);
     return AffineExpression(NegationOf(var), coeff, -constant);
@@ -320,6 +315,17 @@ struct AffineExpression {
   IntegerValue coeff = IntegerValue(0);      // Zero for constant.
   IntegerValue constant = IntegerValue(0);
 };
+
+template <typename H>
+H AbslHashValue(H h, const AffineExpression& e) {
+  if (e.var != kNoIntegerVariable) {
+    h = H::combine(std::move(h), e.var);
+    h = H::combine(std::move(h), e.coeff);
+  }
+  h = H::combine(std::move(h), e.constant);
+
+  return h;
+}
 
 // A model singleton that holds the root level integer variable domains.
 // we just store a single domain for both var and its negation.
@@ -507,6 +513,7 @@ class IntegerEncoder {
   //
   // Tricky: for domain with hole, like [0,1][5,6], we assume some equivalence
   // classes, like >=2, >=3, >=4 are all the same as >= 5.
+  bool IsFixedOrHasAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
                                             IntegerValue value) const;
@@ -1537,10 +1544,6 @@ inline IntegerLiteral AffineExpression::GreaterOrEqual(
                                         CeilRatio(bound - constant, coeff));
 }
 
-inline IntegerLiteral AffineExpression::GreaterOrEqual(int64_t bound) const {
-  return GreaterOrEqual(IntegerValue(bound));
-}
-
 // var * coeff + constant <= bound.
 inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
   if (var == kNoIntegerVariable) {
@@ -1549,10 +1552,6 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
   }
   DCHECK_GT(coeff, 0);
   return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
-}
-
-inline IntegerLiteral AffineExpression::LowerOrEqual(int64_t bound) const {
-  return LowerOrEqual(IntegerValue(bound));
 }
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {

@@ -79,13 +79,11 @@ void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
-    IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
-    const absl::Span<const IntegerValue> offsets,
+    IntegerVariable target_var, const absl::Span<const AffineExpression> exprs,
     const absl::Span<const Literal> selectors,
     const absl::Span<const Literal> enforcements, Model* model)
     : target_var_(target_var),
-      vars_(vars.begin(), vars.end()),
-      offsets_(offsets.begin(), offsets.end()),
+      exprs_(exprs.begin(), exprs.end()),
       selectors_(selectors.begin(), selectors.end()),
       enforcements_(enforcements.begin(), enforcements.end()),
       trail_(model->GetOrCreate<Trail>()),
@@ -103,11 +101,10 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   // Propagate() calls.
   IntegerValue target_min = kMaxIntegerValue;
   const IntegerValue current_min = integer_trail_->LowerBound(target_var_);
-  for (int i = 0; i < vars_.size(); ++i) {
+  for (int i = 0; i < exprs_.size(); ++i) {
     if (trail_->Assignment().LiteralIsTrue(selectors_[i])) return true;
     if (trail_->Assignment().LiteralIsFalse(selectors_[i])) continue;
-    target_min = std::min(target_min,
-                          integer_trail_->LowerBound(vars_[i]) + offsets_[i]);
+    target_min = std::min(target_min, integer_trail_->LowerBound(exprs_[i]));
 
     // Abort if we can't get a better bound.
     if (target_min <= current_min) return true;
@@ -123,12 +120,13 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   for (const Literal l : enforcements_) {
     literal_reason_.push_back(l.Negated());
   }
-  for (int i = 0; i < vars_.size(); ++i) {
+  for (int i = 0; i < exprs_.size(); ++i) {
     if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
       literal_reason_.push_back(selectors_[i]);
     } else {
-      integer_reason_.push_back(
-          IntegerLiteral::GreaterOrEqual(vars_[i], target_min - offsets_[i]));
+      if (!exprs_[i].IsConstant()) {
+        integer_reason_.push_back(exprs_[i].GreaterOrEqual(target_min));
+      }
     }
   }
   return integer_trail_->Enqueue(
@@ -141,7 +139,7 @@ void GreaterThanAtLeastOneOfPropagator::RegisterWith(
   const int id = watcher->Register(this);
   for (const Literal l : selectors_) watcher->WatchLiteral(l.Negated(), id);
   for (const Literal l : enforcements_) watcher->WatchLiteral(l, id);
-  for (const IntegerVariable v : vars_) watcher->WatchLowerBound(v, id);
+  for (const AffineExpression e : exprs_) watcher->WatchLowerBound(e, id);
 }
 
 }  // namespace sat

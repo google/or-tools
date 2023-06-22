@@ -1841,84 +1841,81 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
   AddIntegerVariableFromIntervals(y_helper, model, &result.vars);
   gtl::STLSortAndRemoveDuplicates(&result.vars);
 
-  result.generate_cuts =
-      [x_helper, y_helper, model](
-          const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
-        if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-        if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+  auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
+  result.generate_cuts = [x_helper, y_helper, product_decomposer, model](
+                             const absl::StrongVector<IntegerVariable, double>&
+                                 lp_values,
+                             LinearConstraintManager* manager) {
+    if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+    if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
 
-        const int num_rectangles = x_helper->NumTasks();
-        std::vector<int> active_rectangles;
-        std::vector<IntegerValue> cached_areas(num_rectangles);
-        std::vector<Rectangle> cached_rectangles(num_rectangles);
-        for (int rect = 0; rect < num_rectangles; ++rect) {
-          if (!y_helper->IsPresent(rect) || !y_helper->IsPresent(rect))
-            continue;
+    const int num_rectangles = x_helper->NumTasks();
+    std::vector<int> active_rectangles;
+    std::vector<IntegerValue> cached_areas(num_rectangles);
+    std::vector<Rectangle> cached_rectangles(num_rectangles);
+    for (int rect = 0; rect < num_rectangles; ++rect) {
+      if (!y_helper->IsPresent(rect) || !y_helper->IsPresent(rect)) continue;
 
-          cached_areas[rect] =
-              x_helper->SizeMin(rect) * y_helper->SizeMin(rect);
-          if (cached_areas[rect] == 0) continue;
+      cached_areas[rect] = x_helper->SizeMin(rect) * y_helper->SizeMin(rect);
+      if (cached_areas[rect] == 0) continue;
 
-          // TODO(user): It might be possible/better to use some shifted value
-          // here, but for now this code is not in the hot spot, so better be
-          // defensive and only do connected components on really disjoint
-          // rectangles.
-          Rectangle& rectangle = cached_rectangles[rect];
-          rectangle.x_min = x_helper->StartMin(rect);
-          rectangle.x_max = x_helper->EndMax(rect);
-          rectangle.y_min = y_helper->StartMin(rect);
-          rectangle.y_max = y_helper->EndMax(rect);
+      // TODO(user): It might be possible/better to use some shifted value
+      // here, but for now this code is not in the hot spot, so better be
+      // defensive and only do connected components on really disjoint
+      // rectangles.
+      Rectangle& rectangle = cached_rectangles[rect];
+      rectangle.x_min = x_helper->StartMin(rect);
+      rectangle.x_max = x_helper->EndMax(rect);
+      rectangle.y_min = y_helper->StartMin(rect);
+      rectangle.y_max = y_helper->EndMax(rect);
 
-          active_rectangles.push_back(rect);
+      active_rectangles.push_back(rect);
+    }
+
+    if (active_rectangles.size() <= 1) return true;
+
+    std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
+        cached_rectangles, absl::MakeSpan(active_rectangles));
+    for (absl::Span<int> rectangles : components) {
+      if (rectangles.size() <= 1) continue;
+
+      auto generate_cuts = [&lp_values, product_decomposer, manager, model,
+                            &rectangles](const std::string& cut_name,
+                                         SchedulingConstraintHelper* x_helper,
+                                         SchedulingConstraintHelper* y_helper) {
+        std::vector<CtEvent> events;
+
+        for (const int rect : rectangles) {
+          CtEvent event(rect, x_helper);
+          event.x_end = x_helper->Ends()[rect];
+          event.x_lp_end = event.x_end.LpValue(lp_values);
+          event.y_min = y_helper->StartMin(rect);
+          event.y_max = y_helper->EndMax(rect);
+          event.y_size_min = y_helper->SizeMin(rect);
+
+          // TODO(user): Use improved energy from demands helper.
+          event.energy_min = event.x_size_min * event.y_size_min;
+          event.decomposed_energy = product_decomposer->TryToDecompose(
+              x_helper->Sizes()[rect], y_helper->Sizes()[rect]);
+          events.push_back(event);
         }
 
-        if (active_rectangles.size() <= 1) return true;
-
-        std::vector<absl::Span<int>> components =
-            GetOverlappingRectangleComponents(
-                cached_rectangles, absl::MakeSpan(active_rectangles));
-        for (absl::Span<int> rectangles : components) {
-          if (rectangles.size() <= 1) continue;
-
-          auto generate_cuts = [&lp_values, model, manager, &rectangles](
-                                   const std::string& cut_name,
-                                   SchedulingConstraintHelper* x_helper,
-                                   SchedulingConstraintHelper* y_helper) {
-            std::vector<CtEvent> events;
-
-            for (const int rect : rectangles) {
-              CtEvent event(rect, x_helper);
-              event.x_end = x_helper->Ends()[rect];
-              event.x_lp_end = event.x_end.LpValue(lp_values);
-              event.y_min = y_helper->StartMin(rect);
-              event.y_max = y_helper->EndMax(rect);
-              event.y_size_min = y_helper->SizeMin(rect);
-
-              // TODO(user): Use improved energy from demands helper.
-              event.energy_min = event.x_size_min * event.y_size_min;
-              event.decomposed_energy = TryToDecomposeProduct(
-                  x_helper->Sizes()[rect], y_helper->Sizes()[rect], model);
-              events.push_back(event);
-            }
-
-            GenerateCompletionTimeCutsWithEnergy(
-                cut_name, lp_values, std::move(events),
-                /*use_lifting=*/false, /*skip_low_sizes=*/false, model,
-                manager);
-          };
-
-          if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
-          if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
-          generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
-          generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
-          if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
-          if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
-          generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
-          generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
-        }
-        return true;
+        GenerateCompletionTimeCutsWithEnergy(
+            cut_name, lp_values, std::move(events),
+            /*use_lifting=*/false, /*skip_low_sizes=*/false, model, manager);
       };
+
+      if (!x_helper->SynchronizeAndSetTimeDirection(true)) return false;
+      if (!y_helper->SynchronizeAndSetTimeDirection(true)) return false;
+      generate_cuts("NoOverlap2dXCompletionTime", x_helper, y_helper);
+      generate_cuts("NoOverlap2dYCompletionTime", y_helper, x_helper);
+      if (!x_helper->SynchronizeAndSetTimeDirection(false)) return false;
+      if (!y_helper->SynchronizeAndSetTimeDirection(false)) return false;
+      generate_cuts("NoOverlap2dXCompletionTimeMirror", x_helper, y_helper);
+      generate_cuts("NoOverlap2dYCompletionTimeMirror", y_helper, x_helper);
+    }
+    return true;
+  };
   return result;
 }
 

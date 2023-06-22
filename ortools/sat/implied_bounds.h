@@ -132,20 +132,6 @@ class ImpliedBounds {
                                                 : empty_var_to_value_;
   }
 
-  // Register the fact that var = sum literal * value with sum literal == 1.
-  // Note that we call this an "element" encoding because a value can appear
-  // more than once.
-  void AddElementEncoding(IntegerVariable var,
-                          const std::vector<ValueLiteralPair>& encoding,
-                          int exactly_one_index);
-
-  // Returns an empty map if there is no such encoding.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-  GetElementEncodings(IntegerVariable var);
-
-  // Get an unsorted set of variables appearing in element encodings.
-  const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
-
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
@@ -188,37 +174,71 @@ class ImpliedBounds {
       literal_to_var_to_value_;
   const absl::flat_hash_map<IntegerVariable, IntegerValue> empty_var_to_value_;
 
+  // Stats.
+  int64_t num_deductions_ = 0;
+  int64_t num_enqueued_in_var_to_bounds_ = 0;
+};
+
+class ElementEncodings {
+ public:
+  ElementEncodings() = default;
+
+  // Register the fact that var = sum literal * value with sum literal == 1.
+  // Note that we call this an "element" encoding because a value can appear
+  // more than once.
+  void Add(IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
+           int exactly_one_index);
+
+  // Returns an empty map if there is no such encoding.
+  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>& Get(
+      IntegerVariable var);
+
+  // Get an unsorted set of variables appearing in element encodings.
+  const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
+
+ private:
   absl::flat_hash_map<IntegerVariable,
                       absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
       var_to_index_to_element_encodings_;
   const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
       empty_element_encoding_;
   std::vector<IntegerVariable> element_encoded_variables_;
-
-  // Stats.
-  int64_t num_deductions_ = 0;
-  int64_t num_enqueued_in_var_to_bounds_ = 0;
 };
 
-// Tries to decompose a product left * right in a list of constant alternative
-// left_value * right_value controlled by literals in an exactly one
-// relationship. We construct this by using literals from the full encoding or
-// element encodings of the variables of the two affine expressions.
-// If it fails, it returns an empty vector.
-std::vector<LiteralValueValue> TryToDecomposeProduct(
-    const AffineExpression& left, const AffineExpression& right, Model* model);
+// Helper class to express a product as a linear constraint.
+class ProductDecomposer {
+ public:
+  explicit ProductDecomposer(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        element_encodings_(model->GetOrCreate<ElementEncodings>()),
+        integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
 
-// Looks at value encodings and detects if the product of two variables can be
-// linearized.
-//
-// In the returned encoding, note that all the literals will be unique and in
-// exactly one relation, and that the values can be duplicated. This is what we
-// call an "element" encoding.
-//
-// The expressions will also be canonical.
-bool DetectLinearEncodingOfProducts(const AffineExpression& left,
-                                    const AffineExpression& right, Model* model,
-                                    LinearConstraintBuilder* builder);
+  // Tries to decompose a product left * right in a list of constant alternative
+  // left_value * right_value controlled by literals in an exactly one
+  // relationship. We construct this by using literals from the full encoding or
+  // element encodings of the variables of the two affine expressions.
+  // If it fails, it returns an empty vector.
+  std::vector<LiteralValueValue> TryToDecompose(const AffineExpression& left,
+                                                const AffineExpression& right);
+
+  // Looks at value encodings and detects if the product of two variables can be
+  // linearized.
+  //
+  // On true, the builder will be cleared to contain the linearization. On
+  // false, it might be in an undefined state.
+  //
+  // In the returned encoding, note that all the literals will be unique and in
+  // exactly one relation, and that the values can be duplicated. This is what
+  // we call an "element" encoding. The expressions will also be canonical.
+  bool TryToLinearize(const AffineExpression& left,
+                      const AffineExpression& right,
+                      LinearConstraintBuilder* builder);
+
+ private:
+  IntegerTrail* integer_trail_;
+  ElementEncodings* element_encodings_;
+  IntegerEncoder* integer_encoder_;
+};
 
 // Class used to detect and hold all the information about a variable beeing the
 // product of two others. This class is meant to be used by LP relaxation and

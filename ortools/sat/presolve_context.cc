@@ -2117,26 +2117,23 @@ void PresolveContext::LogInfo() {
   }
 }
 
+// Load the constraints in a local model.
+//
+// TODO(user): The model we load does not contain affine relations! But
+// ideally we should be able to remove all of them once we allow more complex
+// constraints to contains linear expression.
+//
+// TODO(user): remove code duplication with cp_model_solver. Here we also do
+// not run the heuristic to decide which variable to fully encode.
+//
+// TODO(user): Maybe do not load slow to propagate constraints? for instance
+// we do not use any linear relaxation here.
 bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
   if (context->ModelIsUnsat()) return false;
 
   // Update the domain in the current CpModelProto.
   context->WriteVariableDomainsToProto();
   const CpModelProto& model_proto = *(context->working_model);
-
-  // Load the constraints in a local model.
-  //
-  // TODO(user): The model we load does not contain affine relations! But
-  // ideally we should be able to remove all of them once we allow more complex
-  // constraints to contains linear expression.
-  //
-  // TODO(user): remove code duplication with cp_model_solver. Here we also do
-  // not run the heuristic to decide which variable to fully encode.
-  //
-  // TODO(user): Maybe do not load slow to propagate constraints? for instance
-  // we do not use any linear relaxation here.
-  Model model;
-  local_model->Register<SolverLogger>(context->logger());
 
   // Adapt some of the parameters during this probing phase.
   auto* local_param = local_model->GetOrCreate<SatParameters>();
