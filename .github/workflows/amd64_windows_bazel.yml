@@ -1,17 +1,17 @@
-# ref: https://github.com/actions/runner-images
 name: amd64 Windows Bazel
 
-on:
-  push:
-  pull_request:
-  schedule:
-    # min hours day(month) month day(week)
-    - cron: '0 0 7,22 * *'
+on: [push, pull_request]
 
 jobs:
   # Building using the github runner environement directly.
   bazel:
-    runs-on: windows-latest
+    # ref: https://github.com/actions/runner-images
+    strategy:
+      matrix:
+        runner: [windows-2022, windows-2019]
+      fail-fast: false # Don't cancel all jobs if one fails.
+    runs-on: ${{ matrix.runner }}
+    #runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
