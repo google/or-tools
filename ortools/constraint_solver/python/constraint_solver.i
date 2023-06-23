@@ -1024,6 +1024,8 @@ namespace operations_research {
 %unignore Solver::LE;
 %unignore Solver::EQ;
 
+%unignore Solver::TopProgressPercent;
+
 }  // namespace operations_research
 
 // ============= Unexposed C++ API : Solver class ==============
@@ -1076,7 +1078,6 @@ namespace operations_research {
 // - MakeVariableDomainFilter()
 //
 // - TopPeriodicCheck()
-// - TopProgressPercent()
 // - PushState()
 // - PopState()
 //
@@ -1296,9 +1297,7 @@ namespace operations_research {
 
 // SearchMonitor.
 // Ignored:
-// - kNoProgress
 // - PeriodicCheck()
-// - ProgressPercent()
 // - Accept()
 // - Install()
 %feature("director") SearchMonitor;
@@ -1323,6 +1322,8 @@ namespace operations_research {
 %unignore SearchMonitor::LocalOptimum;
 %unignore SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
+%unignore SearchMonitor::ProgressPercent;
+%unignore SearchMonitor::kNoProgress;
 %rename (solver) SearchMonitor::solver;
 %feature("nodirector") SearchMonitor::solver;
 
