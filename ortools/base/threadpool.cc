@@ -14,7 +14,6 @@
 #include "ortools/base/threadpool.h"
 
 #include "absl/log/check.h"
-#include "ortools/base/callback.h"
 
 namespace operations_research {
 void RunWorker(void* data) {
@@ -86,11 +85,6 @@ void ThreadPool::Schedule(std::function<void()> closure) {
     lock.unlock();
     condition_.notify_all();
   }
-}
-
-void ThreadPool::Add(Closure* closure) {
-  assert(closure != nullptr);
-  Schedule([closure] { closure->Run(); });
 }
 
 }  // namespace operations_research
