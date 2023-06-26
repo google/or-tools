@@ -28,6 +28,7 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/threadpool.h"
@@ -90,11 +91,27 @@ class SubSolver {
 
   // Returns search statistics.
   virtual std::string StatisticsString() const { return std::string(); }
+  virtual std::string OneLineStats() const { return std::string(); }
+
+  // Note that this is protected by the global execution mutex and so it is
+  // called sequentially.
+  void AddTaskDuration(double duration_in_seconds) {
+    timing_.AddTimeInSec(duration_in_seconds);
+  }
+
+  std::string TimingInfo() const {
+    // TODO(user): remove trailing "\n" from ValueAsString().
+    std::string data = timing_.ValueAsString();
+    if (!data.empty()) data.pop_back();
+    return data;
+  }
 
  protected:
   const std::string name_;
   const SubsolverType type_;
+
   double deterministic_time_ = 0.0;
+  TimeDistribution timing_ = TimeDistribution("tasks");
 };
 
 // A simple wrapper to add a synchronization point in the list of subsolvers.

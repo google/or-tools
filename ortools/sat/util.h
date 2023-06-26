@@ -47,6 +47,21 @@ namespace sat {
 // Prints a positive number with separators for easier reading (ex: 1'348'065).
 std::string FormatCounter(int64_t num);
 
+// Helper to align vertically multi-line messages.
+inline std::string LeftAlign(std::string s, int size = 16) {
+  if (s.size() >= size) return s;
+  s.resize(size, ' ');
+  return s;
+}
+inline std::string RightAlign(std::string s, int size = 16) {
+  if (s.size() >= size) return s;
+  return absl::StrCat(std::string(size - s.size(), ' '), s);
+}
+inline std::string HeaderStr(std::string s) { return LeftAlign(s, 30); }
+inline std::string RowNameStr(std::string name) {
+  return RightAlign(absl::StrCat("'", name, "':"), 30);
+}
+
 // Returns a in [0, m) such that a * x = 1 modulo m.
 // If gcd(x, m) != 1, there is no inverse, and it returns 0.
 //

@@ -38,7 +38,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
@@ -708,20 +707,6 @@ bool CpModelPresolver::CanonicalizeLinearArgument(const ConstraintProto& ct,
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
-
-  int64_t min_offset = std::numeric_limits<int64_t>::max();
-  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-    min_offset = std::min(min_offset, expr.offset());
-  }
-  if (min_offset != std::numeric_limits<int64_t>::max() && min_offset != 0) {
-    LinearArgumentProto* lin_max = ct->mutable_lin_max();
-    lin_max->mutable_target()->set_offset(lin_max->target().offset() -
-                                          min_offset);
-    for (LinearExpressionProto& expr : *(lin_max->mutable_exprs())) {
-      expr.set_offset(expr.offset() - min_offset);
-    }
-    context_->UpdateRuleStats("lin_max: shift offset");
-  }
 
   const LinearExpressionProto& target = ct->lin_max().target();
 

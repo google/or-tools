@@ -289,11 +289,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         VLOG(2) << name() << " import a solution with value " << solution.rank;
         ++num_solutions_imported_;
         num_batches_before_perturbation_ =
-            params_.violation_ls_perturbation_frequency();
+            params_.violation_ls_perturbation_period();
       } else if (num_batches_before_perturbation_ <= 0) {
         // TODO(user): Tune the improvement constant, maybe use luby.
         num_batches_before_perturbation_ =
-            params_.violation_ls_perturbation_frequency();
+            params_.violation_ls_perturbation_period();
         ++num_perturbations_;
         PerturbateCurrentSolution();
         should_recompute_violations = true;
@@ -383,7 +383,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
             evaluator_->current_solution(),
             absl::StrCat(name(), "(", OneLineStats(), ")"));
         num_batches_before_perturbation_ =
-            params_.violation_ls_perturbation_frequency();
+            params_.violation_ls_perturbation_period();
       } else {
         shared_response_->LogMessage(name(), "infeasible solution. Aborting.");
         model_is_supported_ = false;

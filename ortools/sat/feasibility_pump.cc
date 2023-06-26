@@ -211,7 +211,7 @@ void FeasibilityPump::MaybePushToRepo() {
         lp_solution[model_var] = GetLPSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddNewSolution(lp_solution);
+    incomplete_solutions_->AddSolution(lp_solution);
   }
 
   if (integer_solution_is_feasible_) {
@@ -223,7 +223,7 @@ void FeasibilityPump::MaybePushToRepo() {
         lp_solution[model_var] = GetIntegerSolutionValue(positive_var);
       }
     }
-    incomplete_solutions_->AddNewSolution(lp_solution);
+    incomplete_solutions_->AddSolution(lp_solution);
   }
 }
 

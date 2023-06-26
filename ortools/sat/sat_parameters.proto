@@ -388,8 +388,9 @@ message SatParameters {
 
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
-  // number of search workers is > 1.
-  optional bool log_subsolver_statistics = 189 [default = true];
+  // number of search workers is > 1. Note that in all case we display a bit
+  // of stats with one line per subsolver.
+  optional bool log_subsolver_statistics = 189 [default = false];
 
   // Add a prefix to all logs.
   optional string log_prefix = 185 [default = ""];
@@ -1108,11 +1109,13 @@ message SatParameters {
   // current solution. This parameter selects the first option.
   optional bool feasibility_jump_enable_restarts = 250 [default = true];
 
-  // Use feasibility_jump to find improving solutions.
-  optional bool use_violation_ls = 244 [default = false];
+  // This will create incomplete subsolvers (that are not LNS subsolvers)
+  // that use the feasibility jump code to find improving solution, treating
+  // the objective improvement as a hard constraint.
+  optional int32 num_violation_ls = 244 [default = 0];
 
   // How long violation_ls should wait before perturbating a solution.
-  optional int32 violation_ls_perturbation_frequency = 249 [default = 100];
+  optional int32 violation_ls_perturbation_period = 249 [default = 100];
 
   // Enables experimental workstealing-like shared tree search.
   // If non-zero, start this many complete worker threads to explore a shared

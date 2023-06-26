@@ -77,32 +77,34 @@ void SharedLPSolutionRepository::NewLPSolution(
   AddInternal(solution);
 }
 
-bool SharedIncompleteSolutionManager::HasNewSolution() const {
+void SharedIncompleteSolutionManager::AddSolution(
+    const std::vector<double>& lp_solution) {
+  absl::MutexLock mutex_lock(&mutex_);
+  ++num_added_;
+  solutions_.push_back(lp_solution);
+  if (solutions_.size() > 100) solutions_.pop_front();
+}
+
+bool SharedIncompleteSolutionManager::HasSolution() const {
   absl::MutexLock mutex_lock(&mutex_);
   return !solutions_.empty();
 }
 
-std::vector<double> SharedIncompleteSolutionManager::GetNewSolution() {
+std::vector<double> SharedIncompleteSolutionManager::PopLast() {
   absl::MutexLock mutex_lock(&mutex_);
-  std::vector<double> solution;
-  if (solutions_.empty()) return solution;
+  if (solutions_.empty()) return {};
 
-  solution = std::move(solutions_.back());
+  ++num_queried_;
+  std::vector<double> solution = std::move(solutions_.back());
   solutions_.pop_back();
   return solution;
-}
-
-void SharedIncompleteSolutionManager::AddNewSolution(
-    const std::vector<double>& lp_solution) {
-  absl::MutexLock mutex_lock(&mutex_);
-  solutions_.push_back(lp_solution);
 }
 
 SharedResponseManager::SharedResponseManager(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-      solutions_(parameters_.solution_pool_size()),
+      solutions_(parameters_.solution_pool_size(), "feasible solutions"),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
 namespace {
@@ -730,20 +732,23 @@ void SharedResponseManager::DisplayImprovementStatistics() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!primal_improvements_count_.empty()) {
     SOLVER_LOG(logger_, "");
-    SOLVER_LOG(logger_, "Solutions found per subsolver (", num_solutions_,
-               "):");
+    SOLVER_LOG(logger_,
+               HeaderStr(absl::StrCat("Solutions (", num_solutions_, ")")),
+               RightAlign("Num"), RightAlign("Rank"));
     for (const auto& entry : primal_improvements_count_) {
       const int min_rank = primal_improvements_min_rank_[entry.first];
       const int max_rank = primal_improvements_max_rank_[entry.first];
-      SOLVER_LOG(logger_, "  '", entry.first, "':", entry.second, "     rank:[",
-                 min_rank, ",", max_rank, "]");
+      SOLVER_LOG(logger_, RowNameStr(entry.first),
+                 RightAlign(FormatCounter(entry.second)),
+                 RightAlign(absl::StrCat("[", min_rank, ",", max_rank, "]")));
     }
   }
   if (!dual_improvements_count_.empty()) {
     SOLVER_LOG(logger_, "");
-    SOLVER_LOG(logger_, "Objective bounds found per subsolver:");
+    SOLVER_LOG(logger_, HeaderStr("Objective bounds"), RightAlign("Num"));
     for (const auto& entry : dual_improvements_count_) {
-      SOLVER_LOG(logger_, "  '", entry.first, "': ", entry.second);
+      SOLVER_LOG(logger_, RowNameStr(entry.first),
+                 RightAlign(FormatCounter(entry.second)));
     }
   }
 }
@@ -918,9 +923,10 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!bounds_exported_.empty()) {
     SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, "Improving variable bounds shared per subsolver:");
+    SOLVER_LOG(logger, HeaderStr("Improving bounds shared"), RightAlign("Num"));
     for (const auto& entry : bounds_exported_) {
-      SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
+      SOLVER_LOG(logger, RowNameStr(entry.first),
+                 RightAlign(FormatCounter(entry.second)));
     }
   }
 }
@@ -992,9 +998,10 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
   }
   if (!name_to_clauses.empty()) {
     SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, "Clauses shared per subsolver:");
+    SOLVER_LOG(logger, HeaderStr("Clauses shared"), RightAlign("Num"));
     for (const auto& entry : name_to_clauses) {
-      SOLVER_LOG(logger, "  '", entry.first, "': ", entry.second);
+      SOLVER_LOG(logger, RowNameStr(entry.first),
+                 RightAlign(FormatCounter(entry.second)));
     }
   }
 }

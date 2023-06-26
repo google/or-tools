@@ -818,7 +818,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
       new_params.set_randomize_search(true);
       new_params.set_search_randomization_tolerance(num_random + 1);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
-      new_params.set_name(absl::StrCat("random_", num_random));
+      new_params.set_name("random");
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
@@ -826,7 +826,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
       new_params.set_randomize_search(true);
       new_params.set_search_randomization_tolerance(num_random_qr + 1);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
-      new_params.set_name(absl::StrCat("random_quick_restart_", num_random_qr));
+      new_params.set_name("random_quick_restart");
       num_random_qr++;
     }
     result.push_back(new_params);

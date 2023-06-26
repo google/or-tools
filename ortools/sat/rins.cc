@@ -78,12 +78,11 @@ std::vector<double> GetIncompleteSolutionValues(
     SharedIncompleteSolutionManager* incomplete_solutions) {
   std::vector<double> empty_solution_values;
 
-  if (incomplete_solutions == nullptr ||
-      !incomplete_solutions->HasNewSolution()) {
+  if (incomplete_solutions == nullptr || !incomplete_solutions->HasSolution()) {
     return empty_solution_values;
   }
 
-  return incomplete_solutions->GetNewSolution();
+  return incomplete_solutions->PopLast();
 }
 
 static double kEpsilon = 1e-7;
@@ -174,7 +173,7 @@ ReducedDomainNeighborhood GetRinsRensNeighborhood(
   CHECK(incomplete_solutions != nullptr);
   const bool lp_solution_available = lp_solutions->NumSolutions() > 0;
   const bool incomplete_solution_available =
-      incomplete_solutions->HasNewSolution();
+      incomplete_solutions->HasSolution();
 
   if (!lp_solution_available && !incomplete_solution_available) {
     return reduced_domains;  // Not generated.

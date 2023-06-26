@@ -174,6 +174,15 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return active_variables_;
   }
 
+  // Returns the vector of active objective variables. The graph_mutex_ must be
+  // locked before calling this method.
+  std::vector<int> ActiveObjectiveVariablesWhileHoldingLock() const
+      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
+    std::vector<int> result;
+    result = active_objective_variables_;
+    return result;
+  }
+
   // Constraints <-> Variables graph.
   // Note that only non-constant variable are listed here.
   const std::vector<std::vector<int>>& ConstraintToVar() const
@@ -203,8 +212,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // cumulative, or as a dimension of a no_overlap_2d constraint.
   std::vector<std::vector<int>> GetUniqueIntervalSets() const;
 
-  // Returns one sub-vector per circuit or per single vehicle ciruit in a routes
-  // constraints. Each circuit is non empty, and does not contain any
+  // Returns one sub-vector per circuit or per single vehicle circuit in a
+  // routes constraints. Each circuit is non empty, and does not contain any
   // self-looping arcs. Path are sorted, starting from the arc with the lowest
   // tail index, and going in sequence up to the last arc before the circuit is
   // closed. Each entry correspond to the arc literal on the circuit.
@@ -357,7 +366,7 @@ class NeighborhoodGenerator {
     // The difficulty when this neighborhood was generated.
     double difficulty = 0.0;
 
-    // The determinitic time limit given to the solver for this neighborhood.
+    // The deterministic time limit given to the solver for this neighborhood.
     double deterministic_limit = 0.0;
 
     // The time it took to solve this neighborhood.
@@ -410,6 +419,12 @@ class NeighborhoodGenerator {
     return num_fully_solved_calls_;
   }
 
+  // Out of num_calls(), how many improved the given solution.
+  int64_t num_improving_calls() const {
+    absl::MutexLock mutex_lock(&generator_mutex_);
+    return num_improving_calls_;
+  }
+
   // The current difficulty of this generator
   double difficulty() const {
     absl::MutexLock mutex_lock(&generator_mutex_);
@@ -445,6 +460,7 @@ class NeighborhoodGenerator {
   // Only updated on Synchronize().
   int64_t num_calls_ = 0;
   int64_t num_fully_solved_calls_ = 0;
+  int64_t num_improving_calls_ = 0;
   int64_t num_consecutive_non_improving_calls_ = 0;
   double deterministic_time_ = 0.0;
   double current_average_ = 0.0;

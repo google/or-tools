@@ -2585,6 +2585,18 @@ class FullProblemSolver : public SubSolver {
     dtime_since_last_sync_ = 0.0;
   }
 
+  std::string OneLineStats() const override {
+    CpSolverResponse r;
+    FillSolveStatsInResponse(local_model_.get(), &r);
+    return absl::StrCat(
+        RightAlign(FormatCounter(r.num_booleans())),
+        RightAlign(FormatCounter(r.num_conflicts())),
+        RightAlign(FormatCounter(r.num_branches())),
+        RightAlign(FormatCounter(r.num_restarts())),
+        RightAlign(FormatCounter(r.num_binary_propagations())),
+        RightAlign(FormatCounter(r.num_integer_propagations())));
+  }
+
   std::string StatisticsString() const override {
     // Padding.
     const std::string p4(4, ' ');
@@ -3250,7 +3262,18 @@ class LnsSolver : public SubSolver {
     shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
   }
 
-  // TODO(user): Display LNS success rate.
+  std::string OneLineStats() const override {
+    const double fully_solved_proportion =
+        static_cast<double>(generator_->num_fully_solved_calls()) /
+        static_cast<double>(std::max(int64_t{1}, generator_->num_calls()));
+    return absl::StrCat(
+        RightAlign(absl::StrCat(generator_->num_improving_calls(), "/",
+                                generator_->num_calls())),
+        RightAlign(absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion)),
+        RightAlign(absl::StrFormat("%0.2f", generator_->difficulty())),
+        RightAlign(absl::StrFormat("%0.2f", generator_->deterministic_limit())),
+        TimingInfo());
+  }
 
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;
@@ -3399,27 +3422,20 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       !params.interleave_search() &&
       helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
   const LinearModel* linear_model = global_model->Get<LinearModel>();
-  if (params.use_violation_ls() && feasibility_jump_possible &&
+  if (params.num_violation_ls() > 0 && feasibility_jump_possible &&
       model_proto.has_objective()) {
-    if (params.test_feasibility_jump()) {
-      for (int i = 0; i < params.num_workers(); ++i) {
-        SatParameters local_params = params;
-        local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
-        local_params.set_feasibility_jump_decay(((i / 2) % 2) == 1 ? 0.95
-                                                                   : 1.0);
-        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-            absl::StrCat("violation_ls_", i), SubSolver::INCOMPLETE,
-            linear_model, local_params, shared.time_limit, shared.response,
-            shared.bounds.get(), shared.stats));
-      }
-    } else {
+    const int num_violation_ls = params.test_feasibility_jump()
+                                     ? params.num_workers()
+                                     : params.num_violation_ls();
+    for (int i = 0; i < num_violation_ls; ++i) {
       SatParameters local_params = params;
-      local_params.set_random_seed(params.random_seed());
-      local_params.set_feasibility_jump_decay(0.95);
+      local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
+      const bool use_decay = i % 2 == 1;
+      local_params.set_feasibility_jump_decay(use_decay ? 0.95 : 1.0);
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-          "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
-          shared.time_limit, shared.response, shared.bounds.get(),
-          shared.stats));
+          (use_decay ? "violation_ls_decay" : "violation_ls"),
+          SubSolver::INCOMPLETE, linear_model, local_params, shared.time_limit,
+          shared.response, shared.bounds.get(), shared.stats));
     }
   }
 
@@ -3480,38 +3496,37 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         case 1: {  // Adds randomized values on restart and decay.
           local_params.set_feasibility_jump_decay(0.95);
           local_params.set_feasibility_jump_var_randomization_probability(0.05);
-          name = "jump_decay_random_values_on_restarts_0";
+          name = "jump_decay_rnd_on_rst";
           break;
         }
         case 2: {  // Adds perturbation and decay.
           local_params.set_feasibility_jump_decay(0.95);
           local_params.set_feasibility_jump_var_randomization_probability(0.05);
           local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_decay_random_perturbations_0";
+          name = "jump_decay_perturb";
           break;
         }
         case 3: {  // Disable restarts and perturbations.
           local_params.set_feasibility_jump_var_randomization_probability(0.0);
           local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_no_restarts";
+          name = "jump_no_rst";
           break;
         }
         case 4: {  // Adds decay and disable restarts and perturbations.
           local_params.set_feasibility_jump_decay(0.95);
           local_params.set_feasibility_jump_var_randomization_probability(0.0);
           local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_decay_no_restarts";
+          name = "jump_decay_no_rst";
           break;
         }
         default: {  // Alternate random_restarts and random_perturbations.
-          const int index = (i - 3) / 2;  // starts at 1.
           local_params.set_feasibility_jump_decay(0.95);
           local_params.set_feasibility_jump_var_randomization_probability(0.05);
           if (i % 2 == 0) {  // Adds randomized restart and decay.
-            name = absl::StrCat("jump_decay_random_values_on_restarts_", index);
+            name = "jump_decay_rnd_on_rst";
           } else {  // Adds perturbation and decay.
             local_params.set_feasibility_jump_enable_restarts(false);
-            name = absl::StrCat("jump_decay_random_perturbations_", index);
+            name = "jump_decay_perturb";
           }
         }
       }
@@ -3581,11 +3596,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
-              helper, "scheduling_random_intervals_lns"),
+              helper, "scheduling_intervals_lns"),
           params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
-              helper, "scheduling_random_precedences_lns"),
+              helper, "scheduling_precedences_lns"),
           params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
@@ -3678,9 +3693,27 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                                       const std::vector<std::string>& names,
                                       const absl::string_view type_name) {
       if (!names.empty()) {
+        absl::btree_map<std::string, int> solvers_and_count;
+        for (const auto& name : names) {
+          solvers_and_count[name]++;
+        }
+        std::string solver_list;
+        bool first = true;
+        for (const auto& [name, count] : solvers_and_count) {
+          if (first) {
+            first = false;
+          } else {
+            absl::StrAppend(&solver_list, ", ");
+          }
+          if (count == 1) {
+            absl::StrAppend(&solver_list, name);
+          } else {
+            absl::StrAppend(&solver_list, name, "(", count, ")");
+          }
+        }
         SOLVER_LOG(logger, names.size(), " ",
                    absl::StrCat(type_name, names.size() == 1 ? "" : "s"), ": [",
-                   absl::StrJoin(names.begin(), names.end(), ", "), "]");
+                   solver_list, "]");
       }
     };
 
@@ -3709,22 +3742,59 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Log statistics.
   if (logger->LoggingIsEnabled()) {
     if (params.log_subsolver_statistics()) {
-      bool first = true;
+      SOLVER_LOG(logger, "");
+      SOLVER_LOG(logger, "Sub-solver detailed search statistics:");
       for (const auto& subsolver : subsolvers) {
         if (subsolver == nullptr) continue;
         const std::string stats = subsolver->StatisticsString();
         if (stats.empty()) continue;
-        if (first) {
-          SOLVER_LOG(logger, "");
-          SOLVER_LOG(logger, "Sub-solver search statistics:");
-          first = false;
-        }
         SOLVER_LOG(logger,
                    absl::StrCat("  '", subsolver->name(), "':\n", stats));
       }
     }
 
+    // Subsolver one-liner.
+    SOLVER_LOG(logger, "");
+    SOLVER_LOG(logger, HeaderStr("Subsolver statistics"), RightAlign("Bools"),
+               RightAlign("Conflicts"), RightAlign("Branches"),
+               RightAlign("Restarts"), RightAlign("BoolPropag"),
+               RightAlign("IntegerPropag"));
+    for (const auto& subsolver : subsolvers) {
+      if (subsolver == nullptr) continue;
+      if (subsolver->type() != SubSolver::FULL_PROBLEM) continue;
+      if (subsolver->name().empty()) continue;
+      const std::string stats = subsolver->OneLineStats();
+      if (stats.empty()) continue;
+      SOLVER_LOG(logger, absl::StrCat(RowNameStr(subsolver->name()), stats));
+    }
+
+    SOLVER_LOG(logger, "");
+    SOLVER_LOG(
+        logger, HeaderStr("LNS statistics"), RightAlign("Improv/Calls"),
+        RightAlign("Closed"), RightAlign("Difficulty"), RightAlign("TimeLimit"),
+        RightAlign("         [     min,      max]      avg      dev     sum"));
+    for (const auto& subsolver : subsolvers) {
+      if (subsolver == nullptr) continue;
+      if (subsolver->type() != SubSolver::INCOMPLETE) continue;
+      if (subsolver->name().empty()) continue;
+      const std::string stats = subsolver->OneLineStats();
+      if (stats.empty()) continue;
+      SOLVER_LOG(logger, absl::StrCat(RowNameStr(subsolver->name()), stats));
+    }
+
     shared.response->DisplayImprovementStatistics();
+
+    SOLVER_LOG(logger, "");
+    SOLVER_LOG(logger, HeaderStr("Solution repositories"), RightAlign("Added"),
+               RightAlign("Queried"), RightAlign("Ignored"),
+               RightAlign("Synchro"));
+    SOLVER_LOG(logger, shared.response->SolutionsRepository().Stats());
+    if (shared.lp_solutions != nullptr) {
+      SOLVER_LOG(logger, shared.lp_solutions->Stats());
+    }
+    if (shared.incomplete_solutions != nullptr) {
+      SOLVER_LOG(logger, shared.incomplete_solutions->Stats());
+    }
 
     if (shared.bounds) {
       shared.bounds->LogStatistics(logger);
@@ -4343,7 +4413,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Linear model (used by feasibility_jump and violation_ls)
   if (params.num_workers() > 1 || params.test_feasibility_jump() ||
-      params.use_violation_ls()) {
+      params.num_violation_ls() > 0) {
     LinearModel* linear_model = new LinearModel(new_cp_model_proto);
     model->TakeOwnership(linear_model);
     model->Register(linear_model);

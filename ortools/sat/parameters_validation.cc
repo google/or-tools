@@ -94,6 +94,14 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
 
+  // Parallelism.
+  const int kMaxReasonableParallelism = 1'000'000;
+  TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(min_num_lns_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(shared_tree_num_workers, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
+
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
@@ -111,7 +119,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);
 
   // Violation ls.
-  TEST_IN_RANGE(violation_ls_perturbation_frequency, 1, 1000000000);
+  TEST_IN_RANGE(num_violation_ls, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(violation_ls_perturbation_period, 1, 1'000'000'000);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
@@ -120,11 +129,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(max_time_in_seconds);
   TEST_NON_NEGATIVE(max_deterministic_time);
   TEST_NON_NEGATIVE(new_constraints_batch_size);
-  TEST_NON_NEGATIVE(num_workers);
-  TEST_NON_NEGATIVE(num_search_workers);
-  TEST_NON_NEGATIVE(min_num_lns_workers);
-  TEST_NON_NEGATIVE(shared_tree_num_workers);
-  TEST_NON_NEGATIVE(interleave_batch_size);
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(presolve_probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(linearization_level);

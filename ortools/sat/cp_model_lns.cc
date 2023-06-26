@@ -228,7 +228,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     // linear constraint somewhere else. This is not the case if we have a fixed
     // size optional interval variable. But it should not matter as the
     // intervals are replaced by their underlying variables in the scheduling
-    // constrainst.
+    // constraints.
     if (constraints[ct_index].constraint_case() == ConstraintProto::kInterval) {
       continue;
     }
@@ -555,7 +555,7 @@ struct Demand {
 
   // Because of the binary splitting of the capacity in the procedure used to
   // extract precedences out of a cumulative constraint, processing bigger
-  // heigts first will decrease its probability of being split across the 2
+  // heights first will decrease its probability of being split across the 2
   // halves of the current split.
   bool operator<(const Demand& other) const {
     return std::tie(start, height, end) <
@@ -1171,6 +1171,10 @@ void NeighborhoodGenerator::Synchronize() {
       ++num_consecutive_non_improving_calls_;
     }
 
+    if (data.base_objective > data.new_objective) {
+      ++num_improving_calls_;
+    }
+
     // TODO(user): Weight more recent data.
     // degrade the current average to forget old learnings.
     const double gain_per_time_unit =
@@ -1255,18 +1259,21 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    DCHECK_GT(target_size, 0);
+    if (target_size == num_active_vars) return helper_.FullNeighborhood();
+    // TODO(user): Clean-up when target_size == 0.
 
     for (const int constraint_index : active_constraints) {
+      // TODO(user): randomize order of variable addition when close to the
+      // limit.
       for (const int var : helper_.ConstraintToVar()[constraint_index]) {
         if (visited_variables_set[var]) continue;
         visited_variables_set[var] = true;
         if (helper_.IsActive(var)) {
           relaxed_variables.push_back(var);
-          if (relaxed_variables.size() == target_size) break;
+          if (relaxed_variables.size() >= target_size) break;
         }
       }
-      if (relaxed_variables.size() == target_size) break;
+      if (relaxed_variables.size() >= target_size) break;
     }
   }
 
@@ -1295,13 +1302,17 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
     // We read the exact number while locked.
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
+    const int num_objective_variables =
+        helper_.ActiveObjectiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    if (target_size == 0) return helper_.FullNeighborhood();
+    if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
     const int first_var =
-        helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
-            random, 0, num_active_vars)];
-
+        num_objective_variables > 0  // Prefer objective variables.
+            ? helper_.ActiveObjectiveVariablesWhileHoldingLock()
+                  [absl::Uniform<int>(random, 0, num_objective_variables)]
+            : helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
+                  random, 0, num_active_vars)];
     visited_variables_set[first_var] = true;
     visited_variables.push_back(first_var);
     relaxed_variables.push_back(first_var);
@@ -1362,7 +1373,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    if (target_size == 0) return helper_.FullNeighborhood();
+    if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
     // Start by a random constraint.
     const int num_active_constraints = helper_.ConstraintToVar().size();
@@ -1393,7 +1404,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
         if (helper_.IsActive(var)) {
           relaxed_variables.push_back(var);
         }
-        if (relaxed_variables.size() == target_size) break;
+        if (relaxed_variables.size() >= target_size) break;
 
         for (const int ct : helper_.VarToConstraint()[var]) {
           if (added_constraints[ct]) continue;
@@ -1425,7 +1436,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(difficulty * num_active_vars);
-    if (target_size == 0) return helper_.FullNeighborhood();
+    if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
     const int num_vars = helper_.VarToConstraint().size();
     const int num_constraints = helper_.ConstraintToVar().size();
@@ -1917,7 +1928,7 @@ Neighborhood RoutingFullPathNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
-  return (incomplete_solutions_->HasNewSolution() ||
+  return (incomplete_solutions_->HasSolution() ||
           lp_solutions_->NumSolutions() > 0);
 }
 

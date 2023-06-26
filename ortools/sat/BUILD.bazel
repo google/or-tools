@@ -1556,6 +1556,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:threadpool",
+        "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
