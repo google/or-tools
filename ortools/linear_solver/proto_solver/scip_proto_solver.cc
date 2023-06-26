@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -378,8 +379,8 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   CHECK(gen_cst.has_min_constraint() || gen_cst.has_max_constraint());
   const auto& minmax = gen_cst.has_min_constraint() ? gen_cst.min_constraint()
                                                     : gen_cst.max_constraint();
-  const std::set<int> unique_var_indices(minmax.var_index().begin(),
-                                         minmax.var_index().end());
+  const absl::btree_set<int> unique_var_indices(minmax.var_index().begin(),
+                                                minmax.var_index().end());
   SCIP_VAR* scip_resultant_var = scip_variables[minmax.resultant_var_index()];
 
   std::vector<SCIP_VAR*> vars;
