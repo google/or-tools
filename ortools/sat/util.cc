@@ -59,6 +59,45 @@ std::string FormatCounter(int64_t num) {
   return out;
 }
 
+namespace {
+
+inline std::string LeftAlign(std::string s, int size = 16) {
+  if (s.size() >= size) return s;
+  s.resize(size, ' ');
+  return s;
+}
+
+inline std::string RightAlign(std::string s, int size = 16) {
+  if (s.size() >= size) return s;
+  return absl::StrCat(std::string(size - s.size(), ' '), s);
+}
+
+}  // namespace
+
+std::string FormatTable(const std::vector<std::vector<std::string>>& table,
+                        int spacing) {
+  std::vector<int> widths;
+  for (const std::vector<std::string>& line : table) {
+    if (line.size() > widths.size()) widths.resize(line.size(), spacing);
+    for (int j = 0; j < line.size(); ++j) {
+      widths[j] = std::max<int>(widths[j], line[j].size() + spacing);
+    }
+  }
+  std::string output;
+  for (int i = 0; i < table.size(); ++i) {
+    for (int j = 0; j < table[i].size(); ++j) {
+      if (i == 0 && j == 0) {
+        // We currently only left align the table name.
+        absl::StrAppend(&output, LeftAlign(table[i][j], widths[j]));
+      } else {
+        absl::StrAppend(&output, RightAlign(table[i][j], widths[j]));
+      }
+    }
+    absl::StrAppend(&output, "\n");
+  }
+  return output;
+}
+
 void RandomizeDecisionHeuristic(absl::BitGenRef random,
                                 SatParameters* parameters) {
 #if !defined(__PORTABLE_PLATFORM__)

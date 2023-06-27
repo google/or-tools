@@ -1167,10 +1167,12 @@ void NeighborhoodGenerator::Synchronize() {
         data.initial_best_objective.value(), data.new_objective.value()));
     if (best_objective_improvement > 0) {
       num_consecutive_non_improving_calls_ = 0;
+      next_time_limit_bump_ = 50;
     } else {
       ++num_consecutive_non_improving_calls_;
     }
 
+    // Confusing: this one is however comparing to the base solution objective.
     if (data.base_objective > data.new_objective) {
       ++num_improving_calls_;
     }
@@ -1199,8 +1201,8 @@ void NeighborhoodGenerator::Synchronize() {
   //
   // TODO(user): experiment with resetting the time limit if a solution is
   // found.
-  if (num_consecutive_non_improving_calls_ > 50) {
-    num_consecutive_non_improving_calls_ = 0;
+  if (num_consecutive_non_improving_calls_ > next_time_limit_bump_) {
+    next_time_limit_bump_ = num_consecutive_non_improving_calls_ + 50;
     deterministic_limit_ *= 1.02;
 
     // We do not want the limit to go to high. Intuitively, the goal is to try
@@ -1471,12 +1473,17 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
       elements[i].tie_break = absl::Uniform<double>(random, 0.0, 1.0);
     }
 
-    // We start by a random node.
-    const int first_index = absl::Uniform<int>(random, 0, num_nodes);
-    elements[first_index].score =
-        first_index < num_vars
-            ? helper_.VarToConstraint()[first_index].size()
-            : helper_.ConstraintToVar()[first_index - num_vars].size();
+    // We start by a random active variable.
+    //
+    // Note that while num_vars contains all variables, all the fixed variable
+    // will have no associated constraint, so we don't want to start from a
+    // random variable.
+    //
+    // TODO(user): Does starting by a constraint make sense too?
+    const int first_index =
+        helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
+            random, 0, num_active_vars)];
+    elements[first_index].score = helper_.VarToConstraint()[first_index].size();
     pq.Add(elements[first_index]);
     added_or_connected[first_index] = true;
 
@@ -1575,15 +1582,6 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
-}
-
-Neighborhood RelaxObjectiveVariablesGenerator::Generate(
-    const CpSolverResponse& initial_solution, double difficulty,
-    absl::BitGenRef random) {
-  std::vector<int> fixed_variables = helper_.ActiveObjectiveVariables();
-  GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
-  return helper_.FixGivenVariables(
-      initial_solution, {fixed_variables.begin(), fixed_variables.end()});
 }
 
 namespace {

@@ -47,20 +47,16 @@ namespace sat {
 // Prints a positive number with separators for easier reading (ex: 1'348'065).
 std::string FormatCounter(int64_t num);
 
-// Helper to align vertically multi-line messages.
-inline std::string LeftAlign(std::string s, int size = 16) {
-  if (s.size() >= size) return s;
-  s.resize(size, ' ');
-  return s;
+// This is used to format our table first row entry.
+inline std::string FormatName(absl::string_view name) {
+  return absl::StrCat("'", name, "':");
 }
-inline std::string RightAlign(std::string s, int size = 16) {
-  if (s.size() >= size) return s;
-  return absl::StrCat(std::string(size - s.size(), ' '), s);
-}
-inline std::string HeaderStr(std::string s) { return LeftAlign(s, 30); }
-inline std::string RowNameStr(std::string name) {
-  return RightAlign(absl::StrCat("'", name, "':"), 30);
-}
+
+// Display tabular data by auto-computing cell width. Note that we right align
+// everything but the first row/col that is assumed to be the table name and is
+// left aligned.
+std::string FormatTable(const std::vector<std::vector<std::string>>& table,
+                        int spacing = 2);
 
 // Returns a in [0, m) such that a * x = 1 modulo m.
 // If gcd(x, m) != 1, there is no inverse, and it returns 0.

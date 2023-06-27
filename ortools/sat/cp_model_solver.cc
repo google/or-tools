@@ -2585,16 +2585,16 @@ class FullProblemSolver : public SubSolver {
     dtime_since_last_sync_ = 0.0;
   }
 
-  std::string OneLineStats() const override {
+  std::vector<std::string> TableLineStats() const override {
     CpSolverResponse r;
     FillSolveStatsInResponse(local_model_.get(), &r);
-    return absl::StrCat(
-        RightAlign(FormatCounter(r.num_booleans())),
-        RightAlign(FormatCounter(r.num_conflicts())),
-        RightAlign(FormatCounter(r.num_branches())),
-        RightAlign(FormatCounter(r.num_restarts())),
-        RightAlign(FormatCounter(r.num_binary_propagations())),
-        RightAlign(FormatCounter(r.num_integer_propagations())));
+    return {FormatName(name()),
+            FormatCounter(r.num_booleans()),
+            FormatCounter(r.num_conflicts()),
+            FormatCounter(r.num_branches()),
+            FormatCounter(r.num_restarts()),
+            FormatCounter(r.num_binary_propagations()),
+            FormatCounter(r.num_integer_propagations())};
   }
 
   std::string StatisticsString() const override {
@@ -2918,8 +2918,6 @@ class FeasibilityPumpSolver : public SubSolver {
     dtime_since_last_sync_ = 0.0;
   }
 
-  // TODO(user): Display feasibility pump statistics.
-
  private:
   SharedClasses* shared_;
   std::unique_ptr<Model> local_model_;
@@ -3009,9 +3007,11 @@ class LnsSolver : public SubSolver {
           static_cast<double>(num_calls);
       std::string source_info =
           neighborhood.source_info.empty() ? name() : neighborhood.source_info;
-      const std::string lns_info = absl::StrFormat(
-          "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", source_info, data.difficulty,
-          task_id, data.deterministic_limit, fully_solved_proportion);
+      const std::string lns_info =
+          absl::StrFormat("%s(d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d)",
+                          source_info, data.difficulty, task_id,
+                          data.deterministic_limit, fully_solved_proportion,
+                          generator_->num_consecutive_non_improving_calls());
 
       SatParameters local_params(parameters_);
       local_params.set_max_deterministic_time(data.deterministic_limit);
@@ -3061,6 +3061,31 @@ class LnsSolver : public SubSolver {
       if (neighborhood.delta.has_solution_hint()) {
         *lns_fragment.mutable_solution_hint() =
             neighborhood.delta.solution_hint();
+      }
+      if (generator_->num_consecutive_non_improving_calls() > 10 &&
+          absl::Bernoulli(random, 0.5)) {
+        // If we seems to be stalling, lets try to solve without the hint in
+        // order to diversify our solution pool. Otherwise non-improving
+        // neighborhood will just return the base solution always.
+        lns_fragment.clear_solution_hint();
+      }
+      if (neighborhood.is_simple &&
+          neighborhood.num_relaxed_variables_in_objective == 0) {
+        // If we didn't relax the objective, there can be no improving solution.
+        // However, we might have some diversity if they are multiple feasible
+        // solution. Note that removing the objective might slightly speed up
+        // presolving.
+        //
+        // TODO(user): How can we teak the search to favor diversity.
+        if (generator_->num_consecutive_non_improving_calls() > 10) {
+          // We have been staling, try to find diverse solution?
+          lns_fragment.clear_solution_hint();
+          lns_fragment.clear_objective();
+        } else {
+          // Just regenerate.
+          // Note that we do not change the difficulty.
+          return;
+        }
       }
 
       CpModelProto debug_copy;
@@ -3262,17 +3287,16 @@ class LnsSolver : public SubSolver {
     shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
   }
 
-  std::string OneLineStats() const override {
+  std::vector<std::string> TableLineStats() const override {
     const double fully_solved_proportion =
         static_cast<double>(generator_->num_fully_solved_calls()) /
         static_cast<double>(std::max(int64_t{1}, generator_->num_calls()));
-    return absl::StrCat(
-        RightAlign(absl::StrCat(generator_->num_improving_calls(), "/",
-                                generator_->num_calls())),
-        RightAlign(absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion)),
-        RightAlign(absl::StrFormat("%0.2f", generator_->difficulty())),
-        RightAlign(absl::StrFormat("%0.2f", generator_->deterministic_limit())),
-        TimingInfo());
+    return {FormatName(name()),
+            absl::StrCat(generator_->num_improving_calls(), "/",
+                         generator_->num_calls()),
+            absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion),
+            absl::StrFormat("%0.2f", generator_->difficulty()),
+            absl::StrFormat("%0.2f", generator_->deterministic_limit())};
   }
 
  private:
@@ -3576,19 +3600,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             helper, "graph_dec_lns"),
         params, helper, &shared));
 
-    // Create the rnd_obj_lns worker if the number of terms in the objective is
-    // big enough, and it is no more than half the number of variables in the
-    // model.
-    if (model_proto.objective().vars().size() >=
-            params.objective_lns_min_size() &&
-        model_proto.objective().vars_size() >=
-            model_proto.objective().vars().size() * 2) {
-      subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RelaxObjectiveVariablesGenerator>(helper,
-                                                             "rnd_obj_lns"),
-          params, helper, &shared));
-    }
-
     // TODO(user): If we have a model with scheduling + routing. We create
     // a lot of LNS generators. Investigate if we can reduce this number.
     if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
@@ -3697,23 +3708,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         for (const auto& name : names) {
           solvers_and_count[name]++;
         }
-        std::string solver_list;
-        bool first = true;
+        std::vector<std::string> counted_names;
         for (const auto& [name, count] : solvers_and_count) {
-          if (first) {
-            first = false;
-          } else {
-            absl::StrAppend(&solver_list, ", ");
-          }
           if (count == 1) {
-            absl::StrAppend(&solver_list, name);
+            counted_names.push_back(name);
           } else {
-            absl::StrAppend(&solver_list, name, "(", count, ")");
+            counted_names.push_back(absl::StrCat(name, "(", count, ")"));
           }
         }
-        SOLVER_LOG(logger, names.size(), " ",
-                   absl::StrCat(type_name, names.size() == 1 ? "" : "s"), ": [",
-                   solver_list, "]");
+        SOLVER_LOG(
+            logger, names.size(), " ",
+            absl::StrCat(type_name, names.size() == 1 ? "" : "s"), ": [",
+            absl::StrJoin(counted_names.begin(), counted_names.end(), ", "),
+            "]");
       }
     };
 
@@ -3740,9 +3747,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   // Log statistics.
+  // TODO(user): Store and display first solution solvers.
   if (logger->LoggingIsEnabled()) {
+    SOLVER_LOG(logger, "");
+
     if (params.log_subsolver_statistics()) {
-      SOLVER_LOG(logger, "");
       SOLVER_LOG(logger, "Sub-solver detailed search statistics:");
       for (const auto& subsolver : subsolvers) {
         if (subsolver == nullptr) continue;
@@ -3751,50 +3760,60 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         SOLVER_LOG(logger,
                    absl::StrCat("  '", subsolver->name(), "':\n", stats));
       }
+      SOLVER_LOG(logger, "");
     }
 
-    // Subsolver one-liner.
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, HeaderStr("Subsolver statistics"), RightAlign("Bools"),
-               RightAlign("Conflicts"), RightAlign("Branches"),
-               RightAlign("Restarts"), RightAlign("BoolPropag"),
-               RightAlign("IntegerPropag"));
+    // Generic task timing table.
+    std::vector<std::vector<std::string>> table;
+    table.push_back(
+        {"Task timing", "n [     min,      max]      avg      dev      sum"});
+    for (const auto& subsolver : subsolvers) {
+      if (subsolver == nullptr) continue;
+      table.push_back({FormatName(subsolver->name()), subsolver->TimingInfo()});
+    }
+    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
+
+    // Subsolver tables.
+    table.clear();
+    table.push_back({"Search stats", "Bools", "Conflicts", "Branches",
+                     "Restarts", "BoolPropag", "IntegerPropag"});
     for (const auto& subsolver : subsolvers) {
       if (subsolver == nullptr) continue;
       if (subsolver->type() != SubSolver::FULL_PROBLEM) continue;
       if (subsolver->name().empty()) continue;
-      const std::string stats = subsolver->OneLineStats();
+      std::vector<std::string> stats = subsolver->TableLineStats();
       if (stats.empty()) continue;
-      SOLVER_LOG(logger, absl::StrCat(RowNameStr(subsolver->name()), stats));
+      table.push_back(std::move(stats));
     }
+    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
 
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(
-        logger, HeaderStr("LNS statistics"), RightAlign("Improv/Calls"),
-        RightAlign("Closed"), RightAlign("Difficulty"), RightAlign("TimeLimit"),
-        RightAlign("         [     min,      max]      avg      dev     sum"));
+    // TODO(user): Split feasibility_jump and pump.
+    table.clear();
+    table.push_back(
+        {"LNS stats", "Improv/Calls", "Closed", "Difficulty", "TimeLimit"});
     for (const auto& subsolver : subsolvers) {
       if (subsolver == nullptr) continue;
       if (subsolver->type() != SubSolver::INCOMPLETE) continue;
       if (subsolver->name().empty()) continue;
-      const std::string stats = subsolver->OneLineStats();
+      std::vector<std::string> stats = subsolver->TableLineStats();
       if (stats.empty()) continue;
-      SOLVER_LOG(logger, absl::StrCat(RowNameStr(subsolver->name()), stats));
+      table.push_back(std::move(stats));
     }
+    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
 
     shared.response->DisplayImprovementStatistics();
 
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, HeaderStr("Solution repositories"), RightAlign("Added"),
-               RightAlign("Queried"), RightAlign("Ignored"),
-               RightAlign("Synchro"));
-    SOLVER_LOG(logger, shared.response->SolutionsRepository().Stats());
+    table.clear();
+    table.push_back(
+        {"Solution repositories", "Added", "Queried", "Ignored", "Synchro"});
+    table.push_back(shared.response->SolutionsRepository().TableLineStats());
     if (shared.lp_solutions != nullptr) {
-      SOLVER_LOG(logger, shared.lp_solutions->Stats());
+      table.push_back(shared.lp_solutions->TableLineStats());
     }
     if (shared.incomplete_solutions != nullptr) {
-      SOLVER_LOG(logger, shared.incomplete_solutions->Stats());
+      table.push_back(shared.incomplete_solutions->TableLineStats());
     }
+    SOLVER_LOG(logger, FormatTable(table));
 
     if (shared.bounds) {
       shared.bounds->LogStatistics(logger);
@@ -3931,7 +3950,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // This also copy the logs to the response if requested.
   shared_response_manager->AddFinalResponsePostprocessor(
       [logger, &model_proto, &log_string](CpSolverResponse* response) {
-        SOLVER_LOG(logger, "");
         SOLVER_LOG(logger, CpSolverResponseStats(
                                *response,
                                model_proto.has_objective() ||

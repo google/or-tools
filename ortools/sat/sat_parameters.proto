@@ -1256,11 +1256,6 @@ message SatParameters {
   }
   optional FPRoundingMethod fp_rounding = 165 [default = PROPAGATION_ASSISTED];
 
-  // Adds the objective_lns worker if the objective contains more than the given
-  // number of variables. We use a int32max default value to effectively disable
-  // this lns worker by default.
-  optional int32 objective_lns_min_size = 231 [default = 2147483647];
-
   // If true, registers more lns subsolvers with different parameters.
   optional bool diversify_lns_params = 137 [default = false];
 

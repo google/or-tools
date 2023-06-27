@@ -91,7 +91,7 @@ class SubSolver {
 
   // Returns search statistics.
   virtual std::string StatisticsString() const { return std::string(); }
-  virtual std::string OneLineStats() const { return std::string(); }
+  virtual std::vector<std::string> TableLineStats() const { return {}; }
 
   // Note that this is protected by the global execution mutex and so it is
   // called sequentially.

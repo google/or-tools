@@ -68,14 +68,16 @@ class FeasibilityJumpSolver : public SubSolver {
   // No synchronization needed for TaskIsAvailable().
   void Synchronize() final {}
 
+  // Note that this should only returns true if there is a need to delete this
+  // subsolver early to reclaim memory, otherwise we will not properly have the
+  // stats.
+  //
+  // TODO(user): Save the logging stats before deletion.
   bool IsDone() final {
     // Tricky: we cannot delete something if there is a task in flight, we will
     // have to wait.
     if (task_generated_.load()) return false;
-
     if (!model_is_supported_.load()) return true;
-    if (shared_response_->ProblemIsSolved()) return true;
-    if (shared_time_limit_->LimitReached()) return true;
 
     // We are done after the first task is done in the FIRST_SOLUTION mode.
     return type() == SubSolver::FIRST_SOLUTION &&
@@ -84,6 +86,8 @@ class FeasibilityJumpSolver : public SubSolver {
 
   bool TaskIsAvailable() final {
     if (task_generated_.load()) return false;
+    if (shared_response_->ProblemIsSolved()) return false;
+    if (shared_time_limit_->LimitReached()) return false;
 
     return (shared_response_->SolutionsRepository().NumSolutions() > 0) ==
            (type() == SubSolver::INCOMPLETE);

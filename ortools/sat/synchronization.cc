@@ -731,25 +731,24 @@ void SharedResponseManager::RegisterObjectiveBoundImprovement(
 void SharedResponseManager::DisplayImprovementStatistics() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!primal_improvements_count_.empty()) {
-    SOLVER_LOG(logger_, "");
-    SOLVER_LOG(logger_,
-               HeaderStr(absl::StrCat("Solutions (", num_solutions_, ")")),
-               RightAlign("Num"), RightAlign("Rank"));
+    std::vector<std::vector<std::string>> table;
+    table.push_back(
+        {absl::StrCat("Solutions (", num_solutions_, ")"), "Num", "Rank"});
     for (const auto& entry : primal_improvements_count_) {
       const int min_rank = primal_improvements_min_rank_[entry.first];
       const int max_rank = primal_improvements_max_rank_[entry.first];
-      SOLVER_LOG(logger_, RowNameStr(entry.first),
-                 RightAlign(FormatCounter(entry.second)),
-                 RightAlign(absl::StrCat("[", min_rank, ",", max_rank, "]")));
+      table.push_back({FormatName(entry.first), FormatCounter(entry.second),
+                       absl::StrCat("[", min_rank, ",", max_rank, "]")});
     }
+    SOLVER_LOG(logger_, FormatTable(table));
   }
   if (!dual_improvements_count_.empty()) {
-    SOLVER_LOG(logger_, "");
-    SOLVER_LOG(logger_, HeaderStr("Objective bounds"), RightAlign("Num"));
+    std::vector<std::vector<std::string>> table;
+    table.push_back({"Objective bounds", "Num"});
     for (const auto& entry : dual_improvements_count_) {
-      SOLVER_LOG(logger_, RowNameStr(entry.first),
-                 RightAlign(FormatCounter(entry.second)));
+      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
     }
+    SOLVER_LOG(logger_, FormatTable(table));
   }
 }
 
@@ -922,12 +921,12 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!bounds_exported_.empty()) {
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, HeaderStr("Improving bounds shared"), RightAlign("Num"));
+    std::vector<std::vector<std::string>> table;
+    table.push_back({"Improving bounds shared", "Num"});
     for (const auto& entry : bounds_exported_) {
-      SOLVER_LOG(logger, RowNameStr(entry.first),
-                 RightAlign(FormatCounter(entry.second)));
+      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
     }
+    SOLVER_LOG(logger, FormatTable(table));
   }
 }
 
@@ -997,12 +996,12 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
     name_to_clauses[id_to_worker_name_[id]] = id_to_clauses_exported_[id];
   }
   if (!name_to_clauses.empty()) {
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, HeaderStr("Clauses shared"), RightAlign("Num"));
+    std::vector<std::vector<std::string>> table;
+    table.push_back({"Clauses shared", "Num"});
     for (const auto& entry : name_to_clauses) {
-      SOLVER_LOG(logger, RowNameStr(entry.first),
-                 RightAlign(FormatCounter(entry.second)));
+      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
     }
+    SOLVER_LOG(logger, FormatTable(table));
   }
 }
 

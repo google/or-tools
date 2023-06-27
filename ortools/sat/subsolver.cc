@@ -119,6 +119,8 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   int64_t task_id = 0;
   std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
   std::vector<std::function<void()>> to_run;
+  std::vector<int> indices;
+  std::vector<double> timing;
   to_run.reserve(batch_size);
   ThreadPool pool("DeterministicLoop", num_threads);
   pool.StartWorkers();
@@ -129,27 +131,39 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     // We first generate all task to run in this batch.
     // Note that we can't start the task right away since if a task finish
     // before we schedule everything, we will not be deterministic.
+    to_run.clear();
+    indices.clear();
     for (int t = 0; t < batch_size; ++t) {
       const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
       if (best == -1) break;
       num_generated_tasks[best]++;
       to_run.push_back(subsolvers[best]->GenerateTask(task_id++));
+      indices.push_back(best);
     }
     if (to_run.empty()) break;
 
     // Schedule each task.
+    timing.resize(to_run.size());
     absl::BlockingCounter blocking_counter(static_cast<int>(to_run.size()));
-    for (auto& f : to_run) {
-      pool.Schedule([f = std::move(f), &blocking_counter]() {
-        f();
-        blocking_counter.DecrementCount();
-      });
+    for (int i = 0; i < to_run.size(); ++i) {
+      pool.Schedule(
+          [i, f = std::move(to_run[i]), &timing, &blocking_counter]() {
+            WallTimer timer;
+            timer.Start();
+            f();
+            timing[i] = timer.Get();
+            blocking_counter.DecrementCount();
+          });
     }
-    to_run.clear();
 
     // Wait for all tasks of this batch to be done before scheduling another
     // batch.
     blocking_counter.Wait();
+
+    // Update times.
+    for (int i = 0; i < to_run.size(); ++i) {
+      subsolvers[indices[i]]->AddTaskDuration(timing[i]);
+    }
   }
 }
 

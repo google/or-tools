@@ -118,12 +118,11 @@ class SharedSolutionRepository {
   // Works in O(num_solutions_to_keep_).
   void Synchronize();
 
-  std::string Stats() const {
+  std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(&mutex_);
-    return absl::StrCat(RowNameStr(name_), RightAlign(absl::StrCat(num_added_)),
-                        RightAlign(FormatCounter(num_queried_)),
-                        RightAlign(FormatCounter(num_ignored_)),
-                        RightAlign(FormatCounter(num_synchronization_)));
+    return {FormatName(name_), FormatCounter(num_added_),
+            FormatCounter(num_queried_), FormatCounter(num_ignored_),
+            FormatCounter(num_synchronization_)};
   }
 
  protected:
@@ -175,11 +174,10 @@ class SharedIncompleteSolutionManager {
   // If there are no solution, this return an empty vector.
   std::vector<double> PopLast();
 
-  std::string Stats() const {
+  std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(&mutex_);
-    return absl::StrCat(RowNameStr("pump"),
-                        RightAlign(FormatCounter(num_added_)),
-                        RightAlign(FormatCounter(num_queried_)));
+    return {FormatName("pump"), FormatCounter(num_added_),
+            FormatCounter(num_queried_)};
   }
 
  private:

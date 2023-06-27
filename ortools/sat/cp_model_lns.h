@@ -425,6 +425,14 @@ class NeighborhoodGenerator {
     return num_improving_calls_;
   }
 
+  // Returns the number of the last calls to this generator that didn't improve
+  // the best solution. Note that this count improvement to the best known
+  // solution not the base one used to generate one neighborhood.
+  int64_t num_consecutive_non_improving_calls() const {
+    absl::MutexLock mutex_lock(&generator_mutex_);
+    return num_consecutive_non_improving_calls_;
+  }
+
   // The current difficulty of this generator
   double difficulty() const {
     absl::MutexLock mutex_lock(&generator_mutex_);
@@ -462,6 +470,7 @@ class NeighborhoodGenerator {
   int64_t num_fully_solved_calls_ = 0;
   int64_t num_improving_calls_ = 0;
   int64_t num_consecutive_non_improving_calls_ = 0;
+  int64_t next_time_limit_bump_ = 50;
   double deterministic_time_ = 0.0;
   double current_average_ = 0.0;
 };
@@ -537,16 +546,6 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit DecompositionGraphNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
-      : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution,
-                        double difficulty, absl::BitGenRef random) final;
-};
-
-// Pick a random subset of objective terms.
-class RelaxObjectiveVariablesGenerator : public NeighborhoodGenerator {
- public:
-  explicit RelaxObjectiveVariablesGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
