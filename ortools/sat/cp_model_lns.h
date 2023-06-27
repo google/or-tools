@@ -519,6 +519,15 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
+class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit ArcGraphNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
 // Pick a random subset of constraint and relax all of their variables. We are a
 // bit smarter than this because after the first constraint is selected, we only
 // select constraints that share at least one variable with the already selected

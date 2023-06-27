@@ -57,6 +57,8 @@ class SubSolver {
   // update asynchronously (and so non-deterministically) global "shared"
   // classes, but this global state is incorporated by the Subsolver only when
   // Synchronize() is called.
+  //
+  // This is only called by the main thread in Subsolver creation order.
   virtual void Synchronize() = 0;
 
   // Returns true if this SubSolver is done and its memory can be freed. Note
@@ -66,9 +68,12 @@ class SubSolver {
   //
   // This is needed since some subsolve can be done before the overal Solve() is
   // finished. This is the case for first solution subsolvers for instances.
+  //
+  // This is only called by the main thread in a sequential fashion.
   virtual bool IsDone() { return false; }
 
   // Returns true iff GenerateTask() can be called.
+  // This is only called by the main thread in a sequential fashion.
   virtual bool TaskIsAvailable() = 0;
 
   // Returns a task to run. The task_id is just an ever increasing counter that
@@ -77,6 +82,8 @@ class SubSolver {
   // TODO(user): We could use a more complex selection logic and pass in the
   // deterministic time limit this subtask should run for. Unclear at this
   // stage.
+  //
+  // This is only called by the main thread.
   virtual std::function<void()> GenerateTask(int64_t task_id) = 0;
 
   // Returns the total deterministic time spend by the completed tasks before
@@ -94,24 +101,41 @@ class SubSolver {
   virtual std::vector<std::string> TableLineStats() const { return {}; }
 
   // Note that this is protected by the global execution mutex and so it is
-  // called sequentially.
+  // called sequentially. Subclasses do not need to call this.
   void AddTaskDuration(double duration_in_seconds) {
     timing_.AddTimeInSec(duration_in_seconds);
   }
 
+  // This one need to be called by the Subclasses. Usually from Synchronize(),
+  // or from the task itself it we execute a single task at the same time.
+  void AddTaskDeterministicDuration(double deterministic_duration) {
+    if (deterministic_duration <= 0) return;
+    deterministic_time_ += deterministic_duration;
+    dtiming_.AddTimeInSec(deterministic_duration);
+  }
+
   std::string TimingInfo() const {
-    // TODO(user): remove trailing "\n" from ValueAsString().
+    // TODO(user): remove trailing "\n" from ValueAsString() or just build the
+    // table line directly.
     std::string data = timing_.ValueAsString();
     if (!data.empty()) data.pop_back();
     return data;
   }
 
- protected:
+  std::string DeterministicTimingInfo() const {
+    // TODO(user): remove trailing "\n" from ValueAsString().
+    std::string data = dtiming_.ValueAsString();
+    if (!data.empty()) data.pop_back();
+    return data;
+  }
+
+ private:
   const std::string name_;
   const SubsolverType type_;
 
   double deterministic_time_ = 0.0;
-  TimeDistribution timing_ = TimeDistribution("tasks");
+  TimeDistribution timing_ = TimeDistribution("task time");
+  TimeDistribution dtiming_ = TimeDistribution("task dtime");
 };
 
 // A simple wrapper to add a synchronization point in the list of subsolvers.

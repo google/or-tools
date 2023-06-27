@@ -2580,7 +2580,7 @@ class FullProblemSolver : public SubSolver {
   // can have a deterministic parallel mode.
   void Synchronize() override {
     absl::MutexLock mutex_lock(&mutex_);
-    deterministic_time_ += dtime_since_last_sync_;
+    AddTaskDeterministicDuration(dtime_since_last_sync_);
     shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
     dtime_since_last_sync_ = 0.0;
   }
@@ -2654,27 +2654,22 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-class ObjectiveLbSolver : public SubSolver {
+class ObjectiveShavingSolver : public SubSolver {
  public:
-  ObjectiveLbSolver(const SatParameters& local_parameters,
-                    NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
+  ObjectiveShavingSolver(const SatParameters& local_parameters,
+                         NeighborhoodGeneratorHelper* helper,
+                         SharedClasses* shared)
       : SubSolver(local_parameters.name(), FULL_PROBLEM),
         local_params_(local_parameters),
         helper_(helper),
         shared_(shared),
         local_proto_(*shared->model_proto) {}
 
-  ~ObjectiveLbSolver() override = default;
-
-  bool IsDone() override {
-    {
-      absl::MutexLock mutex_lock(&mutex_);
-      if (task_in_flight_) return false;
-    }
-    return shared_->SearchIsDone();
-  }
+  ~ObjectiveShavingSolver() override = default;
 
   bool TaskIsAvailable() override {
+    if (shared_->SearchIsDone()) return false;
+
     // We only support one task at the time.
     absl::MutexLock mutex_lock(&mutex_);
     return !task_in_flight_;
@@ -2688,35 +2683,39 @@ class ObjectiveLbSolver : public SubSolver {
       objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
     }
     return [this]() {
-      if (!ResetModel()) return;
+      if (ResetModel()) {
+        SolveLoadedCpModel(local_proto_, local_repo_.get());
+        const CpSolverResponse local_response =
+            local_repo_->GetOrCreate<SharedResponseManager>()->GetResponse();
 
-      SolveLoadedCpModel(local_proto_, local_repo_.get());
-      const CpSolverResponse local_response =
-          local_repo_->GetOrCreate<SharedResponseManager>()->GetResponse();
-
-      if (local_response.status() == CpSolverStatus::OPTIMAL ||
-          local_response.status() == CpSolverStatus::FEASIBLE) {
-        std::vector<int64_t> solution_values(local_response.solution().begin(),
-                                             local_response.solution().end());
-        if (local_params_.cp_model_presolve()) {
-          const int num_original_vars = shared_->model_proto->variables_size();
-          PostsolveResponseWrapper(local_params_, num_original_vars,
-                                   mapping_proto_, postsolve_mapping_,
-                                   &solution_values);
+        if (local_response.status() == CpSolverStatus::OPTIMAL ||
+            local_response.status() == CpSolverStatus::FEASIBLE) {
+          std::vector<int64_t> solution_values(
+              local_response.solution().begin(),
+              local_response.solution().end());
+          if (local_params_.cp_model_presolve()) {
+            const int num_original_vars =
+                shared_->model_proto->variables_size();
+            PostsolveResponseWrapper(local_params_, num_original_vars,
+                                     mapping_proto_, postsolve_mapping_,
+                                     &solution_values);
+          }
+          shared_->response->NewSolution(solution_values, Info());
+        } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
+          absl::MutexLock mutex_lock(&mutex_);
+          shared_->response->UpdateInnerObjectiveBounds(
+              Info(), objective_lb_ + 1, kMaxIntegerValue);
         }
-        shared_->response->NewSolution(solution_values, Info());
-      } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
-        absl::MutexLock mutex_lock(&mutex_);
-        shared_->response->UpdateInnerObjectiveBounds(Info(), objective_lb_ + 1,
-                                                      kMaxIntegerValue);
       }
 
       absl::MutexLock mutex_lock(&mutex_);
       task_in_flight_ = false;
-      const double dtime =
-          local_repo_->GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime();
-      deterministic_time_ += dtime;
-      shared_->time_limit->AdvanceDeterministicTime(dtime);
+      if (local_repo_ != nullptr) {
+        const double dtime = local_repo_->GetOrCreate<TimeLimit>()
+                                 ->GetElapsedDeterministicTime();
+        AddTaskDeterministicDuration(dtime);
+        shared_->time_limit->AdvanceDeterministicTime(dtime);
+      }
     };
   }
 
@@ -2738,16 +2737,14 @@ class ObjectiveLbSolver : public SubSolver {
     }
   }
 
-  std::string StatisticsString() const override { return ""; }
-
  private:
   std::string Info() {
-    return absl::StrCat(name_, " #vars=", local_proto_.variables().size(),
+    return absl::StrCat(name(), " #vars=", local_proto_.variables().size(),
                         " #csts=", local_proto_.constraints().size());
   }
 
   bool ResetModel() {
-    local_repo_ = std::make_unique<Model>(name_);
+    local_repo_ = std::make_unique<Model>(name());
     *local_repo_->GetOrCreate<SatParameters>() = local_params_;
 
     auto* time_limit = local_repo_->GetOrCreate<TimeLimit>();
@@ -2834,7 +2831,7 @@ class FeasibilityPumpSolver : public SubSolver {
                         SharedClasses* shared)
       : SubSolver("feasibility_pump", INCOMPLETE),
         shared_(shared),
-        local_model_(std::make_unique<Model>(name_)) {
+        local_model_(std::make_unique<Model>(name())) {
     // Setup the local model parameters and time limit.
     *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
@@ -2891,7 +2888,7 @@ class FeasibilityPumpSolver : public SubSolver {
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
       auto* feasibility_pump = local_model_->Mutable<FeasibilityPump>();
       if (!feasibility_pump->Solve()) {
-        shared_->response->NotifyThatImprovingProblemIsInfeasible(name_);
+        shared_->response->NotifyThatImprovingProblemIsInfeasible(name());
       }
 
       {
@@ -2913,7 +2910,7 @@ class FeasibilityPumpSolver : public SubSolver {
 
   void Synchronize() override {
     absl::MutexLock mutex_lock(&mutex_);
-    deterministic_time_ += dtime_since_last_sync_;
+    AddTaskDeterministicDuration(dtime_since_last_sync_);
     shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
     dtime_since_last_sync_ = 0.0;
   }
@@ -3282,9 +3279,9 @@ class LnsSolver : public SubSolver {
 
   void Synchronize() override {
     generator_->Synchronize();
-    const double old = deterministic_time_;
-    deterministic_time_ = generator_->deterministic_time();
-    shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
+    const double diff = generator_->deterministic_time() - deterministic_time();
+    AddTaskDeterministicDuration(diff);
+    shared_->time_limit->AdvanceDeterministicTime(diff);
   }
 
   std::vector<std::string> TableLineStats() const override {
@@ -3409,8 +3406,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       ++num_full_problem_solvers;
 
       if (local_params.use_objective_shaving_search()) {
-        subsolvers.push_back(
-            std::make_unique<ObjectiveLbSolver>(local_params, helper, &shared));
+        subsolvers.push_back(std::make_unique<ObjectiveShavingSolver>(
+            local_params, helper, &shared));
         continue;
       }
 
@@ -3592,6 +3589,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                                                              "graph_var_lns"),
         params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
+        std::make_unique<ArcGraphNeighborhoodGenerator>(helper,
+                                                        "graph_arc_lns"),
+        params, helper, &shared));
+    subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<ConstraintGraphNeighborhoodGenerator>(helper,
                                                                "graph_cst_lns"),
         params, helper, &shared));
@@ -3765,11 +3766,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
     // Generic task timing table.
     std::vector<std::vector<std::string>> table;
-    table.push_back(
-        {"Task timing", "n [     min,      max]      avg      dev      sum"});
+    table.push_back({"Task timing",
+                     "n [     min,      max]      avg      dev     time",
+                     "n [     min,      max]      avg      dev    dtime"});
     for (const auto& subsolver : subsolvers) {
       if (subsolver == nullptr) continue;
-      table.push_back({FormatName(subsolver->name()), subsolver->TimingInfo()});
+      table.push_back({FormatName(subsolver->name()), subsolver->TimingInfo(),
+                       subsolver->DeterministicTimingInfo()});
     }
     if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
 
@@ -3780,7 +3783,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     for (const auto& subsolver : subsolvers) {
       if (subsolver == nullptr) continue;
       if (subsolver->type() != SubSolver::FULL_PROBLEM) continue;
-      if (subsolver->name().empty()) continue;
       std::vector<std::string> stats = subsolver->TableLineStats();
       if (stats.empty()) continue;
       table.push_back(std::move(stats));
@@ -3794,7 +3796,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     for (const auto& subsolver : subsolvers) {
       if (subsolver == nullptr) continue;
       if (subsolver->type() != SubSolver::INCOMPLETE) continue;
-      if (subsolver->name().empty()) continue;
       std::vector<std::string> stats = subsolver->TableLineStats();
       if (stats.empty()) continue;
       table.push_back(std::move(stats));
