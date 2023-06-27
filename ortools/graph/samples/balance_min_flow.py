@@ -30,20 +30,59 @@ def main():
     team_a = [1, 3, 5]
     team_b = [2, 4, 6]
 
-    start_nodes = ([0, 0] + [11, 11, 11] + [12, 12, 12] + [
-        1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6
-    ] + [7, 8, 9, 10])
-    end_nodes = ([11, 12] + team_a + team_b + [
-        7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8,
-        9, 10
-    ] + [13, 13, 13, 13])
-    capacities = ([2, 2] + [1, 1, 1] + [1, 1, 1] + [
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-    ] + [1, 1, 1, 1])
-    costs = ([0, 0] + [0, 0, 0] + [0, 0, 0] + [
-        90, 76, 75, 70, 35, 85, 55, 65, 125, 95, 90, 105, 45, 110, 95, 115, 60,
-        105, 80, 75, 45, 65, 110, 95
-    ] + [0, 0, 0, 0])
+    start_nodes = (
+        [0, 0]
+        + [11, 11, 11]
+        + [12, 12, 12]
+        + [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6]
+        + [7, 8, 9, 10]
+    )
+    end_nodes = (
+        [11, 12]
+        + team_a
+        + team_b
+        + [7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10, 7, 8, 9, 10]
+        + [13, 13, 13, 13]
+    )
+    capacities = (
+        [2, 2]
+        + [1, 1, 1]
+        + [1, 1, 1]
+        + [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        + [1, 1, 1, 1]
+    )
+    costs = (
+        [0, 0]
+        + [0, 0, 0]
+        + [0, 0, 0]
+        + [
+            90,
+            76,
+            75,
+            70,
+            35,
+            85,
+            55,
+            65,
+            125,
+            95,
+            90,
+            105,
+            45,
+            110,
+            95,
+            115,
+            60,
+            105,
+            80,
+            75,
+            45,
+            65,
+            110,
+            95,
+        ]
+        + [0, 0, 0, 0]
+    )
 
     source = 0
     sink = 13
@@ -55,8 +94,9 @@ def main():
     # [START constraints]
     # Add each arc.
     for i in range(0, len(start_nodes)):
-        smcf.add_arc_with_capacity_and_unit_cost(start_nodes[i], end_nodes[i],
-                                                 capacities[i], costs[i])
+        smcf.add_arc_with_capacity_and_unit_cost(
+            start_nodes[i], end_nodes[i], capacities[i], costs[i]
+        )
 
     # Add node supplies.
     for i in range(0, len(supplies)):
@@ -70,24 +110,29 @@ def main():
 
     # [START print_solution]
     if status == smcf.OPTIMAL:
-        print('Total cost = ', smcf.optimal_cost())
+        print("Total cost = ", smcf.optimal_cost())
         print()
         for arc in range(smcf.num_arcs()):
             # Can ignore arcs leading out of source or intermediate, or into sink.
-            if (smcf.tail(arc) != source and smcf.tail(arc) != 11 and
-                    smcf.tail(arc) != 12 and smcf.head(arc) != sink):
-
+            if (
+                smcf.tail(arc) != source
+                and smcf.tail(arc) != 11
+                and smcf.tail(arc) != 12
+                and smcf.head(arc) != sink
+            ):
                 # Arcs in the solution will have a flow value of 1.
                 # There start and end nodes give an assignment of worker to task.
                 if smcf.flow(arc) > 0:
-                    print('Worker %d assigned to task %d.  Cost = %d' %
-                          (smcf.tail(arc), smcf.head(arc), smcf.unit_cost(arc)))
+                    print(
+                        "Worker %d assigned to task %d.  Cost = %d"
+                        % (smcf.tail(arc), smcf.head(arc), smcf.unit_cost(arc))
+                    )
     else:
-        print('There was an issue with the min cost flow input.')
-        print(f'Status: {status}')
+        print("There was an issue with the min cost flow input.")
+        print(f"Status: {status}")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

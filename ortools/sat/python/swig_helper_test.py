@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tests for ortools.sat.python.swig_helper."""
 
 from absl.testing import absltest
@@ -21,13 +22,12 @@ from ortools.sat.python import swig_helper
 
 
 class Callback(swig_helper.SolutionCallback):
-
     def __init__(self):
         swig_helper.SolutionCallback.__init__(self)
         self.__solution_count = 0
 
     def OnSolutionCallback(self):
-        print('New Solution')
+        print("New Solution")
         self.__solution_count += 1
 
     def SolutionCount(self):
@@ -35,7 +35,6 @@ class Callback(swig_helper.SolutionCallback):
 
 
 class SwigHelperTest(absltest.TestCase):
-
     def testVariableDomain(self):
         model_string = """
       variables { domain: [ -10, 10 ] }
@@ -45,9 +44,11 @@ class SwigHelperTest(absltest.TestCase):
         self.assertTrue(text_format.Parse(model_string, model))
 
         d0 = swig_helper.CpSatHelper.SerializedVariableDomain(
-            model.variables[0].SerializeToString())
+            model.variables[0].SerializeToString()
+        )
         d1 = swig_helper.CpSatHelper.SerializedVariableDomain(
-            model.variables[1].SerializeToString())
+            model.variables[1].SerializeToString()
+        )
 
         self.assertEqual(d0.FlattenedIntervals(), [-10, 10])
         self.assertEqual(d1.FlattenedIntervals(), [-5, -5, 3, 6])
@@ -89,8 +90,10 @@ class SwigHelperTest(absltest.TestCase):
 
         solve_wrapper = swig_helper.SolveWrapper()
         solution = cp_model_pb2.CpSolverResponse.FromString(
-            swig_helper.SolveWrapper.SerializedSolve(model.SerializeToString(),
-                                                     solve_wrapper))
+            swig_helper.SolveWrapper.SerializedSolve(
+                model.SerializeToString(), solve_wrapper
+            )
+        )
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -135,10 +138,13 @@ class SwigHelperTest(absltest.TestCase):
 
         solve_wrapper = swig_helper.SolveWrapper()
         swig_helper.SolveWrapper.SetSerializedParameters(
-            parameters.SerializeToString(), solve_wrapper)
+            parameters.SerializeToString(), solve_wrapper
+        )
         solution = cp_model_pb2.CpSolverResponse.FromString(
-            swig_helper.SolveWrapper.SerializedSolve(model.SerializeToString(),
-                                                     solve_wrapper))
+            swig_helper.SolveWrapper.SerializedSolve(
+                model.SerializeToString(), solve_wrapper
+            )
+        )
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -161,8 +167,10 @@ class SwigHelperTest(absltest.TestCase):
 
         solve_wrapper = swig_helper.SolveWrapper()
         solution = cp_model_pb2.CpSolverResponse.FromString(
-            swig_helper.SolveWrapper.SerializedSolve(model.SerializeToString(),
-                                                     solve_wrapper))
+            swig_helper.SolveWrapper.SerializedSolve(
+                model.SerializeToString(), solve_wrapper
+            )
+        )
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -184,10 +192,13 @@ class SwigHelperTest(absltest.TestCase):
         params = sat_parameters_pb2.SatParameters()
         params.enumerate_all_solutions = True
         swig_helper.SolveWrapper.SetSerializedParameters(
-            params.SerializeToString(), solve_wrapper)
+            params.SerializeToString(), solve_wrapper
+        )
         solution = cp_model_pb2.CpSolverResponse.FromString(
-            swig_helper.SolveWrapper.SerializedSolve(model.SerializeToString(),
-                                                     solve_wrapper))
+            swig_helper.SolveWrapper.SerializedSolve(
+                model.SerializeToString(), solve_wrapper
+            )
+        )
 
         self.assertEqual(5, callback.SolutionCount())
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
@@ -228,10 +239,9 @@ class SwigHelperTest(absltest.TestCase):
       """
         model = cp_model_pb2.CpModelProto()
         self.assertTrue(text_format.Parse(model_string, model))
-        stats = swig_helper.CpSatHelper.SerializedModelStats(
-            model.SerializeToString())
+        stats = swig_helper.CpSatHelper.SerializedModelStats(model.SerializeToString())
         self.assertTrue(stats)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     absltest.main()

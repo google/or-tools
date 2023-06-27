@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tests for ortools.util.python.sorted_interval_list."""
 
 import unittest
@@ -18,22 +19,20 @@ from ortools.util.python import sorted_interval_list
 
 
 class SortedIntervalListTest(unittest.TestCase):
-
     def testCtorAndGetter(self):
         bool_domain = sorted_interval_list.Domain(0, 1)
         self.assertEqual(2, bool_domain.Size())
         self.assertEqual(0, bool_domain.Min())
         self.assertEqual(1, bool_domain.Max())
         self.assertFalse(bool_domain.IsEmpty())
-        self.assertEqual(str(bool_domain), '[0,1]')
+        self.assertEqual(str(bool_domain), "[0,1]")
 
     def testFromValues(self):
         domain = sorted_interval_list.Domain.FromValues([1, 3, -5, 5])
         self.assertEqual(4, domain.Size())
         self.assertEqual(-5, domain.Min())
         self.assertEqual(5, domain.Max())
-        self.assertEqual([-5, -5, 1, 1, 3, 3, 5, 5],
-                         domain.FlattenedIntervals())
+        self.assertEqual([-5, -5, 1, 1, 3, 3, 5, 5], domain.FlattenedIntervals())
         self.assertTrue(domain.Contains(1))
         self.assertFalse(domain.Contains(0))
 
@@ -86,5 +85,5 @@ class SortedIntervalListTest(unittest.TestCase):
         self.assertEqual([6, 9223372036854775807], d2.FlattenedIntervals())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

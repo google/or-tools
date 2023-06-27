@@ -50,20 +50,20 @@ def main():
 
     # [START print_solution]
     if status != smf.OPTIMAL:
-        print('There was an issue with the max flow input.')
-        print(f'Status: {status}')
+        print("There was an issue with the max flow input.")
+        print(f"Status: {status}")
         exit(1)
-    print('Max flow:', smf.optimal_flow())
-    print('')
-    print(' Arc    Flow / Capacity')
+    print("Max flow:", smf.optimal_flow())
+    print("")
+    print(" Arc    Flow / Capacity")
     solution_flows = smf.flows(all_arcs)
     for arc, flow, capacity in zip(all_arcs, solution_flows, capacities):
-        print(f'{smf.tail(arc)} / {smf.head(arc)}   {flow:3}  / {capacity:3}')
-    print('Source side min-cut:', smf.get_source_side_min_cut())
-    print('Sink side min-cut:', smf.get_sink_side_min_cut())
+        print(f"{smf.tail(arc)} / {smf.head(arc)}   {flow:3}  / {capacity:3}")
+    print("Source side min-cut:", smf.get_source_side_min_cut())
+    print("Sink side min-cut:", smf.get_sink_side_min_cut())
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

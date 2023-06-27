@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """helpers methods for the cp_model module."""
 
 import numbers
@@ -28,56 +29,56 @@ def is_integral(x):
 
 def is_a_number(x):
     """Checks if x has either a number.Number or a np.double type."""
-    return isinstance(x, numbers.Number) or isinstance(
-        x, np.double) or isinstance(x, np.integer)
+    return (
+        isinstance(x, numbers.Number)
+        or isinstance(x, np.double)
+        or isinstance(x, np.integer)
+    )
 
 
 def is_zero(x):
     """Checks if the x is 0 or 0.0."""
-    return (is_integral(x) and int(x) == 0) or (is_a_number(x) and
-                                                float(x) == 0.0)
+    return (is_integral(x) and int(x) == 0) or (is_a_number(x) and float(x) == 0.0)
 
 
 def is_one(x):
     """Checks if x is 1 or 1.0."""
-    return (is_integral(x) and int(x) == 1) or (is_a_number(x) and
-                                                float(x) == 1.0)
+    return (is_integral(x) and int(x) == 1) or (is_a_number(x) and float(x) == 1.0)
 
 
 def is_minus_one(x):
     """Checks if x is -1 or -1.0."""
-    return (is_integral(x) and int(x) == -1) or (is_a_number(x) and
-                                                 float(x) == -1.0)
+    return (is_integral(x) and int(x) == -1) or (is_a_number(x) and float(x) == -1.0)
 
 
 def assert_is_int64(x):
     """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
     if not is_integral(x):
-        raise TypeError('Not an integer: %s' % x)
+        raise TypeError("Not an integer: %s" % x)
     if x < INT_MIN or x > INT_MAX:
-        raise OverflowError('Does not fit in an int64_t: %s' % x)
+        raise OverflowError("Does not fit in an int64_t: %s" % x)
     return int(x)
 
 
 def assert_is_int32(x):
     """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
     if not is_integral(x):
-        raise TypeError('Not an integer: %s' % x)
+        raise TypeError("Not an integer: %s" % x)
     if x < INT32_MIN or x > INT32_MAX:
-        raise OverflowError('Does not fit in an int32_t: %s' % x)
+        raise OverflowError("Does not fit in an int32_t: %s" % x)
     return int(x)
 
 
 def assert_is_boolean(x):
     """Asserts that x is 0 or 1."""
     if not is_integral(x) or x < 0 or x > 1:
-        raise TypeError('Not a boolean: %s' % x)
+        raise TypeError("Not a boolean: %s" % x)
 
 
 def assert_is_a_number(x):
     """Asserts that x is a number and returns it."""
     if not is_a_number(x):
-        raise TypeError('Not a number: %s' % x)
+        raise TypeError("Not a number: %s" % x)
     elif is_integral(x):
         return int(x)
     else:
@@ -101,8 +102,7 @@ def capped_subtraction(x, y):
         return x
     if x == y:
         if x == INT_MAX or x == INT_MIN:
-            raise OverflowError(
-                'Integer NaN: subtracting INT_MAX or INT_MIN to itself')
+            raise OverflowError("Integer NaN: subtracting INT_MAX or INT_MIN to itself")
         return 0
     if x == INT_MAX or x == INT_MIN:
         return x

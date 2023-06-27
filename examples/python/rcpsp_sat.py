@@ -27,18 +27,18 @@ from absl import app
 from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
-from ortools.scheduling import pywraprcpsp
 from ortools.scheduling import rcpsp_pb2
-
-FLAGS = flags.FLAGS
+from ortools.scheduling import pywraprcpsp
 
 _INPUT = flags.DEFINE_string('input', '', 'Input file to parse and solve.')
 _OUTPUT_PROTO = flags.DEFINE_string(
     'output_proto', '', 'Output file to write the cp_model proto to.')
 _PARAMS = flags.DEFINE_string('params', '', 'Sat solver parameters.')
 _USE_INTERVAL_MAKESPAN = flags.DEFINE_bool(
-    'use_interval_makespan', True,
-    'Whether we encode the makespan using an interval or not.')
+    'use_interval_makespan',
+    False,
+    'Whether we encode the makespan using an interval or not.',
+)
 _HORIZON = flags.DEFINE_integer('horizon', -1, 'Force horizon.')
 _ADD_REDUNDANT_ENERGETIC_CONSTRAINTS = flags.DEFINE_bool(
     'add_redundant_energetic_constraints', False,
@@ -213,7 +213,7 @@ def SolveRcpsp(problem,
     lower_bound: A valid lower bound of the makespan objective.
 
   Returns:
-    (lower_bound of the objective, best solution found, asssignment)
+    (lower_bound of the objective, best solution found, assignment)
   """
     # Create the model.
     model = cp_model.CpModel()
@@ -350,8 +350,7 @@ def SolveRcpsp(problem,
             task = problem.tasks[task_id]
             num_modes = len(task.recipes)
 
-            for successor_index in range(len(task.successors)):
-                next_id = task.successors[successor_index]
+            for successor_index, next_id in enumerate(task.successors):
                 delay_matrix = task.successor_delays[successor_index]
                 num_next_modes = len(problem.tasks[next_id].recipes)
                 for m1 in range(num_modes):
@@ -510,6 +509,9 @@ def SolveRcpsp(problem,
 
     # Solve model.
     solver = cp_model.CpSolver()
+    if not _USE_INTERVAL_MAKESPAN.value:
+        solver.parameters.exploit_all_precedences = True
+        solver.parameters.use_hard_precedences_in_cumulative = True
     if params:
         text_format.Parse(params, solver.parameters)
     if in_main_solve:
@@ -517,7 +519,7 @@ def SolveRcpsp(problem,
     status = solver.Solve(model)
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         assignment = rcpsp_pb2.RcpspAssignment()
-        for t in range(len(problem.tasks)):
+        for t, _ in enumerate(problem.tasks):
             if t in task_starts:
                 assignment.start_of_task.append(solver.Value(task_starts[t]))
                 for r in range(len(task_to_presence_literals[t])):
@@ -666,7 +668,7 @@ def ComputePreemptiveLowerBound(problem, after, lower_bound):
         min_duration = max_duration
         for t in c:
             min_duration = min(min_duration, duration_map[t])
-        count = model.NewIntVar(0, min_duration, f'count_{t}')
+        count = model.NewIntVar(0, min_duration, f'count_{c}')
         all_vars.append(count)
         for t in c:
             vars_per_task[t].append(count)

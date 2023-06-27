@@ -44,7 +44,8 @@ def main():
     # [START constraints]
     # Add arcs, capacities and costs in bulk using numpy.
     all_arcs = smcf.add_arcs_with_capacity_and_unit_cost(
-        start_nodes, end_nodes, capacities, unit_costs)
+        start_nodes, end_nodes, capacities, unit_costs
+    )
 
     # Add supply for each nodes.
     smcf.set_nodes_supplies(np.arange(0, len(supplies)), supplies)
@@ -57,21 +58,21 @@ def main():
 
     # [START print_solution]
     if status != smcf.OPTIMAL:
-        print('There was an issue with the min cost flow input.')
-        print(f'Status: {status}')
+        print("There was an issue with the min cost flow input.")
+        print(f"Status: {status}")
         exit(1)
-    print(f'Minimum cost: {smcf.optimal_cost()}')
-    print('')
-    print(' Arc    Flow / Capacity Cost')
+    print(f"Minimum cost: {smcf.optimal_cost()}")
+    print("")
+    print(" Arc    Flow / Capacity Cost")
     solution_flows = smcf.flows(all_arcs)
     costs = solution_flows * unit_costs
     for arc, flow, cost in zip(all_arcs, solution_flows, costs):
         print(
-            f'{smcf.tail(arc):1} -> {smcf.head(arc)}  {flow:3}  / {smcf.capacity(arc):3}       {cost}'
+            f"{smcf.tail(arc):1} -> {smcf.head(arc)}  {flow:3}  / {smcf.capacity(arc):3}       {cost}"
         )
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]
