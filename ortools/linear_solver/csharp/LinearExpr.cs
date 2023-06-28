@@ -23,6 +23,11 @@ public class LinearExpr
         return 0;
     }
 
+    public virtual double SolutionValue()
+    {
+        return 0;
+    }
+
     public double Visit(Dictionary<Variable, double> coefficients)
     {
         return DoVisit(coefficients, 1.0);
@@ -185,6 +190,11 @@ class ProductCst : LinearExpr
         }
     }
 
+    public override double SolutionValue()
+    {
+        return expr_.SolutionValue() * coeff_;
+    }
+    
     private LinearExpr expr_;
     private double coeff_;
 }
@@ -212,6 +222,11 @@ class SumCst : LinearExpr
         {
             return 0.0;
         }
+    }
+    
+    public override double SolutionValue()
+    {
+        return expr_.SolutionValue() + coeff_;
     }
 
     private LinearExpr expr_;
@@ -246,6 +261,11 @@ class VarWrapper : LinearExpr
         return 0.0;
     }
 
+    public override double SolutionValue()
+    {
+        return var_.SolutionValue();
+    }
+
     private Variable var_;
 }
 
@@ -272,6 +292,11 @@ class Sum : LinearExpr
         {
             return 0.0;
         }
+    }
+
+    public override double SolutionValue()
+    {
+        return left_.SolutionValue() + right_.SolutionValue();
     }
 
     private LinearExpr left_;
@@ -302,6 +327,16 @@ public class SumArray : LinearExpr
         }
     }
 
+    public override double SolutionValue()
+    {
+        double sum = 0.0;
+        foreach (LinearExpr expr in array_)
+        {
+            sum += expr.SolutionValue();
+        }
+        return sum;
+    }
+
     private LinearExpr[] array_;
 }
 
@@ -329,6 +364,16 @@ public class SumVarArray : LinearExpr
             }
         }
         return 0.0;
+    }
+
+    public override double SolutionValue()
+    {
+        double sum = 0.0;
+        foreach (Variable var in array_)
+        {
+            sum += var.SolutionValue();
+        }
+        return sum;
     }
 
     private Variable[] array_;
