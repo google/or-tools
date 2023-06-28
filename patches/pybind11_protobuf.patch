@@ -1,0 +1,22 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e936f66..5461aaf 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -57,7 +57,7 @@ target_include_directories(
+ # ============================================================================
+ # pybind11_native_proto_caster shared library
+ add_library(
+-  pybind11_native_proto_caster SHARED
++  pybind11_native_proto_caster STATIC
+   # bazel: pybind_library: native_proto_caster
+   pybind11_protobuf/native_proto_caster.h
+   # bazel: pybind_library: enum_type_caster
+@@ -83,6 +83,8 @@ target_link_libraries(
+ 
+ target_include_directories(
+   pybind11_native_proto_caster
++  PUBLIC
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+   PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
+           ${pybind11_INCLUDE_DIRS})
+ 

@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index ec1641ba9..f4dcc999a 100644
+index dc09f63db..7341519d8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -17,6 +17,12 @@ if (POLICY CMP0077)
@@ -67,3 +67,18 @@ index ec1641ba9..f4dcc999a 100644
    ${protobuf_BINARY_DIR}
    ${protobuf_SOURCE_DIR}/src)
  
+diff --git a/cmake/libprotobuf.cmake b/cmake/libprotobuf.cmake
+index 715ffb51c..16edf9dcf 100644
+--- a/cmake/libprotobuf.cmake
++++ b/cmake/libprotobuf.cmake
+@@ -25,7 +25,9 @@ endif()
+ if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+   target_link_libraries(libprotobuf PRIVATE log)
+ endif()
+-target_include_directories(libprotobuf PUBLIC ${protobuf_SOURCE_DIR}/src)
++target_include_directories(libprotobuf PUBLIC
++  ${protobuf_SOURCE_DIR}/src
++  ${protobuf_SOURCE_DIR})
+ target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})
+ if(protobuf_BUILD_SHARED_LIBS)
+   target_compile_definitions(libprotobuf
