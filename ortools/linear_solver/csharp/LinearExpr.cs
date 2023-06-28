@@ -334,6 +334,7 @@ public class SumArray : LinearExpr
         {
             sum += expr.SolutionValue();
         }
+        return sum;
     }
 
     private LinearExpr[] array_;
@@ -372,6 +373,7 @@ public class SumVarArray : LinearExpr
         {
             sum += var.SolutionValue();
         }
+        return sum;
     }
 
     private Variable[] array_;
