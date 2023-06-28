@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Methods for building and solving model_builder models.
 
 The following two sections describe the main
@@ -41,19 +42,29 @@ from numpy.lib import mixins
 from ortools.linear_solver.python import model_builder_helper as mbh
 from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
 
+
 # Custom types.
 NumberT = Union[numbers.Number, np.number]
 IntegerT = Union[numbers.Integral, np.integer]
-LinearExprT = Union['LinearExpr', NumberT]
-ConstraintT = Union['VarCompVar', 'BoundedLinearExpression', bool]
+LinearExprT = Union["LinearExpr", NumberT]
+ConstraintT = Union["VarCompVar", "BoundedLinearExpression", bool]
 ShapeT = Union[IntegerT, Sequence[IntegerT]]
-VariablesT = Union['VariableContainer', 'Variable']
-NumpyFuncT = Callable[[
-    'VariableContainer',
-    Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
-], LinearExprT,]
-SliceT = Union[slice, int, List[int], 'ellipsis',
-               Tuple[Union[int, slice, List[int], 'ellipsis'], ...],]
+VariablesT = Union["VariableContainer", "Variable"]
+NumpyFuncT = Callable[
+    [
+        "VariableContainer",
+        Optional[Union[NumberT, npt.NDArray[np.number], Sequence[NumberT]]],
+    ],
+    LinearExprT,
+]
+SliceT = Union[
+    slice,
+    int,
+    List[int],
+    "ellipsis",
+    Tuple[Union[int, slice, List[int], "ellipsis"], ...],
+]
+
 
 # Forward solve statuses.
 SolveStatus = pwmb.SolveStatus
@@ -62,62 +73,60 @@ SolveStatus = pwmb.SolveStatus
 class LinearExpr:
     """Holds an linear expression.
 
-  A linear expression is built from constants and variables.
-  For example, `x + 2.0 * (y - z + 1.0)`.
+    A linear expression is built from constants and variables.
+    For example, `x + 2.0 * (y - z + 1.0)`.
 
-  Linear expressions are used in ModelBuilder models in constraints and in the
-  objective:
+    Linear expressions are used in ModelBuilder models in constraints and in the
+    objective:
 
-  * You can define linear constraints as in:
+    * You can define linear constraints as in:
 
-  ```
-  model.add(x + 2 * y <= 5.0)
-  model.add(sum(array_of_vars) == 5.0)
-  ```
+    ```
+    model.add(x + 2 * y <= 5.0)
+    model.add(sum(array_of_vars) == 5.0)
+    ```
 
-  * In ModelBuilder, the objective is a linear expression:
+    * In ModelBuilder, the objective is a linear expression:
 
-  ```
-  model.minimize(x + 2.0 * y + z)
-  ```
+    ```
+    model.minimize(x + 2.0 * y + z)
+    ```
 
-  * For large arrays, using the LinearExpr class is faster that using the python
-  `sum()` function. You can create constraints and the objective from lists of
-  linear expressions or coefficients as follows:
+    * For large arrays, using the LinearExpr class is faster that using the python
+    `sum()` function. You can create constraints and the objective from lists of
+    linear expressions or coefficients as follows:
 
-  ```
-  model.minimize(model_builder.LinearExpr.sum(expressions))
-  model.add(model_builder.LinearExpr.weighted_sum(expressions, coeffs) >= 0)
-  ```
-  """
+    ```
+    model.minimize(model_builder.LinearExpr.sum(expressions))
+    model.add(model_builder.LinearExpr.weighted_sum(expressions, coeffs) >= 0)
+    ```
+    """
 
     @classmethod
     def sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
-            cls,
-            expressions: Sequence[LinearExprT],
-            *,
-            constant: NumberT = 0.0) -> LinearExprT:
+        cls, expressions: Sequence[LinearExprT], *, constant: NumberT = 0.0
+    ) -> LinearExprT:
         """Creates `sum(expressions) + constant`.
 
-    It can perform simple simplifications and returns different objects,
-    including the input.
+        It can perform simple simplifications and returns different objects,
+        including the input.
 
-    Args:
-      expressions: a sequence of linear expressions or constants.
-      constant: a numerical constant.
+        Args:
+          expressions: a sequence of linear expressions or constants.
+          constant: a numerical constant.
 
-    Returns:
-      a LinearExpr instance or a numerical constant.
-    """
+        Returns:
+          a LinearExpr instance or a numerical constant.
+        """
         checked_constant: np.double = mbh.assert_is_a_number(constant)
         if not expressions:
             return checked_constant
         if len(expressions) == 1 and mbh.is_zero(checked_constant):
             return expressions[0]
 
-        return LinearExpr.weighted_sum(expressions,
-                                       np.ones(len(expressions)),
-                                       constant=checked_constant)
+        return LinearExpr.weighted_sum(
+            expressions, np.ones(len(expressions)), constant=checked_constant
+        )
 
     @classmethod
     def weighted_sum(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
@@ -129,21 +138,22 @@ class LinearExpr:
     ) -> LinearExprT:
         """Creates `sum(expressions[i] * coefficients[i]) + constant`.
 
-    It can perform simple simplifications and returns different object,
-    including the input.
+        It can perform simple simplifications and returns different object,
+        including the input.
 
-    Args:
-      expressions: a sequence of linear expressions or constants.
-      coefficients: a sequence of numerical constants.
-      constant: a numerical constant.
+        Args:
+          expressions: a sequence of linear expressions or constants.
+          coefficients: a sequence of numerical constants.
+          constant: a numerical constant.
 
-    Returns:
-      a LinearExpr instance or a numerical constant.
-    """
+        Returns:
+          a LinearExpr instance or a numerical constant.
+        """
         if len(expressions) != len(coefficients):
             raise ValueError(
-                'LinearExpr.weighted_sum: expressions and coefficients have'
-                ' different lengths')
+                "LinearExpr.weighted_sum: expressions and coefficients have"
+                " different lengths"
+            )
         checked_constant: np.double = mbh.assert_is_a_number(constant)
         if not expressions:
             return checked_constant
@@ -183,16 +193,16 @@ class LinearExpr:
     ) -> LinearExprT:
         """Creates `expression * coefficient + constant`.
 
-    It can perform simple simplifications and returns different object,
-    including the input.
-    Args:
-      expression: a linear expression or a constant.
-      coefficient: a numerical constant.
-      constant: a numerical constant.
+        It can perform simple simplifications and returns different object,
+        including the input.
+        Args:
+          expression: a linear expression or a constant.
+          coefficient: a numerical constant.
+          constant: a numerical constant.
 
-    Returns:
-      a LinearExpr instance or a numerical constant.
-    """
+        Returns:
+          a LinearExpr instance or a numerical constant.
+        """
         checked_coefficient: np.double = mbh.assert_is_a_number(coefficient)
         checked_constant: np.double = mbh.assert_is_a_number(constant)
 
@@ -201,8 +211,7 @@ class LinearExpr:
         if mbh.is_one(checked_coefficient) and mbh.is_zero(checked_constant):
             return expression
         if mbh.is_a_number(expression):
-            return np.double(
-                expression) * checked_coefficient + checked_constant
+            return np.double(expression) * checked_coefficient + checked_constant
         if isinstance(expression, Variable):
             return _WeightedSum(
                 variable_indices=np.array([expression.index], dtype=np.int32),
@@ -213,11 +222,9 @@ class LinearExpr:
             return _WeightedSum(
                 variable_indices=np.copy(expression.variable_indices),
                 coefficients=expression.coefficients * checked_coefficient,
-                constant=expression.constant * checked_coefficient +
-                checked_constant,
+                constant=expression.constant * checked_coefficient + checked_constant,
             )
-        raise TypeError(
-            f'Unknown expression {expression!r} of type {type(expression)}')
+        raise TypeError(f"Unknown expression {expression!r} of type {type(expression)}")
 
     def __hash__(self):
         return object.__hash__(self)
@@ -228,7 +235,9 @@ class LinearExpr:
     def __add__(self, arg: LinearExprT) -> LinearExprT:
         if mbh.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg)
-        return LinearExpr.weighted_sum([self, arg], [1.0, 1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return LinearExpr.weighted_sum(
+            [self, arg], [1.0, 1.0], constant=0.0
+        )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __radd__(self, arg: LinearExprT):
         return self.__add__(arg)
@@ -236,10 +245,14 @@ class LinearExpr:
     def __sub__(self, arg: LinearExprT):
         if mbh.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg * -1.0)
-        return LinearExpr.weighted_sum([self, arg], [1.0, -1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return LinearExpr.weighted_sum(
+            [self, arg], [1.0, -1.0], constant=0.0
+        )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __rsub__(self, arg: LinearExprT):
-        return LinearExpr.weighted_sum([self, arg], [-1.0, 1.0], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return LinearExpr.weighted_sum(
+            [self, arg], [-1.0, 1.0], constant=0.0
+        )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __mul__(self, arg: NumberT):
         arg = mbh.assert_is_a_number(arg)
@@ -250,7 +263,7 @@ class LinearExpr:
         return self.multiply_by(arg)
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
-        raise NotImplementedError('LinearExpr.multiply_by')
+        raise NotImplementedError("LinearExpr.multiply_by")
 
     def __rmul__(self, arg: NumberT):
         return self.__mul__(arg)
@@ -258,8 +271,7 @@ class LinearExpr:
     def __div__(self, arg: NumberT):
         coeff = mbh.assert_is_a_number(arg)
         if mbh.is_zero(coeff):
-            raise ValueError(
-                'Cannot call the division operator with a zero divisor')
+            raise ValueError("Cannot call the division operator with a zero divisor")
         return self.__mul__(1.0 / coeff)
 
     def __truediv__(self, _):
@@ -287,36 +299,47 @@ class LinearExpr:
         return NotImplemented
 
     def __neg__(self):
-        return self.__mul__(-1.0)  # pytype: disable=unsupported-operands  # numpy-scalars
+        return self.__mul__(
+            -1.0
+        )  # pytype: disable=unsupported-operands  # numpy-scalars
 
     def __bool__(self):
-        raise NotImplementedError(
-            f'Cannot use a LinearExpr {self} as a Boolean value')
+        raise NotImplementedError(f"Cannot use a LinearExpr {self} as a Boolean value")
 
     def __eq__(
-            self, arg: Optional[LinearExprT]
-    ) -> Union[bool, 'BoundedLinearExpression']:
+        self, arg: Optional[LinearExprT]
+    ) -> Union[bool, "BoundedLinearExpression"]:
         if arg is None:
             return False
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
             return BoundedLinearExpression(self, arg, arg)
         else:
-            return BoundedLinearExpression(self - arg, 0, 0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return BoundedLinearExpression(
+                self - arg, 0, 0
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
-    def __ge__(self, arg: LinearExprT) -> 'BoundedLinearExpression':
+    def __ge__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
-            return BoundedLinearExpression(self, arg, math.inf)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return BoundedLinearExpression(
+                self, arg, math.inf
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
-            return BoundedLinearExpression(self - arg, 0, math.inf)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return BoundedLinearExpression(
+                self - arg, 0, math.inf
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
-    def __le__(self, arg: LinearExprT) -> 'BoundedLinearExpression':
+    def __le__(self, arg: LinearExprT) -> "BoundedLinearExpression":
         if mbh.is_a_number(arg):
             arg = mbh.assert_is_a_number(arg)
-            return BoundedLinearExpression(self, -math.inf, arg)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return BoundedLinearExpression(
+                self, -math.inf, arg
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
-            return BoundedLinearExpression(self - arg, -math.inf, 0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return BoundedLinearExpression(
+                self - arg, -math.inf, 0
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ne__(self, arg: LinearExprT):
         return NotImplemented
@@ -332,16 +355,17 @@ class _WeightedSum(LinearExpr):
     """Represents sum(ai * xi) + b."""
 
     def __init__(
-            self,
-            *,
-            variable_indices: npt.NDArray[np.int32],
-            coefficients: npt.NDArray[np.double],
-            constant: np.double = np.double(0.0),
+        self,
+        *,
+        variable_indices: npt.NDArray[np.int32],
+        coefficients: npt.NDArray[np.double],
+        constant: np.double = np.double(0.0),
     ):
         super().__init__()
         self.__variable_indices: npt.NDArray[np.int32] = variable_indices
-        self.__coefficients: npt.NDArray[
-            np.double] = mbh.assert_is_a_number_array(coefficients)
+        self.__coefficients: npt.NDArray[np.double] = mbh.assert_is_a_number_array(
+            coefficients
+        )
         self.__constant: np.double = constant
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
@@ -370,51 +394,53 @@ class _WeightedSum(LinearExpr):
 
     def pretty_string(self, helper: pwmb.ModelBuilderHelper) -> str:
         """Pretty print a linear expression into a string."""
-        output: str = ''
+        output: str = ""
         for index, coeff in zip(self.variable_indices, self.coefficients):
             var_name = helper.var_name(index)
             if not var_name:
-                var_name = f'unnamed_var_{index}'
+                var_name = f"unnamed_var_{index}"
 
             if not output and mbh.is_one(coeff):
                 output = var_name
             elif not output and mbh.is_minus_one(coeff):
-                output = f'-{var_name}'
+                output = f"-{var_name}"
             elif not output:
-                output = f'{coeff} * {var_name}'
+                output = f"{coeff} * {var_name}"
             elif mbh.is_one(coeff):
-                output += f' + {var_name}'
+                output += f" + {var_name}"
             elif mbh.is_minus_one(coeff):
-                output += f' - {var_name}'
+                output += f" - {var_name}"
             elif coeff > 0.0:
-                output += f' + {coeff} * {var_name}'
+                output += f" + {coeff} * {var_name}"
             elif coeff < 0.0:
-                output += ' - {-coeff} * {var_name}'
+                output += " - {-coeff} * {var_name}"
         if self.constant > 0:
-            output += f' + {self.constant}'
+            output += f" + {self.constant}"
         elif self.constant < 0:
-            output += f' - {-self.constant}'
+            output += f" - {-self.constant}"
         if not output:
-            output = '0.0'
+            output = "0.0"
         return output
 
     def __repr__(self):
-        return (f'WeightedSum(indices = {self.variable_indices}, coefficients ='
-                f' {self.coefficients}, constant = {self.constant})')
+        return (
+            f"WeightedSum(indices = {self.variable_indices}, coefficients ="
+            f" {self.coefficients}, constant = {self.constant})"
+        )
 
 
 class Variable(LinearExpr):
     """A variable (continuous or integral).
 
-  A Variable is an object that can take on any integer value within defined
-  ranges. Variables appear in constraint like:
+    A Variable is an object that can take on any integer value within defined
+    ranges. Variables appear in constraint like:
 
-      x + y >= 5
+        x + y >= 5
 
-  Solving a model is equivalent to finding, for each variable, a single value
-  from the set of initial values (called the initial domain), such that the
-  model is feasible, or optimal if you provided an objective function.
-  """
+    Solving a model is equivalent to finding, for each variable, a single value
+    from the set of initial values (called the initial domain), such that the
+    model is feasible, or optimal if you provided an objective function.
+    """
 
     def __init__(
         self,
@@ -469,9 +495,9 @@ class Variable(LinearExpr):
         name = self.__helper.var_name(self.__index)
         if not name:
             if self.__helper.VarIsInteger(self.__index):
-                return 'unnamed_int_var_%i' % self.__index
+                return "unnamed_int_var_%i" % self.__index
             else:
-                return 'unnamed_num_var_%i' % self.__index
+                return "unnamed_num_var_%i" % self.__index
         return name
 
     def __repr__(self) -> str:
@@ -482,14 +508,14 @@ class Variable(LinearExpr):
         is_integer = self.__helper.var_is_integral(index)
         if name:
             if is_integer:
-                return f'{name}(index={index}, lb={lb}, ub={ub}, integer)'
+                return f"{name}(index={index}, lb={lb}, ub={ub}, integer)"
             else:
-                return f'{name}(index={index}, lb={lb}, ub={ub})'
+                return f"{name}(index={index}, lb={lb}, ub={ub})"
         else:
             if is_integer:
-                return f'unnamed_var(index={index}, lb={lb}, ub={ub}, integer)'
+                return f"unnamed_var(index={index}, lb={lb}, ub={ub}, integer)"
             else:
-                return f'unnamed_var(index={index}, lb={lb}, ub={ub})'
+                return f"unnamed_var(index={index}, lb={lb}, ub={ub})"
 
     @property
     def name(self) -> str:
@@ -549,7 +575,9 @@ class Variable(LinearExpr):
                 arg = mbh.assert_is_a_number(arg)
                 return BoundedLinearExpression(self, arg, arg)
             else:
-                return BoundedLinearExpression(self - arg, 0.0, 0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+                return BoundedLinearExpression(
+                    self - arg, 0.0, 0.0
+                )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ne__(self, arg: LinearExprT) -> ConstraintT:
         if arg is None:
@@ -562,7 +590,9 @@ class Variable(LinearExpr):
         return hash((self.__helper, self.__index))
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
-        return LinearExpr.weighted_sum([self], [arg], constant=0.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return LinearExpr.weighted_sum(
+            [self], [arg], constant=0.0
+        )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
 
 _REGISTERED_NUMPY_VARIABLE_FUNCS: Dict[Any, NumpyFuncT] = {}
@@ -571,8 +601,7 @@ _REGISTERED_NUMPY_VARIABLE_FUNCS: Dict[Any, NumpyFuncT] = {}
 class VariableContainer(mixins.NDArrayOperatorsMixin):
     """Variable container."""
 
-    def __init__(self, helper: pwmb.ModelBuilderHelper,
-                 indices: npt.NDArray[np.int32]):
+    def __init__(self, helper: pwmb.ModelBuilderHelper, indices: npt.NDArray[np.int32]):
         self.__helper: pwmb.ModelBuilderHelper = helper
         self.__variable_indices: npt.NDArray[np.int32] = indices
 
@@ -582,8 +611,9 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
 
     def __getitem__(self, pos: SliceT) -> VariablesT:
         # delegate the treatment of the 'pos' query to __variable_indices.
-        index_or_slice: Union[np.int32, npt.NDArray[np.int32]] = (
-            self.__variable_indices[pos])
+        index_or_slice: Union[
+            np.int32, npt.NDArray[np.int32]
+        ] = self.__variable_indices[pos]
         if np.isscalar(index_or_slice):
             return Variable(self.__helper, index_or_slice, None, None, None)
         else:
@@ -595,7 +625,7 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
 
     # pylint: disable=invalid-name
     @property
-    def T(self) -> 'VariableContainer':
+    def T(self) -> "VariableContainer":
         """Returns a view upon the transposed numpy array of variables."""
         return VariableContainer(self.__helper, self.__variable_indices.T)
 
@@ -611,22 +641,19 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
         """Returns the number of variables in the numpy array."""
         return self.__variable_indices.size
 
-    def ravel(self) -> 'VariableContainer':
+    def ravel(self) -> "VariableContainer":
         """returns the ravel array of variables."""
         return VariableContainer(self.__helper, self.__variable_indices.ravel())
 
-    def flatten(self) -> 'VariableContainer':
+    def flatten(self) -> "VariableContainer":
         """returns the flattened array of variables."""
-        return VariableContainer(self.__helper,
-                                 self.__variable_indices.flatten())
+        return VariableContainer(self.__helper, self.__variable_indices.flatten())
 
     def __str__(self) -> str:
-        return f'VariableContainer({self.__variable_indices})'
+        return f"VariableContainer({self.__variable_indices})"
 
     def __repr__(self) -> str:
-        return (
-            f'VariableContainer({self.__helper}, {repr(self.__variable_indices)})'
-        )
+        return f"VariableContainer({self.__helper}, {repr(self.__variable_indices)})"
 
     def __len__(self):
         return self.__variable_indices.shape[0]
@@ -634,12 +661,13 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
     def __array_ufunc__(
         self,
         ufunc: np.ufunc,
-        method: Literal['__call__', 'reduce', 'reduceat', 'accumulate', 'outer',
-                        'inner'],
+        method: Literal[
+            "__call__", "reduce", "reduceat", "accumulate", "outer", "inner"
+        ],
         *inputs: Any,
         **kwargs: Any,
     ) -> LinearExprT:
-        if method != '__call__':
+        if method != "__call__":
             return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
         function = _REGISTERED_NUMPY_VARIABLE_FUNCS.get(ufunc)
         if function is None:
@@ -650,8 +678,9 @@ class VariableContainer(mixins.NDArrayOperatorsMixin):
             return function(inputs[1], inputs[0], **kwargs)
         return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
 
-    def __array_function__(self, func: Any, types: Any, inputs: Any,
-                           kwargs: Any) -> LinearExprT:
+    def __array_function__(
+        self, func: Any, types: Any, inputs: Any, kwargs: Any
+    ) -> LinearExprT:
         function = _REGISTERED_NUMPY_VARIABLE_FUNCS.get(func)
         if function is None:
             return NotImplemented  # pytype: disable=bad-return-type  # numpy-scalars
@@ -674,8 +703,8 @@ def _implements(np_function: Any) -> Callable[[NumpyFuncT], NumpyFuncT]:
 
 @_implements(np.sum)
 def sum_variable_container(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
-        container: VariableContainer,
-        constant: NumberT = 0.0) -> LinearExprT:
+    container: VariableContainer, constant: NumberT = 0.0
+) -> LinearExprT:
     """Implementation of np.sum for VariableContainer objects."""
     indices: npt.NDArray[np.int32] = container.variable_indices
     return _WeightedSum(
@@ -693,8 +722,9 @@ def dot_variable_container(
     """Implementation of np.dot for VariableContainer objects."""
     if len(container.shape) != 1:
         raise ValueError(
-            'dot_variable_container only supports 1D variable containers (shape ='
-            f' {container.shape})')
+            "dot_variable_container only supports 1D variable containers (shape ="
+            f" {container.shape})"
+        )
     indices: npt.NDArray[np.int32] = container.variable_indices
     if np.isscalar(arg):
         return _WeightedSum(
@@ -722,12 +752,12 @@ class VarCompVar:
 
     def __str__(self) -> str:
         if self.__is_equality:
-            return f'{self.__left} == {self.__right}'
+            return f"{self.__left} == {self.__right}"
         else:
-            return f'{self.__left} != {self.__right}'
+            return f"{self.__left} != {self.__right}"
 
     def __repr__(self) -> str:
-        return f'VarCompVar({self.__left}, {self.__right}, {self.__is_equality})'
+        return f"VarCompVar({self.__left}, {self.__right}, {self.__is_equality})"
 
     @property
     def left(self) -> Variable:
@@ -742,19 +772,18 @@ class VarCompVar:
         return self.__is_equality
 
     def __bool__(self) -> bool:
-        return bool(
-            self.__left.index == self.__right.index) == self.__is_equality
+        return bool(self.__left.index == self.__right.index) == self.__is_equality
 
 
 # TODO(user): investigate storing left and right expressions.
 class BoundedLinearExpression:
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
-  The only use of this class is to be added to the ModelBuilder through
-  `ModelBuilder.add(bounded expression)`, as in:
+    The only use of this class is to be added to the ModelBuilder through
+    `ModelBuilder.add(bounded expression)`, as in:
 
-      model.Add(x + 2 * y -1 >= z)
-  """
+        model.Add(x + 2 * y -1 >= z)
+    """
 
     def __init__(self, expr: LinearExprT, lb: NumberT, ub: NumberT):
         self.__expr: LinearExprT = expr
@@ -764,16 +793,17 @@ class BoundedLinearExpression:
     def __str__(self) -> str:
         if self.__lb > -math.inf and self.__ub < math.inf:
             if self.__lb == self.__ub:
-                return str(self.__expr) + ' == ' + str(self.__lb)
+                return str(self.__expr) + " == " + str(self.__lb)
             else:
-                return str(self.__lb) + ' <= ' + str(
-                    self.__expr) + ' <= ' + str(self.__ub)
+                return (
+                    str(self.__lb) + " <= " + str(self.__expr) + " <= " + str(self.__ub)
+                )
         elif self.__lb > -math.inf:
-            return str(self.__expr) + ' >= ' + str(self.__lb)
+            return str(self.__expr) + " >= " + str(self.__lb)
         elif self.__ub < math.inf:
-            return str(self.__expr) + ' <= ' + str(self.__ub)
+            return str(self.__expr) + " <= " + str(self.__ub)
         else:
-            return 'True (unbounded expr ' + str(self.__expr) + ')'
+            return "True (unbounded expr " + str(self.__expr) + ")"
 
     @property
     def expression(self) -> LinearExprT:
@@ -789,18 +819,19 @@ class BoundedLinearExpression:
 
     def __bool__(self) -> bool:
         raise NotImplementedError(
-            f'Cannot use a BoundedLinearExpression {self} as a Boolean value')
+            f"Cannot use a BoundedLinearExpression {self} as a Boolean value"
+        )
 
 
 class LinearConstraint:
     """Stores a linear equation.
 
-  Example:
-      x = model.new_num_var(0, 10, 'x')
-      y = model.new_num_var(0, 10, 'y')
+    Example:
+        x = model.new_num_var(0, 10, 'x')
+        y = model.new_num_var(0, 10, 'y')
 
-      linear_constraint = model.add(x + 2 * y == 5)
-  """
+        linear_constraint = model.add(x + 2 * y == 5)
+    """
 
     def __init__(self, helper: pwmb.ModelBuilderHelper):
         self.__index: np.int32 = helper.add_linear_constraint()
@@ -847,70 +878,71 @@ class LinearConstraint:
 class ModelBuilder:
     """Methods for building a linear model.
 
-  Methods beginning with:
+    Methods beginning with:
 
-  * ```new_``` create integer, boolean, or interval variables.
-  * ```add_``` create new constraints and add them to the model.
-  """
+    * ```new_``` create integer, boolean, or interval variables.
+    * ```add_``` create new constraints and add them to the model.
+    """
 
     def __init__(self):
         self.__helper: pwmb.ModelBuilderHelper = pwmb.ModelBuilderHelper()
 
     # Integer variable.
 
-    def new_var(self, lb: NumberT, ub: NumberT, is_integer: bool,
-                name: Optional[str]) -> Variable:
+    def new_var(
+        self, lb: NumberT, ub: NumberT, is_integer: bool, name: Optional[str]
+    ) -> Variable:
         """Create an integer variable with domain [lb, ub].
 
-    Args:
-      lb: Lower bound of the variable.
-      ub: Upper bound of the variable.
-      is_integer: Indicates if the variable must take integral values.
-      name: The name of the variable.
+        Args:
+          lb: Lower bound of the variable.
+          ub: Upper bound of the variable.
+          is_integer: Indicates if the variable must take integral values.
+          name: The name of the variable.
 
-    Returns:
-      a variable whose domain is [lb, ub].
-    """
+        Returns:
+          a variable whose domain is [lb, ub].
+        """
 
         return Variable(self.__helper, lb, ub, is_integer, name)
 
-    def new_int_var(self,
-                    lb: NumberT,
-                    ub: NumberT,
-                    name: Optional[str] = None) -> Variable:
+    def new_int_var(
+        self, lb: NumberT, ub: NumberT, name: Optional[str] = None
+    ) -> Variable:
         """Create an integer variable with domain [lb, ub].
 
-    Args:
-      lb: Lower bound of the variable.
-      ub: Upper bound of the variable.
-      name: The name of the variable.
+        Args:
+          lb: Lower bound of the variable.
+          ub: Upper bound of the variable.
+          name: The name of the variable.
 
-    Returns:
-      a variable whose domain is [lb, ub].
-    """
+        Returns:
+          a variable whose domain is [lb, ub].
+        """
 
         return self.new_var(lb, ub, True, name)
 
-    def new_num_var(self,
-                    lb: NumberT,
-                    ub: NumberT,
-                    name: Optional[str] = None) -> Variable:
+    def new_num_var(
+        self, lb: NumberT, ub: NumberT, name: Optional[str] = None
+    ) -> Variable:
         """Create an integer variable with domain [lb, ub].
 
-    Args:
-      lb: Lower bound of the variable.
-      ub: Upper bound of the variable.
-      name: The name of the variable.
+        Args:
+          lb: Lower bound of the variable.
+          ub: Upper bound of the variable.
+          name: The name of the variable.
 
-    Returns:
-      a variable whose domain is [lb, ub].
-    """
+        Returns:
+          a variable whose domain is [lb, ub].
+        """
 
         return self.new_var(lb, ub, False, name)
 
     def new_bool_var(self, name: Optional[str] = None) -> Variable:
         """Creates a 0-1 variable with the given name."""
-        return self.new_var(0, 1, True, name)  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return self.new_var(
+            0, 1, True, name
+        )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def new_constant(self, value: NumberT) -> Variable:
         """Declares a constant variable."""
@@ -935,35 +967,41 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, is_integral and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, is_integral and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, is_integral and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, is_integral and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if not np.isscalar(is_integral):
             if shape is None:
                 shape = np.shape(is_integral)
             elif shape != np.shape(is_integral):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, is_integral and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, is_integral and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if shape is None:
-            raise ValueError('a shape must be defined')
+            raise ValueError("a shape must be defined")
 
-        name = name or ''
+        name = name or ""
 
-        if (np.isscalar(lower_bounds) and np.isscalar(upper_bounds) and
-                np.isscalar(is_integral)):
-            var_indices = self.__helper.add_var_array(shape, lower_bounds,
-                                                      upper_bounds, is_integral,
-                                                      name)
+        if (
+            np.isscalar(lower_bounds)
+            and np.isscalar(upper_bounds)
+            and np.isscalar(is_integral)
+        ):
+            var_indices = self.__helper.add_var_array(
+                shape, lower_bounds, upper_bounds, is_integral, name
+            )
             return VariableContainer(self.__helper, var_indices)
 
         # Convert scalars to np.arrays if needed.
@@ -975,7 +1013,8 @@ class ModelBuilder:
             is_integral = np.full(shape, is_integral)
 
         var_indices = self.__helper.add_var_array_with_bounds(
-            lower_bounds, upper_bounds, is_integral, name)
+            lower_bounds, upper_bounds, is_integral, name
+        )
         return VariableContainer(self.__helper, var_indices)
 
     def new_num_var_array(
@@ -996,25 +1035,28 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if shape is None:
-            raise ValueError('a shape must be defined')
+            raise ValueError("a shape must be defined")
 
-        name = name or ''
+        name = name or ""
 
         if np.isscalar(lower_bounds) and np.isscalar(upper_bounds):
-            var_indices = self.__helper.add_var_array(shape, lower_bounds,
-                                                      upper_bounds, False, name)
+            var_indices = self.__helper.add_var_array(
+                shape, lower_bounds, upper_bounds, False, name
+            )
             return VariableContainer(self.__helper, var_indices)
 
         # Convert scalars to np.arrays if needed.
@@ -1024,7 +1066,8 @@ class ModelBuilder:
             upper_bounds = np.full(shape, upper_bounds)
 
         var_indices = self.__helper.add_var_array_with_bounds(
-            lower_bounds, upper_bounds, np.zeros(shape, dtype=bool), name)
+            lower_bounds, upper_bounds, np.zeros(shape, dtype=bool), name
+        )
         return VariableContainer(self.__helper, var_indices)
 
     def new_int_var_array(
@@ -1045,25 +1088,28 @@ class ModelBuilder:
                 shape = np.shape(lower_bounds)
             elif shape != np.shape(lower_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if not np.isscalar(upper_bounds):
             if shape is None:
                 shape = np.shape(upper_bounds)
             elif shape != np.shape(upper_bounds):
                 raise ValueError(
-                    'lower_bounds, upper_bounds, and shape must have'
-                    ' compatible shapes (when defined)')
+                    "lower_bounds, upper_bounds, and shape must have"
+                    " compatible shapes (when defined)"
+                )
 
         if shape is None:
-            raise ValueError('a shape must be defined')
+            raise ValueError("a shape must be defined")
 
-        name = name or ''
+        name = name or ""
 
         if np.isscalar(lower_bounds) and np.isscalar(upper_bounds):
-            var_indices = self.__helper.add_var_array(shape, lower_bounds,
-                                                      upper_bounds, True, name)
+            var_indices = self.__helper.add_var_array(
+                shape, lower_bounds, upper_bounds, True, name
+            )
             return VariableContainer(self.__helper, var_indices)
 
         # Convert scalars to np.arrays if needed.
@@ -1073,7 +1119,8 @@ class ModelBuilder:
             upper_bounds = np.full(shape, upper_bounds)
 
         var_indices = self.__helper.add_var_array_with_bounds(
-            lower_bounds, upper_bounds, np.ones(shape, dtype=bool), name)
+            lower_bounds, upper_bounds, np.ones(shape, dtype=bool), name
+        )
         return VariableContainer(self.__helper, var_indices)
 
     def new_bool_var_array(
@@ -1085,7 +1132,7 @@ class ModelBuilder:
         if mbh.is_integral(shape):
             shape = [shape]
 
-        name = name or ''
+        name = name or ""
 
         var_indices = self.__helper.add_var_array(shape, 0.0, 1.0, True, name)
         return VariableContainer(self.__helper, var_indices)
@@ -1118,53 +1165,61 @@ class ModelBuilder:
         elif isinstance(linear_expr, Variable):
             self.__helper.set_constraint_lower_bound(ct.index, lb)
             self.__helper.set_constraint_upper_bound(ct.index, ub)
-            self.__helper.add_term_to_constraint(ct.index, linear_expr.index,
-                                                 1.0)
+            self.__helper.add_term_to_constraint(ct.index, linear_expr.index, 1.0)
         elif isinstance(linear_expr, _WeightedSum):
-            self.__helper.set_constraint_lower_bound(ct.index,
-                                                     lb - linear_expr.constant)
-            self.__helper.set_constraint_upper_bound(ct.index,
-                                                     ub - linear_expr.constant)
-            self.__helper.add_terms_to_constraint(ct.index,
-                                                  linear_expr.variable_indices,
-                                                  linear_expr.coefficients)
+            self.__helper.set_constraint_lower_bound(
+                ct.index, lb - linear_expr.constant
+            )
+            self.__helper.set_constraint_upper_bound(
+                ct.index, ub - linear_expr.constant
+            )
+            self.__helper.add_terms_to_constraint(
+                ct.index, linear_expr.variable_indices, linear_expr.coefficients
+            )
         else:
             raise TypeError(
-                f'Not supported: ModelBuilder.add_linear_constraint({linear_expr})'
-                f' with type {type(linear_expr)}')
+                f"Not supported: ModelBuilder.add_linear_constraint({linear_expr})"
+                f" with type {type(linear_expr)}"
+            )
         return ct
 
-    def add(self,
-            ct: ConstraintT,
-            name: Optional[str] = None) -> LinearConstraint:
+    def add(self, ct: ConstraintT, name: Optional[str] = None) -> LinearConstraint:
         """Adds a `BoundedLinearExpression` to the model.
 
-    Args:
-      ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
-      name: An optional name.
+        Args:
+          ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+          name: An optional name.
 
-    Returns:
-      An instance of the `Constraint` class.
-    """
+        Returns:
+          An instance of the `Constraint` class.
+        """
         if isinstance(ct, BoundedLinearExpression):
-            return self.add_linear_constraint(ct.expression, ct.lower_bound,
-                                              ct.upper_bound, name)
+            return self.add_linear_constraint(
+                ct.expression, ct.lower_bound, ct.upper_bound, name
+            )
         elif isinstance(ct, VarCompVar):
             if not ct.is_equality:
-                raise TypeError('Not supported: ModelBuilder.Add(' + str(ct) +
-                                ')')
+                raise TypeError("Not supported: ModelBuilder.Add(" + str(ct) + ")")
             new_ct = LinearConstraint(self.__helper)
             new_ct.lower_bound = 0.0
             new_ct.upper_bound = 0.0
-            new_ct.add_term(ct.left, 1.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
-            new_ct.add_term(ct.right, -1.0)  # pytype: disable=wrong-arg-types  # numpy-scalars
+            new_ct.add_term(
+                ct.left, 1.0
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
+            new_ct.add_term(
+                ct.right, -1.0
+            )  # pytype: disable=wrong-arg-types  # numpy-scalars
             return new_ct
         elif ct and isinstance(ct, bool):
-            return self.add_linear_constraint(linear_expr=0.0)  # Evaluate to True.  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return self.add_linear_constraint(
+                linear_expr=0.0
+            )  # Evaluate to True.  # pytype: disable=wrong-arg-types  # numpy-scalars
         elif not ct and isinstance(ct, bool):
-            return self.add_linear_constraint(1.0, 0.0, 0.0)  # Evaluate to False.  # pytype: disable=wrong-arg-types  # numpy-scalars
+            return self.add_linear_constraint(
+                1.0, 0.0, 0.0
+            )  # Evaluate to False.  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
-            raise TypeError('Not supported: ModelBuilder.Add(' + str(ct) + ')')
+            raise TypeError("Not supported: ModelBuilder.Add(" + str(ct) + ")")
 
     @property
     def num_constraints(self) -> int:
@@ -1188,10 +1243,12 @@ class ModelBuilder:
         elif isinstance(linear_expr, _WeightedSum):
             self.helper.set_objective_offset(linear_expr.constant)
             self.__helper.set_objective_coefficients(
-                linear_expr.variable_indices, linear_expr.coefficients)
+                linear_expr.variable_indices, linear_expr.coefficients
+            )
         else:
             raise TypeError(
-                f'Not supported: ModelBuilder.minimize/maximize({linear_expr})')
+                f"Not supported: ModelBuilder.minimize/maximize({linear_expr})"
+            )
 
     @property
     def objective_offset(self) -> np.double:
@@ -1242,17 +1299,18 @@ class ModelBuilder:
 class ModelSolver:
     """Main solver class.
 
-  The purpose of this class is to search for a solution to the model provided
-  to the solve() method.
+    The purpose of this class is to search for a solution to the model provided
+    to the solve() method.
 
-  Once solve() is called, this class allows inspecting the solution found
-  with the value() method, as well as general statistics about the solve
-  procedure.
-  """
+    Once solve() is called, this class allows inspecting the solution found
+    with the value() method, as well as general statistics about the solve
+    procedure.
+    """
 
     def __init__(self, solver_name: str):
         self.__solve_helper: pwmb.ModelSolverHelper = pwmb.ModelSolverHelper(
-            solver_name)
+            solver_name
+        )
         self.log_callback: Optional[Callable[[str], None]] = None
 
     def solver_is_supported(self) -> bool:
@@ -1285,7 +1343,8 @@ class ModelSolver:
         """Checks that solve has run and has found a feasible solution."""
         if not self.__solve_helper.has_solution():
             raise RuntimeError(
-                'solve() has not been called, or no solution has been found.')
+                "solve() has not been called, or no solution has been found."
+            )
 
     def stop_search(self):
         """Stops the current search asynchronously."""
@@ -1299,11 +1358,11 @@ class ModelSolver:
         elif isinstance(expr, Variable):
             return self.__solve_helper.var_value(expr.index)
         elif isinstance(expr, _WeightedSum):
-            return self.__solve_helper.expression_value(expr.variable_indices,
-                                                        expr.coefficients,
-                                                        expr.constant)
+            return self.__solve_helper.expression_value(
+                expr.variable_indices, expr.coefficients, expr.constant
+            )
         else:
-            raise TypeError(f'Unknown expression {expr!r} of type {type(expr)}')
+            raise TypeError(f"Unknown expression {expr!r} of type {type(expr)}")
 
     def reduced_cost(self, var: Variable) -> np.double:
         """Returns the reduced cost of a linear expression after solve."""
@@ -1336,8 +1395,8 @@ class ModelSolver:
     def status_string(self) -> str:
         """Returns additional information of the last solve.
 
-    It can describe why the model is invalid.
-    """
+        It can describe why the model is invalid.
+        """
         return self.__solve_helper.status_string()
 
     @property

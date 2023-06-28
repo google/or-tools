@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Small example to illustrate solving a MIP problem."""
 # [START program]
 # [START import]
@@ -22,16 +23,16 @@ def IntegerProgrammingExample():
     """Integer programming sample."""
     # [START solver]
     # Create the mip solver with the SCIP backend.
-    solver = pywraplp.Solver.CreateSolver('SCIP')
+    solver = pywraplp.Solver.CreateSolver("SCIP")
     if not solver:
         return
     # [END solver]
 
     # [START variables]
     # x, y, and z are non-negative integer variables.
-    x = solver.IntVar(0.0, solver.infinity(), 'x')
-    y = solver.IntVar(0.0, solver.infinity(), 'y')
-    z = solver.IntVar(0.0, solver.infinity(), 'z')
+    x = solver.IntVar(0.0, solver.infinity(), "x")
+    y = solver.IntVar(0.0, solver.infinity(), "y")
+    z = solver.IntVar(0.0, solver.infinity(), "z")
     # [END variables]
 
     # [START constraints]
@@ -67,11 +68,11 @@ def IntegerProgrammingExample():
     # [START print_solution]
     solver.Solve()
     # Print the objective value of the solution.
-    print('Maximum objective function value = %d' % solver.Objective().Value())
+    print("Maximum objective function value = %d" % solver.Objective().Value())
     print()
     # Print the value of each variable in the solution.
     for variable in [x, y, z]:
-        print('%s = %d' % (variable.name(), variable.solution_value()))
+        print("%s = %d" % (variable.name(), variable.solution_value()))
     # [END print_solution]
 
 

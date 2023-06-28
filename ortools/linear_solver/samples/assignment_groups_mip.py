@@ -70,7 +70,7 @@ def main():
     # Solver.
     # [START solver]
     # Create the mip solver with the SCIP backend.
-    solver = pywraplp.Solver.CreateSolver('SCIP')
+    solver = pywraplp.Solver.CreateSolver("SCIP")
     if not solver:
         return
     # [END solver]
@@ -82,31 +82,30 @@ def main():
     x = {}
     for worker in range(num_workers):
         for task in range(num_tasks):
-            x[worker, task] = solver.BoolVar(f'x[{worker},{task}]')
+            x[worker, task] = solver.BoolVar(f"x[{worker},{task}]")
     # [END variables]
 
     # Constraints
     # [START constraints]
     # The total size of the tasks each worker takes on is at most total_size_max.
     for worker in range(num_workers):
-        solver.Add(
-            solver.Sum([x[worker, task] for task in range(num_tasks)]) <= 1)
+        solver.Add(solver.Sum([x[worker, task] for task in range(num_tasks)]) <= 1)
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        solver.Add(
-            solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
+        solver.Add(solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
     # [END constraints]
 
     # [START assignments]
     # Create variables for each worker, indicating whether they work on some task.
     work = {}
     for worker in range(num_workers):
-        work[worker] = solver.BoolVar(f'work[{worker}]')
+        work[worker] = solver.BoolVar(f"work[{worker}]")
 
     for worker in range(num_workers):
-        solver.Add(work[worker] == solver.Sum(
-            [x[worker, task] for task in range(num_tasks)]))
+        solver.Add(
+            work[worker] == solver.Sum([x[worker, task] for task in range(num_tasks)])
+        )
 
     # Group1
     constraint_g1 = solver.Constraint(1, 1)
@@ -116,7 +115,7 @@ def main():
         constraint = solver.Constraint(0, 1)
         constraint.SetCoefficient(work[group1[i][0]], 1)
         constraint.SetCoefficient(work[group1[i][1]], 1)
-        p = solver.BoolVar(f'g1_p{i}')
+        p = solver.BoolVar(f"g1_p{i}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g1.SetCoefficient(p, 1)
@@ -129,7 +128,7 @@ def main():
         constraint = solver.Constraint(0, 1)
         constraint.SetCoefficient(work[group2[i][0]], 1)
         constraint.SetCoefficient(work[group2[i][1]], 1)
-        p = solver.BoolVar(f'g2_p{i}')
+        p = solver.BoolVar(f"g2_p{i}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g2.SetCoefficient(p, 1)
@@ -142,7 +141,7 @@ def main():
         constraint = solver.Constraint(0, 1)
         constraint.SetCoefficient(work[group3[i][0]], 1)
         constraint.SetCoefficient(work[group3[i][1]], 1)
-        p = solver.BoolVar(f'g3_p{i}')
+        p = solver.BoolVar(f"g3_p{i}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g3.SetCoefficient(p, 1)
@@ -165,17 +164,19 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        print(f'Total cost = {solver.Objective().Value()}\n')
+        print(f"Total cost = {solver.Objective().Value()}\n")
         for worker in range(num_workers):
             for task in range(num_tasks):
                 if x[worker, task].solution_value() > 0.5:
-                    print(f'Worker {worker} assigned to task {task}.' +
-                          f' Cost: {costs[worker][task]}')
+                    print(
+                        f"Worker {worker} assigned to task {task}."
+                        + f" Cost: {costs[worker][task]}"
+                    )
     else:
-        print('No solution found.')
+        print("No solution found.")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

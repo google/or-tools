@@ -36,6 +36,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 using ::Eigen::SparseMatrix;
 using ::Eigen::VectorXd;
@@ -51,6 +52,10 @@ using ::operations_research::SolveStatus;
 
 namespace py = pybind11;
 using ::py::arg;
+
+const MPModelProto& ToMPModelProto(ModelBuilderHelper* helper) {
+  return helper->model();
+}
 
 // TODO(user): The interface uses serialized protos because of issues building
 // pybind11_protobuf. See
@@ -146,6 +151,10 @@ std::vector<std::pair<int, double>> SortedGroupedTerms(
 }
 
 PYBIND11_MODULE(pywrap_model_builder_helper, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
+
+  m.def("to_mpmodel_proto", &ToMPModelProto, arg("helper"));
+
   py::class_<MPModelExportOptions>(m, "MPModelExportOptions")
       .def(py::init<>())
       .def_readwrite("obfuscate", &MPModelExportOptions::obfuscate)

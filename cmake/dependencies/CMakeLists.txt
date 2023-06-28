@@ -103,9 +103,9 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v23.2"
+    GIT_TAG "v23.3"
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v23.2.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v23.3.patch")
   FetchContent_MakeAvailable(protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -170,6 +170,23 @@ if(BUILD_PYTHON AND BUILD_pybind11)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
+
+if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
+  message(CHECK_START "Fetching pybind11_protobuf")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  #set(PYBIND11_INSTALL ON)
+  #set(PYBIND11_TEST OFF)
+  FetchContent_Declare(
+    pybind11_protobuf
+    GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
+    GIT_TAG "main"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
+  )
+  FetchContent_MakeAvailable(pybind11_protobuf)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
 
 # ##############################################################################
 # GLPK

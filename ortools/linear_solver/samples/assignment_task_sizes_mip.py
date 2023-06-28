@@ -45,7 +45,7 @@ def main():
     # Solver
     # [START solver]
     # Create the mip solver with the SCIP backend.
-    solver = pywraplp.Solver.CreateSolver('SCIP')
+    solver = pywraplp.Solver.CreateSolver("SCIP")
 
     if not solver:
         return
@@ -58,7 +58,7 @@ def main():
     x = {}
     for worker in range(num_workers):
         for task in range(num_tasks):
-            x[worker, task] = solver.BoolVar(f'x[{worker},{task}]')
+            x[worker, task] = solver.BoolVar(f"x[{worker},{task}]")
     # [END variables]
 
     # Constraints
@@ -66,14 +66,15 @@ def main():
     # The total size of the tasks each worker takes on is at most total_size_max.
     for worker in range(num_workers):
         solver.Add(
-            solver.Sum([
-                task_sizes[task] * x[worker, task] for task in range(num_tasks)
-            ]) <= total_size_max)
+            solver.Sum(
+                [task_sizes[task] * x[worker, task] for task in range(num_tasks)]
+            )
+            <= total_size_max
+        )
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        solver.Add(
-            solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
+        solver.Add(solver.Sum([x[worker, task] for worker in range(num_workers)]) == 1)
     # [END constraints]
 
     # Objective
@@ -93,17 +94,19 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        print(f'Total cost = {solver.Objective().Value()}\n')
+        print(f"Total cost = {solver.Objective().Value()}\n")
         for worker in range(num_workers):
             for task in range(num_tasks):
                 if x[worker, task].solution_value() > 0.5:
-                    print(f'Worker {worker} assigned to task {task}.' +
-                          f' Cost: {costs[worker][task]}')
+                    print(
+                        f"Worker {worker} assigned to task {task}."
+                        + f" Cost: {costs[worker][task]}"
+                    )
     else:
-        print('No solution found.')
+        print("No solution found.")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

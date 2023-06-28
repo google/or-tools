@@ -73,7 +73,7 @@ git_repository(
 ## Protobuf
 git_repository(
     name = "com_google_protobuf",
-    tag = "v23.2",
+    tag = "v23.3",
     patches = ["//patches:protobuf-v23.2.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/protocolbuffers/protobuf.git",
@@ -214,8 +214,21 @@ new_git_repository(
     remote = "https://github.com/pybind/pybind11.git",
 )
 
+new_git_repository(
+    name = "pybind11_protobuf",
+    #build_file = "@pybind11_bazel//:pybind11.BUILD",
+    #tag = "v2.10.3",
+    commit = "5baa2dc9d93e3b608cde86dfa4b8c63aeab4ac78",
+    remote = "https://github.com/pybind/pybind11_protobuf.git",
+)
+
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
 python_configure(name = "local_config_python", python_version = "3")
+
+bind(
+    name = "python_headers", 
+    actual = "@local_config_python//:python_headers", 
+)
 
 # Java support (with junit 5)
 ## Bazel Java rules.

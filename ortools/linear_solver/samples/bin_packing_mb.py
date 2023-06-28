@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solve a simple bin packing problem using a MIP solver."""
 # [START program]
 # [START import]
@@ -26,10 +27,10 @@ def create_data_model():
     """Create the data for the example."""
     data = {}
     weights = [48, 30, 19, 36, 36, 27, 42, 42, 36, 24, 30]
-    data['weights'] = weights
-    data['items'] = list(range(len(weights)))
-    data['bins'] = data['items']
-    data['bin_capacity'] = 100
+    data["weights"] = weights
+    data["items"] = list(range(len(weights)))
+    data["bins"] = data["items"]
+    data["bin_capacity"] = 100
     return data
 
 # [END data_model]
@@ -38,8 +39,8 @@ def create_data_model():
 def main():
     # [START data]
     data = create_data_model()
-    num_items = len(data['items'])
-    num_bins = len(data['bins'])
+    num_items = len(data["items"])
+    num_bins = len(data["bins"])
     # [END data]
     # [END program_part1]
 
@@ -52,22 +53,25 @@ def main():
     # [START variables]
     # Variables
     # x[i, j] = 1 if item i is packed in bin j.
-    x = model.new_bool_var_array(shape=[num_items, num_bins], name='x')  # pytype: disable=wrong-arg-types  # numpy-scalars
+    x = model.new_bool_var_array(
+        shape=[num_items, num_bins], name="x"
+    )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     # y[j] = 1 if bin j is used.
-    y = model.new_bool_var_array(shape=[num_bins], name='y')  # pytype: disable=wrong-arg-types  # numpy-scalars
+    y = model.new_bool_var_array(
+        shape=[num_bins], name="y"
+    )  # pytype: disable=wrong-arg-types  # numpy-scalars
     # [END variables]
 
     # [START constraints]
     # Constraints
     # Each item must be in exactly one bin.
-    for i in data['items']:
+    for i in data["items"]:
         model.add(np.sum(x[i, :]) == 1)
 
     # The amount packed in each bin cannot exceed its capacity.
-    for j in data['bins']:
-        model.add(
-            np.dot(x[:, j], data['weights']) <= data['bin_capacity'] * y[j])
+    for j in data["bins"]:
+        model.add(np.dot(x[:, j], data["weights"]) <= data["bin_capacity"] * y[j])
     # [END constraints]
 
     # [START objective]
@@ -77,36 +81,36 @@ def main():
 
     # [START solve]
     # Create the solver with the CP-SAT backend, and solve the model.
-    solver = model_builder.ModelSolver('sat')
+    solver = model_builder.ModelSolver("sat")
     status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
     if status == model_builder.SolveStatus.OPTIMAL:
-        num_bins = 0.
-        for j in data['bins']:
+        num_bins = 0.0
+        for j in data["bins"]:
             if solver.value(y[j]) == 1:
                 bin_items = []
                 bin_weight = 0
-                for i in data['items']:
+                for i in data["items"]:
                     if solver.value(x[i, j]) > 0:
                         bin_items.append(i)
-                        bin_weight += data['weights'][i]
+                        bin_weight += data["weights"][i]
                 if bin_weight > 0:
                     num_bins += 1
-                    print('Bin number', j)
-                    print('  Items packed:', bin_items)
-                    print('  Total weight:', bin_weight)
+                    print("Bin number", j)
+                    print("  Items packed:", bin_items)
+                    print("  Total weight:", bin_weight)
                     print()
         print()
-        print('Number of bins used:', num_bins)
-        print('Time = ', solver.wall_time, ' seconds')
+        print("Number of bins used:", num_bins)
+        print("Time = ", solver.wall_time, " seconds")
     else:
-        print('The problem does not have an optimal solution.')
+        print("The problem does not have an optimal solution.")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program_part2]
 # [END program]

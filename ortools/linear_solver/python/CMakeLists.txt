@@ -48,6 +48,9 @@ endif()
 
 pybind11_add_module(pywrap_model_builder_helper MODULE pywrap_model_builder_helper.cc)
 
+target_include_directories(pywrap_model_builder_helper PRIVATE
+  ${protobuf_SOURCE_DIR})
+
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
   set_target_properties(pywrap_model_builder_helper PROPERTIES
@@ -63,7 +66,11 @@ elseif(UNIX)
     )
 endif()
 
-target_link_libraries(pywrap_model_builder_helper PRIVATE ${PROJECT_NAMESPACE}::ortools)
+target_link_libraries(pywrap_model_builder_helper PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  pybind11_native_proto_caster
+)
+
 add_library(${PROJECT_NAMESPACE}::pywrap_model_builder_helper ALIAS pywrap_model_builder_helper)
 
 if(BUILD_TESTING)

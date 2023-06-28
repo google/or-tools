@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Linear optimization example."""
 # [START program]
 # [START import]
@@ -22,17 +23,17 @@ def LinearProgrammingExample():
     """Linear programming sample."""
     # Instantiate a Glop solver, naming it LinearExample.
     # [START solver]
-    solver = pywraplp.Solver.CreateSolver('GLOP')
+    solver = pywraplp.Solver.CreateSolver("GLOP")
     if not solver:
         return
     # [END solver]
 
     # Create the two variables and let them take on any non-negative value.
     # [START variables]
-    x = solver.NumVar(0, solver.infinity(), 'x')
-    y = solver.NumVar(0, solver.infinity(), 'y')
+    x = solver.NumVar(0, solver.infinity(), "x")
+    y = solver.NumVar(0, solver.infinity(), "y")
 
-    print('Number of variables =', solver.NumVariables())
+    print("Number of variables =", solver.NumVariables())
     # [END variables]
 
     # [START constraints]
@@ -45,7 +46,7 @@ def LinearProgrammingExample():
     # Constraint 2: x - y <= 2.
     solver.Add(x - y <= 2.0)
 
-    print('Number of constraints =', solver.NumConstraints())
+    print("Number of constraints =", solver.NumConstraints())
     # [END constraints]
 
     # [START objective]
@@ -60,18 +61,18 @@ def LinearProgrammingExample():
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
-        print('Solution:')
-        print('Objective value =', solver.Objective().Value())
-        print('x =', x.solution_value())
-        print('y =', y.solution_value())
+        print("Solution:")
+        print("Objective value =", solver.Objective().Value())
+        print("x =", x.solution_value())
+        print("y =", y.solution_value())
     else:
-        print('The problem does not have an optimal solution.')
+        print("The problem does not have an optimal solution.")
     # [END print_solution]
 
     # [START advanced]
-    print('\nAdvanced usage:')
-    print('Problem solved in %f milliseconds' % solver.wall_time())
-    print('Problem solved in %d iterations' % solver.iterations())
+    print("\nAdvanced usage:")
+    print("Problem solved in %f milliseconds" % solver.wall_time())
+    print("Problem solved in %d iterations" % solver.iterations())
     # [END advanced]
 
 

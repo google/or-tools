@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Simple unit tests for python/linear_solver.i. Not exhaustive."""
 
 import unittest
@@ -41,11 +42,10 @@ constraint {
 
 
 class PyWrapLp(unittest.TestCase):
-
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)
-        solver = pywraplp.Solver.CreateSolver('CBC')
+        solver = pywraplp.Solver.CreateSolver("CBC")
         if not solver:
             return
         # For now, create the model from the proto by parsing the proto
@@ -61,23 +61,23 @@ class PyWrapLp(unittest.TestCase):
         self.assertEqual(solution.best_objective_bound, 3.0)
 
     def test_external_api(self):
-        solver = pywraplp.Solver.CreateSolver('GLOP')
+        solver = pywraplp.Solver.CreateSolver("GLOP")
         infinity = solver.Infinity()
         infinity2 = solver.infinity()
         self.assertEqual(infinity, infinity2)
         # x1, x2 and x3 are continuous non-negative variables.
-        x1 = solver.NumVar(0.0, infinity, 'x1')
-        x2 = solver.NumVar(0.0, infinity, 'x2')
-        x3 = solver.NumVar(0.0, infinity, 'x3')
+        x1 = solver.NumVar(0.0, infinity, "x1")
+        x2 = solver.NumVar(0.0, infinity, "x2")
+        x3 = solver.NumVar(0.0, infinity, "x3")
         self.assertEqual(x1.Lb(), 0)
         self.assertEqual(x1.Ub(), infinity)
         self.assertFalse(x1.Integer())
         solver.Maximize(10 * x1 + 6 * x2 + 4 * x3 + 5)
         self.assertEqual(solver.Objective().Offset(), 5)
-        c0 = solver.Add(10 * x1 + 4 * x2 + 5 * x3 <= 600, 'ConstraintName0')
+        c0 = solver.Add(10 * x1 + 4 * x2 + 5 * x3 <= 600, "ConstraintName0")
         c1 = solver.Add(2 * x1 + 2 * x2 + 6 * x3 <= 300)
         sum_of_vars = sum([x1, x2, x3])
-        solver.Add(sum_of_vars <= 100.0, 'OtherConstraintName')
+        solver.Add(sum_of_vars <= 100.0, "OtherConstraintName")
         self.assertEqual(c1.Lb(), -infinity)
         self.assertEqual(c1.Ub(), 300)
         c1.SetLb(-100000)
@@ -94,5 +94,5 @@ class PyWrapLp(unittest.TestCase):
         self.assertAlmostEqual(c0.DualValue(), 0.6666666666666667)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

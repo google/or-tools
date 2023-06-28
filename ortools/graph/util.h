@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "ortools/base/hash.h"
@@ -353,7 +354,7 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
   if (arc_path->empty()) return;
 
   // This maps each node to the latest arc in the given path that leaves it.
-  std::map<int, int> last_arc_leaving_node;
+  absl::btree_map<int, int> last_arc_leaving_node;
   for (const int arc : *arc_path) last_arc_leaving_node[graph.Tail(arc)] = arc;
 
   // Special case for the destination.
