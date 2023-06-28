@@ -10,15 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Collection of helpers to visualize cp_model solutions in colab."""
 
 # pylint: disable=g-import-not-at-top
 import random
+
 try:
     from IPython.display import display
     from IPython.display import SVG
     import plotly.figure_factory as ff
     import svgwrite
+
     correct_imports = True
 except ImportError:
     correct_imports = False
@@ -34,7 +37,7 @@ def RunFromIPython():
 
 
 def ToDate(v):
-    return '2016-01-01 6:%02i:%02i' % (v / 60, v % 60)
+    return "2016-01-01 6:%02i:%02i" % (v / 60, v % 60)
 
 
 class ColorManager(object):
@@ -49,14 +52,17 @@ class ColorManager(object):
         r = sr + dr * step
         g = sg + dg * step
         b = sb + db * step
-        return 'rgb(%i, %i, %i)' % (r, g, b)
+        return "rgb(%i, %i, %i)" % (r, g, b)
 
     def SeedRandomColor(self, seed=0):
         random.seed(seed)
 
     def RandomColor(self):
-        return 'rgb(%i,%i,%i)' % (random.randint(0, 255), random.randint(
-            0, 255), random.randint(0, 255))
+        return "rgb(%i,%i,%i)" % (
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255),
+        )
 
 
 def DisplayJobshop(starts, durations, machines, name):
@@ -70,27 +76,32 @@ def DisplayJobshop(starts, durations, machines, name):
     for i in all_jobs:
         for j in all_machines:
             df.append(
-                dict(Task='Resource%i' % machines[i][j],
-                     Start=ToDate(starts[i][j]),
-                     Finish=ToDate(starts[i][j] + durations[i][j]),
-                     Resource='Job%i' % i))
+                dict(
+                    Task="Resource%i" % machines[i][j],
+                    Start=ToDate(starts[i][j]),
+                    Finish=ToDate(starts[i][j] + durations[i][j]),
+                    Resource="Job%i" % i,
+                )
+            )
 
-    sorted_df = sorted(df, key=lambda k: k['Task'])
+    sorted_df = sorted(df, key=lambda k: k["Task"])
 
     colors = {}
     cm = ColorManager()
     cm.SeedRandomColor(0)
     for i in all_jobs:
-        colors['Job%i' % i] = cm.RandomColor()
+        colors["Job%i" % i] = cm.RandomColor()
 
-    fig = ff.create_gantt(sorted_df,
-                          colors=colors,
-                          index_col='Resource',
-                          title=name,
-                          show_colorbar=False,
-                          showgrid_x=True,
-                          showgrid_y=True,
-                          group_tasks=True)
+    fig = ff.create_gantt(
+        sorted_df,
+        colors=colors,
+        index_col="Resource",
+        title=name,
+        show_colorbar=False,
+        showgrid_x=True,
+        showgrid_y=True,
+        group_tasks=True,
+    )
     fig.show()
 
 
@@ -103,30 +114,37 @@ class SvgWrapper(object):
         self.__scaling = scaling
         self.__offset = scaling
         self.__dwg = svgwrite.Drawing(
-            size=(self.__sizex * self.__scaling + self.__offset,
-                  self.__sizey * self.__scaling + self.__offset * 2))
+            size=(
+                self.__sizex * self.__scaling + self.__offset,
+                self.__sizey * self.__scaling + self.__offset * 2,
+            )
+        )
 
     def Display(self):
         display(SVG(self.__dwg.tostring()))
 
-    def AddRectangle(self, x, y, dx, dy, fill, stroke='black', label=None):
+    def AddRectangle(self, x, y, dx, dy, fill, stroke="black", label=None):
         """Draw a rectangle, dx and dy must be >= 0."""
         s = self.__scaling
         o = self.__offset
         corner = (x * s + o, (self.__sizey - y - dy) * s + o)
         size = (dx * s - 1, dy * s - 1)
         self.__dwg.add(
-            self.__dwg.rect(insert=corner, size=size, fill=fill, stroke=stroke))
+            self.__dwg.rect(insert=corner, size=size, fill=fill, stroke=stroke)
+        )
         self.AddText(x + 0.5 * dx, y + 0.5 * dy, label)
 
     def AddText(self, x, y, label):
         text = self.__dwg.text(
             label,
-            insert=(x * self.__scaling + self.__offset,
-                    (self.__sizey - y) * self.__scaling + self.__offset),
-            text_anchor='middle',
-            font_family='sans-serif',
-            font_size='%dpx' % (self.__scaling / 2))
+            insert=(
+                x * self.__scaling + self.__offset,
+                (self.__sizey - y) * self.__scaling + self.__offset,
+            ),
+            text_anchor="middle",
+            font_family="sans-serif",
+            font_size="%dpx" % (self.__scaling / 2),
+        )
         self.__dwg.add(text)
 
     def AddXScale(self, step=1):
@@ -136,11 +154,14 @@ class SvgWrapper(object):
         y = self.__sizey * s + o / 2.0 + o
         dy = self.__offset / 4.0
         self.__dwg.add(
-            self.__dwg.line((o, y), (self.__sizex * s + o, y), stroke='black'))
+            self.__dwg.line((o, y), (self.__sizex * s + o, y), stroke="black")
+        )
         for i in range(0, int(self.__sizex) + 1, step):
             self.__dwg.add(
-                self.__dwg.line((o + i * s, y - dy), (o + i * s, y + dy),
-                                stroke='black'))
+                self.__dwg.line(
+                    (o + i * s, y - dy), (o + i * s, y + dy), stroke="black"
+                )
+            )
 
     def AddYScale(self, step=1):
         """Add an scale on the y axis."""
@@ -149,19 +170,25 @@ class SvgWrapper(object):
         x = o / 2.0
         dx = self.__offset / 4.0
         self.__dwg.add(
-            self.__dwg.line((x, o), (x, self.__sizey * s + o), stroke='black'))
+            self.__dwg.line((x, o), (x, self.__sizey * s + o), stroke="black")
+        )
         for i in range(0, int(self.__sizey) + 1, step):
             self.__dwg.add(
-                self.__dwg.line((x - dx, i * s + o), (x + dx, i * s + o),
-                                stroke='black'))
+                self.__dwg.line(
+                    (x - dx, i * s + o), (x + dx, i * s + o), stroke="black"
+                )
+            )
 
     def AddTitle(self, title):
         """Add a title to the drawing."""
         text = self.__dwg.text(
             title,
-            insert=(self.__offset + self.__sizex * self.__scaling / 2.0,
-                    self.__offset / 2),
-            text_anchor='middle',
-            font_family='sans-serif',
-            font_size='%dpx' % (self.__scaling / 2))
+            insert=(
+                self.__offset + self.__sizex * self.__scaling / 2.0,
+                self.__offset / 2,
+            ),
+            text_anchor="middle",
+            font_family="sans-serif",
+            font_size="%dpx" % (self.__scaling / 2),
+        )
         self.__dwg.add(text)

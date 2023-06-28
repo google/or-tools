@@ -397,9 +397,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     {
       const double dtime =
           evaluator_->MutableLinearEvaluator()->DeterministicTime();
-      const double delta = dtime - deterministic_time_;
+      const double delta = dtime - deterministic_time();
+      AddTaskDeterministicDuration(delta);
       shared_time_limit_->AdvanceDeterministicTime(delta);
-      deterministic_time_ += delta;
     }
 
     task_generated_ = false;  // Atomic.
