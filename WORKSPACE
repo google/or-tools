@@ -74,7 +74,7 @@ git_repository(
 git_repository(
     name = "com_google_protobuf",
     tag = "v23.3",
-    patches = ["//patches:protobuf-v23.2.patch"],
+    patches = ["//patches:protobuf-v23.3.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
