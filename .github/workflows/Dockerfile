@@ -5,4 +5,4 @@ FROM alpine:edge
 RUN apk add --no-cache git clang-extra-tools
 RUN apk add --no-cache python3 py3-pip \
 && rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED \
-&& python3 -m pip install yapf
+&& python3 -m pip install black

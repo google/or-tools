@@ -7,7 +7,7 @@ scipy==1.10.0
 # OR-Tools build dependencies
 mypy-protobuf==3.4.0
 virtualenv==20.16.6
-yapf==0.32.0
+black==23.3.0
 
 # Example dependencies
 pandas==1.5.3
