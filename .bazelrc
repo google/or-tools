@@ -14,12 +14,14 @@ build --flag_alias=with_xpress=//ortools/linear_solver:with_xpress
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
 
-# By default, build OR-Tools in C++ 17 mode.
+# By default, build OR-Tools in C++ 17 mode, with various extra flags per
+# platform.
 build --enable_platform_specific_config
-build:linux --cxxopt="-std=c++17"
-build:linux --host_cxxopt="-std=c++17"
-build:macos --cxxopt="-std=c++17" --features=-supports_dynamic_linker
-build:macos --host_cxxopt="-std=c++17" --features=-supports_dynamic_linker
+
+build:linux --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
+build:linux --host_cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
+build:macos --cxxopt="-std=c++17"  --features=-supports_dynamic_linker --cxxopt=-Wno-sign-compare
+build:macos --host_cxxopt="-std=c++17" --features=-supports_dynamic_linker --cxxopt=-Wno-sign-compare
 build:windows --cxxopt="/std:c++20"
 build:windows --host_cxxopt="/std:c++20"
 
