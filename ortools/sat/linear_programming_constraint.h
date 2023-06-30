@@ -52,19 +52,6 @@
 namespace operations_research {
 namespace sat {
 
-// Stores for each IntegerVariable its temporary LP solution.
-//
-// This is shared between all LinearProgrammingConstraint because in the corner
-// case where we have many different LinearProgrammingConstraint and a lot of
-// variable, we could theoretically use up a quadratic amount of memory
-// otherwise.
-//
-// TODO(user): find a better way?
-struct LinearProgrammingConstraintLpSolution
-    : public absl::StrongVector<IntegerVariable, double> {
-  LinearProgrammingConstraintLpSolution() = default;
-};
-
 // Helper struct to combine info generated from solving LP.
 struct LPSolveInfo {
   glop::ProblemStatus status;
@@ -210,7 +197,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // TODO(user): This fixes to 1, but for some problems fixing to 0
   // or to the std::round(support value) might work better. When this is the
   // case, change behaviour automatically?
-  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary(Model* model);
+  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary();
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -229,7 +216,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // does BFS. This might depend on the model, more trials are necessary. We
   // could also do exponential smoothing instead of decaying every N calls, i.e.
   // pseudo = a * pseudo + (1-a) reduced.
-  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary(Model* model);
+  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary();
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -303,8 +290,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Second half of AddCutFromConstraints().
   bool PostprocessAndAddCut(const std::string& name, const std::string& info,
-                            IntegerVariable first_slack,
-                            const LinearConstraint& cut);
+                            IntegerVariable first_slack, const CutData& cut);
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
@@ -548,8 +534,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // and no lazy constraints where added.
   bool lp_at_level_zero_is_final_ = false;
 
-  // Same as lp_solution_ but this vector is indexed differently.
-  LinearProgrammingConstraintLpSolution& expanded_lp_solution_;
+  // Same as lp_solution_ but this vector is indexed by IntegerVariable.
+  ModelLpValues& expanded_lp_solution_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;
@@ -593,6 +579,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64_t num_solves_ = 0;
   mutable int64_t num_adjusts_ = 0;
   mutable int64_t num_cut_overflows_ = 0;
+  mutable int64_t num_bad_cuts_ = 0;
   mutable int64_t num_scaling_issues_ = 0;
   std::vector<int64_t> num_solves_by_status_;
 };

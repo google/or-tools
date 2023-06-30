@@ -19,6 +19,8 @@ PYTHON_DEPS = [
     "//ortools/linear_solver/python:model_builder",
     "//ortools/sat/python:cp_model",
     "//ortools/sat/colab:visualization",
+    "//ortools/scheduling:rcpsp_py_proto",
+    "//ortools/scheduling/python:pywrap_rcpsp",
     requirement("absl-py"),
     requirement("numpy"),
     requirement("pandas"),
@@ -44,9 +46,6 @@ def code_sample_test_py(name):
         size = "medium",
         srcs = [name + ".py"],
         main = name + ".py",
-        data = [
-            "//ortools/sat/python:cp_model",
-        ],
         deps = PYTHON_DEPS,
         python_version = "PY3",
         srcs_version = "PY3",

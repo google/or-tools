@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solve a simple assignment problem."""
 # [START program]
 # [START import]
@@ -43,7 +44,7 @@ def main():
     for i in range(num_workers):
         t = []
         for j in range(num_tasks):
-            t.append(model.NewBoolVar(f'x[{i},{j}]'))
+            t.append(model.NewBoolVar(f"x[{i},{j}]"))
         x.append(t)
     # [END variables]
 
@@ -76,18 +77,17 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f'Total cost = {solver.ObjectiveValue()}')
+        print(f"Total cost = {solver.ObjectiveValue()}")
         print()
         for i in range(num_workers):
             for j in range(num_tasks):
                 if solver.BooleanValue(x[i][j]):
-                    print(
-                        f'Worker {i} assigned to task {j} Cost = {costs[i][j]}')
+                    print(f"Worker {i} assigned to task {j} Cost = {costs[i][j]}")
     else:
-        print('No solution found.')
+        print("No solution found.")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

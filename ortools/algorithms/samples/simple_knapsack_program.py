@@ -15,7 +15,7 @@
 # [START program]
 """A simple knapsack problem."""
 # [START import]
-from ortools.algorithms import pywrapknapsack_solver
+from ortools.algorithms.python import pywrapknapsack_solver
 # [END import]
 
 
@@ -23,7 +23,8 @@ def main():
     # Create the solver.
     # [START solver]
     solver = pywrapknapsack_solver.KnapsackSolver(
-        pywrapknapsack_solver.KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER, "test"
+        pywrapknapsack_solver.SolverType.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
+        "test",
     )
     # [END solver]
 

@@ -244,6 +244,7 @@ file(GENERATE
   INPUT ${PROJECT_BINARY_DIR}/python/__init__.py.in)
 
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
@@ -259,6 +260,7 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/scheduling/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
 
@@ -316,7 +318,7 @@ add_custom_command(
   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
   ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PYTHON_PROJECT}/init
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
@@ -325,7 +327,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_model_builder_helper> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PYTHON_PROJECT}/scheduling
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_rcpsp> ${PYTHON_PROJECT}/scheduling/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util/python
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
@@ -346,7 +348,7 @@ add_custom_command(
     pywrap_model_builder_helper
     pywrap_pdlp_pybind11
     swig_helper
-    pywraprcpsp
+    pywrap_rcpsp
     sorted_interval_list
   BYPRODUCTS
     python/${PYTHON_PROJECT}

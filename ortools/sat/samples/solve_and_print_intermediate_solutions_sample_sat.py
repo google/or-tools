@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solves an optimization problem and displays all intermediate solutions."""
 
 # [START program]
@@ -28,10 +29,10 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
 
     def on_solution_callback(self):
-        print(f'Solution {self.__solution_count}')
-        print(f'  objective value = {self.ObjectiveValue()}')
+        print(f"Solution {self.__solution_count}")
+        print(f"  objective value = {self.ObjectiveValue()}")
         for v in self.__variables:
-            print(f'  {v}={self.Value(v)}', end=' ')
+            print(f"  {v}={self.Value(v)}", end=" ")
         print()
         self.__solution_count += 1
 
@@ -50,9 +51,9 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
     # [END variables]
 
     # Creates the constraints.
@@ -71,8 +72,8 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print(f'Status = {solver.StatusName(status)}')
-    print(f'Number of solutions found: {solution_printer.solution_count()}')
+    print(f"Status = {solver.StatusName(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count()}")
 
 
 SolveAndPrintIntermediateSolutionsSampleSat()

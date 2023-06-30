@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Simple model with a reified constraint."""
 
 from ortools.sat.python import cp_model
@@ -20,9 +21,9 @@ def ReifiedSampleSat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
-    b = model.NewBoolVar('b')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
+    b = model.NewBoolVar("b")
 
     # First version using a half-reified bool and.
     model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)

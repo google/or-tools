@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample to demonstrate Boolean variable and literals."""
+
 
 from ortools.sat.python import cp_model
 
 
 def LiteralSampleSat():
     model = cp_model.CpModel()
-    x = model.NewBoolVar('x')
+    x = model.NewBoolVar("x")
     not_x = x.Not()
     print(x)
     print(not_x)

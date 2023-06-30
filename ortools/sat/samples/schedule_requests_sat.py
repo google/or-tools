@@ -31,16 +31,13 @@ def main():
     all_nurses = range(num_nurses)
     all_shifts = range(num_shifts)
     all_days = range(num_days)
-    shift_requests = [[[0, 0, 1], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 1],
-                       [0, 1, 0], [0, 0, 1]],
-                      [[0, 0, 0], [0, 0, 0], [0, 1, 0], [0, 1, 0], [1, 0, 0],
-                       [0, 0, 0], [0, 0, 1]],
-                      [[0, 1, 0], [0, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0],
-                       [0, 1, 0], [0, 0, 0]],
-                      [[0, 0, 1], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 0],
-                       [1, 0, 0], [0, 0, 0]],
-                      [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 0], [1, 0, 0],
-                       [0, 1, 0], [0, 0, 0]]]
+    shift_requests = [
+        [[0, 0, 1], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 1]],
+        [[0, 0, 0], [0, 0, 0], [0, 1, 0], [0, 1, 0], [1, 0, 0], [0, 0, 0], [0, 0, 1]],
+        [[0, 1, 0], [0, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0], [0, 0, 0]],
+        [[0, 0, 1], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 0], [1, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 0]],
+    ]
     # [END data]
 
     # Creates the model.
@@ -55,7 +52,7 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar(f'shift_n{n}_d{d}_s{s}')
+                shifts[(n, d, s)] = model.NewBoolVar(f"shift_n{n}_d{d}_s{s}")
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in .
@@ -94,8 +91,13 @@ def main():
     # [START objective]
     # pylint: disable=g-complex-comprehension
     model.Maximize(
-        sum(shift_requests[n][d][s] * shifts[(n, d, s)] for n in all_nurses
-            for d in all_days for s in all_shifts))
+        sum(
+            shift_requests[n][d][s] * shifts[(n, d, s)]
+            for n in all_nurses
+            for d in all_days
+            for s in all_shifts
+        )
+    )
     # [END objective]
 
     # Creates the solver and solve.
@@ -106,33 +108,34 @@ def main():
 
     # [START print_solution]
     if status == cp_model.OPTIMAL:
-        print('Solution:')
+        print("Solution:")
         for d in all_days:
-            print('Day', d)
+            print("Day", d)
             for n in all_nurses:
                 for s in all_shifts:
                     if solver.Value(shifts[(n, d, s)]) == 1:
                         if shift_requests[n][d][s] == 1:
-                            print('Nurse', n, 'works shift', s, '(requested).')
+                            print("Nurse", n, "works shift", s, "(requested).")
                         else:
-                            print('Nurse', n, 'works shift', s,
-                                  '(not requested).')
+                            print("Nurse", n, "works shift", s, "(not requested).")
             print()
-        print(f'Number of shift requests met = {solver.ObjectiveValue()}',
-              f'(out of {num_nurses * min_shifts_per_nurse})')
+        print(
+            f"Number of shift requests met = {solver.ObjectiveValue()}",
+            f"(out of {num_nurses * min_shifts_per_nurse})",
+        )
     else:
-        print('No optimal solution found !')
+        print("No optimal solution found !")
     # [END print_solution]
 
     # Statistics.
     # [START statistics]
-    print('\nStatistics')
-    print(f'  - conflicts: {solver.NumConflicts()}')
-    print(f'  - branches : {solver.NumBranches()}')
-    print(f'  - wall time: {solver.WallTime()}s')
+    print("\nStatistics")
+    print(f"  - conflicts: {solver.NumConflicts()}")
+    print(f"  - branches : {solver.NumBranches()}")
+    print(f"  - wall time: {solver.WallTime()}s")
     # [END statistics]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

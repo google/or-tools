@@ -1,0 +1,191 @@
+resources {
+  max_capacity: 1
+  release_after_usage: true
+}
+resources {
+  max_capacity: 1
+  release_after_usage: true
+}
+tasks {
+  duration: 5
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 2
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 1
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 2
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 0
+  late_due_date: 0
+  lateness_cost_per_time_unit: 7
+}
+tasks {
+  duration: 3
+  recipes {
+    demands {
+      resource_id: 1
+      demand: 1
+    }
+  }
+  late_due_date: 0
+  lateness_cost_per_time_unit: 0
+}
+tasks {
+  duration: 2
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 0
+  late_due_date: 0
+  lateness_cost_per_time_unit: 8
+}
+tasks {
+  duration: 3
+  recipes {
+    demands {
+      resource_id: 1
+      demand: 1
+    }
+  }
+  late_due_date: 0
+  lateness_cost_per_time_unit: 0
+}
+tasks {
+  duration: 0
+  late_due_date: 0
+  lateness_cost_per_time_unit: 6
+}
+tasks {
+  duration: 3
+  recipes {
+    demands {
+      resource_id: 1
+      demand: 1
+    }
+  }
+  late_due_date: 0
+  lateness_cost_per_time_unit: 0
+}
+tasks {
+  duration: 2
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+}
+tasks {
+  duration: 0
+  late_due_date: 0
+  lateness_cost_per_time_unit: 3
+}
+tasks {
+  duration: 30
+  recipes {
+    demands {
+      resource_id: 0
+      demand: 1
+    }
+  }
+  late_due_date: 0
+  lateness_cost_per_time_unit: 0
+}
+precedences {
+  first_task_id: 0
+  second_task_id: 1
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 1
+  second_task_id: 2
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 2
+  second_task_id: 3
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 5
+  second_task_id: 0
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 4
+  second_task_id: 5
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 6
+  second_task_id: 2
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 8
+  second_task_id: 6
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 7
+  second_task_id: 8
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 10
+  second_task_id: 1
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 9
+  second_task_id: 10
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 11
+  second_task_id: 3
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 13
+  second_task_id: 11
+  type: STARTS_AFTER_END
+}
+precedences {
+  first_task_id: 12
+  second_task_id: 13
+  type: STARTS_AFTER_END
+}

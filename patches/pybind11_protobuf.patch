@@ -20,3 +20,29 @@ index e936f66..5461aaf 100644
    PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
            ${pybind11_INCLUDE_DIRS})
  
+diff --git a/pybind11_protobuf/proto_cast_util.cc b/pybind11_protobuf/proto_cast_util.cc
+index 06bde44..1cc6a30 100644
+--- a/pybind11_protobuf/proto_cast_util.cc
++++ b/pybind11_protobuf/proto_cast_util.cc
+@@ -599,13 +599,14 @@ absl::optional<std::string> PyProtoDescriptorName(py::handle py_proto) {
+ 
+ bool PyProtoIsCompatible(py::handle py_proto, const Descriptor* descriptor) {
+   assert(PyGILState_Check());
+-  if (descriptor->file()->pool() != DescriptorPool::generated_pool()) {
+-    /// This indicates that the C++ descriptor does not come from the C++
+-    /// DescriptorPool. This may happen if the C++ code has the same proto
+-    /// in different descriptor pools, perhaps from different shared objects,
+-    /// and could be result in undefined behavior.
+-    return false;
+-  }
++  // if (descriptor->file()->pool() != DescriptorPool::generated_pool()) {
++  //   /// This indicates that the C++ descriptor does not come from the C++
++  //   /// DescriptorPool. This may happen if the C++ code has the same proto
++  //   /// in different descriptor pools, perhaps from different shared objects,
++  //   /// and could be result in undefined behavior.
++  //   std::cout << "  * Different";
++  //   return false;
++  // }
+ 
+   auto py_descriptor = ResolveAttrs(py_proto, {"DESCRIPTOR"});
+   if (!py_descriptor) {

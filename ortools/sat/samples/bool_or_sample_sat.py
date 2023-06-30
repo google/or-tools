@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample to demonstrates a simple Boolean constraint."""
+
 
 from ortools.sat.python import cp_model
 
@@ -19,8 +21,8 @@ from ortools.sat.python import cp_model
 def BoolOrSampleSat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
 
     model.AddBoolOr([x, y.Not()])
 

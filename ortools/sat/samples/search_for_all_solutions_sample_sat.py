@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample that solves a model and displays all solutions."""
 
 # [START program]
@@ -29,7 +30,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -47,9 +48,9 @@ def SearchForAllSolutionsSampleSat():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
     # [END variables]
 
     # Create the constraints.
@@ -67,8 +68,8 @@ def SearchForAllSolutionsSampleSat():
     status = solver.Solve(model, solution_printer)
     # [END solve]
 
-    print(f'Status = {solver.StatusName(status)}')
-    print(f'Number of solutions found: {solution_printer.solution_count()}')
+    print(f"Status = {solver.StatusName(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count()}")
 
 
 SearchForAllSolutionsSampleSat()

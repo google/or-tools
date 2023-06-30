@@ -31,6 +31,7 @@
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 using ::operations_research::Domain;
 using ::operations_research::sat::CpModelProto;
@@ -58,68 +59,8 @@ class PySolutionCallback : public SolutionCallback {
   }
 };
 
-template <class M>
-bool StringToProtobuf(absl::string_view serialized_message, M& message) {
-  return message.ParseFromString(std::string(serialized_message));
-}
-
-void SetSerializedParameters(absl::string_view serialized_parameters,
-                             SolveWrapper* solve_wrapper) {
-  SatParameters parameters;
-  if (StringToProtobuf(serialized_parameters, parameters)) {
-    solve_wrapper->SetParameters(parameters);
-  }
-}
-
-pybind11::bytes SerializedSolve(absl::string_view serialized_model,
-                                SolveWrapper* solve_wrapper) {
-  std::string result;
-  {
-    ::pybind11::gil_scoped_release release;
-    CpModelProto model_proto;
-    CHECK(StringToProtobuf(serialized_model, model_proto));
-    result = solve_wrapper->Solve(model_proto).SerializeAsString();
-  }
-  return result;
-}
-
-std::string SerializedModelStats(absl::string_view serialized_model) {
-  CpModelProto model_proto;
-  CHECK(StringToProtobuf(serialized_model, model_proto));
-  return CpSatHelper::ModelStats(model_proto);
-}
-
-std::string SerializedSolverResponseStats(
-    absl::string_view serialized_response) {
-  CpSolverResponse response_proto;
-  CHECK(StringToProtobuf(serialized_response, response_proto));
-  return CpSatHelper::SolverResponseStats(response_proto);
-}
-
-std::string SerializedValidateModel(absl::string_view serialized_model) {
-  CpModelProto model_proto;
-  CHECK(StringToProtobuf(serialized_model, model_proto));
-  return CpSatHelper::ValidateModel(model_proto);
-}
-
-Domain SerializedVariableDomain(absl::string_view serialized_variable) {
-  IntegerVariableProto variable_proto;
-  CHECK(StringToProtobuf(serialized_variable, variable_proto));
-  return CpSatHelper::VariableDomain(variable_proto);
-}
-
-bool SerializedWriteModelToFile(absl::string_view serialized_model,
-                                const std::string& filename) {
-  CpModelProto model_proto;
-  CHECK(StringToProtobuf(serialized_model, model_proto));
-  return CpSatHelper::WriteModelToFile(model_proto, filename);
-}
-
-pybind11::bytes SerializedResponse(const SolutionCallback& solution_callback) {
-  return solution_callback.Response().SerializeAsString();
-}
-
 PYBIND11_MODULE(swig_helper, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
   pybind11::module::import("ortools.util.python.sorted_interval_list");
 
   pybind11::class_<SolutionCallback, PySolutionCallback>(m, "SolutionCallback")
@@ -134,8 +75,7 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("NumConflicts", &SolutionCallback::NumConflicts)
       .def("NumIntegerPropagations", &SolutionCallback::NumIntegerPropagations)
       .def("ObjectiveValue", &SolutionCallback::ObjectiveValue)
-      .def_static("SerializedResponse", &SerializedResponse,
-                  arg("solution_callback"))
+      .def("Response", &SolutionCallback::Response)
       .def("SolutionBooleanValue", &SolutionCallback::SolutionBooleanValue,
            arg("index"))
       .def("SolutionIntegerValue", &SolutionCallback::SolutionIntegerValue,
@@ -150,21 +90,23 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("AddSolutionCallback", &SolveWrapper::AddSolutionCallback,
            arg("callback"))
       .def("ClearSolutionCallback", &SolveWrapper::ClearSolutionCallback)
-      .def_static("SetSerializedParameters", &SetSerializedParameters,
-                  arg("serialized_parameters"), arg("solve_wrapper"))
-      .def_static("SerializedSolve", &SerializedSolve, arg("model_proto"),
-                  arg("solve_wrapper"))
+      .def("SetParameters", &SolveWrapper::SetParameters, arg("parameters"))
+      .def("Solve",
+           [](SolveWrapper* solve_wrapper,
+              const CpModelProto& model_proto) -> CpSolverResponse {
+             ::pybind11::gil_scoped_release release;
+             return solve_wrapper->Solve(model_proto);
+           })
       .def("StopSearch", &SolveWrapper::StopSearch);
 
   pybind11::class_<CpSatHelper>(m, "CpSatHelper")
-      .def_static("SerializedModelStats", &SerializedModelStats,
-                  arg("serialized_model"))
-      .def_static("SerializedSolverResponseStats",
-                  &SerializedSolverResponseStats, arg("serialized_response"))
-      .def_static("SerializedValidateModel", &SerializedValidateModel,
-                  arg("serialized_model"))
-      .def_static("SerializedVariableDomain", &SerializedVariableDomain,
-                  arg("serialized_variable"))
-      .def_static("SerializedWriteModelToFile", &SerializedWriteModelToFile,
-                  arg("serialized_model"), arg("filename"));
+      .def_static("ModelStats", &CpSatHelper::ModelStats, arg("model_proto"))
+      .def_static("SolverResponseStats", &CpSatHelper::SolverResponseStats,
+                  arg("response"))
+      .def_static("ValidateModel", &CpSatHelper::ValidateModel,
+                  arg("model_proto"))
+      .def_static("VariableDomain", &CpSatHelper::VariableDomain,
+                  arg("variable_proto"))
+      .def_static("WriteModelToFile", &CpSatHelper::WriteModelToFile,
+                  arg("model_proto"), arg("filename"));
 }

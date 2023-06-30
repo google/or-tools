@@ -29,9 +29,9 @@ def SimpleSatProgram():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
     # [END variables]
 
     # Creates the constraints.
@@ -47,11 +47,11 @@ def SimpleSatProgram():
 
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f'x = {solver.Value(x)}')
-        print(f'y = {solver.Value(y)}')
-        print(f'z = {solver.Value(z)}')
+        print(f"x = {solver.Value(x)}")
+        print(f"y = {solver.Value(y)}")
+        print(f"z = {solver.Value(z)}")
     else:
-        print('No solution found.')
+        print("No solution found.")
     # [END print_solution]
 
 

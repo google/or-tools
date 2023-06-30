@@ -228,8 +228,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
-      expanded_lp_solution_(
-          *model->GetOrCreate<LinearProgrammingConstraintLpSolution>()) {
+      expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()) {
   // Tweak the default parameters to make the solve incremental.
   simplex_params_.set_use_dual_simplex(true);
   simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
@@ -1093,19 +1092,6 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   bool at_least_one_added = false;
   DCHECK(base_ct_.AllCoefficientsArePositive());
 
-  // Try single node flow cover cut.
-  //
-  // TODO(user): Properly evaluate that this is super-seeded by
-  // TrySingleNodeFlow() below.
-  if (/*DISABLES CODE*/ (false)) {
-    if (flow_cover_cut_helper_.ComputeFlowCoverRelaxationAndGenerateCut(
-            base_ct_, &implied_bounds_processor_)) {
-      at_least_one_added |= PostprocessAndAddCut(
-          absl::StrCat(name, "_F"), flow_cover_cut_helper_.Info(), first_slack,
-          flow_cover_cut_helper_.cut());
-    }
-  }
-
   // Try cover approach to find cut.
   // TODO(user): Share common computation between kinds.
   {
@@ -1165,40 +1151,67 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 
 bool LinearProgrammingConstraint::PostprocessAndAddCut(
     const std::string& name, const std::string& info,
-    IntegerVariable first_slack, const LinearConstraint& cut) {
-  // Substitute any slack left.
-  tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
-  IntegerValue cut_ub = cut.ub;
-  bool overflow = false;
-  for (int i = 0; i < cut.vars.size(); ++i) {
-    const IntegerVariable var = cut.vars[i];
-
-    // Simple copy for non-slack variables.
-    if (var < first_slack) {
-      const glop::ColIndex col = mirror_lp_variable_.at(PositiveVariable(var));
-      if (VariableIsPositive(var)) {
-        tmp_scattered_vector_.Add(col, cut.coeffs[i]);
-      } else {
-        tmp_scattered_vector_.Add(col, -cut.coeffs[i]);
-      }
-      continue;
-    }
-
-    // Replace slack from LP constraints.
-    const int slack_index = (var.value() - first_slack.value()) / 2;
-    const glop::RowIndex row = tmp_slack_rows_[slack_index];
-    const IntegerValue multiplier = cut.coeffs[i];
-    if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
-            multiplier, integer_lp_[row].terms)) {
-      overflow = true;
-      break;
-    }
-  }
-
-  if (overflow) {
-    VLOG(1) << "Overflow in slack removal.";
+    IntegerVariable first_slack, const CutData& cut) {
+  if (cut.rhs > absl::int128(std::numeric_limits<int64_t>::max()) ||
+      cut.rhs < absl::int128(std::numeric_limits<int64_t>::min())) {
+    VLOG(2) << "RHS overflow " << name << " " << info;
     ++num_cut_overflows_;
     return false;
+  }
+
+  // We test this here to avoid doing the costly conversion below.
+  //
+  // TODO(user): Ideally we should detect this even earlier during the cut
+  // generation.
+  if (cut.ComputeViolation() < 1e-4) {
+    VLOG(2) << "Bad cut " << name << " " << info;
+    ++num_bad_cuts_;
+    return false;
+  }
+
+  // Substitute any slack left.
+  tmp_scattered_vector_.ClearAndResize(integer_variables_.size());
+  IntegerValue cut_ub = static_cast<int64_t>(cut.rhs);
+  for (const CutTerm& term : cut.terms) {
+    if (term.coeff == 0) continue;
+    if (!AddProductTo(-term.coeff, term.expr_offset, &cut_ub)) {
+      VLOG(2) << "Overflow in conversion";
+      ++num_cut_overflows_;
+      return false;
+    }
+    for (int i = 0; i < 2; ++i) {
+      if (term.expr_coeffs[i] == 0) continue;
+      const IntegerVariable var = term.expr_vars[i];
+      const IntegerValue coeff =
+          CapProd(term.coeff.value(), term.expr_coeffs[i].value());
+      if (AtMinOrMaxInt64(coeff.value())) {
+        VLOG(2) << "Overflow in conversion";
+        ++num_cut_overflows_;
+        return false;
+      }
+
+      // Simple copy for non-slack variables.
+      if (var < first_slack) {
+        const glop::ColIndex col =
+            mirror_lp_variable_.at(PositiveVariable(var));
+        if (VariableIsPositive(var)) {
+          tmp_scattered_vector_.Add(col, coeff);
+        } else {
+          tmp_scattered_vector_.Add(col, -coeff);
+        }
+        continue;
+      } else {
+        // Replace slack from LP constraints.
+        const int slack_index = (var.value() - first_slack.value()) / 2;
+        const glop::RowIndex row = tmp_slack_rows_[slack_index];
+        if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
+                coeff, integer_lp_[row].terms)) {
+          VLOG(2) << "Overflow in slack removal";
+          ++num_cut_overflows_;
+          return false;
+        }
+      }
+    }
   }
 
   tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
@@ -1211,7 +1224,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
     top_n_cuts_.AddCut(cut_, name, expanded_lp_solution_);
     return true;
   }
-  return constraint_manager_.AddCut(cut_, name, expanded_lp_solution_, info);
+  return constraint_manager_.AddCut(cut_, name, info);
 }
 
 // TODO(user): This can be still too slow on some problems like
@@ -1341,8 +1354,7 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   // cuts will be derived in subsequent passes. Otherwise, try normal cut
   // heuristic that should result in a cut with reasonable coefficients.
   if (obj_coeff_magnitude < 1e9 &&
-      constraint_manager_.AddCut(objective_ct, "Objective",
-                                 expanded_lp_solution_)) {
+      constraint_manager_.AddCut(objective_ct, "Objective")) {
     return;
   }
 
@@ -1352,10 +1364,12 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   }
 
   // Try knapsack.
+  const IntegerVariable first_slack(
+      std::numeric_limits<IntegerVariable::ValueType>::max());
   base_ct_.ComplementForPositiveCoefficients();
   if (cover_cut_helper_.TrySimpleKnapsack(base_ct_)) {
-    constraint_manager_.AddCut(cover_cut_helper_.cut(), "Objective_K",
-                               expanded_lp_solution_);
+    PostprocessAndAddCut("Objective_K", cover_cut_helper_.Info(), first_slack,
+                         cover_cut_helper_.cut());
   }
 
   // Try rounding.
@@ -1364,8 +1378,8 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   base_ct_.ComplementForSmallerLpValues();
   if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
                                               &implied_bounds_processor_)) {
-    constraint_manager_.AddCut(integer_rounding_cut_helper_.cut(),
-                               "Objective_R", expanded_lp_solution_);
+    PostprocessAndAddCut("Objective_R", integer_rounding_cut_helper_.Info(),
+                         first_slack, integer_rounding_cut_helper_.cut());
   }
 }
 
@@ -1723,7 +1737,8 @@ bool LinearProgrammingConstraint::Propagate() {
     // begin to generate cuts. Note that we rely on num_solves_ since on some
     // problems there is no other constraints than the cuts.
     cuts_round++;
-    if (parameters_.cut_level() > 0 && num_solves_ > 1) {
+    if (parameters_.cut_level() > 0 &&
+        (num_solves_ > 1 || !parameters_.add_lp_constraints_lazily())) {
       // This must be called first.
       implied_bounds_processor_.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);
@@ -1742,29 +1757,26 @@ bool LinearProgrammingConstraint::Propagate() {
         if (problem_proven_infeasible_by_cuts_) {
           return integer_trail_->ReportConflict({});
         }
-        top_n_cuts_.TransferToManager(expanded_lp_solution_,
-                                      &constraint_manager_);
+        top_n_cuts_.TransferToManager(&constraint_manager_);
       }
 
       // Try to add cuts.
       if (level == 0 || !parameters_.only_add_cuts_at_level_zero()) {
         for (const CutGenerator& generator : cut_generators_) {
           if (level > 0 && generator.only_run_at_level_zero) continue;
-          if (!generator.generate_cuts(expanded_lp_solution_,
-                                       &constraint_manager_)) {
+          if (!generator.generate_cuts(&constraint_manager_)) {
             return false;
           }
         }
       }
 
       implied_bounds_processor_.IbCutPool().TransferToManager(
-          expanded_lp_solution_, &constraint_manager_);
+          &constraint_manager_);
     }
 
     int num_added = 0;
     state_ = simplex_.GetState();
-    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state_,
-                                     &num_added)) {
+    if (constraint_manager_.ChangeLp(&state_, &num_added)) {
       simplex_.LoadStateForNextSolve(state_);
       if (!CreateLpFromConstraintManager()) {
         return integer_trail_->ReportConflict({});
@@ -2715,6 +2727,8 @@ std::string LinearProgrammingConstraint::Statistics() const {
                   FormatCounter(total_num_eq_propagations_), "\n");
   absl::StrAppend(&result, "  total num cut overflow: ",
                   FormatCounter(num_cut_overflows_), "\n");
+  absl::StrAppend(&result,
+                  "  total num bad cuts: ", FormatCounter(num_bad_cuts_), "\n");
   absl::StrAppend(&result, "  total num adjust: ", FormatCounter(num_adjusts_),
                   "\n");
   absl::StrAppend(&result, "  total num scaling issues: ",
@@ -2731,7 +2745,7 @@ std::string LinearProgrammingConstraint::Statistics() const {
 }
 
 std::function<IntegerLiteral()>
-LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary(Model* model) {
+LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary() {
   // Gather all 0-1 variables that appear in this LP.
   std::vector<IntegerVariable> variables;
   for (IntegerVariable var : integer_variables_) {
@@ -2777,7 +2791,7 @@ LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary(Model* model) {
 }
 
 std::function<IntegerLiteral()>
-LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model* model) {
+LinearProgrammingConstraint::HeuristicLpReducedCostBinary() {
   // Gather all 0-1 variables that appear in this LP.
   std::vector<IntegerVariable> variables;
   for (IntegerVariable var : integer_variables_) {

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample to demonstrates how to rank intervals."""
 
 from ortools.sat.python import cp_model
@@ -19,16 +20,16 @@ from ortools.sat.python import cp_model
 def RankTasks(model, starts, presences, ranks):
     """This method adds constraints and variables to links tasks and ranks.
 
-  This method assumes that all starts are disjoint, meaning that all tasks have
-  a strictly positive duration, and they appear in the same NoOverlap
-  constraint.
+    This method assumes that all starts are disjoint, meaning that all tasks have
+    a strictly positive duration, and they appear in the same NoOverlap
+    constraint.
 
-  Args:
-    model: The CpModel to add the constraints to.
-    starts: The array of starts variables of all tasks.
-    presences: The array of presence variables of all tasks.
-    ranks: The array of rank variables of all tasks.
-  """
+    Args:
+      model: The CpModel to add the constraints to.
+      starts: The array of starts variables of all tasks.
+      presences: The array of presence variables of all tasks.
+      ranks: The array of rank variables of all tasks.
+    """
 
     num_tasks = len(starts)
     all_tasks = range(num_tasks)
@@ -40,7 +41,7 @@ def RankTasks(model, starts, presences, ranks):
             if i == j:
                 precedences[(i, j)] = presences[i]
             else:
-                prec = model.NewBoolVar(f'{i} before {j}')
+                prec = model.NewBoolVar(f"{i} before {j}")
                 precedences[(i, j)] = prec
                 model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
 
@@ -51,17 +52,13 @@ def RankTasks(model, starts, presences, ranks):
             if not cp_model.ObjectIsATrueLiteral(presences[i]):
                 tmp_array.append(presences[i].Not())
                 # Makes sure that if i is not performed, all precedences are false.
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(i, j)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(j, i)].Not())
             if not cp_model.ObjectIsATrueLiteral(presences[j]):
                 tmp_array.append(presences[j].Not())
                 # Makes sure that if j is not performed, all precedences are false.
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
@@ -92,25 +89,24 @@ def RankingSampleSat():
 
     # Creates intervals, half of them are optional.
     for t in all_tasks:
-        start = model.NewIntVar(0, horizon, f'start[{t}]')
+        start = model.NewIntVar(0, horizon, f"start[{t}]")
         duration = t + 1
-        end = model.NewIntVar(0, horizon, f'end[{t}]')
+        end = model.NewIntVar(0, horizon, f"end[{t}]")
         if t < num_tasks // 2:
-            interval = model.NewIntervalVar(start, duration, end,
-                                            f'interval[{t}]')
+            interval = model.NewIntervalVar(start, duration, end, f"interval[{t}]")
             presence = True
         else:
-            presence = model.NewBoolVar(f'presence[{t}]')
-            interval = model.NewOptionalIntervalVar(start, duration, end,
-                                                    presence,
-                                                    f'o_interval[{t}]')
+            presence = model.NewBoolVar(f"presence[{t}]")
+            interval = model.NewOptionalIntervalVar(
+                start, duration, end, presence, f"o_interval[{t}]"
+            )
         starts.append(start)
         ends.append(end)
         intervals.append(interval)
         presences.append(presence)
 
         # Ranks = -1 if and only if the tasks is not performed.
-        ranks.append(model.NewIntVar(-1, num_tasks - 1, f'rank[{t}]'))
+        ranks.append(model.NewIntVar(-1, num_tasks - 1, f"rank[{t}]"))
 
     # Adds NoOverlap constraint.
     model.AddNoOverlap(intervals)
@@ -122,7 +118,7 @@ def RankingSampleSat():
     model.Add(ranks[0] < ranks[1])
 
     # Creates makespan variable.
-    makespan = model.NewIntVar(0, horizon, 'makespan')
+    makespan = model.NewIntVar(0, horizon, "makespan")
     for t in all_tasks:
         model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
 
@@ -137,17 +133,21 @@ def RankingSampleSat():
 
     if status == cp_model.OPTIMAL:
         # Prints out the makespan and the start times and ranks of all tasks.
-        print(f'Optimal cost: {solver.ObjectiveValue()}')
-        print(f'Makespan: {solver.Value(makespan)}')
+        print(f"Optimal cost: {solver.ObjectiveValue()}")
+        print(f"Makespan: {solver.Value(makespan)}")
         for t in all_tasks:
             if solver.Value(presences[t]):
-                print(f'Task {t} starts at {solver.Value(starts[t])} '
-                      f'with rank {solver.Value(ranks[t])}')
+                print(
+                    f"Task {t} starts at {solver.Value(starts[t])} "
+                    f"with rank {solver.Value(ranks[t])}"
+                )
             else:
-                print(f'Task {t} in not performed '
-                      f'and ranked at {solver.Value(ranks[t])}')
+                print(
+                    f"Task {t} in not performed "
+                    f"and ranked at {solver.Value(ranks[t])}"
+                )
     else:
-        print(f'Solver exited with nonoptimal status: {status}')
+        print(f"Solver exited with nonoptimal status: {status}")
 
 
 RankingSampleSat()

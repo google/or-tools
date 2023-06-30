@@ -269,14 +269,13 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 
 // Same as Add(), but logs some information about the newly added constraint.
 // Cuts are also handled slightly differently than normal constraints.
-bool LinearConstraintManager::AddCut(
-    const LinearConstraint& ct, std::string type_name,
-    const absl::StrongVector<IntegerVariable, double>& lp_solution,
-    std::string extra_info) {
+bool LinearConstraintManager::AddCut(const LinearConstraint& ct,
+                                     std::string type_name,
+                                     std::string extra_info) {
   ++num_add_cut_calls_;
   if (ct.vars.empty()) return false;
 
-  const double activity = ComputeActivity(ct, lp_solution);
+  const double activity = ComputeActivity(ct, expanded_lp_solution_);
   const double violation =
       std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
   const double l2_norm = ComputeL2Norm(ct);
@@ -542,9 +541,8 @@ void LinearConstraintManager::FillDerivedFields(ConstraintInfo* info) {
   info->ub_is_trivial = max_sum <= info->constraint.ub;
 }
 
-bool LinearConstraintManager::ChangeLp(
-    const absl::StrongVector<IntegerVariable, double>& lp_solution,
-    glop::BasisState* solution_state, int* num_new_constraints) {
+bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
+                                       int* num_new_constraints) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
   const double saved_dtime = dtime_;
@@ -595,7 +593,7 @@ bool LinearConstraintManager::ChangeLp(
     dtime_ += 1.7e-9 *
               static_cast<double>(constraint_infos_[i].constraint.vars.size());
     const double activity =
-        ComputeActivity(constraint_infos_[i].constraint, lp_solution);
+        ComputeActivity(constraint_infos_[i].constraint, expanded_lp_solution_);
     const double lb_violation =
         ToDouble(constraint_infos_[i].constraint.lb) - activity;
     const double ub_violation =
@@ -828,11 +826,9 @@ void TopNCuts::AddCut(
   cuts_.Add({name, ct}, violation / l2_norm);
 }
 
-void TopNCuts::TransferToManager(
-    const absl::StrongVector<IntegerVariable, double>& lp_solution,
-    LinearConstraintManager* manager) {
+void TopNCuts::TransferToManager(LinearConstraintManager* manager) {
   for (const CutCandidate& candidate : cuts_.UnorderedElements()) {
-    manager->AddCut(candidate.cut, candidate.name, lp_solution);
+    manager->AddCut(candidate.cut, candidate.name);
   }
   cuts_.Clear();
 }

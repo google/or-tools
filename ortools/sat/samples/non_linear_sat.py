@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Non linear example.
 
 Finds a rectangle with maximum available area for given perimeter using
@@ -26,11 +27,11 @@ def non_linear_sat():
 
     model = cp_model.CpModel()
 
-    x = model.NewIntVar(0, perimeter, 'x')
-    y = model.NewIntVar(0, perimeter, 'y')
+    x = model.NewIntVar(0, perimeter, "x")
+    y = model.NewIntVar(0, perimeter, "y")
     model.Add(2 * (x + y) == perimeter)
 
-    area = model.NewIntVar(0, perimeter * perimeter, 's')
+    area = model.NewIntVar(0, perimeter * perimeter, "s")
     model.AddMultiplicationEquality(area, x, y)
 
     model.Maximize(area)
@@ -40,11 +41,11 @@ def non_linear_sat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f'x = {solver.Value(x)}')
-        print(f'y = {solver.Value(y)}')
-        print(f's = {solver.Value(area)}')
+        print(f"x = {solver.Value(x)}")
+        print(f"y = {solver.Value(y)}")
+        print(f"s = {solver.Value(area)}")
     else:
-        print('No solution found.')
+        print("No solution found.")
 
 
 non_linear_sat()

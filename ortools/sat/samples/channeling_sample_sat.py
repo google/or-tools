@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Link integer constraints together."""
+
 
 from ortools.sat.python import cp_model
 
@@ -27,7 +29,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -41,11 +43,11 @@ def ChannelingSampleSat():
     model = cp_model.CpModel()
 
     # Declare our two primary variables.
-    x = model.NewIntVar(0, 10, 'x')
-    y = model.NewIntVar(0, 10, 'y')
+    x = model.NewIntVar(0, 10, "x")
+    y = model.NewIntVar(0, 10, "y")
 
     # Declare our intermediate boolean variable.
-    b = model.NewBoolVar('b')
+    b = model.NewBoolVar("b")
 
     # Implement b == (x >= 5).
     model.Add(x >= 5).OnlyEnforceIf(b)
@@ -58,8 +60,7 @@ def ChannelingSampleSat():
     model.Add(y == 0).OnlyEnforceIf(b.Not())
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()

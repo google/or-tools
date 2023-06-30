@@ -14,15 +14,12 @@
 #ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
-#include <math.h>
-
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/util/time_limit.h"
 

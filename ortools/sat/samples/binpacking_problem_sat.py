@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solves a binpacking problem using the CP-SAT solver."""
+
 
 from ortools.sat.python import cp_model
 
@@ -36,13 +38,13 @@ def BinpackingProblemSat():
     for i in all_items:
         num_copies = items[i][1]
         for b in all_bins:
-            x[(i, b)] = model.NewIntVar(0, num_copies, f'x[{i},{b}]')
+            x[(i, b)] = model.NewIntVar(0, num_copies, f"x[{i},{b}]")
 
     # Load variables.
-    load = [model.NewIntVar(0, bin_capacity, f'load[{b}]') for b in all_bins]
+    load = [model.NewIntVar(0, bin_capacity, f"load[{b}]") for b in all_bins]
 
     # Slack variables.
-    slacks = [model.NewBoolVar(f'slack[{b}]') for b in all_bins]
+    slacks = [model.NewBoolVar(f"slack[{b}]") for b in all_bins]
 
     # Links load and x.
     for b in all_bins:
@@ -66,13 +68,13 @@ def BinpackingProblemSat():
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    print(f'Solve status: {solver.StatusName(status)}')
+    print(f"Solve status: {solver.StatusName(status)}")
     if status == cp_model.OPTIMAL:
-        print(f'Optimal objective value: {solver.ObjectiveValue()}')
-    print('Statistics')
-    print(f'  - conflicts : {solver.NumConflicts()}')
-    print(f'  - branches  : {solver.NumBranches()}')
-    print(f'  - wall time : {solver.WallTime()}s')
+        print(f"Optimal objective value: {solver.ObjectiveValue()}")
+    print("Statistics")
+    print(f"  - conflicts : {solver.NumConflicts()}")
+    print(f"  - branches  : {solver.NumBranches()}")
+    print(f"  - wall time : {solver.WallTime()}s")
 
 
 BinpackingProblemSat()

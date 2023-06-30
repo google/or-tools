@@ -77,7 +77,7 @@ def main():
     x = {}
     for worker in range(num_workers):
         for task in range(num_tasks):
-            x[worker, task] = model.NewBoolVar(f'x[{worker},{task}]')
+            x[worker, task] = model.NewBoolVar(f"x[{worker},{task}]")
     # [END variables]
 
     # Constraints
@@ -95,12 +95,11 @@ def main():
     # Create variables for each worker, indicating whether they work on some task.
     work = {}
     for worker in range(num_workers):
-        work[worker] = model.NewBoolVar(f'work[{worker}]')
+        work[worker] = model.NewBoolVar(f"work[{worker}]")
 
     for worker in range(num_workers):
         for task in range(num_tasks):
-            model.Add(work[worker] == sum(
-                x[worker, task] for task in range(num_tasks)))
+            model.Add(work[worker] == sum(x[worker, task] for task in range(num_tasks)))
 
     # Define the allowed groups of worders
     model.AddAllowedAssignments([work[0], work[1], work[2], work[3]], group1)
@@ -126,17 +125,19 @@ def main():
     # Print solution.
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f'Total cost = {solver.ObjectiveValue()}\n')
+        print(f"Total cost = {solver.ObjectiveValue()}\n")
         for worker in range(num_workers):
             for task in range(num_tasks):
                 if solver.BooleanValue(x[worker, task]):
-                    print(f'Worker {worker} assigned to task {task}.' +
-                          f' Cost = {costs[worker][task]}')
+                    print(
+                        f"Worker {worker} assigned to task {task}."
+                        + f" Cost = {costs[worker][task]}"
+                    )
     else:
-        print('No solution found.')
+        print("No solution found.")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

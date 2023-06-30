@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample to demonstrate how an interval can span across a break."""
 
 from ortools.sat.python import cp_model
@@ -27,7 +28,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -47,23 +48,24 @@ def SchedulingWithCalendarSampleSat():
     # Because of the break, work cannot start at 13h.
 
     start = model.NewIntVarFromDomain(
-        cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), 'start')
-    duration = model.NewIntVar(3, 4, 'duration')
-    end = model.NewIntVar(8, 18, 'end')
-    unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
+        cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), "start"
+    )
+    duration = model.NewIntVar(3, 4, "duration")
+    end = model.NewIntVar(8, 18, "end")
+    unused_interval = model.NewIntervalVar(start, duration, end, "interval")
 
     # We have 2 states (spanning across lunch or not)
-    across = model.NewBoolVar('across')
+    across = model.NewBoolVar("across")
     non_spanning_hours = cp_model.Domain.FromValues([8, 9, 10, 14, 15])
     model.AddLinearExpressionInDomain(start, non_spanning_hours).OnlyEnforceIf(
-        across.Not())
+        across.Not()
+    )
     model.AddLinearConstraint(start, 11, 12).OnlyEnforceIf(across)
     model.Add(duration == 3).OnlyEnforceIf(across.Not())
     model.Add(duration == 4).OnlyEnforceIf(across)
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([start], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([start], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()

@@ -30,10 +30,10 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
         if self.__solution_count >= self.__solution_limit:
-            print(f'Stop search after {self.__solution_limit} solutions')
+            print(f"Stop search after {self.__solution_limit} solutions")
             self.StopSearch()
 
     def solution_count(self):
@@ -46,9 +46,9 @@ def StopAfterNSolutionsSampleSat():
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -57,8 +57,8 @@ def StopAfterNSolutionsSampleSat():
     solver.parameters.enumerate_all_solutions = True
     # Solve.
     status = solver.Solve(model, solution_printer)
-    print(f'Status = {solver.StatusName(status)}')
-    print(f'Number of solutions found: {solution_printer.solution_count()}')
+    print(f"Status = {solver.StatusName(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count()}")
     assert solution_printer.solution_count() == 5
 
 

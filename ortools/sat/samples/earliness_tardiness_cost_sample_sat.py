@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Encodes a convex piecewise linear function."""
+
 
 from ortools.sat.python import cp_model
 
@@ -27,7 +29,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -46,7 +48,7 @@ def earliness_tardiness_cost_sample_sat():
     model = cp_model.CpModel()
 
     # Declare our primary variable.
-    x = model.NewIntVar(0, 20, 'x')
+    x = model.NewIntVar(0, 20, "x")
 
     # Create the expression variable and implement the piecewise linear function.
     #
@@ -55,25 +57,24 @@ def earliness_tardiness_cost_sample_sat():
     #   ed    ld
     #
     large_constant = 1000
-    expr = model.NewIntVar(0, large_constant, 'expr')
+    expr = model.NewIntVar(0, large_constant, "expr")
 
     # First segment.
-    s1 = model.NewIntVar(-large_constant, large_constant, 's1')
+    s1 = model.NewIntVar(-large_constant, large_constant, "s1")
     model.Add(s1 == earliness_cost * (earliness_date - x))
 
     # Second segment.
     s2 = 0
 
     # Third segment.
-    s3 = model.NewIntVar(-large_constant, large_constant, 's3')
+    s3 = model.NewIntVar(-large_constant, large_constant, "s3")
     model.Add(s3 == lateness_cost * (x - lateness_date))
 
     # Link together expr and x through s1, s2, and s3.
     model.AddMaxEquality(expr, [s1, s2, s3])
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()

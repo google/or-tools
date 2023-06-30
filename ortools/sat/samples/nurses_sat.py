@@ -42,7 +42,7 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar(f'shift_n{n}_d{d}_s{s}')
+                shifts[(n, d, s)] = model.NewBoolVar(f"shift_n{n}_d{d}_s{s}")
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in the schedule period.
@@ -84,7 +84,6 @@ def main():
     solver.parameters.linearization_level = 0
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
-
     # [END parameters]
 
     # [START solution_printer]
@@ -102,19 +101,19 @@ def main():
 
         def on_solution_callback(self):
             self._solution_count += 1
-            print(f'Solution {self._solution_count}')
+            print(f"Solution {self._solution_count}")
             for d in range(self._num_days):
-                print(f'Day {d}')
+                print(f"Day {d}")
                 for n in range(self._num_nurses):
                     is_working = False
                     for s in range(self._num_shifts):
                         if self.Value(self._shifts[(n, d, s)]):
                             is_working = True
-                            print(f'  Nurse {n} works shift {s}')
+                            print(f"  Nurse {n} works shift {s}")
                     if not is_working:
-                        print(f'  Nurse {n} does not work')
+                        print(f"  Nurse {n} does not work")
             if self._solution_count >= self._solution_limit:
-                print(f'Stop search after {self._solution_limit} solutions')
+                print(f"Stop search after {self._solution_limit} solutions")
                 self.StopSearch()
 
         def solution_count(self):
@@ -122,9 +121,9 @@ def main():
 
     # Display the first five solutions.
     solution_limit = 5
-    solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
-                                                    num_days, num_shifts,
-                                                    solution_limit)
+    solution_printer = NursesPartialSolutionPrinter(
+        shifts, num_nurses, num_days, num_shifts, solution_limit
+    )
     # [END solution_printer]
 
     # [START solve]
@@ -133,14 +132,14 @@ def main():
 
     # Statistics.
     # [START statistics]
-    print('\nStatistics')
-    print(f'  - conflicts      : {solver.NumConflicts()}')
-    print(f'  - branches       : {solver.NumBranches()}')
-    print(f'  - wall time      : {solver.WallTime()} s')
-    print(f'  - solutions found: {solution_printer.solution_count()}')
+    print("\nStatistics")
+    print(f"  - conflicts      : {solver.NumConflicts()}")
+    print(f"  - branches       : {solver.NumBranches()}")
+    print(f"  - wall time      : {solver.WallTime()} s")
+    print(f"  - solutions found: {solution_printer.solution_count()}")
     # [END statistics]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

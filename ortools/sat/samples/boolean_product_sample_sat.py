@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample that encodes the product of two Boolean variables."""
+
 
 from ortools.sat.python import cp_model
 
@@ -19,12 +21,12 @@ from ortools.sat.python import cp_model
 def BooleanProductSampleSat():
     """Encoding of the product of two Boolean variables.
 
-  p == x * y, which is the same as p <=> x and y
-  """
+    p == x * y, which is the same as p <=> x and y
+    """
     model = cp_model.CpModel()
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
-    p = model.NewBoolVar('p')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
+    p = model.NewBoolVar("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
     model.AddBoolOr(x.Not(), y.Not(), p)

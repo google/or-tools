@@ -26,7 +26,13 @@ elseif(UNIX)
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(swig_helper PRIVATE ${PROJECT_NAMESPACE}::ortools)
+target_link_libraries(swig_helper PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  pybind11_native_proto_caster
+  protobuf::libprotobuf
+  )
+target_include_directories(swig_helper PRIVATE ${protobuf_SOURCE_DIR})
+
 add_library(${PROJECT_NAMESPACE}::swig_helper ALIAS swig_helper)
 
 if(BUILD_TESTING)

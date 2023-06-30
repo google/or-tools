@@ -1,0 +1,89 @@
+node {
+  type                : HUT
+  current_index       : 0
+  geodata_node_ref     : 0
+}
+node {
+  type                : POLE
+  current_index       : 1
+  parent_index        : 0
+  cable_length_meters : 600
+  geodata_node_ref     : 1
+}
+node {
+  type                : FDH
+  current_index       : 2
+  parent_index        : 1
+  cable_length_meters : 600
+  geodata_node_ref     : 2
+}
+node {
+  type                : UNDERGROUND_VAULT
+  current_index       : 3
+  parent_index        : 1
+  cable_length_meters : 300
+  geodata_node_ref     : 3
+}
+node {
+  type                : POLE
+  current_index       : 4
+  parent_index        : 3
+  cable_length_meters : 300
+  geodata_node_ref     : 4
+}
+node {
+  type                : FDH
+  current_index       : 5
+  parent_index        : 4
+  cable_length_meters : 300
+  geodata_node_ref     : 5
+}
+node {
+  type                : FDH
+  current_index       : 6
+  parent_index        : 3
+  cable_length_meters : 600
+  geodata_node_ref     : 6
+}
+node {
+  type                : POLE
+  current_index       : 7
+  parent_index        : 6
+  cable_length_meters : 600
+  geodata_node_ref     : 7
+}
+node {
+  type                : FDH
+  current_index       : 8
+  parent_index        : 7
+  cable_length_meters : 900
+  geodata_node_ref     : 8
+}
+node {
+  type                : CUSTOMER_ENDPOINT
+  current_index       : 9
+  parent_index        : 2
+  cable_length_meters : 9000
+  geodata_node_ref    : 9
+}
+node {
+  type                : CUSTOMER_ENDPOINT
+  current_index       : 10
+  parent_index        : 5
+  cable_length_meters : 9000
+  geodata_node_ref    : 10
+}
+node {
+  type                : CUSTOMER_ENDPOINT
+  current_index       : 11
+  parent_index        : 6
+  cable_length_meters : 9000
+  geodata_node_ref    : 11
+}
+node {
+  type                : CUSTOMER_ENDPOINT
+  current_index       : 12
+  parent_index        : 8
+  cable_length_meters : 9000
+  geodata_node_ref    : 12
+}

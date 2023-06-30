@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Rabbits and Pheasants quizz."""
 
 from ortools.sat.python import cp_model
@@ -20,8 +21,8 @@ def RabbitsAndPheasantsSat():
     """Solves the rabbits + pheasants problem."""
     model = cp_model.CpModel()
 
-    r = model.NewIntVar(0, 100, 'r')
-    p = model.NewIntVar(0, 100, 'p')
+    r = model.NewIntVar(0, 100, "r")
+    p = model.NewIntVar(0, 100, "p")
 
     # 20 heads.
     model.Add(r + p == 20)
@@ -33,7 +34,7 @@ def RabbitsAndPheasantsSat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL:
-        print(f'{solver.Value(r)} rabbits and {solver.Value(p)} pheasants')
+        print(f"{solver.Value(r)} rabbits and {solver.Value(p)} pheasants")
 
 
 RabbitsAndPheasantsSat()

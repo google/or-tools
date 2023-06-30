@@ -37,7 +37,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -55,16 +55,16 @@ def main():
     # [START variables]
     base = 10
 
-    c = model.NewIntVar(1, base - 1, 'C')
-    p = model.NewIntVar(0, base - 1, 'P')
-    i = model.NewIntVar(1, base - 1, 'I')
-    s = model.NewIntVar(0, base - 1, 'S')
-    f = model.NewIntVar(1, base - 1, 'F')
-    u = model.NewIntVar(0, base - 1, 'U')
-    n = model.NewIntVar(0, base - 1, 'N')
-    t = model.NewIntVar(1, base - 1, 'T')
-    r = model.NewIntVar(0, base - 1, 'R')
-    e = model.NewIntVar(0, base - 1, 'E')
+    c = model.NewIntVar(1, base - 1, "C")
+    p = model.NewIntVar(0, base - 1, "P")
+    i = model.NewIntVar(1, base - 1, "I")
+    s = model.NewIntVar(0, base - 1, "S")
+    f = model.NewIntVar(1, base - 1, "F")
+    u = model.NewIntVar(0, base - 1, "U")
+    n = model.NewIntVar(0, base - 1, "N")
+    t = model.NewIntVar(1, base - 1, "T")
+    r = model.NewIntVar(0, base - 1, "R")
+    e = model.NewIntVar(0, base - 1, "E")
 
     # We need to group variables in a list to use the constraint AllDifferent.
     letters = [c, p, i, s, f, u, n, t, r, e]
@@ -78,8 +78,10 @@ def main():
     model.AddAllDifferent(letters)
 
     # CP + IS + FUN = TRUE
-    model.Add(c * base + p + i * base + s + f * base * base + u * base +
-              n == t * base * base * base + r * base * base + u * base + e)
+    model.Add(
+        c * base + p + i * base + s + f * base * base + u * base + n
+        == t * base * base * base + r * base * base + u * base + e
+    )
     # [END constraints]
 
     # Creates a solver and solves the model.
@@ -94,15 +96,15 @@ def main():
 
     # Statistics.
     # [START statistics]
-    print('\nStatistics')
-    print(f'  status   : {solver.StatusName(status)}')
-    print(f'  conflicts: {solver.NumConflicts()}')
-    print(f'  branches : {solver.NumBranches()}')
-    print(f'  wall time: {solver.WallTime()} s')
-    print(f'  sol found: {solution_printer.solution_count()}')
+    print("\nStatistics")
+    print(f"  status   : {solver.StatusName(status)}")
+    print(f"  conflicts: {solver.NumConflicts()}")
+    print(f"  branches : {solver.NumBranches()}")
+    print(f"  wall time: {solver.WallTime()} s")
+    print(f"  sol found: {solution_printer.solution_count()}")
     # [END statistics]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

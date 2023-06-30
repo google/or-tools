@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Code sample that solves a model and gets the infeasibility assumptions."""
 # [START program]
 # [START import]
@@ -27,12 +28,12 @@ def main():
 
     # Creates the variables.
     # [START variables]
-    x = model.NewIntVar(0, 10, 'x')
-    y = model.NewIntVar(0, 10, 'y')
-    z = model.NewIntVar(0, 10, 'z')
-    a = model.NewBoolVar('a')
-    b = model.NewBoolVar('b')
-    c = model.NewBoolVar('c')
+    x = model.NewIntVar(0, 10, "x")
+    y = model.NewIntVar(0, 10, "y")
+    z = model.NewIntVar(0, 10, "z")
+    a = model.NewBoolVar("a")
+    b = model.NewBoolVar("b")
+    c = model.NewBoolVar("c")
     # [END variables]
 
     # Creates the constraints.
@@ -53,13 +54,15 @@ def main():
 
     # Print solution.
     # [START print_solution]
-    print(f'Status = {solver.StatusName(status)}')
+    print(f"Status = {solver.StatusName(status)}")
     if status == cp_model.INFEASIBLE:
-        print('SufficientAssumptionsForInfeasibility = '
-              f'{solver.SufficientAssumptionsForInfeasibility()}')
+        print(
+            "SufficientAssumptionsForInfeasibility = "
+            f"{solver.SufficientAssumptionsForInfeasibility()}"
+        )
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

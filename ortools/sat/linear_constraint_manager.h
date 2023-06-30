@@ -41,6 +41,16 @@
 namespace operations_research {
 namespace sat {
 
+// Stores for each IntegerVariable its temporary LP solution.
+//
+// This is shared between all LinearProgrammingConstraint because in the corner
+// case where we have many different LinearProgrammingConstraint and a lot of
+// variable, we could theoretically use up a quadratic amount of memory
+// otherwise.
+struct ModelLpValues : public absl::StrongVector<IntegerVariable, double> {
+  ModelLpValues() = default;
+};
+
 // This class holds a list of globally valid linear constraints and has some
 // logic to decide which one should be part of the LP relaxation. We want more
 // for a better relaxation, but for efficiency we do not want to have too much
@@ -85,6 +95,7 @@ class LinearConstraintManager {
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
+        expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
         model_(model),
         logger_(model->GetOrCreate<SolverLogger>()) {}
   ~LinearConstraintManager();
@@ -103,7 +114,6 @@ class LinearConstraintManager {
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
   bool AddCut(const LinearConstraint& ct, std::string type_name,
-              const absl::StrongVector<IntegerVariable, double>& lp_solution,
               std::string extra_info = "");
 
   // These must be level zero bounds.
@@ -117,17 +127,16 @@ class LinearConstraintManager {
   // is easy to support dynamic modification if it becomes needed.
   void SetObjectiveCoefficient(IntegerVariable var, IntegerValue coeff);
 
-  // Heuristic to decides what LP is best solved next. The given lp_solution
-  // should usually be the optimal solution of the LP returned by GetLp() before
-  // this call, but is just used as an heuristic.
+  // Heuristic to decides what LP is best solved next. We use the model lp
+  // solutions as an heuristic, and it should usually be updated with the last
+  // known solution before this call.
   //
   // The current solution state is used for detecting inactive constraints. It
   // is also updated correctly on constraint deletion/addition so that the
   // simplex can be fully iterative on restart by loading this modified state.
   //
   // Returns true iff LpConstraints() will return a different LP than before.
-  bool ChangeLp(const absl::StrongVector<IntegerVariable, double>& lp_solution,
-                glop::BasisState* solution_state,
+  bool ChangeLp(glop::BasisState* solution_state,
                 int* num_new_constraints = nullptr);
 
   // This can be called initially to add all the current constraint to the LP
@@ -144,6 +153,11 @@ class LinearConstraintManager {
   // of the next LP to solve.
   const std::vector<ConstraintIndex>& LpConstraints() const {
     return lp_constraints_;
+  }
+
+  // To simplify CutGenerator api.
+  const absl::StrongVector<IntegerVariable, double>& LpValues() {
+    return expanded_lp_solution_;
   }
 
   int64_t num_cuts() const { return num_cuts_; }
@@ -242,6 +256,7 @@ class LinearConstraintManager {
   absl::flat_hash_map<IntegerVariable, double> objective_map_;
 
   TimeLimit* time_limit_;
+  ModelLpValues& expanded_lp_solution_;
   Model* model_;
   SolverLogger* logger_;
 
@@ -268,14 +283,12 @@ class TopNCuts {
  public:
   explicit TopNCuts(int n) : cuts_(n) {}
 
-  // Add a cut to the local pool
+  // Adds a cut to the local pool.
   void AddCut(LinearConstraint ct, const std::string& name,
               const absl::StrongVector<IntegerVariable, double>& lp_solution);
 
   // Empty the local pool and add all its content to the manager.
-  void TransferToManager(
-      const absl::StrongVector<IntegerVariable, double>& lp_solution,
-      LinearConstraintManager* manager);
+  void TransferToManager(LinearConstraintManager* manager);
 
  private:
   struct CutCandidate {

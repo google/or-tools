@@ -45,19 +45,15 @@ namespace sat {
 
 // A "cut" generator on a set of IntegerVariable.
 //
-// The generate_cuts() function will usually be called with the current LP
-// optimal solution (but should work for any lp_values). Note that a
-// CutGenerator should:
+// The generate_cuts() function can get the current LP solution with
+// manager->LpValues(). Note that a CutGenerator should:
 // - Only look at the lp_values positions that corresponds to its 'vars' or
 //   their negation.
 // - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
   bool only_run_at_level_zero = false;
   std::vector<IntegerVariable> vars;
-  std::function<bool(
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
-      LinearConstraintManager* manager)>
-      generate_cuts;
+  std::function<bool(LinearConstraintManager* manager)> generate_cuts;
 };
 
 // To simplify cut generation code, we use a more complex data structure than
@@ -114,6 +110,9 @@ struct CutData {
   bool AllCoefficientsArePositive() const;
   void ComplementForPositiveCoefficients();
   void ComplementForSmallerLpValues();
+
+  // Computes and return the cut violation.
+  double ComputeViolation() const;
 
   std::string DebugString() const;
 
@@ -495,7 +494,7 @@ class IntegerRoundingCutHelper {
                   ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // If successful, info about the last generated cut.
-  const LinearConstraint& cut() const { return cut_; }
+  const CutData& cut() const { return cut_; }
 
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
@@ -514,9 +513,8 @@ class IntegerRoundingCutHelper {
   std::vector<IntegerValue> best_rs_;
 
   int64_t num_ib_used_ = 0;
-  CutData best_cut_;
   CutDataBuilder cut_builder_;
-  LinearConstraint cut_;
+  CutData cut_;
 
   std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
   std::vector<std::pair<int, IntegerValue>> best_adjusted_coeffs_;
@@ -588,7 +586,7 @@ class CoverCutHelper {
                          ImpliedBoundsProcessor* ib_processor = nullptr);
 
   // If successful, info about the last generated cut.
-  const LinearConstraint& cut() const { return cut_; }
+  const CutData& cut() const { return cut_; }
 
   // Single line of text that we append to the cut log line.
   std::string Info() const { return absl::StrCat("lift=", num_lifting_); }
@@ -608,8 +606,8 @@ class CoverCutHelper {
   template <class Compare>
   int MinimizeCover(int cover_size, absl::int128 slack);
 
-  // Here to reuse memory.
-  CutData base_ct_;
+  // Here to reuse memory, cut_ is both the input and the output.
+  CutData cut_;
   CutData temp_cut_;
   CutDataBuilder cut_builder_;
 
@@ -631,9 +629,6 @@ class CoverCutHelper {
   CutStats flow_stats_;
   CutStats cover_stats_;
   CutStats ls_stats_;
-
-  // Stores the cut for output.
-  LinearConstraint cut_;
 };
 
 // A cut generator for z = x * y (x and y >= 0).

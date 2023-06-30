@@ -36,8 +36,10 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         current_time = time.time()
-        print(f'Solution {self.__solution_count}, '
-              f'time = {current_time - self.__start_time} s')
+        print(
+            f"Solution {self.__solution_count}, "
+            f"time = {current_time - self.__start_time} s"
+        )
         self.__solution_count += 1
 
         all_queens = range(len(self.__queens))
@@ -45,9 +47,9 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
             for j in all_queens:
                 if self.Value(self.__queens[j]) == i:
                     # There is a queen in column j, row i.
-                    print('Q', end=' ')
+                    print("Q", end=" ")
                 else:
-                    print('_', end=' ')
+                    print("_", end=" ")
             print()
         print()
 
@@ -64,9 +66,7 @@ def main(board_size):
     # [START variables]
     # There are `board_size` number of variables, one for a queen in each column
     # of the board. The value of each variable is the row that the queen is in.
-    queens = [
-        model.NewIntVar(0, board_size - 1, f'x_{i}') for i in range(board_size)
-    ]
+    queens = [model.NewIntVar(0, board_size - 1, f"x_{i}") for i in range(board_size)]
     # [END variables]
 
     # Creates the constraints.
@@ -89,15 +89,15 @@ def main(board_size):
 
     # Statistics.
     # [START statistics]
-    print('\nStatistics')
-    print(f'  conflicts      : {solver.NumConflicts()}')
-    print(f'  branches       : {solver.NumBranches()}')
-    print(f'  wall time      : {solver.WallTime()} s')
-    print(f'  solutions found: {solution_printer.solution_count()}')
+    print("\nStatistics")
+    print(f"  conflicts      : {solver.NumConflicts()}")
+    print(f"  branches       : {solver.NumBranches()}")
+    print(f"  wall time      : {solver.WallTime()} s")
+    print(f"  solutions found: {solution_printer.solution_count()}")
     # [END statistics]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # By default, solve the 8x8 problem.
     size = 8
     if len(sys.argv) > 1:

@@ -17,11 +17,11 @@
 #ifndef OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
 #define OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/scheduling/rcpsp.pb.h"
 
 namespace operations_research {

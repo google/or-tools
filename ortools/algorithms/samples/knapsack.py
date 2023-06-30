@@ -15,7 +15,7 @@
 """A simple knapsack problem."""
 # [START program]
 # [START import]
-from ortools.algorithms import pywrapknapsack_solver
+from ortools.algorithms.python import pywrapknapsack_solver
 # [END import]
 
 
@@ -23,7 +23,7 @@ def main():
     # Create the solver.
     # [START solver]
     solver = pywrapknapsack_solver.KnapsackSolver(
-        pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        pywrapknapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
         "KnapsackExample",
     )
     # [END solver]

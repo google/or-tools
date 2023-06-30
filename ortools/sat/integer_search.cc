@@ -748,10 +748,10 @@ void ConfigureSearchHeuristics(Model* model) {
       base_heuristics.push_back(heuristics.fixed_search);
       for (const auto& ct :
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
-        base_heuristics.push_back(WrapIntegerLiteralHeuristic(
-            ct->HeuristicLpReducedCostBinary(model)));
-        base_heuristics.push_back(WrapIntegerLiteralHeuristic(
-            ct->HeuristicLpMostInfeasibleBinary(model)));
+        base_heuristics.push_back(
+            WrapIntegerLiteralHeuristic(ct->HeuristicLpReducedCostBinary()));
+        base_heuristics.push_back(
+            WrapIntegerLiteralHeuristic(ct->HeuristicLpMostInfeasibleBinary()));
       }
       heuristics.decision_policies = CompleteHeuristics(
           base_heuristics, SequentialSearch({SatSolverHeuristic(model),

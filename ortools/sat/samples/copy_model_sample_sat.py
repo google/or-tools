@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Showcases deep copying of a model."""
 
 # [START program]
@@ -27,9 +28,9 @@ def CopyModelSat():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
     # [END variables]
 
     # Creates the constraints.
@@ -48,8 +49,7 @@ def CopyModelSat():
     # [END solve]
 
     if status == cp_model.OPTIMAL:
-        print('Optimal value of the original model: {}'.format(
-            solver.ObjectiveValue()))
+        print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
 
     # Copy the model.
     copy = cp_model.CpModel()
@@ -62,8 +62,7 @@ def CopyModelSat():
     status = solver.Solve(copy)
 
     if status == cp_model.OPTIMAL:
-        print('Optimal value of the modified model: {}'.format(
-            solver.ObjectiveValue()))
+        print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
 
 
 CopyModelSat()

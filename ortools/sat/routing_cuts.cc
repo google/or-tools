@@ -45,13 +45,14 @@ namespace {
 // Note that we used to also add the same cut for the incoming arcs, but because
 // of flow conservation on these problems, the outgoing flow is always the same
 // as the incoming flow, so adding this extra cut doesn't seem relevant.
-void AddOutgoingCut(
-    int num_nodes, int subset_size, const std::vector<bool>& in_subset,
-    const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals,
-    const std::vector<double>& literal_lp_values, int64_t rhs_lower_bound,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
-    LinearConstraintManager* manager, Model* model) {
+void AddOutgoingCut(int num_nodes, int subset_size,
+                    const std::vector<bool>& in_subset,
+                    const std::vector<int>& tails,
+                    const std::vector<int>& heads,
+                    const std::vector<Literal>& literals,
+                    const std::vector<double>& literal_lp_values,
+                    int64_t rhs_lower_bound, LinearConstraintManager* manager,
+                    Model* model) {
   // A node is said to be optional if it can be excluded from the subcircuit,
   // in which case there is a self-loop on that node.
   // If there are optional nodes, use extended formula:
@@ -128,7 +129,7 @@ void AddOutgoingCut(
   }
 
   if (sum_outgoing < rhs_lower_bound - 1e-6) {
-    manager->AddCut(outgoing.Build(), "Circuit", lp_values);
+    manager->AddCut(outgoing.Build(), "Circuit");
   }
 }
 
@@ -373,8 +374,7 @@ void SeparateSubtourInequalities(
     if (outgoing_flow < min_outgoing_flow - 1e-6) {
       AddOutgoingCut(num_nodes, subset.size(), in_subset, tails, heads,
                      literals, literal_lp_values,
-                     /*rhs_lower_bound=*/min_outgoing_flow, lp_values, manager,
-                     model);
+                     /*rhs_lower_bound=*/min_outgoing_flow, manager, model);
     }
 
     // Sparse clean up.
@@ -435,16 +435,13 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     std::vector<Literal> literals, Model* model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
-  result.generate_cuts =
-      [num_nodes, tails, heads, literals, model](
-          const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) mutable {
-        FilterFalseArcsAtLevelZero(tails, heads, literals, model);
-        SeparateSubtourInequalities(
-            num_nodes, tails, heads, literals, lp_values,
-            /*demands=*/{}, /*capacity=*/0, manager, model);
-        return true;
-      };
+  result.generate_cuts = [=](LinearConstraintManager* manager) mutable {
+    FilterFalseArcsAtLevelZero(tails, heads, literals, model);
+    SeparateSubtourInequalities(num_nodes, tails, heads, literals,
+                                manager->LpValues(),
+                                /*demands=*/{}, /*capacity=*/0, manager, model);
+    return true;
+  };
   return result;
 }
 
@@ -455,16 +452,13 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
                                     int64_t capacity, Model* model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
-  result.generate_cuts =
-      [num_nodes, tails, heads, demands, capacity, literals, model](
-          const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) mutable {
-        FilterFalseArcsAtLevelZero(tails, heads, literals, model);
-        SeparateSubtourInequalities(num_nodes, tails, heads, literals,
-                                    lp_values, demands, capacity, manager,
-                                    model);
-        return true;
-      };
+  result.generate_cuts = [=](LinearConstraintManager* manager) mutable {
+    FilterFalseArcsAtLevelZero(tails, heads, literals, model);
+    SeparateSubtourInequalities(num_nodes, tails, heads, literals,
+                                manager->LpValues(), demands, capacity, manager,
+                                model);
+    return true;
+  };
   return result;
 }
 
@@ -593,7 +587,7 @@ void SeparateFlowInequalities(
           cut.AddTerm(arc_capacities[i], 1.0);
         }
       }
-      manager->AddCut(cut.Build(), "IncomingFlow", lp_values);
+      manager->AddCut(cut.Build(), "IncomingFlow");
     }
 
     if (lp_outgoing_flow < ToDouble(min_outgoing_flow) - 1e-6) {
@@ -607,7 +601,7 @@ void SeparateFlowInequalities(
           cut.AddTerm(arc_capacities[i], 1.0);
         }
       }
-      manager->AddCut(cut.Build(), "OutgoingFlow", lp_values);
+      manager->AddCut(cut.Build(), "OutgoingFlow");
     }
 
     // Sparse clean up.
@@ -627,13 +621,11 @@ CutGenerator CreateFlowCutGenerator(
   for (const AffineExpression expr : arc_capacities) {
     if (!expr.IsConstant()) result.vars.push_back(expr.var);
   }
-  result.generate_cuts =
-      [=](const absl::StrongVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
-        SeparateFlowInequalities(num_nodes, tails, heads, arc_capacities,
-                                 get_flows, lp_values, manager, model);
-        return true;
-      };
+  result.generate_cuts = [=](LinearConstraintManager* manager) {
+    SeparateFlowInequalities(num_nodes, tails, heads, arc_capacities, get_flows,
+                             manager->LpValues(), manager, model);
+    return true;
+  };
   return result;
 }
 
