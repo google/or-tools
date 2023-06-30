@@ -1210,7 +1210,6 @@ cc_library(
         ":model",
         ":sat_base",
         ":util",
-        "//ortools/algorithms:knapsack_solver_for_cuts",
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/util:strong_integers",
