@@ -22,6 +22,7 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/linear_assignment_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
 )
 
 set(NAME ${PROJECT_NAME}_graph)
