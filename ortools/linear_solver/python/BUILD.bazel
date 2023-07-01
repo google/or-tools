@@ -26,7 +26,7 @@ pybind_extension(
         "//ortools/linear_solver/wrappers:model_builder_helper",
         "@com_google_absl//absl/strings",
         "@eigen//:eigen3",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",	
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -91,7 +91,7 @@ py_library(
     deps = [
         ":pywrap_model_builder_helper",
         requirement("numpy"),
-        requirement("pandas"),	
+        requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
@@ -102,7 +102,7 @@ py_test(
     deps = [
         ":pandas_model",
         requirement("absl-py"),
-        requirement("pandas"),	
+        requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )

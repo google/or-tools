@@ -15,12 +15,11 @@
 import math
 from typing import Callable, Union
 
-import pandas as pd
-
-#from google3.net.proto2.contrib.pyutil import compare
-from google.protobuf import text_format
 from absl.testing import absltest
 from absl.testing import parameterized
+import pandas as pd
+
+from google.protobuf import text_format
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import pandas_model as pdm
 
