@@ -1230,6 +1230,8 @@ cc_library(
         ":model",
         "//ortools/base",
         "//ortools/base:mathutil",
+        "//ortools/graph",
+        "//ortools/graph:max_flow",
     ],
 )
 

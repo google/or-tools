@@ -79,3 +79,8 @@ def code_sample_java(name):
             "//ortools/java/com/google/ortools:Loader",
         ],
     )
+
+def code_sample_cc_py(name):
+    code_sample_cc(name = name)
+    code_sample_py(name = name)
+
