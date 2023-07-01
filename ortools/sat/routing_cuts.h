@@ -57,6 +57,51 @@ void GenerateInterestingSubsets(int num_nodes,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);
 
+// Given a rooted tree on n nodes represented by the parent vector, returns the
+// n sets of nodes corresponding to all the possible subtree. Note that the
+// output memory is just n as all subset will point into the same vector.
+//
+// This assumes a single rooted tree, otherwise it will not crash but the result
+// will not be correct.
+//
+// In the TSP context, if the tree is a Gomory-Hu cut tree, this will returns
+// a set of "min-cut" that contains a min-cut for all node pairs.
+//
+// TODO(user): This also allocate O(n) memory internally, we could reuse it from
+// call to call if needed.
+void ExtractAllSubsetsFromTree(const std::vector<int>& parent,
+                               std::vector<int>* subset_data,
+                               std::vector<absl::Span<const int>>* subsets);
+
+// In the routing context, we usually always have lp_value in [0, 1] and only
+// looks at arcs with a lp_value that is not too close to zero.
+struct ArcWithLpValue {
+  int tail;
+  int head;
+  double lp_value;
+};
+
+// Given a set of arcs on a directed graph with n nodes (in [0, num_nodes)),
+// returns a "parent" vector of size n encoding a rooted Gomory-Hu tree.
+//
+// Note that usually each edge in the tree is attached a max-flow value (its
+// weight), but we don't need it here. It can be added if needed. This tree as
+// the property that for all (s, t) pair of nodes, if you take the minimum
+// weight edge on the path from s to t and split the tree in two, then this is a
+// min-cut for that pair.
+//
+// IMPORTANT: This algorithm currently "symmetrize" the graph, so we will
+// actually have all the min-cuts that minimize sum incoming + sum outgoing lp
+// values. The algo do not work as is on an asymmetric graph. Note however that
+// because of flow conservation, our outgoing lp values should be the same as
+// our incoming one on a circuit/route constraint.
+//
+// We use a simple implementation described in "Very Simple Methods for All
+// Pairs Network Flow Analysis", Dan Gusfield, 1990,
+// https://ranger.uta.edu/~weems/NOTES5311/LAB/LAB2SPR21/gusfield.huGomory.pdf
+std::vector<int> ComputeGomoryHuTree(
+    int num_nodes, const std::vector<ArcWithLpValue>& relevant_arcs);
+
 // Cut generator for the circuit constraint, where in any feasible solution, the
 // arcs that are present (variable at 1) must form a circuit through all the
 // nodes of the graph. Self arc are forbidden in this case.

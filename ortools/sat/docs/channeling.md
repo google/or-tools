@@ -47,6 +47,8 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 
 ```python
 #!/usr/bin/env python3
+"""Link integer constraints together."""
+
 
 from ortools.sat.python import cp_model
 
@@ -62,7 +64,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print('%s=%i' % (v, self.Value(v)), end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -76,11 +78,11 @@ def ChannelingSampleSat():
     model = cp_model.CpModel()
 
     # Declare our two primary variables.
-    x = model.NewIntVar(0, 10, 'x')
-    y = model.NewIntVar(0, 10, 'y')
+    x = model.NewIntVar(0, 10, "x")
+    y = model.NewIntVar(0, 10, "y")
 
     # Declare our intermediate boolean variable.
-    b = model.NewBoolVar('b')
+    b = model.NewBoolVar("b")
 
     # Implement b == (x >= 5).
     model.Add(x >= 5).OnlyEnforceIf(b)
@@ -93,8 +95,7 @@ def ChannelingSampleSat():
     model.Add(y == 0).OnlyEnforceIf(b.Not())
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
@@ -355,6 +356,8 @@ variables together:
 
 ```python
 #!/usr/bin/env python3
+"""Solves a binpacking problem using the CP-SAT solver."""
+
 
 from ortools.sat.python import cp_model
 
@@ -379,13 +382,13 @@ def BinpackingProblemSat():
     for i in all_items:
         num_copies = items[i][1]
         for b in all_bins:
-            x[(i, b)] = model.NewIntVar(0, num_copies, 'x_%i_%i' % (i, b))
+            x[(i, b)] = model.NewIntVar(0, num_copies, f"x[{i},{b}]")
 
     # Load variables.
-    load = [model.NewIntVar(0, bin_capacity, 'load_%i' % b) for b in all_bins]
+    load = [model.NewIntVar(0, bin_capacity, f"load[{b}]") for b in all_bins]
 
     # Slack variables.
-    slacks = [model.NewBoolVar('slack_%i' % b) for b in all_bins]
+    slacks = [model.NewBoolVar(f"slack[{b}]") for b in all_bins]
 
     # Links load and x.
     for b in all_bins:
@@ -409,13 +412,13 @@ def BinpackingProblemSat():
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    print('Solve status: %s' % solver.StatusName(status))
+    print(f"Solve status: {solver.StatusName(status)}")
     if status == cp_model.OPTIMAL:
-        print('Optimal objective value: %i' % solver.ObjectiveValue())
-    print('Statistics')
-    print('  - conflicts : %i' % solver.NumConflicts())
-    print('  - branches  : %i' % solver.NumBranches())
-    print('  - wall time : %f s' % solver.WallTime())
+        print(f"Optimal objective value: {solver.ObjectiveValue()}")
+    print("Statistics")
+    print(f"  - conflicts : {solver.NumConflicts()}")
+    print(f"  - branches  : {solver.NumBranches()}")
+    print(f"  - wall time : {solver.WallTime()}s")
 
 
 BinpackingProblemSat()

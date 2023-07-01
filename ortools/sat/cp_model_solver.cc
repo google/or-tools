@@ -3616,7 +3616,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-              helper, "scheduling_time_window_lns"),
+              helper, "scheduling_time_windows_lns"),
           params, helper, &shared));
 
       const std::vector<std::vector<int>> intervals_in_constraints =

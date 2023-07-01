@@ -73,7 +73,7 @@ The `CpModelProto` message has a `solution_hint` field. This field is a
 indices and hint values).
 
 Adding solution hinting to a model implies filling these two fields. This is
-done by the `addHint` or `AddHint` methods.
+done by the `addHint`, `AddHint`, or `SetHint` methods.
 
 Some remarks:
 
@@ -90,6 +90,7 @@ Some remarks:
 
 ```python
 #!/usr/bin/env python3
+"""Code sample that solves a model using solution hinting."""
 
 from ortools.sat.python import cp_model
 
@@ -101,9 +102,9 @@ def SolutionHintingSampleSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
 
     # Creates the constraints.
     model.Add(x != y)
@@ -119,8 +120,8 @@ def SolutionHintingSampleSat():
     solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
     status = solver.Solve(model, solution_printer)
 
-    print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.solution_count())
+    print(f"Status = {solver.StatusName(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count()}")
 
 
 SolutionHintingSampleSat()
@@ -322,6 +323,7 @@ illustrated in the following examples.
 
 ```python
 #!/usr/bin/env python3
+"""Showcases deep copying of a model."""
 
 from ortools.sat.python import cp_model
 
@@ -333,9 +335,9 @@ def CopyModelSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, 'x')
-    y = model.NewIntVar(0, num_vals - 1, 'y')
-    z = model.NewIntVar(0, num_vals - 1, 'z')
+    x = model.NewIntVar(0, num_vals - 1, "x")
+    y = model.NewIntVar(0, num_vals - 1, "y")
+    z = model.NewIntVar(0, num_vals - 1, "z")
 
     # Creates the constraints.
     model.Add(x != y)
@@ -347,8 +349,7 @@ def CopyModelSat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL:
-        print('Optimal value of the original model: {}'.format(
-            solver.ObjectiveValue()))
+        print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
 
     # Copy the model.
     copy = cp_model.CpModel()
@@ -361,8 +362,7 @@ def CopyModelSat():
     status = solver.Solve(copy)
 
     if status == cp_model.OPTIMAL:
-        print('Optimal value of the modified model: {}'.format(
-            solver.ObjectiveValue()))
+        print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
 
 
 CopyModelSat()

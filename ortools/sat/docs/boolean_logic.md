@@ -48,13 +48,15 @@ negation of `x`.
 
 ```python
 #!/usr/bin/env python3
+"""Code sample to demonstrate Boolean variable and literals."""
+
 
 from ortools.sat.python import cp_model
 
 
 def LiteralSampleSat():
     model = cp_model.CpModel()
-    x = model.NewBoolVar('x')
+    x = model.NewBoolVar("x")
     not_x = x.Not()
     print(x)
     print(not_x)
@@ -147,6 +149,8 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 
 ```python
 #!/usr/bin/env python3
+"""Code sample to demonstrates a simple Boolean constraint."""
+
 
 from ortools.sat.python import cp_model
 
@@ -154,8 +158,8 @@ from ortools.sat.python import cp_model
 def BoolOrSampleSat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
 
     model.AddBoolOr([x, y.Not()])
 
@@ -255,6 +259,7 @@ then is written as Or(not b, x) and Or(not b, not y).
 
 ```python
 #!/usr/bin/env python3
+"""Simple model with a reified constraint."""
 
 from ortools.sat.python import cp_model
 
@@ -263,9 +268,9 @@ def ReifiedSampleSat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
-    b = model.NewBoolVar('b')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
+    b = model.NewBoolVar("b")
 
     # First version using a half-reified bool and.
     model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
@@ -417,6 +422,8 @@ code samples output this truth table:
 
 ```python
 #!/usr/bin/env python3
+"""Code sample that encodes the product of two Boolean variables."""
+
 
 from ortools.sat.python import cp_model
 
@@ -424,12 +431,12 @@ from ortools.sat.python import cp_model
 def BooleanProductSampleSat():
     """Encoding of the product of two Boolean variables.
 
-  p == x * y, which is the same as p <=> x and y
-  """
+    p == x * y, which is the same as p <=> x and y
+    """
     model = cp_model.CpModel()
-    x = model.NewBoolVar('x')
-    y = model.NewBoolVar('y')
-    p = model.NewBoolVar('p')
+    x = model.NewBoolVar("x")
+    y = model.NewBoolVar("y")
+    p = model.NewBoolVar("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
     model.AddBoolOr(x.Not(), y.Not(), p)

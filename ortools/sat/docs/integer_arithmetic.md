@@ -57,10 +57,11 @@ take on any value between 0 and 10, inclusive:
 -   **Python**: `x = model.NewIntVar(0, 10, 'x')`
 -   **Java**: `IntVar x = model.newIntVar(0, 10, "x");`
 -   **C#**: `IntVar x = model.NewIntVar(0, 10, "x");`
+-   **Go**: `x := model.NewIntVar(0, 10).WithName("x")`
 
 ### Non-contiguous domain
 
-An instance of the Domain class is needed to create variables with 
+An instance of the Domain class is needed to create variables with
 non-contiguous domains. Here, the variable can be any of 1, 3, 4, or 6:
 
 -   **C++**: `model.NewIntVar(Domain::FromValues({1, 3, 4, 6});`
@@ -149,6 +150,7 @@ rabbits and pheasants are there?
 
 ```python
 #!/usr/bin/env python3
+"""Rabbits and Pheasants quizz."""
 
 from ortools.sat.python import cp_model
 
@@ -157,8 +159,8 @@ def RabbitsAndPheasantsSat():
     """Solves the rabbits + pheasants problem."""
     model = cp_model.CpModel()
 
-    r = model.NewIntVar(0, 100, 'r')
-    p = model.NewIntVar(0, 100, 'p')
+    r = model.NewIntVar(0, 100, "r")
+    p = model.NewIntVar(0, 100, "p")
 
     # 20 heads.
     model.Add(r + p == 20)
@@ -170,7 +172,7 @@ def RabbitsAndPheasantsSat():
     status = solver.Solve(model)
 
     if status == cp_model.OPTIMAL:
-        print(f'{solver.Value(r)} rabbits and {solver.Value(p)} pheasants')
+        print(f"{solver.Value(r)} rabbits and {solver.Value(p)} pheasants")
 
 
 RabbitsAndPheasantsSat()
@@ -330,6 +332,8 @@ The following samples output:
 
 ```python
 #!/usr/bin/env python3
+"""Encodes a convex piecewise linear function."""
+
 
 from ortools.sat.python import cp_model
 
@@ -345,7 +349,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -364,7 +368,7 @@ def earliness_tardiness_cost_sample_sat():
     model = cp_model.CpModel()
 
     # Declare our primary variable.
-    x = model.NewIntVar(0, 20, 'x')
+    x = model.NewIntVar(0, 20, "x")
 
     # Create the expression variable and implement the piecewise linear function.
     #
@@ -373,25 +377,24 @@ def earliness_tardiness_cost_sample_sat():
     #   ed    ld
     #
     large_constant = 1000
-    expr = model.NewIntVar(0, large_constant, 'expr')
+    expr = model.NewIntVar(0, large_constant, "expr")
 
     # First segment.
-    s1 = model.NewIntVar(-large_constant, large_constant, 's1')
+    s1 = model.NewIntVar(-large_constant, large_constant, "s1")
     model.Add(s1 == earliness_cost * (earliness_date - x))
 
     # Second segment.
     s2 = 0
 
     # Third segment.
-    s3 = model.NewIntVar(-large_constant, large_constant, 's3')
+    s3 = model.NewIntVar(-large_constant, large_constant, "s3")
     model.Add(s3 == lateness_cost * (x - lateness_date))
 
     # Link together expr and x through s1, s2, and s3.
     model.AddMaxEquality(expr, [s1, s2, s3])
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
@@ -672,6 +675,7 @@ The following samples output:
 
 ```python
 #!/usr/bin/env python3
+"""Implements a step function."""
 
 from ortools.sat.python import cp_model
 
@@ -687,7 +691,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
-            print(f'{v}={self.Value(v)}', end=' ')
+            print(f"{v}={self.Value(v)}", end=" ")
         print()
 
     def solution_count(self):
@@ -701,7 +705,7 @@ def step_function_sample_sat():
     model = cp_model.CpModel()
 
     # Declare our primary variable.
-    x = model.NewIntVar(0, 20, 'x')
+    x = model.NewIntVar(0, 20, "x")
 
     # Create the expression variable and implement the step function
     # Note it is not defined for x == 2.
@@ -712,23 +716,24 @@ def step_function_sample_sat():
     #      -- ---            0
     # 0 ================ 20
     #
-    expr = model.NewIntVar(0, 3, 'expr')
+    expr = model.NewIntVar(0, 3, "expr")
 
     # expr == 0 on [5, 6] U [8, 10]
-    b0 = model.NewBoolVar('b0')
+    b0 = model.NewBoolVar("b0")
     model.AddLinearExpressionInDomain(
-        x, cp_model.Domain.FromIntervals([(5, 6), (8, 10)])).OnlyEnforceIf(b0)
+        x, cp_model.Domain.FromIntervals([(5, 6), (8, 10)])
+    ).OnlyEnforceIf(b0)
     model.Add(expr == 0).OnlyEnforceIf(b0)
 
     # expr == 2 on [0, 1] U [3, 4] U [11, 20]
-    b2 = model.NewBoolVar('b2')
+    b2 = model.NewBoolVar("b2")
     model.AddLinearExpressionInDomain(
-        x, cp_model.Domain.FromIntervals([(0, 1), (3, 4),
-                                          (11, 20)])).OnlyEnforceIf(b2)
+        x, cp_model.Domain.FromIntervals([(0, 1), (3, 4), (11, 20)])
+    ).OnlyEnforceIf(b2)
     model.Add(expr == 2).OnlyEnforceIf(b2)
 
     # expr == 3 when x == 7
-    b3 = model.NewBoolVar('b3')
+    b3 = model.NewBoolVar("b3")
     model.Add(x == 7).OnlyEnforceIf(b3)
     model.Add(expr == 3).OnlyEnforceIf(b3)
 
@@ -736,8 +741,7 @@ def step_function_sample_sat():
     model.AddBoolOr(b0, b2, b3)
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MIN_VALUE)
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()

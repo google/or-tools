@@ -162,13 +162,18 @@ class LinearConstraintBuilder {
   // specified at construction or during the Build() call.
   explicit LinearConstraintBuilder(const Model* model)
       : encoder_(model->Get<IntegerEncoder>()), lb_(0), ub_(0) {}
+  explicit LinearConstraintBuilder(IntegerEncoder* encoder)
+      : encoder_(encoder), lb_(0), ub_(0) {}
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
       : encoder_(model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
+  LinearConstraintBuilder(IntegerEncoder* encoder, IntegerValue lb,
+                          IntegerValue ub)
+      : encoder_(encoder), lb_(lb), ub_(ub) {}
 
   // Warning: this version without encoder cannot be used to add literals, so
   // one shouldn't call AddLiteralTerm() on it. All other functions works.
   //
-  // TODO(user): Have a subclass so we can enforce than caller using
+  // TODO(user): Have a subclass so we can enforce that a caller using
   // AddLiteralTerm() must construct the Builder with an encoder.
   LinearConstraintBuilder() : encoder_(nullptr), lb_(0), ub_(0) {}
 
