@@ -24,7 +24,7 @@ using System.Linq;
 /// (source, destination, traffic), the goal is to assign one unique
 /// path for each demand such that the cost is minimized.  The cost is
 /// defined by the maximum ratio utilization (traffic/capacity) for all
-/// arcs.  There is also a penalty associated with an traffic of an arc
+/// arcs.  There is also a penalty associated with a traffic of an arc
 /// being above the comfort zone, 85% of the capacity by default.
 /// Please note that constraint programming is well suited here because
 /// we cannot have multiple active paths for a single demand.
