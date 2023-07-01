@@ -27,8 +27,8 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
     def RealSolve(self, profits, weights, capacities, solver_type, use_reduction):
         solver = pywrapknapsack_solver.KnapsackSolver(solver_type, "solver")
         solver.set_use_reduction(use_reduction)
-        solver.Init(profits, weights, capacities)
-        profit = solver.Solve()
+        solver.init(profits, weights, capacities)
+        profit = solver.solve()
 
         return profit
 

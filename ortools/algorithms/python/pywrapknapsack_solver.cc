@@ -28,12 +28,12 @@ using ::py::arg;
 PYBIND11_MODULE(pywrapknapsack_solver, m) {
   py::class_<KnapsackSolver>(m, "KnapsackSolver")
       .def(py::init<KnapsackSolver::SolverType, const std::string&>())
-      .def("Init", &KnapsackSolver::Init, arg("profits"), arg("weights"),
+      .def("init", &KnapsackSolver::Init, arg("profits"), arg("weights"),
            arg("capacities"))
-      .def("Solve", &KnapsackSolver::Solve)
-      .def("BestSolutionContains", &KnapsackSolver::BestSolutionContains,
+      .def("solve", &KnapsackSolver::Solve)
+      .def("best_solution_contains", &KnapsackSolver::BestSolutionContains,
            arg("item_id"))
-      .def("IsSolutionOptimal", &KnapsackSolver::IsSolutionOptimal)
+      .def("is_solution_optimal", &KnapsackSolver::IsSolutionOptimal)
       .def("set_time_limit", &KnapsackSolver::set_time_limit,
            arg("time_limit_seconds"))
       .def("set_use_reduction", &KnapsackSolver::set_use_reduction,

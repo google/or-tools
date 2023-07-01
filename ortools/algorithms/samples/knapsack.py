@@ -139,8 +139,8 @@ def main():
     # [END data]
 
     # [START solve]
-    solver.Init(values, weights, capacities)
-    computed_value = solver.Solve()
+    solver.init(values, weights, capacities)
+    computed_value = solver.solve()
     # [END solve]
 
     # [START print_solution]
@@ -149,7 +149,7 @@ def main():
     total_weight = 0
     print("Total value =", computed_value)
     for i in range(len(values)):
-        if solver.BestSolutionContains(i):
+        if solver.best_solution_contains(i):
             packed_items.append(i)
             packed_weights.append(weights[0][i])
             total_weight += weights[0][i]
