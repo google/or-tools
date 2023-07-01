@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """This is the Golomb ruler problem.
 
 This model aims at maximizing radar interferences in a minimum space.
@@ -34,13 +35,13 @@ FLAGS = flags.FLAGS
 
 def main(_):
     # Create the solver.
-    solver = pywrapcp.Solver('golomb ruler')
+    solver = pywrapcp.Solver("golomb ruler")
 
     size = 8
     var_max = size * size
     all_vars = list(range(0, size))
 
-    marks = [solver.IntVar(0, var_max, 'marks_%d' % i) for i in all_vars]
+    marks = [solver.IntVar(0, var_max, "marks_%d" % i) for i in all_vars]
 
     objective = solver.Minimize(marks[size - 1], 1)
 
@@ -62,21 +63,28 @@ def main(_):
     collector = solver.AllSolutionCollector(solution)
 
     solver.Solve(
-        solver.Phase(marks, solver.CHOOSE_FIRST_UNBOUND,
-                     solver.ASSIGN_MIN_VALUE), [objective, collector])
+        solver.Phase(marks, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+        [objective, collector],
+    )
     for i in range(0, collector.SolutionCount()):
         obj_value = collector.Value(i, marks[size - 1])
         time = collector.WallTime(i)
         branches = collector.Branches(i)
         failures = collector.Failures(i)
-        print(('Solution #%i: value = %i, failures = %i, branches = %i,'
-               'time = %i ms') % (i, obj_value, failures, branches, time))
+        print(
+            ("Solution #%i: value = %i, failures = %i, branches = %i," "time = %i ms")
+            % (i, obj_value, failures, branches, time)
+        )
     time = solver.WallTime()
     branches = solver.Branches()
     failures = solver.Failures()
-    print(('Total run : failures = %i, branches = %i, time = %i ms' %
-           (failures, branches, time)))
+    print(
+        (
+            "Total run : failures = %i, branches = %i, time = %i ms"
+            % (failures, branches, time)
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

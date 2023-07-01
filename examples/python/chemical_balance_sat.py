@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """We are trying to group items in equal sized groups.
 
 Each item has a color and a value. We want the sum of values of each group to be
@@ -59,9 +60,13 @@ def chemical_balance():
     max_set = [
         int(
             math.ceil(
-                min(max_quantities[q][1] * 1000 / chemical_set[s][q + 1]
+                min(
+                    max_quantities[q][1] * 1000 / chemical_set[s][q + 1]
                     for q in all_products
-                    if chemical_set[s][q + 1] != 0)))
+                    if chemical_set[s][q + 1] != 0
+                )
+            )
+        )
         for s in all_sets
     ]
 
@@ -71,14 +76,13 @@ def chemical_balance():
 
     for p in all_products:
         model.Add(
-            sum(
-                int(chemical_set[s][p + 1] * 10) * set_vars[s]
-                for s in all_sets) <= int(max_quantities[p][1] * 10000))
+            sum(int(chemical_set[s][p + 1] * 10) * set_vars[s] for s in all_sets)
+            <= int(max_quantities[p][1] * 10000)
+        )
         model.Add(
-            sum(
-                int(chemical_set[s][p + 1] * 10) * set_vars[s]
-                for s in all_sets) >= int(max_quantities[p][1] * 10000) -
-            epsilon)
+            sum(int(chemical_set[s][p + 1] * 10) * set_vars[s] for s in all_sets)
+            >= int(max_quantities[p][1] * 10000) - epsilon
+        )
 
     model.Minimize(epsilon)
 
@@ -90,15 +94,15 @@ def chemical_balance():
     print(f"Optimal objective value = {solver.ObjectiveValue() / 10000.0}")
 
     for s in all_sets:
-        print(f"  {chemical_set[s][0]} = {solver.Value(set_vars[s]) / 1000.0}",
-              end=" ")
+        print(f"  {chemical_set[s][0]} = {solver.Value(set_vars[s]) / 1000.0}", end=" ")
         print()
     for p in all_products:
         name = max_quantities[p][0]
         max_quantity = max_quantities[p][1]
         quantity = sum(
             solver.Value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
-            for s in all_sets)
+            for s in all_sets
+        )
         print(f"{name}: {quantity} out of {max_quantity}")
 
 

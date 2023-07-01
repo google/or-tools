@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Integer programming examples that show how to use the APIs."""
 
 from ortools.linear_solver import pywraplp
-from ortools.init import pywrapinit
 
 
 def Announce(solver, api_type):
-    print('---- Integer programming example with ' + solver + ' (' + api_type +
-          ') -----')
+    print(
+        "---- Integer programming example with " + solver + " (" + api_type + ") -----"
+    )
 
 
 def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
@@ -29,12 +30,12 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
     if not solver:
         return
 
-    Announce(optimization_problem_type, 'natural language API')
+    Announce(optimization_problem_type, "natural language API")
 
     infinity = solver.infinity()
     # x1 and x2 are integer non-negative variables.
-    x1 = solver.IntVar(0.0, infinity, 'x1')
-    x2 = solver.IntVar(0.0, infinity, 'x2')
+    x1 = solver.IntVar(0.0, infinity, "x1")
+    x2 = solver.IntVar(0.0, infinity, "x2")
 
     solver.Minimize(x1 + 2 * x2)
     solver.Add(3 * x1 + 2 * x2 >= 17)
@@ -48,12 +49,12 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
     if not solver:
         return
 
-    Announce(optimization_problem_type, 'C++ style API')
+    Announce(optimization_problem_type, "C++ style API")
 
     infinity = solver.infinity()
     # x1 and x2 are integer non-negative variables.
-    x1 = solver.IntVar(0.0, infinity, 'x1')
-    x2 = solver.IntVar(0.0, infinity, 'x2')
+    x1 = solver.IntVar(0.0, infinity, "x1")
+    x2 = solver.IntVar(0.0, infinity, "x2")
 
     # Minimize x1 + 2 * x2.
     objective = solver.Objective()
@@ -70,8 +71,8 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
 
 def SolveAndPrint(solver, variable_list):
     """Solve the problem and print the solution."""
-    print('Number of variables = %d' % solver.NumVariables())
-    print('Number of constraints = %d' % solver.NumConstraints())
+    print("Number of variables = %d" % solver.NumVariables())
+    print("Number of constraints = %d" % solver.NumConstraints())
 
     result_status = solver.Solve()
 
@@ -82,33 +83,33 @@ def SolveAndPrint(solver, variable_list):
     # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
     assert solver.VerifySolution(1e-7, True)
 
-    print('Problem solved in %f milliseconds' % solver.wall_time())
+    print("Problem solved in %f milliseconds" % solver.wall_time())
 
     # The objective value of the solution.
-    print('Optimal objective value = %f' % solver.Objective().Value())
+    print("Optimal objective value = %f" % solver.Objective().Value())
 
     # The value of each variable in the solution.
     for variable in variable_list:
-        print('%s = %f' % (variable.name(), variable.solution_value()))
+        print("%s = %f" % (variable.name(), variable.solution_value()))
 
-    print('Advanced usage:')
-    print('Problem solved in %d branch-and-bound nodes' % solver.nodes())
+    print("Advanced usage:")
+    print("Problem solved in %d branch-and-bound nodes" % solver.nodes())
 
 
 def RunAllIntegerExampleNaturalLanguageAPI():
-    RunIntegerExampleNaturalLanguageAPI('GLPK')
-    RunIntegerExampleNaturalLanguageAPI('CBC')
-    RunIntegerExampleNaturalLanguageAPI('SCIP')
-    RunIntegerExampleNaturalLanguageAPI('SAT')
-    RunIntegerExampleNaturalLanguageAPI('Gurobi')
+    RunIntegerExampleNaturalLanguageAPI("GLPK")
+    # Disabling due to ASAN errors with CBC.
+    # RunIntegerExampleNaturalLanguageAPI('CBC')
+    RunIntegerExampleNaturalLanguageAPI("SCIP")
+    RunIntegerExampleNaturalLanguageAPI("SAT")
 
 
 def RunAllIntegerExampleCppStyleAPI():
-    RunIntegerExampleCppStyleAPI('GLPK')
-    RunIntegerExampleCppStyleAPI('CBC')
-    RunIntegerExampleCppStyleAPI('SCIP')
-    RunIntegerExampleCppStyleAPI('SAT')
-    RunIntegerExampleCppStyleAPI('Gurobi')
+    RunIntegerExampleCppStyleAPI("GLPK")
+    # Disabling due to ASAN errors with CBC.
+    # RunIntegerExampleCppStyleAPI('CBC')
+    RunIntegerExampleCppStyleAPI("SCIP")
+    RunIntegerExampleCppStyleAPI("SAT")
 
 
 def main():
@@ -116,10 +117,5 @@ def main():
     RunAllIntegerExampleCppStyleAPI()
 
 
-if __name__ == '__main__':
-    pywrapinit.CppBridge.InitLogging('integer_programming.py')
-    cpp_flags = pywrapinit.CppFlags()
-    cpp_flags.stderrthreshold = 0
-    cpp_flags.log_prefix = False
-    pywrapinit.CppBridge.SetFlags(cpp_flags)
+if __name__ == "__main__":
     main()

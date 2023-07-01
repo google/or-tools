@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Maximize the minimum of pairwise distances between n robots in a square space."""
 
 import math
@@ -21,14 +22,14 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-_NUM_ROBOTS = flags.DEFINE_integer('num_robots', 8,
-                                   'Number of robots to place.')
-_ROOM_SIZE = flags.DEFINE_integer('room_size', 20,
-                                  'Size of the square room where robots are.')
+_NUM_ROBOTS = flags.DEFINE_integer("num_robots", 8, "Number of robots to place.")
+_ROOM_SIZE = flags.DEFINE_integer(
+    "room_size", 20, "Size of the square room where robots are."
+)
 _PARAMS = flags.DEFINE_string(
-    'params',
-    'num_search_workers:16, max_time_in_seconds:20',
-    'Sat solver parameters.',
+    "params",
+    "num_search_workers:16, max_time_in_seconds:20",
+    "Sat solver parameters.",
 )
 
 
@@ -37,8 +38,8 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     model = cp_model.CpModel()
 
     # Create the list of coordinates (x, y) for each robot.
-    x = [model.NewIntVar(1, room_size, f'x_{i}') for i in range(num_robots)]
-    y = [model.NewIntVar(1, room_size, f'y_{i}') for i in range(num_robots)]
+    x = [model.NewIntVar(1, room_size, f"x_{i}") for i in range(num_robots)]
+    y = [model.NewIntVar(1, room_size, f"y_{i}") for i in range(num_robots)]
 
     # The specification of the problem is to maximize the minimum euclidian
     # distance between any two robots. Unfortunately, the euclidian distance
@@ -57,30 +58,30 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     #   forall i:
     #     scaled_min_square_distance <= scaling * (x_diff_sq[i] + y_diff_sq[i])
     scaling = 1000
-    scaled_min_square_distance = model.NewIntVar(0, 2 * scaling * room_size**2,
-                                                 'scaled_min_square_distance')
+    scaled_min_square_distance = model.NewIntVar(
+        0, 2 * scaling * room_size**2, "scaled_min_square_distance"
+    )
 
     # Build intermediate variables and get the list of squared distances on
     # each dimension.
     for i in range(num_robots - 1):
         for j in range(i + 1, num_robots):
             # Compute the distance on each dimension between robot i and robot j.
-            x_diff = model.NewIntVar(-room_size, room_size, f'x_diff{i}')
-            y_diff = model.NewIntVar(-room_size, room_size, f'y_diff{i}')
+            x_diff = model.NewIntVar(-room_size, room_size, f"x_diff{i}")
+            y_diff = model.NewIntVar(-room_size, room_size, f"y_diff{i}")
             model.Add(x_diff == x[i] - x[j])
             model.Add(y_diff == y[i] - y[j])
 
             # Compute the square of the previous differences.
-            x_diff_sq = model.NewIntVar(0, room_size**2, f'x_diff_sq{i}')
-            y_diff_sq = model.NewIntVar(0, room_size**2, f'y_diff_sq{i}')
+            x_diff_sq = model.NewIntVar(0, room_size**2, f"x_diff_sq{i}")
+            y_diff_sq = model.NewIntVar(0, room_size**2, f"y_diff_sq{i}")
             model.AddMultiplicationEquality(x_diff_sq, x_diff, x_diff)
             model.AddMultiplicationEquality(y_diff_sq, y_diff, y_diff)
 
             # We just need to be <= to the scaled square distance as we are
             # maximizing the min distance, which is equivalent as maximizing the min
             # square distance.
-            model.Add(scaled_min_square_distance <= scaling *
-                      (x_diff_sq + y_diff_sq))
+            model.Add(scaled_min_square_distance <= scaling * (x_diff_sq + y_diff_sq))
 
     # Naive symmetry breaking.
     for i in range(1, num_robots):
@@ -99,20 +100,22 @@ def spread_robots(num_robots: int, room_size: int, params: str):
 
     # Prints the solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f'Spread {num_robots} with a min pairwise distance of'
-              f' {math.sqrt(solver.ObjectiveValue() / scaling)}')
+        print(
+            f"Spread {num_robots} with a min pairwise distance of"
+            f" {math.sqrt(solver.ObjectiveValue() / scaling)}"
+        )
         for i in range(num_robots):
-            print(f'robot {i}: x={solver.Value(x[i])} y={solver.Value(y[i])}')
+            print(f"robot {i}: x={solver.Value(x[i])} y={solver.Value(y[i])}")
     else:
-        print('No solution found.')
+        print("No solution found.")
 
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
+        raise app.UsageError("Too many command-line arguments.")
 
     spread_robots(_NUM_ROBOTS.value, _ROOM_SIZE.value, _PARAMS.value)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

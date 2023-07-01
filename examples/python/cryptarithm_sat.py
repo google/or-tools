@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Use CP-SAT to solve a simple cryptarithmetic problem: SEND+MORE=MONEY.
 """
 
@@ -19,28 +20,27 @@ from ortools.sat.python import cp_model
 
 
 def send_more_money():
-    """Solve the cryptarithmic puzzle SEND+MORE=MONEY.
-  """
+    """Solve the cryptarithmic puzzle SEND+MORE=MONEY."""
     model = cp_model.CpModel()
 
     # Create variables.
     # Since s is a leading digit, it can't be 0.
-    s = model.NewIntVar(1, 9, 's')
-    e = model.NewIntVar(0, 9, 'e')
-    n = model.NewIntVar(0, 9, 'n')
-    d = model.NewIntVar(0, 9, 'd')
+    s = model.NewIntVar(1, 9, "s")
+    e = model.NewIntVar(0, 9, "e")
+    n = model.NewIntVar(0, 9, "n")
+    d = model.NewIntVar(0, 9, "d")
     # Since m is a leading digit, it can't be 0.
-    m = model.NewIntVar(1, 9, 'm')
-    o = model.NewIntVar(0, 9, 'o')
-    r = model.NewIntVar(0, 9, 'r')
-    y = model.NewIntVar(0, 9, 'y')
+    m = model.NewIntVar(1, 9, "m")
+    o = model.NewIntVar(0, 9, "o")
+    r = model.NewIntVar(0, 9, "r")
+    y = model.NewIntVar(0, 9, "y")
 
     # Create carry variables. c0 is true if the first column of addends carries
     # a 1, c2 is true if the second column carries a 1, and so on.
-    c0 = model.NewBoolVar('c0')
-    c1 = model.NewBoolVar('c1')
-    c2 = model.NewBoolVar('c2')
-    c3 = model.NewBoolVar('c3')
+    c0 = model.NewBoolVar("c0")
+    c1 = model.NewBoolVar("c1")
+    c2 = model.NewBoolVar("c2")
+    c3 = model.NewBoolVar("c3")
 
     # Force all letters to take on different values.
     model.AddAllDifferent(s, e, n, d, m, o, r, y)
@@ -63,20 +63,20 @@ def send_more_money():
     # Solve model.
     solver = cp_model.CpSolver()
     if solver.Solve(model) == cp_model.OPTIMAL:
-        print('Optimal solution found!')
-    print('s:', solver.Value(s))
-    print('e:', solver.Value(e))
-    print('n:', solver.Value(n))
-    print('d:', solver.Value(d))
-    print('m:', solver.Value(m))
-    print('o:', solver.Value(o))
-    print('r:', solver.Value(r))
-    print('y:', solver.Value(y))
+        print("Optimal solution found!")
+    print("s:", solver.Value(s))
+    print("e:", solver.Value(e))
+    print("n:", solver.Value(n))
+    print("d:", solver.Value(d))
+    print("m:", solver.Value(m))
+    print("o:", solver.Value(o))
+    print("r:", solver.Value(r))
+    print("y:", solver.Value(y))
 
 
 def main(_):
     send_more_money()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

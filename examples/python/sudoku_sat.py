@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """This model implements a sudoku solver."""
 
 from ortools.sat.python import cp_model
@@ -26,16 +27,22 @@ def solve_sudoku():
     line = list(range(0, line_size))
     cell = list(range(0, cell_size))
 
-    initial_grid = [[0, 6, 0, 0, 5, 0, 0, 2, 0], [0, 0, 0, 3, 0, 0, 0, 9, 0],
-                    [7, 0, 0, 6, 0, 0, 0, 1, 0], [0, 0, 6, 0, 3, 0, 4, 0, 0],
-                    [0, 0, 4, 0, 7, 0, 1, 0, 0], [0, 0, 5, 0, 9, 0, 8, 0, 0],
-                    [0, 4, 0, 0, 0, 1, 0, 0, 6], [0, 3, 0, 0, 0, 8, 0, 0, 0],
-                    [0, 2, 0, 0, 4, 0, 0, 5, 0]]
+    initial_grid = [
+        [0, 6, 0, 0, 5, 0, 0, 2, 0],
+        [0, 0, 0, 3, 0, 0, 0, 9, 0],
+        [7, 0, 0, 6, 0, 0, 0, 1, 0],
+        [0, 0, 6, 0, 3, 0, 4, 0, 0],
+        [0, 0, 4, 0, 7, 0, 1, 0, 0],
+        [0, 0, 5, 0, 9, 0, 8, 0, 0],
+        [0, 4, 0, 0, 0, 1, 0, 0, 6],
+        [0, 3, 0, 0, 0, 8, 0, 0, 0],
+        [0, 2, 0, 0, 4, 0, 0, 5, 0],
+    ]
 
     grid = {}
     for i in line:
         for j in line:
-            grid[(i, j)] = model.NewIntVar(1, line_size, 'grid %i %i' % (i, j))
+            grid[(i, j)] = model.NewIntVar(1, line_size, "grid %i %i" % (i, j))
 
     # AllDifferent on rows.
     for i in line:
@@ -51,8 +58,7 @@ def solve_sudoku():
             one_cell = []
             for di in cell:
                 for dj in cell:
-                    one_cell.append(grid[(i * cell_size + di,
-                                          j * cell_size + dj)])
+                    one_cell.append(grid[(i * cell_size + di, j * cell_size + dj)])
 
             model.AddAllDifferent(one_cell)
 

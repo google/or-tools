@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Tasks and workers to group assignment to average sum(cost) / #workers."""
 
 from typing import Sequence
@@ -26,8 +27,10 @@ class ObjectivePrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
 
     def on_solution_callback(self):
-        print('Solution %i, time = %f s, objective = %i' %
-              (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
+        print(
+            "Solution %i, time = %f s, objective = %i"
+            % (self.__solution_count, self.WallTime(), self.ObjectiveValue())
+        )
         self.__solution_count += 1
 
 
@@ -50,13 +53,13 @@ def tasks_and_workers_assignment_sat():
     x = {}
     for i in all_workers:
         for j in all_groups:
-            x[i, j] = model.NewBoolVar('x[%i,%i]' % (i, j))
+            x[i, j] = model.NewBoolVar("x[%i,%i]" % (i, j))
 
     ## y_kj is 1 if task k is assigned to group j
     y = {}
     for k in all_tasks:
         for j in all_groups:
-            y[k, j] = model.NewBoolVar('x[%i,%i]' % (k, j))
+            y[k, j] = model.NewBoolVar("x[%i,%i]" % (k, j))
 
     # Constraints
 
@@ -75,13 +78,11 @@ def tasks_and_workers_assignment_sat():
     scaled_sum_of_costs_in_group = []
     scaling = 1000  # We introduce scaling to deal with floating point average.
     for j in all_groups:
-        n = model.NewIntVar(1, num_workers, 'num_workers_in_group_%i' % j)
+        n = model.NewIntVar(1, num_workers, "num_workers_in_group_%i" % j)
         model.Add(n == sum(x[i, j] for i in all_workers))
-        c = model.NewIntVar(0, sum_of_costs * scaling,
-                            'sum_of_costs_of_group_%i' % j)
+        c = model.NewIntVar(0, sum_of_costs * scaling, "sum_of_costs_of_group_%i" % j)
         model.Add(c == sum(y[k, j] * task_cost[k] * scaling for k in all_tasks))
-        a = model.NewIntVar(0, sum_of_costs * scaling,
-                            'average_cost_of_group_%i' % j)
+        a = model.NewIntVar(0, sum_of_costs * scaling, "average_cost_of_group_%i" % j)
         model.AddDivisionEquality(a, c, n)
 
         averages.append(a)
@@ -92,7 +93,7 @@ def tasks_and_workers_assignment_sat():
     model.Add(sum(num_workers_in_group) == num_workers)
 
     # Objective.
-    obj = model.NewIntVar(0, sum_of_costs * scaling, 'obj')
+    obj = model.NewIntVar(0, sum_of_costs * scaling, "obj")
     model.AddMaxEquality(obj, averages)
     model.Minimize(obj)
 
@@ -105,17 +106,18 @@ def tasks_and_workers_assignment_sat():
 
     if status == cp_model.OPTIMAL:
         for j in all_groups:
-            print('Group %i' % j)
+            print("Group %i" % j)
             for i in all_workers:
                 if solver.BooleanValue(x[i, j]):
-                    print('  - worker %i' % i)
+                    print("  - worker %i" % i)
             for k in all_tasks:
                 if solver.BooleanValue(y[k, j]):
-                    print('  - task %i with cost %i' % (k, task_cost[k]))
-            print('  - sum_of_costs = %i' %
-                  (solver.Value(scaled_sum_of_costs_in_group[j]) // scaling))
-            print('  - average cost = %f' %
-                  (solver.Value(averages[j]) * 1.0 / scaling))
+                    print("  - task %i with cost %i" % (k, task_cost[k]))
+            print(
+                "  - sum_of_costs = %i"
+                % (solver.Value(scaled_sum_of_costs_in_group[j]) // scaling)
+            )
+            print("  - average cost = %f" % (solver.Value(averages[j]) * 1.0 / scaling))
 
 
 tasks_and_workers_assignment_sat()
@@ -123,9 +125,9 @@ tasks_and_workers_assignment_sat()
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
+        raise app.UsageError("Too many command-line arguments.")
     tasks_and_workers_assignment_sat()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

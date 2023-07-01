@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """This model implements a simple jobshop named ft06.
 
 A jobshop is a standard scheduling problem when you must sequence a
@@ -38,29 +39,42 @@ def jobshop_ft06():
     all_machines = range(0, machines_count)
     all_jobs = range(0, jobs_count)
 
-    durations = [[1, 3, 6, 7, 3, 6], [8, 5, 10, 10, 10, 4], [5, 4, 8, 9, 1, 7],
-                 [5, 5, 5, 3, 8, 9], [9, 3, 5, 4, 3, 1], [3, 3, 9, 10, 4, 1]]
+    durations = [
+        [1, 3, 6, 7, 3, 6],
+        [8, 5, 10, 10, 10, 4],
+        [5, 4, 8, 9, 1, 7],
+        [5, 5, 5, 3, 8, 9],
+        [9, 3, 5, 4, 3, 1],
+        [3, 3, 9, 10, 4, 1],
+    ]
 
-    machines = [[2, 0, 1, 3, 5, 4], [1, 2, 4, 5, 0, 3], [2, 3, 5, 0, 1, 4],
-                [1, 0, 2, 3, 4, 5], [2, 1, 4, 5, 0, 3], [1, 3, 5, 0, 4, 2]]
+    machines = [
+        [2, 0, 1, 3, 5, 4],
+        [1, 2, 4, 5, 0, 3],
+        [2, 3, 5, 0, 1, 4],
+        [1, 0, 2, 3, 4, 5],
+        [2, 1, 4, 5, 0, 3],
+        [1, 3, 5, 0, 4, 2],
+    ]
 
     # Computes horizon dynamically.
     horizon = sum([sum(durations[i]) for i in all_jobs])
 
-    task_type = collections.namedtuple('task_type', 'start end interval')
+    task_type = collections.namedtuple("task_type", "start end interval")
 
     # Creates jobs.
     all_tasks = {}
     for i in all_jobs:
         for j in all_machines:
-            start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (i, j))
+            start_var = model.NewIntVar(0, horizon, "start_%i_%i" % (i, j))
             duration = durations[i][j]
-            end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
-            interval_var = model.NewIntervalVar(start_var, duration, end_var,
-                                                'interval_%i_%i' % (i, j))
-            all_tasks[(i, j)] = task_type(start=start_var,
-                                          end=end_var,
-                                          interval=interval_var)
+            end_var = model.NewIntVar(0, horizon, "end_%i_%i" % (i, j))
+            interval_var = model.NewIntervalVar(
+                start_var, duration, end_var, "interval_%i_%i" % (i, j)
+            )
+            all_tasks[(i, j)] = task_type(
+                start=start_var, end=end_var, interval=interval_var
+            )
 
     # Create disjuctive constraints.
     machine_to_jobs = {}
@@ -79,9 +93,10 @@ def jobshop_ft06():
             model.Add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
 
     # Makespan objective.
-    obj_var = model.NewIntVar(0, horizon, 'makespan')
+    obj_var = model.NewIntVar(0, horizon, "makespan")
     model.AddMaxEquality(
-        obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs])
+        obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs]
+    )
     model.Minimize(obj_var)
 
     # Solve model.
@@ -92,12 +107,13 @@ def jobshop_ft06():
     # Output solution.
     if status == cp_model.OPTIMAL:
         if visualization.RunFromIPython():
-            starts = [[
-                solver.Value(all_tasks[(i, j)][0]) for j in all_machines
-            ] for i in all_jobs]
-            visualization.DisplayJobshop(starts, durations, machines, 'FT06')
+            starts = [
+                [solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+                for i in all_jobs
+            ]
+            visualization.DisplayJobshop(starts, durations, machines, "FT06")
         else:
-            print('Optimal makespan: %i' % solver.ObjectiveValue())
+            print("Optimal makespan: %i" % solver.ObjectiveValue())
 
 
 jobshop_ft06()

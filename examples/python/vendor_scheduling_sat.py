@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solves a simple shift scheduling problem."""
 
 from typing import Sequence
@@ -21,8 +22,15 @@ from ortools.sat.python import cp_model
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, num_vendors, num_hours, possible_schedules,
-                 selected_schedules, hours_stat, min_vendors):
+    def __init__(
+        self,
+        num_vendors,
+        num_hours,
+        possible_schedules,
+        selected_schedules,
+        hours_stat,
+        min_vendors,
+    ):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
         self.__num_vendors = num_vendors
@@ -35,17 +43,18 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         """Called at each new solution."""
         self.__solution_count += 1
-        print('Solution %i: ', self.__solution_count)
-        print('  min vendors:', self.__min_vendors)
+        print("Solution %i: ", self.__solution_count)
+        print("  min vendors:", self.__min_vendors)
         for i in range(self.__num_vendors):
             print(
-                '  - vendor %i: ' % i, self.__possible_schedules[self.Value(
-                    self.__selected_schedules[i])])
+                "  - vendor %i: " % i,
+                self.__possible_schedules[self.Value(self.__selected_schedules[i])],
+            )
         print()
 
         for j in range(self.__num_hours):
-            print('  - # workers on day%2i: ' % j, end=' ')
-            print(self.Value(self.__hours_stat[j]), end=' ')
+            print("  - # workers on day%2i: " % j, end=" ")
+            print(self.Value(self.__hours_stat[j]), end=" ")
             print()
         print()
 
@@ -72,12 +81,14 @@ def vendor_scheduling_sat():
     # Last columns are :
     #   index_of_the_schedule, sum of worked hours (per work type).
     # The index is useful for branching.
-    possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
-                          [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
-                          [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
-                          [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
-                          [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
-                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
+    possible_schedules = [
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
+        [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0],
+    ]
 
     num_possible_schedules = len(possible_schedules)
     selected_schedules = []
@@ -97,11 +108,10 @@ def vendor_scheduling_sat():
     for v in all_vendors:
         tmp = []
         for h in all_hours:
-            x[v, h] = model.NewIntVar(0, num_work_types, 'x[%i,%i]' % (v, h))
+            x[v, h] = model.NewIntVar(0, num_work_types, "x[%i,%i]" % (v, h))
             tmp.append(x[v, h])
-        selected_schedule = model.NewIntVar(0, num_possible_schedules - 1,
-                                            's[%i]' % v)
-        hours = model.NewIntVar(0, num_hours, 'h[%i]' % v)
+        selected_schedule = model.NewIntVar(0, num_possible_schedules - 1, "s[%i]" % v)
+        hours = model.NewIntVar(0, num_hours, "h[%i]" % v)
         selected_schedules.append(selected_schedule)
         vendors_stat.append(hours)
         tmp.append(selected_schedule)
@@ -113,7 +123,7 @@ def vendor_scheduling_sat():
     # Statistics and constraints for each hour
     #
     for h in all_hours:
-        workers = model.NewIntVar(0, 1000, 'workers[%i]' % h)
+        workers = model.NewIntVar(0, 1000, "workers[%i]" % h)
         model.Add(workers == sum(x[v, h] for v in all_vendors))
         hours_stat.append(workers)
         model.Add(workers * max_traffic_per_vendor >= traffic[h])
@@ -127,25 +137,29 @@ def vendor_scheduling_sat():
     # Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.enumerate_all_solutions = True
-    solution_printer = SolutionPrinter(num_vendors, num_hours,
-                                       possible_schedules, selected_schedules,
-                                       hours_stat, min_vendors)
+    solution_printer = SolutionPrinter(
+        num_vendors,
+        num_hours,
+        possible_schedules,
+        selected_schedules,
+        hours_stat,
+        min_vendors,
+    )
     status = solver.Solve(model, solution_printer)
-    print('Status = %s' % solver.StatusName(status))
+    print("Status = %s" % solver.StatusName(status))
 
-    print('Statistics')
-    print('  - conflicts : %i' % solver.NumConflicts())
-    print('  - branches  : %i' % solver.NumBranches())
-    print('  - wall time : %f s' % solver.WallTime())
-    print('  - number of solutions found: %i' %
-          solution_printer.solution_count())
+    print("Statistics")
+    print("  - conflicts : %i" % solver.NumConflicts())
+    print("  - branches  : %i" % solver.NumBranches())
+    print("  - wall time : %f s" % solver.WallTime())
+    print("  - number of solutions found: %i" % solution_printer.solution_count())
 
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
+        raise app.UsageError("Too many command-line arguments.")
     vendor_scheduling_sat()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

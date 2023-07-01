@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """This is the Golomb ruler problem.
 
 This model aims at maximizing radar interferences in a minimum space.
@@ -29,11 +30,12 @@ from absl import flags
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
-_ORDER = flags.DEFINE_integer('order', 8, 'Order of the ruler.')
+_ORDER = flags.DEFINE_integer("order", 8, "Order of the ruler.")
 _PARAMS = flags.DEFINE_string(
-    'params',
-    'num_search_workers:16,log_search_progress:true,max_time_in_seconds:45',
-    'Sat solver parameters.')
+    "params",
+    "num_search_workers:16,log_search_progress:true,max_time_in_seconds:45",
+    "Sat solver parameters.",
+)
 
 
 def solve_golomb_ruler(order, params):
@@ -44,7 +46,7 @@ def solve_golomb_ruler(order, params):
     var_max = order * order
     all_vars = list(range(0, order))
 
-    marks = [model.NewIntVar(0, var_max, f'marks_{i}') for i in all_vars]
+    marks = [model.NewIntVar(0, var_max, f"marks_{i}") for i in all_vars]
 
     model.Add(marks[0] == 0)
     for i in range(order - 2):
@@ -53,7 +55,7 @@ def solve_golomb_ruler(order, params):
     diffs = []
     for i in range(order - 1):
         for j in range(i + 1, order):
-            diff = model.NewIntVar(0, var_max, f'diff [{j},{i}]')
+            diff = model.NewIntVar(0, var_max, f"diff [{j},{i}]")
             model.Add(diff == marks[j] - marks[i])
             diffs.append(diff)
     model.AddAllDifferent(diffs)
@@ -70,29 +72,29 @@ def solve_golomb_ruler(order, params):
     if params:
         text_format.Parse(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    print(f'Golomb ruler(order={order})')
+    print(f"Golomb ruler(order={order})")
     status = solver.Solve(model, solution_printer)
 
     # Print solution.
-    print(f'status: {solver.StatusName(status)}')
+    print(f"status: {solver.StatusName(status)}")
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         for idx, var in enumerate(marks):
-            print(f'mark[{idx}]: {solver.Value(var)}')
+            print(f"mark[{idx}]: {solver.Value(var)}")
         intervals = [solver.Value(diff) for diff in diffs]
         intervals.sort()
-        print(f'intervals: {intervals}')
+        print(f"intervals: {intervals}")
 
-    print('Statistics:')
-    print(f'- conflicts: {solver.NumConflicts()}')
-    print(f'- branches : {solver.NumBranches()}')
-    print(f'- wall time: {solver.WallTime()}s\n')
+    print("Statistics:")
+    print(f"- conflicts: {solver.NumConflicts()}")
+    print(f"- branches : {solver.NumBranches()}")
+    print(f"- wall time: {solver.WallTime()}s\n")
 
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
+        raise app.UsageError("Too many command-line arguments.")
     solve_golomb_ruler(_ORDER.value, _PARAMS.value)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Reader and solver of the single assembly line balancing problem.
 
 from https://assembly-line-balancing.de/salbp/:
@@ -36,12 +37,14 @@ from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
 
-_INPUT = flags.DEFINE_string('input', '', 'Input file to parse and solve.')
-_PARAMS = flags.DEFINE_string('params', '', 'Sat solver parameters.')
+_INPUT = flags.DEFINE_string("input", "", "Input file to parse and solve.")
+_PARAMS = flags.DEFINE_string("params", "", "Sat solver parameters.")
 _OUTPUT_PROTO = flags.DEFINE_string(
-    'output_proto', '', 'Output file to write the cp_model proto to.')
-_MODEL = flags.DEFINE_string('model', 'boolean',
-                             'Model used: boolean, scheduling, greedy')
+    "output_proto", "", "Output file to write the cp_model proto to."
+)
+_MODEL = flags.DEFINE_string(
+    "model", "boolean", "Model used: boolean, scheduling, greedy"
+)
 
 
 class SectionInfo(object):
@@ -54,13 +57,13 @@ class SectionInfo(object):
 
     def __str__(self):
         if self.index_map:
-            return f'SectionInfo(index_map={self.index_map})'
+            return f"SectionInfo(index_map={self.index_map})"
         elif self.set_of_pairs:
-            return f'SectionInfo(set_of_pairs={self.set_of_pairs})'
+            return f"SectionInfo(set_of_pairs={self.set_of_pairs})"
         elif self.value is not None:
-            return f'SectionInfo(value={self.value})'
+            return f"SectionInfo(value={self.value})"
         else:
-            return 'SectionInfo()'
+            return "SectionInfo()"
 
 
 def read_model(filename):
@@ -69,64 +72,64 @@ def read_model(filename):
     current_info = SectionInfo()
 
     model = {}
-    with open(filename, 'r') as input_file:
-        print(f'Reading model from \'{filename}\'')
-        section_name = ''
+    with open(filename, "r") as input_file:
+        print(f"Reading model from '{filename}'")
+        section_name = ""
 
         for line in input_file:
             stripped_line = line.strip()
             if not stripped_line:
                 continue
 
-            match_section_def = re.match(r'<([\w\s]+)>', stripped_line)
+            match_section_def = re.match(r"<([\w\s]+)>", stripped_line)
             if match_section_def:
                 section_name = match_section_def.group(1)
-                if section_name == 'end':
+                if section_name == "end":
                     continue
 
                 current_info = SectionInfo()
                 model[section_name] = current_info
                 continue
 
-            match_single_number = re.match(r'^([0-9]+)$', stripped_line)
+            match_single_number = re.match(r"^([0-9]+)$", stripped_line)
             if match_single_number:
                 current_info.value = int(match_single_number.group(1))
                 continue
 
-            match_key_value = re.match(r'^([0-9]+)\s+([0-9]+)$', stripped_line)
+            match_key_value = re.match(r"^([0-9]+)\s+([0-9]+)$", stripped_line)
             if match_key_value:
                 key = int(match_key_value.group(1))
                 value = int(match_key_value.group(2))
                 current_info.index_map[key] = value
                 continue
 
-            match_pair = re.match(r'^([0-9]+),([0-9]+)$', stripped_line)
+            match_pair = re.match(r"^([0-9]+),([0-9]+)$", stripped_line)
             if match_pair:
                 left = int(match_pair.group(1))
                 right = int(match_pair.group(2))
                 current_info.set_of_pairs.add((left, right))
                 continue
 
-            print(f'Unrecognized line \'{stripped_line}\'')
+            print(f"Unrecognized line '{stripped_line}'")
 
     return model
 
 
 def print_stats(model):
-    print('Model Statistics')
+    print("Model Statistics")
     for key, value in model.items():
-        print(f'  - {key}: {value}')
+        print(f"  - {key}: {value}")
 
 
 def solve_model_greedily(model):
     """Compute a greedy solution."""
-    print('Solving using a Greedy heuristics')
+    print("Solving using a Greedy heuristics")
 
-    num_tasks = model['number of tasks'].value
+    num_tasks = model["number of tasks"].value
     all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the data.
-    precedences = model['precedence relations'].set_of_pairs
-    durations = model['task times'].index_map
-    cycle_time = model['cycle time'].value
+    precedences = model["precedence relations"].set_of_pairs
+    durations = model["task times"].index_map
+    cycle_time = model["cycle time"].value
 
     weights = collections.defaultdict(int)
     successors = collections.defaultdict(list)
@@ -145,7 +148,7 @@ def solve_model_greedily(model):
 
     while len(assignment) < num_tasks:
         if not candidates:
-            print('error empty')
+            print("error empty")
             break
 
         best = -1
@@ -175,7 +178,7 @@ def solve_model_greedily(model):
                 candidates.add(succ)
                 del weights[succ]
 
-    print(f'  greedy solution uses {current_pod + 1} pods.')
+    print(f"  greedy solution uses {current_pod + 1} pods.")
 
     return assignment
 
@@ -183,13 +186,13 @@ def solve_model_greedily(model):
 def solve_boolean_model(model, hint):
     """Solve the given model."""
 
-    print('Solving using the Boolean model')
+    print("Solving using the Boolean model")
     # Model data
-    num_tasks = model['number of tasks'].value
+    num_tasks = model["number of tasks"].value
     all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the model.
-    durations = model['task times'].index_map
-    precedences = model['precedence relations'].set_of_pairs
-    cycle_time = model['cycle time'].value
+    durations = model["task times"].index_map
+    precedences = model["precedence relations"].set_of_pairs
+    cycle_time = model["cycle time"].value
 
     num_pods = max(p for _, p in hint.items()) + 1 if hint else num_tasks - 1
     all_pods = range(num_pods)
@@ -204,11 +207,11 @@ def solve_boolean_model(model, hint):
     # Create the variables
     for t in all_tasks:
         for p in all_pods:
-            assign[t, p] = model.NewBoolVar(f'assign_{t}_{p}')
-            possible[t, p] = model.NewBoolVar(f'possible_{t}_{p}')
+            assign[t, p] = model.NewBoolVar(f"assign_{t}_{p}")
+            possible[t, p] = model.NewBoolVar(f"possible_{t}_{p}")
 
     # active[p] indicates if pod p is active.
-    active = [model.NewBoolVar(f'active_{p}') for p in all_pods]
+    active = [model.NewBoolVar(f"active_{p}") for p in all_pods]
 
     # Each task is done on exactly one pod.
     for t in all_tasks:
@@ -216,8 +219,7 @@ def solve_boolean_model(model, hint):
 
     # Total tasks assigned to one pod cannot exceed cycle time.
     for p in all_pods:
-        model.Add(
-            sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time)
+        model.Add(sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time)
 
     # Maintain the possible variables:
     #   possible at pod p -> possible at any pod after p
@@ -235,8 +237,7 @@ def solve_boolean_model(model, hint):
     # Precedences.
     for before, after in precedences:
         for p in range(1, num_pods):
-            model.AddImplication(assign[before, p], possible[after,
-                                                             p - 1].Not())
+            model.AddImplication(assign[before, p], possible[after, p - 1].Not())
 
     # Link active variables with the assign one.
     for p in all_pods:
@@ -260,7 +261,7 @@ def solve_boolean_model(model, hint):
         model.AddHint(assign[t, hint[t]], 1)
 
     if _OUTPUT_PROTO.value:
-        print(f'Writing proto to {_OUTPUT_PROTO.value}')
+        print(f"Writing proto to {_OUTPUT_PROTO.value}")
         model.ExportToFile(_OUTPUT_PROTO.value)
 
     # Solve model.
@@ -274,13 +275,13 @@ def solve_boolean_model(model, hint):
 def solve_scheduling_model(model, hint):
     """Solve the given model using a cumutive model."""
 
-    print('Solving using the scheduling model')
+    print("Solving using the scheduling model")
     # Model data
-    num_tasks = model['number of tasks'].value
+    num_tasks = model["number of tasks"].value
     all_tasks = range(1, num_tasks + 1)  # Tasks are 1 based in the data.
-    durations = model['task times'].index_map
-    precedences = model['precedence relations'].set_of_pairs
-    cycle_time = model['cycle time'].value
+    durations = model["task times"].index_map
+    precedences = model["precedence relations"].set_of_pairs
+    cycle_time = model["cycle time"].value
 
     num_pods = max(p for _, p in hint.items()) + 1 if hint else num_tasks
 
@@ -289,21 +290,20 @@ def solve_scheduling_model(model, hint):
     # pod[t] indicates on which pod the task is performed.
     pods = {}
     for t in all_tasks:
-        pods[t] = model.NewIntVar(0, num_pods - 1, f'pod_{t}')
+        pods[t] = model.NewIntVar(0, num_pods - 1, f"pod_{t}")
 
     # Create the variables
     intervals = []
     demands = []
     for t in all_tasks:
-        interval = model.NewFixedSizeIntervalVar(pods[t], 1, '')
+        interval = model.NewFixedSizeIntervalVar(pods[t], 1, "")
         intervals.append(interval)
         demands.append(durations[t])
 
     # Add terminating interval as the objective.
-    obj_var = model.NewIntVar(1, num_pods, 'obj_var')
-    obj_size = model.NewIntVar(1, num_pods, 'obj_duration')
-    obj_interval = model.NewIntervalVar(obj_var, obj_size, num_pods + 1,
-                                        'obj_interval')
+    obj_var = model.NewIntVar(1, num_pods, "obj_var")
+    obj_size = model.NewIntVar(1, num_pods, "obj_duration")
+    obj_interval = model.NewIntervalVar(obj_var, obj_size, num_pods + 1, "obj_interval")
     intervals.append(obj_interval)
     demands.append(cycle_time)
 
@@ -322,7 +322,7 @@ def solve_scheduling_model(model, hint):
         model.AddHint(pods[t], hint[t])
 
     if _OUTPUT_PROTO.value:
-        print(f'Writing proto to{_OUTPUT_PROTO.value}')
+        print(f"Writing proto to{_OUTPUT_PROTO.value}")
         model.ExportToFile(_OUTPUT_PROTO.value)
 
     # Solve model.
@@ -335,17 +335,17 @@ def solve_scheduling_model(model, hint):
 
 def main(argv: Sequence[str]) -> None:
     if len(argv) > 1:
-        raise app.UsageError('Too many command-line arguments.')
+        raise app.UsageError("Too many command-line arguments.")
 
     model = read_model(_INPUT.value)
     print_stats(model)
     greedy_solution = solve_model_greedily(model)
 
-    if _MODEL.value == 'boolean':
+    if _MODEL.value == "boolean":
         solve_boolean_model(model, greedy_solution)
-    elif _MODEL.value == 'scheduling':
+    elif _MODEL.value == "scheduling":
         solve_scheduling_model(model, greedy_solution)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(main)

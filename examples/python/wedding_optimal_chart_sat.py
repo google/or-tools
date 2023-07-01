@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Finding an optimal wedding seating chart.
 
 From
@@ -56,9 +57,10 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         current_time = time.time()
         objective = self.ObjectiveValue()
-        print("Solution %i, time = %f s, objective = %i" %
-              (self.__solution_count, current_time - self.__start_time,
-               objective))
+        print(
+            "Solution %i, time = %f s, objective = %i"
+            % (self.__solution_count, current_time - self.__start_time, objective)
+        )
         self.__solution_count += 1
 
         for t in range(self.__num_tables):
@@ -85,38 +87,52 @@ def build_data():
 
     # Connection matrix: who knows who, and how strong
     # is the relation
-    connections = [[1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]]
+    connections = [
+        [1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]
 
     # Names of the guests. B: Bride side, G: Groom side
     names = [
-        "Deb (B)", "John (B)", "Martha (B)", "Travis (B)", "Allan (B)",
-        "Lois (B)", "Jayne (B)", "Brad (B)", "Abby (B)", "Mary Helen (G)",
-        "Lee (G)", "Annika (G)", "Carl (G)", "Colin (G)", "Shirley (G)",
-        "DeAnn (G)", "Lori (G)"
+        "Deb (B)",
+        "John (B)",
+        "Martha (B)",
+        "Travis (B)",
+        "Allan (B)",
+        "Lois (B)",
+        "Jayne (B)",
+        "Brad (B)",
+        "Abby (B)",
+        "Mary Helen (G)",
+        "Lee (G)",
+        "Annika (G)",
+        "Carl (G)",
+        "Colin (G)",
+        "Shirley (G)",
+        "DeAnn (G)",
+        "Lori (G)",
     ]
     return num_tables, table_capacity, min_known_neighbors, connections, names
 
 
 def solve_with_discrete_model():
     """Discrete approach."""
-    num_tables, table_capacity, min_known_neighbors, connections, names = build_data(
-    )
+    num_tables, table_capacity, min_known_neighbors, connections, names = build_data()
 
     num_guests = len(connections)
 
@@ -132,28 +148,32 @@ def solve_with_discrete_model():
     seats = {}
     for t in all_tables:
         for g in all_guests:
-            seats[(t,
-                   g)] = model.NewBoolVar("guest %i seats on table %i" % (g, t))
+            seats[(t, g)] = model.NewBoolVar("guest %i seats on table %i" % (g, t))
 
     colocated = {}
     for g1 in range(num_guests - 1):
         for g2 in range(g1 + 1, num_guests):
             colocated[(g1, g2)] = model.NewBoolVar(
-                "guest %i seats with guest %i" % (g1, g2))
+                "guest %i seats with guest %i" % (g1, g2)
+            )
 
     same_table = {}
     for g1 in range(num_guests - 1):
         for g2 in range(g1 + 1, num_guests):
             for t in all_tables:
                 same_table[(g1, g2, t)] = model.NewBoolVar(
-                    "guest %i seats with guest %i on table %i" % (g1, g2, t))
+                    "guest %i seats with guest %i on table %i" % (g1, g2, t)
+                )
 
     # Objective
     model.Maximize(
-        sum(connections[g1][g2] * colocated[g1, g2]
+        sum(
+            connections[g1][g2] * colocated[g1, g2]
             for g1 in range(num_guests - 1)
             for g2 in range(g1 + 1, num_guests)
-            if connections[g1][g2] > 0))
+            if connections[g1][g2] > 0
+        )
+    )
 
     #
     # Constraints
@@ -172,29 +192,38 @@ def solve_with_discrete_model():
         for g2 in range(g1 + 1, num_guests):
             for t in all_tables:
                 # Link same_table and seats.
-                model.AddBoolOr([
-                    seats[(t, g1)].Not(), seats[(t, g2)].Not(),
-                    same_table[(g1, g2, t)]
-                ])
+                model.AddBoolOr(
+                    [
+                        seats[(t, g1)].Not(),
+                        seats[(t, g2)].Not(),
+                        same_table[(g1, g2, t)],
+                    ]
+                )
                 model.AddImplication(same_table[(g1, g2, t)], seats[(t, g1)])
                 model.AddImplication(same_table[(g1, g2, t)], seats[(t, g2)])
 
             # Link colocated and same_table.
             model.Add(
-                sum(same_table[(g1, g2, t)] for t in all_tables) == colocated[(
-                    g1, g2)])
+                sum(same_table[(g1, g2, t)] for t in all_tables) == colocated[(g1, g2)]
+            )
 
     # Min known neighbors rule.
     for g in all_guests:
         model.Add(
-            sum(same_table[(g, g2, t)]
+            sum(
+                same_table[(g, g2, t)]
                 for g2 in range(g + 1, num_guests)
                 for t in all_tables
-                if connections[g][g2] > 0) +
-            sum(same_table[(g1, g, t)]
+                if connections[g][g2] > 0
+            )
+            + sum(
+                same_table[(g1, g, t)]
                 for g1 in range(g)
                 for t in all_tables
-                if connections[g1][g] > 0) >= min_known_neighbors)
+                if connections[g1][g] > 0
+            )
+            >= min_known_neighbors
+        )
 
     # Symmetry breaking. First guest seats on the first table.
     model.Add(seats[(0, 0)] == 1)
