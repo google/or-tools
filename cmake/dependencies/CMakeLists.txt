@@ -174,8 +174,6 @@ endif()
 if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
   message(CHECK_START "Fetching pybind11_protobuf")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  #set(PYBIND11_INSTALL ON)
-  #set(PYBIND11_TEST OFF)
   FetchContent_Declare(
     pybind11_protobuf
     GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
