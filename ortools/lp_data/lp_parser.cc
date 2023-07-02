@@ -184,8 +184,9 @@ bool LPParser::ParseIntegerVariablesList(StringPiece line) {
 }
 
 bool LPParser::ParseConstraint(StringPiece constraint) {
+  std::string constraint_as_string{constraint};
   const StatusOr<ParsedConstraint> parsed_constraint_or_status =
-      ::operations_research::glop::ParseConstraint(constraint.as_string());
+      ::operations_research::glop::ParseConstraint(constraint_as_string);
   if (!parsed_constraint_or_status.ok()) return false;
   const ParsedConstraint& parsed_constraint =
       parsed_constraint_or_status.value();
@@ -413,8 +414,9 @@ StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint_view) {
     right_bound = consumed_coeff;
     if (ConsumeToken(&constraint, &consumed_name, &consumed_coeff) !=
         TokenType::END) {
+      std::string constraint_as_string{constraint};
       return absl::InvalidArgumentError(absl::StrCat(
-          "End of input was expected, found: ", constraint.as_string()));
+          "End of input was expected, found: ", constraint_as_string));
     }
   }
 
