@@ -14,11 +14,11 @@
 
 """Tests for ortools.util.python.sorted_interval_list."""
 
-import unittest
+from absl.testing import absltest
 from ortools.util.python import sorted_interval_list
 
 
-class SortedIntervalListTest(unittest.TestCase):
+class SortedIntervalListTest(absltest.TestCase):
     def testCtorAndGetter(self):
         bool_domain = sorted_interval_list.Domain(0, 1)
         self.assertEqual(2, bool_domain.Size())
@@ -86,4 +86,4 @@ class SortedIntervalListTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

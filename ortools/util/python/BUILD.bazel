@@ -11,15 +11,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for model_builder.
+# Python wrapper for sorted_interval_list.
 
+load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_python//python:defs.bzl", "py_test")
+
+cc_library(
+    name = "sorted_interval_list_doc",
+    hdrs = ["sorted_interval_list_doc.h"],
+    visibility = ["//visibility:public"],
+)
 
 pybind_extension(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
+        ":sorted_interval_list_doc",
         "//ortools/util:sorted_interval_list",
+    ],
+)
+
+py_test(
+    name = "sorted_interval_list_test",
+    srcs = ["sorted_interval_list_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":sorted_interval_list",
+        requirement("absl-py"),
     ],
 )
