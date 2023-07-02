@@ -16,6 +16,7 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:defs.bzl", "py_test")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 # OSS solvers
 bool_flag(
@@ -42,6 +43,12 @@ config_setting(
     },
 )
 
+cc_library(
+    name = "pywrapknapsack_solver_doc",
+    hdrs = ["pywrapknapsack_solver_doc.h"],
+    visibility = ["//visibility:public"],
+)
+
 pybind_extension(
     name = "pywrapknapsack_solver",
     srcs = ["pywrapknapsack_solver.cc"],
@@ -54,6 +61,7 @@ pybind_extension(
     }),
     visibility = ["//visibility:public"],
     deps = [
+        ":pywrapknapsack_solver_doc",
         "//ortools/algorithms:knapsack_solver_lib",
         "@com_google_absl//absl/strings",
     ],

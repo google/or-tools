@@ -16,6 +16,7 @@
 #include <string>
 
 #include "ortools/algorithms/knapsack_solver.h"
+#include "ortools/algorithms/python/pywrapknapsack_solver_doc.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -26,39 +27,61 @@ namespace py = pybind11;
 using ::py::arg;
 
 PYBIND11_MODULE(pywrapknapsack_solver, m) {
-  py::class_<KnapsackSolver>(m, "KnapsackSolver")
+  py::class_<KnapsackSolver>(m, "KnapsackSolver",
+                             DOC(operations_research, KnapsackSolver))
       .def(py::init<KnapsackSolver::SolverType, const std::string&>())
-      .def("init", &KnapsackSolver::Init, arg("profits"), arg("weights"),
-           arg("capacities"))
-      .def("solve", &KnapsackSolver::Solve)
+      .def("init", &KnapsackSolver::Init,
+           DOC(operations_research, KnapsackSolver, Init), arg("profits"),
+           arg("weights"), arg("capacities"))
+      .def("solve", &KnapsackSolver::Solve,
+           DOC(operations_research, KnapsackSolver, Solve))
       .def("best_solution_contains", &KnapsackSolver::BestSolutionContains,
+           DOC(operations_research, KnapsackSolver, BestSolutionContains),
            arg("item_id"))
-      .def("is_solution_optimal", &KnapsackSolver::IsSolutionOptimal)
+      .def("is_solution_optimal", &KnapsackSolver::IsSolutionOptimal,
+           DOC(operations_research, KnapsackSolver, IsSolutionOptimal))
       .def("set_time_limit", &KnapsackSolver::set_time_limit,
+           DOC(operations_research, KnapsackSolver, set_time_limit),
            arg("time_limit_seconds"))
       .def("set_use_reduction", &KnapsackSolver::set_use_reduction,
+           DOC(operations_research, KnapsackSolver, set_use_reduction),
            arg("use_reduction"));
 
-  py::enum_<KnapsackSolver::SolverType>(m, "SolverType")
+  py::enum_<KnapsackSolver::SolverType>(
+      m, "SolverType", DOC(operations_research, KnapsackSolver, SolverType))
       .value("KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER",
              KnapsackSolver::SolverType::
-                 KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER)
+                 KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER))
       .value("KNAPSACK_BRUTE_FORCE_SOLVER",
-             KnapsackSolver::SolverType::KNAPSACK_BRUTE_FORCE_SOLVER)
+             KnapsackSolver::SolverType::KNAPSACK_BRUTE_FORCE_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_BRUTE_FORCE_SOLVER))
       .value("KNAPSACK_64ITEMS_SOLVER",
-             KnapsackSolver::SolverType::KNAPSACK_64ITEMS_SOLVER)
+             KnapsackSolver::SolverType::KNAPSACK_64ITEMS_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER))
       .value("KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER",
-             KnapsackSolver::SolverType::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER)
+             KnapsackSolver::SolverType::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER))
 #if defined(USE_CBC)
       .value("KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER",
-             KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER)
+             KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER))
 #endif  // USE_CBC
 #if defined(USE_SCIP)
       .value(
           "KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER",
-          KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER)
+          KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
+          DOC(operations_research, KnapsackSolver, SolverType,
+              KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER))
 #endif  // USE_SCIP
       .value("KNAPSACK_DIVIDE_AND_CONQUER_SOLVER",
-             KnapsackSolver::SolverType::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER)
+             KnapsackSolver::SolverType::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_DIVIDE_AND_CONQUER_SOLVER))
       .export_values();
 }
