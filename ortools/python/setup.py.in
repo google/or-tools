@@ -49,7 +49,7 @@ setup(
     ],
     package_data={
         '@PYTHON_PROJECT@':[$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'.libs/*','../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>],
-        '@PYTHON_PROJECT@.init':['$<TARGET_FILE_NAME:pywrapinit>'],
+        '@PYTHON_PROJECT@.init.python':['$<TARGET_FILE_NAME:pywrapinit>'],
         '@PYTHON_PROJECT@.algorithms.python':['$<TARGET_FILE_NAME:pywrapknapsack_solver>'],
         '@PYTHON_PROJECT@.bop':['*.pyi'],
         '@PYTHON_PROJECT@.glop':['*.pyi'],
