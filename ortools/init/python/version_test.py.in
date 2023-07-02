@@ -15,16 +15,16 @@
 
 import unittest
 import ortools
-from ortools.init import pywrapinit
+from ortools.init.python import pywrapinit
 
 
 class VersionApi(unittest.TestCase):
 
     def test_version_api(self):
         print('test_version_api')
-        self.assertEqual(@PROJECT_VERSION_MAJOR@, pywrapinit.OrToolsVersion.MajorNumber())
-        self.assertEqual(@PROJECT_VERSION_MINOR@, pywrapinit.OrToolsVersion.MinorNumber())
-        self.assertEqual(@PROJECT_VERSION_PATCH@, pywrapinit.OrToolsVersion.PatchNumber())
+        self.assertEqual(@PROJECT_VERSION_MAJOR@, pywrapinit.OrToolsVersion.major_number())
+        self.assertEqual(@PROJECT_VERSION_MINOR@, pywrapinit.OrToolsVersion.minor_number())
+        self.assertEqual(@PROJECT_VERSION_PATCH@, pywrapinit.OrToolsVersion.patch_number())
 
     def test_version(self):
         print('test_version')

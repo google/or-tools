@@ -14,41 +14,40 @@
 
 """Simple unit tests for python/init.i. Not exhaustive."""
 
-import unittest
-from ortools.init import pywrapinit
+from ortools.init.python import pywrapinit
+from absl.testing import absltest
 
 
-class PyWrapInit(unittest.TestCase):
+class PyWrapInit(absltest.TestCase):
     def test_logging(self):
         print("test_logging")
-        pywrapinit.CppBridge.InitLogging("pywrapinit_test.py")
-        pywrapinit.CppBridge.ShutdownLogging()
+        pywrapinit.CppBridge.init_logging("pywrapinit_test.py")
+        pywrapinit.CppBridge.shutdown_logging()
 
     def test_flags(self):
         print("test_cpp_flags")
         cpp_flags = pywrapinit.CppFlags()
-        # print(f'{dir(cpp_flags)}')
         assert hasattr(cpp_flags, "stderrthreshold")
         assert hasattr(cpp_flags, "log_prefix")
         assert hasattr(cpp_flags, "cp_model_dump_prefix")
         assert hasattr(cpp_flags, "cp_model_dump_models")
         assert hasattr(cpp_flags, "cp_model_dump_lns")
         assert hasattr(cpp_flags, "cp_model_dump_response")
-        pywrapinit.CppBridge.SetFlags(cpp_flags)
+        pywrapinit.CppBridge.set_flags(cpp_flags)
 
     def test_version(self):
         print("test_version")
-        major = pywrapinit.OrToolsVersion.MajorNumber()
+        major = pywrapinit.OrToolsVersion.major_number()
         self.assertIsInstance(major, int)
-        minor = pywrapinit.OrToolsVersion.MinorNumber()
+        minor = pywrapinit.OrToolsVersion.minor_number()
         self.assertIsInstance(minor, int)
-        patch = pywrapinit.OrToolsVersion.PatchNumber()
+        patch = pywrapinit.OrToolsVersion.patch_number()
         self.assertIsInstance(patch, int)
-        version = pywrapinit.OrToolsVersion.VersionString()
+        version = pywrapinit.OrToolsVersion.version_string()
         self.assertIsInstance(version, str)
         string = f"{major}.{minor}.{patch}"
         self.assertEqual(version, string)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()
