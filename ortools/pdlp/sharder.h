@@ -170,12 +170,12 @@ class Sharder {
   // comments on the first constructor.
   Sharder(const Sharder& other_sharder, int64_t num_elements);
 
-  // `Sharder` may be copied or moved.
+  // `Sharder` may be moved, but not copied.
   // Moved-from objects may be in an invalid state. The only methods that may be
   // called on a moved-from object are the destructor or `operator=`.
-  Sharder(const Sharder& other) = default;
+  Sharder(const Sharder& other) = delete;
+  Sharder& operator=(const Sharder& other) = delete;
   Sharder(Sharder&& other) = default;
-  Sharder& operator=(const Sharder& other) = default;
   Sharder& operator=(Sharder&& other) = default;
 
   int NumShards() const { return static_cast<int>(shard_starts_.size()) - 1; }

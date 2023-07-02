@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Solves a simple LP using PDLP's direct Python API.
 
 Note: The direct API is generally for advanced use cases. It is matrix-based,
@@ -25,22 +26,22 @@ import scipy.sparse
 from ortools.pdlp import solve_log_pb2
 from ortools.pdlp import solvers_pb2
 from ortools.pdlp.python import pywrap_pdlp
-from ortools.init import pywrapinit
+from ortools.init.python import pywrapinit
 
 
 def simple_lp() -> pywrap_pdlp.QuadraticProgram:
     """Returns a small LP.
 
-  min 5.5 x_0 - 2 x_1 - x_2 +   x_3 - 14 s.t.
-      2 x_0 +     x_1 +   x_2 + 2 x_3  = 12
-        x_0 +             x_2          <=  7
-      4 x_0                            >=  -4
-     -1 <=            1.5 x_2 -   x_3  <= 1
-    -infinity <= x_0 <= infinity
-           -2 <= x_1 <= infinity
-    -infinity <= x_2 <= 6
-          2.5 <= x_3 <= 3.5
-  """
+    min 5.5 x_0 - 2 x_1 - x_2 +   x_3 - 14 s.t.
+        2 x_0 +     x_1 +   x_2 + 2 x_3  = 12
+          x_0 +             x_2          <=  7
+        4 x_0                            >=  -4
+       -1 <=            1.5 x_2 -   x_3  <= 1
+      -infinity <= x_0 <= infinity
+             -2 <= x_1 <= infinity
+      -infinity <= x_2 <= 6
+            2.5 <= x_3 <= 3.5
+    """
     lp = pywrap_pdlp.QuadraticProgram()
     lp.objective_offset = -14
     lp.objective_vector = [5.5, -2, -1, 1]
@@ -51,8 +52,9 @@ def simple_lp() -> pywrap_pdlp.QuadraticProgram:
     # Most use cases should initialize the sparse constraint matrix without
     # constructing a dense matrix first! We use a np.array here for convenience
     # only.
-    constraint_matrix = np.array([[2, 1, 1, 2], [1, 0, 1, 0], [4, 0, 0, 0],
-                                  [0, 0, 1.5, -1]])
+    constraint_matrix = np.array(
+        [[2, 1, 1, 2], [1, 0, 1, 0], [4, 0, 0, 0], [0, 0, 1.5, -1]]
+    )
     lp.constraint_matrix = scipy.sparse.csc_matrix(constraint_matrix)
     return lp
 
@@ -71,40 +73,42 @@ def main() -> None:
 
     # Call the main solve function. Note that a quirk of the pywrap11 API forces
     # us to serialize the `params` and deserialize the `solve_log` proto messages.
-    result = pywrap_pdlp.primal_dual_hybrid_gradient(simple_lp(),
-                                                     params.SerializeToString())
+    result = pywrap_pdlp.primal_dual_hybrid_gradient(
+        simple_lp(), params.SerializeToString()
+    )
     solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
 
     if solve_log.termination_reason == solve_log_pb2.TERMINATION_REASON_OPTIMAL:
-        print('Solve successful')
+        print("Solve successful")
     else:
         print(
-            'Solve not successful. Status:',
-            solve_log_pb2.TerminationReason.Name(solve_log.termination_reason))
+            "Solve not successful. Status:",
+            solve_log_pb2.TerminationReason.Name(solve_log.termination_reason),
+        )
 
     # Solutions vectors are always returned. *However*, their interpretation
     # depends on termination_reason! See primal_dual_hybrid_gradient.h for more
     # details on what the vectors mean if termination_reason is not
     # TERMINATION_REASON_OPTIMAL.
-    print('Primal solution:', result.primal_solution)
-    print('Dual solution:', result.dual_solution)
-    print('Reduced costs:', result.reduced_costs)
+    print("Primal solution:", result.primal_solution)
+    print("Dual solution:", result.dual_solution)
+    print("Reduced costs:", result.reduced_costs)
 
     solution_type = solve_log.solution_type
-    print('Solution type:', solve_log_pb2.PointType.Name(solution_type))
+    print("Solution type:", solve_log_pb2.PointType.Name(solution_type))
     for ci in solve_log.solution_stats.convergence_information:
         if ci.candidate_type == solution_type:
-            print('Primal objective:', ci.primal_objective)
-            print('Dual objective:', ci.dual_objective)
+            print("Primal objective:", ci.primal_objective)
+            print("Dual objective:", ci.dual_objective)
 
-    print('Iterations:', solve_log.iteration_count)
-    print('Solve time (sec):', solve_log.solve_time_sec)
+    print("Iterations:", solve_log.iteration_count)
+    print("Solve time (sec):", solve_log.solve_time_sec)
 
 
-if __name__ == '__main__':
-    pywrapinit.CppBridge.InitLogging('simple_pdlp_program.py')
+if __name__ == "__main__":
+    pywrapinit.CppBridge.init_logging("simple_pdlp_program.py")
     cpp_flags = pywrapinit.CppFlags()
-    cpp_flags.logtostderr = True
+    cpp_flags.stderrthreshold = 0
     cpp_flags.log_prefix = False
-    pywrapinit.CppBridge.SetFlags(cpp_flags)
+    pywrapinit.CppBridge.set_flags(cpp_flags)
     main()
