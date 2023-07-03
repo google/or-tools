@@ -34,13 +34,14 @@ rather than for solving specific optimization problems.
 
 import math
 import numbers
-from typing import Any, Callable, Dict, List, Literal, Optional, Union, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+
 import numpy as np
 from numpy import typing as npt
 from numpy.lib import mixins
 
 from ortools.linear_solver.python import model_builder_helper as mbh
-from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
+from ortools.linear_solver.python import model_builder_numbers as mbn
 
 
 # Custom types.
@@ -67,7 +68,7 @@ SliceT = Union[
 
 
 # Forward solve statuses.
-SolveStatus = pwmb.SolveStatus
+SolveStatus = mbh.SolveStatus
 
 
 class LinearExpr:
@@ -118,10 +119,10 @@ class LinearExpr:
         Returns:
           a LinearExpr instance or a numerical constant.
         """
-        checked_constant: np.double = mbh.assert_is_a_number(constant)
+        checked_constant: np.double = mbn.assert_is_a_number(constant)
         if not expressions:
             return checked_constant
-        if len(expressions) == 1 and mbh.is_zero(checked_constant):
+        if len(expressions) == 1 and mbn.is_zero(checked_constant):
             return expressions[0]
 
         return LinearExpr.weighted_sum(
@@ -154,7 +155,7 @@ class LinearExpr:
                 "LinearExpr.weighted_sum: expressions and coefficients have"
                 " different lengths"
             )
-        checked_constant: np.double = mbh.assert_is_a_number(constant)
+        checked_constant: np.double = mbn.assert_is_a_number(constant)
         if not expressions:
             return checked_constant
 
@@ -162,10 +163,10 @@ class LinearExpr:
         indices = []
         coeffs = []
         for e, c in zip(expressions, coefficients):
-            if mbh.is_zero(c):
+            if mbn.is_zero(c):
                 continue
 
-            if mbh.is_a_number(e):
+            if mbn.is_a_number(e):
                 checked_constant += np.double(c * e)
             elif isinstance(e, Variable):
                 indices.append(np.array([e.index], dtype=np.int32))
@@ -203,14 +204,14 @@ class LinearExpr:
         Returns:
           a LinearExpr instance or a numerical constant.
         """
-        checked_coefficient: np.double = mbh.assert_is_a_number(coefficient)
-        checked_constant: np.double = mbh.assert_is_a_number(constant)
+        checked_coefficient: np.double = mbn.assert_is_a_number(coefficient)
+        checked_constant: np.double = mbn.assert_is_a_number(constant)
 
-        if mbh.is_zero(checked_coefficient):
+        if mbn.is_zero(checked_coefficient):
             return checked_constant
-        if mbh.is_one(checked_coefficient) and mbh.is_zero(checked_constant):
+        if mbn.is_one(checked_coefficient) and mbn.is_zero(checked_constant):
             return expression
-        if mbh.is_a_number(expression):
+        if mbn.is_a_number(expression):
             return np.double(expression) * checked_coefficient + checked_constant
         if isinstance(expression, Variable):
             return _WeightedSum(
@@ -233,7 +234,7 @@ class LinearExpr:
         return NotImplemented
 
     def __add__(self, arg: LinearExprT) -> LinearExprT:
-        if mbh.is_a_number(arg):
+        if mbn.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg)
         return LinearExpr.weighted_sum(
             [self, arg], [1.0, 1.0], constant=0.0
@@ -243,7 +244,7 @@ class LinearExpr:
         return self.__add__(arg)
 
     def __sub__(self, arg: LinearExprT):
-        if mbh.is_a_number(arg):
+        if mbn.is_a_number(arg):
             return LinearExpr.sum([self], constant=arg * -1.0)
         return LinearExpr.weighted_sum(
             [self, arg], [1.0, -1.0], constant=0.0
@@ -255,10 +256,10 @@ class LinearExpr:
         )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __mul__(self, arg: NumberT):
-        arg = mbh.assert_is_a_number(arg)
-        if mbh.is_one(arg):
+        arg = mbn.assert_is_a_number(arg)
+        if mbn.is_one(arg):
             return self
-        elif mbh.is_zero(arg):
+        elif mbn.is_zero(arg):
             return 0.0
         return self.multiply_by(arg)
 
@@ -269,8 +270,8 @@ class LinearExpr:
         return self.__mul__(arg)
 
     def __div__(self, arg: NumberT):
-        coeff = mbh.assert_is_a_number(arg)
-        if mbh.is_zero(coeff):
+        coeff = mbn.assert_is_a_number(arg)
+        if mbn.is_zero(coeff):
             raise ValueError("Cannot call the division operator with a zero divisor")
         return self.__mul__(1.0 / coeff)
 
@@ -311,8 +312,8 @@ class LinearExpr:
     ) -> Union[bool, "BoundedLinearExpression"]:
         if arg is None:
             return False
-        if mbh.is_a_number(arg):
-            arg = mbh.assert_is_a_number(arg)
+        if mbn.is_a_number(arg):
+            arg = mbn.assert_is_a_number(arg)
             return BoundedLinearExpression(self, arg, arg)
         else:
             return BoundedLinearExpression(
@@ -320,8 +321,8 @@ class LinearExpr:
             )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __ge__(self, arg: LinearExprT) -> "BoundedLinearExpression":
-        if mbh.is_a_number(arg):
-            arg = mbh.assert_is_a_number(arg)
+        if mbn.is_a_number(arg):
+            arg = mbn.assert_is_a_number(arg)
             return BoundedLinearExpression(
                 self, arg, math.inf
             )  # pytype: disable=wrong-arg-types  # numpy-scalars
@@ -331,8 +332,8 @@ class LinearExpr:
             )  # pytype: disable=wrong-arg-types  # numpy-scalars
 
     def __le__(self, arg: LinearExprT) -> "BoundedLinearExpression":
-        if mbh.is_a_number(arg):
-            arg = mbh.assert_is_a_number(arg)
+        if mbn.is_a_number(arg):
+            arg = mbn.assert_is_a_number(arg)
             return BoundedLinearExpression(
                 self, -math.inf, arg
             )  # pytype: disable=wrong-arg-types  # numpy-scalars
@@ -363,13 +364,13 @@ class _WeightedSum(LinearExpr):
     ):
         super().__init__()
         self.__variable_indices: npt.NDArray[np.int32] = variable_indices
-        self.__coefficients: npt.NDArray[np.double] = mbh.assert_is_a_number_array(
+        self.__coefficients: npt.NDArray[np.double] = mbn.assert_is_a_number_array(
             coefficients
         )
         self.__constant: np.double = constant
 
     def multiply_by(self, arg: NumberT) -> LinearExprT:
-        if mbh.is_zero(arg):
+        if mbn.is_zero(arg):
             return 0.0  # pytype: disable=bad-return-type  # numpy-scalars
         if self.__variable_indices.size > 0:
             return _WeightedSum(
@@ -392,7 +393,7 @@ class _WeightedSum(LinearExpr):
     def constant(self) -> np.double:
         return self.__constant
 
-    def pretty_string(self, helper: pwmb.ModelBuilderHelper) -> str:
+    def pretty_string(self, helper: mbh.ModelBuilderHelper) -> str:
         """Pretty print a linear expression into a string."""
         output: str = ""
         for index, coeff in zip(self.variable_indices, self.coefficients):
@@ -400,15 +401,15 @@ class _WeightedSum(LinearExpr):
             if not var_name:
                 var_name = f"unnamed_var_{index}"
 
-            if not output and mbh.is_one(coeff):
+            if not output and mbn.is_one(coeff):
                 output = var_name
-            elif not output and mbh.is_minus_one(coeff):
+            elif not output and mbn.is_minus_one(coeff):
                 output = f"-{var_name}"
             elif not output:
                 output = f"{coeff} * {var_name}"
-            elif mbh.is_one(coeff):
+            elif mbn.is_one(coeff):
                 output += f" + {var_name}"
-            elif mbh.is_minus_one(coeff):
+            elif mbn.is_minus_one(coeff):
                 output += f" - {var_name}"
             elif coeff > 0.0:
                 output += f" + {coeff} * {var_name}"
@@ -444,7 +445,7 @@ class Variable(LinearExpr):
 
     def __init__(
         self,
-        helper: pwmb.ModelBuilderHelper,
+        helper: mbh.ModelBuilderHelper,
         lb: NumberT,
         ub: Optional[NumberT],
         is_integral: Optional[bool],
@@ -452,7 +453,7 @@ class Variable(LinearExpr):
     ):
         """See ModelBuilder.new_var below."""
         LinearExpr.__init__(self)
-        self.__helper: pwmb.ModelBuilderHelper = helper
+        self.__helper: mbh.ModelBuilderHelper = helper
         # Python do not support multiple __init__ methods.
         # This method is only called from the ModelBuilder class.
         # We hack the parameter to support the two cases:
@@ -462,13 +463,13 @@ class Variable(LinearExpr):
         # case 2:
         #     helper is a ModelBuilderHelper, lb is an index (int), ub is None,
         #     is_integral is None, and name is None.
-        if mbh.is_integral(lb) and ub is None and is_integral is None:
+        if mbn.is_integral(lb) and ub is None and is_integral is None:
             self.__index: np.int32 = np.int32(lb)
-            self.__helper: pwmb.ModelBuilderHelper = helper
+            self.__helper: mbh.ModelBuilderHelper = helper
         else:
             index: np.int32 = helper.add_var()
             self.__index: np.int32 = np.int32(index)
-            self.__helper: pwmb.ModelBuilderHelper = helper
+            self.__helper: mbh.ModelBuilderHelper = helper
             helper.set_var_lower_bound(index, lb)
             helper.set_var_upper_bound(index, ub)
             helper.set_var_integrality(index, is_integral)
@@ -481,7 +482,7 @@ class Variable(LinearExpr):
         return self.__index
 
     @property
-    def helper(self) -> pwmb.ModelBuilderHelper:
+    def helper(self) -> mbh.ModelBuilderHelper:
         """Returns the underlying ModelBuilderHelper."""
         return self.__helper
 
@@ -571,8 +572,8 @@ class Variable(LinearExpr):
         if isinstance(arg, Variable):
             return VarCompVar(self, arg, True)
         else:
-            if mbh.is_a_number(arg):
-                arg = mbh.assert_is_a_number(arg)
+            if mbn.is_a_number(arg):
+                arg = mbn.assert_is_a_number(arg)
                 return BoundedLinearExpression(self, arg, arg)
             else:
                 return BoundedLinearExpression(
@@ -601,8 +602,8 @@ _REGISTERED_NUMPY_VARIABLE_FUNCS: Dict[Any, NumpyFuncT] = {}
 class VariableContainer(mixins.NDArrayOperatorsMixin):
     """Variable container."""
 
-    def __init__(self, helper: pwmb.ModelBuilderHelper, indices: npt.NDArray[np.int32]):
-        self.__helper: pwmb.ModelBuilderHelper = helper
+    def __init__(self, helper: mbh.ModelBuilderHelper, indices: npt.NDArray[np.int32]):
+        self.__helper: mbh.ModelBuilderHelper = helper
         self.__variable_indices: npt.NDArray[np.int32] = indices
 
     @property
@@ -787,8 +788,8 @@ class BoundedLinearExpression:
 
     def __init__(self, expr: LinearExprT, lb: NumberT, ub: NumberT):
         self.__expr: LinearExprT = expr
-        self.__lb: np.double = mbh.assert_is_a_number(lb)
-        self.__ub: np.double = mbh.assert_is_a_number(ub)
+        self.__lb: np.double = mbn.assert_is_a_number(lb)
+        self.__ub: np.double = mbn.assert_is_a_number(ub)
 
     def __str__(self) -> str:
         if self.__lb > -math.inf and self.__ub < math.inf:
@@ -833,9 +834,9 @@ class LinearConstraint:
         linear_constraint = model.add(x + 2 * y == 5)
     """
 
-    def __init__(self, helper: pwmb.ModelBuilderHelper):
+    def __init__(self, helper: mbh.ModelBuilderHelper):
         self.__index: np.int32 = helper.add_linear_constraint()
-        self.__helper: pwmb.ModelBuilderHelper = helper
+        self.__helper: mbh.ModelBuilderHelper = helper
 
     @property
     def index(self) -> np.int32:
@@ -843,7 +844,7 @@ class LinearConstraint:
         return self.__index
 
     @property
-    def helper(self) -> pwmb.ModelBuilderHelper:
+    def helper(self) -> mbh.ModelBuilderHelper:
         """Returns the ModelBuilderHelper instance."""
         return self.__helper
 
@@ -885,7 +886,7 @@ class ModelBuilder:
     """
 
     def __init__(self):
-        self.__helper: pwmb.ModelBuilderHelper = pwmb.ModelBuilderHelper()
+        self.__helper: mbh.ModelBuilderHelper = mbh.ModelBuilderHelper()
 
     # Integer variable.
 
@@ -1129,7 +1130,7 @@ class ModelBuilder:
         name: Optional[str] = None,
     ) -> VariableContainer:
         """Creates a vector of Boolean variables."""
-        if mbh.is_integral(shape):
+        if mbn.is_integral(shape):
             shape = [shape]
 
         name = name or ""
@@ -1159,7 +1160,7 @@ class ModelBuilder:
         ct = LinearConstraint(self.__helper)
         if name:
             self.__helper.set_constraint_name(ct.index, name)
-        if mbh.is_a_number(linear_expr):
+        if mbn.is_a_number(linear_expr):
             self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
             self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
         elif isinstance(linear_expr, Variable):
@@ -1236,7 +1237,7 @@ class ModelBuilder:
         """Defines the objective."""
         self.helper.clear_objective()
         self.__helper.set_maximize(maximize)
-        if mbh.is_a_number(linear_expr):
+        if mbn.is_a_number(linear_expr):
             self.helper.set_objective_offset(linear_expr)
         elif isinstance(linear_expr, Variable):
             self.helper.set_var_objective_coefficient(linear_expr.index, 1.0)
@@ -1260,12 +1261,12 @@ class ModelBuilder:
 
     # Input/Output
     def export_to_lp_string(self, obfuscate: bool = False) -> str:
-        options: pwmb.MPModelExportOptions = pwmb.MPModelExportOptions()
+        options: mbh.MPModelExportOptions = mbh.MPModelExportOptions()
         options.obfuscate = obfuscate
         return self.__helper.export_to_lp_string(options)
 
     def export_to_mps_string(self, obfuscate: bool = False) -> str:
-        options: pwmb.MPModelExportOptions = pwmb.MPModelExportOptions()
+        options: mbh.MPModelExportOptions = mbh.MPModelExportOptions()
         options.obfuscate = obfuscate
         return self.__helper.export_to_mps_string(options)
 
@@ -1291,7 +1292,7 @@ class ModelBuilder:
         self.__helper.set_name(name)
 
     @property
-    def helper(self) -> pwmb.ModelBuilderHelper:
+    def helper(self) -> mbh.ModelBuilderHelper:
         """Returns the model builder helper."""
         return self.__helper
 
@@ -1308,9 +1309,7 @@ class ModelSolver:
     """
 
     def __init__(self, solver_name: str):
-        self.__solve_helper: pwmb.ModelSolverHelper = pwmb.ModelSolverHelper(
-            solver_name
-        )
+        self.__solve_helper: mbh.ModelSolverHelper = mbh.ModelSolverHelper(solver_name)
         self.log_callback: Optional[Callable[[str], None]] = None
 
     def solver_is_supported(self) -> bool:
@@ -1353,7 +1352,7 @@ class ModelSolver:
     def value(self, expr: LinearExprT) -> np.double:
         """Returns the value of a linear expression after solve."""
         self.__check_has_feasible_solution()
-        if mbh.is_a_number(expr):
+        if mbn.is_a_number(expr):
             return expr
         elif isinstance(expr, Variable):
             return self.__solve_helper.var_value(expr.index)

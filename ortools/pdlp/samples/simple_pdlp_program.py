@@ -26,7 +26,7 @@ import scipy.sparse
 from ortools.pdlp import solve_log_pb2
 from ortools.pdlp import solvers_pb2
 from ortools.pdlp.python import pywrap_pdlp
-from ortools.init.python import pywrapinit
+from ortools.init.python import init
 
 
 def simple_lp() -> pywrap_pdlp.QuadraticProgram:
@@ -106,9 +106,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    pywrapinit.CppBridge.init_logging("simple_pdlp_program.py")
-    cpp_flags = pywrapinit.CppFlags()
+    init.CppBridge.init_logging("simple_pdlp_program.py")
+    cpp_flags = init.CppFlags()
     cpp_flags.stderrthreshold = 0
     cpp_flags.log_prefix = False
-    pywrapinit.CppBridge.set_flags(cpp_flags)
+    init.CppBridge.set_flags(cpp_flags)
     main()

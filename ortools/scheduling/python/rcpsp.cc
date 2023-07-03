@@ -23,7 +23,7 @@ using ::operations_research::scheduling::rcpsp::RcpspParser;
 namespace py = pybind11;
 using ::py::arg;
 
-PYBIND11_MODULE(pywrap_rcpsp, m) {
+PYBIND11_MODULE(rcpsp, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
   py::class_<RcpspParser>(m, "RcpspParser")

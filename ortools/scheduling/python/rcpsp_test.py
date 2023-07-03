@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ortools.scheduling.python.pywrap_rcpsp."""
+"""Tests for ortools.scheduling.python.rcpsp."""
 
 from absl import app
 from absl import flags
 from absl.testing import absltest
-from ortools.scheduling.python import pywrap_rcpsp
+from ortools.scheduling.python import rcpsp
 
 FLAGS = flags.FLAGS
 
 
-class PywraprcpspTest(absltest.TestCase):
+class RcpspTest(absltest.TestCase):
     def testParseAndAccess(self):
-        parser = pywrap_rcpsp.RcpspParser()
+        parser = rcpsp.RcpspParser()
         data = "ortools/scheduling/testdata/j301_1.sm"
         try:
             filename = f"{FLAGS.test_srcdir}/com_google_ortools/{data}"

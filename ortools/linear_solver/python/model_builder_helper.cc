@@ -13,6 +13,8 @@
 
 // A pybind11 wrapper for model_builder_helper.
 
+#include "ortools/linear_solver/wrappers/model_builder_helper.h"
+
 #include <algorithm>
 #include <complex>
 #include <cstdlib>
@@ -31,7 +33,6 @@
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
-#include "ortools/linear_solver/wrappers/model_builder_helper.h"
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
@@ -150,7 +151,7 @@ std::vector<std::pair<int, double>> SortedGroupedTerms(
   return terms;
 }
 
-PYBIND11_MODULE(pywrap_model_builder_helper, m) {
+PYBIND11_MODULE(model_builder_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
   m.def("to_mpmodel_proto", &ToMPModelProto, arg("helper"));

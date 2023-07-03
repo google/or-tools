@@ -72,8 +72,8 @@ class BaseKnapsackSolver;
                 ]
       capacities = [ 34, 4 ]
 
-      solver = pywrapknapsack_solver.KnapsackSolver(
-          pywrapknapsack_solver.SolverType
+      solver = knapsack_solver.KnapsackSolver(
+          knapsack_solver.SolverType
               .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
           'Multi-dimensional solver')
       solver.init(profits, weights, capacities)

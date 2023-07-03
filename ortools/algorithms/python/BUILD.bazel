@@ -44,14 +44,14 @@ config_setting(
 )
 
 cc_library(
-    name = "pywrapknapsack_solver_doc",
-    hdrs = ["pywrapknapsack_solver_doc.h"],
+    name = "knapsack_solver_doc",
+    hdrs = ["knapsack_solver_doc.h"],
     visibility = ["//visibility:public"],
 )
 
 pybind_extension(
-    name = "pywrapknapsack_solver",
-    srcs = ["pywrapknapsack_solver.cc"],
+    name = "knapsack_solver",
+    srcs = ["knapsack_solver.cc"],
     copts = [] + select({
         ":use_cbc": ["-DUSE_CBC"],
         "//conditions:default": [],
@@ -61,18 +61,18 @@ pybind_extension(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        ":pywrapknapsack_solver_doc",
+        ":knapsack_solver_doc",
         "//ortools/algorithms:knapsack_solver_lib",
         "@com_google_absl//absl/strings",
     ],
 )
 
 py_test(
-    name = "pywrapknapsack_solver_test",
-    srcs = ["pywrapknapsack_solver_test.py"],
+    name = "knapsack_solver_test",
+    srcs = ["knapsack_solver_test.py"],
     python_version = "PY3",
     deps = [
-        ":pywrapknapsack_solver",
+        ":knapsack_solver",
         requirement("absl-py"),
     ],
 )

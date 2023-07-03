@@ -16,11 +16,12 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 
 PYTHON_DEPS = [
+    "//ortools/init/python:init",
     "//ortools/linear_solver/python:model_builder",
     "//ortools/sat/python:cp_model",
     "//ortools/sat/colab:visualization",
     "//ortools/scheduling:rcpsp_py_proto",
-    "//ortools/scheduling/python:pywrap_rcpsp",
+    "//ortools/scheduling/python:rcpsp",
     requirement("absl-py"),
     requirement("numpy"),
     requirement("pandas"),

@@ -14,18 +14,16 @@
 
 # Copyright 2011 Google Inc. All Rights Reserved.
 
-"""pywrapknapsack_solver unittest file."""
+"""knapsack_solver unittest file."""
 
 from absl import app
-
-import unittest
-
-from ortools.algorithms.python import pywrapknapsack_solver
+from absl.testing import absltest
+from ortools.algorithms.python import knapsack_solver
 
 
-class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
+class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
     def RealSolve(self, profits, weights, capacities, solver_type, use_reduction):
-        solver = pywrapknapsack_solver.KnapsackSolver(solver_type, "solver")
+        solver = knapsack_solver.KnapsackSolver(solver_type, "solver")
         solver.set_use_reduction(use_reduction)
         solver.init(profits, weights, capacities)
         profit = solver.solve()
@@ -61,7 +59,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
             profits,
             weights,
             capacities,
-            pywrapknapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+            knapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
         )
 
         if generic_profit == self._invalid_solution:
@@ -73,7 +71,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
         #        profits,
         #        weights,
         #        capacities,
-        #        pywrapknapsack_solver.SolverType.
+        #        knapsack_solver.SolverType.
         #        KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER)
         #    if cbc_profit != generic_profit:
         #      return self._invalid_solution
@@ -82,7 +80,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
             profits,
             weights,
             capacities,
-            pywrapknapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
+            knapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
         )
         if scip_profit != generic_profit:
             return self._invalid_solution
@@ -95,7 +93,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
                 profits,
                 weights,
                 capacities,
-                pywrapknapsack_solver.SolverType.KNAPSACK_BRUTE_FORCE_SOLVER,
+                knapsack_solver.SolverType.KNAPSACK_BRUTE_FORCE_SOLVER,
             )
             if brute_force_profit != generic_profit:
                 return self._invalid_solution
@@ -105,7 +103,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
                 profits,
                 weights,
                 capacities,
-                pywrapknapsack_solver.SolverType.KNAPSACK_64ITEMS_SOLVER,
+                knapsack_solver.SolverType.KNAPSACK_64ITEMS_SOLVER,
             )
             if items64_profit != generic_profit:
                 return self._invalid_solution
@@ -115,7 +113,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
                 profits,
                 weights,
                 capacities,
-                pywrapknapsack_solver.SolverType.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
+                knapsack_solver.SolverType.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
             )
             if dynamic_programming_profit != generic_profit:
                 return self._invalid_solution
@@ -125,7 +123,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
                 profits,
                 weights,
                 capacities,
-                pywrapknapsack_solver.SolverType.KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
+                knapsack_solver.SolverType.KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
             )
             if divide_and_conquer_profit != generic_profit:
                 return self._invalid_solution
@@ -262,7 +260,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
 
 
 def main(_):
-    unittest.main()
+    absltest.main()
 
 
 if __name__ == "__main__":

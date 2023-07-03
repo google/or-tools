@@ -13,10 +13,11 @@
 
 // A pybind11 wrapper for the init library.
 
+#include "ortools/init/init.h"
+
 #include <string>
 
-#include "ortools/init/init.h"
-#include "ortools/init/python/pywrapinit_doc.h"
+#include "ortools/init/python/init_doc.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -28,7 +29,7 @@ using ::operations_research::OrToolsVersion;
 namespace py = pybind11;
 using ::py::arg;
 
-PYBIND11_MODULE(pywrapinit, m) {
+PYBIND11_MODULE(init, m) {
   py::class_<CppFlags>(m, "CppFlags", DOC(operations_research, CppFlags))
       .def(py::init<>())
       .def_readwrite("stderrthreshold", &CppFlags::stderrthreshold,

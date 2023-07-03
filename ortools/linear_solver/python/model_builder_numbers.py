@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""helpers methods for the cp_model_builder module."""
+"""helpers methods for the cp_model_builder module on numbers."""
 
 import numbers
 from typing import Any, Sequence, Union
