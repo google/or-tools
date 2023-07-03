@@ -46,32 +46,33 @@ if(MSVC)
   target_link_libraries(pywraplp PRIVATE ${Python3_LIBRARIES})
 endif()
 
-pybind11_add_module(pywrap_model_builder_helper MODULE pywrap_model_builder_helper.cc)
+pybind11_add_module(model_builder_helper_pybind11 MODULE model_builder_helper.cc)
+set_target_properties(model_builder_helper_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "model_builder_helper")
 
-target_include_directories(pywrap_model_builder_helper PRIVATE
+target_include_directories(model_builder_helper_pybind11 PRIVATE
   ${protobuf_SOURCE_DIR})
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(pywrap_model_builder_helper PROPERTIES
+  set_target_properties(model_builder_helper_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET pywrap_model_builder_helper APPEND PROPERTY
+  set_property(TARGET model_builder_helper_pybind11 APPEND PROPERTY
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(pywrap_model_builder_helper PROPERTIES
+  set_target_properties(model_builder_helper_pybind11 PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
 
-target_link_libraries(pywrap_model_builder_helper PRIVATE
+target_link_libraries(model_builder_helper_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
 )
-
-add_library(${PROJECT_NAMESPACE}::pywrap_model_builder_helper ALIAS pywrap_model_builder_helper)
+add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_builder_helper_pybind11)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

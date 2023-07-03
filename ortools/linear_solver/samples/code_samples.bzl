@@ -63,7 +63,6 @@ def code_sample_py(name):
         deps = [
             requirement("absl-py"),
             requirement("numpy"),
-            "@com_google_protobuf//:protobuf_python",
         ],
         python_version = "PY3",
         srcs_version = "PY3",

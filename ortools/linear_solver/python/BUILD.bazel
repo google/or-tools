@@ -17,8 +17,8 @@ load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 pybind_extension(
-    name = "pywrap_model_builder_helper",
-    srcs = ["pywrap_model_builder_helper.cc"],
+    name = "model_builder_helper",
+    srcs = ["model_builder_helper.cc"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -27,17 +27,6 @@ pybind_extension(
         "@com_google_absl//absl/strings",
         "@eigen//:eigen3",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
-    ],
-)
-
-py_library(
-    name = "model_builder_helper",
-    srcs = ["model_builder_helper.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":pywrap_model_builder_helper",
-        "//ortools/linear_solver:linear_solver_py_pb2",
-        requirement("numpy"),
     ],
 )
 
@@ -51,9 +40,20 @@ py_test(
     python_version = "PY3",
     deps = [
         ":model_builder_helper",
-        ":pywrap_model_builder_helper",
+        ":model_builder_numbers",
+        "//ortools/linear_solver:linear_solver_py_pb2",
+        requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
+    ],
+)
+
+py_library(
+    name = "model_builder_numbers",
+    srcs = ["model_builder_numbers.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("numpy"),
     ],
 )
 
@@ -63,10 +63,9 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":model_builder_helper",
-        ":pywrap_model_builder_helper",
+        ":model_builder_numbers",
         requirement("numpy"),
         "//ortools/linear_solver:linear_solver_py_pb2",
-        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -81,7 +80,8 @@ py_test(
     deps = [
         ":model_builder",
         ":model_builder_helper",
-        ":pywrap_model_builder_helper",
+        ":model_builder_numbers",
+        requirement("absl-py"),
         requirement("numpy"),
     ],
 )
@@ -90,7 +90,7 @@ py_library(
     name = "pandas_model",
     srcs = ["pandas_model.py"],
     deps = [
-        ":pywrap_model_builder_helper",
+        ":model_builder_helper",
         requirement("numpy"),
         requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",

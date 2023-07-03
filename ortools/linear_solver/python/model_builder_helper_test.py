@@ -17,30 +17,31 @@
 import gzip
 import os
 import threading
+
+from absl.testing import absltest
 import numpy as np
 from scipy import sparse
 
-import unittest
 from ortools.linear_solver import linear_solver_pb2
-from ortools.linear_solver.python import pywrap_model_builder_helper
+from ortools.linear_solver.python import model_builder_helper
 
 
-class PywrapModelBuilderHelperTest(unittest.TestCase):
+class PywrapModelBuilderHelperTest(absltest.TestCase):
     def test_export_model_proto_to_mps_string(self):
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         model.set_name("testmodel")
         result = model.export_to_mps_string()
         self.assertIn("testmodel", result)
         self.assertIn("ENDATA", result)
 
     def test_export_model_proto_to_lp_string(self):
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         model.set_maximize(True)
         lp_string = model.export_to_lp_string()
         self.assertIn("Maximize", lp_string)
 
     def test_import_from_mps_string(self):
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         self.assertTrue(model.import_from_mps_string("NAME testmodel"))
         self.assertEqual(model.name(), "testmodel")
 
@@ -48,12 +49,12 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
     def test_import_from_mps_file(self):
         path = os.path.dirname(__file__)
         mps_path = f"{path}/../testdata/maximization.mps"
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name(), "SupportedMaximizationProblem")
 
     def test_import_from_lp_string(self):
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         model.import_from_lp_string("max:")
         self.assertTrue(model.maximize())
 
@@ -71,26 +72,28 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
             model=model,
             solver_type=linear_solver_pb2.MPModelRequest.GLOP_LINEAR_PROGRAMMING,
         )
-        solver_helper = pywrap_model_builder_helper.ModelSolverHelper("")
+        solver_helper = model_builder_helper.ModelSolverHelper("")
         result = solver_helper.solve_serialized_request(request.SerializeToString())
         response = linear_solver_pb2.MPSolutionResponse().FromString(result)
         self.assertEqual(
-            response.status, linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL
+            response.status,
+            linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
         )
         self.assertAlmostEqual(response.objective_value, 1.0)
 
     def test_solve_with_glop_direct(self):
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         self.assertEqual(0, model.add_var())
         model.set_var_lower_bound(0, 0.0)
         model.set_var_upper_bound(0, 1.0)
         model.set_var_objective_coefficient(0, 1.0)
         model.set_maximize(True)
 
-        solver = pywrap_model_builder_helper.ModelSolverHelper("glop")
+        solver = model_builder_helper.ModelSolverHelper("glop")
         solver.solve(model)
         self.assertEqual(
-            solver.status(), linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL
+            solver.status(),
+            linear_solver_pb2.MPSolverResponseStatus.MPSOLVER_OPTIMAL,
         )
         self.assertAlmostEqual(solver.objective_value(), 1.0)
         self.assertAlmostEqual(solver.var_value(0), 1.0)
@@ -110,7 +113,7 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
             model=model,
             solver_type=linear_solver_pb2.MPModelRequest.PDLP_LINEAR_PROGRAMMING,
         )
-        solver_helper = pywrap_model_builder_helper.ModelSolverHelper("")
+        solver_helper = model_builder_helper.ModelSolverHelper("")
         result = solver_helper.solve_serialized_request(request.SerializeToString())
         if result:
             response = linear_solver_pb2.MPSolutionResponse().FromString(result)
@@ -130,9 +133,9 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
         mps_path = f"{path}/../testdata/large_model.mps.gz"
         with gzip.open(mps_path, "r") as f:
             mps_data = f.read()
-        model_helper = pywrap_model_builder_helper.ModelBuilderHelper()
+        model_helper = model_builder_helper.ModelBuilderHelper()
         self.assertTrue(model_helper.import_from_mps_string(mps_data))
-        solver_helper = pywrap_model_builder_helper.ModelSolverHelper("glop")
+        solver_helper = model_builder_helper.ModelSolverHelper("glop")
 
         result = []
         solve_thread = threading.Thread(
@@ -144,7 +147,7 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
         self.assertTrue(solver_helper.has_response())
         self.assertEqual(
             solver_helper.status(),
-            pywrap_model_builder_helper.SolveStatus.CANCELLED_BY_USER,
+            model_builder_helper.SolveStatus.CANCELLED_BY_USER,
         )
 
     def test_build_model(self):
@@ -155,7 +158,7 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
         con_ub = np.array([5.0, 6.0])
         constraint_matrix = sparse.csr_matrix(np.array([[1.0], [2.0]]))
 
-        model = pywrap_model_builder_helper.ModelBuilderHelper()
+        model = model_builder_helper.ModelBuilderHelper()
         model.fill_model_from_sparse_data(
             var_lb, var_ub, obj, con_lb, con_ub, constraint_matrix
         )
@@ -183,4 +186,4 @@ class PywrapModelBuilderHelperTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

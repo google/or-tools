@@ -11,23 +11,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(knapsack_solver MODULE knapsack_solver.cc)
+pybind11_add_module(knapsack_solver_pybind11 MODULE knapsack_solver.cc)
+set_target_properties(knapsack_solver_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "knapsack_solver")
+
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(knapsack_solver PROPERTIES
+  set_target_properties(knapsack_solver_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET knapsack_solver APPEND PROPERTY
+  set_property(TARGET knapsack_solver_pybind11 APPEND PROPERTY
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(knapsack_solver PROPERTIES
+  set_target_properties(knapsack_solver_pybind11 PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(knapsack_solver PRIVATE ${PROJECT_NAMESPACE}::ortools)
-add_library(${PROJECT_NAMESPACE}::knapsack_solver ALIAS knapsack_solver)
+
+target_link_libraries(knapsack_solver_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::knapsack_solver_pybind11 ALIAS knapsack_solver_pybind11)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

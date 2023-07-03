@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 
 from ortools.linear_solver import linear_solver_pb2
-from ortools.linear_solver.python import pywrap_model_builder_helper as pwmb
+from ortools.linear_solver.python import model_builder_helper as mbh
 
 _Number = Union[int, float, np.number]
 _LinearType = Union[_Number, "_LinearBase"]
@@ -208,7 +208,7 @@ class _Variable(_LinearBase):
 
     __slots__ = ("_helper", "_index")
 
-    _helper: pwmb.ModelBuilderHelper
+    _helper: mbh.ModelBuilderHelper
     _index: int
 
     def __str__(self):
@@ -250,7 +250,7 @@ class _Variable(_LinearBase):
 
 
 def _create_variable(
-    helper: pwmb.ModelBuilderHelper,
+    helper: mbh.ModelBuilderHelper,
     *,
     name: str,
     lower_bound: _Number,
@@ -260,7 +260,7 @@ def _create_variable(
     """Creates a new variable in the helper.
 
     Args:
-      helper (pwmb.ModelBuilderHelper): The helper to create the variable.
+      helper (mbh.ModelBuilderHelper): The helper to create the variable.
       name (str): The name of the variable.
       lower_bound (Union[int, float]): The lower bound of the variable.
       upper_bound (Union[int, float]): The upper bound of the variable.
@@ -289,12 +289,12 @@ class _BoundedLinearBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _create_linear_constraint(
-        self, helper: pwmb.ModelBuilderHelper, name: str
+        self, helper: mbh.ModelBuilderHelper, name: str
     ) -> "_LinearConstraint":
         """Creates a new linear constraint in the helper.
 
         Args:
-          helper (pwmb.ModelBuilderHelper): The helper to create the constraint.
+          helper (mbh.ModelBuilderHelper): The helper to create the constraint.
           name (str): The name of the linear constraint.
 
         Returns:
@@ -304,7 +304,7 @@ class _BoundedLinearBase(metaclass=abc.ABCMeta):
 
 def _create_linear_constraint(
     constraint: Union[bool, _BoundedLinearBase],
-    helper: pwmb.ModelBuilderHelper,
+    helper: mbh.ModelBuilderHelper,
     name: str,
 ):
     """Creates a new linear constraint in the helper.
@@ -370,7 +370,7 @@ class _BoundedLinearExpression(_BoundedLinearBase):
         )
 
     def _create_linear_constraint(
-        self, helper: pwmb.ModelBuilderHelper, name: str
+        self, helper: mbh.ModelBuilderHelper, name: str
     ) -> "_LinearConstraint":
         index = helper.add_linear_constraint()
         expr = _as_flat_linear_expression(self._expression)
@@ -414,7 +414,7 @@ class _VarEqVar(_BoundedLinearBase):
         return hash(self._left) == hash(self._right)
 
     def _create_linear_constraint(
-        self, helper: pwmb.ModelBuilderHelper, name: str
+        self, helper: mbh.ModelBuilderHelper, name: str
     ) -> "_LinearConstraint":
         index = helper.add_linear_constraint()
         helper.set_constraint_lower_bound(index, 0.0)
@@ -442,7 +442,7 @@ class _LinearConstraint:
 
     __slots__ = ("_helper", "_index")
 
-    _helper: pwmb.ModelBuilderHelper
+    _helper: mbh.ModelBuilderHelper
     _index: int
 
     @property
@@ -551,7 +551,7 @@ class OptimizationModel:
         """Initializes an optimization model with the given name."""
         if not name.isidentifier():
             raise ValueError("name={} is not a valid identifier".format(name))
-        self._helper: pwmb.ModelBuilderHelper = pwmb.ModelBuilderHelper()
+        self._helper: mbh.ModelBuilderHelper = mbh.ModelBuilderHelper()
         self._helper.set_name(name)
         self._variables: dict[str, pd.Series] = {}
         self._linear_constraints: dict[str, pd.Series] = {}
@@ -567,7 +567,7 @@ class OptimizationModel:
 
     def to_proto(self) -> linear_solver_pb2.MPModelProto:
         """Exports the optimization model to a ProtoBuf format."""
-        return pwmb.to_mpmodel_proto(self._helper)
+        return mbh.to_mpmodel_proto(self._helper)
 
     @typing.overload
     def _get_linear_constraints(self, constraints: Optional[pd.Index]) -> pd.Index:
@@ -1349,11 +1349,11 @@ class SolveStatus(enum.Enum):
     UNBOUNDED = enum.auto()
 
 
-_solve_status: dict[pwmb.SolveStatus, SolveStatus] = {
-    pwmb.SolveStatus.OPTIMAL: SolveStatus.OPTIMAL,
-    pwmb.SolveStatus.FEASIBLE: SolveStatus.FEASIBLE,
-    pwmb.SolveStatus.INFEASIBLE: SolveStatus.INFEASIBLE,
-    pwmb.SolveStatus.UNBOUNDED: SolveStatus.UNBOUNDED,
+_solve_status: dict[mbh.SolveStatus, SolveStatus] = {
+    mbh.SolveStatus.OPTIMAL: SolveStatus.OPTIMAL,
+    mbh.SolveStatus.FEASIBLE: SolveStatus.FEASIBLE,
+    mbh.SolveStatus.INFEASIBLE: SolveStatus.INFEASIBLE,
+    mbh.SolveStatus.UNBOUNDED: SolveStatus.UNBOUNDED,
 }
 
 
@@ -1391,8 +1391,8 @@ class _SolveResult:
     def __init__(
         self,
         model: OptimizationModel,
-        solver: pwmb.ModelSolverHelper,
-        status: pwmb.SolveStatus,
+        solver: mbh.ModelSolverHelper,
+        status: mbh.SolveStatus,
     ):
         self._model = model
         self._solver = solver
@@ -1588,7 +1588,7 @@ class Solver:
           Solver (based on its `solver_type`).
           RuntimeError: On a solve error.
         """
-        solver = pwmb.ModelSolverHelper(_solver_type_to_name[self.solver_type])
+        solver = mbh.ModelSolverHelper(_solver_type_to_name[self.solver_type])
         solver.enable_output(options.enable_output)
         solver.set_time_limit_in_seconds(options.time_limit_seconds)
         if options.solver_specific_parameters:

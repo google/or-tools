@@ -17,13 +17,11 @@
 """knapsack_solver unittest file."""
 
 from absl import app
-
-import unittest
-
+from absl.testing import absltest
 from ortools.algorithms.python import knapsack_solver
 
 
-class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
+class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
     def RealSolve(self, profits, weights, capacities, solver_type, use_reduction):
         solver = knapsack_solver.KnapsackSolver(solver_type, "solver")
         solver.set_use_reduction(use_reduction)
@@ -262,7 +260,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(unittest.TestCase):
 
 
 def main(_):
-    unittest.main()
+    absltest.main()
 
 
 if __name__ == "__main__":

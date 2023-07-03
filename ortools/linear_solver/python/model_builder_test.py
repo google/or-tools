@@ -15,15 +15,17 @@
 """Tests for ModelBuilder."""
 
 import math
+
+from absl.testing import absltest
 import numpy as np
 import numpy.testing as np_testing
+
 import os
 
 from ortools.linear_solver.python import model_builder as mb
-import unittest
 
 
-class ModelBuilderTest(unittest.TestCase):
+class ModelBuilderTest(absltest.TestCase):
     # Number of decimal places to use for numerical tolerance for
     # checking primal, dual, objective values and other values.
     NUM_PLACES = 5
@@ -92,7 +94,9 @@ class ModelBuilderTest(unittest.TestCase):
             4.0 - 1.0 * solver.dual_value(c0) - 5.0 * solver.dual_value(c1)
         )
         self.assertAlmostEqual(
-            x3_expected_reduced_cost, solver.reduced_cost(x3), places=self.NUM_PLACES
+            x3_expected_reduced_cost,
+            solver.reduced_cost(x3),
+            places=self.NUM_PLACES,
         )
 
         self.assertAlmostEqual(100.0, solver.activity(c0), places=self.NUM_PLACES)
@@ -559,4 +563,4 @@ ENDATA
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()
