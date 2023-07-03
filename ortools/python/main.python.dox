@@ -1,0 +1,11 @@
+/*! @file
+* @author Laurent Perron <lperron@google.com>
+* @author Corentin "Mizux" Le Molgat <corentinl@google.com>
+*/
+
+/*! @mainpage OR-Tools
+This is the reference documentation for the Google OR-Tools Python wrappers.
+
+This repository contains several components:
+
+*/

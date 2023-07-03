@@ -1,0 +1,16 @@
+/* The standard CSS for doxygen 1.9.6*/
+
+html {
+/* page base colors */
+/*--page-background-color: white;*/
+/*--page-foreground-color: black;*/
+
+/* header */
+--header-background: #d9821e;
+--header-foreground: white;
+
+/* footer */
+--footer-background: #d9821e;
+--footer-foreground: white;
+}
+
