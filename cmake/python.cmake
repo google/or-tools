@@ -318,8 +318,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
   ${PYTHON_PROJECT}/.libs
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapinit> ${PYTHON_PROJECT}/init/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PYTHON_PROJECT}/algorithms/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:init> ${PYTHON_PROJECT}/init/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:knapsack_solver> ${PYTHON_PROJECT}/algorithms/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
@@ -328,7 +328,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_model_builder_helper> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_rcpsp> ${PYTHON_PROJECT}/scheduling/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rcpsp> ${PYTHON_PROJECT}/scheduling/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PYTHON_PROJECT}/util/python
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
@@ -339,8 +339,8 @@ add_custom_command(
     python/setup.py
     Py${PROJECT_NAME}_proto
     ${PROJECT_NAMESPACE}::ortools
-    pywrapinit
-    pywrapknapsack_solver
+    init
+    knapsack_solver
     linear_sum_assignment_pybind11
     max_flow_pybind11
     min_cost_flow_pybind11
@@ -349,7 +349,7 @@ add_custom_command(
     pywrap_model_builder_helper
     pywrap_pdlp_pybind11
     swig_helper
-    pywrap_rcpsp
+    rcpsp
     sorted_interval_list
   BYPRODUCTS
     python/${PYTHON_PROJECT}

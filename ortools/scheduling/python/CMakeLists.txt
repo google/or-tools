@@ -11,27 +11,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(pywrap_rcpsp MODULE pywrap_rcpsp.cc)
+pybind11_add_module(rcpsp MODULE rcpsp.cc)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(pywrap_rcpsp PROPERTIES
+  set_target_properties(rcpsp PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET pywrap_rcpsp APPEND PROPERTY
+  set_property(TARGET rcpsp APPEND PROPERTY
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(pywrap_rcpsp PROPERTIES
+  set_target_properties(rcpsp PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(pywrap_rcpsp PRIVATE
+target_link_libraries(rcpsp PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
   protobuf::libprotobuf
   )
-target_include_directories(pywrap_rcpsp PRIVATE ${protobuf_SOURCE_DIR})
+target_include_directories(rcpsp PRIVATE ${protobuf_SOURCE_DIR})
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

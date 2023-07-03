@@ -11,23 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(pywrapinit MODULE pywrapinit.cc)
+pybind11_add_module(init MODULE init.cc)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(pywrapinit PROPERTIES
+  set_target_properties(init PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET pywrapinit APPEND PROPERTY
+  set_property(TARGET init APPEND PROPERTY
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(pywrapinit PROPERTIES
+  set_target_properties(init PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(pywrapinit PRIVATE ${PROJECT_NAMESPACE}::ortools)
-add_library(${PROJECT_NAMESPACE}::pywrapinit ALIAS pywrapinit)
+target_link_libraries(init PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::init ALIAS init)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

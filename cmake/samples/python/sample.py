@@ -14,7 +14,7 @@
 
 """Sample to test or-tools installation."""
 import ortools
-# from ortools.algorithms import pywrapknapsack_solver
+# from ortools.algorithms import knapsack_solver
 from ortools.constraint_solver import pywrapcp
 # from ortools.graph.python import linear_sum_assignment
 # from ortools.graph.python import max_flow
@@ -23,7 +23,7 @@ from ortools.linear_solver import pywraplp
 # from ortools.linear_solver import linear_solver_pb2
 # from ortools.sat.python import swig_helper
 # from ortools.sat.python import cp_model
-# from ortools.scheduling import pywraprcpsp
+# from ortools.scheduling import rcpsp
 # from ortools.util.python import sorted_interval_list
 
 

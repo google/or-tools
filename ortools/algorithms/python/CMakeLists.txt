@@ -11,23 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(pywrapknapsack_solver MODULE pywrapknapsack_solver.cc)
+pybind11_add_module(knapsack_solver MODULE knapsack_solver.cc)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
-  set_target_properties(pywrapknapsack_solver PROPERTIES
+  set_target_properties(knapsack_solver PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     )
-  set_property(TARGET pywrapknapsack_solver APPEND PROPERTY
+  set_property(TARGET knapsack_solver APPEND PROPERTY
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(pywrapknapsack_solver PROPERTIES
+  set_target_properties(knapsack_solver PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(pywrapknapsack_solver PRIVATE ${PROJECT_NAMESPACE}::ortools)
-add_library(${PROJECT_NAMESPACE}::pywrapknapsack_solver ALIAS pywrapknapsack_solver)
+target_link_libraries(knapsack_solver PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::knapsack_solver ALIAS knapsack_solver)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

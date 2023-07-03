@@ -13,10 +13,11 @@
 
 // A pybind11 wrapper for knapsack_solver.
 
+#include "ortools/algorithms/knapsack_solver.h"
+
 #include <string>
 
-#include "ortools/algorithms/knapsack_solver.h"
-#include "ortools/algorithms/python/pywrapknapsack_solver_doc.h"
+#include "ortools/algorithms/python/knapsack_solver_doc.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -26,7 +27,7 @@ using ::operations_research::KnapsackSolver;
 namespace py = pybind11;
 using ::py::arg;
 
-PYBIND11_MODULE(pywrapknapsack_solver, m) {
+PYBIND11_MODULE(knapsack_solver, m) {
   py::class_<KnapsackSolver>(m, "KnapsackSolver",
                              DOC(operations_research, KnapsackSolver))
       .def(py::init<KnapsackSolver::SolverType, const std::string&>())

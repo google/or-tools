@@ -41,7 +41,7 @@ def code_sample_py(name):
         main = name + ".py",
         deps = [
             requirement("absl-py"),
-            "//ortools/algorithms/python:pywrapknapsack_solver",
+            "//ortools/algorithms/python:knapsack_solver",
         ],
         python_version = "PY3",
         srcs_version = "PY3",
@@ -53,7 +53,7 @@ def code_sample_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         data = [
-            "//ortools/algorithms/python:pywrapknapsack_solver",
+            "//ortools/algorithms/python:knapsack_solver",
         ],
         deps = [
             requirement("absl-py"),

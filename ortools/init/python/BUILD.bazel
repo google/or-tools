@@ -19,27 +19,27 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_python//python:defs.bzl", "py_test")
 
 cc_library(
-    name = "pywrapinit_doc",
-    hdrs = ["pywrapinit_doc.h"],
+    name = "init_doc",
+    hdrs = ["init_doc.h"],
     visibility = ["//visibility:public"],
 )
 
 pybind_extension(
-    name = "pywrapinit",
-    srcs = ["pywrapinit.cc"],
+    name = "init",
+    srcs = ["init.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":pywrapinit_doc",
+        ":init_doc",
         "//ortools/init",
     ],
 )
 
 py_test(
-    name = "pywrapinit_test",
-    srcs = ["pywrapinit_test.py"],
+    name = "init_test",
+    srcs = ["init_test.py"],
     python_version = "PY3",
     deps = [
-        ":pywrapinit",
+        ":init",
         requirement("absl-py"),
     ],
 )

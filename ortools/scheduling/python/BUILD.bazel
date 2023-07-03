@@ -18,8 +18,8 @@ load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:defs.bzl", "py_test")
 
 pybind_extension(
-    name = "pywrap_rcpsp",
-    srcs = ["pywrap_rcpsp.cc"],
+    name = "rcpsp",
+    srcs = ["rcpsp.cc"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/scheduling:rcpsp_cc_proto",
@@ -30,14 +30,14 @@ pybind_extension(
 )
 
 py_test(
-    name = "pywrap_rcpsp_test",
-    srcs = ["pywrap_rcpsp_test.py"],
+    name = "rcpsp_test",
+    srcs = ["rcpsp_test.py"],
     data = [
         "//ortools/scheduling/testdata:j301_1.sm",
     ],
     python_version = "PY3",
     deps = [
-        ":pywrap_rcpsp",
+        ":rcpsp",
         "//ortools/scheduling:rcpsp_py_proto",
         requirement("absl-py"),
     ],
