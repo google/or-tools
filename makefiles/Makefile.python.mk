@@ -236,7 +236,7 @@ check_python: \
 
 .PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
 test_python_tests: \
- rpy_pywrapinit_test \
+ rpy_init_test \
  rpy_lp_api_test \
  rpy_lp_test \
  rpy_model_builder_test \
