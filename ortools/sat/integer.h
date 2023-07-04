@@ -105,6 +105,28 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   return result - adjust;
 }
 
+// Overflows and saturated arithmetic.
+
+inline IntegerValue CapProdI(IntegerValue a, IntegerValue b) {
+  return IntegerValue(CapProd(a.value(), b.value()));
+}
+
+inline IntegerValue CapSubI(IntegerValue a, IntegerValue b) {
+  return IntegerValue(CapSub(a.value(), b.value()));
+}
+
+inline IntegerValue CapAddI(IntegerValue a, IntegerValue b) {
+  return IntegerValue(CapAdd(a.value(), b.value()));
+}
+
+inline bool ProdOverflow(IntegerValue t, IntegerValue value) {
+  return AtMinOrMaxInt64(CapProd(t.value(), value.value()));
+}
+
+inline bool AtMinOrMaxInt64I(IntegerValue t) {
+  return AtMinOrMaxInt64(t.value());
+}
+
 // Returns dividend - FloorRatio(dividend, divisor) * divisor;
 //
 // This function is around the same speed than the computation above, but it
@@ -118,17 +140,21 @@ inline IntegerValue PositiveRemainder(IntegerValue dividend,
   return m < 0 ? m + positive_divisor : m;
 }
 
+inline bool AddTo(IntegerValue a, IntegerValue* result) {
+  if (AtMinOrMaxInt64I(a)) return false;
+  const IntegerValue add = CapAddI(a, *result);
+  if (AtMinOrMaxInt64I(add)) return false;
+  *result = add;
+  return true;
+}
+
 // Computes result += a * b, and return false iff there is an overflow.
 inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
-  const int64_t prod = CapProd(a.value(), b.value());
-  if (prod == std::numeric_limits<int64_t>::min() ||
-      prod == std::numeric_limits<int64_t>::max())
-    return false;
-  const int64_t add = CapAdd(prod, result->value());
-  if (add == std::numeric_limits<int64_t>::min() ||
-      add == std::numeric_limits<int64_t>::max())
-    return false;
-  *result = IntegerValue(add);
+  const IntegerValue prod = CapProdI(a, b);
+  if (AtMinOrMaxInt64I(prod)) return false;
+  const IntegerValue add = CapAddI(prod, *result);
+  if (AtMinOrMaxInt64I(add)) return false;
+  *result = add;
   return true;
 }
 

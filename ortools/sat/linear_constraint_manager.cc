@@ -46,6 +46,28 @@
 namespace operations_research {
 namespace sat {
 
+bool PossibleOverflow(const IntegerTrail& integer_trail,
+                      const LinearConstraint& constraint) {
+  IntegerValue min_activity(0);
+  IntegerValue max_activity(0);
+  const int size = constraint.vars.size();
+  for (int i = 0; i < size; ++i) {
+    const IntegerVariable var = constraint.vars[i];
+    const IntegerValue coeff = constraint.coeffs[i];
+    CHECK_NE(coeff, 0);
+    const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
+    if (coeff > 0) {
+      if (!AddProductTo(lb, coeff, &min_activity)) return true;
+      if (!AddProductTo(ub, coeff, &max_activity)) return true;
+    } else {
+      if (!AddProductTo(ub, coeff, &min_activity)) return true;
+      if (!AddProductTo(lb, coeff, &max_activity)) return true;
+    }
+  }
+  return AtMinOrMaxInt64(CapSub(max_activity.value(), min_activity.value()));
+}
+
 namespace {
 
 const LinearConstraintManager::ConstraintIndex kInvalidConstraintIndex(-1);
@@ -289,6 +311,12 @@ bool LinearConstraintManager::AddCut(const LinearConstraint& ct,
             << " eff=" << violation / l2_norm << " " << extra_info;
     return false;
   }
+
+  // TODO(user): We could prevent overflow by dividing more. Note that mainly
+  // happen with super large variable domain since we usually restrict the size
+  // of the generated coefficients in our cuts. So it shouldn't be that
+  // important.
+  if (PossibleOverflow(integer_trail_, ct)) return false;
 
   bool added = false;
   const ConstraintIndex ct_index = Add(ct, &added);

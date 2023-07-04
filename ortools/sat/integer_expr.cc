@@ -851,7 +851,7 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
   {
     const IntegerValue max_a = integer_trail_->UpperBound(a_);
     const IntegerValue max_b = integer_trail_->UpperBound(b_);
-    const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
+    const IntegerValue new_max = CapProdI(max_a, max_b);
     if (new_max < integer_trail_->UpperBound(p_)) {
       if (!integer_trail_->SafeEnqueue(
               p_.LowerOrEqual(new_max),
@@ -866,7 +866,7 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
   {
     const IntegerValue min_a = integer_trail_->LowerBound(a_);
     const IntegerValue min_b = integer_trail_->LowerBound(b_);
-    const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
+    const IntegerValue new_min = CapProdI(min_a, min_b);
 
     // The conflict test is needed because when new_min is large, we could
     // have an overflow in p_.GreaterOrEqual(new_min);
@@ -893,7 +893,7 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue min_b = integer_trail_->LowerBound(b);
     const IntegerValue min_p = integer_trail_->LowerBound(p_);
     const IntegerValue max_p = integer_trail_->UpperBound(p_);
-    const IntegerValue prod(CapProd(max_a.value(), min_b.value()));
+    const IntegerValue prod = CapProdI(max_a, min_b);
     if (prod > max_p) {
       if (!integer_trail_->SafeEnqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)),
                                        {integer_trail_->LowerBoundAsLiteral(b),
@@ -980,12 +980,12 @@ bool ProductPropagator::Propagate() {
   //
   // TODO(user): In the reasons, including all 4 bounds is always correct, but
   // we might be able to relax some of them.
-  const int64_t max_a = integer_trail_->UpperBound(a_).value();
-  const int64_t max_b = integer_trail_->UpperBound(b_).value();
-  const IntegerValue p1(CapProd(max_a, max_b));
-  const IntegerValue p2(CapProd(max_a, min_b));
-  const IntegerValue p3(CapProd(min_a, max_b));
-  const IntegerValue p4(CapProd(min_a, min_b));
+  const IntegerValue max_a = integer_trail_->UpperBound(a_);
+  const IntegerValue max_b = integer_trail_->UpperBound(b_);
+  const IntegerValue p1 = CapProdI(max_a, max_b);
+  const IntegerValue p2 = CapProdI(max_a, min_b);
+  const IntegerValue p3 = CapProdI(min_a, max_b);
+  const IntegerValue p4 = CapProdI(min_a, min_b);
   const IntegerValue new_max_p = std::max({p1, p2, p3, p4});
   if (new_max_p < integer_trail_->UpperBound(p_)) {
     if (!integer_trail_->SafeEnqueue(
@@ -1124,7 +1124,7 @@ SquarePropagator::SquarePropagator(AffineExpression x, AffineExpression s,
 bool SquarePropagator::Propagate() {
   const IntegerValue min_x = integer_trail_->LowerBound(x_);
   const IntegerValue min_s = integer_trail_->LowerBound(s_);
-  const IntegerValue min_x_square(CapProd(min_x.value(), min_x.value()));
+  const IntegerValue min_x_square = CapProdI(min_x, min_x);
   if (min_x_square > min_s) {
     if (!integer_trail_->SafeEnqueue(s_.GreaterOrEqual(min_x_square),
                                      {x_.GreaterOrEqual(min_x)})) {
@@ -1141,7 +1141,7 @@ bool SquarePropagator::Propagate() {
 
   const IntegerValue max_x = integer_trail_->UpperBound(x_);
   const IntegerValue max_s = integer_trail_->UpperBound(s_);
-  const IntegerValue max_x_square(CapProd(max_x.value(), max_x.value()));
+  const IntegerValue max_x_square = CapProdI(max_x, max_x);
   if (max_x_square < max_s) {
     if (!integer_trail_->SafeEnqueue(s_.LowerOrEqual(max_x_square),
                                      {x_.LowerOrEqual(max_x)})) {
@@ -1151,9 +1151,7 @@ bool SquarePropagator::Propagate() {
     const IntegerValue new_max(FloorSquareRoot(max_s.value()));
     if (!integer_trail_->SafeEnqueue(
             x_.LowerOrEqual(new_max),
-            {s_.LowerOrEqual(IntegerValue(CapProd(new_max.value() + 1,
-                                                  new_max.value() + 1)) -
-                             1)})) {
+            {s_.LowerOrEqual(CapProdI(new_max + 1, new_max + 1) - 1)})) {
       return false;
     }
   }
@@ -1273,7 +1271,7 @@ bool DivisionPropagator::PropagateUpperBounds(AffineExpression num,
   // num < (max_div + 1) * denom
   // num + 1 <= (max_div + 1) * max_denom.
   const IntegerValue new_max_num =
-      IntegerValue(CapAdd(CapProd(max_div.value() + 1, max_denom.value()), -1));
+      CapAddI(CapProdI(max_div + 1, max_denom), -1);
   if (max_num > new_max_num) {
     if (!integer_trail_->SafeEnqueue(
             num.LowerOrEqual(new_max_num),
@@ -1309,8 +1307,7 @@ bool DivisionPropagator::PropagatePositiveDomains(AffineExpression num,
   // We start from num / denom >= min_div.
   // num >= min_div * denom.
   // num >= min_div * min_denom.
-  const IntegerValue new_min_num =
-      IntegerValue(CapProd(min_denom.value(), min_div.value()));
+  const IntegerValue new_min_num = CapProdI(min_denom, min_div);
   if (min_num < new_min_num) {
     if (!integer_trail_->SafeEnqueue(
             num.GreaterOrEqual(new_min_num),
@@ -1382,8 +1379,7 @@ bool FixedDivisionPropagator::Propagate() {
     }
   } else if (max_a / b_ > max_c) {
     const IntegerValue new_max_a =
-        max_c >= 0 ? max_c * b_ + b_ - 1
-                   : IntegerValue(CapProd(max_c.value(), b_.value()));
+        max_c >= 0 ? max_c * b_ + b_ - 1 : CapProdI(max_c, b_);
     CHECK_LT(new_max_a, max_a);
     if (!integer_trail_->SafeEnqueue(
             a_.LowerOrEqual(new_max_a),
@@ -1401,8 +1397,7 @@ bool FixedDivisionPropagator::Propagate() {
     }
   } else if (min_a / b_ < min_c) {
     const IntegerValue new_min_a =
-        min_c > 0 ? IntegerValue(CapProd(min_c.value(), b_.value()))
-                  : min_c * b_ - b_ + 1;
+        min_c > 0 ? CapProdI(min_c, b_) : min_c * b_ - b_ + 1;
     CHECK_GT(new_min_a, min_a);
     if (!integer_trail_->SafeEnqueue(
             a_.GreaterOrEqual(new_min_a),

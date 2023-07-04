@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include <functional>
+#include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -41,9 +42,6 @@ namespace sat {
 //     subsets spans will point in the subset_data vector (which will be of size
 //     exactly num_nodes).
 //
-// Only subsets of size >= min_subset_size will be returned. This is mainly here
-// to exclude subsets of size 1.
-//
 // This is an heuristic to generate interesting cuts for TSP or other graph
 // based constraints. We roughly follow the algorithm described in section 6 of
 // "The Traveling Salesman Problem, A computational Study", David L. Applegate,
@@ -53,25 +51,27 @@ namespace sat {
 // the asymmetric case.
 void GenerateInterestingSubsets(int num_nodes,
                                 const std::vector<std::pair<int, int>>& arcs,
-                                int min_subset_size, int stop_at_num_components,
+                                int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets);
 
-// Given a rooted tree on n nodes represented by the parent vector, returns the
-// n sets of nodes corresponding to all the possible subtree. Note that the
-// output memory is just n as all subset will point into the same vector.
+// Given a set of rooted tree on n nodes represented by the parent vector,
+// returns the n sets of nodes corresponding to all the possible subtree. Note
+// that the output memory is just n as all subset will point into the same
+// vector.
 //
-// This assumes a single rooted tree, otherwise it will not crash but the result
-// will not be correct.
+// This assumes no cycles, otherwise it will not crash but the result will not
+// be correct.
 //
 // In the TSP context, if the tree is a Gomory-Hu cut tree, this will returns
 // a set of "min-cut" that contains a min-cut for all node pairs.
 //
 // TODO(user): This also allocate O(n) memory internally, we could reuse it from
 // call to call if needed.
-void ExtractAllSubsetsFromTree(const std::vector<int>& parent,
-                               std::vector<int>* subset_data,
-                               std::vector<absl::Span<const int>>* subsets);
+void ExtractAllSubsetsFromForest(
+    const std::vector<int>& parent, std::vector<int>* subset_data,
+    std::vector<absl::Span<const int>>* subsets,
+    int node_limit = std::numeric_limits<int>::max());
 
 // In the routing context, we usually always have lp_value in [0, 1] and only
 // looks at arcs with a lp_value that is not too close to zero.
@@ -79,7 +79,16 @@ struct ArcWithLpValue {
   int tail;
   int head;
   double lp_value;
+
+  bool operator==(const ArcWithLpValue& o) const {
+    return tail == o.tail && head == o.head && lp_value == o.lp_value;
+  }
 };
+
+// Regroups and sum the lp values on duplicate arcs or reversed arcs
+// (tail->head) and (head->tail). As a side effect, we will always
+// have tail <= head.
+void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs);
 
 // Given a set of arcs on a directed graph with n nodes (in [0, num_nodes)),
 // returns a "parent" vector of size n encoding a rooted Gomory-Hu tree.

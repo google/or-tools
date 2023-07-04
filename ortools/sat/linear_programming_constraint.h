@@ -610,19 +610,6 @@ class LinearProgrammingConstraintCollection
   }
 };
 
-// Tests for possible overflow in the propagation of the given linear
-// constraint.
-bool PossibleOverflow(const IntegerTrail& integer_trail,
-                      const LinearConstraint& constraint);
-
-// Reduces the coefficient of the constraint so that we cannot have overflow
-// in the propagation of the given linear constraint. Note that we may loose
-// some strength by doing so.
-//
-// Returns true if we changed the constraint.
-bool PreventOverflow(const IntegerTrail& integer_trail,
-                     LinearConstraint* constraint);
-
 }  // namespace sat
 }  // namespace operations_research
 

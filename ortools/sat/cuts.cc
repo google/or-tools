@@ -274,15 +274,14 @@ void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
     //
     // If we cannot merge the term, we will keep them separate. The produced cut
     // will be less strong, but can still be used.
-    const int64_t new_coeff =
-        CapAdd(cut->terms[entry_index].coeff.value(), term.coeff.value());
-    const int64_t overflow_check = CapProd(t.value(), new_coeff);
-    if (AtMinOrMaxInt64(new_coeff) || AtMinOrMaxInt64(overflow_check)) {
+    const IntegerValue new_coeff =
+        CapAddI(cut->terms[entry_index].coeff, term.coeff);
+    if (AtMinOrMaxInt64I(new_coeff) || ProdOverflow(t, new_coeff)) {
       // If we cannot merge the term, we keep them separate.
       cut->terms.push_back(term);
     } else {
       ++num_merges_;
-      cut->terms[entry_index].coeff = IntegerValue(new_coeff);
+      cut->terms[entry_index].coeff = new_coeff;
     }
   }
 }
@@ -327,22 +326,6 @@ namespace {
 // Minimum amount of violation of the cut constraint by the solution. This
 // is needed to avoid numerical issues and adding cuts with minor effect.
 const double kMinCutViolation = 1e-4;
-
-IntegerValue CapProdI(IntegerValue a, IntegerValue b) {
-  return IntegerValue(CapProd(a.value(), b.value()));
-}
-
-IntegerValue CapSubI(IntegerValue a, IntegerValue b) {
-  return IntegerValue(CapSub(a.value(), b.value()));
-}
-
-IntegerValue CapAddI(IntegerValue a, IntegerValue b) {
-  return IntegerValue(CapAdd(a.value(), b.value()));
-}
-
-bool ProdOverflow(IntegerValue t, IntegerValue value) {
-  return AtMinOrMaxInt64(CapProd(t.value(), value.value()));
-}
 
 IntegerValue PositiveRemainder(absl::int128 dividend,
                                IntegerValue positive_divisor) {
@@ -933,7 +916,7 @@ bool IntegerRoundingCutHelper::ComputeCut(
   }
 
   // Use implied bounds to "lift" Booleans into the cut.
-  // This should lead to stronger cuts even if the norms migth be worse.
+  // This should lead to stronger cuts even if the norms might be worse.
   num_ib_used_ = 0;
   if (ib_processor != nullptr) {
     const auto [num_lb, num_ub] = ib_processor->PostprocessWithImpliedBound(
@@ -2643,8 +2626,7 @@ bool BuildMaxAffineUpConstraint(
   // -delta_y * var + delta_x * target <= delta_x * y_at_min - delta_y * x_min
   //
   // Checks the rhs for overflows.
-  if (AtMinOrMaxInt64(CapProd(delta_x.value(), y_at_min.value())) ||
-      AtMinOrMaxInt64(CapProd(delta_y.value(), x_min.value()))) {
+  if (ProdOverflow(delta_x, y_at_min) || ProdOverflow(delta_y, x_min)) {
     return false;
   }
 

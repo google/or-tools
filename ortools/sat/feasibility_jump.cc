@@ -348,6 +348,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     if (shared_bounds_ != nullptr) {
       shared_bounds_->UpdateDomains(&var_domains_);
       for (int var = 0; var < var_domains_.size(); ++var) {
+        // We abort if the problem is trivially UNSAT. This might happen while
+        // we are cleaning up all workers at the end of a search.
+        if (var_domains_[var].IsEmpty()) return;
         var_has_two_values_[var] = var_domains_[var].HasTwoValues();
       }
     }

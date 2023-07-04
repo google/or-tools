@@ -1631,7 +1631,8 @@ void GenerateCompletionTimeCutsWithEnergy(const std::string& cut_name,
       DCHECK_GE(event.x_start_min, sequence_start_min);
       const IntegerValue energy = event.energy_min;
       sum_duration += energy;
-      sum_square_duration += energy * energy;
+      if (!AddProductTo(energy, energy, &sum_square_duration)) break;
+
       unscaled_lp_contrib += event.x_lp_end * ToDouble(energy);
       current_start_min = std::min(current_start_min, event.x_start_min);
 
@@ -1668,14 +1669,16 @@ void GenerateCompletionTimeCutsWithEnergy(const std::string& cut_name,
       // duration actually equal to energy / capacity. But to keep the
       // computation in the integer domain, we multiply by capacity
       // everywhere instead.
-      if (AtMinOrMaxInt64(
-              CapAdd(CapProd(sum_duration.value(), sum_duration.value()),
-                     sum_square_duration.value()))) {
-        break;  // Overflow, we exit the loop.
-      }
-      const IntegerValue min_contrib =
-          (sum_duration * sum_duration + sum_square_duration) / 2 +
-          current_start_min * sum_duration * capacity;
+      IntegerValue min_contrib = 0;
+      if (!AddProductTo(sum_duration, sum_duration, &min_contrib)) break;
+      if (!AddTo(sum_square_duration, &min_contrib)) break;
+      min_contrib = min_contrib / 2;  // The above is the double of the area.
+
+      const IntegerValue intermediate = CapProdI(sum_duration, capacity);
+      if (AtMinOrMaxInt64I(intermediate)) break;
+      const IntegerValue offset = CapProdI(current_start_min, intermediate);
+      if (AtMinOrMaxInt64I(offset)) break;
+      if (!AddTo(offset, &min_contrib)) break;
 
       // We compute the efficacity in the unscaled domain where the l2 norm of
       // the cuts is exactly the sqrt of  the sum of squared duration.

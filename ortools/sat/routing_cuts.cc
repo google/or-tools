@@ -19,12 +19,14 @@
 #include <cstdlib>
 #include <functional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
@@ -73,6 +75,21 @@ class OutgoingCutHelper {
 
   // Try to add an outgoing cut from the given subset.
   bool TrySubsetCut(std::string name, absl::Span<const int> subset);
+
+  // If we look at the symmetrized version (tail <-> head = tail->head +
+  // head->tail) and we split all the edges between a subset of nodes S and the
+  // outside into a set A and the other d(S)\A, and |A| is odd, we have a
+  // constraint of the form:
+  //   "all edge of A at 1" => sum other edges >= 1.
+  // This is because a cycle or multiple-cycle must go in/out an even number
+  // of time. This enforced constraint simply linearize to:
+  //    sum_d(S)\A x_e + sum_A (1 - x_e) >= 1.
+  //
+  // Given a subset of nodes, it is easy to identify the best subset A of edge
+  // to consider.
+  bool TryBlossomSubsetCut(std::string name,
+                           const std::vector<ArcWithLpValue>& symmetrized_edges,
+                           absl::Span<const int> subset);
 
  private:
   // Add a cut of the form Sum_{outgoing arcs from S} lp >= rhs_lower_bound.
@@ -252,16 +269,109 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
   return result;
 }
 
+bool OutgoingCutHelper::TryBlossomSubsetCut(
+    std::string name, const std::vector<ArcWithLpValue>& symmetrized_edges,
+    absl::Span<const int> subset) {
+  DCHECK_GE(subset.size(), 1);
+  DCHECK_LT(subset.size(), num_nodes_);
+
+  // Initialize "in_subset" and the subset demands.
+  for (const int n : subset) in_subset_[n] = true;
+  auto cleanup = ::absl::MakeCleanup([subset, this]() {
+    for (const int n : subset) in_subset_[n] = false;
+  });
+
+  // The heuristic assumes non-duplicates arcs, otherwise they are all bundled
+  // together in the same symmetric edge, and the result is probably wrong.
+  absl::flat_hash_set<std::pair<int, int>> special_edges;
+  int num_inverted = 0;
+  double sum_inverted = 0.0;
+  double sum = 0.0;
+  double best_change = 1.0;
+  ArcWithLpValue const* best_swap = nullptr;
+  for (const ArcWithLpValue& arc : symmetrized_edges) {
+    if (in_subset_[arc.tail] == in_subset_[arc.head]) continue;
+
+    if (arc.lp_value > 0.5) {
+      ++num_inverted;
+      special_edges.insert({arc.tail, arc.head});
+      sum_inverted += 1.0 - arc.lp_value;
+    } else {
+      sum += arc.lp_value;
+    }
+
+    const double change = std::abs(2 * arc.lp_value - 1.0);
+    if (change < best_change) {
+      best_change = change;
+      best_swap = &arc;
+    }
+  }
+
+  // If the we don't have an odd number, we move the best edge from one set to
+  // the other.
+  if (num_inverted % 2 == 0) {
+    if (best_swap == nullptr) return false;
+    if (special_edges.contains({best_swap->tail, best_swap->head})) {
+      --num_inverted;
+      special_edges.erase({best_swap->tail, best_swap->head});
+      sum_inverted -= (1.0 - best_swap->lp_value);
+      sum += best_swap->lp_value;
+    } else {
+      ++num_inverted;
+      special_edges.insert({best_swap->tail, best_swap->head});
+      sum_inverted += (1.0 - best_swap->lp_value);
+      sum -= best_swap->lp_value;
+    }
+  }
+  if (sum + sum_inverted > 0.99) return false;
+
+  // For the route constraint, it is actually allowed to have circuit of size
+  // 2, so the reasoning is wrong if one of the edges touches the depot.
+  if (!demands_.empty()) {
+    for (const auto [tail, head] : special_edges) {
+      if (tail == 0) return false;
+    }
+  }
+
+  // Try to generate the cut.
+  //
+  // We deal with the corner case with duplicate arcs, or just one side of a
+  // "symmetric" edge present.
+  int num_actual_inverted = 0;
+  absl::flat_hash_set<std::pair<int, int>> processed_arcs;
+  LinearConstraintBuilder builder(encoder_, IntegerValue(1), kMaxIntegerValue);
+  for (int i = 0; i < tails_.size(); ++i) {
+    if (tails_[i] == heads_[i]) continue;
+    if (in_subset_[tails_[i]] == in_subset_[heads_[i]]) continue;
+
+    const std::pair<int, int> key = {tails_[i], heads_[i]};
+    const std::pair<int, int> r_key = {heads_[i], tails_[i]};
+    const std::pair<int, int> s_key = std::min(key, r_key);
+    if (special_edges.contains(s_key) && !processed_arcs.contains(key)) {
+      processed_arcs.insert(key);
+      CHECK(builder.AddLiteralTerm(literals_[i], IntegerValue(-1)));
+      if (!processed_arcs.contains(r_key)) {
+        ++num_actual_inverted;
+      }
+      continue;
+    }
+
+    // Normal edge.
+    CHECK(builder.AddLiteralTerm(literals_[i], IntegerValue(1)));
+  }
+  builder.AddConstant(IntegerValue(num_actual_inverted));
+  if (num_actual_inverted % 2 == 0) return false;
+
+  return manager_->AddCut(builder.Build(), name);
+}
+
 }  // namespace
 
 void GenerateInterestingSubsets(int num_nodes,
                                 const std::vector<std::pair<int, int>>& arcs,
-                                int min_subset_size, int stop_at_num_components,
+                                int stop_at_num_components,
                                 std::vector<int>* subset_data,
                                 std::vector<absl::Span<const int>>* subsets) {
-  subset_data->resize(num_nodes);
-  subsets->clear();
-
   // We will do a union-find by adding one by one the arc of the lp solution
   // in the order above. Every intermediate set during this construction will
   // be a candidate for a cut.
@@ -313,71 +423,28 @@ void GenerateInterestingSubsets(int num_nodes,
   // a consecutive span in the subset_data vector. This vector just lists the
   // nodes in the "pre-order" graph traversal order. The Spans will point inside
   // the subset_data vector, it is why we initialize it once and for all.
-  int new_size = 0;
-  {
-    std::vector<absl::InlinedVector<int, 2>> graph(parent.size());
-    for (int i = 0; i < parent.size(); ++i) {
-      if (parent[i] != i) graph[parent[i]].push_back(i);
-    }
-    std::vector<int> queue;
-    std::vector<bool> seen(graph.size(), false);
-    std::vector<int> start_index(parent.size());
-    for (int i = 0; i < parent.size(); ++i) {
-      // Note that because of the way we constructed 'parent', the graph is a
-      // binary tree. This is not required for the correctness of the algorithm
-      // here though.
-      CHECK(graph[i].empty() || graph[i].size() == 2);
-      if (parent[i] != i) continue;
-
-      // Explore the subtree rooted at node i.
-      CHECK(!seen[i]);
-      queue.push_back(i);
-      while (!queue.empty()) {
-        const int node = queue.back();
-        if (seen[node]) {
-          queue.pop_back();
-          // All the children of node are in the span [start, end) of the
-          // subset_data vector.
-          const int start = start_index[node];
-          if (new_size - start >= min_subset_size) {
-            subsets->emplace_back(&(*subset_data)[start], new_size - start);
-          }
-          continue;
-        }
-        seen[node] = true;
-        start_index[node] = new_size;
-        if (node < num_nodes) (*subset_data)[new_size++] = node;
-        for (const int child : graph[node]) {
-          if (!seen[child]) queue.push_back(child);
-        }
-      }
-    }
-  }
-
-  DCHECK_EQ(new_size, num_nodes);
+  ExtractAllSubsetsFromForest(parent, subset_data, subsets,
+                              /*node_limit=*/num_nodes);
 }
 
-void ExtractAllSubsetsFromTree(const std::vector<int>& parent,
-                               std::vector<int>* subset_data,
-                               std::vector<absl::Span<const int>>* subsets) {
+void ExtractAllSubsetsFromForest(const std::vector<int>& parent,
+                                 std::vector<int>* subset_data,
+                                 std::vector<absl::Span<const int>>* subsets,
+                                 int node_limit) {
   // To not reallocate memory since we need the span to point inside this
   // vector, we resize subset_data right away.
   int out_index = 0;
   const int num_nodes = parent.size();
-  subset_data->resize(num_nodes);
+  subset_data->resize(std::min(num_nodes, node_limit));
   subsets->clear();
 
   // Starts by creating the corresponding graph and find the root.
-  int root = -1;
   util::StaticGraph<int> graph(num_nodes, num_nodes - 1);
   for (int i = 0; i < num_nodes; ++i) {
-    if (parent[i] == i) {
-      root = i;
-    } else {
+    if (parent[i] != i) {
       graph.AddArc(parent[i], i);
     }
   }
-  if (root == -1) return;
   graph.Build();
 
   // Perform a dfs on the rooted tree.
@@ -385,24 +452,30 @@ void ExtractAllSubsetsFromTree(const std::vector<int>& parent,
   std::vector<int> subtree_starts(num_nodes, -1);
   std::vector<int> stack;
   stack.reserve(num_nodes);
-  stack.push_back(root);
-  while (!stack.empty()) {
-    const int node = stack.back();
+  for (int i = 0; i < parent.size(); ++i) {
+    if (parent[i] != i) continue;
 
-    // The node was already explored, output its subtree and pop it.
-    if (subtree_starts[node] >= 0) {
-      stack.pop_back();
-      (*subset_data)[out_index++] = node;
-      const int start = subtree_starts[node];
-      const int size = out_index - start;
-      subsets->push_back(absl::MakeSpan(&(*subset_data)[start], size));
-      continue;
-    }
+    stack.push_back(i);  // root.
+    while (!stack.empty()) {
+      const int node = stack.back();
 
-    // Explore.
-    subtree_starts[node] = out_index;
-    for (const int child : graph[node]) {
-      stack.push_back(child);
+      // The node was already explored, output its subtree and pop it.
+      if (subtree_starts[node] >= 0) {
+        stack.pop_back();
+        if (node < node_limit) {
+          (*subset_data)[out_index++] = node;
+        }
+        const int start = subtree_starts[node];
+        const int size = out_index - start;
+        subsets->push_back(absl::MakeSpan(&(*subset_data)[start], size));
+        continue;
+      }
+
+      // Explore.
+      subtree_starts[node] = out_index;
+      for (const int child : graph[node]) {
+        stack.push_back(child);
+      }
     }
   }
 }
@@ -437,6 +510,31 @@ std::vector<int> ComputeGomoryHuTree(
   }
 
   return parent;
+}
+
+void SymmetrizeArcs(std::vector<ArcWithLpValue>* arcs) {
+  for (ArcWithLpValue& arc : *arcs) {
+    if (arc.tail <= arc.head) continue;
+    std::swap(arc.tail, arc.head);
+  }
+  std::sort(arcs->begin(), arcs->end(),
+            [](const ArcWithLpValue& a, const ArcWithLpValue& b) {
+              return std::tie(a.tail, a.head) < std::tie(b.tail, b.head);
+            });
+
+  int new_size = 0;
+  int last_tail = -1;
+  int last_head = -1;
+  for (const ArcWithLpValue& arc : *arcs) {
+    if (arc.tail == last_tail && arc.head == last_head) {
+      (*arcs)[new_size - 1].lp_value += arc.lp_value;
+      continue;
+    }
+    (*arcs)[new_size++] = arc;
+    last_tail = arc.tail;
+    last_head = arc.head;
+  }
+  arcs->resize(new_size);
 }
 
 // We roughly follow the algorithm described in section 6 of "The Traveling
@@ -486,7 +584,6 @@ void SeparateSubtourInequalities(
   std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
   GenerateInterestingSubsets(num_nodes, ordered_arcs,
-                             /*min_subset_size=*/2,
                              /*stop_at_num_components=*/2, &subset_data,
                              &subsets);
 
@@ -500,10 +597,23 @@ void SeparateSubtourInequalities(
   OutgoingCutHelper helper(num_nodes, capacity, demands, tails, heads, literals,
                            literal_lp_values, relevant_arcs, manager, model);
 
+  // Hack/optim: we exploit the tree structure of the subsets to not add a cut
+  // for a larger subset if we added a cut from one included in it.
+  //
+  // TODO(user): Currently if we add too many not so relevant cuts, our generic
+  // MIP cut heuritic are way too slow on TSP/VRP problems.
+  int last_added_start = -1;
+
   // Process each subsets and add any violated cut.
   int num_added = 0;
   for (const absl::Span<const int> subset : subsets) {
-    if (helper.TrySubsetCut("Circuit", subset)) ++num_added;
+    if (subset.size() <= 1) continue;
+    const int start = static_cast<int>(subset.data() - subset_data.data());
+    if (start <= last_added_start) continue;
+    if (helper.TrySubsetCut("Circuit", subset)) {
+      ++num_added;
+      last_added_start = start;
+    }
   }
 
   // If there were no cut added by the heuristic above, we try exact separation.
@@ -516,19 +626,53 @@ void SeparateSubtourInequalities(
   // Note(user): Compared to any min-cut, these cut have some nice properties
   // since they are "included" in each other. This might help with combining
   // them within our generic IP cuts framework.
-  if (num_added == 0) {
-    // TODO(user): I had an older version that tried the n-cuts generated during
-    // the course of the algorithm. This could also be interesting. But it is
-    // hard to tell with our current benchmark setup.
-    const std::vector<int> parent =
-        ComputeGomoryHuTree(num_nodes, relevant_arcs);
+  //
+  // TODO(user): I had an older version that tried the n-cuts generated during
+  // the course of the algorithm. This could also be interesting. But it is
+  // hard to tell with our current benchmark setup.
+  if (num_added != 0) return;
+  SymmetrizeArcs(&relevant_arcs);
+  std::vector<int> parent = ComputeGomoryHuTree(num_nodes, relevant_arcs);
 
-    // Try all interesting subset from the Gomory-Hu tree.
-    ExtractAllSubsetsFromTree(parent, &subset_data, &subsets);
-    for (const absl::Span<const int> subset : subsets) {
-      if (subset.size() == 1) continue;
-      if (subset.size() == num_nodes) continue;
-      helper.TrySubsetCut("CircuitExact", subset);
+  // Try all interesting subset from the Gomory-Hu tree.
+  ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
+  last_added_start = -1;
+  for (const absl::Span<const int> subset : subsets) {
+    if (subset.size() <= 1) continue;
+    if (subset.size() == num_nodes) continue;
+    const int start = static_cast<int>(subset.data() - subset_data.data());
+    if (start <= last_added_start) continue;
+    if (helper.TrySubsetCut("CircuitExact", subset)) {
+      ++num_added;
+      last_added_start = start;
+    }
+  }
+
+  // Exact separation of symmetric Blossom cut. We use the algorithm in the
+  // paper: "A Faster Exact Separation Algorithm for Blossom Inequalities", Adam
+  // N. Letchford, Gerhard Reinelt, Dirk Oliver Theis, 2004.
+  //
+  // Note that the "relevant_arcs" were symmetrized above.
+  if (num_added != 0) return;
+  if (num_nodes <= 2) return;
+  std::vector<ArcWithLpValue> for_blossom;
+  for_blossom.reserve(relevant_arcs.size());
+  for (ArcWithLpValue arc : relevant_arcs) {
+    if (arc.lp_value > 0.5) arc.lp_value = 1.0 - arc.lp_value;
+    if (arc.lp_value < 1e-6) continue;
+    for_blossom.push_back(arc);
+  }
+  parent = ComputeGomoryHuTree(num_nodes, for_blossom);
+  ExtractAllSubsetsFromForest(parent, &subset_data, &subsets);
+  last_added_start = -1;
+  for (const absl::Span<const int> subset : subsets) {
+    if (subset.size() <= 1) continue;
+    if (subset.size() == num_nodes) continue;
+    const int start = static_cast<int>(subset.data() - subset_data.data());
+    if (start <= last_added_start) continue;
+    if (helper.TryBlossomSubsetCut("CircuitBlossom", relevant_arcs, subset)) {
+      ++num_added;
+      last_added_start = start;
     }
   }
 }
@@ -662,7 +806,6 @@ void SeparateFlowInequalities(
   std::vector<int> subset_data;
   std::vector<absl::Span<const int>> subsets;
   GenerateInterestingSubsets(num_nodes, ordered_arcs,
-                             /*min_subset_size=*/1,
                              /*stop_at_num_components=*/1, &subset_data,
                              &subsets);
 

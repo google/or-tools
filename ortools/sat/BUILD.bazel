@@ -1229,6 +1229,7 @@ cc_library(
         ":linear_constraint",
         ":model",
         "//ortools/base",
+        "//ortools/base:cleanup",
         "//ortools/base:mathutil",
         "//ortools/graph",
         "//ortools/graph:max_flow",
