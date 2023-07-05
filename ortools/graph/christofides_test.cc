@@ -22,10 +22,10 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "testing/base/public/benchmark.h"
 
 namespace operations_research {
 

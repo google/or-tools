@@ -25,11 +25,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/util/time_limit.h"
-#include "testing/base/public/benchmark.h"
 
 namespace operations_research {
 namespace {

@@ -20,6 +20,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/random/distributions.h"
+#include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "isp/fiber/auto_design/utils/parallelizer.h"
@@ -27,7 +28,6 @@
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/shortest_paths.h"
 #include "ortools/graph/test_util.h"
-#include "testing/base/public/benchmark.h"
 
 namespace operations_research {
 namespace {

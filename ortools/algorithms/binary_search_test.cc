@@ -25,10 +25,10 @@
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/time/time.h"
+#include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/util/testing_utils.h"
-#include "testing/base/public/benchmark.h"
 
 namespace operations_research {
 

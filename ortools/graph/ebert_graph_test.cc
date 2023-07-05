@@ -22,10 +22,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/macros.h"
 #include "ortools/util/permutation.h"
-#include "testing/base/public/benchmark.h"
 #include "testing/base/public/test_utils.h"
 
 namespace operations_research {

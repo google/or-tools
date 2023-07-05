@@ -19,12 +19,12 @@
 #include <vector>
 
 #include "absl/random/distributions.h"
+#include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
-#include "testing/base/public/benchmark.h"
 
 ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 

@@ -16,11 +16,11 @@
 #include <random>
 #include <vector>
 
+#include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/linked_hash_set.h"
 #include "ortools/util/random_engine.h"
-#include "testing/base/public/benchmark.h"
 #include "util/tuple/dump_vars.h"
 
 namespace operations_research {
