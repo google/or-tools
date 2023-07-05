@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/weighted_set_covering_model.h"
+#include "ortools/algorithms/set_cover_model.h"
 
 #include <algorithm>
 
@@ -19,20 +19,20 @@
 
 namespace operations_research {
 
-void WeightedSetCoveringModel::AddEmptySubset(Cost cost) {
+void SetCoverModel::AddEmptySubset(Cost cost) {
   subset_costs_.push_back(cost);
   columns_.push_back(SparseColumn());
   row_view_is_valid_ = false;
 }
 
-void WeightedSetCoveringModel::AddElementToLastSubset(int element) {
+void SetCoverModel::AddElementToLastSubset(int element) {
   ElementIndex new_element(element);
   columns_.back().push_back(new_element);
   num_elements_ = std::max(num_elements_, new_element + 1);
   row_view_is_valid_ = false;
 }
 
-void WeightedSetCoveringModel::SetSubsetCost(int subset, Cost cost) {
+void SetCoverModel::SetSubsetCost(int subset, Cost cost) {
   const SubsetIndex subset_index(subset);
   const SubsetIndex size = std::max(columns_.size(), subset_index + 1);
   columns_.resize(size, SparseColumn());
@@ -41,7 +41,7 @@ void WeightedSetCoveringModel::SetSubsetCost(int subset, Cost cost) {
   row_view_is_valid_ = false;  // Probably overkill, but better safe than sorry.
 }
 
-void WeightedSetCoveringModel::AddElementToSubset(int element, int subset) {
+void SetCoverModel::AddElementToSubset(int element, int subset) {
   const SubsetIndex subset_index(subset);
   const SubsetIndex size = std::max(columns_.size(), subset_index + 1);
   subset_costs_.resize(size, 0.0);
@@ -52,13 +52,22 @@ void WeightedSetCoveringModel::AddElementToSubset(int element, int subset) {
   row_view_is_valid_ = false;
 }
 
-void WeightedSetCoveringModel::CreateSparseRowView() {
+void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
     return;
   }
   rows_.resize(num_elements_, SparseRow());
+  glop::StrictITIVector<ElementIndex, int> row_sizes(num_elements_, 0);
   for (SubsetIndex subset(0); subset < columns_.size(); ++subset) {
     std::sort(columns_[subset].begin(), columns_[subset].end());
+    for (const ElementIndex element : columns_[subset]) {
+      ++row_sizes[element];
+    }
+  }
+  for (ElementIndex element(0); element < num_elements_; ++element) {
+    rows_[element].reserve(EntryIndex(row_sizes[element]));
+  }
+  for (SubsetIndex subset(0); subset < columns_.size(); ++subset) {
     for (const ElementIndex element : columns_[subset]) {
       rows_[element].push_back(subset);
     }
@@ -66,7 +75,7 @@ void WeightedSetCoveringModel::CreateSparseRowView() {
   row_view_is_valid_ = true;
 }
 
-bool WeightedSetCoveringModel::ComputeFeasibility() const {
+bool SetCoverModel::ComputeFeasibility() const {
   CHECK_GT(num_elements_, 0);
   CHECK_GT(columns_.size(), 0);
   CHECK_EQ(columns_.size(), subset_costs_.size());
@@ -91,4 +100,5 @@ bool WeightedSetCoveringModel::ComputeFeasibility() const {
           << *std::max_element(coverage.begin(), coverage.end());
   return true;
 }
+
 }  // namespace operations_research

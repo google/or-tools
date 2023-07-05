@@ -274,3 +274,8 @@ git_repository(
     remote = "https://github.com/google/googletest.git",
 )
 
+git_repository(
+    name = "com_google_benchmark",
+    tag = "v1.8.1",
+    remote = "https://github.com/google/benchmark.git",
+)

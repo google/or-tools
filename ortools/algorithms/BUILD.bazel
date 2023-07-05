@@ -98,10 +98,12 @@ cc_library(
     ],
 )
 
+# Weighted set covering
+
 cc_library(
-    name = "weighted_set_covering_model",
-    srcs = ["weighted_set_covering_model.cc"],
-    hdrs = ["weighted_set_covering_model.h"],
+    name = "set_cover_model",
+    srcs = ["set_cover_model.cc"],
+    hdrs = ["set_cover_model.h"],
     deps = [
         "//ortools/lp_data:base",
         "@com_google_absl//absl/log:check",
@@ -109,19 +111,56 @@ cc_library(
 )
 
 cc_library(
-    name = "weighted_set_covering",
-    srcs = ["weighted_set_covering.cc"],
-    hdrs = ["weighted_set_covering.h"],
+    name = "set_cover_ledger",
+    srcs = ["set_cover_ledger.cc"],
+    hdrs = ["set_cover_ledger.h"],
     deps = [
-        ":weighted_set_covering_model",
+        ":set_cover_model",
         "//ortools/base",
-        "//ortools/base:adjustable_priority_queue",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "set_cover_utils",
+    srcs = ["set_cover_utils.cc"],
+    hdrs = ["set_cover_utils.h"],
+    deps = [
+        ":set_cover_ledger",
+        ":set_cover_model",
+        "//ortools/base:adjustable_priority_queue",
+    ],
+)
+
+cc_library(
+    name = "set_cover",
+    srcs = ["set_cover.cc"],
+    hdrs = ["set_cover.h"],
+    deps = [
+        ":set_cover_utils",
+        "//ortools/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
     ],
 )
+
+cc_test(
+    name = "set_cover_test",
+    size = "medium",
+    timeout = "long",
+    srcs = ["set_cover_test.cc"],
+    deps = [
+        ":set_cover",
+        "@com_google_absl//absl/log",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Graph automorphism libraries.
 
 cc_library(
     name = "dense_doubly_linked_list",
