@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Generate SVG for a Routing problem."""
 
 # [START import]
@@ -49,72 +50,327 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
         self._locations = [(l[0] * 114, l[1] * 80) for l in locations]
         self._distance_matrix = [
             [
-                0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388,
-                354, 468, 776, 662
+                0,
+                548,
+                776,
+                696,
+                582,
+                274,
+                502,
+                194,
+                308,
+                194,
+                536,
+                502,
+                388,
+                354,
+                468,
+                776,
+                662,
             ],
             [
-                548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480,
-                674, 1016, 868, 1210
+                548,
+                0,
+                684,
+                308,
+                194,
+                502,
+                730,
+                354,
+                696,
+                742,
+                1084,
+                594,
+                480,
+                674,
+                1016,
+                868,
+                1210,
             ],
             [
-                776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
-                1130, 788, 1552, 754
+                776,
+                684,
+                0,
+                992,
+                878,
+                502,
+                274,
+                810,
+                468,
+                742,
+                400,
+                1278,
+                1164,
+                1130,
+                788,
+                1552,
+                754,
             ],
             [
-                696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
-                822, 1164, 560, 1358
+                696,
+                308,
+                992,
+                0,
+                114,
+                650,
+                878,
+                502,
+                844,
+                890,
+                1232,
+                514,
+                628,
+                822,
+                1164,
+                560,
+                1358,
             ],
             [
-                582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514,
-                708, 1050, 674, 1244
+                582,
+                194,
+                878,
+                114,
+                0,
+                536,
+                764,
+                388,
+                730,
+                776,
+                1118,
+                400,
+                514,
+                708,
+                1050,
+                674,
+                1244,
             ],
             [
-                274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662,
-                628, 514, 1050, 708
+                274,
+                502,
+                502,
+                650,
+                536,
+                0,
+                228,
+                308,
+                194,
+                240,
+                582,
+                776,
+                662,
+                628,
+                514,
+                1050,
+                708,
             ],
             [
-                502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890,
-                856, 514, 1278, 480
+                502,
+                730,
+                274,
+                878,
+                764,
+                228,
+                0,
+                536,
+                194,
+                468,
+                354,
+                1004,
+                890,
+                856,
+                514,
+                1278,
+                480,
             ],
             [
-                194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354,
-                320, 662, 742, 856
+                194,
+                354,
+                810,
+                502,
+                388,
+                308,
+                536,
+                0,
+                342,
+                388,
+                730,
+                468,
+                354,
+                320,
+                662,
+                742,
+                856,
             ],
             [
-                308, 696, 468, 844, 730, 194, 194, 342, 0, 274, 388, 810, 696,
-                662, 320, 1084, 514
+                308,
+                696,
+                468,
+                844,
+                730,
+                194,
+                194,
+                342,
+                0,
+                274,
+                388,
+                810,
+                696,
+                662,
+                320,
+                1084,
+                514,
             ],
             [
-                194, 742, 742, 890, 776, 240, 468, 388, 274, 0, 342, 536, 422,
-                388, 274, 810, 468
+                194,
+                742,
+                742,
+                890,
+                776,
+                240,
+                468,
+                388,
+                274,
+                0,
+                342,
+                536,
+                422,
+                388,
+                274,
+                810,
+                468,
             ],
             [
-                536, 1084, 400, 1232, 1118, 582, 354, 730, 388, 342, 0, 878,
-                764, 730, 388, 1152, 354
+                536,
+                1084,
+                400,
+                1232,
+                1118,
+                582,
+                354,
+                730,
+                388,
+                342,
+                0,
+                878,
+                764,
+                730,
+                388,
+                1152,
+                354,
             ],
             [
-                502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0, 114,
-                308, 650, 274, 844
+                502,
+                594,
+                1278,
+                514,
+                400,
+                776,
+                1004,
+                468,
+                810,
+                536,
+                878,
+                0,
+                114,
+                308,
+                650,
+                274,
+                844,
             ],
             [
-                388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
-                194, 536, 388, 730
+                388,
+                480,
+                1164,
+                628,
+                514,
+                662,
+                890,
+                354,
+                696,
+                422,
+                764,
+                114,
+                0,
+                194,
+                536,
+                388,
+                730,
             ],
             [
-                354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308,
-                194, 0, 342, 422, 536
+                354,
+                674,
+                1130,
+                822,
+                708,
+                628,
+                856,
+                320,
+                662,
+                388,
+                730,
+                308,
+                194,
+                0,
+                342,
+                422,
+                536,
             ],
             [
-                468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650,
-                536, 342, 0, 764, 194
+                468,
+                1016,
+                788,
+                1164,
+                1050,
+                514,
+                514,
+                662,
+                320,
+                274,
+                388,
+                650,
+                536,
+                342,
+                0,
+                764,
+                194,
             ],
             [
-                776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274,
-                388, 422, 764, 0, 798
+                776,
+                868,
+                1552,
+                560,
+                674,
+                1050,
+                1278,
+                742,
+                1084,
+                810,
+                1152,
+                274,
+                388,
+                422,
+                764,
+                0,
+                798,
             ],
             [
-                662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844,
-                730, 536, 194, 798, 0
+                662,
+                1210,
+                754,
+                1358,
+                1244,
+                708,
+                480,
+                856,
+                514,
+                468,
+                354,
+                844,
+                730,
+                536,
+                194,
+                798,
+                0,
             ],
         ]
         self._time_matrix = [
@@ -155,7 +411,7 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
             (10, 15),  # 15
             (5, 15),  # 16
         ]
-        if args['drop_nodes']:
+        if args["drop_nodes"]:
             self._demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
         else:
             self._demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
@@ -170,13 +426,13 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
             [16, 14],
         ]
 
-        if args['tsp']:
+        if args["tsp"]:
             self._num_vehicles = 1
         else:
             self._num_vehicles = 4
             self._vehicle_capacities = [15, 15, 15, 15]
 
-        if args['resources']:
+        if args["resources"]:
             self._vehicle_load_time = 5
             self._vehicle_unload_time = 5
 
@@ -266,9 +522,14 @@ class GoogleColorPalette(object):
 
     def __init__(self):
         """Initialize Google ColorPalette."""
-        self._colors = [('blue', r'#4285F4'), ('red', r'#EA4335'),
-                        ('yellow', r'#FBBC05'), ('green', r'#34A853'),
-                        ('black', r'#101010'), ('white', r'#FFFFFF')]
+        self._colors = [
+            ("blue", r"#4285F4"),
+            ("red", r"#EA4335"),
+            ("yellow", r"#FBBC05"),
+            ("green", r"#34A853"),
+            ("black", r"#101010"),
+            ("white", r"#FFFFFF"),
+        ]
 
     def __getitem__(self, key):
         """Gets color name from idx."""
@@ -302,85 +563,101 @@ class SVG(object):
     @staticmethod
     def header(size, margin):
         """Writes header."""
-        print(r'<svg xmlns:xlink="http://www.w3.org/1999/xlink" '
-              'xmlns="http://www.w3.org/2000/svg" version="1.1"\n'
-              'width="{width}" height="{height}" '
-              'viewBox="-{margin} -{margin} {width} {height}">'.format(
-                  width=size[0] + 2 * margin,
-                  height=size[1] + 2 * margin,
-                  margin=margin))
+        print(
+            r'<svg xmlns:xlink="http://www.w3.org/1999/xlink" '
+            'xmlns="http://www.w3.org/2000/svg" version="1.1"\n'
+            'width="{width}" height="{height}" '
+            'viewBox="-{margin} -{margin} {width} {height}">'.format(
+                width=size[0] + 2 * margin, height=size[1] + 2 * margin, margin=margin
+            )
+        )
 
     @staticmethod
     def definitions(colors):
         """Writes definitions."""
-        print(r'<!-- Need this definition to make an arrow marker,'
-              ' from https://www.w3.org/TR/svg-markers/ -->')
-        print(r'<defs>')
+        print(
+            r"<!-- Need this definition to make an arrow marker,"
+            " from https://www.w3.org/TR/svg-markers/ -->"
+        )
+        print(r"<defs>")
         for color in colors:
             print(
                 r'  <marker id="arrow_{colorname}" viewBox="0 0 16 16" '
                 'refX="8" refY="8" markerUnits="strokeWidth" markerWidth="5" markerHeight="5" '
-                'orient="auto">'.format(colorname=color[0]))
+                'orient="auto">'.format(colorname=color[0])
+            )
             print(
-                r'    <path d="M 0 0 L 16 8 L 0 16 z" stroke="none" fill="{color}"/>'
-                .format(color=color[1]))
-            print(r'  </marker>')
-        print(r'</defs>')
+                r'    <path d="M 0 0 L 16 8 L 0 16 z" stroke="none" fill="{color}"/>'.format(
+                    color=color[1]
+                )
+            )
+            print(r"  </marker>")
+        print(r"</defs>")
 
     @staticmethod
     def footer():
         """Writes svg footer."""
-        print(r'</svg>')
+        print(r"</svg>")
 
     @staticmethod
     def draw_line(position_1, position_2, size, fg_color):
         """Draws a line."""
-        line_style = (
-            r'style="stroke-width:{sz};stroke:{fg};fill:none"').format(
-                sz=size, fg=fg_color)
-        print(r'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" {style}/>'.format(
-            x1=position_1[0],
-            y1=position_1[1],
-            x2=position_2[0],
-            y2=position_2[1],
-            style=line_style))
+        line_style = (r'style="stroke-width:{sz};stroke:{fg};fill:none"').format(
+            sz=size, fg=fg_color
+        )
+        print(
+            r'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" {style}/>'.format(
+                x1=position_1[0],
+                y1=position_1[1],
+                x2=position_2[0],
+                y2=position_2[1],
+                style=line_style,
+            )
+        )
 
     @staticmethod
     def draw_polyline(position_1, position_2, size, fg_color, colorname):
         """Draws a line with arrow maker in the middle."""
-        polyline_style = (r'style="stroke-width:{sz};stroke:{fg};fill:none;'
-                          'marker-mid:url(#arrow_{colorname})"').format(
-                              sz=size, fg=fg_color, colorname=colorname)
-        print(r'<polyline points="{x1},{y1} {x2},{y2} {x3},{y3}" {style}/>'.
-              format(x1=position_1[0],
-                     y1=position_1[1],
-                     x2=(position_1[0] + position_2[0]) / 2,
-                     y2=(position_1[1] + position_2[1]) / 2,
-                     x3=position_2[0],
-                     y3=position_2[1],
-                     style=polyline_style))
+        polyline_style = (
+            r'style="stroke-width:{sz};stroke:{fg};fill:none;'
+            'marker-mid:url(#arrow_{colorname})"'
+        ).format(sz=size, fg=fg_color, colorname=colorname)
+        print(
+            r'<polyline points="{x1},{y1} {x2},{y2} {x3},{y3}" {style}/>'.format(
+                x1=position_1[0],
+                y1=position_1[1],
+                x2=(position_1[0] + position_2[0]) / 2,
+                y2=(position_1[1] + position_2[1]) / 2,
+                x3=position_2[0],
+                y3=position_2[1],
+                style=polyline_style,
+            )
+        )
 
     @staticmethod
-    def draw_circle(position, radius, size, fg_color, bg_color='white'):
+    def draw_circle(position, radius, size, fg_color, bg_color="white"):
         """Print a circle."""
-        circle_style = (
-            r'style="stroke-width:{sz};stroke:{fg};fill:{bg}"').format(
-                sz=size, fg=fg_color, bg=bg_color)
-        print(r'<circle cx="{cx}" cy="{cy}" r="{r}" {style}/>'.format(
-            cx=position[0], cy=position[1], r=radius, style=circle_style))
+        circle_style = (r'style="stroke-width:{sz};stroke:{fg};fill:{bg}"').format(
+            sz=size, fg=fg_color, bg=bg_color
+        )
+        print(
+            r'<circle cx="{cx}" cy="{cy}" r="{r}" {style}/>'.format(
+                cx=position[0], cy=position[1], r=radius, style=circle_style
+            )
+        )
 
     @staticmethod
-    def draw_text(text, position, size, fg_color='none', bg_color='black'):
+    def draw_text(text, position, size, fg_color="none", bg_color="black"):
         """Print a middle centred text."""
-        text_style = (r'style="text-anchor:middle;font-weight:bold;'
-                      'font-size:{sz};stroke:{fg};fill:{bg}"').format(
-                          sz=size, fg=fg_color, bg=bg_color)
-        print(r'<text x="{x}" y="{y}" dy="{dy}" {style}>{txt}</text>'.format(
-            x=position[0],
-            y=position[1],
-            dy=size / 3,
-            style=text_style,
-            txt=text))
+        text_style = (
+            r'style="text-anchor:middle;font-weight:bold;'
+            'font-size:{sz};stroke:{fg};fill:{bg}"'
+        ).format(sz=size, fg=fg_color, bg=bg_color)
+        print(
+            r'<text x="{x}" y="{y}" dy="{dy}" {style}>{txt}</text>'.format(
+                x=position[0], y=position[1], dy=size / 3, style=text_style, txt=text
+            )
+        )
 
 
 class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
@@ -433,8 +710,8 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
 
     def draw_grid(self):
         """Draws the city grid."""
-        print(r'<!-- Print city streets -->')
-        color = '#969696'
+        print(r"<!-- Print city streets -->")
+        color = "#969696"
         # Horizontal streets
         for i in range(9):
             p_1 = [0, i * 80]
@@ -448,101 +725,106 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
 
     def draw_depot(self):
         """Draws the depot."""
-        print(r'<!-- Print depot -->')
-        color = self._color_palette.value_from_name('black')
+        print(r"<!-- Print depot -->")
+        color = self._color_palette.value_from_name("black")
         loc = self._data.locations[self._data.depot]
-        self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                              'white')
-        self._svg.draw_text(self._data.depot, loc, self._radius, 'none', color)
+        self._svg.draw_circle(loc, self._radius, self._stroke_width, color, "white")
+        self._svg.draw_text(self._data.depot, loc, self._radius, "none", color)
 
     def draw_depots(self):
         """Draws the depot."""
-        print(r'<!-- Print depots -->')
+        print(r"<!-- Print depots -->")
         # print starts
         for vehicle_idx, start in enumerate(self._data.starts):
             del vehicle_idx
-            color = self._color_palette.value_from_name('black')
+            color = self._color_palette.value_from_name("black")
             # color = self._color_palette.value(vehicle_idx)
             loc = self._data.locations[start]
-            self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                                  'white')
-            self._svg.draw_text(start, loc, self._radius, 'none', color)
+            self._svg.draw_circle(loc, self._radius, self._stroke_width, color, "white")
+            self._svg.draw_text(start, loc, self._radius, "none", color)
         # print end
-        color = self._color_palette.value_from_name('black')
+        color = self._color_palette.value_from_name("black")
         loc = self._data.locations[0]
-        self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                              'white')
-        self._svg.draw_text(0, loc, self._radius, 'none', color)
+        self._svg.draw_circle(loc, self._radius, self._stroke_width, color, "white")
+        self._svg.draw_text(0, loc, self._radius, "none", color)
 
     def draw_locations(self):
         """Draws all the locations but the depot."""
-        print(r'<!-- Print locations -->')
-        color = self._color_palette.value_from_name('blue')
-        if not self._args['starts_ends']:
+        print(r"<!-- Print locations -->")
+        color = self._color_palette.value_from_name("blue")
+        if not self._args["starts_ends"]:
             for idx, loc in enumerate(self._data.locations):
                 if idx == self._data.depot:
                     continue
-                self._svg.draw_circle(loc, self._radius, self._stroke_width,
-                                      color, 'white')
-                self._svg.draw_text(idx, loc, self._radius, 'none', color)
+                self._svg.draw_circle(
+                    loc, self._radius, self._stroke_width, color, "white"
+                )
+                self._svg.draw_text(idx, loc, self._radius, "none", color)
         else:
             for idx, loc in enumerate(self._data.locations):
                 if idx in self._data.starts + self._data.ends:
                     continue
-                self._svg.draw_circle(loc, self._radius, self._stroke_width,
-                                      color, 'white')
-                self._svg.draw_text(idx, loc, self._radius, 'none', color)
+                self._svg.draw_circle(
+                    loc, self._radius, self._stroke_width, color, "white"
+                )
+                self._svg.draw_text(idx, loc, self._radius, "none", color)
 
     def draw_demands(self):
         """Draws all the demands."""
-        print(r'<!-- Print demands -->')
+        print(r"<!-- Print demands -->")
         for idx, loc in enumerate(self._data.locations):
             if idx == self._data.depot:
                 continue
             demand = self._data.demands[idx]
             position = [
-                x + y
-                for x, y in zip(loc, [self._radius * 1.2, self._radius * 1.1])
+                x + y for x, y in zip(loc, [self._radius * 1.2, self._radius * 1.1])
             ]
-            color = self._color_palette.value_from_name('red')
+            color = self._color_palette.value_from_name("red")
             # color = self._color_palette.value(int(math.log(demand, 2)))
-            self._svg.draw_text(demand, position, self._radius, 'none', color)
+            self._svg.draw_text(demand, position, self._radius, "none", color)
 
     def draw_pickups_deliveries(self):
         """Draws all pickups deliveries."""
-        print(r'<!-- Print pickups deliveries -->')
-        colorname = 'red'
+        print(r"<!-- Print pickups deliveries -->")
+        colorname = "red"
         color = self._color_palette.value_from_name(colorname)
         for pickup_delivery in self._data.pickups_deliveries:
-            self._svg.draw_polyline(self._data.locations[pickup_delivery[0]],
-                                    self._data.locations[pickup_delivery[1]],
-                                    self._stroke_width, color, colorname)
+            self._svg.draw_polyline(
+                self._data.locations[pickup_delivery[0]],
+                self._data.locations[pickup_delivery[1]],
+                self._stroke_width,
+                color,
+                colorname,
+            )
 
     def draw_time_windows(self):
         """Draws all the time windows."""
-        print(r'<!-- Print time windows -->')
+        print(r"<!-- Print time windows -->")
         for idx, loc in enumerate(self._data.locations):
             if idx == self._data.depot:
                 continue
             time_window = self._data.time_windows[idx]
             position = [
-                x + y
-                for x, y in zip(loc, [self._radius * 0, -self._radius * 1.6])
+                x + y for x, y in zip(loc, [self._radius * 0, -self._radius * 1.6])
             ]
-            color = self._color_palette.value_from_name('red')
+            color = self._color_palette.value_from_name("red")
             self._svg.draw_text(
-                '[{t1},{t2}]'.format(t1=time_window[0], t2=time_window[1]),
-                position, self._radius * 0.75, 'white', color)
+                "[{t1},{t2}]".format(t1=time_window[0], t2=time_window[1]),
+                position,
+                self._radius * 0.75,
+                "white",
+                color,
+            )
 
-##############
-##  ROUTES  ##
-##############
+    ##############
+    ##  ROUTES  ##
+    ##############
 
     def draw_drop_nodes(self):
         """Draws the dropped nodes."""
-        print(r'<!-- Print drop nodes -->')
+        print(r"<!-- Print drop nodes -->")
         if self._assignment is None:
-            print('<!-- No solution found. -->')
+            print("<!-- No solution found. -->")
         # Display dropped nodes.
         dropped_nodes = []
         for node in range(self._routing.Size()):
@@ -550,17 +832,16 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
                 continue
             if self._assignment.Value(self._routing.NextVar(node)) == node:
                 dropped_nodes.append(self._manager.IndexToNode(node))
-        color = self._color_palette.value_from_name('black')
+        color = self._color_palette.value_from_name("black")
         for node_idx in dropped_nodes:
             loc = self._data.locations[node_idx]
-            self._svg.draw_circle(loc, self._radius, self._stroke_width, color,
-                                  'white')
-            self._svg.draw_text(node_idx, loc, self._radius, 'none', color)
+            self._svg.draw_circle(loc, self._radius, self._stroke_width, color, "white")
+            self._svg.draw_text(node_idx, loc, self._radius, "none", color)
 
     def routes(self):
         """Creates the route list from the assignment."""
         if self._assignment is None:
-            print('<!-- No solution found. -->')
+            print("<!-- No solution found. -->")
             return []
         routes = []
         for vehicle_id in range(self._data.num_vehicles):
@@ -581,23 +862,28 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         previous_loc_idx = None
         for loc_idx in route:
             if previous_loc_idx is not None and previous_loc_idx != loc_idx:
-                self._svg.draw_polyline(self._data.locations[previous_loc_idx],
-                                        self._data.locations[loc_idx],
-                                        self._stroke_width, color, colorname)
+                self._svg.draw_polyline(
+                    self._data.locations[previous_loc_idx],
+                    self._data.locations[loc_idx],
+                    self._stroke_width,
+                    color,
+                    colorname,
+                )
             previous_loc_idx = loc_idx
         # Then print location along the route
         for loc_idx in route:
             if loc_idx != self._data.depot:
                 loc = self._data.locations[loc_idx]
-                self._svg.draw_circle(loc, self._radius, self._stroke_width,
-                                      color, 'white')
-                self._svg.draw_text(loc_idx, loc, self._radius, 'none', color)
+                self._svg.draw_circle(
+                    loc, self._radius, self._stroke_width, color, "white"
+                )
+                self._svg.draw_text(loc_idx, loc, self._radius, "none", color)
 
     def draw_routes(self):
         """Draws the routes."""
-        print(r'<!-- Print routes -->')
+        print(r"<!-- Print routes -->")
         for route_idx, route in enumerate(self.routes()):
-            print(r'<!-- Print route {idx} -->'.format(idx=route_idx))
+            print(r"<!-- Print route {idx} -->".format(idx=route_idx))
             color = self._color_palette.value(route_idx)
             colorname = self._color_palette.name(route_idx)
             self.draw_route(route, color, colorname)
@@ -605,9 +891,9 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
     def tw_routes(self):
         """Creates the route time window list from the assignment."""
         if self._assignment is None:
-            print('<!-- No solution found. -->')
+            print("<!-- No solution found. -->")
             return []
-        time_dimension = self._routing.GetDimensionOrDie('Time')
+        time_dimension = self._routing.GetDimensionOrDie("Time")
         loc_routes = []
         tw_routes = []
         for vehicle_id in range(self._data.num_vehicles):
@@ -636,25 +922,29 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
             loc = self._data.locations[loc_idx]
             if loc_idx == 0:  # special case for depot
                 position = [
-                    x + y for x, y in zip(loc, [
-                        self._radius * is_start, self._radius *
-                        (1.8 + route_idx)
-                    ])
+                    x + y
+                    for x, y in zip(
+                        loc, [self._radius * is_start, self._radius * (1.8 + route_idx)]
+                    )
                 ]
                 is_start = 1
             else:
                 position = [
-                    x + y
-                    for x, y in zip(loc, [self._radius * 0, self._radius * 1.8])
+                    x + y for x, y in zip(loc, [self._radius * 0, self._radius * 1.8])
                 ]
-            self._svg.draw_text('[{t_min}]'.format(t_min=time_window[0]),
-                                position, self._radius * 0.75, 'white', color)
+            self._svg.draw_text(
+                "[{t_min}]".format(t_min=time_window[0]),
+                position,
+                self._radius * 0.75,
+                "white",
+                color,
+            )
 
     def draw_tw_routes(self):
         """Draws the time window routes."""
-        print(r'<!-- Print time window routes -->')
+        print(r"<!-- Print time window routes -->")
         for route_idx, loc_tw in enumerate(self.tw_routes()):
-            print(r'<!-- Print time window route {} -->'.format(route_idx))
+            print(r"<!-- Print time window route {} -->".format(route_idx))
             color = self._color_palette.value(route_idx)
             self.draw_tw_route(route_idx, loc_tw[0], loc_tw[1], color)
 
@@ -665,25 +955,26 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         self._svg.header(size, margin)
         self._svg.definitions(self._color_palette.colors)
         self.draw_grid()
-        if not self._args['solution']:
-            if self._args['pickup_delivery']:
+        if not self._args["solution"]:
+            if self._args["pickup_delivery"]:
                 self.draw_pickups_deliveries()
             self.draw_locations()
         else:
             self.draw_routes()
             self.draw_drop_nodes()
-        if self._args['starts_ends']:
+        if self._args["starts_ends"]:
             self.draw_depots()
         else:
             self.draw_depot()
-        if self._args['capacity']:
+        if self._args["capacity"]:
             self.draw_demands()
-        if self._args['drop_nodes']:
+        if self._args["drop_nodes"]:
             self.draw_demands()
-        if self._args['time_windows'] or self._args['resources']:
+        if self._args["time_windows"] or self._args["resources"]:
             self.draw_time_windows()
-        if ((self._args['time_windows'] or self._args['resources']) and
-                self._args['solution']):
+        if (self._args["time_windows"] or self._args["resources"]) and self._args[
+            "solution"
+        ]:
             self.draw_tw_routes()
         self._svg.footer()
 
@@ -693,55 +984,43 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
 ########
 def main():  # pylint: disable=too-many-locals,too-many-branches
     """Entry point of the program."""
-    parser = argparse.ArgumentParser(description='Output VRP as svg image.')
-    parser.add_argument('-tsp',
-                        '--tsp',
-                        action='store_true',
-                        help='use 1 vehicle')
-    parser.add_argument('-vrp',
-                        '--vrp',
-                        action='store_true',
-                        help='use 4 vehicle')
-    parser.add_argument('-gs',
-                        '--global-span',
-                        action='store_true',
-                        help='use global span constraints')
-    parser.add_argument('-c',
-                        '--capacity',
-                        action='store_true',
-                        help='use capacity constraints')
-    parser.add_argument('-r',
-                        '--resources',
-                        action='store_true',
-                        help='use resources constraints')
-    parser.add_argument('-dn',
-                        '--drop-nodes',
-                        action='store_true',
-                        help='allow drop nodes (disjuntion constraints)')
-    parser.add_argument('-tw',
-                        '--time-windows',
-                        action='store_true',
-                        help='use time-window constraints')
-    parser.add_argument('-se',
-                        '--starts-ends',
-                        action='store_true',
-                        help='use multiple starts & ends')
-    parser.add_argument('-pd',
-                        '--pickup-delivery',
-                        action='store_true',
-                        help='use pickup & delivery constraints')
-    parser.add_argument('-fifo',
-                        '--fifo',
-                        action='store_true',
-                        help='use pickup & delivery FIFO Policy')
-    parser.add_argument('-lifo',
-                        '--lifo',
-                        action='store_true',
-                        help='use pickup & delivery LIFO Policy')
-    parser.add_argument('-s',
-                        '--solution',
-                        action='store_true',
-                        help='print solution')
+    parser = argparse.ArgumentParser(description="Output VRP as svg image.")
+    parser.add_argument("-tsp", "--tsp", action="store_true", help="use 1 vehicle")
+    parser.add_argument("-vrp", "--vrp", action="store_true", help="use 4 vehicle")
+    parser.add_argument(
+        "-gs", "--global-span", action="store_true", help="use global span constraints"
+    )
+    parser.add_argument(
+        "-c", "--capacity", action="store_true", help="use capacity constraints"
+    )
+    parser.add_argument(
+        "-r", "--resources", action="store_true", help="use resources constraints"
+    )
+    parser.add_argument(
+        "-dn",
+        "--drop-nodes",
+        action="store_true",
+        help="allow drop nodes (disjuntion constraints)",
+    )
+    parser.add_argument(
+        "-tw", "--time-windows", action="store_true", help="use time-window constraints"
+    )
+    parser.add_argument(
+        "-se", "--starts-ends", action="store_true", help="use multiple starts & ends"
+    )
+    parser.add_argument(
+        "-pd",
+        "--pickup-delivery",
+        action="store_true",
+        help="use pickup & delivery constraints",
+    )
+    parser.add_argument(
+        "-fifo", "--fifo", action="store_true", help="use pickup & delivery FIFO Policy"
+    )
+    parser.add_argument(
+        "-lifo", "--lifo", action="store_true", help="use pickup & delivery LIFO Policy"
+    )
+    parser.add_argument("-s", "--solution", action="store_true", help="print solution")
     args = vars(parser.parse_args())
 
     # Instantiate the data problem.
@@ -749,7 +1028,7 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     data = DataModel(args)
     # [END data]
 
-    if not args['solution']:
+    if not args["solution"]:
         # Print svg on cout
         printer = SVGPrinter(args, data)
         printer.print_to_console()
@@ -757,13 +1036,14 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
 
     # Create the routing index manager.
     # [START index_manager]
-    if args['starts_ends']:
-        manager = pywrapcp.RoutingIndexManager(len(data.locations),
-                                               data.num_vehicles, data.starts,
-                                               data.ends)
+    if args["starts_ends"]:
+        manager = pywrapcp.RoutingIndexManager(
+            len(data.locations), data.num_vehicles, data.starts, data.ends
+        )
     else:
-        manager = pywrapcp.RoutingIndexManager(len(data.locations),
-                                               data.num_vehicles, data.depot)
+        manager = pywrapcp.RoutingIndexManager(
+            len(data.locations), data.num_vehicles, data.depot
+        )
     # [END index_manager]
 
     # Create Routing Model.
@@ -799,36 +1079,33 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         from_node = manager.IndexToNode(from_index)
         return data.demands[from_node]
 
-    demand_callback_index = routing.RegisterUnaryTransitCallback(
-        demand_callback)
+    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
 
-    if args['time_windows'] or args['resources']:
+    if args["time_windows"] or args["resources"]:
         routing.SetArcCostEvaluatorOfAllVehicles(time_callback_index)
     else:
         routing.SetArcCostEvaluatorOfAllVehicles(distance_callback_index)
 
-    if args['global_span'] or args['pickup_delivery']:
-        dimension_name = 'Distance'
-        routing.AddDimension(distance_callback_index, 0, 3000, True,
-                             dimension_name)
+    if args["global_span"] or args["pickup_delivery"]:
+        dimension_name = "Distance"
+        routing.AddDimension(distance_callback_index, 0, 3000, True, dimension_name)
         distance_dimension = routing.GetDimensionOrDie(dimension_name)
         distance_dimension.SetGlobalSpanCostCoefficient(100)
 
-    if args['capacity'] or args['drop_nodes']:
-        routing.AddDimensionWithVehicleCapacity(demand_callback_index, 0,
-                                                data.vehicle_capacities, True,
-                                                'Capacity')
+    if args["capacity"] or args["drop_nodes"]:
+        routing.AddDimensionWithVehicleCapacity(
+            demand_callback_index, 0, data.vehicle_capacities, True, "Capacity"
+        )
 
-    if args['drop_nodes']:
+    if args["drop_nodes"]:
         # Allow to drop nodes.
         penalty = 1000
         for node in range(1, len(data.locations)):
             routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
 
-    if args['pickup_delivery']:
-        dimension_name = 'Distance'
-        routing.AddDimension(distance_callback_index, 0, 3000, True,
-                             dimension_name)
+    if args["pickup_delivery"]:
+        dimension_name = "Distance"
+        routing.AddDimension(distance_callback_index, 0, 3000, True, dimension_name)
         distance_dimension = routing.GetDimensionOrDie(dimension_name)
         distance_dimension.SetGlobalSpanCostCoefficient(100)
         for request in data.pickups_deliveries:
@@ -836,27 +1113,29 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             delivery_index = manager.NodeToIndex(request[1])
             routing.AddPickupAndDelivery(pickup_index, delivery_index)
             routing.solver().Add(
-                routing.VehicleVar(pickup_index) == routing.VehicleVar(
-                    delivery_index))
+                routing.VehicleVar(pickup_index) == routing.VehicleVar(delivery_index)
+            )
             routing.solver().Add(
-                distance_dimension.CumulVar(pickup_index) <=
-                distance_dimension.CumulVar(delivery_index))
-        if args['fifo']:
+                distance_dimension.CumulVar(pickup_index)
+                <= distance_dimension.CumulVar(delivery_index)
+            )
+        if args["fifo"]:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_FIFO)
-        if args['lifo']:
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_FIFO
+            )
+        if args["lifo"]:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO)
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO
+            )
 
-    if args['starts_ends']:
-        dimension_name = 'Distance'
-        routing.AddDimension(distance_callback_index, 0, 2000, True,
-                             dimension_name)
+    if args["starts_ends"]:
+        dimension_name = "Distance"
+        routing.AddDimension(distance_callback_index, 0, 2000, True, dimension_name)
         distance_dimension = routing.GetDimensionOrDie(dimension_name)
         distance_dimension.SetGlobalSpanCostCoefficient(100)
 
-    time = 'Time'
-    if args['time_windows'] or args['resources']:
+    time = "Time"
+    if args["time_windows"] or args["resources"]:
         routing.AddDimension(time_callback_index, 30, 30, False, time)
         time_dimension = routing.GetDimensionOrDie(time)
         # Add time window constraints for each location except depot and 'copy' the
@@ -865,26 +1144,26 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             if location_idx == 0:
                 continue
             index = manager.NodeToIndex(location_idx)
-            time_dimension.CumulVar(index).SetRange(time_window[0],
-                                                    time_window[1])
+            time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
             routing.AddToAssignment(time_dimension.SlackVar(index))
         # Add time window constraints for each vehicle start node and 'copy' the
         # slack var in the solution object (aka Assignment) to print it.
         for vehicle_id in range(data.num_vehicles):
             index = routing.Start(vehicle_id)
             time_window = data.time_windows[0]
-            time_dimension.CumulVar(index).SetRange(time_window[0],
-                                                    time_window[1])
+            time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
             routing.AddToAssignment(time_dimension.SlackVar(index))
 
         # Instantiate route start and end times to produce feasible times.
         for vehicle_id in range(data.num_vehicles):
             routing.AddVariableMinimizedByFinalizer(
-                time_dimension.CumulVar(routing.End(vehicle_id)))
+                time_dimension.CumulVar(routing.End(vehicle_id))
+            )
             routing.AddVariableMinimizedByFinalizer(
-                time_dimension.CumulVar(routing.Start(vehicle_id)))
+                time_dimension.CumulVar(routing.Start(vehicle_id))
+            )
 
-    if args['resources']:
+    if args["resources"]:
         # Add resource constraints at the depot.
         time_dimension = routing.GetDimensionOrDie(time)
         solver = routing.solver()
@@ -894,30 +1173,39 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             intervals.append(
                 solver.FixedDurationIntervalVar(
                     time_dimension.CumulVar(routing.Start(i)),
-                    data.vehicle_load_time, 'depot_interval'))
+                    data.vehicle_load_time,
+                    "depot_interval",
+                )
+            )
             # Add unloading time at end of routes.
             intervals.append(
                 solver.FixedDurationIntervalVar(
                     time_dimension.CumulVar(routing.End(i)),
-                    data.vehicle_unload_time, 'depot_interval '))
+                    data.vehicle_unload_time,
+                    "depot_interval ",
+                )
+            )
 
         depot_usage = [1 for i in range(data.num_vehicles * 2)]
         solver.AddConstraint(
-            solver.Cumulative(intervals, depot_usage, data.depot_capacity,
-                              'depot'))
+            solver.Cumulative(intervals, depot_usage, data.depot_capacity, "depot")
+        )
 
     # Setting first solution heuristic (cheapest addition).
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     # pylint: disable=no-member
-    if not args['pickup_delivery']:
+    if not args["pickup_delivery"]:
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        )
     else:
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION)
+            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+        )
 
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    )
     search_parameters.time_limit.FromSeconds(2)
 
     # Solve the problem.
@@ -928,5 +1216,5 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
