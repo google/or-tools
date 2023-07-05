@@ -15,7 +15,7 @@ This repository contains several component:
 - `ortools.graph.python.linear_sum_assignment`,
 - `ortools.graph.python.max_flow`,
 - `ortools.graph.python.min_cost_flow`,
- 
+
 ### Routing library and legacy Constraint Programming Solver
  - `ortools.constraint_solver.pywrapcp`,
 
@@ -30,11 +30,11 @@ This repository contains several component:
 
 ### Legacy linear solver wrapper
  - `ortools.linear_solver.pywraplp`,
- - `ortools.linear_solver.linear_solver_py_pb2`,
+ - `ortools.linear_solver.linear_solver_pb2`,
 
 ### Linear solver backends
  - `ortools.bop.bop_parameters_pb2`,
- - `ortools.glop.glop_parameters_pb2`,
+ - `ortools.glop.parameters_pb2`,
  - `ortools.pdlp`,
 
 ### PSPLIB Parser
