@@ -408,17 +408,43 @@ endif()
 ## Doc rules ##
 ###############
 if(BUILD_PYTHON_DOC)
-  find_program(PDOC_PRG NAMES pdoc)
-  if (PDOC_PRG)
-    # add a target to generate API documentation with pdoc
+  # add a target to generate API documentation with Doxygen
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    configure_file(${PROJECT_SOURCE_DIR}/ortools/python/Doxyfile.in ${PROJECT_BINARY_DIR}/python/Doxyfile @ONLY)
+    file(DOWNLOAD
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
+      SHOW_PROGRESS
+    )
     add_custom_target(${PROJECT_NAME}_python_doc ALL
       #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/python
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/python
+      COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/Doxyfile
+      DEPENDS
+        python_package
+        ${PROJECT_BINARY_DIR}/python/Doxyfile
+        ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/python/stylesheet.css
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      COMMENT "Generating Python API documentation with Doxygen"
+      VERBATIM)
+  else()
+    message(WARNING "cmd `doxygen` not found, Python doc generation is disable!")
+  endif()
+
+  # pdoc doc
+  find_program(PDOC_PRG NAMES pdoc)
+  if (PDOC_PRG)
+    # add a target to generate API documentation with pdoc
+    add_custom_target(${PROJECT_NAME}_pdoc_doc ALL
+      #COMMAND ${CMAKE_COMMAND} -E rm -rf ${PROJECT_BINARY_DIR}/docs/pdoc
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/pdoc
       COMMAND ${PDOC_PRG}
       --logo https://developers.google.com/optimization/images/orLogo.png
       --no-search -d google
       --footer-text "OR-Tools v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-      -o ${PROJECT_BINARY_DIR}/docs/python
+      -o ${PROJECT_BINARY_DIR}/docs/pdoc
       ${PROJECT_BINARY_DIR}/python/ortools
       DEPENDS python_package
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

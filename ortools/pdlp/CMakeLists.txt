@@ -16,9 +16,9 @@ if(NOT USE_PDLP)
 endif()
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/gtest.*")
-list(FILTER _SRCS EXCLUDE REGEX ".*/test.*")
+list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
+list(FILTER _SRCS EXCLUDE REGEX "/gtest[^/]*$")
+list(FILTER _SRCS EXCLUDE REGEX "/test[^/]*$")
 
 set(NAME ${PROJECT_NAME}_pdlp)
 
