@@ -1,4 +1,4 @@
-FROM minizinc/mznc2022:latest AS env
+FROM minizinc/mznc2023:latest AS env
 
 ENV SRC_GIT_BRANCH main
 
@@ -19,10 +19,10 @@ RUN apt update -qq \
 ENV CC=gcc-11 CXX=g++-11
 
 # Install CMake 3.25.2
-RUN wget -q "https://cmake.org/files/v3.25/cmake-3.25.2-linux-x86_64.sh" \
-&& chmod a+x cmake-3.25.2-linux-x86_64.sh \
-&& ./cmake-3.25.2-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.25.2-linux-x86_64.sh
+RUN wget -q "https://cmake.org/files/v3.26/cmake-3.26.4-linux-x86_64.sh" \
+&& chmod a+x cmake-3.26.4-linux-x86_64.sh \
+&& ./cmake-3.26.4-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.26.4-linux-x86_64.sh
 
 FROM env AS devel
 WORKDIR /root
@@ -30,8 +30,10 @@ RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-
 
 FROM devel AS build
 WORKDIR /root/or-tools
-RUN make cpp BUILD_PYTHON=OFF BUILD_JAVA=OFF BUILD_DOTNET=OFF USE_SCIP=OFF USE_COINOR=OFF JOBS=8
+RUN rm -rf build
+RUN cmake -S. -Bbuild -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF -DUSE_SCIP=OFF -DUSE_COINOR=OFF -DBUILD_DEPS=ON
+RUN cmake --build build --target all -j16
 
-RUN ln -s /root/or-tools/install_make/bin/fzn-ortools /entry_data/fzn-exec
+RUN ln -s /root/or-tools/build/bin/fzn-ortools /entry_data/fzn-exec
 
 RUN cp /root/or-tools/ortools/flatzinc/mznlib/*mzn /entry_data/mzn-lib

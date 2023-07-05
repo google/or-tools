@@ -709,7 +709,7 @@ distclean: clean
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2022v1
+MZN_TAG=or-tools-minizinc-challenge:2023v1
 
 .PHONY: minizinc-challenge
 minizinc-challenge: minizinc-challenge.Dockerfile

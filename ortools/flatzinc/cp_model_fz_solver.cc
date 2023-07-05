@@ -1313,7 +1313,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             m.proto.search_strategy().empty() ? "quick_restart" : "fixed");
         m.parameters.add_subsolvers("core_or_no_lp"),
             m.parameters.add_subsolvers("max_lp");
-
       } else {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(
