@@ -30,7 +30,6 @@ cc_library(
     srcs = ["model_builder_helper.cc"],
     hdrs = ["model_builder_helper.h"],
     copts = [
-        "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
         "-DUSE_LP_PARSER",

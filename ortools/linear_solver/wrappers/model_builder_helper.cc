@@ -23,11 +23,13 @@
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #endif  // defined(USE_SCIP)
+#if defined(USE_PDLP)
+#include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
+#endif  // defined(USE_PDLP)
 #if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
 #endif  // defined(USE_LP_PARSER)
@@ -332,16 +334,15 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_SCIP)
-#if defined(USE_HIGHS)
-    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::HIGHS_LINEAR_PROGRAMMING: {
-      const auto temp = HighsSolveProto(request);
+#if defined(USE_PDLP)
+    case MPModelRequest::PDLP_LINEAR_PROGRAMMING: {
+      const auto temp = PdlpSolveProto(request);
       if (temp.ok()) {
         response_ = std::move(temp.value());
       }
       break;
     }
-#endif  // defined(USE_HIGHS)
+#endif  // defined(USE_PDLP)
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
