@@ -52,6 +52,19 @@ def code_sample_test_py(name):
         srcs_version = "PY3",
     )
 
+def code_sample_test_arg_py(name, suffix, args, data):
+    native.py_test(
+        name = name + "_" + suffix + "_py_test",
+        size = "medium",
+        srcs = [name + ".py"],
+        main = name + ".py",
+        data = data,
+        args = args,
+        deps = PYTHON_DEPS,
+        python_version = "PY3",
+        srcs_version = "PY3",
+    )
+
 def code_sample_py(name):
     code_sample_compile_py(name)
     code_sample_test_py(name)
