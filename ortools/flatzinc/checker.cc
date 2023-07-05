@@ -360,11 +360,41 @@ bool CheckDiffnNonStrictK(const Constraint& ct,
 
 bool CheckDisjunctive(const Constraint& ct,
                       const std::function<int64_t(Variable*)>& evaluator) {
+  // TODO(user): Improve complexity for large size.
+  const int size = Size(ct.arguments[0]);
+  CHECK_EQ(size, Size(ct.arguments[1]));
+  absl::flat_hash_map<int64_t, int64_t> usage;
+  for (int i = 0; i < size; ++i) {
+    const int64_t start = EvalAt(ct.arguments[0], i, evaluator);
+    const int64_t duration = EvalAt(ct.arguments[1], i, evaluator);
+    for (int64_t t = start; t < start + duration; ++t) {
+      ++usage[t];
+      if (usage[t] > 1) {
+        return false;
+      }
+    }
+  }
   return true;
 }
 
 bool CheckDisjunctiveStrict(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator) {
+  // TODO(user): Improve complexity for large size.
+  const int size = Size(ct.arguments[0]);
+  CHECK_EQ(size, Size(ct.arguments[1]));
+  absl::flat_hash_map<int64_t, int64_t> usage;
+  for (int i = 0; i + 1 < size; ++i) {
+    const int64_t start_i = EvalAt(ct.arguments[0], i, evaluator);
+    const int64_t duration_i = EvalAt(ct.arguments[1], i, evaluator);
+    for (int j = i + 1; j < size; ++j) {
+      const int64_t start_j = EvalAt(ct.arguments[0], j, evaluator);
+      const int64_t duration_j = EvalAt(ct.arguments[1], j, evaluator);
+      if (start_i + duration_i <= start_j || start_j + duration_j <= start_i) {
+        continue;
+      }
+      return false;
+    }
+  }
   return true;
 }
 
@@ -1157,8 +1187,8 @@ CallMap CreateCallMap() {
   m["diffn_k_with_sizes"] = CheckDiffnK;
   m["fzn_diffn_nonstrict"] = CheckDiffnNonStrict;
   m["diffn_nonstrict_k_with_sizes"] = CheckDiffnNonStrictK;
-  m["disjunctive"] = CheckDisjunctive;
-  m["disjunctive_strict"] = CheckDisjunctiveStrict;
+  m["fzn_disjunctive"] = CheckDisjunctive;
+  m["fzn_disjunctive_strict"] = CheckDisjunctiveStrict;
   m["false_constraint"] = CheckFalseConstraint;
   m["global_cardinality"] = CheckGlobalCardinality;
   m["global_cardinality_closed"] = CheckGlobalCardinalityClosed;

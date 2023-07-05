@@ -844,6 +844,28 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_f_inverse(LookupConstant(i - num_variables));
       }
     }
+  } else if (fz_ct.type == "fzn_disjunctive") {
+    const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
+    const std::vector<VarOrValue> sizes =
+        LookupVarsOrValues(fz_ct.arguments[1]);
+
+    auto* arg = ct->mutable_cumulative();
+    arg->mutable_capacity()->set_offset(1);
+    for (int i = 0; i < starts.size(); ++i) {
+      arg->add_intervals(
+          GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
+      arg->add_demands()->set_offset(1);
+    }
+  } else if (fz_ct.type == "fzn_disjunctive_strict") {
+    const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
+    const std::vector<VarOrValue> sizes =
+        LookupVarsOrValues(fz_ct.arguments[1]);
+
+    auto* arg = ct->mutable_no_overlap();
+    for (int i = 0; i < starts.size(); ++i) {
+      arg->add_intervals(
+          GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
+    }
   } else if (fz_ct.type == "fzn_cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
     const std::vector<VarOrValue> sizes =
@@ -1313,6 +1335,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             m.proto.search_strategy().empty() ? "quick_restart" : "fixed");
         m.parameters.add_subsolvers("core_or_no_lp"),
             m.parameters.add_subsolvers("max_lp");
+
       } else {
         m.parameters.add_subsolvers("default_lp");
         m.parameters.add_subsolvers(
