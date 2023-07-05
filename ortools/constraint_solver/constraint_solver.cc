@@ -1372,12 +1372,9 @@ void Search::Accept(ModelVisitor* const visitor) const {
 
 #undef CALL_EVENT_LISTENERS
 
-bool LocalOptimumReached(Search* search) {
-  return search->LocalOptimum();
-}
+bool LocalOptimumReached(Search* search) { return search->LocalOptimum(); }
 
-bool AcceptDelta(Search* search, Assignment* delta,
-                 Assignment* deltadelta) {
+bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta) {
   return search->AcceptDelta(delta, deltadelta);
 }
 

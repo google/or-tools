@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_WEIGHTED_SET_COVERING_MODEL_H_
-#define OR_TOOLS_ALGORITHMS_WEIGHTED_SET_COVERING_MODEL_H_
+#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
+#define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 
@@ -64,10 +64,10 @@ using ElementToSubsetVector = glop::StrictITIVector<ElementIndex, SubsetIndex>;
 using SubsetToElementVector = glop::StrictITIVector<SubsetIndex, ElementIndex>;
 
 // Main class for describing a weighted set-covering problem.
-class WeightedSetCoveringModel {
+class SetCoverModel {
  public:
   // Constructs an empty weighted set-covering problem.
-  WeightedSetCoveringModel()
+  SetCoverModel()
       : num_elements_(0),
         row_view_is_valid_(false),
         subset_costs_(),
@@ -82,11 +82,11 @@ class WeightedSetCoveringModel {
   // number of columns.
   SubsetIndex num_subsets() const { return columns_.size(); }
 
-  SubsetCostVector subset_costs() const { return subset_costs_; }
+  const SubsetCostVector& subset_costs() { return subset_costs_; }
 
-  SparseColumnView columns() const { return columns_; }
+  const SparseColumnView& columns() { return columns_; }
 
-  SparseRowView rows() const {
+  const SparseRowView& rows() {
     DCHECK(row_view_is_valid_);
     return rows_;
   }
@@ -136,4 +136,4 @@ class WeightedSetCoveringModel {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_WEIGHTED_SET_COVERING_MODEL_H_
+#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
