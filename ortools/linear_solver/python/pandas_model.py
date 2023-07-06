@@ -146,7 +146,7 @@ def _as_flat_linear_expression(base: _LinearType) -> _LinearExpression:
             to_process.append((expr._right, coeff))
         elif isinstance(expr, _Variable):
             terms[expr] += coeff
-        elif isinstance(expr, _Number):
+        elif isinstance(expr, (int, float, np.number)):  # i.e. is _Number
             offset += coeff * expr
         elif isinstance(expr, _Product):
             to_process.append((expr._expression, coeff * expr._coefficient))
@@ -514,7 +514,7 @@ def _convert_to_series_and_validate_index(
       TypeError: If the type of `value_or_series` is not recognized.
       ValueError: If the index does not match.
     """
-    if isinstance(value_or_series, (bool, _Number)):
+    if isinstance(value_or_series, (bool, int, float, np.number)):  # i.e. scalar
         result = pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):
@@ -723,8 +723,8 @@ class OptimizationModel:
         if name in self._variables:
             raise ValueError("name={} already exists".format(name))
         if (
-            isinstance(lower_bound, _Number)
-            and isinstance(upper_bound, _Number)
+            isinstance(lower_bound, (int, float, np.number))  # i.e. is _Number
+            and isinstance(upper_bound, (int, float, np.number))  # i.e. is _Number
             and lower_bound > upper_bound
         ):
             raise ValueError(
@@ -735,8 +735,8 @@ class OptimizationModel:
         if (
             isinstance(is_integer, bool)
             and is_integer
-            and isinstance(lower_bound, _Number)
-            and isinstance(upper_bound, _Number)
+            and isinstance(lower_bound, (int, float, np.number))  # i.e. is _Number
+            and isinstance(upper_bound, (int, float, np.number))  # i.e. is _Number
             and math.isfinite(lower_bound)
             and math.isfinite(upper_bound)
             and math.ceil(lower_bound) > math.floor(upper_bound)
