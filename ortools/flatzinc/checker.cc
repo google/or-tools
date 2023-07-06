@@ -338,23 +338,49 @@ bool CheckCumulative(const Constraint& ct,
   return true;
 }
 
-bool CheckDiffn(const Constraint& ct,
-                const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckCumulativeOpt(const Constraint& ct,
+                        const std::function<int64_t(Variable*)>& evaluator) {
+  // TODO: Improve complexity for large durations.
+  const int64_t capacity = Eval(ct.arguments[4], evaluator);
+  const int size = Size(ct.arguments[0]);
+  CHECK_EQ(size, Size(ct.arguments[1]));
+  CHECK_EQ(size, Size(ct.arguments[2]));
+  CHECK_EQ(size, Size(ct.arguments[3]));
+  absl::flat_hash_map<int64_t, int64_t> usage;
+  for (int i = 0; i < size; ++i) {
+    if (EvalAt(ct.arguments[0], i, evaluator) == 0) continue;
+    const int64_t start = EvalAt(ct.arguments[1], i, evaluator);
+    const int64_t duration = EvalAt(ct.arguments[2], i, evaluator);
+    const int64_t requirement = EvalAt(ct.arguments[3], i, evaluator);
+    for (int64_t t = start; t < start + duration; ++t) {
+      usage[t] += requirement;
+      if (usage[t] > capacity) {
+        return false;
+      }
+    }
+  }
   return true;
 }
 
-bool CheckDiffnK(const Constraint& ct,
-                 const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckDiffn(const Constraint& /*ct*/,
+                const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
-bool CheckDiffnNonStrict(const Constraint& ct,
-                         const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckDiffnK(const Constraint& /*ct*/,
+                 const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
-bool CheckDiffnNonStrictK(const Constraint& ct,
-                          const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckDiffnNonStrict(
+    const Constraint& /*ct*/,
+    const std::function<int64_t(Variable*)>& /*evaluator*/) {
+  return true;
+}
+
+bool CheckDiffnNonStrictK(
+    const Constraint& /*ct*/,
+    const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
@@ -382,7 +408,6 @@ bool CheckDisjunctiveStrict(
   // TODO(user): Improve complexity for large size.
   const int size = Size(ct.arguments[0]);
   CHECK_EQ(size, Size(ct.arguments[1]));
-  absl::flat_hash_map<int64_t, int64_t> usage;
   for (int i = 0; i + 1 < size; ++i) {
     const int64_t start_i = EvalAt(ct.arguments[0], i, evaluator);
     const int64_t duration_i = EvalAt(ct.arguments[1], i, evaluator);
@@ -398,8 +423,32 @@ bool CheckDisjunctiveStrict(
   return true;
 }
 
-bool CheckFalseConstraint(const Constraint& ct,
-                          const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckDisjunctiveStrictOpt(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator) {
+  // TODO: Improve complexity for large size.
+  const int size = Size(ct.arguments[0]);
+  CHECK_EQ(size, Size(ct.arguments[1]));
+  CHECK_EQ(size, Size(ct.arguments[2]));
+  for (int i = 0; i + 1 < size; ++i) {
+    if (EvalAt(ct.arguments[0], i, evaluator) == 0) continue;
+    const int64_t start_i = EvalAt(ct.arguments[1], i, evaluator);
+    const int64_t duration_i = EvalAt(ct.arguments[2], i, evaluator);
+    for (int j = i + 1; j < size; ++j) {
+      if (EvalAt(ct.arguments[0], j, evaluator) == 0) continue;
+      const int64_t start_j = EvalAt(ct.arguments[1], j, evaluator);
+      const int64_t duration_j = EvalAt(ct.arguments[2], j, evaluator);
+      if (start_i + duration_i <= start_j || start_j + duration_j <= start_i) {
+        continue;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckFalseConstraint(
+    const Constraint& /*ct*/,
+    const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return false;
 }
 
@@ -992,13 +1041,13 @@ bool CheckNvalue(const Constraint& ct,
   return count == all_values.size();
 }
 
-bool CheckRegular(const Constraint& ct,
-                  const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckRegular(const Constraint& /*ct*/,
+                  const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
-bool CheckRegularNfa(const Constraint& ct,
-                     const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckRegularNfa(const Constraint& /*ct*/,
+                     const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
@@ -1095,8 +1144,8 @@ bool CheckSubCircuit(const Constraint& ct,
   return visited.size() == Size(ct.arguments[0]);
 }
 
-bool CheckTableInt(const Constraint& ct,
-                   const std::function<int64_t(Variable*)>& evaluator) {
+bool CheckTableInt(const Constraint& /*ct*/,
+                   const std::function<int64_t(Variable*)>& /*evaluator*/) {
   return true;
 }
 
@@ -1183,12 +1232,14 @@ CallMap CreateCallMap() {
   m["var_cumulative"] = CheckCumulative;
   m["variable_cumulative"] = CheckCumulative;
   m["fixed_cumulative"] = CheckCumulative;
+  m["ortools_cumulative_opt"] = CheckCumulativeOpt;
   m["fzn_diffn"] = CheckDiffn;
   m["diffn_k_with_sizes"] = CheckDiffnK;
   m["fzn_diffn_nonstrict"] = CheckDiffnNonStrict;
   m["diffn_nonstrict_k_with_sizes"] = CheckDiffnNonStrictK;
   m["fzn_disjunctive"] = CheckDisjunctive;
   m["fzn_disjunctive_strict"] = CheckDisjunctiveStrict;
+  m["ortools_disjunctive_strict_opt"] = CheckDisjunctiveStrictOpt;
   m["false_constraint"] = CheckFalseConstraint;
   m["global_cardinality"] = CheckGlobalCardinality;
   m["global_cardinality_closed"] = CheckGlobalCardinalityClosed;
