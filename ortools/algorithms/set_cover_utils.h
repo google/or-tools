@@ -89,7 +89,7 @@ class SubsetPriorityQueue {
   }
 
   // Returns the size of the queue.
-  ssize_t Size() const { return max_pq_.Size(); }
+  int Size() const { return max_pq_.Size(); }
 
  private:
   // Initializes the priority queue.
