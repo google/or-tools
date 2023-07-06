@@ -1698,7 +1698,8 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
             absl::int128(objective_integer_scaling_factor_) +
         absl::int128(objective_integer_after_offset_);
 
-    if (objective_domain_.IsFixed() && objective_domain_.FixedValue() == 0) {
+    if (objective_domain_.IsFixed() && objective_domain_.FixedValue() * gcd ==
+                                           -objective_integer_before_offset_) {
       // We avoid a corner case where this would overflow but the objective is
       // zero. In this case any factor work, so we just take 1 and avoid the
       // overflow.

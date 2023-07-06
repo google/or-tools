@@ -5682,6 +5682,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       // the no-overlap and the cumulative constraint.
       return changed;
     }
+
     const int64_t demand_min = context_->MinOf(demand_expr);
     const int64_t demand_max = context_->MaxOf(demand_expr);
     if (demand_min > capacity_max / 2) {

@@ -1038,12 +1038,17 @@ void ProcessOneCompressedColumn(
       any_values_literals.push_back(tuple_literals[i]);
       continue;
     }
-    ConstraintProto* clause = context->working_model->add_constraints();
-    clause->add_enforcement_literal(tuple_literals[i]);
+
+    ConstraintProto* ct = context->working_model->add_constraints();
+    ct->add_enforcement_literal(tuple_literals[i]);
+
+    // It is slightly better to use a bool_and if size is 1 instead of
+    // reconverting it at a later stage.
+    auto* literals =
+        values[i].size() == 1 ? ct->mutable_bool_and() : ct->mutable_bool_or();
     for (const int64_t v : values[i]) {
       DCHECK(context->DomainContains(variable, v));
-      clause->mutable_bool_or()->add_literals(
-          context->GetOrCreateVarValueEncoding(variable, v));
+      literals->add_literals(context->GetOrCreateVarValueEncoding(variable, v));
       pairs.emplace_back(v, tuple_literals[i]);
     }
   }
@@ -1160,9 +1165,11 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
   std::vector<int> deleted_vars;
   for (int var_index = 0; var_index < num_vars; ++var_index) {
     const int var = (*vars)[var_index];
+
     // We do not use VariableWithCostIsUniqueAndRemovable() since this one
     // return false if the objective is constraining but we don't care here.
-    if (context->VariableWithCostIsUniqueAndRemovable(var)) {
+    // Our transformation also do not loose solutions.
+    if (context->VariableWithCostIsUnique(var)) {
       context->UpdateRuleStats("table: removed unused column with cost");
       only_here_and_in_objective[var_index] = true;
       objective_coeffs[var_index] =
@@ -1171,7 +1178,7 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
       context->RemoveVariableFromObjective(var);
       context->MarkVariableAsRemoved(var);
       deleted_vars.push_back(var);
-    } else if (context->VariableIsUniqueAndRemovable(var)) {
+    } else if (context->VarToConstraints(var).size() == 1) {
       // If there is no cost, we can remove that variable using the same code by
       // just setting the cost to zero.
       context->UpdateRuleStats("table: removed unused column");

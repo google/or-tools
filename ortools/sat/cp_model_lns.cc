@@ -1360,61 +1360,77 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
   const int num_model_vars = helper_.ModelProto().variables_size();
   if (num_model_vars == 0) return helper_.FullNeighborhood();
 
-  std::vector<bool> relaxed_variables_set(num_model_vars, false);
-  std::vector<int> relaxed_variables;
+  std::vector<std::vector<int>> vars_to_constraints;
+  std::vector<std::vector<int>> constraints_to_vars;
+  std::vector<int> active_vars;
+  std::vector<int> active_objective_vars;
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    active_vars = helper_.ActiveVariablesWhileHoldingLock();
+    active_objective_vars = helper_.ActiveObjectiveVariablesWhileHoldingLock();
+    constraints_to_vars = helper_.ConstraintToVar();
+    vars_to_constraints = helper_.VarToConstraint();
+  }
 
-    // The number of active variables can decrease asynchronously.
-    // We read the exact number while locked.
-    const int num_active_vars =
-        helper_.ActiveVariablesWhileHoldingLock().size();
-    const int num_objective_variables =
-        helper_.ActiveObjectiveVariablesWhileHoldingLock().size();
-    const int target_size = std::ceil(difficulty * num_active_vars);
-    if (target_size == num_active_vars) return helper_.FullNeighborhood();
-    if (target_size == 0) return helper_.FullNeighborhood();
+  for (auto& cts : vars_to_constraints) {
+    if (cts.empty()) continue;
+    std::shuffle(cts.begin(), cts.end(), random);
+  }
+  for (auto& vars : constraints_to_vars) {
+    if (vars.empty()) continue;
+    std::shuffle(vars.begin(), vars.end(), random);
+  }
 
-    const int first_var =
-        num_objective_variables > 0  // Prefer objective variables.
-            ? helper_.ActiveObjectiveVariablesWhileHoldingLock()
-                  [absl::Uniform<int>(random, 0, num_objective_variables)]
-            : helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
-                  random, 0, num_active_vars)];
+  const int num_active_vars = active_vars.size();
+  const int num_objective_variables = active_objective_vars.size();
+  const int target_size = std::ceil(difficulty * num_active_vars);
+  if (target_size == num_active_vars) return helper_.FullNeighborhood();
+  if (target_size == 0) return helper_.FullNeighborhood();
 
-    relaxed_variables_set[first_var] = true;
-    relaxed_variables.push_back(first_var);
+  const int first_var =
+      num_objective_variables > 0  // Prefer objective variables.
+          ? active_objective_vars[absl::Uniform<int>(random, 0,
+                                                     num_objective_variables)]
+          : active_vars[absl::Uniform<int>(random, 0, num_active_vars)];
 
-    int empty_loops = 0;
-    while (relaxed_variables.size() < target_size) {
-      const int tail_var = relaxed_variables[absl::Uniform<int>(
-          random, 0, relaxed_variables.size())];
-      const auto& cts = helper_.VarToConstraint()[tail_var];
-      int head_var = tail_var;
-      if (!cts.empty()) {
-        const int label_ct = cts[absl::Uniform<int>(random, 0, cts.size())];
-        const auto& vars = helper_.ConstraintToVar()[label_ct];
-        if (!vars.empty()) {
-          head_var = vars[absl::Uniform<int>(random, 0, vars.size())];
+  std::vector<bool> relaxed_variables_set(num_model_vars, false);
+  std::vector<int> relaxed_variables;
+  std::vector<int> candidates;
+
+  relaxed_variables_set[first_var] = true;
+  relaxed_variables.push_back(first_var);
+  candidates.push_back(first_var);
+
+  while (relaxed_variables.size() < target_size) {
+    if (candidates.empty()) break;  // We have exhausted our scc.
+
+    const int tail_index = absl::Uniform<int>(random, 0, candidates.size());
+    const int tail_var = candidates[tail_index];
+    int head_var = tail_var;
+    auto& cts = vars_to_constraints[tail_var];
+    while (!cts.empty() && head_var == tail_var) {
+      const int ct = cts.back();
+      auto& vars = constraints_to_vars[ct];
+      while (!vars.empty() && head_var == tail_var) {
+        const int candidate = vars.back();
+        vars.pop_back();
+        if (!relaxed_variables_set[candidate]) {
+          head_var = candidate;
         }
       }
-      if (relaxed_variables_set[head_var]) {
-        if (++empty_loops == 1000) {
-          while (true) {
-            const int new_var =
-                helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
-                    random, 0, num_active_vars)];
-            if (relaxed_variables_set[new_var]) continue;
-            relaxed_variables_set[new_var] = true;
-            relaxed_variables.push_back(new_var);
-            empty_loops = 0;
-            break;
-          }
-        }
-        continue;
+      if (vars.empty()) {
+        cts.pop_back();  // This constraint has no more un-relaxed variables.
       }
+    }
+    if (cts.empty()) {
+      std::swap(candidates[tail_index], candidates.back());
+      candidates.pop_back();
+    }
+
+    if (head_var != tail_var) {
       relaxed_variables_set[head_var] = true;
       relaxed_variables.push_back(head_var);
+      candidates.push_back(head_var);
     }
   }
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
