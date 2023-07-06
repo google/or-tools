@@ -5,17 +5,17 @@
 | MacOS    | [![Status][macos_svg]][macos_link] |
 | Windows  | [![Status][windows_svg]][windows_link] |
 
-[linux_svg]: https://github.com/google/or-tools/actions/workflows/amd64_linux_bazel.yml/badge.svg?branch=main
-[linux_link]: https://github.com/google/or-tools/actions/workflows/amd64_linux_bazel.yml
-[macos_svg]: https://github.com/google/or-tools/actions/workflows/amd64_macos_bazel.yml/badge.svg?branch=main
-[macos_link]: https://github.com/google/or-tools/actions/workflows/amd64_macos_bazel.yml
-[windows_svg]: https://github.com/google/or-tools/actions/workflows/amd64_windows_bazel.yml/badge.svg?branch=main
-[windows_link]: https://github.com/google/or-tools/actions/workflows/amd64_windows_bazel.yml
+[linux_svg]: ./../../../actions/workflows/amd64_linux_bazel.yml/badge.svg?branch=main
+[linux_link]: ./../../../actions/workflows/amd64_linux_bazel.yml
+[macos_svg]: ./../../../actions/workflows/amd64_macos_bazel.yml/badge.svg?branch=main
+[macos_link]: ./../../../actions/workflows/amd64_macos_bazel.yml
+[windows_svg]: ./../../../actions/workflows/amd64_windows_bazel.yml/badge.svg?branch=main
+[windows_link]: ./../../../actions/workflows/amd64_windows_bazel.yml
 
 Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]: [![Status][docker_svg]][docker_link]
 
-[docker_svg]: https://github.com/google/or-tools/actions/workflows/amd64_docker_bazel.yml/badge.svg?branch=main
-[docker_link]: https://github.com/google/or-tools/actions/workflows/amd64_docker_bazel.yml
+[docker_svg]: ./../../../actions/workflows/amd64_docker_bazel.yml/badge.svg?branch=main
+[docker_link]: ./../../../actions/workflows/amd64_docker_bazel.yml
 
 ## Introduction
 

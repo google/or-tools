@@ -5,49 +5,49 @@
 | MacOS    | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] |
 | Windows  | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
-[linux_cpp_svg]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_cpp.yml/badge.svg?branch=main
-[linux_cpp_link]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_cpp.yml
-[linux_python_svg]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_python.yml/badge.svg?branch=main
-[linux_python_link]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_python.yml
-[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_java.yml/badge.svg?branch=main
-[linux_java_link]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_java.yml
-[linux_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_dotnet.yml/badge.svg?branch=main
-[linux_dotnet_link]: https://github.com/google/or-tools/actions/workflows/amd64_linux_cmake_dotnet.yml
+[linux_cpp_svg]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml/badge.svg?branch=main
+[linux_cpp_link]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml
+[linux_python_svg]: ./../../../actions/workflows/amd64_linux_cmake_python.yml/badge.svg?branch=main
+[linux_python_link]: ./../../../actions/workflows/amd64_linux_cmake_python.yml
+[linux_java_svg]: ./../../../actions/workflows/amd64_linux_cmake_java.yml/badge.svg?branch=main
+[linux_java_link]: ./../../../actions/workflows/amd64_linux_cmake_java.yml
+[linux_dotnet_svg]: ./../../../actions/workflows/amd64_linux_cmake_dotnet.yml/badge.svg?branch=main
+[linux_dotnet_link]: ./../../../actions/workflows/amd64_linux_cmake_dotnet.yml
 
-[macos_cpp_svg]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_cpp.yml/badge.svg?branch=main
-[macos_cpp_link]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_cpp.yml
-[macos_python_svg]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_python.yml/badge.svg?branch=main
-[macos_python_link]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_python.yml
-[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_java.yml/badge.svg?branch=main
-[macos_java_link]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_java.yml
-[macos_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_dotnet.yml/badge.svg?branch=main
-[macos_dotnet_link]: https://github.com/google/or-tools/actions/workflows/amd64_macos_cmake_dotnet.yml
+[macos_cpp_svg]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml/badge.svg?branch=main
+[macos_cpp_link]: ./../../../actions/workflows/amd64_macos_cmake_cpp.yml
+[macos_python_svg]: ./../../../actions/workflows/amd64_macos_cmake_python.yml/badge.svg?branch=main
+[macos_python_link]: ./../../../actions/workflows/amd64_macos_cmake_python.yml
+[macos_java_svg]: ./../../../actions/workflows/amd64_macos_cmake_java.yml/badge.svg?branch=main
+[macos_java_link]: ./../../../actions/workflows/amd64_macos_cmake_java.yml
+[macos_dotnet_svg]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml/badge.svg?branch=main
+[macos_dotnet_link]: ./../../../actions/workflows/amd64_macos_cmake_dotnet.yml
 
-[windows_cpp_svg]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_cpp.yml/badge.svg?branch=main
-[windows_cpp_link]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_cpp.yml
-[windows_python_svg]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_python.yml/badge.svg?branch=main
-[windows_python_link]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_python.yml
-[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_java.yml/badge.svg?branch=main
-[windows_java_link]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_java.yml
-[windows_dotnet_svg]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
-[windows_dotnet_link]: https://github.com/google/or-tools/actions/workflows/amd64_windows_cmake_dotnet.yml
+[windows_cpp_svg]: ./../../../actions/workflows/amd64_windows_cmake_cpp.yml/badge.svg?branch=main
+[windows_cpp_link]: ./../../../actions/workflows/amd64_windows_cmake_cpp.yml
+[windows_python_svg]: ./../../../actions/workflows/amd64_windows_cmake_python.yml/badge.svg?branch=main
+[windows_python_link]: ./../../../actions/workflows/amd64_windows_cmake_python.yml
+[windows_java_svg]: ./../../../actions/workflows/amd64_windows_cmake_java.yml/badge.svg?branch=main
+[windows_java_link]: ./../../../actions/workflows/amd64_windows_cmake_java.yml
+[windows_dotnet_svg]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
+[windows_dotnet_link]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml
 
 Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
 \[C++, Python, Java, .Net\]: [![Status][docker_svg]][docker_link]
 
-[docker_svg]: https://github.com/google/or-tools/actions/workflows/amd64_docker_cmake.yml/badge.svg?branch=main
-[docker_link]: https://github.com/google/or-tools/actions/workflows/amd64_docker_cmake.yml
+[docker_svg]: ./../../../actions/workflows/amd64_docker_cmake.yml/badge.svg?branch=main
+[docker_link]: ./../../../actions/workflows/amd64_docker_cmake.yml
 
 [![Build Status][aarch64_toolchain_status]][aarch64_toolchain_link]
 [![Build Status][mips_toolchain_status]][mips_toolchain_link]
 [![Build Status][powerpc_toolchain_status]][powerpc_toolchain_link]
 
-[aarch64_toolchain_status]: https://github.com/google/or-tools/actions/workflows/aarch64_toolchain.yml/badge.svg
-[aarch64_toolchain_link]: https://github.com/google/or-tools/actions/workflows/aarch64_toolchain.yml
-[mips_toolchain_status]: https://github.com/google/or-tools/actions/workflows/mips_toolchain.yml/badge.svg
-[mips_toolchain_link]: https://github.com/google/or-tools/actions/workflows/mips_toolchain.yml
-[powerpc_toolchain_status]: https://github.com/google/or-tools/actions/workflows/powerpc_toolchain.yml/badge.svg
-[powerpc_toolchain_link]: https://github.com/google/or-tools/actions/workflows/powerpc_toolchain.yml
+[aarch64_toolchain_status]: ./../../../actions/workflows/aarch64_toolchain.yml/badge.svg
+[aarch64_toolchain_link]: ./../../../actions/workflows/aarch64_toolchain.yml
+[mips_toolchain_status]: ./../../../actions/workflows/mips_toolchain.yml/badge.svg
+[mips_toolchain_link]: ./../../../actions/workflows/mips_toolchain.yml
+[powerpc_toolchain_status]: ./../../../actions/workflows/powerpc_toolchain.yml/badge.svg
+[powerpc_toolchain_link]: ./../../../actions/workflows/powerpc_toolchain.yml
 
 ## Introduction
 <nav for="cmake"> |
