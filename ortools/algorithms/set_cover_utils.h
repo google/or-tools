@@ -16,6 +16,10 @@
 
 #include <limits>
 #include <vector>
+#if defined(_MSC_VER)
+#include <basetsd.h>
+#define ssize_t SSIZE_T
+#endif
 
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -89,7 +93,7 @@ class SubsetPriorityQueue {
   }
 
   // Returns the size of the queue.
-  int Size() const { return max_pq_.Size(); }
+  ssize_t Size() const { return max_pq_.Size(); }
 
  private:
   // Initializes the priority queue.
