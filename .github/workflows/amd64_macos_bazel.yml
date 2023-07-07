@@ -24,6 +24,16 @@ jobs:
       - name: Check Bazel
         run: bazel version
       - name: Build
-        run: bazel build -c opt --action_env=BAZEL_CXXOPTS="-std=c++17" --subcommands=true //ortools/... //examples/...
+        run: >
+          bazel build
+          -c opt
+          --action_env=BAZEL_CXXOPTS="-std=c++17"
+          --subcommands=true
+          //ortools/... //examples/...
       - name: Test
-        run: bazel test -c opt --action_env=BAZEL_CXXOPTS="-std=c++17" --test_output=errors //ortools/... //examples/...
+        run: >
+          bazel test
+          -c opt
+          --action_env=BAZEL_CXXOPTS="-std=c++17"
+          --test_output=errors
+          //ortools/... //examples/...
