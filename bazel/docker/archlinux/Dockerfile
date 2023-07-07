@@ -24,5 +24,5 @@ FROM build AS test
 RUN bazel test \
  -c opt \
  --action_env=BAZEL_CXXOPTS="-std=c++17" \
- --test_output=all \
+ --test_output=errors \
  ...
