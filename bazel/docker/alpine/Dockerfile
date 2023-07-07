@@ -30,7 +30,7 @@ RUN bazel build \
  --host_javabase=@local_jdk//:jdk \
  --action_env=BAZEL_CXXOPTS="-std=c++17" \
  --subcommands=true \
- ...
+ ortools/... examples/...
 
 FROM build AS test
 RUN bazel test \
@@ -38,4 +38,4 @@ RUN bazel test \
  --host_javabase=@local_jdk//:jdk \
  --action_env=BAZEL_CXXOPTS="-std=c++17" \
  --test_output=errors \
- ...
+ ortools/... examples/...
