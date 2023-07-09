@@ -1070,7 +1070,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
       stratified_lower_bound = min_weight;
     }
 
-    ProcessCore(core, min_weight, &repository, &nodes, solver);
+    ProcessCore(core, min_weight, &repository, &nodes, solver, nullptr);
     max_depth = std::max(max_depth, nodes.back()->depth());
   }
 }
@@ -1587,10 +1587,12 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   Coefficient lower_bound(0);
 
   // This is used by the "stratified" approach.
-  // TODO(user): Take into account parameters.
   Coefficient stratified_lower_bound(0);
-  for (EncodingNode* n : nodes) {
-    stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
+  if (parameters_->max_sat_stratification() !=
+      SatParameters::STRATIFICATION_NONE) {
+    for (EncodingNode* n : nodes) {
+      stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
+    }
   }
 
   // Start the algorithm.
@@ -1633,6 +1635,10 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 
+    VLOG(2) << "[Core] #nodes " << nodes.size()
+            << " #assumptions:" << assumptions.size()
+            << " stratification:" << stratified_lower_bound;
+
     // Solve under the assumptions.
     //
     // TODO(user): Find multiple core like in the "main" algorithm.
@@ -1668,7 +1674,8 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // We only count an iter when we found a core.
     ++iter;
-    if (!ProcessCore(core, min_weight, &repository, &nodes, sat_solver_)) {
+    if (!ProcessCore(core, min_weight, &repository, &nodes, sat_solver_,
+                     implications_)) {
       return SatSolver::INFEASIBLE;
     }
     max_depth = std::max(max_depth, nodes.back()->depth());

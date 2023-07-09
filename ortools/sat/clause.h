@@ -509,7 +509,10 @@ class BinaryImplicationGraph : public SatPropagator {
   // TODO(user): Our algorithm could generalize easily to at_most_ones + a list
   // of literals that will be false if one of the literal in the amo is at one.
   // It is a way to merge common list of implications.
-  ABSL_MUST_USE_RESULT bool AddAtMostOne(absl::Span<const Literal> at_most_one);
+  //
+  // If the final AMO size is smaller than "expansion_size" we fully expand it.
+  ABSL_MUST_USE_RESULT bool AddAtMostOne(absl::Span<const Literal> at_most_one,
+                                         int expansion_size = 10);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
@@ -609,6 +612,13 @@ class BinaryImplicationGraph : public SatPropagator {
   const std::vector<std::vector<Literal>>& GenerateAtMostOnesWithLargeWeight(
       const std::vector<Literal>& literals,
       const std::vector<double>& lp_values);
+
+  // Heuristically identify "at most one" between the given literals, swap
+  // them around and return these amo as span inside the literals vector.
+  //
+  // TODO(user): Add a limit to make sure this do not take too much time.
+  std::vector<absl::Span<const Literal>> HeuristicAmoPartition(
+      std::vector<Literal>* literals);
 
   // Number of literal propagated by this class (including conflicts).
   int64_t num_propagations() const { return num_propagations_; }
@@ -760,7 +770,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // at_most_one_buffer_. This replace literal by their representative, remove
   // fixed literals and deal with duplicates. Return false iff the model is
   // UNSAT.
-  bool CleanUpAndAddAtMostOnes(int base_index);
+  //
+  // If the final AMO size is smaller than "expansion_size" we fully expand it.
+  bool CleanUpAndAddAtMostOnes(int base_index, int expansion_size = 10);
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SAT_CNF_READER_H_
 #define OR_TOOLS_SAT_SAT_CNF_READER_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -34,16 +35,34 @@
 namespace operations_research {
 namespace sat {
 
-struct LinearBooleanProblemWrapper {
-  explicit LinearBooleanProblemWrapper(LinearBooleanProblem* p) : problem(p) {}
+// This implement the implicit contract needed by the SatCnfReader class.
+class LinearBooleanProblemWrapper {
+ public:
+  explicit LinearBooleanProblemWrapper(LinearBooleanProblem* p) : problem_(p) {}
 
-  void SetNumVariables(int num) { problem->set_num_variables(num); }
-  void SetOriginalNumVariables(int num) {
-    problem->set_original_num_variables(num);
+  // In the new 2022 .wcnf format, we don't know the number of variable before
+  // hand (no header). So when this is called (after all the constraint have
+  // been added), we need to re-index the slack so that they are after the
+  // variable of the original problem.
+  void SetSizeAndPostprocess(int num_variables, int num_slacks) {
+    problem_->set_num_variables(num_variables + num_slacks);
+    problem_->set_original_num_variables(num_variables);
+    for (const int c : to_postprocess_) {
+      auto* literals = problem_->mutable_constraints(c)->mutable_literals();
+      const int last_index = literals->size() - 1;
+      const int last = (*literals)[last_index];
+      (*literals)[last_index] =
+          last >= 0 ? last + num_variables : last - num_variables;
+    }
   }
 
-  void AddConstraint(absl::Span<const int> clause) {
-    LinearBooleanConstraint* constraint = problem->add_constraints();
+  // If last_is_slack is true, then the last literal is assumed to be a slack
+  // with index in [-num_slacks, num_slacks]. We will re-index it at the end in
+  // SetSizeAndPostprocess().
+  void AddConstraint(absl::Span<const int> clause, bool last_is_slack = false) {
+    if (last_is_slack)
+      to_postprocess_.push_back(problem_->constraints().size());
+    LinearBooleanConstraint* constraint = problem_->add_constraints();
     constraint->mutable_literals()->Reserve(clause.size());
     constraint->mutable_coefficients()->Reserve(clause.size());
     constraint->set_lower_bound(1);
@@ -55,40 +74,49 @@ struct LinearBooleanProblemWrapper {
 
   void AddObjectiveTerm(int literal, int64_t value) {
     CHECK_GE(literal, 0) << "Negative literal not supported.";
-    problem->mutable_objective()->add_literals(literal);
-    problem->mutable_objective()->add_coefficients(value);
+    problem_->mutable_objective()->add_literals(literal);
+    problem_->mutable_objective()->add_coefficients(value);
   }
 
   void SetObjectiveOffset(int64_t offset) {
-    problem->mutable_objective()->set_offset(offset);
+    problem_->mutable_objective()->set_offset(offset);
   }
 
-  LinearBooleanProblem* problem;
+ private:
+  LinearBooleanProblem* problem_;
+  std::vector<int> to_postprocess_;
 };
 
-struct CpModelProtoWrapper {
-  explicit CpModelProtoWrapper(CpModelProto* p) : problem(p) {}
+// This implement the implicit contract needed by the SatCnfReader class.
+class CpModelProtoWrapper {
+ public:
+  explicit CpModelProtoWrapper(CpModelProto* p) : problem_(p) {}
 
-  void SetNumVariables(int num) {
-    for (int i = 0; i < num; ++i) {
-      IntegerVariableProto* variable = problem->add_variables();
+  void SetSizeAndPostprocess(int num_variables, int num_slacks) {
+    for (int i = 0; i < num_variables + num_slacks; ++i) {
+      IntegerVariableProto* variable = problem_->add_variables();
       variable->add_domain(0);
       variable->add_domain(1);
     }
+    for (const int c : to_postprocess_) {
+      auto* literals = problem_->mutable_constraints(c)
+                           ->mutable_bool_or()
+                           ->mutable_literals();
+      const int last_index = literals->size() - 1;
+      const int last = (*literals)[last_index];
+      (*literals)[last_index] =
+          last >= 0 ? last + num_variables : last - num_variables;
+    }
   }
-
-  // TODO(user): Not supported. This is only used for displaying a wcnf
-  // solution in cnf format, so it is not useful internally. Instead of adding
-  // another field, we could use the variables names or the search heuristics
-  // to encode this info.
-  void SetOriginalNumVariables(int /*num*/) {}
 
   int LiteralToRef(int signed_value) {
     return signed_value > 0 ? signed_value - 1 : signed_value;
   }
 
-  void AddConstraint(absl::Span<const int> clause) {
-    auto* constraint = problem->add_constraints()->mutable_bool_or();
+  void AddConstraint(absl::Span<const int> clause, bool last_is_slack = false) {
+    if (last_is_slack)
+      to_postprocess_.push_back(problem_->constraints().size());
+    auto* constraint = problem_->add_constraints()->mutable_bool_or();
     constraint->mutable_literals()->Reserve(clause.size());
     for (const int literal : clause) {
       constraint->add_literals(LiteralToRef(literal));
@@ -97,15 +125,17 @@ struct CpModelProtoWrapper {
 
   void AddObjectiveTerm(int literal, int64_t value) {
     CHECK_GE(literal, 0) << "Negative literal not supported.";
-    problem->mutable_objective()->add_vars(LiteralToRef(literal));
-    problem->mutable_objective()->add_coeffs(value);
+    problem_->mutable_objective()->add_vars(LiteralToRef(literal));
+    problem_->mutable_objective()->add_coeffs(value);
   }
 
   void SetObjectiveOffset(int64_t offset) {
-    problem->mutable_objective()->set_offset(offset);
+    problem_->mutable_objective()->set_offset(offset);
   }
 
-  CpModelProto* problem;
+ private:
+  CpModelProto* problem_;
+  std::vector<int> to_postprocess_;
 };
 
 // This class loads a file in cnf file format into a SatProblem.
@@ -140,15 +170,20 @@ class SatCnfReader {
  private:
   template <class Problem>
   bool LoadInternal(const std::string& filename, Problem* problem) {
-    positive_literal_to_weight_.clear();
-    objective_offset_ = 0;
     is_wcnf_ = false;
+    objective_offset_ = 0;
+    positive_literal_to_weight_.clear();
+
     end_marker_seen_ = false;
     hard_weight_ = 0;
     num_skipped_soft_clauses_ = 0;
     num_singleton_soft_clauses_ = 0;
     num_added_clauses_ = 0;
     num_slack_variables_ = 0;
+
+    num_variables_ = 0;
+    num_clauses_ = 0;
+    actual_num_variables_ = 0;
 
     int num_lines = 0;
     for (const std::string& line : FileLines(filename)) {
@@ -158,8 +193,13 @@ class SatCnfReader {
     if (num_lines == 0) {
       LOG(FATAL) << "File '" << filename << "' is empty or can't be read.";
     }
-    problem->SetOriginalNumVariables(num_variables_);
-    problem->SetNumVariables(num_variables_ + num_slack_variables_);
+
+    if (num_variables_ > 0 && num_variables_ != actual_num_variables_) {
+      LOG(ERROR) << "Wrong number of variables ! Expected:" << num_variables_
+                 << " Seen:" << actual_num_variables_;
+    }
+
+    problem->SetSizeAndPostprocess(actual_num_variables_, num_slack_variables_);
 
     // Fill the objective.
     if (!positive_literal_to_weight_.empty()) {
@@ -168,14 +208,21 @@ class SatCnfReader {
           problem->AddObjectiveTerm(p.first, p.second);
         }
       }
+      for (const std::pair<int, int64_t> p : slack_literal_to_weight_) {
+        if (p.second != 0) {
+          problem->AddObjectiveTerm(actual_num_variables_ + p.first, p.second);
+        }
+      }
       problem->SetObjectiveOffset(objective_offset_);
     }
 
-    if (num_clauses_ != num_added_clauses_ + num_singleton_soft_clauses_ +
-                            num_skipped_soft_clauses_) {
-      LOG(ERROR) << "Wrong number of clauses. " << num_clauses_ << " "
-                 << num_added_clauses_;
-      return false;
+    // Some file from the max-sat competition seems to have the wrong number of
+    // clause !? I checked manually, so still parse them with best effort.
+    const int total_seen = num_added_clauses_ + num_singleton_soft_clauses_ +
+                           num_skipped_soft_clauses_;
+    if (num_clauses_ > 0 && num_clauses_ != total_seen) {
+      LOG(ERROR) << "Wrong number of clauses ! Expected:" << num_clauses_
+                 << " Seen:" << total_seen;
     }
     return true;
   }
@@ -222,6 +269,11 @@ class SatCnfReader {
       return;
     }
 
+    // The new wcnf format do not have header p line anymore.
+    if (num_variables_ == 0) {
+      is_wcnf_ = true;
+    }
+
     static const char kWordDelimiters[] = " ";
     auto splitter = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
@@ -231,23 +283,35 @@ class SatCnfReader {
     bool first = true;
     bool end_marker_seen = false;
     for (const absl::string_view word : splitter) {
-      int64_t signed_value;
-      CHECK(absl::SimpleAtoi(word, &signed_value));
       if (first && is_wcnf_) {
-        // Mathematically, a soft clause of weight 0 can be removed.
-        if (signed_value == 0) {
-          ++num_skipped_soft_clauses_;
-          return;
+        first = false;
+        if (word == "h") {
+          // Hard clause in the new 2022 format.
+          // Note that hard_weight_ == 0 here.
+          weight = hard_weight_;
+        } else {
+          CHECK(absl::SimpleAtoi(word, &weight));
+          CHECK_GE(weight, 0);
+
+          // A soft clause of weight 0 can be removed.
+          if (weight == 0) {
+            ++num_skipped_soft_clauses_;
+            return;
+          }
         }
-        weight = signed_value;
-      } else {
-        if (signed_value == 0) {
-          end_marker_seen = true;
-          break;  // end of clause.
-        }
-        tmp_clause_.push_back(signed_value);
+        continue;
       }
-      first = false;
+
+      int signed_value;
+      CHECK(absl::SimpleAtoi(word, &signed_value));
+      if (signed_value == 0) {
+        end_marker_seen = true;
+        break;  // end of clause.
+      }
+
+      actual_num_variables_ = std::max(actual_num_variables_,
+                                       std::max(signed_value, -signed_value));
+      tmp_clause_.push_back(signed_value);
     }
     if (!end_marker_seen) return;
 
@@ -271,26 +335,20 @@ class SatCnfReader {
       } else {
         // The +1 is because a positive literal is the same as the 1-based
         // variable index.
-        const int slack_literal = num_variables_ + num_slack_variables_ + 1;
-        ++num_slack_variables_;
+        const int slack_literal = ++num_slack_variables_;
 
+        slack_literal_to_weight_[slack_literal] += weight;
         tmp_clause_.push_back(slack_literal);
 
         ++num_added_clauses_;
-        problem->AddConstraint(tmp_clause_);
-
-        if (slack_literal > 0) {
-          positive_literal_to_weight_[slack_literal] += weight;
-        } else {
-          positive_literal_to_weight_[-slack_literal] -= weight;
-          objective_offset_ += weight;
-        }
+        problem->AddConstraint(tmp_clause_, /*last_is_slack=*/true);
 
         if (wcnf_use_strong_slack_) {
           // Add the binary implications slack_literal true => all the other
           // clause literals are false.
           for (int i = 0; i + 1 < tmp_clause_.size(); ++i) {
-            problem->AddConstraint({-slack_literal, -tmp_clause_[i]});
+            problem->AddConstraint({-tmp_clause_[i], -slack_literal},
+                                   /*last_is_slack=*/true);
           }
         }
       }
@@ -300,22 +358,24 @@ class SatCnfReader {
   bool interpret_cnf_as_max_sat_;
   const bool wcnf_use_strong_slack_;
 
-  int num_clauses_;
-  int num_variables_;
+  int num_clauses_ = 0;
+  int num_variables_ = 0;
+  int actual_num_variables_ = 0;
 
   // Temporary storage for ProcessNewLine().
   std::vector<absl::string_view> words_;
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.
-  absl::btree_map<int, int64_t> positive_literal_to_weight_;
   int64_t objective_offset_;
+  absl::btree_map<int, int64_t> positive_literal_to_weight_;
+  absl::btree_map<int, int64_t> slack_literal_to_weight_;
 
   // Used for the wcnf format.
   bool is_wcnf_;
   // Some files have text after %. This indicates if we have seen the '%'.
   bool end_marker_seen_;
-  int64_t hard_weight_;
+  int64_t hard_weight_ = 0;
 
   int num_slack_variables_;
   int num_skipped_soft_clauses_;

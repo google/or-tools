@@ -1275,27 +1275,36 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
   // This comes from the WCSP litterature. Basically, if by fixing a variable to
   // a value, we have only tuples with a non-zero cost, we can substract the
   // minimum cost of these tuples and transfer it to the variable cost.
-  for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
-    absl::flat_hash_map<int64_t, int64_t> value_to_min_cost;
-    const int num_tuples = tuples->size();
-    for (int i = 0; i < num_tuples; ++i) {
-      const int64_t v = (*tuples)[i][var_index];
-      const int64_t cost = (*tuples)[i].back();
-      auto insert = value_to_min_cost.insert({v, cost});
-      if (!insert.second) {
-        insert.first->second = std::min(insert.first->second, cost);
+  //
+  // TODO(user): Doing this before table compression can prevent good
+  // compression. We should probably exploit this during compression to make
+  // sure we compress as much as possible, and once compressed, do it again. Or
+  // do it in a more general IP settings when one iterals implies that a set of
+  // literals with >0 cost are in EXO. We can transfer the min of their cost to
+  // that Boolean.
+  if (/*DISABLES CODE*/ (false)) {
+    for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
+      absl::flat_hash_map<int64_t, int64_t> value_to_min_cost;
+      const int num_tuples = tuples->size();
+      for (int i = 0; i < num_tuples; ++i) {
+        const int64_t v = (*tuples)[i][var_index];
+        const int64_t cost = (*tuples)[i].back();
+        auto insert = value_to_min_cost.insert({v, cost});
+        if (!insert.second) {
+          insert.first->second = std::min(insert.first->second, cost);
+        }
       }
-    }
-    for (int i = 0; i < num_tuples; ++i) {
-      const int64_t v = (*tuples)[i][var_index];
-      (*tuples)[i].back() -= value_to_min_cost.at(v);
-    }
-    for (const auto entry : value_to_min_cost) {
-      if (entry.second == 0) continue;
-      context->UpdateRuleStats("table: transferred cost to encoding");
-      const int value_literal = context->GetOrCreateVarValueEncoding(
-          new_vars[var_index], entry.first);
-      context->AddLiteralToObjective(value_literal, entry.second);
+      for (int i = 0; i < num_tuples; ++i) {
+        const int64_t v = (*tuples)[i][var_index];
+        (*tuples)[i].back() -= value_to_min_cost.at(v);
+      }
+      for (const auto entry : value_to_min_cost) {
+        if (entry.second == 0) continue;
+        context->UpdateRuleStats("table: transferred cost to encoding");
+        const int value_literal = context->GetOrCreateVarValueEncoding(
+            new_vars[var_index], entry.first);
+        context->AddLiteralToObjective(value_literal, entry.second);
+      }
     }
   }
 

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -550,8 +551,8 @@ bool BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b) {
   return true;
 }
 
-bool BinaryImplicationGraph::AddAtMostOne(
-    absl::Span<const Literal> at_most_one) {
+bool BinaryImplicationGraph::AddAtMostOne(absl::Span<const Literal> at_most_one,
+                                          int expansion_size) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (at_most_one.size() <= 1) return true;
 
@@ -564,7 +565,7 @@ bool BinaryImplicationGraph::AddAtMostOne(
   at_most_one_buffer_.push_back(Literal(kNoLiteralIndex));
 
   is_dag_ = false;
-  return CleanUpAndAddAtMostOnes(base_index);
+  return CleanUpAndAddAtMostOnes(base_index, expansion_size);
 }
 
 // TODO(user): remove duplication with
@@ -584,7 +585,8 @@ bool BinaryImplicationGraph::FixLiteral(Literal true_literal) {
 // This works by doing a linear scan on the at_most_one_buffer_ and
 // cleaning/copying the at most ones on the fly to the beginning of the same
 // buffer.
-bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
+bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
+                                                     int expansion_size) {
   const VariablesAssignment& assignment = trail_->Assignment();
   int local_end = base_index;
   const int buffer_size = at_most_one_buffer_.size();
@@ -675,7 +677,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
 
     // We expand small sizes into implications.
     // TODO(user): Investigate what the best threshold is.
-    if (at_most_one.size() < 10) {
+    if (at_most_one.size() < expansion_size) {
       // Note that his automatically skip size 0 and 1.
       for (const Literal a : at_most_one) {
         for (const Literal b : at_most_one) {
@@ -1857,6 +1859,88 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     if (!at_most_one.empty()) tmp_cuts_.push_back(at_most_one);
   }
   return tmp_cuts_;
+}
+
+// TODO(user): Use deterministic limit.
+// TODO(user): Explore the graph instead of just looking at full amo, especially
+// since we expand small ones.
+std::vector<absl::Span<const Literal>>
+BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
+  std::vector<absl::Span<const Literal>> result;
+
+  absl::StrongVector<LiteralIndex, bool> to_consider(implications_.size(),
+                                                     false);
+  for (const Literal l : *literals) to_consider[l.Index()] = true;
+
+  // Priority queue of (intersection_size, start_of_amo).
+  std::priority_queue<std::pair<int, int>> pq;
+
+  // Compute for each at most one that might overlap, its overlaping size and
+  // stores its start in the at_most_one_buffer_.
+  //
+  // This is in O(num_literal in amo).
+  absl::flat_hash_set<int> explored_amo;
+  for (const Literal l : *literals) {
+    if (l.Index() >= at_most_ones_.size()) continue;
+    for (const int start : at_most_ones_[l.Index()]) {
+      const auto [_, inserted] = explored_amo.insert(start);
+      if (!inserted) continue;
+
+      int intersection_size = 0;
+      for (int i = start;; ++i) {
+        const Literal l = at_most_one_buffer_[i];
+        if (l.Index() == kNoLiteralIndex) break;
+        if (to_consider[l.Index()]) ++intersection_size;
+      }
+      if (intersection_size > 1) {
+        pq.push({intersection_size, start});
+      }
+
+      // Abort early if we are done.
+      if (intersection_size == literals->size()) break;
+    }
+  }
+
+  // Consume AMOs, update size.
+  int num_processed = 0;
+  while (!pq.empty()) {
+    const auto [old_size, start] = pq.top();
+    pq.pop();
+
+    // Recompute size.
+    int intersection_size = 0;
+    for (int i = start;; ++i) {
+      const Literal l = at_most_one_buffer_[i];
+      if (l.Index() == kNoLiteralIndex) break;
+      if (to_consider[l.Index()]) ++intersection_size;
+    }
+    if (intersection_size != old_size) {
+      // re-add with new size.
+      if (intersection_size > 1) {
+        pq.push({intersection_size, start});
+      }
+      continue;
+    }
+
+    // Mark the literal of that at most one at false.
+    for (int i = start;; ++i) {
+      const Literal l = at_most_one_buffer_[i];
+      if (l.Index() == kNoLiteralIndex) break;
+      to_consider[l.Index()] = false;
+    }
+
+    // Extract the intersection by moving it in
+    // [num_processed, num_processed + intersection_size).
+    const int span_start = num_processed;
+    for (int i = num_processed; i < literals->size(); ++i) {
+      if (to_consider[(*literals)[i].Index()]) continue;
+      std::swap((*literals)[num_processed], (*literals)[i]);
+      ++num_processed;
+    }
+    result.push_back(absl::MakeSpan(literals->data() + span_start,
+                                    num_processed - span_start));
+  }
+  return result;
 }
 
 void BinaryImplicationGraph::MarkDescendants(Literal root) {

@@ -81,6 +81,12 @@ class EncodingNode {
   void InitializeLazyCoreNode(Coefficient weight, EncodingNode* a,
                               EncodingNode* b);
 
+  // If we know that all the literals[0] of the given nodes are in "at most one"
+  // relationship, we can create a node that is the sum of them with a simple
+  // encoding. This does create linking implications.
+  void InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
+                         SatSolver* solver);
+
   // Returns a literal with the meaning 'this node number is > i'.
   // The given i must be in [lb_, current_ub).
   Literal GreaterThan(int i) const { return literal(i - lb_); }
@@ -147,7 +153,7 @@ class EncodingNode {
   int ub_ = 1;
   BooleanVariable for_sorting_;
 
-  // The weight is only applies for literal >= this lb.
+  // The weight is only applied for literal >= this lb.
   int weight_lb_ = 0;
 
   Coefficient weight_;
@@ -225,9 +231,13 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
 
 // Updates the encoding using the given core. The literals in the core must
 // match the order in nodes. Returns false if the model become infeasible.
+//
+// If "implications" is not null, we try to exploit at_most_ones between
+// literal of the core for a better Boolean encoding.
 bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
                  std::deque<EncodingNode>* repository,
-                 std::vector<EncodingNode*>* nodes, SatSolver* solver);
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver,
+                 BinaryImplicationGraph* implications = nullptr);
 
 // There is more than one way to create new assumptions and encode the
 // information from this core. This is slightly different from ProcessCore() and

@@ -68,6 +68,33 @@ void EncodingNode::InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
   for_sorting_ = first_var_index;
 }
 
+void EncodingNode::InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
+                                     SatSolver* solver) {
+  CHECK_GE(nodes.size(), 2);
+  CHECK(literals_.empty()) << "Already initialized";
+  const BooleanVariable var = solver->NewBooleanVariable();
+  const Literal new_literal(var, true);
+  literals_.push_back(new_literal);
+  child_a_ = nullptr;
+  child_b_ = nullptr;
+  lb_ = 0;
+  depth_ = 0;
+  for_sorting_ = var;
+  std::vector<Literal> clause{new_literal.Negated()};
+  for (const EncodingNode* node : nodes) {
+    // node_lit => new_lit.
+    clause.push_back(node->literals_[0]);
+    solver->AddBinaryClause(node->literals_[0].Negated(), new_literal);
+    lb_ += node->lb_;
+    depth_ = std::max(node->depth_ + 1, depth_);
+    for_sorting_ = std::min(for_sorting_, node->for_sorting_);
+  }
+
+  // If new_literal is true then one of the lit must be true.
+  // Note that this is not needed for correctness though.
+  solver->AddProblemClause(clause);
+}
+
 void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
                                       SatSolver* solver) {
   CHECK(literals_.empty()) << "Already initialized";
@@ -552,7 +579,8 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
 
 bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
                  std::deque<EncodingNode>* repository,
-                 std::vector<EncodingNode*>* nodes, SatSolver* solver) {
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver,
+                 BinaryImplicationGraph* implications) {
   // Backtrack to be able to add new constraints.
   solver->ResetToLevelZero();
   if (core.size() == 1) {
@@ -593,6 +621,69 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
     ++new_node_index;
   }
   nodes->resize(new_node_index);
+
+  // Amongst the node to merge, if many are leaf nodes in an "at most one"
+  // relationship, it is super advantageous to exploit it during merging as
+  // we can regroup all nodes from an at most one in a single new node with a
+  // depth of 1.
+  if (implications != nullptr) {
+    std::vector<Literal> leaves;
+    absl::flat_hash_map<LiteralIndex, int> node_indices;
+    for (int i = 0; i < to_merge.size(); ++i) {
+      const EncodingNode& node = *to_merge[i];
+      if (node.depth() != 0) continue;
+      if (node.size() != 1) continue;
+      if (node.ub() != node.lb() + 1) continue;
+      if (node_indices.contains(node.literal(0).Index())) continue;
+      node_indices[node.literal(0).Index()] = i;
+      leaves.push_back(node.literal(0));
+    }
+
+    int num_in_decompo = 0;
+    const std::vector<absl::Span<const Literal>> decomposition =
+        implications->HeuristicAmoPartition(&leaves);
+    for (const auto amo : decomposition) {
+      num_in_decompo += amo.size();
+
+      // Extract Amo nodes and set them to nullptr in to_merge.
+      std::vector<EncodingNode*> amo_nodes;
+      for (const Literal l : amo) {
+        const int index = node_indices.at(l.Index());
+        amo_nodes.push_back(to_merge[index]);
+        to_merge[index] = nullptr;
+      }
+
+      // Create the new node with proper constraints and weight.
+      repository->push_back(EncodingNode());
+      EncodingNode* n = &repository->back();
+      n->InitializeAmoNode(amo_nodes, solver);
+      n->set_weight(min_weight);
+      to_merge.push_back(n);
+    }
+    VLOG(2) << "Detected " << decomposition.size() << " AMO on "
+            << num_in_decompo << "/" << leaves.size() << " core literals";
+
+    // Clean-up to_merge.
+    int new_size = 0;
+    for (EncodingNode* node : to_merge) {
+      if (node == nullptr) continue;
+      to_merge[new_size++] = node;
+    }
+    to_merge.resize(new_size);
+
+    if (to_merge.size() == 1) {
+      // Increase the bound in this case.
+      //
+      // TODO(user): No need to create this literal + implications in the first
+      // place. Moreover we actually have an "exactly one" in this case and if
+      // the amo used was larger, we can just set these extra literals to false.
+      // Note that since this is a core, the solver already learned that at
+      // least one of these literal must be true. We also explicitly added this
+      // clause in InitializeAmoNode() above.
+      return solver->AddUnitClause(to_merge[0]->literal(0));
+    }
+  }
+
   nodes->push_back(LazyMergeAllNodeWithPQAndIncreaseLb(min_weight, to_merge,
                                                        solver, repository));
   return !solver->ModelIsUnsat();
