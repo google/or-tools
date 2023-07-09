@@ -37,7 +37,6 @@ py_test(
         "//ortools/linear_solver/testdata:large_model.mps.gz",
         "//ortools/linear_solver/testdata:maximization.mps",
     ],
-    python_version = "PY3",
     deps = [
         ":model_builder_helper",
         ":model_builder_numbers",
@@ -65,6 +64,7 @@ py_library(
         ":model_builder_helper",
         ":model_builder_numbers",
         requirement("numpy"),
+        requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
@@ -76,32 +76,8 @@ py_test(
         "//ortools/linear_solver/testdata:maximization.mps",
         "//ortools/linear_solver/testdata:small_model.lp",
     ],
-    python_version = "PY3",
     deps = [
         ":model_builder",
-        ":model_builder_helper",
-        ":model_builder_numbers",
-        requirement("absl-py"),
-        requirement("numpy"),
-    ],
-)
-
-py_library(
-    name = "pandas_model",
-    srcs = ["pandas_model.py"],
-    deps = [
-        ":model_builder_helper",
-        requirement("numpy"),
-        requirement("pandas"),
-        "//ortools/linear_solver:linear_solver_py_pb2",
-    ],
-)
-
-py_test(
-    name = "pandas_model_test",
-    srcs = ["pandas_model_test.py"],
-    deps = [
-        ":pandas_model",
         requirement("absl-py"),
         requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",

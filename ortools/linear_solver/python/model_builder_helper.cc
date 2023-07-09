@@ -31,6 +31,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "pybind11/eigen.h"
@@ -177,10 +178,19 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("mps_string"))
       .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,
            arg("mps_file"))
+#if defined(USE_LP_PARSER)
       .def("import_from_lp_string", &ModelBuilderHelper::ImportFromLpString,
            arg("lp_string"))
       .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
            arg("lp_file"))
+#else
+      .def("import_from_lp_string", [](const std::string& lp_string) {
+        LOG(INFO) << "Parsing LP string is not compiled in";
+      })
+      .def("import_from_lp_file", [](const std::string& lp_file) {
+        LOG(INFO) << "Parsing LP file is not compiled in";
+      })
+#endif
       .def(
           "fill_model_from_sparse_data",
           [](ModelBuilderHelper* helper,

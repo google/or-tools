@@ -46,6 +46,7 @@ def code_sample_py(name):
         deps = [
             requirement("absl-py"),
             requirement("numpy"),
+            requirement("pandas"),
             "//ortools/linear_solver/python:model_builder",
         ],
         python_version = "PY3",
@@ -63,6 +64,7 @@ def code_sample_py(name):
         deps = [
             requirement("absl-py"),
             requirement("numpy"),
+            requirement("pandas"),
         ],
         python_version = "PY3",
         srcs_version = "PY3",

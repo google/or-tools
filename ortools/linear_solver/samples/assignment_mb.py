@@ -15,7 +15,9 @@
 """MIP example that solves an assignment problem."""
 # [START program]
 # [START import]
-import numpy as np
+import io
+
+import pandas as pd
 
 from ortools.linear_solver.python import model_builder
 # [END import]
@@ -24,20 +26,35 @@ from ortools.linear_solver.python import model_builder
 def main():
     # Data
     # [START data_model]
-    costs = np.array(
-        [
-            [90, 80, 75, 70],
-            [35, 85, 55, 65],
-            [125, 95, 90, 95],
-            [45, 110, 95, 115],
-            [50, 100, 90, 100],
-        ]
-    )
-    num_workers, num_tasks = costs.shape
+    data_str = """
+  worker  task  cost
+      w1    t1    90
+      w1    t2    80
+      w1    t3    75
+      w1    t4    70
+      w2    t1    35
+      w2    t2    85
+      w2    t3    55
+      w2    t4    65
+      w3    t1   125
+      w3    t2    95
+      w3    t3    90
+      w3    t4    95
+      w4    t1    45
+      w4    t2   110
+      w4    t3    95
+      w4    t4   115
+      w5    t1    50
+      w5    t2   110
+      w5    t3    90
+      w5    t4   100
+  """
+
+    data = pd.read_table(io.StringIO(data_str), sep=r"\s+")
     # [END data_model]
 
-    # Solver
     # Create the model.
+    # [START model]
     model = model_builder.ModelBuilder()
     # [END model]
 
@@ -45,25 +62,23 @@ def main():
     # [START variables]
     # x[i, j] is an array of 0-1 variables, which will be 1
     # if worker i is assigned to task j.
-    x = model.new_bool_var_array(
-        shape=[num_workers, num_tasks], name="x"
-    )  # pytype: disable=wrong-arg-types  # numpy-scalars
+    x = model.new_bool_var_series(name="x", index=data.index)
     # [END variables]
 
     # Constraints
     # [START constraints]
     # Each worker is assigned to at most 1 task.
-    for i in range(num_workers):
-        model.add(np.sum(x[i, :]) <= 1)
+    for unused_name, tasks in data.groupby("worker"):
+        model.add(x[tasks.index].sum() <= 1)
 
     # Each task is assigned to exactly one worker.
-    for j in range(num_tasks):
-        model.add(np.sum(x[:, j]) == 1)
+    for unused_name, workers in data.groupby("task"):
+        model.add(x[workers.index].sum() == 1)
     # [END constraints]
 
     # Objective
     # [START objective]
-    model.minimize(np.dot(x.flatten(), costs.flatten()))
+    model.minimize(data.cost.dot(x))
     # [END objective]
 
     # [START solve]
@@ -79,11 +94,9 @@ def main():
         or status == model_builder.SolveStatus.FEASIBLE
     ):
         print(f"Total cost = {solver.objective_value}\n")
-        for i in range(num_workers):
-            for j in range(num_tasks):
-                # Test if x[i,j] is 1 (with tolerance for floating point arithmetic).
-                if solver.value(x[i, j]) > 0.5:
-                    print(f"Worker {i} assigned to task {j}." + f" Cost: {costs[i][j]}")
+        selected = data.loc[solver.values(x).loc[lambda x: x == 1].index]
+        for unused_index, row in selected.iterrows():
+            print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
     else:
         print("No solution found.")
     # [END print_solution]
