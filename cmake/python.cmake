@@ -271,7 +271,6 @@ file(COPY
 file(COPY
   ortools/linear_solver/python/model_builder.py
   ortools/linear_solver/python/model_builder_numbers.py
-  ortools/linear_solver/python/pandas_model.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
 file(COPY
   ortools/sat/python/cp_model.py
