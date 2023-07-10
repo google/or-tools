@@ -1762,7 +1762,7 @@ def prize_collecting_tsp():
     arcs = []
     for i in all_nodes:
         is_visited = model.NewBoolVar(f"{i} is visited")
-        arcs.append([i, i, is_visited.Not()])
+        arcs.append((i, i, is_visited.Not()))
 
         obj_vars.append(is_visited)
         obj_coeffs.append(VISIT_VALUES[i])
@@ -1773,7 +1773,7 @@ def prize_collecting_tsp():
                 used_arcs[i, j] = is_visited.Not()
                 continue
             arc_is_used = model.NewBoolVar(f"{j} follows {i}")
-            arcs.append([i, j, arc_is_used])
+            arcs.append((i, j, arc_is_used))
 
             obj_vars.append(arc_is_used)
             obj_coeffs.append(-DISTANCE_MATRIX[i][j])

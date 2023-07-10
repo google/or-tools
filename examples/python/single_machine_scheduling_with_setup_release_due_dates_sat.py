@@ -449,19 +449,19 @@ def single_machine_scheduling():
     for i in all_jobs:
         # Initial arc from the dummy node (0) to a task.
         start_lit = model.NewBoolVar("")
-        arcs.append([0, i + 1, start_lit])
+        arcs.append((0, i + 1, start_lit))
         # If this task is the first, set to minimum starting time.
         min_start_time = max(release_dates[i], setup_times[0][i])
         model.Add(starts[i] == min_start_time).OnlyEnforceIf(start_lit)
         # Final arc from an arc to the dummy node.
-        arcs.append([i + 1, 0, model.NewBoolVar("")])
+        arcs.append((i + 1, 0, model.NewBoolVar("")))
 
         for j in all_jobs:
             if i == j:
                 continue
 
             lit = model.NewBoolVar("%i follows %i" % (j, i))
-            arcs.append([i + 1, j + 1, lit])
+            arcs.append((i + 1, j + 1, lit))
 
             # We add the reified precedence to link the literal with the times of the
             # two tasks.

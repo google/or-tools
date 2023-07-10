@@ -1721,7 +1721,7 @@ def main():
                 continue
 
             lit = model.NewBoolVar("%i follows %i" % (j, i))
-            arcs.append([i, j, lit])
+            arcs.append((i, j, lit))
             arc_literals[i, j] = lit
 
             obj_vars.append(lit)
