@@ -212,6 +212,7 @@ class IntVarFilteredHeuristic {
   /// Modifies the current solution by setting the variable of index 'index' to
   /// value 'value'.
   void SetValue(int64_t index, int64_t value) {
+    DCHECK_LT(index, is_in_delta_.size());
     if (!is_in_delta_[index]) {
       delta_->FastAdd(vars_[index])->SetValue(value);
       delta_indices_.push_back(index);
@@ -229,9 +230,6 @@ class IntVarFilteredHeuristic {
   bool Contains(int64_t index) const {
     return assignment_->IntVarContainer().Element(index).Var() != nullptr;
   }
-  /// Returns the number of variables the decision builder is trying to
-  /// instantiate.
-  int Size() const { return vars_.size(); }
   /// Returns the variable of index 'index'.
   IntVar* Var(int64_t index) const { return vars_[index]; }
   /// Returns the index of a secondary var.
@@ -272,8 +270,7 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
   RoutingFilteredHeuristic(RoutingModel* model,
                            std::function<bool()> stop_search,
-                           LocalSearchFilterManager* filter_manager,
-                           bool omit_secondary_vars = true);
+                           LocalSearchFilterManager* filter_manager);
   ~RoutingFilteredHeuristic() override {}
   /// Builds a solution starting from the routes formed by the next accessor.
   const Assignment* BuildSolutionFromRoutes(
@@ -1022,7 +1019,7 @@ struct PickupDeliveryInsertion {
   }
 };
 
-/// Filter-base decision builder which builds a solution by inserting
+/// Filter-based decision builder which builds a solution by inserting
 /// nodes at their cheapest position. The cost of a position is computed
 /// an arc-based cost callback. Node selected for insertion are considered in
 /// decreasing order of distance to the start/ends of the routes, i.e. farthest
@@ -1215,7 +1212,17 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   bool BuildSolutionInternal() override;
 
  protected:
-  typedef std::pair</*saving*/ int64_t, /*saving index*/ int64_t> Saving;
+  struct Saving {
+    int64_t saving;
+    unsigned int vehicle_type : 20;
+    unsigned int before_node : 22;
+    unsigned int after_node : 22;
+    bool operator<(const Saving& other) const {
+      return std::tie(saving, vehicle_type, before_node, after_node) <
+             std::tie(other.saving, other.vehicle_type, other.before_node,
+                      other.after_node);
+    }
+  };
 
   template <typename S>
   class SavingsContainer;
@@ -1223,21 +1230,6 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   virtual double ExtraSavingsMemoryMultiplicativeFactor() const = 0;
 
   virtual void BuildRoutesFromSavings() = 0;
-
-  /// Returns the cost class from a saving.
-  int64_t GetVehicleTypeFromSaving(const Saving& saving) const {
-    return saving.second / size_squared_;
-  }
-  /// Returns the "before node" from a saving.
-  int64_t GetBeforeNodeFromSaving(const Saving& saving) const {
-    return (saving.second % size_squared_) / Size();
-  }
-  /// Returns the "after node" from a saving.
-  int64_t GetAfterNodeFromSaving(const Saving& saving) const {
-    return (saving.second % size_squared_) % Size();
-  }
-  /// Returns the saving value from a saving.
-  int64_t GetSavingValue(const Saving& saving) const { return saving.first; }
 
   /// Finds the best available vehicle of type "type" to start a new route to
   /// serve the arc before_node-->after_node.
@@ -1278,8 +1270,9 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   /// Builds a saving from a saving value, a vehicle type and two nodes.
   Saving BuildSaving(int64_t saving, int vehicle_type, int before_node,
                      int after_node) const {
-    return std::make_pair(saving, vehicle_type * size_squared_ +
-                                      before_node * Size() + after_node);
+    return {saving, static_cast<unsigned int>(vehicle_type),
+            static_cast<unsigned int>(before_node),
+            static_cast<unsigned int>(after_node)};
   }
 
   /// Computes and returns the maximum number of (closest) neighbors to consider
@@ -1288,7 +1281,6 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   int64_t MaxNumNeighborsPerNode(int num_vehicle_types) const;
 
   const SavingsParameters savings_params_;
-  int64_t size_squared_;
 
   friend class SavingsFilteredHeuristicTestPeer;
 };

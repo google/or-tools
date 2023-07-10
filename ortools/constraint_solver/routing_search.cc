@@ -54,6 +54,7 @@
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/range_query_function.h"
@@ -278,7 +279,6 @@ IntVarFilteredHeuristic::IntVarFilteredHeuristic(
       vars_(vars),
       base_vars_size_(vars.size()),
       delta_(solver->MakeAssignment()),
-      is_in_delta_(vars_.size(), false),
       empty_(solver->MakeAssignment()),
       filter_manager_(filter_manager),
       objective_upper_bound_(std::numeric_limits<int64_t>::max()),
@@ -288,6 +288,7 @@ IntVarFilteredHeuristic::IntVarFilteredHeuristic(
     vars_.insert(vars_.end(), secondary_vars.begin(), secondary_vars.end());
   }
   assignment_->MutableIntVarContainer()->Resize(vars_.size());
+  is_in_delta_.resize(vars_.size(), false);
   delta_indices_.reserve(vars_.size());
 }
 
@@ -412,13 +413,12 @@ bool IntVarFilteredHeuristic::FilterAccept() {
 
 RoutingFilteredHeuristic::RoutingFilteredHeuristic(
     RoutingModel* model, std::function<bool()> stop_search,
-    LocalSearchFilterManager* filter_manager, bool omit_secondary_vars)
-    : IntVarFilteredHeuristic(
-          model->solver(), model->Nexts(),
-          omit_secondary_vars || model->CostsAreHomogeneousAcrossVehicles()
-              ? std::vector<IntVar*>()
-              : model->VehicleVars(),
-          filter_manager),
+    LocalSearchFilterManager* filter_manager)
+    : IntVarFilteredHeuristic(model->solver(), model->Nexts(),
+                              model->CostsAreHomogeneousAcrossVehicles()
+                                  ? std::vector<IntVar*>()
+                                  : model->VehicleVars(),
+                              filter_manager),
       model_(model),
       stop_search_(std::move(stop_search)) {}
 
@@ -485,6 +485,8 @@ void RoutingFilteredHeuristic::MakeDisjunctionNodesUnperformed(int64_t node) {
 }
 
 bool RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
+  // TODO(user): check that delta_ is empty.
+  SynchronizeFilters();
   for (int index = 0; index < model_->Size(); ++index) {
     DCHECK(!IsSecondaryVar(index));
     if (!Contains(index)) {
@@ -498,7 +500,8 @@ bool RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
 }
 
 void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
-  std::vector<bool> to_make_unperformed(Size(), false);
+  const int num_nexts = model()->Nexts().size();
+  std::vector<bool> to_make_unperformed(num_nexts, false);
   for (const auto& [pickups, deliveries] :
        model()->GetPickupAndDeliveryPairs()) {
     int64_t performed_pickup = -1;
@@ -524,10 +527,10 @@ void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
       }
     }
   }
-  for (int index = 0; index < Size(); ++index) {
+  for (int index = 0; index < num_nexts; ++index) {
     if (to_make_unperformed[index] || !Contains(index)) continue;
     int64_t next = Value(index);
-    while (next < Size() && to_make_unperformed[next]) {
+    while (next < num_nexts && to_make_unperformed[next]) {
       const int64_t next_of_next = Value(next);
       SetValue(index, next_of_next);
       SetValue(next, next);
@@ -543,8 +546,7 @@ CheapestInsertionFilteredHeuristic::CheapestInsertionFilteredHeuristic(
     std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
     std::function<int64_t(int64_t)> penalty_evaluator,
     LocalSearchFilterManager* filter_manager)
-    : RoutingFilteredHeuristic(model, std::move(stop_search), filter_manager,
-                               /*omit_secondary_vars=*/evaluator != nullptr),
+    : RoutingFilteredHeuristic(model, std::move(stop_search), filter_manager),
       evaluator_(std::move(evaluator)),
       penalty_evaluator_(std::move(penalty_evaluator)) {}
 
@@ -2604,8 +2606,9 @@ CheapestAdditionFilteredHeuristic::CheapestAdditionFilteredHeuristic(
 bool CheapestAdditionFilteredHeuristic::BuildSolutionInternal() {
   const int kUnassigned = -1;
   const RoutingModel::IndexPairs& pairs = model()->GetPickupAndDeliveryPairs();
-  std::vector<std::vector<int64_t>> deliveries(Size());
-  std::vector<std::vector<int64_t>> pickups(Size());
+  const int num_nexts = model()->Nexts().size();
+  std::vector<std::vector<int64_t>> deliveries(num_nexts);
+  std::vector<std::vector<int64_t>> pickups(num_nexts);
   for (const RoutingModel::IndexPair& pair : pairs) {
     for (int first : pair.first) {
       for (int second : pair.second) {
@@ -3068,8 +3071,8 @@ class SavingsFilteredHeuristic::SavingsContainer {
   // skipped_savings_ vector of the nodes, if they're uncontained.
   void SkipSavingForArc(const SavingAndArc& saving_and_arc) {
     const Saving& saving = saving_and_arc.saving;
-    const int64_t before_node = savings_db_->GetBeforeNodeFromSaving(saving);
-    const int64_t after_node = savings_db_->GetAfterNodeFromSaving(saving);
+    const int64_t before_node = saving.before_node;
+    const int64_t after_node = saving.after_node;
     if (!savings_db_->Contains(before_node)) {
       skipped_savings_starting_at_[before_node].push_back(saving_and_arc);
     }
@@ -3115,7 +3118,7 @@ class SavingsFilteredHeuristic::SavingsContainer {
 
     if (!next_saving_added &&
         GetNextSavingForArcWithType(arc_index, type, &next_saving)) {
-      type_and_index.first = savings_db_->GetVehicleTypeFromSaving(next_saving);
+      type_and_index.first = next_saving.vehicle_type;
       if (previous_index >= 0) {
         // Update the previous saving.
         next_savings_[previous_index] = {next_saving, arc_index};
@@ -3211,7 +3214,7 @@ class SavingsFilteredHeuristic::SavingsContainer {
     bool found_saving = false;
     while (!costs_and_savings.empty() && !found_saving) {
       const Saving& saving = costs_and_savings.back().second;
-      if (type == -1 || savings_db_->GetVehicleTypeFromSaving(saving) == type) {
+      if (type == -1 || saving.vehicle_type == type) {
         *next_saving = saving;
         found_saving = true;
       }
@@ -3257,8 +3260,6 @@ SavingsFilteredHeuristic::SavingsFilteredHeuristic(
   DCHECK_LE(savings_params_.neighbors_ratio, 1);
   DCHECK_GT(savings_params_.max_memory_usage_bytes, 0);
   DCHECK_GT(savings_params_.arc_coefficient, 0);
-  const int size = model->Size();
-  size_squared_ = size * size;
 }
 
 SavingsFilteredHeuristic::~SavingsFilteredHeuristic() {}
@@ -3500,10 +3501,10 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
     const std::vector<Saving>& sorted_savings_for_type =
         savings_container_->GetSortedSavingsForVehicleType(type);
     for (const Saving& saving : sorted_savings_for_type) {
-      DCHECK_EQ(GetVehicleTypeFromSaving(saving), type);
-      const int before_node = GetBeforeNodeFromSaving(saving);
+      DCHECK_EQ(saving.vehicle_type, type);
+      const int before_node = saving.before_node;
       in_savings_ptr[vehicle_type_offset + before_node].push_back(&saving);
-      const int after_node = GetAfterNodeFromSaving(saving);
+      const int after_node = saving.after_node;
       out_savings_ptr[vehicle_type_offset + after_node].push_back(&saving);
     }
   }
@@ -3513,8 +3514,8 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
     if (StopSearch()) return;
     // First find the best saving to start a new route.
     const Saving saving = savings_container_->GetSaving();
-    int before_node = GetBeforeNodeFromSaving(saving);
-    int after_node = GetAfterNodeFromSaving(saving);
+    int before_node = saving.before_node;
+    int after_node = saving.after_node;
     const bool nodes_contained = Contains(before_node) || Contains(after_node);
 
     if (nodes_contained) {
@@ -3523,7 +3524,7 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
     }
 
     // Find the right vehicle to start the route with this Saving.
-    const int type = GetVehicleTypeFromSaving(saving);
+    const int type = saving.vehicle_type;
     const int vehicle =
         StartNewRouteWithBestVehicleOfType(type, before_node, after_node);
     if (vehicle < 0) {
@@ -3550,17 +3551,18 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
         if (out_index < out_savings_ptr[saving_offset + before_node].size()) {
           const Saving& out_saving =
               *(out_savings_ptr[saving_offset + before_node][out_index]);
-          if (GetSavingValue(in_saving) < GetSavingValue(out_saving)) {
-            after_after_node = GetAfterNodeFromSaving(in_saving);
+          if (in_saving.saving < out_saving.saving) {
+            after_after_node = in_saving.after_node;
           } else {
-            before_before_node = GetBeforeNodeFromSaving(out_saving);
+            before_before_node = out_saving.before_node;
           }
         } else {
-          after_after_node = GetAfterNodeFromSaving(in_saving);
+          after_after_node = in_saving.after_node;
         }
       } else {
-        before_before_node = GetBeforeNodeFromSaving(
-            *(out_savings_ptr[saving_offset + before_node][out_index]));
+        before_before_node =
+            out_savings_ptr[saving_offset + before_node][out_index]
+                ->before_node;
       }
       // Extend the route
       if (after_after_node != -1) {
@@ -3629,9 +3631,9 @@ void ParallelSavingsFilteredHeuristic::BuildRoutesFromSavings() {
   while (savings_container_->HasSaving()) {
     if (StopSearch()) return;
     const Saving saving = savings_container_->GetSaving();
-    const int64_t before_node = GetBeforeNodeFromSaving(saving);
-    const int64_t after_node = GetAfterNodeFromSaving(saving);
-    const int type = GetVehicleTypeFromSaving(saving);
+    const int64_t before_node = saving.before_node;
+    const int64_t after_node = saving.after_node;
+    const int type = saving.vehicle_type;
 
     if (!Contains(before_node) && !Contains(after_node)) {
       // Neither nodes are contained, start a new route.

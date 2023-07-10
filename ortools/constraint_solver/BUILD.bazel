@@ -15,7 +15,6 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -302,6 +301,30 @@ cc_library(
 )
 
 cc_library(
+    name = "routing_utils",
+    srcs = ["routing_utils.cc"],
+    hdrs = ["routing_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "//ortools/util:saturated_arithmetic",
+    ],
+)
+
+cc_library(
+    name = "routing_neighborhoods",
+    srcs = ["routing_neighborhoods.cc"],
+    hdrs = ["routing_neighborhoods.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp",
+        ":routing_types",
+        ":routing_utils",
+        "//ortools/base",
+    ],
+)
+
+cc_library(
     name = "routing_index_manager",
     srcs = ["routing_index_manager.cc"],
     hdrs = ["routing_index_manager.h"],
@@ -319,18 +342,22 @@ cc_library(
     srcs = [
         "routing.cc",
         "routing_breaks.cc",
+        "routing_constraints.cc",
+        "routing_decision_builders.cc",
         "routing_filters.cc",
         "routing_flow.cc",
+        "routing_insertion_lns.cc",
         "routing_lp_scheduling.cc",
-        "routing_neighborhoods.cc",
         "routing_sat.cc",
         "routing_search.cc",
     ],
     hdrs = [
         "routing.h",
+        "routing_constraints.h",
+        "routing_decision_builders.h",
         "routing_filters.h",
+        "routing_insertion_lns.h",
         "routing_lp_scheduling.h",
-        "routing_neighborhoods.h",
         "routing_search.h",
     ],
     copts = select({
@@ -343,9 +370,11 @@ cc_library(
         ":cp",
         ":routing_enums_cc_proto",
         ":routing_index_manager",
+        ":routing_neighborhoods",
         ":routing_parameters",
         ":routing_parameters_cc_proto",
         ":routing_types",
+        ":routing_utils",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",

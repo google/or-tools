@@ -200,11 +200,9 @@ import java.util.function.LongUnaryOperator;
 
 %rename (registerUnaryTransitVector) RoutingModel::RegisterUnaryTransitVector;
 %rename (registerUnaryTransitCallback) RoutingModel::RegisterUnaryTransitCallback;
-%rename (registerPositiveUnaryTransitCallback) RoutingModel::RegisterPositiveUnaryTransitCallback; // not tested
 
 %rename (registerTransitMatrix) RoutingModel::RegisterTransitMatrix;
 %rename (registerTransitCallback) RoutingModel::RegisterTransitCallback;
-%rename (registerPositiveTransitCallback) RoutingModel::RegisterPositiveTransitCallback; // not tested
 
 %rename (restoreAssignment) RoutingModel::RestoreAssignment;
 %rename (routesToAssignment) RoutingModel::RoutesToAssignment;

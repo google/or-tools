@@ -1406,10 +1406,11 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Returns the vector of path start nodes.
   const std::vector<int64_t>& path_starts() const { return path_starts_; }
   /// Returns the class of the path of the ith base node.
-  int PathClass(int i) const {
+  int PathClass(int i) const { return PathClassFromStartNode(StartNode(i)); }
+  int PathClassFromStartNode(int64_t start_node) const {
     return iteration_parameters_.start_empty_path_class != nullptr
-               ? iteration_parameters_.start_empty_path_class(StartNode(i))
-               : StartNode(i);
+               ? iteration_parameters_.start_empty_path_class(start_node)
+               : start_node;
   }
 
   /// When the operator is being synchronized with a new solution (when Start()
@@ -1462,6 +1463,12 @@ class PathOperator : public IntVarLocalSearchOperator {
   int64_t OldPath(int64_t node) const {
     return ignore_path_vars_ ? 0LL : OldValue(node + number_of_nexts_);
   }
+
+  int CurrentNodePathStart(int64_t node) const {
+    return node_path_starts_[node];
+  }
+
+  int CurrentNodePathEnd(int64_t node) const { return node_path_ends_[node]; }
 
   /// Moves the chain starting after the node before_chain and ending at the
   /// node chain_end after the node destination
@@ -1609,6 +1616,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<int> base_sibling_alternatives_;
   std::vector<int> end_nodes_;
   std::vector<int> base_paths_;
+  std::vector<int> node_path_starts_;
+  std::vector<int> node_path_ends_;
   std::vector<int> calls_per_base_node_;
   std::vector<int64_t> path_starts_;
   std::vector<int64_t> path_ends_;
@@ -2049,8 +2058,9 @@ class SymmetryBreaker : public DecisionVisitor {
 /// the search is running.
 class SearchLog : public SearchMonitor {
  public:
-  SearchLog(Solver* s, OptimizeVar* obj, IntVar* var, double scaling_factor,
-            double offset, std::function<std::string()> display_callback,
+  SearchLog(Solver* solver, std::vector<IntVar*> vars, std::string vars_name,
+            std::vector<double> scaling_factors, std::vector<double> offsets,
+            std::function<std::string()> display_callback,
             bool display_on_new_solutions_only, int period);
   ~SearchLog() override;
   void EnterSearch() override;
@@ -2076,16 +2086,16 @@ class SearchLog : public SearchMonitor {
 
   const int period_;
   std::unique_ptr<WallTimer> timer_;
-  IntVar* const var_;
-  OptimizeVar* const obj_;
-  const double scaling_factor_;
-  const double offset_;
+  const std::vector<IntVar*> vars_;
+  const std::string vars_name_;
+  const std::vector<double> scaling_factors_;
+  const std::vector<double> offsets_;
   std::function<std::string()> display_callback_;
   const bool display_on_new_solutions_only_;
   int nsol_;
   int64_t tick_;
-  int64_t objective_min_;
-  int64_t objective_max_;
+  std::vector<int64_t> objective_min_;
+  std::vector<int64_t> objective_max_;
   int min_right_depth_;
   int max_depth_;
   int sliding_min_depth_;

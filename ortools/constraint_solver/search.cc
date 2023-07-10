@@ -24,22 +24,14 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/casts.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ortools/base/bitmap.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -57,30 +49,28 @@ namespace operations_research {
 
 // ---------- Search Log ---------
 
-SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-                     double scaling_factor, double offset,
+SearchLog::SearchLog(Solver* solver, std::vector<IntVar*> vars,
+                     std::string vars_name, std::vector<double> scaling_factors,
+                     std::vector<double> offsets,
                      std::function<std::string()> display_callback,
                      bool display_on_new_solutions_only, int period)
-    : SearchMonitor(s),
+    : SearchMonitor(solver),
       period_(period),
       timer_(new WallTimer),
-      var_(var),
-      obj_(obj),
-      scaling_factor_(scaling_factor),
-      offset_(offset),
+      vars_(std::move(vars)),
+      vars_name_(std::move(vars_name)),
+      scaling_factors_(std::move(scaling_factors)),
+      offsets_(std::move(offsets)),
       display_callback_(std::move(display_callback)),
       display_on_new_solutions_only_(display_on_new_solutions_only),
       nsol_(0),
       tick_(0),
-      objective_min_(std::numeric_limits<int64_t>::max()),
-      objective_max_(std::numeric_limits<int64_t>::min()),
+      objective_min_(vars_.size(), std::numeric_limits<int64_t>::max()),
+      objective_max_(vars_.size(), std::numeric_limits<int64_t>::min()),
       min_right_depth_(std::numeric_limits<int32_t>::max()),
       max_depth_(0),
       sliding_min_depth_(0),
-      sliding_max_depth_(0) {
-  CHECK(obj == nullptr || var == nullptr)
-      << "Either var or obj need to be nullptr.";
-}
+      sliding_max_depth_(0) {}
 
 SearchLog::~SearchLog() {}
 
@@ -111,39 +101,57 @@ bool SearchLog::AtSolution() {
   Maintain();
   const int depth = solver()->SearchDepth();
   std::string obj_str = "";
-  int64_t current = 0;
+  std::vector<int64_t> current;
   bool objective_updated = false;
-  const auto scaled_str = [this](int64_t value) {
-    if (scaling_factor_ != 1.0 || offset_ != 0.0) {
-      return absl::StrFormat("%d (%.8lf)", value,
-                             scaling_factor_ * (value + offset_));
-    } else {
-      return absl::StrCat(value);
+  const auto scaled_str = [this](const std::vector<int64_t>& values) {
+    std::vector<std::string> value_strings(values.size());
+    for (int i = 0; i < values.size(); ++i) {
+      if (scaling_factors_[i] != 1.0 || offsets_[i] != 0.0) {
+        value_strings[i] =
+            absl::StrFormat("%d (%.8lf)", values[i],
+                            scaling_factors_[i] * (values[i] + offsets_[i]));
+      } else {
+        value_strings[i] = absl::StrCat(values[i]);
+      }
     }
+    return absl::StrJoin(value_strings, ", ");
   };
-  if (obj_ != nullptr && obj_->var()->Bound()) {
-    current = obj_->var()->Value();
-    obj_str = obj_->Print();
-    objective_updated = true;
-  } else if (var_ != nullptr && var_->Bound()) {
-    current = var_->Value();
-    absl::StrAppend(&obj_str, scaled_str(current), ", ");
-    objective_updated = true;
+  bool all_vars_bound = !vars_.empty();
+  for (IntVar* var : vars_) {
+    all_vars_bound &= var->Bound();
+  }
+  if (all_vars_bound) {
+    for (IntVar* var : vars_) {
+      current.push_back(var->Value());
+      objective_updated = true;
+    }
+    absl::StrAppend(&obj_str,
+                    vars_name_.empty() ? "" : absl::StrCat(vars_name_, " = "),
+                    scaled_str(current), ", ");
   } else {
-    current = solver()->GetOrCreateLocalSearchState()->ObjectiveMin();
-    absl::StrAppend(&obj_str, scaled_str(current), ", ");
+    current.push_back(solver()->GetOrCreateLocalSearchState()->ObjectiveMin());
+    absl::StrAppend(&obj_str, "objective = ", scaled_str(current), ", ");
     objective_updated = true;
   }
   if (objective_updated) {
-    if (current > objective_min_) {
+    if (!objective_min_.empty() &&
+        std::lexicographical_compare(objective_min_.begin(),
+                                     objective_min_.end(), current.begin(),
+                                     current.end())) {
       absl::StrAppend(&obj_str,
-                      "objective minimum = ", scaled_str(objective_min_), ", ");
+                      vars_name_.empty() ? "" : absl::StrCat(vars_name_, " "),
+                      "minimum = ", scaled_str(objective_min_), ", ");
+
     } else {
       objective_min_ = current;
     }
-    if (current < objective_max_) {
+    if (!objective_max_.empty() &&
+        std::lexicographical_compare(current.begin(), current.end(),
+                                     objective_max_.begin(),
+                                     objective_max_.end())) {
       absl::StrAppend(&obj_str,
-                      "objective maximum = ", scaled_str(objective_max_), ", ");
+                      vars_name_.empty() ? "" : absl::StrCat(vars_name_, " "),
+                      "maximum = ", scaled_str(objective_max_), ", ");
     } else {
       objective_max_ = current;
     }
@@ -227,13 +235,15 @@ void SearchLog::OutputDecision() {
     sliding_min_depth_ = depth;
     sliding_max_depth_ = depth;
   }
-  if (obj_ != nullptr &&
-      objective_min_ != std::numeric_limits<int64_t>::max() &&
-      objective_max_ != std::numeric_limits<int64_t>::min()) {
+  if (!objective_min_.empty() &&
+      objective_min_[0] != std::numeric_limits<int64_t>::max() &&
+      objective_max_[0] != std::numeric_limits<int64_t>::min()) {
+    const std::string name =
+        vars_name_.empty() ? "" : absl::StrCat(" ", vars_name_);
     absl::StrAppendFormat(&buffer,
-                          ", objective minimum = %d"
-                          ", objective maximum = %d",
-                          objective_min_, objective_max_);
+                          ",%s minimum = %d"
+                          ",%s maximum = %d",
+                          name, objective_min_[0], name, objective_max_[0]);
   }
   const int progress = solver()->TopProgressPercent();
   if (progress != SearchMonitor::kNoProgress) {
@@ -288,46 +298,63 @@ std::string SearchLog::MemoryUsage() {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
-  return MakeSearchLog(branch_period, static_cast<IntVar*>(nullptr));
+  return MakeSearchLog(branch_period, std::vector<IntVar*>{}, nullptr);
 }
 
-SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
-  return MakeSearchLog(branch_period, var, nullptr);
+SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* var) {
+  return MakeSearchLog(branch_period, std::vector<IntVar*>{var}, nullptr);
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, std::function<std::string()> display_callback) {
-  return MakeSearchLog(branch_period, static_cast<IntVar*>(nullptr),
+  return MakeSearchLog(branch_period, std::vector<IntVar*>{},
                        std::move(display_callback));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
-    int branch_period, IntVar* const var,
+    int branch_period, IntVar* var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, var, 1.0, 0.0,
+  return MakeSearchLog(branch_period, std::vector<IntVar*>{var},
+                       std::move(display_callback));
+}
+
+SearchMonitor* Solver::MakeSearchLog(
+    int branch_period, std::vector<IntVar*> vars,
+    std::function<std::string()> display_callback) {
+  return RevAlloc(new SearchLog(this, std::move(vars), "", {1.0}, {0.0},
                                 std::move(display_callback), true,
                                 branch_period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int branch_period,
-                                     OptimizeVar* const opt_var) {
+SearchMonitor* Solver::MakeSearchLog(int branch_period, OptimizeVar* opt_var) {
   return MakeSearchLog(branch_period, opt_var, nullptr);
 }
 
 SearchMonitor* Solver::MakeSearchLog(
-    int branch_period, OptimizeVar* const opt_var,
+    int branch_period, OptimizeVar* opt_var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0, 0.0,
-                                std::move(display_callback), true,
-                                branch_period));
+  std::vector<IntVar*> vars = opt_var->objective_vars();
+  std::vector<double> scaling_factors(vars.size(), 1.0);
+  std::vector<double> offsets(vars.size(), 0.0);
+  return RevAlloc(new SearchLog(
+      this, std::move(vars), opt_var->Name(), std::move(scaling_factors),
+      std::move(offsets), std::move(display_callback), true, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
-  return RevAlloc(new SearchLog(this, parameters.objective, parameters.variable,
-                                parameters.scaling_factor, parameters.offset,
-                                std::move(parameters.display_callback),
-                                parameters.display_on_new_solutions_only,
-                                parameters.branch_period));
+  DCHECK(parameters.objective == nullptr || parameters.variables.empty())
+      << "Either variables are empty or objective is nullptr.";
+  std::vector<IntVar*> vars = parameters.objective != nullptr
+                                  ? parameters.objective->objective_vars()
+                                  : parameters.variables;
+  std::vector<double> scaling_factors = parameters.scaling_factors;
+  scaling_factors.resize(vars.size(), 1.0);
+  std::vector<double> offsets = parameters.offsets;
+  offsets.resize(vars.size(), 0.0);
+  return RevAlloc(new SearchLog(
+      this, std::move(vars), "", std::move(scaling_factors), std::move(offsets),
+      std::move(parameters.display_callback),
+      parameters.display_on_new_solutions_only, parameters.branch_period));
 }
 
 // ---------- Search Trace ----------
@@ -3072,14 +3099,7 @@ bool OptimizeVar::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   return true;
 }
 
-std::string OptimizeVar::Print() const {
-  std::string out =
-      (Size() == 1) ? "objective value = " : "objective values = ";
-  for (int i = 0; i < Size(); ++i) {
-    absl::StrAppendFormat(&out, "%d, ", ObjectiveVar(i)->Value());
-  }
-  return out;
-}
+std::string OptimizeVar::Name() const { return "objective"; }
 
 std::string OptimizeVar::DebugString() const {
   std::string out;
@@ -3126,23 +3146,14 @@ class WeightedOptimizeVar : public OptimizeVar {
   }
 
   ~WeightedOptimizeVar() override {}
-  std::string Print() const override;
+  std::string Name() const override;
 
  private:
   const std::vector<IntVar*> sub_objectives_;
   const std::vector<int64_t> weights_;
 };
 
-std::string WeightedOptimizeVar::Print() const {
-  std::string result(OptimizeVar::Print());
-  result.append("\nWeighted Objective:\n");
-  for (int i = 0; i < sub_objectives_.size(); ++i) {
-    absl::StrAppendFormat(&result, "Variable %s,\tvalue %d,\tweight %d\n",
-                          sub_objectives_[i]->name(),
-                          sub_objectives_[i]->Value(), weights_[i]);
-  }
-  return result;
-}
+std::string WeightedOptimizeVar::Name() const { return "weighted objective"; }
 }  // namespace
 
 OptimizeVar* Solver::MakeWeightedOptimize(

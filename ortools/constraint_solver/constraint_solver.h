@@ -2422,6 +2422,11 @@ class Solver {
   SearchMonitor* MakeSearchLog(int branch_period, IntVar* var,
                                std::function<std::string()> display_callback);
 
+  /// At each solution, this monitor will display the 'vars' values and the
+  /// result of @p display_callback.
+  SearchMonitor* MakeSearchLog(int branch_period, std::vector<IntVar*> vars,
+                               std::function<std::string()> display_callback);
+
   /// OptimizeVar Search Logs
   /// At each solution, this monitor will also display the 'opt_var' value.
   SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* opt_var);
@@ -2436,15 +2441,15 @@ class Solver {
     /// SearchMonitors will display a periodic search log every branch_period
     /// branches explored.
     int branch_period = 1;
-    /// SearchMonitors will display values of objective or variable (both cannot
-    /// be used together).
+    /// SearchMonitors will display values of objective or variables (both
+    /// cannot be used together).
     OptimizeVar* objective = nullptr;
-    IntVar* variable = nullptr;
+    std::vector<IntVar*> variables;
     /// When displayed, objective or var values will be scaled and offset by
     /// the given values in the following way:
     /// scaling_factor * (value + offset).
-    double scaling_factor = 1.0;
-    double offset = 0;
+    std::vector<double> scaling_factors;
+    std::vector<double> offsets;
     /// SearchMonitors will display the result of display_callback at each new
     /// solution found and when the search finishes if
     /// display_on_new_solutions_only is false.
@@ -4425,6 +4430,7 @@ class ObjectiveMonitor : public SearchMonitor {
   bool found_initial_solution_;
 
  private:
+  friend class Solver;
   const std::vector<IntVar*> objective_vars_;
   std::vector<IntVar*> minimization_vars_;
   std::vector<IntVar*> upper_bounds_;
@@ -4459,7 +4465,7 @@ class OptimizeVar : public ObjectiveMonitor {
   void RefuteDecision(Decision* d) override;
   bool AtSolution() override;
   bool AcceptSolution() override;
-  virtual std::string Print() const;
+  virtual std::string Name() const;
   std::string DebugString() const override;
 
   void ApplyBound();

@@ -171,6 +171,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/hash/hash.h"
+#include "absl/log/check.h"
 #include "absl/time/time.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
@@ -185,6 +187,7 @@
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/theta_tree.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -192,6 +195,7 @@
 
 namespace operations_research {
 
+class FinalizerVariables;
 class GlobalDimensionCumulOptimizer;
 class LocalDimensionCumulOptimizer;
 class LocalSearchPhaseParameters;
@@ -533,15 +537,27 @@ class RoutingModel {
                const RoutingModelParameters& parameters);
   ~RoutingModel();
 
+  /// Represents the sign of values returned by a transit evaluator.
+  enum TransitEvaluatorSign {
+    kTransitEvaluatorSignUnknown = 0,
+    kTransitEvaluatorSignPositiveOrZero = 1,
+    kTransitEvaluatorSignNegativeOrZero = 2,
+  };
   /// Registers 'callback' and returns its index.
+  /// The sign parameter allows to notify the solver that the callback only
+  /// return values of the given sign. This can help the solver, but passing
+  /// an incorrect sign may crash in non-opt compilation mode, and yield
+  /// incorrect results in opt.
   int RegisterUnaryTransitVector(std::vector<int64_t> values);
-  int RegisterUnaryTransitCallback(TransitCallback1 callback);
-  int RegisterPositiveUnaryTransitCallback(TransitCallback1 callback);
+  int RegisterUnaryTransitCallback(
+      TransitCallback1 callback,
+      TransitEvaluatorSign sign = kTransitEvaluatorSignUnknown);
 
   int RegisterTransitMatrix(
       std::vector<std::vector<int64_t> /*needed_for_swig*/> values);
-  int RegisterTransitCallback(TransitCallback2 callback);
-  int RegisterPositiveTransitCallback(TransitCallback2 callback);
+  int RegisterTransitCallback(
+      TransitCallback2 callback,
+      TransitEvaluatorSign sign = kTransitEvaluatorSignUnknown);
 
   int RegisterStateDependentTransitCallback(VariableIndexEvaluator2 callback);
   const TransitCallback2& TransitCallback(int callback_index) const {
@@ -672,19 +688,6 @@ class RoutingModel {
   static RoutingModel::StateDependentTransit MakeStateDependentTransit(
       const std::function<int64_t(int64_t)>& f, int64_t domain_start,
       int64_t domain_end);
-
-  /// For every vehicle of the routing model:
-  /// - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of
-  ///   slacks on that vehicle, that is,
-  ///   dimension->CumulVar(end) - dimension->CumulVar(start) -
-  ///   sum_{node in path of vehicle} dimension->FixedTransitVar(node).
-  /// - if spans[vehicle] is not nullptr, constrains it to be
-  ///   dimension->CumulVar(end) - dimension->CumulVar(start)
-  /// This does stronger propagation than a decomposition, and takes breaks into
-  /// account.
-  Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
-                                          std::vector<IntVar*> spans,
-                                          std::vector<IntVar*> total_slacks);
 
   /// Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
@@ -1153,7 +1156,11 @@ class RoutingModel {
   /// Adds a callback called each time a solution is found during the search.
   /// This is a shortcut to creating a monitor to call the callback on
   /// AtSolution() and adding it with AddSearchMonitor.
-  void AddAtSolutionCallback(std::function<void()> callback);
+  /// If track_unchecked_neighbors is true, the callback will also be called on
+  /// AcceptUncheckedNeighbor() events, which is useful to grab solutions
+  /// obtained when solver_parameters.check_solution_period > 1 (aka fastLS).
+  void AddAtSolutionCallback(std::function<void()> callback,
+                             bool track_unchecked_neighbors = false);
   /// Adds a variable to minimize in the solution finalizer. The solution
   /// finalizer is called each time a solution is found during the search and
   /// allows to instantiate secondary variables (such as dimension cumul
@@ -1973,6 +1980,7 @@ class RoutingModel {
   Assignment* GetOrCreateAssignment();
   Assignment* GetOrCreateTmpAssignment();
   RegularLimit* GetOrCreateLimit();
+  RegularLimit* GetOrCreateCumulativeLimit();
   RegularLimit* GetOrCreateLocalSearchLimit();
   RegularLimit* GetOrCreateLargeNeighborhoodSearchLimit();
   RegularLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
@@ -2101,7 +2109,6 @@ class RoutingModel {
       const RoutingSearchParameters& parameters, const FilterOptions& options);
   DecisionBuilder* CreateSolutionFinalizer(
       const RoutingSearchParameters& parameters, SearchLimit* lns_limit);
-  DecisionBuilder* CreateFinalizerForMinimizedAndMaximizedVariables();
   void CreateFirstSolutionDecisionBuilders(
       const RoutingSearchParameters& search_parameters);
   DecisionBuilder* GetFirstSolutionDecisionBuilder(
@@ -2370,22 +2377,13 @@ class RoutingModel {
   absl::flat_hash_map<NodeNeighborsParameters,
                       std::unique_ptr<NodeNeighborsByCostClass>>
       node_neighbors_by_cost_class_per_size_;
+  std::unique_ptr<FinalizerVariables> finalizer_variables_;
 #ifndef SWIG
-  struct VarTarget {
-    VarTarget(IntVar* v, int64_t t) : var(v), target(t) {}
-
-    IntVar* var;
-    int64_t target;
-  };
-  std::vector<std::pair<VarTarget, int64_t>>
-      weighted_finalizer_variable_targets_;
-  std::vector<VarTarget> finalizer_variable_targets_;
-  absl::flat_hash_map<IntVar*, int> weighted_finalizer_variable_index_;
-  absl::flat_hash_set<IntVar*> finalizer_variable_target_set_;
   std::unique_ptr<SweepArranger> sweep_arranger_;
 #endif
 
   RegularLimit* limit_ = nullptr;
+  RegularLimit* cumulative_limit_ = nullptr;
   RegularLimit* ls_limit_ = nullptr;
   RegularLimit* lns_limit_ = nullptr;
   RegularLimit* first_solution_lns_limit_ = nullptr;
@@ -2396,19 +2394,18 @@ class RoutingModel {
   typedef absl::flat_hash_map<CacheKey, StateDependentTransit>
       StateDependentTransitCallbackCache;
 
+  // All transit callbacks are stored in transit_evaluators_,
+  // we refer to callbacks by the index in this vector.
+  // We maintain unary_transit_evaluators_[] (with the same size) to store
+  // callbacks that are unary:
+  // - if a callback is unary, it is in unary_transit_evaluators_[i],
+  //   and a binary version is stored at transit_evaluators_[i].
+  // - if a callback is binary, it is stored at transit_evaluators_[i],
+  //   and unary_transit_evaluators_[i] is nullptr.
   std::vector<TransitCallback1> unary_transit_evaluators_;
   std::vector<TransitCallback2> transit_evaluators_;
-  // The following vector stores a boolean per transit_evaluator_, indicating
-  // whether the transits are all positive.
-  // is_transit_evaluator_positive_ will be set to true only when registering a
-  // callback via RegisterPositiveTransitCallback(), and to false otherwise.
-  // The actual positivity of the transit values will only be checked in debug
-  // mode, when calling RegisterPositiveTransitCallback().
-  // Therefore, RegisterPositiveTransitCallback() should only be called when the
-  // transits are known to be positive, as the positivity of a callback will
-  // allow some improvements in the solver, but will entail in errors if the
-  // transits are falsely assumed positive.
-  std::vector<bool> is_transit_evaluator_positive_;
+  std::vector<TransitEvaluatorSign> transit_evaluator_sign_;
+
   std::vector<VariableIndexEvaluator2> state_dependent_transit_evaluators_;
   std::vector<std::unique_ptr<StateDependentTransitCallbackCache>>
       state_dependent_transit_evaluators_cache_;
@@ -2962,8 +2959,14 @@ class RoutingDimension {
   /// Returns true iff the transit evaluator of 'vehicle' is positive for all
   /// arcs.
   bool AreVehicleTransitsPositive(int vehicle) const {
-    return model()->is_transit_evaluator_positive_
-        [class_evaluators_[vehicle_to_class_[vehicle]]];
+    const int evaluator_index = class_evaluators_[vehicle_to_class_[vehicle]];
+    return model()->transit_evaluator_sign_[evaluator_index] ==
+           RoutingModel::kTransitEvaluatorSignPositiveOrZero;
+  }
+  RoutingModel::TransitEvaluatorSign GetTransitEvaluatorSign(
+      int vehicle) const {
+    const int evaluator_index = class_evaluators_[vehicle_to_class_[vehicle]];
+    return model()->transit_evaluator_sign_[evaluator_index];
   }
   int vehicle_to_class(int vehicle) const { return vehicle_to_class_[vehicle]; }
 #endif  /// !defined(SWIGCSHARP) && !defined(SWIGJAVA)
@@ -3366,12 +3369,6 @@ class RoutingDimension {
   DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };
 
-/// A decision builder which tries to assign values to variables as close as
-/// possible to target values first.
-DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
-                                          std::vector<IntVar*> variables,
-                                          std::vector<int64_t> targets);
-
 /// Attempts to solve the model using the cp-sat solver. As of 5/2019, will
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return
@@ -3384,19 +3381,6 @@ bool SolveModelWithSat(const RoutingModel& model,
 #if !defined(SWIG)
 IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
     const RoutingModel& routing_model, const RoutingDimension& dimension);
-
-// A decision builder that monitors solutions, and tries to fix dimension
-// variables whose route did not change in the candidate solution.
-// Dimension variables are Cumul, Slack and break variables of all dimensions.
-// The user must make sure that those variables will be always be fixed at
-// solution, typically by composing another DecisionBuilder after this one.
-// If this DecisionBuilder returns a non-nullptr value at some node of the
-// search tree, it will always return nullptr in the subtree of that node.
-// Moreover, the decision will be a simultaneous assignment of the dimension
-// variables of unchanged routes on the left branch, and an empty decision on
-// the right branch.
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
-    RoutingModel* model);
 #endif
 
 }  // namespace operations_research
