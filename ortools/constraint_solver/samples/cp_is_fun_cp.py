@@ -28,7 +28,7 @@ from ortools.constraint_solver import pywrapcp
 def main():
     # Constraint programming engine
     # [START solver]
-    solver = pywrapcp.Solver('CP is fun!')
+    solver = pywrapcp.Solver("CP is fun!")
     # [END solver]
 
     # [START variables]
@@ -37,16 +37,16 @@ def main():
     # Decision variables.
     digits = list(range(0, base))
     digits_without_zero = list(range(1, base))
-    c = solver.IntVar(digits_without_zero, 'C')
-    p = solver.IntVar(digits, 'P')
-    i = solver.IntVar(digits_without_zero, 'I')
-    s = solver.IntVar(digits, 'S')
-    f = solver.IntVar(digits_without_zero, 'F')
-    u = solver.IntVar(digits, 'U')
-    n = solver.IntVar(digits, 'N')
-    t = solver.IntVar(digits_without_zero, 'T')
-    r = solver.IntVar(digits, 'R')
-    e = solver.IntVar(digits, 'E')
+    c = solver.IntVar(digits_without_zero, "C")
+    p = solver.IntVar(digits, "P")
+    i = solver.IntVar(digits_without_zero, "I")
+    s = solver.IntVar(digits, "S")
+    f = solver.IntVar(digits_without_zero, "F")
+    u = solver.IntVar(digits, "U")
+    n = solver.IntVar(digits, "N")
+    t = solver.IntVar(digits_without_zero, "T")
+    r = solver.IntVar(digits, "R")
+    e = solver.IntVar(digits, "E")
 
     # We need to group variables in a list to use the constraint AllDifferent.
     letters = [c, p, i, s, f, u, n, t, r, e]
@@ -60,8 +60,10 @@ def main():
     solver.Add(solver.AllDifferent(letters))
 
     # CP + IS + FUN = TRUE
-    solver.Add(p + s + n + base * (c + i + u) + base * base * f == e +
-               base * u + base * base * r + base * base * base * t)
+    solver.Add(
+        p + s + n + base * (c + i + u) + base * base * f
+        == e + base * u + base * base * r + base * base * base * t
+    )
     # [END constraints]
 
     # [START solve]
@@ -71,16 +73,25 @@ def main():
     while solver.NextSolution():
         print(letters)
         # Is CP + IS + FUN = TRUE?
-        assert (base * c.Value() + p.Value() + base * i.Value() + s.Value() +
-                base * base * f.Value() + base * u.Value() +
-                n.Value() == base * base * base * t.Value() +
-                base * base * r.Value() + base * u.Value() + e.Value())
+        assert (
+            base * c.Value()
+            + p.Value()
+            + base * i.Value()
+            + s.Value()
+            + base * base * f.Value()
+            + base * u.Value()
+            + n.Value()
+            == base * base * base * t.Value()
+            + base * base * r.Value()
+            + base * u.Value()
+            + e.Value()
+        )
         solution_count += 1
     solver.EndSearch()
-    print(f'Number of solutions found: {solution_count}')
+    print(f"Number of solutions found: {solution_count}")
     # [END solve]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

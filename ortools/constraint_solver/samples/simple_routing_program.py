@@ -38,7 +38,6 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -62,7 +61,8 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )  # pylint: disable=no-member
     # [END parameters]
 
     # Solve the problem.
@@ -72,21 +72,21 @@ def main():
 
     # Print solution on console.
     # [START print_solution]
-    print(f'Objective: {assignment.ObjectiveValue()}')
+    print(f"Objective: {assignment.ObjectiveValue()}")
     index = routing.Start(0)
-    plan_output = 'Route for vehicle 0:\n'
+    plan_output = "Route for vehicle 0:\n"
     route_distance = 0
     while not routing.IsEnd(index):
-        plan_output += f'{manager.IndexToNode(index)} -> '
+        plan_output += f"{manager.IndexToNode(index)} -> "
         previous_index = index
         index = assignment.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += f'{manager.IndexToNode(index)}\n'
-    plan_output += f'Distance of the route: {route_distance}m\n'
+    plan_output += f"{manager.IndexToNode(index)}\n"
+    plan_output += f"Distance of the route: {route_distance}m\n"
     print(plan_output)
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]
