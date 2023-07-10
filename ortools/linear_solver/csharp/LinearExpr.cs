@@ -194,7 +194,7 @@ class ProductCst : LinearExpr
     {
         return expr_.SolutionValue() * coeff_;
     }
-    
+
     private LinearExpr expr_;
     private double coeff_;
 }
@@ -223,7 +223,7 @@ class SumCst : LinearExpr
             return 0.0;
         }
     }
-    
+
     public override double SolutionValue()
     {
         return expr_.SolutionValue() + coeff_;

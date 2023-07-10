@@ -25,7 +25,7 @@ from ortools.constraint_solver import pywrapcp
 def create_data_model():
     """Stores the data for the problem."""
     data = {}
-    data['time_matrix'] = [
+    data["time_matrix"] = [
         [0, 6, 9, 8, 7, 3, 6, 2, 3, 2, 6, 6, 4, 4, 5, 9, 7],
         [6, 0, 8, 3, 2, 6, 8, 4, 8, 8, 13, 7, 5, 8, 12, 10, 14],
         [9, 8, 0, 11, 10, 6, 3, 9, 5, 8, 4, 15, 14, 13, 9, 18, 9],
@@ -44,7 +44,7 @@ def create_data_model():
         [9, 10, 18, 6, 8, 12, 15, 8, 13, 9, 13, 3, 4, 5, 9, 0, 9],
         [7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0],
     ]
-    data['time_windows'] = [
+    data["time_windows"] = [
         (0, 5),  # depot
         (7, 12),  # 1
         (10, 15),  # 2
@@ -63,13 +63,13 @@ def create_data_model():
         (10, 15),  # 15
         (5, 15),  # 16
     ]
-    data['num_vehicles'] = 4
+    data["num_vehicles"] = 4
     # [START resources_data]
-    data['vehicle_load_time'] = 5
-    data['vehicle_unload_time'] = 5
-    data['depot_capacity'] = 2
+    data["vehicle_load_time"] = 5
+    data["vehicle_unload_time"] = 5
+    data["depot_capacity"] = 2
     # [END resources_data]
-    data['depot'] = 0
+    data["depot"] = 0
     return data
     # [END data_model]
 
@@ -77,27 +77,29 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
-    print(f'Objective: {solution.ObjectiveValue()}')
-    time_dimension = routing.GetDimensionOrDie('Time')
+    print(f"Objective: {solution.ObjectiveValue()}")
+    time_dimension = routing.GetDimensionOrDie("Time")
     total_time = 0
-    for vehicle_id in range(data['num_vehicles']):
+    for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
-        plan_output = f'Route for vehicle {vehicle_id}:\n'
+        plan_output = f"Route for vehicle {vehicle_id}:\n"
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
             plan_output += (
-                f'{manager.IndexToNode(index)}'
-                f' Time({solution.Min(time_var)}, {solution.Max(time_var)})'
-                ' -> ')
+                f"{manager.IndexToNode(index)}"
+                f" Time({solution.Min(time_var)}, {solution.Max(time_var)})"
+                " -> "
+            )
             index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
         plan_output += (
-            f'{manager.IndexToNode(index)}'
-            f' Time({solution.Min(time_var)},{solution.Max(time_var)})\n')
-        plan_output += f'Time of the route: {solution.Min(time_var)}min\n'
+            f"{manager.IndexToNode(index)}"
+            f" Time({solution.Min(time_var)},{solution.Max(time_var)})\n"
+        )
+        plan_output += f"Time of the route: {solution.Min(time_var)}min\n"
         print(plan_output)
         total_time += solution.Min(time_var)
-    print(f'Total time of all routes: {total_time}min')
+    print(f"Total time of all routes: {total_time}min")
     # [END solution_printer]
 
 
@@ -110,14 +112,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(len(data['time_matrix']),
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data["time_matrix"]), data["num_vehicles"], data["depot"]
+    )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -127,7 +129,7 @@ def main():
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['time_matrix'][from_node][to_node]
+        return data["time_matrix"][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
     # [END transit_callback]
@@ -139,65 +141,74 @@ def main():
 
     # Add Time Windows constraint.
     # [START time_windows_constraint]
-    time = 'Time'
+    time = "Time"
     routing.AddDimension(
         transit_callback_index,
         60,  # allow waiting time
         60,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
-        time)
+        time,
+    )
     time_dimension = routing.GetDimensionOrDie(time)
     # Add time window constraints for each location except depot.
-    for location_idx, time_window in enumerate(data['time_windows']):
+    for location_idx, time_window in enumerate(data["time_windows"]):
         if location_idx == 0:
             continue
         index = manager.NodeToIndex(location_idx)
         time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
     # Add time window constraints for each vehicle start node.
-    for vehicle_id in range(data['num_vehicles']):
+    for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(data['time_windows'][0][0],
-                                                data['time_windows'][0][1])
+        time_dimension.CumulVar(index).SetRange(
+            data["time_windows"][0][0], data["time_windows"][0][1]
+        )
     # [END time_windows_constraint]
 
     # Add resource constraints at the depot.
     # [START depot_load_time]
     solver = routing.solver()
     intervals = []
-    for i in range(data['num_vehicles']):
+    for i in range(data["num_vehicles"]):
         # Add time windows at start of routes
         intervals.append(
             solver.FixedDurationIntervalVar(
                 time_dimension.CumulVar(routing.Start(i)),
-                data['vehicle_load_time'], 'depot_interval'))
+                data["vehicle_load_time"],
+                "depot_interval",
+            )
+        )
         # Add time windows at end of routes.
         intervals.append(
             solver.FixedDurationIntervalVar(
                 time_dimension.CumulVar(routing.End(i)),
-                data['vehicle_unload_time'], 'depot_interval'))
+                data["vehicle_unload_time"],
+                "depot_interval",
+            )
+        )
     # [END depot_load_time]
 
     # [START depot_capacity]
     depot_usage = [1 for i in range(len(intervals))]
     solver.Add(
-        solver.Cumulative(intervals, depot_usage, data['depot_capacity'],
-                          'depot'))
+        solver.Cumulative(intervals, depot_usage, data["depot_capacity"], "depot")
+    )
     # [END depot_capacity]
 
     # Instantiate route start and end times to produce feasible times.
     # [START depot_start_end_times]
-    for i in range(data['num_vehicles']):
+    for i in range(data["num_vehicles"]):
         routing.AddVariableMinimizedByFinalizer(
-            time_dimension.CumulVar(routing.Start(i)))
-        routing.AddVariableMinimizedByFinalizer(
-            time_dimension.CumulVar(routing.End(i)))
+            time_dimension.CumulVar(routing.Start(i))
+        )
+        routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.End(i)))
     # [END depot_start_end_times]
 
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
     # [END parameters]
 
     # Solve the problem.
@@ -211,9 +222,9 @@ def main():
         print_solution(data, manager, routing, solution)
     # [END print_solution]
     else:
-        print('No solution found !')
+        print("No solution found !")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]

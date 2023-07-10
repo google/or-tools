@@ -37,32 +37,26 @@ def create_data_model():
     data = {}
     # Locations in block unit
     locations_ = [
-        (4, 4),  # depot
-        (2, 0),
-        (8, 0),  # locations to visit
-        (0, 1),
-        (1, 1),
-        (5, 2),
-        (7, 2),
-        (3, 3),
-        (6, 3),
-        (5, 5),
-        (8, 5),
-        (1, 6),
-        (2, 6),
-        (3, 7),
-        (6, 7),
-        (0, 8),
-        (7, 8),
+        # fmt: off
+      (4, 4),  # depot
+      (2, 0), (8, 0),  # locations to visit
+      (0, 1), (1, 1),
+      (5, 2), (7, 2),
+      (3, 3), (6, 3),
+      (5, 5), (8, 5),
+      (1, 6), (2, 6),
+      (3, 7), (6, 7),
+      (0, 8), (7, 8),
+        # fmt: on
     ]
     # Compute locations in meters using the block dimension defined as follow
     # Manhattan average block: 750ft x 264ft -> 228m x 80m
     # here we use: 114m x 80m city block
     # src: https://nyti.ms/2GDoRIe 'NY Times: Know Your distance'
-    data['locations'] = [(l[0] * 114, l[1] * 80) for l in locations_]
-    data['num_locations'] = len(data['locations'])
-    data['num_vehicles'] = 4
-    data['depot'] = 0
+    data["locations"] = [(l[0] * 114, l[1] * 80) for l in locations_]
+    data["num_locations"] = len(data["locations"])
+    data["num_vehicles"] = 4
+    data["depot"] = 0
     return data
 
 # [END data_model]
@@ -71,23 +65,24 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints solution on console."""
-    print(f'Objective: {assignment.ObjectiveValue()}')
+    print(f"Objective: {assignment.ObjectiveValue()}")
     total_distance = 0
-    for vehicle_id in range(data['num_vehicles']):
+    for vehicle_id in range(data["num_vehicles"]):
         index = routing.Start(vehicle_id)
-        plan_output = f'Route for vehicle {vehicle_id}:\n'
+        plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += f' {manager.IndexToNode(index)} ->'
+            plan_output += f" {manager.IndexToNode(index)} ->"
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id)
-        plan_output += f' {manager.IndexToNode(index)}\n'
-        plan_output += f'Distance of the route: {route_distance}m\n'
+                previous_index, index, vehicle_id
+            )
+        plan_output += f" {manager.IndexToNode(index)}\n"
+        plan_output += f"Distance of the route: {route_distance}m\n"
         print(plan_output)
         total_distance += route_distance
-    print(f'Total Distance of all routes: {total_distance}m')
+    print(f"Total Distance of all routes: {total_distance}m")
 
 # [END solution_printer]
 
@@ -97,22 +92,22 @@ def print_solution(data, manager, routing, assignment):
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points."""
-    return (abs(position_1[0] - position_2[0]) +
-            abs(position_1[1] - position_2[1]))
+    return abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1])
 
 
 def create_distance_evaluator(data):
     """Creates callback to return distance between points."""
     distances_ = {}
     # precompute distance between location to have distance callback in O(1)
-    for from_node in range(data['num_locations']):
+    for from_node in range(data["num_locations"]):
         distances_[from_node] = {}
-        for to_node in range(data['num_locations']):
+        for to_node in range(data["num_locations"]):
             if from_node == to_node:
                 distances_[from_node][to_node] = 0
             else:
-                distances_[from_node][to_node] = (manhattan_distance(
-                    data['locations'][from_node], data['locations'][to_node]))
+                distances_[from_node][to_node] = manhattan_distance(
+                    data["locations"][from_node], data["locations"][to_node]
+                )
 
     def distance_evaluator(manager, from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
@@ -126,13 +121,14 @@ def create_distance_evaluator(data):
 
 def add_distance_dimension(routing, distance_evaluator_index):
     """Add Global Span constraint."""
-    distance = 'Distance'
+    distance = "Distance"
     routing.AddDimension(
         distance_evaluator_index,
         0,  # null slack
         3000,  # maximum distance per vehicle
         True,  # start cumul to zero
-        distance)
+        distance,
+    )
     distance_dimension = routing.GetDimensionOrDie(distance)
     # Try to minimize the max distance among vehicles.
     # /!\ It doesn't mean the standard deviation is minimized
@@ -148,8 +144,9 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(data['num_locations'],
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+        data["num_locations"], data["num_vehicles"], data["depot"]
+    )
     # [END index_manager]
 
     # Create Routing Model.
@@ -160,7 +157,8 @@ def main():
     # Define weight of each edge
     # [START transit_callback]
     distance_evaluator_index = routing.RegisterTransitCallback(
-        functools.partial(create_distance_evaluator(data), manager))
+        functools.partial(create_distance_evaluator(data), manager)
+    )
     # [END transit_callback]
 
     # Define cost of each arc.
@@ -177,7 +175,8 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
     # [END parameters]
 
     # Solve the problem.
@@ -190,10 +189,10 @@ def main():
     if solution:
         print_solution(data, manager, routing, solution)
     else:
-        print('No solution found !')
+        print("No solution found !")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
     # [END program]

@@ -23,15 +23,13 @@ from ortools.constraint_solver import pywrapcp
 def main(board_size):
     # Creates the solver.
     # [START solver]
-    solver = pywrapcp.Solver('n-queens')
+    solver = pywrapcp.Solver("n-queens")
     # [END solver]
 
     # Creates the variables.
     # [START variables]
     # The array index is the column, and the value is the row.
-    queens = [
-        solver.IntVar(0, board_size - 1, f'x{i}') for i in range(board_size)
-    ]
+    queens = [solver.IntVar(0, board_size - 1, f"x{i}") for i in range(board_size)]
     # [END variables]
 
     # Creates the constraints.
@@ -45,8 +43,7 @@ def main(board_size):
     # [END constraints]
 
     # [START db]
-    db = solver.Phase(queens, solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
+    db = solver.Phase(queens, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
     # [END db]
 
     # [START solve]
@@ -59,9 +56,9 @@ def main(board_size):
             for j in range(board_size):
                 if queens[j].Value() == i:
                     # There is a queen in column j, row i.
-                    print('Q', end=' ')
+                    print("Q", end=" ")
                 else:
-                    print('_', end=' ')
+                    print("_", end=" ")
             print()
         print()
         num_solutions += 1
@@ -70,15 +67,15 @@ def main(board_size):
 
     # Statistics.
     # [START statistics]
-    print('\nStatistics')
-    print(f'  failures: {solver.Failures()}')
-    print(f'  branches: {solver.Branches()}')
-    print(f'  wall time: {solver.WallTime()} ms')
-    print(f'  Solutions found: {num_solutions}')
+    print("\nStatistics")
+    print(f"  failures: {solver.Failures()}")
+    print(f"  branches: {solver.Branches()}")
+    print(f"  wall time: {solver.WallTime()} ms")
+    print(f"  Solutions found: {num_solutions}")
     # [END statistics]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # By default, solve the 8x8 problem.
     size = 8
     if len(sys.argv) > 1:
