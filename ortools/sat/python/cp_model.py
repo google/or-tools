@@ -602,17 +602,15 @@ class _SumArray(LinearExpr):
                 raise TypeError("Not an linear expression: " + str(x))
 
     def __str__(self):
+        exprs_str = " + ".join(map(repr, self.__expressions))
         if self.__constant == 0:
-            return "({})".format(" + ".join(map(str, self.__expressions)))
+            return f"({exprs_str})"
         else:
-            return "({} + {})".format(
-                " + ".join(map(str, self.__expressions)), self.__constant
-            )
+            return f"({exprs_str} + {self.__constant})"
 
     def __repr__(self):
-        return "SumArray({}, {})".format(
-            ", ".join(map(repr, self.__expressions)), self.__constant
-        )
+        exprs_str = ", ".join(map(repr, self.__expressions))
+        return f"SumArray({exprs_str}, {self.__constant})"
 
     def Expressions(self):
         return self.__expressions
@@ -654,29 +652,27 @@ class _WeightedSum(LinearExpr):
             elif not output and cmh.is_minus_one(coeff):
                 output = "-" + str(expr)
             elif not output:
-                output = "{} * {}".format(coeff, str(expr))
+                output = f"{coeff} * {expr}"
             elif cmh.is_one(coeff):
-                output += " + {}".format(str(expr))
+                output += f" + {expr}"
             elif cmh.is_minus_one(coeff):
-                output += " - {}".format(str(expr))
+                output += f" - {expr}"
             elif coeff > 1:
-                output += " + {} * {}".format(coeff, str(expr))
+                output += f" + {coeff} * {expr}"
             elif coeff < -1:
-                output += " - {} * {}".format(-coeff, str(expr))
+                output += f" - {-coeff} * {expr}"
         if self.__constant > 0:
-            output += " + {}".format(self.__constant)
+            output += f" + {self.__constant}"
         elif self.__constant < 0:
-            output += " - {}".format(-self.__constant)
+            output += f" - {-self.__constant}"
         if output is None:
             output = "0"
         return output
 
     def __repr__(self):
-        return "WeightedSum([{}], [{}], {})".format(
-            ", ".join(map(repr, self.__expressions)),
-            ", ".join(map(repr, self.__coefficients)),
-            self.__constant,
-        )
+        exprs_str = ", ".join(map(repr, self.__expressions))
+        coeffs_str = ", ".join(map(repr, self.__coefficients))
+        return f"WeightedSum([{exprs_str}], [{coeffs_str}], {self.__constant})"
 
     def Expressions(self):
         return self.__expressions
@@ -2266,10 +2262,7 @@ class CpModel:
                 else:
                     self.__model.objective.scaling_factor = -1
                     self.__model.objective.offset = -constant
-                for (
-                    v,
-                    c,
-                ) in coeffs_map.items():
+                for v, c in coeffs_map.items():
                     self.__model.objective.coeffs.append(c)
                     if minimize:
                         self.__model.objective.vars.append(v.Index())
@@ -2278,10 +2271,7 @@ class CpModel:
             else:
                 self.__model.floating_point_objective.maximize = not minimize
                 self.__model.floating_point_objective.offset = constant
-                for (
-                    v,
-                    c,
-                ) in coeffs_map.items():
+                for v, c in coeffs_map.items():
                     self.__model.floating_point_objective.coeffs.append(c)
                     self.__model.floating_point_objective.vars.append(v.Index())
         elif cmh.is_integral(obj):
