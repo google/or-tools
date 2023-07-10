@@ -7,14 +7,23 @@ jobs:
   # Building using the github runner environement directly.
   bazel:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+      fail-fast: false
     env:
       CC:  gcc-12
       CXX: g++-12
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Check java
+      - uses: actions/checkout@v3
+      - name: Check Java
         run: java -version
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check Python
+        run: python --version
       - name: Install Bazel
         run: |
           curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
