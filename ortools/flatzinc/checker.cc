@@ -19,6 +19,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -386,62 +387,63 @@ bool CheckDiffnNonStrictK(
 
 bool CheckDisjunctive(const Constraint& ct,
                       const std::function<int64_t(Variable*)>& evaluator) {
-  // TODO(user): Improve complexity for large size.
   const int size = Size(ct.arguments[0]);
   CHECK_EQ(size, Size(ct.arguments[1]));
-  absl::flat_hash_map<int64_t, int64_t> usage;
-  for (int i = 0; i < size; ++i) {
-    const int64_t start = EvalAt(ct.arguments[0], i, evaluator);
+  std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
+  start_durations_pairs.reserve(size);
+  for (int i = 0; i + 1 < size; ++i) {
     const int64_t duration = EvalAt(ct.arguments[1], i, evaluator);
-    for (int64_t t = start; t < start + duration; ++t) {
-      ++usage[t];
-      if (usage[t] > 1) {
-        return false;
-      }
-    }
+    if (duration == 0) continue;
+    const int64_t start = EvalAt(ct.arguments[0], i, evaluator);
+    start_durations_pairs.push_back({start, duration});
+  }
+  std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
+  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  for (const auto& pair : start_durations_pairs) {
+    if (pair.first < previous_end) return false;
+    previous_end = pair.first + pair.second;
   }
   return true;
 }
 
 bool CheckDisjunctiveStrict(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator) {
-  // TODO(user): Improve complexity for large size.
   const int size = Size(ct.arguments[0]);
   CHECK_EQ(size, Size(ct.arguments[1]));
+  std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
+  start_durations_pairs.reserve(size);
   for (int i = 0; i + 1 < size; ++i) {
-    const int64_t start_i = EvalAt(ct.arguments[0], i, evaluator);
-    const int64_t duration_i = EvalAt(ct.arguments[1], i, evaluator);
-    for (int j = i + 1; j < size; ++j) {
-      const int64_t start_j = EvalAt(ct.arguments[0], j, evaluator);
-      const int64_t duration_j = EvalAt(ct.arguments[1], j, evaluator);
-      if (start_i + duration_i <= start_j || start_j + duration_j <= start_i) {
-        continue;
-      }
-      return false;
-    }
+    const int64_t start = EvalAt(ct.arguments[0], i, evaluator);
+    const int64_t duration = EvalAt(ct.arguments[1], i, evaluator);
+    start_durations_pairs.push_back({start, duration});
+  }
+  std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
+  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  for (const auto& pair : start_durations_pairs) {
+    if (pair.first < previous_end) return false;
+    previous_end = pair.first + pair.second;
   }
   return true;
 }
 
 bool CheckDisjunctiveStrictOpt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator) {
-  // TODO: Improve complexity for large size.
   const int size = Size(ct.arguments[0]);
   CHECK_EQ(size, Size(ct.arguments[1]));
   CHECK_EQ(size, Size(ct.arguments[2]));
+  std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
+  start_durations_pairs.reserve(size);
   for (int i = 0; i + 1 < size; ++i) {
     if (EvalAt(ct.arguments[0], i, evaluator) == 0) continue;
-    const int64_t start_i = EvalAt(ct.arguments[1], i, evaluator);
-    const int64_t duration_i = EvalAt(ct.arguments[2], i, evaluator);
-    for (int j = i + 1; j < size; ++j) {
-      if (EvalAt(ct.arguments[0], j, evaluator) == 0) continue;
-      const int64_t start_j = EvalAt(ct.arguments[1], j, evaluator);
-      const int64_t duration_j = EvalAt(ct.arguments[2], j, evaluator);
-      if (start_i + duration_i <= start_j || start_j + duration_j <= start_i) {
-        continue;
-      }
-      return false;
-    }
+    const int64_t start = EvalAt(ct.arguments[1], i, evaluator);
+    const int64_t duration = EvalAt(ct.arguments[2], i, evaluator);
+    start_durations_pairs.push_back({start, duration});
+  }
+  std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
+  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  for (const auto& pair : start_durations_pairs) {
+    if (pair.first < previous_end) return false;
+    previous_end = pair.first + pair.second;
   }
   return true;
 }
