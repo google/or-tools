@@ -15,7 +15,7 @@
 
 load(":code_samples.bzl", "code_sample_compile_py", "code_sample_py", "code_sample_test_arg_py")
 
-code_sample_compile_py("arc_flow_cutting_stock_sat")   # Crash on mac, investigate.
+code_sample_compile_py("arc_flow_cutting_stock_sat")
 
 code_sample_py("assignment_with_constraints_sat")
 
@@ -45,12 +45,13 @@ code_sample_py("jobshop_with_maintenance_sat")
 
 code_sample_py("knapsack_2d_sat")
 
-code_sample_compile_py("line_balancing_sat")  # no input
+code_sample_compile_py("line_balancing_sat")
+
 code_sample_test_arg_py(
-    name="line_balancing_sat",
-    suffix="salbp_20_1",
-    data=["//examples/python/testdata:salbp_20_1.alb"],
-    args=["--input $(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+    name = "line_balancing_sat",
+    args = ["--input $(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+    data = ["//examples/python/testdata:salbp_20_1.alb"],
+    suffix = "salbp_20_1",
 )
 
 code_sample_py("maze_escape_sat")
@@ -63,7 +64,14 @@ code_sample_py("prize_collecting_vrp_sat")
 
 code_sample_py("qubo_sat")
 
-code_sample_compile_py("rcpsp_sat")  # no input
+code_sample_compile_py("rcpsp_sat")
+
+code_sample_test_arg_py(
+    name = "rcpsp_sat",
+    args = ["--input $(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
+    data = ["//ortools/scheduling/testdata:j301_1.sm"],
+    suffix = "j301_1",
+)
 
 code_sample_py("shift_scheduling_sat")
 
