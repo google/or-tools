@@ -144,8 +144,9 @@ std::string ConvergenceInformationString(
           convergence_information.l2_primal_variable(),
           convergence_information.l2_dual_variable());
     case OPTIMALITY_NORM_UNSPECIFIED:
-      LOG(FATAL) << "Invalid residual norm.";
+      LOG(FATAL) << "Residual norm not specified.";
   }
+  LOG(FATAL) << "Invalid residual norm " << residual_norm << ".";
 }
 
 std::string ConvergenceInformationShortString(
@@ -178,8 +179,9 @@ std::string ConvergenceInformationShortString(
           convergence_information.primal_objective(),
           convergence_information.dual_objective());
     case OPTIMALITY_NORM_UNSPECIFIED:
-      LOG(FATAL) << "Invalid residual norm.";
+      LOG(FATAL) << "Residual norm not specified.";
   }
+  LOG(FATAL) << "Invalid residual norm " << residual_norm << ".";
 }
 
 void LogInfoWithoutPrefix(absl::string_view message) {

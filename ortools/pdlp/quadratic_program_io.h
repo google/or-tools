@@ -20,6 +20,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research::pdlp {
@@ -34,6 +35,10 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
 
 QuadraticProgram ReadMpsLinearProgramOrDie(const std::string& lp_file,
                                            bool include_names = false);
+
+absl::StatusOr<QuadraticProgram> ReadMpsLinearProgram(
+    const std::string& lp_file, bool include_names = false);
+
 // The input may be `MPModelProto` in text format, binary format, or JSON,
 // possibly gzipped.
 QuadraticProgram ReadMPModelProtoFileOrDie(
