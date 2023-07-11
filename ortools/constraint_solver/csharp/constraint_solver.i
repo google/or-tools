@@ -702,8 +702,8 @@ namespace operations_research {
 // Ignored:
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
-    Solver* s, OptimizeVar* obj, IntVar* var,
-    double scaling_factor, double offset,
+    Solver* solver, std::vector<IntVar*> vars, std::string vars_name,
+    std::vector<double> scaling_factors, std::vector<double> offsets,
     std::function<std::string()> display_callback,
     bool display_on_new_solutions_only, int period);
 // Methods:
