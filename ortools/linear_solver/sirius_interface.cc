@@ -846,7 +846,7 @@ namespace operations_research {
 					cmatval[0] = 1.0;
 
 					CHECK_STATUS(
-						SRScreatecols(mLp, newcols, obj.get(), ctype.get(), lb.get(), ub.get(), NULL)
+						SRScreatecols(mLp, newcols, obj.get(), ctype.get(), lb.get(), ub.get(), colname.get())
 					);
 					//int const cols = SRSgetnbcols(mLp);
 					//unique_ptr<int[]> ind(new int[newcols]);

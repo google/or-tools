@@ -106,7 +106,7 @@ class XpressHeaderParser(object):
                                      "XPRSgetdblcontrol", "XPRSgetstringcontrol", "XPRSgetintattrib",
                                      "XPRSgetdblattrib", "XPRSloadlp", "XPRSloadlp64", "XPRSgetobj", "XPRSgetrhs",
                                      "XPRSgetrhsrange", "XPRSgetlb", "XPRSgetub", "XPRSgetcoef", "XPRSaddrows",
-                                     "XPRSdelrows", "XPRSaddcols", "XPRSdelcols", "XPRSchgcoltype", "XPRSloadbasis",
+                                     "XPRSdelrows", "XPRSaddcols", "XPRSaddnames", "XPRSgetnames", "XPRSdelcols", "XPRSchgcoltype", "XPRSloadbasis",
                                      "XPRSpostsolve", "XPRSchgobjsense", "XPRSgetlasterror", "XPRSgetbasis",
                                      "XPRSwriteprob", "XPRSgetrowtype", "XPRSgetcoltype", "XPRSgetlpsol",
                                      "XPRSgetmipsol", "XPRSchgbounds", "XPRSchgobj", "XPRSchgcoef", "XPRSchgmcoef",
