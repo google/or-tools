@@ -47,6 +47,8 @@ def code_sample_py(name):
         main = name + ".py",
         deps = [
             requirement("absl-py"),
+            requirement("numpy"),
+            requirement("pandas"),
             "//ortools/sat/python:cp_model",
         ],
         python_version = "PY3",
@@ -64,6 +66,7 @@ def code_sample_py(name):
         deps = [
             requirement("absl-py"),
             requirement("numpy"),
+            requirement("pandas"),
             requirement("protobuf"),
         ],
         python_version = "PY3",

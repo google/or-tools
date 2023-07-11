@@ -25,6 +25,8 @@ code_sample_cc_py(name = "assumptions_sample_sat")
 
 code_sample_cc_py(name = "binpacking_problem_sat")
 
+code_sample_py(name = "bin_packing_sat")
+
 code_sample_cc_py(name = "bool_or_sample_sat")
 
 code_sample_py(name = "boolean_product_sample_sat")

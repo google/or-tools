@@ -69,6 +69,8 @@ py_library(
     deps = [
         ":cp_model_helper",
         ":swig_helper",
+        requirement("numpy"),
+        requirement("pandas"),
         "//ortools/sat:cp_model_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
         "//ortools/util/python:sorted_interval_list",
