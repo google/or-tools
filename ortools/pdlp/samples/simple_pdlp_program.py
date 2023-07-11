@@ -25,11 +25,11 @@ import scipy.sparse
 
 from ortools.pdlp import solve_log_pb2
 from ortools.pdlp import solvers_pb2
-from ortools.pdlp.python import pywrap_pdlp
+from ortools.pdlp.python import pdlp
 from ortools.init.python import init
 
 
-def simple_lp() -> pywrap_pdlp.QuadraticProgram:
+def simple_lp() -> pdlp.QuadraticProgram:
     """Returns a small LP.
 
     min 5.5 x_0 - 2 x_1 - x_2 +   x_3 - 14 s.t.
@@ -42,7 +42,7 @@ def simple_lp() -> pywrap_pdlp.QuadraticProgram:
       -infinity <= x_2 <= 6
             2.5 <= x_3 <= 3.5
     """
-    lp = pywrap_pdlp.QuadraticProgram()
+    lp = pdlp.QuadraticProgram()
     lp.objective_offset = -14
     lp.objective_vector = [5.5, -2, -1, 1]
     lp.constraint_lower_bounds = [12, -np.inf, -4, -1]
@@ -73,9 +73,7 @@ def main() -> None:
 
     # Call the main solve function. Note that a quirk of the pywrap11 API forces
     # us to serialize the `params` and deserialize the `solve_log` proto messages.
-    result = pywrap_pdlp.primal_dual_hybrid_gradient(
-        simple_lp(), params.SerializeToString()
-    )
+    result = pdlp.primal_dual_hybrid_gradient(simple_lp(), params.SerializeToString())
     solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
 
     if solve_log.termination_reason == solve_log_pb2.TERMINATION_REASON_OPTIMAL:

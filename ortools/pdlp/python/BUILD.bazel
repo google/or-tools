@@ -18,8 +18,8 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@pip_deps//:requirements.bzl", "requirement")
 
 pybind_extension(
-    name = "pywrap_pdlp",
-    srcs = ["pywrap_pdlp.cc"],
+    name = "pdlp",
+    srcs = ["pdlp.cc"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -35,11 +35,11 @@ pybind_extension(
 )
 
 py_test(
-    name = "pywrap_pdlp_test",
+    name = "pdlp_test",
     size = "small",
-    srcs = ["pywrap_pdlp_test.py"],
+    srcs = ["pdlp_test.py"],
     data = [
-        ":pywrap_pdlp.so",
+        ":pdlp.so",
     ],
     python_version = "PY3",
     srcs_version = "PY3",

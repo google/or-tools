@@ -20,7 +20,7 @@ import scipy.sparse
 
 from ortools.pdlp import solve_log_pb2
 from ortools.pdlp import solvers_pb2
-from ortools.pdlp.python import pywrap_pdlp
+from ortools.pdlp.python import pdlp
 from ortools.linear_solver import linear_solver_pb2
 
 
@@ -77,31 +77,31 @@ def small_proto_qp():
 
 class QuadraticProgramTest(absltest.TestCase):
     def test_validate_quadratic_program_dimensions_for_empty_qp(self):
-        qp = pywrap_pdlp.QuadraticProgram()
+        qp = pdlp.QuadraticProgram()
         qp.resize_and_initialize(3, 2)
-        pywrap_pdlp.validate_quadratic_program_dimensions(qp)
-        self.assertTrue(pywrap_pdlp.is_linear_program(qp))
+        pdlp.validate_quadratic_program_dimensions(qp)
+        self.assertTrue(pdlp.is_linear_program(qp))
 
     def test_converts_from_tiny_mpmodel_lp(self):
         lp_proto = small_proto_lp()
-        qp = pywrap_pdlp.qp_from_mpmodel_proto(
+        qp = pdlp.qp_from_mpmodel_proto(
             lp_proto.SerializeToString(), relax_integer_variables=False
         )
-        pywrap_pdlp.validate_quadratic_program_dimensions(qp)
-        self.assertTrue(pywrap_pdlp.is_linear_program(qp))
+        pdlp.validate_quadratic_program_dimensions(qp)
+        self.assertTrue(pdlp.is_linear_program(qp))
         self.assertSameElements(qp.objective_vector, [0, -2])
 
     def test_converts_from_tiny_mpmodel_qp(self):
         qp_proto = small_proto_qp()
-        qp = pywrap_pdlp.qp_from_mpmodel_proto(
+        qp = pdlp.qp_from_mpmodel_proto(
             qp_proto.SerializeToString(), relax_integer_variables=False
         )
-        pywrap_pdlp.validate_quadratic_program_dimensions(qp)
-        self.assertFalse(pywrap_pdlp.is_linear_program(qp))
+        pdlp.validate_quadratic_program_dimensions(qp)
+        self.assertFalse(pdlp.is_linear_program(qp))
         self.assertSameElements(qp.objective_vector, [0, 0])
 
     def test_build_lp(self):
-        qp = pywrap_pdlp.QuadraticProgram()
+        qp = pdlp.QuadraticProgram()
         qp.objective_vector = [0, -2]
         qp.constraint_matrix = scipy.sparse.csr_matrix(np.array([[1.0, 1.0]]))
         qp.constraint_lower_bounds = [-np.inf]
@@ -110,14 +110,12 @@ class QuadraticProgramTest(absltest.TestCase):
         qp.variable_upper_bounds = [np.inf, np.inf]
         qp.variable_names = ["x", "y"]
         self.assertEqual(
-            linear_solver_pb2.MPModelProto.FromString(
-                pywrap_pdlp.qp_to_mpmodel_proto(qp)
-            ),
+            linear_solver_pb2.MPModelProto.FromString(pdlp.qp_to_mpmodel_proto(qp)),
             small_proto_lp(),
         )
 
     def test_build_qp(self):
-        qp = pywrap_pdlp.QuadraticProgram()
+        qp = pdlp.QuadraticProgram()
         qp.objective_vector = [0, 0]
         qp.constraint_matrix = scipy.sparse.csr_matrix(np.array([[1.0, 1.0]]))
         qp.set_objective_matrix_diagonal([4.0])
@@ -127,9 +125,7 @@ class QuadraticProgramTest(absltest.TestCase):
         qp.variable_upper_bounds = [np.inf, np.inf]
         qp.variable_names = ["x", "y"]
         self.assertEqual(
-            linear_solver_pb2.MPModelProto.FromString(
-                pywrap_pdlp.qp_to_mpmodel_proto(qp)
-            ),
+            linear_solver_pb2.MPModelProto.FromString(pdlp.qp_to_mpmodel_proto(qp)),
             small_proto_qp(),
         )
 
@@ -152,7 +148,7 @@ def tiny_lp():
       Dual: [0.5, 4.0, 0.0]  Value: 6 + 28 - 3.5*6 - 14 = -1
       Reduced costs: [0.0, 1.5, -3.5, 0.0]
     """
-    qp = pywrap_pdlp.QuadraticProgram()
+    qp = pdlp.QuadraticProgram()
     qp.objective_offset = -14
     qp.objective_vector = [5, 2, 1, 1]
     qp.constraint_lower_bounds = [12, 7, 1]
@@ -182,7 +178,7 @@ def test_lp():
      Dual: [-2, 0, 2.375, 2.0/3]
      Value: -5.5 - 16 -1 + 2.5 - 14 = -34
     """
-    qp = pywrap_pdlp.QuadraticProgram()
+    qp = pdlp.QuadraticProgram()
     qp.objective_offset = -14
     qp.objective_vector = [5.5, -2, -1, 1]
     qp.constraint_lower_bounds = [12, -np.inf, -4, -1]
@@ -201,9 +197,7 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         params = solvers_pb2.PrimalDualHybridGradientParams()
         params.termination_criteria.iteration_limit = 1
         params.termination_check_frequency = 1
-        result = pywrap_pdlp.primal_dual_hybrid_gradient(
-            tiny_lp(), params.SerializeToString()
-        )
+        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params.SerializeToString())
         solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
         self.assertLessEqual(solve_log.iteration_count, 1)
         self.assertEqual(
@@ -216,9 +210,7 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         opt_criteria = params.termination_criteria.simple_optimality_criteria
         opt_criteria.eps_optimal_relative = 0.0
         opt_criteria.eps_optimal_absolute = 1.0e-10
-        result = pywrap_pdlp.primal_dual_hybrid_gradient(
-            tiny_lp(), params.SerializeToString()
-        )
+        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params.SerializeToString())
         solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
         self.assertEqual(
             solve_log.termination_reason, solve_log_pb2.TERMINATION_REASON_OPTIMAL
@@ -232,9 +224,7 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         opt_criteria = params.termination_criteria.simple_optimality_criteria
         opt_criteria.eps_optimal_relative = 0.0
         opt_criteria.eps_optimal_absolute = 1.0e-10
-        result = pywrap_pdlp.primal_dual_hybrid_gradient(
-            test_lp(), params.SerializeToString()
-        )
+        result = pdlp.primal_dual_hybrid_gradient(test_lp(), params.SerializeToString())
         solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
         self.assertEqual(
             solve_log.termination_reason, solve_log_pb2.TERMINATION_REASON_OPTIMAL
@@ -250,10 +240,10 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         params.l_inf_ruiz_iterations = 0
         params.l2_norm_rescaling = False
 
-        start = pywrap_pdlp.PrimalAndDualSolution()
+        start = pdlp.PrimalAndDualSolution()
         start.primal_solution = [1.0, 0.0, 6.0, 2.0]
         start.dual_solution = [0.5, 4.0, 0.0]
-        result = pywrap_pdlp.primal_dual_hybrid_gradient(
+        result = pdlp.primal_dual_hybrid_gradient(
             tiny_lp(), params.SerializeToString(), initial_solution=start
         )
         solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)

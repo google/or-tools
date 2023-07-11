@@ -33,9 +33,9 @@
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
 
-namespace pdlp = ::operations_research::pdlp;
-using ::operations_research::MPModelProto;
-using ::operations_research::pdlp::QuadraticProgram;
+namespace operations_research::pdlp {
+namespace {
+
 using ::pybind11::arg;
 
 // TODO(user): The interface uses serialized protos because of issues building
@@ -51,7 +51,9 @@ struct PywrapSolverResult {
   pybind11::bytes solve_log_str;
 };
 
-PYBIND11_MODULE(pywrap_pdlp, m) {
+}  // namespace
+
+PYBIND11_MODULE(pdlp, m) {
   // ---------------------------------------------------------------------------
   // quadratic_program.h
   // ---------------------------------------------------------------------------
@@ -96,8 +98,7 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
 
   m.def("validate_quadratic_program_dimensions",
         [](const QuadraticProgram& qp) {
-          const absl::Status status =
-              pdlp::ValidateQuadraticProgramDimensions(qp);
+          const absl::Status status = ValidateQuadraticProgramDimensions(qp);
           if (status.ok()) {
             return;
           } else {
@@ -105,7 +106,7 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
           }
         });
 
-  m.def("is_linear_program", &pdlp::IsLinearProgram);
+  m.def("is_linear_program", &IsLinearProgram);
 
   m.def(
       "qp_from_mpmodel_proto",
@@ -115,8 +116,8 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
         if (!proto.ParseFromString(std::string(proto_str))) {
           throw std::invalid_argument("Unable to parse input proto");
         }
-        absl::StatusOr<QuadraticProgram> qp = pdlp::QpFromMpModelProto(
-            proto, relax_integer_variables, include_names);
+        absl::StatusOr<QuadraticProgram> qp =
+            QpFromMpModelProto(proto, relax_integer_variables, include_names);
         if (qp.ok()) {
           return *qp;
         } else {
@@ -127,7 +128,7 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
       arg("include_names") = false);
 
   m.def("qp_to_mpmodel_proto", [](const QuadraticProgram& qp) {
-    absl::StatusOr<MPModelProto> proto = pdlp::QpToMpModelProto(qp);
+    absl::StatusOr<MPModelProto> proto = QpToMpModelProto(qp);
     if (proto.ok()) {
       return pybind11::bytes(proto->SerializeAsString());
     } else {
@@ -139,19 +140,17 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
   // quadratic_program_io.h
   // ---------------------------------------------------------------------------
 
-  m.def("read_quadratic_program_or_die", &pdlp::ReadQuadraticProgramOrDie,
+  m.def("read_quadratic_program_or_die", &ReadQuadraticProgramOrDie,
         arg("filename"), arg("include_names") = false);
 
   // ---------------------------------------------------------------------------
   // primal_dual_hybrid_gradient.h
   // ---------------------------------------------------------------------------
 
-  pybind11::class_<pdlp::PrimalAndDualSolution>(m, "PrimalAndDualSolution")
+  pybind11::class_<PrimalAndDualSolution>(m, "PrimalAndDualSolution")
       .def(pybind11::init<>())
-      .def_readwrite("primal_solution",
-                     &pdlp::PrimalAndDualSolution::primal_solution)
-      .def_readwrite("dual_solution",
-                     &pdlp::PrimalAndDualSolution::dual_solution);
+      .def_readwrite("primal_solution", &PrimalAndDualSolution::primal_solution)
+      .def_readwrite("dual_solution", &PrimalAndDualSolution::dual_solution);
 
   pybind11::class_<PywrapSolverResult>(m, "SolverResult")
       .def(pybind11::init<>())
@@ -164,12 +163,12 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
   m.def(
       "primal_dual_hybrid_gradient",
       [](QuadraticProgram qp, absl::string_view params_str,
-         std::optional<pdlp::PrimalAndDualSolution> initial_solution) {
-        pdlp::PrimalDualHybridGradientParams params;
+         std::optional<PrimalAndDualSolution> initial_solution) {
+        PrimalDualHybridGradientParams params;
         if (!params.ParseFromString(std::string(params_str))) {
           throw std::invalid_argument("Unable to parse input params");
         }
-        pdlp::SolverResult result = pdlp::PrimalDualHybridGradient(
+        SolverResult result = PrimalDualHybridGradient(
             std::move(qp), params, std::move(initial_solution));
         return PywrapSolverResult{
             .primal_solution = std::move(result.primal_solution),
@@ -179,3 +178,5 @@ PYBIND11_MODULE(pywrap_pdlp, m) {
       },
       arg("qp"), arg("params"), arg("initial_solution") = std::nullopt);
 }
+
+}  // namespace operations_research::pdlp

@@ -11,23 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(pywrap_pdlp_pybind11 MODULE pywrap_pdlp.cc)
+pybind11_add_module(pdlp_pybind11 MODULE pdlp.cc)
 # note: macOS is APPLE and also UNIX !
-set_target_properties(pywrap_pdlp_pybind11 PROPERTIES
-  LIBRARY_OUTPUT_NAME "pywrap_pdlp")
+set_target_properties(pdlp_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "pdlp")
 if(APPLE)
-  set_target_properties(pywrap_pdlp_pybind11 PROPERTIES
+  set_target_properties(pdlp_pybind11 PROPERTIES
     SUFFIX ".so"
     INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
     LINK_FLAGS "-flat_namespace -undefined suppress"
     )
 elseif(UNIX)
-  set_target_properties(pywrap_pdlp_pybind11 PROPERTIES
+  set_target_properties(pdlp_pybind11 PROPERTIES
     INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
     )
 endif()
-target_link_libraries(pywrap_pdlp_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
-add_library(${PROJECT_NAMESPACE}::pywrap_pdlp_pybind11 ALIAS pywrap_pdlp_pybind11)
+target_link_libraries(pdlp_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::pdlp_pybind11 ALIAS pdlp_pybind11)
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")

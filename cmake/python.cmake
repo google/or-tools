@@ -325,7 +325,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrap_pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
@@ -346,7 +346,7 @@ add_custom_command(
     pywrapcp
     pywraplp
     model_builder_helper_pybind11
-    pywrap_pdlp_pybind11
+    pdlp_pybind11
     swig_helper_pybind11
     rcpsp_pybind11
     sorted_interval_list_pybind11
