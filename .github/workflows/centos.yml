@@ -45,7 +45,6 @@ jobs:
     steps:
       - name: set name variables
         id: names
-        shell: bash
         run: |
           SHARED=${{ matrix.shared }}
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"

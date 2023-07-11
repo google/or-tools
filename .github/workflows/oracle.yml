@@ -1,0 +1,239 @@
+name: OracleLinux
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+      - merge*
+      - fix/*
+  release:
+    types: [ created ]
+
+env:
+  GITHUB_TOKEN: ${{ github.token }}
+  RELEASE_CREATED: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+
+jobs:
+
+  build:
+    name: shrd=${{ matrix.shared }} sirius=${{ matrix.sirius }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    container: 'oraclelinux:8'
+    env:
+      SIRIUS_RELEASE_TAG: antares-integration-v1.3
+      XPRESS_INSTALL_DIR: xpressmp/
+    strategy:
+      fail-fast: false
+      matrix:
+        sirius: [OFF]
+        shared: [ON, OFF]
+        extras: [ON, OFF]
+        exclude:
+          - shared: OFF
+            extras: ON
+          - shared: ON
+            extras: OFF
+
+        include:
+          - extras: OFF
+            python: OFF
+            java: OFF
+            dotnet: OFF
+          - extras: ON
+            python: OFF
+            java: ON
+            dotnet: OFF
+
+    steps:
+      - name: set name variables
+        id: names
+        run: |
+          SHARED=${{ matrix.shared }}
+          [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
+          SIRIUS=${{ matrix.sirius }}
+          [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
+          OS="_oraclelinux8"
+          APPENDIX="${OS}${WITH_SIRIUS}"
+          echo "::set-output name=appendix::$APPENDIX"
+          APPENDIX_WITH_SHARED="${OS}${WITH_SHARED}${WITH_SIRIUS}"
+          echo "::set-output name=appendix_with_shared::$APPENDIX_WITH_SHARED"
+
+      # Fill variable ${BRANCH_NAME}
+      - uses: nelonoel/branch-name@v1.0.1
+
+      - name: Install requirements (dnf)
+        run: |
+          dnf -y update
+          dnf -y install git wget openssl-devel
+          dnf -y groupinstall "Development Tools"
+          dnf -y install gcc-toolset-11
+          dnf clean all
+          rm -rf /var/cache/dnf
+      - name: Install swig (dnf)
+        if: ${{ matrix.extras == 'ON' }}
+        run: |
+          dnf -y update
+          dnf -y install pcre-devel
+          dnf clean all
+          rm -rf /var/cache/dnf
+          wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz"
+          tar xvf swig-4.0.2.tar.gz
+          rm swig-4.0.2.tar.gz
+          cd swig-4.0.2
+          ./configure --prefix=/usr
+          make -j 4
+          make install
+          cd ..
+          rm -rf swig-4.0.2
+      - name: Install java (jdk)
+        if: ${{ matrix.java == 'ON' }}
+        run: |
+          dnf -y update
+          dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven
+          dnf clean all
+          rm -rf /var/cache/dnf
+      - name: Install python
+        if: ${{ matrix.python == 'ON' }}
+        run: |
+          export PATH=/root/.local/bin:$PATH
+          dnf -y update
+          dnf -y install python3 python3-devel python3-pip
+          dnf clean all
+          echo "/root/.local/bin" >> $GITHUB_PATH
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.22.x'
+
+      - name: Checkout OR-Tools
+        run: |
+          git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git -b ${BRANCH_NAME} .
+
+      - name: Checkout Xpress linux
+        uses: actions/checkout@v2
+        with:
+          repository: rte-france/xpress-mp
+          path: ${{ env.XPRESS_INSTALL_DIR }}
+          ref: "9.0"
+          token: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: set Xpress variables
+        run: |
+          cd ${{ env.XPRESS_INSTALL_DIR }}
+          echo "XPRESSDIR=$PWD" >> $GITHUB_ENV
+          echo "XPRESS=$PWD/bin" >> $GITHUB_ENV
+          echo "XPRESS_LIB=$PWD/lib" >> $GITHUB_ENV
+
+      - name: Configure OR-Tools
+        run: |
+          export PATH=/root/.local/bin:$PATH
+          source /opt/rh/gcc-toolset-11/enable
+          cmake --version
+          cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} -DBUILD_FLATZINC=OFF
+
+      - name: Build OR-Tools Linux
+        run: |
+          export PATH=/root/.local/bin:$PATH
+          source /opt/rh/gcc-toolset-11/enable
+          cmake --build build --config Release --target all install -j4
+
+      - name: Prepare OR-Tools install
+        id: or-install
+        run: |
+          cd build
+          ARCHIVE_NAME="ortools_cxx${{ steps.names.outputs.appendix_with_shared }}.zip"
+          ARCHIVE_PATH="$PWD/${ARCHIVE_NAME}"
+          zip -r $ARCHIVE_PATH ./install
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+
+      - name: Run xpress_interface unittests
+        run: |
+          cd build
+          ctest -V -C Release -R 'cxx_unittests_xpress_interface'
+      - name: Run specific cpp tests
+        run: |
+          cd build
+          ctest -V -C Release -R 'cxx_cpp_linear_programming'
+      - name: Run other cpp tests
+        run: |
+          cd build
+          ctest --output-on-failure -C Release -R cxx_cpp -E 'cxx_cpp_linear_programming'
+      - name: Run specific python tests
+        if: ${{ matrix.python == 'ON' }}
+        working-directory: ./build
+        run: ctest -V -C Release -R python_python_linear_programming
+      - name: Run specific java tests
+        if: ${{ matrix.java == 'ON' }}
+        working-directory: ./build
+        run: ctest -V -C Release -R java_java_LinearProgramming
+
+      - name: Upload OR-Tools install artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.or-install.outputs.archive_name }}
+          path: ${{ steps.or-install.outputs.archive_path }}
+
+      - name: prepare OR-Tools wheel
+        if: ${{ matrix.python == 'ON' }}
+        id: wheel
+        run: |
+          MY_DIR="ortools_python-${{ steps.names.outputs.appendix }}"
+          mkdir $MY_DIR
+          cp build/python/dist/*.whl $MY_DIR
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="$PWD/${ARCHIVE_NAME}"
+          zip -r ${ARCHIVE_PATH} ${MY_DIR}
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
+      - name: Upload OR-Tools wheel artifact
+        if: ${{ matrix.python == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.wheel.outputs.archive_name }}
+          path: ${{ steps.wheel.outputs.archive_path }}
+
+      - name: prepare OR-Tools jar
+        if: ${{ matrix.java == 'ON' }}
+        id: jar
+        run: |
+          MY_DIR="ortools_java${{ steps.names.outputs.appendix }}"
+          mkdir ${MY_DIR}
+          cp build/java/ortools-*/target/*.jar $MY_DIR
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="$PWD/${ARCHIVE_NAME}"
+          df -h
+          pwd
+          ls -ltr
+          ls -ltr ${MY_DIR}
+          echo "ARCHIVE_PATH=${ARCHIVE_PATH}"
+          echo "MY_DIR=${MY_DIR}"
+          echo "PWD=$PWD"
+          zip -r $ARCHIVE_PATH $MY_DIR
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
+      - name: Upload OR-Tools jar artifact
+        if: ${{ matrix.java == 'ON' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.jar.outputs.archive_name }}
+          path: ${{ steps.jar.outputs.archive_path }}
+
+  publish_asset:
+    name: Publish release assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        if: ${{ env.RELEASE_CREATED == 'true' }}
+        uses: actions/download-artifact@v3
+
+      - name: Publish assets
+        if:  ${{ env.RELEASE_CREATED == 'true' }}
+        uses: alexellis/upload-assets@0.4.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          asset_paths: '["*/*.zip"]'

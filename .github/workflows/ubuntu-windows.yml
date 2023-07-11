@@ -283,7 +283,7 @@ jobs:
         working-directory: ./build
         run: ctest -V -C Release -R cxx_cpp_linear_programming
       - name: Run specific python tests
-        if: ${{ matrix.sirius == 'ON' }}
+        if: ${{ matrix.python == 'ON' }}
         working-directory: ./build
         run: ctest -V -C Release -R python_python_linear_programming
       - name: Run specific java tests
