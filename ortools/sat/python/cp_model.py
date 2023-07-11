@@ -612,7 +612,7 @@ class _SumArray(LinearExpr):
         )
         if not exprs_str:
             return "0"
-        return exprs_str
+        return f"({exprs_str})"
 
     def __repr__(self):
         exprs_str = ", ".join(map(repr, self.__expressions))
@@ -757,7 +757,9 @@ class IntVar(LinearExpr):
     def __repr__(self) -> str:
         return "%s(%s)" % (self.__var.name, DisplayBounds(self.__var.domain))
 
-    def Name(self) -> Optional[str]:
+    def Name(self) -> str:
+        if not self.__var or not self.__var.name:
+            return ""
         return self.__var.name
 
     def Not(self) -> "_NotBooleanVariable":
@@ -946,6 +948,8 @@ class Constraint:
 
     def Name(self) -> str:
         """Returns the name of the constraint."""
+        if not self.__constraint or not self.__constraint.name:
+            return ""
         return self.__constraint.name
 
     def Index(self) -> int:
@@ -1036,6 +1040,8 @@ class IntervalVar:
             )
 
     def Name(self) -> str:
+        if not self.__ct or not self.__ct.name:
+            return ""
         return self.__ct.name
 
     def StartExpr(self) -> LinearExprT:
@@ -1096,6 +1102,8 @@ class CpModel:
     # Naming.
     def Name(self) -> str:
         """Returns the name of the model."""
+        if not self.__model or not self.__model.name:
+            return ""
         return self.__model.name
 
     def SetName(self, name: str):

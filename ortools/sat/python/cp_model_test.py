@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """Tests for ortools.sat.python.cp_model."""
-
 from absl.testing import absltest
+import pandas as pd
+
 from ortools.sat.python import cp_model
 
 
@@ -61,7 +62,7 @@ class SolutionObjective(cp_model.CpSolverSolutionCallback):
         return self.__obj
 
 
-class LogToString(object):
+class LogToString:
     """Record log in a string."""
 
     def __init__(self):
@@ -473,7 +474,7 @@ class CpModelTest(absltest.TestCase):
         print("testWeightedSum")
         model = cp_model.CpModel()
         x = [model.NewIntVar(0, 2, "x%i" % i) for i in range(100)]
-        c = [2 for i in range(100)]
+        c = [2] * 100
         model.Add(cp_model.LinearExpr.WeightedSum(x, c) <= 3)
         model.Maximize(x[99])
         solver = cp_model.CpSolver()
@@ -1089,8 +1090,7 @@ class CpModelTest(absltest.TestCase):
     def testShortName(self):
         print("testShortName")
         model = cp_model.CpModel()
-        v = model.Proto().variables.add()
-        v.domain.extend([5, 10])
+        model.Proto().variables.add(domain=[5, 10])
         self.assertEqual("[5..10]", cp_model.ShortName(model.Proto(), 0))
 
     def testIntegerExpressionErrors(self):
@@ -1419,6 +1419,30 @@ class CpModelTest(absltest.TestCase):
         solver.parameters.log_search_progress = True
         self.assertEqual(cp_model.MODEL_INVALID, solver.Solve(model))
         self.assertEqual(solver.SolutionInfo(), 'var #0 has no domain(): name: "x0"')
+
+    def testIntVarSeries(self):
+        print("testIntVarSeries")
+        df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
+        model = cp_model.CpModel()
+        x = model.NewIntVarSeries(
+            name="x", index=df.index, lower_bounds=0, upper_bounds=5
+        )
+        model.Minimize(df.coeffs.dot(x))
+        solver = cp_model.CpSolver()
+        self.assertEqual(cp_model.OPTIMAL, solver.Solve(model))
+        solution = solver.Values(x)
+        self.assertTrue((solution.values == [0, 5, 0]).all())
+
+    def testBoolVarSeries(self):
+        print("testBoolVarSeries")
+        df = pd.DataFrame([1, -1, 1], columns=["coeffs"])
+        model = cp_model.CpModel()
+        x = model.NewBoolVarSeries(name="x", index=df.index)
+        model.Minimize(df.coeffs.dot(x))
+        solver = cp_model.CpSolver()
+        self.assertEqual(cp_model.OPTIMAL, solver.Solve(model))
+        solution = solver.BooleanValues(x)
+        self.assertTrue((solution.values == [False, True, False]).all())
 
 
 if __name__ == "__main__":
