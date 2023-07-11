@@ -1,6 +1,7 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/r/opensuse/tumbleweed
 FROM opensuse/tumbleweed AS env
+
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper update -y \
@@ -16,7 +17,8 @@ https://download.opensuse.org/repositories/home:ftake:branches:M17N/openSUSE_Tum
 && zypper clean -a
 
 # Install Python
-RUN zypper install -y python3 python3-pip python3-devel \
+RUN zypper update -y \
+&& zypper install -y python3 python3-pip python3-devel \
 && zypper clean -a
 
 FROM env AS devel
