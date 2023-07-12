@@ -129,7 +129,7 @@ all: build
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 # Remove some rules from gmake that .SUFFIXES does not remove.
-SUFFIXES =
+SUFFIXES :=
 # Keep all intermediate files
 # ToDo: try to remove it later
 .SECONDARY:
@@ -147,8 +147,8 @@ endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
-DISTROS = alpine archlinux centos debian fedora opensuse system_deps ubuntu
-LANGUAGES = cpp python java dotnet
+DISTROS := alpine archlinux centos debian fedora opensuse system_deps ubuntu
+LANGUAGES := cpp python java dotnet
 
 # $* stem
 # $< first prerequist
@@ -198,7 +198,7 @@ $(foreach stage,$(PRESTAGES),$(eval $(call make-prestage-target,$(stage))))
 ############
 ## STAGES ##
 ############
-STAGES = env devel build test install_env install_devel install_build install_test
+STAGES := env devel build test install_env install_devel install_build install_test
 define make-stage-target =
 #$$(info STAGE: $1)
 #$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
@@ -339,11 +339,11 @@ $(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 ###############
 ## TOOLCHAIN ##
 ###############
-TOOLCHAIN_TARGETS = \
+TOOLCHAIN_TARGETS := \
  aarch64 aarch64be \
  mips64 mips64el \
  ppc64 ppc64le
-TOOLCHAIN_STAGES = env devel build test
+TOOLCHAIN_STAGES := env devel build test
 
 define toolchain-stage-target =
 #$$(info STAGE: $1)
@@ -395,7 +395,7 @@ clean_toolchains: $(addprefix clean_toolchain_, $(TOOLCHAIN_STAGES))
 #############
 ## VAGRANT ##
 #############
-VMS = freebsd
+VMS := freebsd
 
 targets_freebsd = $(addprefix freebsd_, $(LANGUAGES))
 .PHONY: freebsd $(targets_freebsd)

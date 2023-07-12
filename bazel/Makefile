@@ -70,7 +70,7 @@ all: build
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 # Remove some rules from gmake that .SUFFIXES does not remove.
-SUFFIXES =
+SUFFIXES :=
 # Keep all intermediate files
 # ToDo: try to remove it later
 .SECONDARY:
@@ -83,17 +83,16 @@ DOCKER_BUILD_CMD := docker build --no-cache
 else
 DOCKER_BUILD_CMD := docker build
 endif
-
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
-DISTROS = alpine archlinux centos debian fedora opensuse ubuntu
+DISTROS := alpine archlinux centos debian fedora opensuse ubuntu
 
 # $* stem
 # $< first prerequist
 # $@ target name
 
-STAGES = env devel build test
+STAGES := env devel build test
 define make-stage-target =
 #$$(info STAGE: $1)
 .PHONY: $1
