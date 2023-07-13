@@ -48,7 +48,7 @@ public class Issue18
             // Console.WriteLine("solution " + globalSum.Var().Value());
             if (count > 10)
             {
-              break;
+                break;
             }
         }
         Console.WriteLine("Solutions: " + count);
