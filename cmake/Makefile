@@ -18,8 +18,8 @@ SHA1 := $(shell git rev-parse --verify HEAD)
 
 # General commands
 .PHONY: help
-BOLD=\e[1m
-RESET=\e[0m
+BOLD:=\e[1m
+RESET:=\e[0m
 
 help:
 	@echo -e "${BOLD}SYNOPSIS${RESET}"
@@ -157,7 +157,7 @@ LANGUAGES := cpp python java dotnet
 ###############
 ## PRESTAGES ##
 ###############
-PRESTAGES = base swig
+PRESTAGES := base swig
 define make-prestage-target =
 #$$(info STAGE: $1)
 #$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
