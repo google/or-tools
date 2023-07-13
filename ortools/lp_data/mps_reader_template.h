@@ -291,7 +291,6 @@
 #include "absl/strings/strip.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/util/filelineiter.h"
 
