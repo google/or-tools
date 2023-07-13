@@ -170,7 +170,6 @@ cc_library(
         ":linear_constraint",
         ":solution",
         ":variable_and_expressions",
-        "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/gscip:gscip_cc_proto",
@@ -180,7 +179,6 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
@@ -368,6 +366,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -385,6 +384,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:glpk_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "//ortools/math_opt/solvers:highs_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:status_macros",

@@ -49,6 +49,8 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -134,14 +136,13 @@ Network::Network(const int num_facilities, const int num_locations,
 
   num_facilities_ = num_facilities;
   num_locations_ = num_locations;
-  facility_edge_incidence_ =
-      std::vector<std::vector<std::pair<int, int>>>(num_facilities);
-  location_edge_incidence_ = std::vector<std::vector<std::pair<int, int>>>(
-      num_locations, std::vector<std::pair<int, int>>());
+  facility_edge_incidence_ = std::vector<std::vector<Edge>>(num_facilities);
+  location_edge_incidence_ =
+      std::vector<std::vector<Edge>>(num_locations, std::vector<Edge>());
   for (int facility = 0; facility < num_facilities_; ++facility) {
     for (int location = 0; location < num_locations_; ++location) {
       if (absl::Bernoulli(bitgen, edge_probability)) {
-        const std::pair<int, int> edge({facility, location});
+        const Edge edge({facility, location});
         facility_edge_incidence_[facility].push_back(edge);
         location_edge_incidence_[location].push_back(edge);
         edges_.push_back(edge);
@@ -219,12 +220,12 @@ absl::Status FullProblem(const FacilityLocationInstance& instance,
 
   // Demand constraints
   for (int location = 0; location < num_locations; ++location) {
-    math_opt::LinearExpression incomming_supply;
+    math_opt::LinearExpression incoming_supply;
     for (const auto& edge :
          instance.network.edges_incident_to_location(location)) {
-      incomming_supply += x.at(edge);
+      incoming_supply += x.at(edge);
     }
-    model.AddLinearConstraint(incomming_supply >= instance.location_demand);
+    model.AddLinearConstraint(incoming_supply >= instance.location_demand);
   }
 
   // Supply constraints
@@ -247,10 +248,7 @@ absl::Status FullProblem(const FacilityLocationInstance& instance,
   }
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, solver_type));
-  if (result.termination.reason != math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "failed to find an optimal solution: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimal());
 
   std::cout << "Full problem optimal objective: "
             << absl::StrFormat("%.9f", result.objective_value()) << std::endl;
@@ -273,7 +271,7 @@ struct FirstStageProblem {
   std::vector<math_opt::Variable> z;
   math_opt::Variable w;
 
-  FirstStageProblem(const Network& network, const double facility_cost);
+  FirstStageProblem(const Network& network, double facility_cost);
 };
 
 FirstStageProblem::FirstStageProblem(const Network& network,
@@ -357,6 +355,7 @@ absl::StatusOr<math_opt::SolveParameters> EnsureDualRaySolveParameters(
     case math_opt::SolverType::kGlpk:
       parameters.presolve = math_opt::Emphasis::kOff;
       parameters.lp_algorithm = math_opt::LPAlgorithm::kDualSimplex;
+      parameters.glpk.compute_unbound_rays_if_possible = true;
       break;
     default:
       return util::InternalErrorBuilder()
@@ -407,12 +406,12 @@ SecondStageSolver::SecondStageSolver(
 
   // Demand constraints
   for (int location = 0; location < num_locations; ++location) {
-    math_opt::LinearExpression incomming_supply;
+    math_opt::LinearExpression incoming_supply;
     for (const auto& edge : network_.edges_incident_to_location(location)) {
-      incomming_supply += x_.at(edge);
+      incoming_supply += x_.at(edge);
     }
     demand_constraints_.push_back(second_stage_model_.AddLinearConstraint(
-        incomming_supply >= instance.location_demand));
+        incoming_supply >= instance.location_demand));
   }
 
   // Supply constraints
@@ -505,7 +504,7 @@ absl::StatusOr<Cut> SecondStageSolver::FeasibilityCut(
   Cut result;
 
   if (!second_stage_result.has_dual_ray()) {
-    // MathOpt does not require solvers to return a dual solution on optimal,
+    // MathOpt does not require solvers to return a dual ray on infeasible,
     // but most LP solvers always will, see go/mathopt-solver-contracts for
     // details.
     return util::InternalErrorBuilder()
@@ -556,6 +555,9 @@ absl::StatusOr<Cut> SecondStageSolver::OptimalityCut(
   Cut result;
 
   if (!second_stage_result.has_dual_feasible_solution()) {
+    // MathOpt does not require solvers to return a dual solution on optimal,
+    // but most LP solvers always will, see go/mathopt-solver-contracts for
+    // details.
     return util::InternalErrorBuilder()
            << "no dual solution available for optimality cut";
   }
@@ -606,12 +608,8 @@ absl::Status Benders(const FacilityLocationInstance& instance,
     // Solve and process first stage.
     ASSIGN_OR_RETURN(const math_opt::SolveResult first_stage_result,
                      first_stage_solver->Solve());
-    if (first_stage_result.termination.reason !=
-        math_opt::TerminationReason::kOptimal) {
-      return util::InternalErrorBuilder()
-             << "could not solve first stage problem to optimality:"
-             << first_stage_result.termination;
-    }
+    RETURN_IF_ERROR(first_stage_result.termination.IsOptimal())
+        << " in first stage problem";
     for (int j = 0; j < num_facilities; j++) {
       z_values[j] = first_stage_result.variable_values().at(first_stage.z[j]);
     }

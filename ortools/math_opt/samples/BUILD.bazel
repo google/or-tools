@@ -14,8 +14,8 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_binary(
-    name = "basic_example",
-    srcs = ["basic_example.cc"],
+    name = "basic_example_mo",
+    srcs = ["basic_example_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -27,8 +27,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "cocktail_hour",
-    srcs = ["cocktail_hour.cc"],
+    name = "cocktail_hour_mo",
+    srcs = ["cocktail_hour_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
@@ -44,8 +44,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "linear_programming",
-    srcs = ["linear_programming.cc"],
+    name = "linear_programming_mo",
+    srcs = ["linear_programming_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -58,8 +58,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "integer_programming",
-    srcs = ["integer_programming.cc"],
+    name = "integer_programming_mo",
+    srcs = ["integer_programming_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -71,8 +71,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "cutting_stock",
-    srcs = ["cutting_stock.cc"],
+    name = "cutting_stock_mo",
+    srcs = ["cutting_stock_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -85,8 +85,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "facility_lp_benders",
-    srcs = ["facility_lp_benders.cc"],
+    name = "facility_lp_benders_mo",
+    srcs = ["facility_lp_benders_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -109,8 +109,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "lagrangian_relaxation",
-    srcs = ["lagrangian_relaxation.cc"],
+    name = "lagrangian_relaxation_mo",
+    srcs = ["lagrangian_relaxation_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:container_logging",
@@ -129,8 +129,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "tsp",
-    srcs = ["tsp.cc"],
+    name = "tsp_mo",
+    srcs = ["tsp_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -145,8 +145,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "linear_regression",
-    srcs = ["linear_regression.cc"],
+    name = "linear_regression_mo",
+    srcs = ["linear_regression_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -159,8 +159,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "advanced_linear_programming",
-    srcs = ["advanced_linear_programming.cc"],
+    name = "advanced_linear_programming_mo",
+    srcs = ["advanced_linear_programming_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -173,8 +173,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "time_indexed_scheduling",
-    srcs = ["time_indexed_scheduling.cc"],
+    name = "time_indexed_scheduling_mo",
+    srcs = ["time_indexed_scheduling_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -190,8 +190,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "graph_coloring",
-    srcs = ["graph_coloring.cc"],
+    name = "graph_coloring_mo",
+    srcs = ["graph_coloring_mo.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",

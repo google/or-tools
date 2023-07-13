@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Simple linear programming example
+// Advanced linear programming example
 
 #include <iostream>
 #include <limits>
@@ -45,7 +45,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 //            x2 in [0, infinity)
 //
 absl::Status Main() {
-  math_opt::Model model("Linear programming example");
+  math_opt::Model model("Advanced linear programming example");
 
   // Variables
   std::vector<math_opt::Variable> x;
@@ -67,10 +67,7 @@ absl::Status Main() {
 
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGlop));
-  if (result.termination.reason != math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "model failed to solve to optimality" << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimal());
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;
@@ -78,6 +75,38 @@ absl::Status Main() {
   std::cout << "Variable values: ["
             << absl::StrJoin(Values(result.variable_values(), x), ", ") << "]"
             << std::endl;
+
+  if (!result.has_dual_feasible_solution()) {
+    // MathOpt does not require solvers to return a dual solution on optimal,
+    // but most LP solvers always will, see go/mathopt-solver-contracts for
+    // details.
+    return util::InternalErrorBuilder()
+           << "no dual solution was returned on optimal";
+  }
+
+  std::cout << "Constraint duals: ["
+            << absl::StrJoin(Values(result.dual_values(), constraints), ", ")
+            << "]" << std::endl;
+  std::cout << "Reduced costs: ["
+            << absl::StrJoin(Values(result.reduced_costs(), x), ", ") << "]"
+            << std::endl;
+
+  if (!result.has_basis()) {
+    // MathOpt does not require solvers to return a basis on optimal, but most
+    // Simplex LP solvers (like Glop) always will, see
+    // go/mathopt-solver-contracts for details.
+    return util::InternalErrorBuilder() << "no basis was returned on optimal";
+  }
+
+  std::cout << "Constraint basis status: ["
+            << absl::StrJoin(Values(result.constraint_status(), constraints),
+                             ", ", absl::StreamFormatter())
+            << "]" << std::endl;
+
+  std::cout << "Variable basis status: ["
+            << absl::StrJoin(Values(result.variable_status(), x), ", ",
+                             absl::StreamFormatter())
+            << "]" << std::endl;
 
   return absl::OkStatus();
 }

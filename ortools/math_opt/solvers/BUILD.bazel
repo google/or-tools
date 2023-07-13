@@ -134,6 +134,7 @@ cc_library(
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",

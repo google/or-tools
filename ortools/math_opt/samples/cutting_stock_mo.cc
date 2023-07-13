@@ -24,43 +24,49 @@
 // the second board, and so on.)
 //
 // This example approximately solves the problem with a column generation
-// heuristic. The leader problem is a set cover problem, and the worker is a
-// knapsack problem. We alternate between solving the LP relaxation of the
-// leader incrementally, and solving the worker to generate new a configuration
-// (a column) for the leader. When the worker can no longer find a column
-// improving the LP cost, we convert the leader problem to a MIP and solve
-// again. We now give precise statements of the leader and worker.
+// heuristic. The leader problem is a set cover problem, and the worker is an
+// unbounded knapsack problem. We alternate between solving the LP relaxation of
+// the leader incrementally, and solving the worker to generate new a
+// configuration (a column) for the leader. When the worker can no longer find a
+// column improving the LP cost, we convert the leader problem to a MIP and
+// solve again. We now give precise statements of the leader and worker.
 //
 // Problem data:
-//  * l_i: the length of each piece we need to cut out.
-//  * d_i: how many copies each piece we need.
+//  * P: the set of pieces
+//  * l_i: the length of each piece we need to cut out, for all i in P.
+//  * d_i: how many copies of each piece we need, for all i in P.
 //  * L: the length of our initial boards.
-//  * q_ci: for configuration c, the quantity of piece i produced.
+//  * C: the set of configurations. A configuration specifies a feasible set of
+//        pieces to cut from a board (see q_ci below). Note that there are
+//        exponentially many configurations.
+//  * q_ci: for configuration c in C, the quantity of piece i in P to cut from a
+//        board (a nonnegative integer).
 //
 // Leader problem variables:
-//  * x_c: how many copies of configuration c to produce.
+//  * x_c: how many copies of configuration c in C to produce.
 //
 // Leader problem formulation:
-//   min         sum_c x_c
-//   s.t. sum_c q_ci * x_c = d_i for all i
-//                     x_c >= 0, integer for all c.
+//   min  sum_{c in C} x_c
+//   s.t. sum_{c in C} q_ci * x_c = d_i, for all i in P
+//        x_c >= 0, integer for all c in C.
 //
 // The worker problem is to generate new configurations for the leader problem
 // based on the dual variables of the demand constraints in the LP relaxation.
 // Worker problem data:
-//   * p_i: The "price" of piece i (dual value from leader's demand constraint)
+//   * p_i: The "price" of piece i in P (dual value from leader's demand
+//         constraint)
 //
 // Worker decision variables:
-//  * y_i: How many copies of piece i should be in the configuration.
+//  * y_i: How many copies of piece i in P should be in the configuration.
 //
 // Worker formulation
-//   max   sum_i p_i * y_i
-//   s.t.  sum_i l_i * y_i <= L
-//                     y_i >= 0, integer for all i
+//   max   sum_{i in P} p_i * y_i
+//   s.t.  sum_{i in P} l_i * y_i <= L
+//         y_i >= 0, integer for all i in P
 //
 // An optimal solution y* defines a new configuration c with q_ci = y_i* for all
-// i. If the solution has objective value <= 1, no further improvement on the LP
-// is possible. For additional background and proofs see:
+// i in P. If the solution has objective value <= 1, no further improvement on
+// the LP is possible. For additional background and proofs see:
 //   https://people.orie.cornell.edu/shmoys/or630/notes-06/lec16.pdf
 // or any other reference on the "Cutting Stock Problem".
 //
@@ -68,8 +74,10 @@
 //   https://en.wikipedia.org/wiki/Bin_packing_problem#Formal_statement
 // but typically in bin packing it is not assumed that you should exploit having
 // multiple items of the same size.
+#include <cmath>
 #include <iostream>
 #include <limits>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -86,11 +94,11 @@ namespace {
 namespace math_opt = operations_research::math_opt;
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
-// piece_sizes and piece_demands must have equal length.
-// every piece must have 0 < size <= board_length.
+// piece_lengths and piece_demands must have equal length.
+// every piece must have 0 < length <= board_length.
 // every piece must have demand > 0.
 struct CuttingStockInstance {
-  std::vector<int> piece_sizes;
+  std::vector<int> piece_lengths;
   std::vector<int> piece_demands;
   int board_length;
 };
@@ -117,30 +125,25 @@ struct CuttingStockSolution {
 // Solves the worker problem.
 //
 // Solves the problem on finding the configuration (with its objective value) to
-// add the to model that will give the greatest improvement in the LP
+// add to the leader model that will give the greatest improvement in the LP
 // relaxation. This is equivalent to a knapsack problem.
 absl::StatusOr<std::pair<Configuration, double>> BestConfiguration(
     const std::vector<double>& piece_prices,
-    const std::vector<int>& piece_sizes, const int board_size) {
+    const std::vector<int>& piece_lengths, const int board_length) {
   int num_pieces = piece_prices.size();
-  CHECK_EQ(piece_sizes.size(), num_pieces);
+  CHECK_EQ(piece_lengths.size(), num_pieces);
   math_opt::Model model("knapsack");
   std::vector<math_opt::Variable> pieces;
   for (int i = 0; i < num_pieces; ++i) {
     pieces.push_back(
-        model.AddIntegerVariable(0, kInf, absl::StrCat("item_", i)));
+        model.AddIntegerVariable(0, kInf, absl::StrCat("piece_", i)));
   }
   model.Maximize(math_opt::InnerProduct(pieces, piece_prices));
-  model.AddLinearConstraint(math_opt::InnerProduct(pieces, piece_sizes) <=
-                            board_size);
+  model.AddLinearConstraint(math_opt::InnerProduct(pieces, piece_lengths) <=
+                            board_length);
   ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  if (solve_result.termination.reason !=
-      math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "Failed to solve knapsack pricing problem to optimality: "
-           << solve_result.termination;
-  }
+  RETURN_IF_ERROR(solve_result.termination.IsOptimal());
   Configuration config;
   for (int i = 0; i < num_pieces; ++i) {
     const int use = static_cast<int>(
@@ -158,7 +161,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     const CuttingStockInstance& instance) {
   math_opt::Model model("cutting_stock");
   model.set_minimize();
-  const int n = instance.piece_sizes.size();
+  const int n = static_cast<int>(instance.piece_lengths.size());
   std::vector<math_opt::LinearConstraint> demand_met;
   for (int i = 0; i < n; ++i) {
     const int d = instance.piece_demands[i];
@@ -169,17 +172,17 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     const math_opt::Variable v = model.AddContinuousVariable(0.0, kInf);
     model.set_objective_coefficient(v, 1);
     for (int i = 0; i < config.pieces.size(); ++i) {
-      const int item = config.pieces[i];
+      const int piece = config.pieces[i];
       const int use = config.quantity[i];
       if (use >= 1) {
-        model.set_coefficient(demand_met[item], v, use);
+        model.set_coefficient(demand_met[piece], v, use);
       }
     }
     configs.push_back({config, v});
   };
 
-  // To ensure the leader problem is always feasible, begin a configuration for
-  // every item that has a single copy of the item.
+  // To ensure the leader problem is always feasible, begin with one
+  // configuration per piece, each having a single copy of the piece.
   for (int i = 0; i < n; ++i) {
     add_config(Configuration{.pieces = {i}, .quantity = {1}});
   }
@@ -189,13 +192,8 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   int pricing_round = 0;
   while (true) {
     ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
-    if (solve_result.termination.reason !=
-        math_opt::TerminationReason::kOptimal) {
-      return util::InternalErrorBuilder()
-             << "Failed to solve leader LP problem to optimality at "
-                "iteration "
-             << pricing_round << " termination: " << solve_result.termination;
-    }
+    RETURN_IF_ERROR(solve_result.termination.IsOptimal())
+        << " at iteration " << pricing_round;
     if (!solve_result.has_dual_feasible_solution()) {
       // MathOpt does not require solvers to return a dual solution on optimal,
       // but most LP solvers always will, see go/mathopt-solver-contracts for
@@ -209,9 +207,9 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     for (const math_opt::LinearConstraint d : demand_met) {
       prices.push_back(solve_result.dual_values().at(d));
     }
-    ASSIGN_OR_RETURN(
-        (const auto [config, value]),
-        BestConfiguration(prices, instance.piece_sizes, instance.board_length));
+    ASSIGN_OR_RETURN((const auto [config, value]),
+                     BestConfiguration(prices, instance.piece_lengths,
+                                       instance.board_length));
     if (value <= 1 + 1e-3) {
       // The LP relaxation is solved, we can stop adding columns.
       break;
@@ -227,15 +225,8 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   }
   ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  switch (solve_result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      break;
-    default:
-      return util::InternalErrorBuilder()
-             << "Failed to solve final cutting stock MIP, termination: "
-             << solve_result.termination;
-  }
+  RETURN_IF_ERROR(solve_result.termination.IsOptimalOrFeasible())
+      << " in final cutting stock MIP";
   CuttingStockSolution solution;
   for (const auto& [config, var] : configs) {
     int use =
@@ -253,12 +244,12 @@ absl::Status RealMain() {
   // Data from https://en.wikipedia.org/wiki/Cutting_stock_problem
   CuttingStockInstance instance;
   instance.board_length = 5600;
-  instance.piece_sizes = {1380, 1520, 1560, 1710, 1820, 1880, 1930,
-                          2000, 2050, 2100, 2140, 2150, 2200};
+  instance.piece_lengths = {1380, 1520, 1560, 1710, 1820, 1880, 1930,
+                            2000, 2050, 2100, 2140, 2150, 2200};
   instance.piece_demands = {22, 25, 12, 14, 18, 18, 20, 10, 12, 14, 16, 18, 20};
   ASSIGN_OR_RETURN(CuttingStockSolution solution, SolveCuttingStock(instance));
-  std::cout << "Best known solution uses 73 rolls." << std::endl;
-  std::cout << "Total rolls used in actual solution found: "
+  std::cout << "Best known solution uses 73 boards." << std::endl;
+  std::cout << "Total boards used in actual solution found: "
             << solution.objective_value << std::endl;
   return absl::OkStatus();
 }
@@ -267,10 +258,9 @@ absl::Status RealMain() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::Status result = RealMain();
-  if (!result.ok()) {
-    std::cout << result;
-    return 1;
+  const absl::Status status = RealMain();
+  if (!status.ok()) {
+    LOG(QFATAL) << status;
   }
   return 0;
 }

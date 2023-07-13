@@ -13,8 +13,10 @@
 
 // Simple integer programming example
 
+#include <cmath>
 #include <iostream>
 #include <limits>
+#include <ostream>
 
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
@@ -53,19 +55,16 @@ absl::Status Main() {
 
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      std::cout << "Problem solved in " << result.solve_time() << std::endl;
-      std::cout << "Objective value: " << result.objective_value() << std::endl;
-      std::cout << "Variable values: [x=" << result.variable_values().at(x)
-                << ", y=" << result.variable_values().at(y) << "]" << std::endl;
-      return absl::OkStatus();
-    default:
-      return util::InternalErrorBuilder()
-             << "model failed to solve: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  // A feasible solution is always available on termination reason kOptimal, and
+  // kFeasible, but in the later case the solution may be sub-optimal.
+  std::cout << "Problem solved in " << result.solve_time() << std::endl;
+  std::cout << "Objective value: " << result.objective_value() << std::endl;
+  std::cout << "Variable values: [x="
+            << std::round(result.variable_values().at(x))
+            << ", y=" << std::round(result.variable_values().at(y)) << "]"
+            << std::endl;
+  return absl::OkStatus();
 }
 }  // namespace
 

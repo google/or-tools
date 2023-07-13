@@ -33,6 +33,9 @@
 // will create a PDF in /tmp.
 #include <iostream>
 #include <limits>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
@@ -252,14 +255,7 @@ absl::StatusOr<Menu> SolveForMenu(
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, math_opt::SolverType::kGscip, args));
 
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      break;
-    default:
-      return util::InternalErrorBuilder()
-             << "failed to find a solution: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
   Menu menu;
   for (const absl::string_view ingredient : kIngredients) {
     if (result.variable_values().at(ingredient_vars.at(ingredient)) > 0.5) {
@@ -299,7 +295,7 @@ absl::Status AnalysisMode() {
 }
 
 std::string ExportToLaTeX(const std::vector<Cocktail>& cocktails,
-                          const std::string& title = "Cocktail Hour") {
+                          absl::string_view title = "Cocktail Hour") {
   std::vector<std::string> lines;
   lines.push_back("\\documentclass{article}");
   lines.push_back("\\usepackage{fullpage}");

@@ -20,13 +20,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -168,6 +167,37 @@ TerminationProto Termination::Proto() const {
 bool Termination::limit_reached() const {
   return reason == TerminationReason::kFeasible ||
          reason == TerminationReason::kNoSolutionFound;
+}
+
+absl::Status Termination::ReasonIs(const TerminationReason reason) const {
+  if (this->reason == reason) return absl::OkStatus();
+  return util::InternalErrorBuilder()
+         << "expected termination reason '" << reason << "' but got " << *this;
+}
+
+absl::Status Termination::ReasonIsAnyOf(
+    std::initializer_list<TerminationReason> reasons) const {
+  for (const TerminationReason reason : reasons) {
+    if (this->reason == reason) return absl::OkStatus();
+  }
+  return util::InternalErrorBuilder()
+         << "expected termination reason in {"
+         << absl::StrJoin(reasons, ", ",
+                          [](std::string* out, TerminationReason reason) {
+                            absl::StrAppend(out, "'");
+                            absl::StreamFormatter()(out, reason);
+                            absl::StrAppend(out, "'");
+                          })
+         << "} but got " << *this;
+}
+
+absl::Status Termination::IsOptimal() const {
+  return ReasonIs(TerminationReason::kOptimal);
+}
+
+absl::Status Termination::IsOptimalOrFeasible() const {
+  return ReasonIsAnyOf(
+      {TerminationReason::kOptimal, TerminationReason::kFeasible});
 }
 
 absl::StatusOr<Termination> Termination::FromProto(
@@ -327,6 +357,9 @@ absl::StatusOr<SolveResultProto> SolveResult::Proto() const {
   if (gscip_solver_specific_output.ByteSizeLong() > 0) {
     *result.mutable_gscip_output() = gscip_solver_specific_output;
   }
+  if (pdlp_solver_specific_output.ByteSizeLong() > 0) {
+    *result.mutable_pdlp_output() = pdlp_solver_specific_output;
+  }
   return result;
 }
 
@@ -364,6 +397,9 @@ absl::StatusOr<SolveResult> SolveResult::FromProto(
   switch (solve_result_proto.solver_specific_output_case()) {
     case SolveResultProto::kGscipOutput:
       result.gscip_solver_specific_output = solve_result_proto.gscip_output();
+      return result;
+    case SolveResultProto::kPdlpOutput:
+      result.pdlp_solver_specific_output = solve_result_proto.pdlp_output();
       return result;
     case SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET:
       return result;

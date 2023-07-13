@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <limits>
+#include <ostream>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -47,17 +48,11 @@ absl::Status Main() {
   model.Maximize(objective_expression);
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      std::cout << "Objective value: " << result.objective_value() << std::endl
-                << "Value for variable x: " << result.variable_values().at(x)
-                << std::endl;
-      return absl::OkStatus();
-    default:
-      return util::InternalErrorBuilder()
-             << "model failed to solve: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  std::cout << "Objective value: " << result.objective_value() << std::endl
+            << "Value for variable x: " << result.variable_values().at(x)
+            << std::endl;
+  return absl::OkStatus();
 }
 }  // namespace
 

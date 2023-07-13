@@ -15,23 +15,25 @@
 //
 // In the Euclidean Traveling Salesperson Problem (TSP), you are given a list of
 // n cities, each with an (x, y) coordinate, and you must find an order to visit
-// the cities in to minimize the (Euclidean) travel distance.
+// the cities which minimizes the (Euclidean) travel distance.
 //
 // The MIP "cutset" formulation for the problem is as follows:
 //   * Data:
 //       n: An integer, the number of cities
-//       (x_i, y_i): a pair of floats for each i in 1..n, the location of each
-//           city
-//       d_ij for all (i, j) pairs of cities, the distance between city i and j.
+//       (x_i, y_i): a pair of floats for each i in N={0..n-1}, the location of
+//           each city
+//       d_ij for all (i, j) pairs of cities, the distance between city i and j
+//           (derived from the cities coordinates (x_i, y_i); this function is
+//           symmetric, i.e. d_ij = d_ji).
 //   * Decision variables:
 //       x_ij: A binary variable, indicates if the edge connecting i and j is
 //           used. Note that x_ij == x_ji, because the problem is symmetric. We
 //           only create variables for i < j, and have x_ji as an alias for
 //           x_ij.
 //   * MIP model:
-//       minimize sum_{i=1}^n sum_{j=1, j < i}^n d_ij * x_ij
-//       s.t. sum_{j=1, j != i}^n x_ij = 2 for all i = 1..n
-//            sum_{i in S} sum_{j not in S} x_ij >= 2 for all S subset {1,...,n}
+//       minimize sum_{i in N} sum_{j in N, j < i} d_ij * x_ij
+//       s.t. sum_{j in N, j != i} x_ij = 2 for all i in N
+//            sum_{i in S} sum_{j not in S} x_ij >= 2 for all S subset N
 //                                                    |S| >= 3, |S| <= n - 3
 //            x_ij in {0, 1}
 // The first set of constraints are called the degree constraints, and the
@@ -51,15 +53,20 @@
 // Note that this is a minimal TSP solution, more sophisticated MIP methods are
 // possible.
 
+#include <cmath>
 #include <iostream>
 #include <optional>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "absl/random/uniform_real_distribution.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
@@ -212,22 +219,21 @@ std::vector<Cycle> FindCycles(
   return result;
 }
 
-// Given a cycle and an EdgeVariables, returns the cutset constraint for the set
-// of nodes in cycle.
+// Returns the cutset constraint for the given set of nodes.
 math_opt::BoundedLinearExpression CutsetConstraint(
-    const Cycle& cycle, const EdgeVariables& edge_vars) {
+    const std::vector<int>& nodes, const EdgeVariables& edge_vars) {
   const int n = edge_vars.num_cities();
-  const absl::flat_hash_set<int> cycle_as_set(cycle.begin(), cycle.end());
-  std::vector<int> not_in_cycle;
+  const absl::flat_hash_set<int> node_set(nodes.begin(), nodes.end());
+  std::vector<int> not_in_set;
   for (int i = 0; i < n; ++i) {
-    if (!cycle_as_set.contains(i)) {
-      not_in_cycle.push_back(i);
+    if (!node_set.contains(i)) {
+      not_in_set.push_back(i);
     }
   }
   math_opt::LinearExpression cutset_edges;
-  for (const int in_cycle : cycle) {
-    for (const int out_of_cycle : not_in_cycle) {
-      cutset_edges += edge_vars.get(in_cycle, out_of_cycle);
+  for (const int in_set : nodes) {
+    for (const int out_of_set : not_in_set) {
+      cutset_edges += edge_vars.get(in_set, out_of_set);
     }
   }
   return cutset_edges >= 2;
@@ -285,11 +291,7 @@ absl::StatusOr<Cycle> SolveTsp(
   };
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, math_opt::SolverType::kGurobi, args));
-  if (result.termination.reason != math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "Expected TSP solve terminate with reason optimal, found: "
-           << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimal());
   std::cout << "Route length: " << result.objective_value() << std::endl;
   const std::vector<Cycle> cycles =
       FindCycles(EdgeValues(edge_vars, result.variable_values()));

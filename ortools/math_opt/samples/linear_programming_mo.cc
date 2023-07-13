@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <limits>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -66,16 +67,13 @@ absl::Status Main() {
 
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGlop));
-  if (result.termination.reason != math_opt::TerminationReason::kOptimal) {
-    return util::InternalErrorBuilder()
-           << "model failed to solve to optimality" << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimal());
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;
 
   std::cout << "Variable values: ["
-            << absl::StrJoin(result.variable_values().Values(x), ", ") << "]"
+            << absl::StrJoin(Values(result.variable_values(), x), ", ") << "]"
             << std::endl;
 
   return absl::OkStatus();

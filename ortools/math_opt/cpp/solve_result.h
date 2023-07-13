@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 
+#include <initializer_list>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -25,8 +26,6 @@
 
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
-#include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -103,23 +102,26 @@ struct SolveStats {
   // contract is clarified.
 
   // Solver claims the optimal value is equal or better (smaller for
-  // minimization and larger for maximization) than best_primal_bound:
+  // minimization and larger for maximization) than best_primal_bound up to the
+  // solvers primal feasibility tolerance (see warning below):
   //   * best_primal_bound is trivial (+inf for minimization and -inf
-  //     maximization) when the solver does not claim to have such bound. This
-  //     may happen for some solvers (e.g., PDLP, typically continuous solvers)
-  //     even when returning optimal (solver could terminate with slightly
-  //     infeasible primal solutions).
+  //     maximization) when the solver does not claim to have such bound.
   //   * best_primal_bound can be closer to the optimal value than the objective
   //     of the best primal feasible solution. In particular, best_primal_bound
   //     may be non-trivial even when no primal feasible solutions are returned.
-  //   * best_dual_bound is always better (smaller for minimization and larger
-  //     for maximization) than best_primal_bound.
+  // Warning: The precise claim is that there exists a primal solution that:
+  //  * is numerically feasible (i.e. feasible up to the solvers tolerance), and
+  //  * has an objective value best_primal_bound.
+  // This numerically feasible solution could be slightly infeasible, in which
+  // case best_primal_bound could be strictly better than the optimal value.
+  // Translating a primal feasibility tolerance to a tolerance on
+  // best_primal_bound is non-trivial, specially when the feasibility tolerance
+  // is relatively large (e.g. when solving with PDLP).
   double best_primal_bound = 0.0;
 
   // Solver claims the optimal value is equal or worse (larger for
-  // minimization and smaller for maximization) than best_dual_bound:
-  //   * best_dual_bound is always better (smaller for minimization and larger
-  //     for maximization) than best_primal_bound.
+  // minimization and smaller for maximization) than best_dual_bound up to the
+  // solvers dual feasibility tolerance (see warning below):
   //   * best_dual_bound is trivial (-inf for minimization and +inf
   //     maximization) when the solver does not claim to have such bound.
   //     Similarly to best_primal_bound, this may happen for some solvers even
@@ -129,6 +131,28 @@ struct SolveStats {
   //     value than the objective of the best dual feasible solution. For MIP
   //     one of the first non-trivial values for best_dual_bound is often the
   //     optimal value of the LP relaxation of the MIP.
+  //   * best_dual_bound should be better (smaller for minimization and larger
+  //     for maximization) than best_primal_bound up to the solvers tolerances
+  //     (see warning below).
+  // Warning:
+  //  * For continuous problems, the precise claim is that there exists a
+  //    dual solution that:
+  //      * is numerically feasible (i.e. feasible up to the solvers tolerance),
+  //        and
+  //      * has an objective value best_dual_bound.
+  //    This numerically feasible solution could be slightly infeasible, in
+  //    which case best_dual_bound could be strictly worse than the optimal
+  //    value and best_primal_bound. Similar to the primal case, translating a
+  //    dual feasibility tolerance to a tolerance on best_dual_bound is
+  //    non-trivial, specially when the feasibility tolerance is relatively
+  //    large. However, some solvers provide a corrected version of
+  //    best_dual_bound that can be numerically safer. This corrected version
+  //    can be accessed through the solver's specific output (e.g. for PDLP,
+  //    pdlp_output.convergence_information.corrected_dual_objective).
+  //  * For MIP solvers, best_dual_bound may be associated to a dual solution
+  //    for some continuous relaxation (e.g. LP relaxation), but it is often a
+  //    complex consequence of the solvers execution and is typically more
+  //    imprecise than the bounds reported by LP solvers.
   double best_dual_bound = 0.0;
 
   // Feasibility statuses for primal and dual problems.
@@ -285,6 +309,27 @@ struct Termination {
   // kNoSolutionFound, and limit is not empty).
   bool limit_reached() const;
 
+  // Returns an OkStatus if the reason of this `Termination` is
+  // `TerminationReason::kOptimal` or `TerminationReason::kFeasible`, or an
+  // `InternalError` otherwise.
+  absl::Status IsOptimalOrFeasible() const;
+
+  // Returns an OkStatus if the reason of this `Termination` is
+  // `TerminationReason::kOptimal`, or an `InternalError` otherwise.
+  //
+  // In most use cases, at least for MIPs, `IsOptimalOrFeasible` should be used
+  // instead.
+  absl::Status IsOptimal() const;
+
+  // Returns an OkStatus if the reason of this `Termination` is `reason`, or an
+  // `InternalError` otherwise.
+  absl::Status ReasonIs(TerminationReason reason) const;
+
+  // Returns an OkStatus if the reason of this `Termination` is in `reasons`, or
+  // an `InternalError` otherwise.
+  absl::Status ReasonIsAnyOf(
+      std::initializer_list<TerminationReason> reasons) const;
+
   // Sets the reason to kFeasible
   static Termination Feasible(Limit limit, std::string detail = {});
 
@@ -340,6 +385,8 @@ struct SolveResult {
 
   // Solver specific output from Gscip. Only populated if Gscip is used.
   GScipOutput gscip_solver_specific_output;
+  // Solver specific output from Pdlp. Only populated if Pdlp is used.
+  SolveResultProto::PdlpOutput pdlp_solver_specific_output;
 
   // Returns the SolveResult equivalent of solve_result_proto.
   //

@@ -82,6 +82,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -239,25 +240,19 @@ absl::StatusOr<FlowModel> SolveMip(const Graph graph,
   model.Minimize(flow_model.cost);
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      std::cout << "MIP Solution with 2 side constraints" << std::endl;
-      std::cout << absl::StrFormat("MIP objective value: %6.3f",
-                                   result.objective_value())
-                << std::endl;
-      std::cout << "Resource 1: "
-                << flow_model.resource_1.Evaluate(result.variable_values())
-                << std::endl;
-      std::cout << "Resource 2: "
-                << flow_model.resource_2.Evaluate(result.variable_values())
-                << std::endl;
-      std::cout << "========================================" << std::endl;
-      return flow_model;
-    default:
-      return util::InternalErrorBuilder()
-             << "model failed to solve: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  std::cout << "MIP Solution with 2 side constraints" << std::endl;
+  std::cout << absl::StrFormat("MIP objective value: %6.3f",
+                               result.objective_value())
+            << std::endl;
+  std::cout << "Resource 1: "
+            << flow_model.resource_1.Evaluate(result.variable_values())
+            << std::endl;
+  std::cout << "Resource 2: "
+            << flow_model.resource_2.Evaluate(result.variable_values())
+            << std::endl;
+  std::cout << "========================================" << std::endl;
+  return flow_model;
 }
 
 // Solves the linear relaxation of a constrained shortest path problem
@@ -268,25 +263,19 @@ absl::Status SolveLinearRelaxation(FlowModel& flow_model, const Graph& graph,
   math_opt::Model& model = *flow_model.model;
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      std::cout << "LP relaxation with 2 side constraints" << std::endl;
-      std::cout << absl::StrFormat("LP objective value: %6.3f",
-                                   result.objective_value())
-                << std::endl;
-      std::cout << "Resource 1: "
-                << flow_model.resource_1.Evaluate(result.variable_values())
-                << std::endl;
-      std::cout << "Resource 2: "
-                << flow_model.resource_2.Evaluate(result.variable_values())
-                << std::endl;
-      std::cout << "========================================" << std::endl;
-      return absl::OkStatus();
-    default:
-      return util::InternalErrorBuilder()
-             << "model failed to solve: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  std::cout << "LP relaxation with 2 side constraints" << std::endl;
+  std::cout << absl::StrFormat("LP objective value: %6.3f",
+                               result.objective_value())
+            << std::endl;
+  std::cout << "Resource 1: "
+            << flow_model.resource_1.Evaluate(result.variable_values())
+            << std::endl;
+  std::cout << "Resource 2: "
+            << flow_model.resource_2.Evaluate(result.variable_values())
+            << std::endl;
+  std::cout << "========================================" << std::endl;
+  return absl::OkStatus();
 }
 
 absl::Status SolveLagrangianRelaxation(const Graph graph,
@@ -365,15 +354,7 @@ absl::Status SolveLagrangianRelaxation(const Graph graph,
     model.Minimize(lagrangian_function);
     ASSIGN_OR_RETURN(math_opt::SolveResult result,
                      Solve(model, math_opt::SolverType::kGscip));
-    switch (result.termination.reason) {
-      case math_opt::TerminationReason::kOptimal:
-      case math_opt::TerminationReason::kFeasible:
-        break;
-      default:
-        return util::InternalErrorBuilder()
-               << "failed to minimize lagrangian function: "
-               << result.termination;
-    }
+    RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
 
     const math_opt::VariableMap<double>& vars_val = result.variable_values();
     bool feasible = true;

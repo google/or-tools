@@ -110,14 +110,7 @@ absl::StatusOr<GraphColoringSolution> SolveGraphColoring(
   // solve the model and check the result
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kCpSat));
-  switch (result.termination.reason) {
-    case math_opt::TerminationReason::kOptimal:
-    case math_opt::TerminationReason::kFeasible:
-      break;
-    default:
-      return util::InternalErrorBuilder()
-             << "model failed to solve: " << result.termination;
-  }
+  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
 
   // build solution from solver output
   GraphColoringSolution solution;
