@@ -59,6 +59,16 @@ class LinearConstraint {
   // Returns 0.0 if the variable is not used in the constraint.
   inline double coefficient(Variable variable) const;
 
+  // Returns the constraints as a bounded linear expression.
+  //
+  // The linear expression will have a zero offset, even if the constraint was
+  // created with a non-zero one. For example:
+  //
+  //   const LinearConstraint c =
+  //     model.AddLinearConstraint(3.2 <= x + 1.0 <= 4.2);
+  //
+  //   // Here `e` will contain 3.2 - 1.0 <= x <= 4.2 - 1.0.
+  //   const BoundedLinearExpression e = c.AsBoundedLinearExpression();
   inline BoundedLinearExpression AsBoundedLinearExpression() const;
 
   // Returns a detailed string description of the contents of the constraint

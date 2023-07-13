@@ -72,6 +72,16 @@ class QuadraticConstraint {
   // not defined.
   inline std::vector<Variable> NonzeroVariables() const;
 
+  // Returns the constraints as a bounded quadratic expression.
+  //
+  // The quadratic expression will have a zero offset, even if the constraint
+  // was created with a non-zero one. For example:
+  //
+  //   const LinearConstraint c =
+  //     model.AddQuadraticConstraint(3.2 <= x*x + 1.0 <= 4.2);
+  //
+  //   // Here `e` will contain 3.2 - 1.0 <= x*x <= 4.2 - 1.0.
+  //   const BoundedQuadraticExpression e = c.AsBoundedQuadraticExpression();
   BoundedQuadraticExpression AsBoundedQuadraticExpression() const;
 
   // Returns a detailed string description of the contents of the constraint
