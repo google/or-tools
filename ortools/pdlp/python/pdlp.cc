@@ -22,7 +22,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 #include "ortools/pdlp/quadratic_program.h"
@@ -32,28 +31,14 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace operations_research::pdlp {
-namespace {
 
 using ::pybind11::arg;
 
-// TODO(user): The interface uses serialized protos because of issues building
-// pybind11_protobuf. See
-// https://github.com/protocolbuffers/protobuf/issues/9464. After
-// pybind11_protobuf is working, this workaround can be removed.
-
-// A mirror of pdlp::SolverResult except with a serialized SolveLog.
-struct PywrapSolverResult {
-  Eigen::VectorXd primal_solution;
-  Eigen::VectorXd dual_solution;
-  Eigen::VectorXd reduced_costs;
-  pybind11::bytes solve_log_str;
-};
-
-}  // namespace
-
 PYBIND11_MODULE(pdlp, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
   // ---------------------------------------------------------------------------
   // quadratic_program.h
   // ---------------------------------------------------------------------------
@@ -110,12 +95,8 @@ PYBIND11_MODULE(pdlp, m) {
 
   m.def(
       "qp_from_mpmodel_proto",
-      [](absl::string_view proto_str, bool relax_integer_variables,
+      [](const MPModelProto& proto, bool relax_integer_variables,
          bool include_names) {
-        MPModelProto proto;
-        if (!proto.ParseFromString(std::string(proto_str))) {
-          throw std::invalid_argument("Unable to parse input proto");
-        }
         absl::StatusOr<QuadraticProgram> qp =
             QpFromMpModelProto(proto, relax_integer_variables, include_names);
         if (qp.ok()) {
@@ -130,7 +111,7 @@ PYBIND11_MODULE(pdlp, m) {
   m.def("qp_to_mpmodel_proto", [](const QuadraticProgram& qp) {
     absl::StatusOr<MPModelProto> proto = QpToMpModelProto(qp);
     if (proto.ok()) {
-      return pybind11::bytes(proto->SerializeAsString());
+      return *proto;
     } else {
       throw std::invalid_argument(absl::StrCat(proto.status().message()));
     }
@@ -152,29 +133,20 @@ PYBIND11_MODULE(pdlp, m) {
       .def_readwrite("primal_solution", &PrimalAndDualSolution::primal_solution)
       .def_readwrite("dual_solution", &PrimalAndDualSolution::dual_solution);
 
-  pybind11::class_<PywrapSolverResult>(m, "SolverResult")
+  pybind11::class_<SolverResult>(m, "SolverResult")
       .def(pybind11::init<>())
-      .def_readwrite("primal_solution", &PywrapSolverResult::primal_solution)
-      .def_readwrite("dual_solution", &PywrapSolverResult::dual_solution)
-      .def_readwrite("reduced_costs", &PywrapSolverResult::reduced_costs)
-      .def_readwrite("solve_log_str", &PywrapSolverResult::solve_log_str);
+      .def_readwrite("primal_solution", &SolverResult::primal_solution)
+      .def_readwrite("dual_solution", &SolverResult::dual_solution)
+      .def_readwrite("reduced_costs", &SolverResult::reduced_costs)
+      .def_readwrite("solve_log", &SolverResult::solve_log);
 
   // TODO(user): Expose interrupt_solve and iteration_stats_callback.
   m.def(
       "primal_dual_hybrid_gradient",
-      [](QuadraticProgram qp, absl::string_view params_str,
+      [](QuadraticProgram qp, PrimalDualHybridGradientParams params,
          std::optional<PrimalAndDualSolution> initial_solution) {
-        PrimalDualHybridGradientParams params;
-        if (!params.ParseFromString(std::string(params_str))) {
-          throw std::invalid_argument("Unable to parse input params");
-        }
-        SolverResult result = PrimalDualHybridGradient(
-            std::move(qp), params, std::move(initial_solution));
-        return PywrapSolverResult{
-            .primal_solution = std::move(result.primal_solution),
-            .dual_solution = std::move(result.dual_solution),
-            .reduced_costs = std::move(result.reduced_costs),
-            .solve_log_str = result.solve_log.SerializeAsString()};
+        return PrimalDualHybridGradient(std::move(qp), params,
+                                        std::move(initial_solution));
       },
       arg("qp"), arg("params"), arg("initial_solution") = std::nullopt);
 }

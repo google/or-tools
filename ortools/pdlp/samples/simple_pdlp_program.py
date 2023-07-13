@@ -71,10 +71,9 @@ def main() -> None:
     params.verbosity_level = 0
     params.presolve_options.use_glop = False
 
-    # Call the main solve function. Note that a quirk of the pywrap11 API forces
-    # us to serialize the `params` and deserialize the `solve_log` proto messages.
-    result = pdlp.primal_dual_hybrid_gradient(simple_lp(), params.SerializeToString())
-    solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
+    # Call the main solve function.
+    result = pdlp.primal_dual_hybrid_gradient(simple_lp(), params)
+    solve_log = result.solve_log
 
     if solve_log.termination_reason == solve_log_pb2.TERMINATION_REASON_OPTIMAL:
         print("Solve successful")

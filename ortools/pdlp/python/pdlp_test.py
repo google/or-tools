@@ -84,18 +84,14 @@ class QuadraticProgramTest(absltest.TestCase):
 
     def test_converts_from_tiny_mpmodel_lp(self):
         lp_proto = small_proto_lp()
-        qp = pdlp.qp_from_mpmodel_proto(
-            lp_proto.SerializeToString(), relax_integer_variables=False
-        )
+        qp = pdlp.qp_from_mpmodel_proto(lp_proto, relax_integer_variables=False)
         pdlp.validate_quadratic_program_dimensions(qp)
         self.assertTrue(pdlp.is_linear_program(qp))
         self.assertSameElements(qp.objective_vector, [0, -2])
 
     def test_converts_from_tiny_mpmodel_qp(self):
         qp_proto = small_proto_qp()
-        qp = pdlp.qp_from_mpmodel_proto(
-            qp_proto.SerializeToString(), relax_integer_variables=False
-        )
+        qp = pdlp.qp_from_mpmodel_proto(qp_proto, relax_integer_variables=False)
         pdlp.validate_quadratic_program_dimensions(qp)
         self.assertFalse(pdlp.is_linear_program(qp))
         self.assertSameElements(qp.objective_vector, [0, 0])
@@ -110,7 +106,7 @@ class QuadraticProgramTest(absltest.TestCase):
         qp.variable_upper_bounds = [np.inf, np.inf]
         qp.variable_names = ["x", "y"]
         self.assertEqual(
-            linear_solver_pb2.MPModelProto.FromString(pdlp.qp_to_mpmodel_proto(qp)),
+            pdlp.qp_to_mpmodel_proto(qp),
             small_proto_lp(),
         )
 
@@ -125,7 +121,7 @@ class QuadraticProgramTest(absltest.TestCase):
         qp.variable_upper_bounds = [np.inf, np.inf]
         qp.variable_names = ["x", "y"]
         self.assertEqual(
-            linear_solver_pb2.MPModelProto.FromString(pdlp.qp_to_mpmodel_proto(qp)),
+            pdlp.qp_to_mpmodel_proto(qp),
             small_proto_qp(),
         )
 
@@ -197,11 +193,10 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         params = solvers_pb2.PrimalDualHybridGradientParams()
         params.termination_criteria.iteration_limit = 1
         params.termination_check_frequency = 1
-        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params.SerializeToString())
-        solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
-        self.assertLessEqual(solve_log.iteration_count, 1)
+        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params)
+        self.assertLessEqual(result.solve_log.iteration_count, 1)
         self.assertEqual(
-            solve_log.termination_reason,
+            result.solve_log.termination_reason,
             solve_log_pb2.TERMINATION_REASON_ITERATION_LIMIT,
         )
 
@@ -210,10 +205,10 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         opt_criteria = params.termination_criteria.simple_optimality_criteria
         opt_criteria.eps_optimal_relative = 0.0
         opt_criteria.eps_optimal_absolute = 1.0e-10
-        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params.SerializeToString())
-        solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
+        result = pdlp.primal_dual_hybrid_gradient(tiny_lp(), params)
         self.assertEqual(
-            solve_log.termination_reason, solve_log_pb2.TERMINATION_REASON_OPTIMAL
+            result.solve_log.termination_reason,
+            solve_log_pb2.TERMINATION_REASON_OPTIMAL,
         )
         self.assertSequenceAlmostEqual(result.primal_solution, [1.0, 0.0, 6.0, 2.0])
         self.assertSequenceAlmostEqual(result.dual_solution, [0.5, 4.0, 0.0])
@@ -224,10 +219,10 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         opt_criteria = params.termination_criteria.simple_optimality_criteria
         opt_criteria.eps_optimal_relative = 0.0
         opt_criteria.eps_optimal_absolute = 1.0e-10
-        result = pdlp.primal_dual_hybrid_gradient(test_lp(), params.SerializeToString())
-        solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
+        result = pdlp.primal_dual_hybrid_gradient(test_lp(), params)
         self.assertEqual(
-            solve_log.termination_reason, solve_log_pb2.TERMINATION_REASON_OPTIMAL
+            result.solve_log.termination_reason,
+            solve_log_pb2.TERMINATION_REASON_OPTIMAL,
         )
         self.assertSequenceAlmostEqual(result.primal_solution, [-1, 8, 1, 2.5])
         self.assertSequenceAlmostEqual(result.dual_solution, [-2, 0, 2.375, 2 / 3])
@@ -244,13 +239,13 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         start.primal_solution = [1.0, 0.0, 6.0, 2.0]
         start.dual_solution = [0.5, 4.0, 0.0]
         result = pdlp.primal_dual_hybrid_gradient(
-            tiny_lp(), params.SerializeToString(), initial_solution=start
+            tiny_lp(), params, initial_solution=start
         )
-        solve_log = solve_log_pb2.SolveLog.FromString(result.solve_log_str)
         self.assertEqual(
-            solve_log.termination_reason, solve_log_pb2.TERMINATION_REASON_OPTIMAL
+            result.solve_log.termination_reason,
+            solve_log_pb2.TERMINATION_REASON_OPTIMAL,
         )
-        self.assertEqual(solve_log.iteration_count, 0)
+        self.assertEqual(result.solve_log.iteration_count, 0)
 
 
 if __name__ == "__main__":
