@@ -15,6 +15,7 @@
 #define PDLP_TEST_UTIL_H_
 
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <string>
 #include <tuple>

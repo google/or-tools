@@ -15,12 +15,12 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/threadpool.h"

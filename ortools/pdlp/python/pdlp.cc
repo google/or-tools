@@ -18,7 +18,6 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "Eigen/SparseCore"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"

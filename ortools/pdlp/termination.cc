@@ -15,7 +15,6 @@
 
 #include <atomic>
 #include <cmath>
-#include <limits>
 #include <optional>
 
 #include "ortools/base/logging.h"

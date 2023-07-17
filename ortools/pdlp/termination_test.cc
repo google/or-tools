@@ -258,7 +258,7 @@ TEST_P(DetailedRelativeTerminationTest, NoTerminationWithExcessiveGap) {
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(DetailedRelativeTerminationTest,
@@ -281,7 +281,7 @@ TEST_P(DetailedRelativeTerminationTest,
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(DetailedRelativeTerminationTest,
@@ -304,7 +304,7 @@ TEST_P(DetailedRelativeTerminationTest,
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(DetailedAbsoluteTerminationTest, TerminationWithNearOptimal) {
@@ -353,7 +353,7 @@ TEST_P(DetailedAbsoluteTerminationTest, NoTerminationWithExcessiveGap) {
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(DetailedAbsoluteTerminationTest,
@@ -376,7 +376,7 @@ TEST_P(DetailedAbsoluteTerminationTest,
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(DetailedAbsoluteTerminationTest,
@@ -399,7 +399,7 @@ TEST_P(DetailedAbsoluteTerminationTest,
       TestLpBoundNorms()));
   EXPECT_EQ(CheckIterateTerminationCriteria(test_criteria_, stats,
                                             TestLpBoundNorms()),
-            absl::nullopt);
+            std::nullopt);
 }
 
 TEST_P(IterateTerminationTest, NoTerminationWithLargeGap) {

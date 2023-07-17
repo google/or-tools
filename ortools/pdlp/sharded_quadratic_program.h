@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"

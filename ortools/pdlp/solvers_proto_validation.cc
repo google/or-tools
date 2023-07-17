@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
