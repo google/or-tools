@@ -202,7 +202,8 @@ class SatCnfReader {
     problem->SetSizeAndPostprocess(actual_num_variables_, num_slack_variables_);
 
     // Fill the objective.
-    if (!positive_literal_to_weight_.empty()) {
+    if (!positive_literal_to_weight_.empty() ||
+        !slack_literal_to_weight_.empty()) {
       for (const std::pair<int, int64_t> p : positive_literal_to_weight_) {
         if (p.second != 0) {
           problem->AddObjectiveTerm(p.first, p.second);

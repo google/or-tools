@@ -67,6 +67,10 @@ class EncodingNode {
   // New literal "<=x" will be constructed using create_lit(x).
   EncodingNode(int lb, int ub, std::function<Literal(int x)> create_lit);
 
+  // Create a node with no literal and constant weight.
+  // TODO(user): Transform functions above to factory like this.
+  static EncodingNode ConstantNode(Coefficient weight);
+
   // Creates a "full" encoding node on n new variables, the represented number
   // beeing in [lb, ub = lb + n). The variables are added to the given solver
   // with the basic implications linking them:
@@ -109,6 +113,9 @@ class EncodingNode {
   // Creates a new literals and increases current_ub.
   // Returns false if we were already at the upper bound for this node.
   bool IncreaseCurrentUB(SatSolver* solver);
+
+  // Indicate that the node cannot grow further than its current assumption.
+  void TransformToBoolean(SatSolver* solver);
 
   // Removes the left-side literals fixed to 1. Note that this increases lb_ and
   // reduces the number of active literals. It also removes any right-side
@@ -213,10 +220,11 @@ std::vector<EncodingNode*> CreateInitialEncodingNodes(
 // Reduces the nodes using the now fixed literals, update the lower-bound, and
 // returns the set of assumptions for the next round of the core-based
 // algorithm. Returns an empty set of assumptions if everything is fixed.
-std::vector<Literal> ReduceNodesAndExtractAssumptions(
-    Coefficient upper_bound, Coefficient stratified_lower_bound,
-    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
-    SatSolver* solver);
+void ReduceNodes(Coefficient upper_bound, Coefficient* lower_bound,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver);
+std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
+                                        const std::vector<EncodingNode*>& nodes,
+                                        SatSolver* solver);
 
 // Returns the minimum weight of the nodes in the core. Note that the literal in
 // the core must appear in the same order as the one in nodes.
@@ -235,8 +243,9 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
 // If "implications" is not null, we try to exploit at_most_ones between
 // literal of the core for a better Boolean encoding.
 bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
-                 std::deque<EncodingNode>* repository,
+                 Coefficient gap, std::deque<EncodingNode>* repository,
                  std::vector<EncodingNode*>* nodes, SatSolver* solver,
+                 std::string* info,
                  BinaryImplicationGraph* implications = nullptr);
 
 // There is more than one way to create new assumptions and encode the

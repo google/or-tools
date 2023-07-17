@@ -106,6 +106,10 @@ std::function<SatParameters(Model*)> NewSatParameters(
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 
+// TODO(user): Clean this up.
+/// Solves a CpModelProto without any processing. Only used for unit tests.
+void LoadAndSolveCpModelForTest(const CpModelProto& model_proto, Model* model);
+
 }  // namespace sat
 }  // namespace operations_research
 

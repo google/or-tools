@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <queue>
 #include <string>
 #include <vector>
@@ -33,6 +34,15 @@
 
 namespace operations_research {
 namespace sat {
+
+EncodingNode EncodingNode::ConstantNode(Coefficient weight) {
+  EncodingNode node;
+  node.lb_ = 1;
+  node.ub_ = 1;
+  node.weight_lb_ = 0;
+  node.weight_ = weight;
+  return node;
+}
 
 EncodingNode::EncodingNode(Literal l)
     : for_sorting_(l.Variable()), literals_(1, l) {}
@@ -143,17 +153,19 @@ bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
 }
 
 Coefficient EncodingNode::Reduce(const SatSolver& solver) {
-  int i = 0;
-  while (i < literals_.size() &&
-         solver.Assignment().LiteralIsTrue(literals_[i])) {
-    ++i;
-    ++lb_;
-  }
-  literals_.erase(literals_.begin(), literals_.begin() + i);
-  while (!literals_.empty() &&
-         solver.Assignment().LiteralIsFalse(literals_.back())) {
-    literals_.pop_back();
-    ub_ = lb_ + literals_.size();
+  if (!literals_.empty()) {
+    int i = 0;
+    while (i < literals_.size() &&
+           solver.Assignment().LiteralIsTrue(literals_[i])) {
+      ++i;
+      ++lb_;
+    }
+    literals_.erase(literals_.begin(), literals_.begin() + i);
+    while (!literals_.empty() &&
+           solver.Assignment().LiteralIsFalse(literals_.back())) {
+      literals_.pop_back();
+      ub_ = lb_ + literals_.size();
+    }
   }
 
   if (weight_lb_ >= lb_) return Coefficient(0);
@@ -165,14 +177,35 @@ Coefficient EncodingNode::Reduce(const SatSolver& solver) {
 void EncodingNode::ApplyWeightUpperBound(Coefficient gap, SatSolver* solver) {
   CHECK_GT(weight_, 0);
   const Coefficient num_allowed = (gap / weight_);
-  const Coefficient new_size =
-      std::max(Coefficient(0), Coefficient(weight_lb_ - lb_) + num_allowed);
+  if (num_allowed > std::numeric_limits<int>::max() / 2) return;
+  const int new_size =
+      std::max(0, (weight_lb_ - lb_) + static_cast<int>(num_allowed.value()));
   if (size() <= new_size) return;
-  for (int i = new_size.value(); i < size(); ++i) {
+  for (int i = new_size; i < size(); ++i) {
     solver->AddUnitClause(literal(i).Negated());
   }
-  literals_.resize(new_size.value());
-  ub_ = lb_ + literals_.size();
+  literals_.resize(new_size);
+  ub_ = lb_ + new_size;
+}
+
+void EncodingNode::TransformToBoolean(SatSolver* solver) {
+  if (size() > 1) {
+    for (int i = 1; i < size(); ++i) {
+      solver->AddUnitClause(literal(i).Negated());
+    }
+    literals_.resize(1);
+    ub_ = lb_ + 1;
+    return;
+  }
+
+  if (current_ub() == ub_) return;
+
+  // TODO(user): Avoid creating a Boolean just to fix it!
+  IncreaseNodeSize(this, solver);
+  CHECK_EQ(size(), 2);
+  solver->AddUnitClause(literal(1).Negated());
+  literals_.resize(1);
+  ub_ = lb_ + 1;
 }
 
 bool EncodingNode::AssumptionIs(Literal other) const {
@@ -497,10 +530,8 @@ bool EncodingNodeByDepth(const EncodingNode* a, const EncodingNode* b) {
 
 }  // namespace
 
-std::vector<Literal> ReduceNodesAndExtractAssumptions(
-    Coefficient upper_bound, Coefficient stratified_lower_bound,
-    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
-    SatSolver* solver) {
+void ReduceNodes(Coefficient upper_bound, Coefficient* lower_bound,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver) {
   // Remove the left-most variables fixed to one from each node.
   // Also update the lower_bound. Note that Reduce() needs the solver to be
   // at the root node in order to work.
@@ -513,7 +544,10 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   // If we closed the problem, we abort and return and empty vector.
   if (upper_bound != kCoefficientMax) {
     const Coefficient gap = upper_bound - *lower_bound;
-    if (gap < 0) return {};
+    if (gap < 0) {
+      nodes->clear();
+      return;
+    }
     for (EncodingNode* n : *nodes) {
       n->ApplyWeightUpperBound(gap, solver);
     }
@@ -540,10 +574,14 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
     // weird behavior, since we will reverse the nodes at each iteration...
     std::reverse(nodes->begin(), nodes->end());
   }
+}
 
+std::vector<Literal> ExtractAssumptions(Coefficient stratified_lower_bound,
+                                        const std::vector<EncodingNode*>& nodes,
+                                        SatSolver* solver) {
   // Extract the assumptions from the nodes.
   std::vector<Literal> assumptions;
-  for (EncodingNode* n : *nodes) {
+  for (EncodingNode* n : nodes) {
     if (n->weight() >= stratified_lower_bound) {
       assumptions.push_back(n->GetAssumption(solver));
     }
@@ -578,55 +616,92 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
 }
 
 bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
-                 std::deque<EncodingNode>* repository,
+                 Coefficient gap, std::deque<EncodingNode>* repository,
                  std::vector<EncodingNode*>* nodes, SatSolver* solver,
-                 BinaryImplicationGraph* implications) {
+                 std::string* info, BinaryImplicationGraph* implications) {
   // Backtrack to be able to add new constraints.
-  solver->ResetToLevelZero();
+  if (!solver->ResetToLevelZero()) return false;
   if (core.size() == 1) {
     return solver->AddUnitClause(core[0].Negated());
   }
 
-  // Remove from nodes the EncodingNode in the core, merge them, and add the
-  // resulting EncodingNode at the back.
-  int index = 0;
-  int new_node_index = 0;
-  std::vector<EncodingNode*> to_merge;
-  for (int i = 0; i < core.size(); ++i) {
-    // Since the nodes appear in order in the core, we can find the
-    // relevant "objective" variable efficiently with a simple linear scan
-    // in the nodes vector (done with index).
-    for (; !(*nodes)[index]->AssumptionIs(core[i]); ++index) {
-      CHECK_LT(index, nodes->size());
-      (*nodes)[new_node_index] = (*nodes)[index];
-      ++new_node_index;
+  // Are the literal in amo relationship?
+  // - If min_weight is large enough, we can infer that.
+  // - If the size is small we can infer this manually.
+  //
+  // TODO(user): improve the HeuristicAmoPartition() for small case, i.e. use
+  // full propagation. Maybe we can merge with MinimizeCoreWithPropagation().
+  bool in_exactly_one = (2 * min_weight) > gap;
+  if (!in_exactly_one && core.size() == 2) {
+    const Literal cost0 = core[0].Negated();
+    const Literal cost1 = core[1].Negated();
+    const bool ok = solver->EnqueueDecisionIfNotConflicting(cost0);
+    if (!ok) {
+      // cost0 cannot be true! so cost1 must be true.
+      return solver->AddUnitClause(cost1);
     }
-    CHECK_LT(index, nodes->size());
-    to_merge.push_back((*nodes)[index]);
 
-    // Special case if the weight > min_weight. we keep it, but reduce its
-    // cost. This is the same "trick" as in WPM1 used to deal with weight.
-    // We basically split a clause with a larger weight in two identical
-    // clauses, one with weight min_weight that will be merged and one with
-    // the remaining weight.
-    if ((*nodes)[index]->weight() > min_weight) {
-      (*nodes)[index]->set_weight((*nodes)[index]->weight() - min_weight);
-      (*nodes)[new_node_index] = (*nodes)[index];
-      ++new_node_index;
+    if (solver->Assignment().LiteralIsFalse(cost1)) {
+      // If the literal are in AMO, we make sure the solver will not forget that
+      // by adding the exactly one below.
+      in_exactly_one = true;
+
+      // Tricky: we need the two nodes to be "Boolean nodes", otherwise while
+      // we have an "at most one" between the assumption we don't necessarily
+      // have an at most one between the nodes.
+      if (!solver->ResetToLevelZero()) return false;
+      for (const EncodingNode* node : *nodes) {
+        if (node->AssumptionIs(core[0]) || node->AssumptionIs(core[1])) {
+          if (node->current_ub() != node->ub() || node->size() != 1) {
+            // TODO(user): We could still improve the encoding in this case.
+            in_exactly_one = false;
+          }
+        }
+      }
     }
-    ++index;
+    if (!solver->ResetToLevelZero()) return false;
   }
-  for (; index < nodes->size(); ++index) {
-    (*nodes)[new_node_index] = (*nodes)[index];
-    ++new_node_index;
+
+  // Remove from nodes the EncodingNode in the core and put them in to_merge.
+  std::vector<EncodingNode*> to_merge;
+  {
+    int index = 0;
+    int new_size = 0;
+    for (int i = 0; i < core.size(); ++i) {
+      // Since the nodes appear in order in the core, we can find the
+      // relevant "objective" variable efficiently with a simple linear scan
+      // in the nodes vector (done with index).
+      for (; !(*nodes)[index]->AssumptionIs(core[i]); ++index) {
+        CHECK_LT(index, nodes->size());
+        (*nodes)[new_size] = (*nodes)[index];
+        ++new_size;
+      }
+      CHECK_LT(index, nodes->size());
+      to_merge.push_back((*nodes)[index]);
+
+      // Special case if the weight > min_weight. we keep it, but reduce its
+      // cost. This is the same "trick" as in WPM1 used to deal with weight.
+      // We basically split a clause with a larger weight in two identical
+      // clauses, one with weight min_weight that will be merged and one with
+      // the remaining weight.
+      if ((*nodes)[index]->weight() > min_weight) {
+        (*nodes)[index]->set_weight((*nodes)[index]->weight() - min_weight);
+        (*nodes)[new_size] = (*nodes)[index];
+        ++new_size;
+      }
+      ++index;
+    }
+    for (; index < nodes->size(); ++index) {
+      (*nodes)[new_size++] = (*nodes)[index];
+    }
+    nodes->resize(new_size);
   }
-  nodes->resize(new_node_index);
 
   // Amongst the node to merge, if many are leaf nodes in an "at most one"
   // relationship, it is super advantageous to exploit it during merging as
   // we can regroup all nodes from an at most one in a single new node with a
   // depth of 1.
-  if (implications != nullptr) {
+  if (!in_exactly_one && implications != nullptr) {
     std::vector<Literal> leaves;
     absl::flat_hash_map<LiteralIndex, int> node_indices;
     for (int i = 0; i < to_merge.size(); ++i) {
@@ -642,50 +717,76 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
     int num_in_decompo = 0;
     const std::vector<absl::Span<const Literal>> decomposition =
         implications->HeuristicAmoPartition(&leaves);
-    for (const auto amo : decomposition) {
-      num_in_decompo += amo.size();
 
-      // Extract Amo nodes and set them to nullptr in to_merge.
-      std::vector<EncodingNode*> amo_nodes;
-      for (const Literal l : amo) {
-        const int index = node_indices.at(l.Index());
-        amo_nodes.push_back(to_merge[index]);
-        to_merge[index] = nullptr;
+    // Same case as above, all the nodes in the core are in a exactly_one.
+    if (decomposition.size() == 1 && decomposition[0].size() == core.size()) {
+      in_exactly_one = true;
+    }
+
+    if (!in_exactly_one) {
+      for (const auto amo : decomposition) {
+        num_in_decompo += amo.size();
+
+        // Extract Amo nodes and set them to nullptr in to_merge.
+        std::vector<EncodingNode*> amo_nodes;
+        for (const Literal l : amo) {
+          const int index = node_indices.at(l.Index());
+          amo_nodes.push_back(to_merge[index]);
+          to_merge[index] = nullptr;
+        }
+
+        // Create the new node with proper constraints and weight.
+        repository->push_back(EncodingNode());
+        EncodingNode* n = &repository->back();
+        n->InitializeAmoNode(amo_nodes, solver);
+        n->set_weight(min_weight);
+        to_merge.push_back(n);
+      }
+      if (num_in_decompo > 0) {
+        absl::StrAppend(info, " amo:", decomposition.size(),
+                        " lit:", num_in_decompo);
       }
 
-      // Create the new node with proper constraints and weight.
-      repository->push_back(EncodingNode());
-      EncodingNode* n = &repository->back();
-      n->InitializeAmoNode(amo_nodes, solver);
-      n->set_weight(min_weight);
-      to_merge.push_back(n);
+      // Clean-up to_merge.
+      int new_size = 0;
+      for (EncodingNode* node : to_merge) {
+        if (node == nullptr) continue;
+        to_merge[new_size++] = node;
+      }
+      to_merge.resize(new_size);
     }
-    VLOG(2) << "Detected " << decomposition.size() << " AMO on "
-            << num_in_decompo << "/" << leaves.size() << " core literals";
+  }
 
-    // Clean-up to_merge.
-    int new_size = 0;
+  // If all the literal of the core are in at_most_one, the core is actually an
+  // exactly_one. We just subtracted the min_cost above. We just have to enqueue
+  // a constant node with min_weight for the rest of the code to work.
+  if (in_exactly_one) {
+    // Tricky: We need to enforce an upper bound of 1 on the nodes.
     for (EncodingNode* node : to_merge) {
-      if (node == nullptr) continue;
-      to_merge[new_size++] = node;
+      node->TransformToBoolean(solver);
     }
-    to_merge.resize(new_size);
 
-    if (to_merge.size() == 1) {
-      // Increase the bound in this case.
-      //
-      // TODO(user): No need to create this literal + implications in the first
-      // place. Moreover we actually have an "exactly one" in this case and if
-      // the amo used was larger, we can just set these extra literals to false.
-      // Note that since this is a core, the solver already learned that at
-      // least one of these literal must be true. We also explicitly added this
-      // clause in InitializeAmoNode() above.
-      return solver->AddUnitClause(to_merge[0]->literal(0));
+    absl::StrAppend(info, " exo");
+    repository->push_back(EncodingNode::ConstantNode(min_weight));
+    nodes->push_back(&repository->back());
+
+    // The negation of the literal in the core are in exactly one.
+    // TODO(user): If we infered the exactly one from the binary implication
+    // graph, there is no need to add the amo since it is already there.
+    std::vector<LiteralWithCoeff> cst;
+    cst.reserve(core.size());
+    for (const Literal l : core) {
+      cst.emplace_back(l.Negated(), Coefficient(1));
     }
+    solver->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(1),
+        /*use_upper_bound=*/true, Coefficient(1), &cst);
+    return !solver->ModelIsUnsat();
   }
 
   nodes->push_back(LazyMergeAllNodeWithPQAndIncreaseLb(min_weight, to_merge,
                                                        solver, repository));
+  absl::StrAppend(info, " d:", nodes->back()->depth());
   return !solver->ModelIsUnsat();
 }
 

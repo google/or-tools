@@ -41,9 +41,12 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/rins.h"
@@ -1121,6 +1124,16 @@ Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
+CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
+  CpModelProto updated_model = model_proto_;
+  {
+    absl::MutexLock domain_lock(&domain_mutex_);
+    *updated_model.mutable_variables() =
+        model_proto_with_only_variables_.variables();
+  }
+  return updated_model;
+}
+
 bool NeighborhoodGenerator::ReadyToGenerate() const {
   return (helper_.shared_response().SolutionsRepository().NumSolutions() > 0);
 }
@@ -1358,79 +1371,78 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   const int num_model_vars = helper_.ModelProto().variables_size();
-  if (num_model_vars == 0) return helper_.FullNeighborhood();
+  if (num_model_vars == 0) return helper_.NoNeighborhood();
 
+  // We copy the full graph var <-> constraints so that we can:
+  //   - reduce it in place
+  //   - not hold the mutex too long.
+  // TODO(user): should we compress it or use a different representation ?
   std::vector<std::vector<int>> vars_to_constraints;
   std::vector<std::vector<int>> constraints_to_vars;
-  std::vector<int> active_vars;
+  int num_active_vars = 0;
   std::vector<int> active_objective_vars;
   {
     absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
-    active_vars = helper_.ActiveVariablesWhileHoldingLock();
+    num_active_vars = helper_.ActiveVariablesWhileHoldingLock().size();
     active_objective_vars = helper_.ActiveObjectiveVariablesWhileHoldingLock();
     constraints_to_vars = helper_.ConstraintToVar();
     vars_to_constraints = helper_.VarToConstraint();
   }
 
-  for (auto& cts : vars_to_constraints) {
-    if (cts.empty()) continue;
-    std::shuffle(cts.begin(), cts.end(), random);
-  }
-  for (auto& vars : constraints_to_vars) {
-    if (vars.empty()) continue;
-    std::shuffle(vars.begin(), vars.end(), random);
-  }
-
-  const int num_active_vars = active_vars.size();
-  const int num_objective_variables = active_objective_vars.size();
   const int target_size = std::ceil(difficulty * num_active_vars);
-  if (target_size == num_active_vars) return helper_.FullNeighborhood();
-  if (target_size == 0) return helper_.FullNeighborhood();
+  if (target_size == 0) return helper_.NoNeighborhood();
 
-  const int first_var =
-      num_objective_variables > 0  // Prefer objective variables.
-          ? active_objective_vars[absl::Uniform<int>(random, 0,
-                                                     num_objective_variables)]
-          : active_vars[absl::Uniform<int>(random, 0, num_active_vars)];
+  // We pick a variable from the objective.
+  const int num_objective_variables = active_objective_vars.size();
+  if (num_objective_variables == 0) return helper_.NoNeighborhood();
+  const int first_var = active_objective_vars[absl::Uniform<int>(
+      random, 0, num_objective_variables)];
 
   std::vector<bool> relaxed_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
-  std::vector<int> candidates;
+  // Active vars are relaxed variables with some unexplored neighbors.
+  std::vector<int> active_vars;
 
   relaxed_variables_set[first_var] = true;
   relaxed_variables.push_back(first_var);
-  candidates.push_back(first_var);
+  active_vars.push_back(first_var);
 
   while (relaxed_variables.size() < target_size) {
-    if (candidates.empty()) break;  // We have exhausted our scc.
+    if (active_vars.empty()) break;  // We have exhausted our component.
 
-    const int tail_index = absl::Uniform<int>(random, 0, candidates.size());
-    const int tail_var = candidates[tail_index];
+    const int tail_index = absl::Uniform<int>(random, 0, active_vars.size());
+    const int tail_var = active_vars[tail_index];
     int head_var = tail_var;
     auto& cts = vars_to_constraints[tail_var];
     while (!cts.empty() && head_var == tail_var) {
-      const int ct = cts.back();
+      const int pos_ct = absl::Uniform<int>(random, 0, cts.size());
+      const int ct = cts[pos_ct];
       auto& vars = constraints_to_vars[ct];
       while (!vars.empty() && head_var == tail_var) {
+        const int pos_var = absl::Uniform<int>(random, 0, vars.size());
+        std::swap(vars[pos_var], vars.back());
         const int candidate = vars.back();
+        // We remove the variable as it is either already relaxed, or will be
+        // relaxed.
         vars.pop_back();
         if (!relaxed_variables_set[candidate]) {
           head_var = candidate;
         }
       }
       if (vars.empty()) {
+        std::swap(cts[pos_ct], cts.back());
         cts.pop_back();  // This constraint has no more un-relaxed variables.
       }
     }
-    if (cts.empty()) {
-      std::swap(candidates[tail_index], candidates.back());
-      candidates.pop_back();
+    if (cts.empty()) {  // Variable is no longer active.
+      std::swap(active_vars[tail_index], active_vars.back());
+      active_vars.pop_back();
     }
 
     if (head_var != tail_var) {
       relaxed_variables_set[head_var] = true;
       relaxed_variables.push_back(head_var);
-      candidates.push_back(head_var);
+      active_vars.push_back(head_var);
     }
   }
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
@@ -1666,6 +1678,128 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
   }
 
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
+namespace {
+
+// Given a (sub)set of binary variables and their initial solution values,
+// returns a local branching constraint over these variables, that is:
+//   sum_{i : s[i] == 0} x_i + sum_{i : s[i] == 1} (1 - x_i) <= k
+// where s is the initial solution and k is the neighborhood size. Requires all
+// variables and initial solution values to be binary.
+ConstraintProto LocalBranchingConstraint(
+    const std::vector<int>& variable_indices,
+    const std::vector<int64_t>& initial_solution, const int neighborhood_size) {
+  DCHECK_EQ(variable_indices.size(), initial_solution.size());
+  DCHECK_GE(neighborhood_size, 0);
+  ConstraintProto local_branching_constraint;
+  local_branching_constraint.set_name("local_branching");
+  LinearConstraintProto* linear = local_branching_constraint.mutable_linear();
+  int lhs_constant_value = 0;
+  for (int i = 0; i < variable_indices.size(); ++i) {
+    if (initial_solution[i] == 0) {
+      linear->add_coeffs(1);
+      linear->add_vars(variable_indices[i]);
+    } else {
+      DCHECK_EQ(initial_solution[i], 1);
+      linear->add_coeffs(-1);
+      linear->add_vars(variable_indices[i]);
+      lhs_constant_value++;
+    }
+  }
+  linear->add_domain(-lhs_constant_value);
+  linear->add_domain(-lhs_constant_value + neighborhood_size);
+  return local_branching_constraint;
+}
+
+}  // namespace
+
+Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<int> active_variables = helper_.ActiveVariables();
+
+  // Collect active binary variables and corresponding initial solution values.
+  // TODO(user): Extend to integer variables.
+  std::vector<int> binary_var_indices;
+  std::vector<int> non_binary_var_indices;
+  std::vector<int64_t> binary_var_initial_solution;
+  for (const int active_var_index : active_variables) {
+    const IntegerVariableProto& var =
+        helper_.ModelProto().variables(active_var_index);
+    if (var.domain_size() == 2 && var.domain(0) == 0 && var.domain(1) == 1) {
+      binary_var_indices.push_back(active_var_index);
+      binary_var_initial_solution.push_back(
+          initial_solution.solution(active_var_index));
+    } else {
+      non_binary_var_indices.push_back(active_var_index);
+    }
+  }
+  if (binary_var_indices.empty()) {
+    return helper_.NoNeighborhood();
+  }
+
+  const int target_size =
+      static_cast<int>(std::ceil(difficulty * binary_var_indices.size()));
+
+  // Create and solve local branching LP.
+  CpModelProto local_branching_model = helper_.UpdatedModelProtoCopy();
+  *local_branching_model.add_constraints() = LocalBranchingConstraint(
+      binary_var_indices, binary_var_initial_solution, target_size);
+  Model model("lb_relax_lns_lp");
+  auto* const params = model.GetOrCreate<SatParameters>();
+  // Parameters to enable solving the LP only.
+  params->set_num_workers(1);
+  params->set_linearization_level(2);
+  params->set_stop_after_root_propagation(true);
+  params->set_add_lp_constraints_lazily(false);
+  // Parameters to attempt to speed up solve.
+  params->set_cp_model_presolve(false);
+  params->set_cp_model_probing_level(0);
+  // Parameters to limit time spent in the solve. The max number of iterations
+  // is relaxed from the default since we rely more on deterministic time.
+  params->set_root_lp_iterations(100000);
+  params->set_max_deterministic_time(10);
+  if (global_time_limit_ != nullptr) {
+    global_time_limit_->UpdateLocalLimit(model.GetOrCreate<TimeLimit>());
+  }
+  solve_callback_(local_branching_model, &model);
+
+  // Skip LNS if no (full) feasible solution was found for the LP.
+  const auto lp_constraints =
+      model.GetOrCreate<LinearProgrammingConstraintCollection>();
+  for (const LinearProgrammingConstraint* lp_constraint : *lp_constraints) {
+    if (!lp_constraint->HasSolution()) {
+      return helper_.NoNeighborhood();
+    }
+  }
+
+  // Compute differences between LP solution and initial solution, with a small
+  // random noise for tie breaking.
+  const auto var_mapping = model.GetOrCreate<CpModelMapping>();
+  const auto lp_solution = model.GetOrCreate<ModelLpValues>();
+  std::vector<double> differences;
+  for (int i = 0; i < binary_var_indices.size(); ++i) {
+    double difference =
+        std::abs(lp_solution->at(var_mapping->Integer(binary_var_indices[i])) -
+                 binary_var_initial_solution[i]);
+    differences.push_back(difference +
+                          absl::Uniform<double>(random, 0.0, 1e-6));
+  }
+
+  // Take the target_size variables with largest differences.
+  std::vector<int> vars_to_relax(binary_var_indices.size());
+  absl::c_iota(vars_to_relax, 0);
+  absl::c_sort(vars_to_relax, [&differences](const int i, const int j) {
+    return differences[i] > differences[j];
+  });
+  vars_to_relax.resize(target_size);
+
+  // For now, we include all non-binary variables in the relaxation, since their
+  // values are likely tied to the binary values.
+  vars_to_relax.insert(vars_to_relax.end(), non_binary_var_indices.begin(),
+                       non_binary_var_indices.end());
+  return helper_.RelaxGivenVariables(initial_solution, vars_to_relax);
 }
 
 namespace {

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -71,10 +72,9 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
 }
 
 sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
+  sat::ReduceNodes(upper_bound_, &lower_bound_, &nodes_, &solver_);
   const std::vector<sat::Literal> assumptions =
-      sat::ReduceNodesAndExtractAssumptions(upper_bound_,
-                                            stratified_lower_bound_,
-                                            &lower_bound_, &nodes_, &solver_);
+      sat::ExtractAssumptions(stratified_lower_bound_, nodes_, &solver_);
   return solver_.ResetAndSolveWithGivenAssumptions(assumptions);
 }
 
@@ -150,7 +150,10 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     sat::MinimizeCore(&solver_, &core);
 
     const sat::Coefficient min_weight = sat::ComputeCoreMinWeight(nodes_, core);
-    sat::ProcessCore(core, min_weight, &repository_, &nodes_, &solver_);
+    std::string info_str;
+    sat::ProcessCore(core, min_weight,
+                     /*gap=*/std::numeric_limits<sat::Coefficient>::max(),
+                     &repository_, &nodes_, &solver_, &info_str);
     assumptions_already_added_ = false;
   }
   return BopOptimizerBase::CONTINUE;

@@ -45,6 +45,9 @@ namespace sat {
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core);
 
+void FilterAssignedLiteral(const VariablesAssignment& assignment,
+                           std::vector<Literal>* core);
+
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
 // default logging framework or simply stdout. Most users should just use

@@ -1788,10 +1788,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   if (shared_response_manager->ProblemIsSolved()) return;
 
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
-  if (parameters.stop_after_root_propagation()) {
-    model->GetOrCreate<ModelSharedTimeLimit>()->Stop();
-    return;
-  }
+  if (parameters.stop_after_root_propagation()) return;
 
   auto solution_observer = [&model_proto, model, shared_response_manager,
                             best_obj_ub = kMaxIntegerValue]() mutable {
@@ -3601,6 +3598,20 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             helper, "graph_dec_lns"),
         params, helper, &shared));
 
+    if (params.use_lb_relax_lns()) {
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
+              helper, "lb_relax_lns",
+              [](const CpModelProto cp_model, Model* model) {
+                model->GetOrCreate<SharedResponseManager>()
+                    ->InitializeObjective(cp_model);
+                LoadCpModel(cp_model, model);
+                SolveLoadedCpModel(cp_model, model);
+              },
+              shared.time_limit),
+          params, helper, &shared));
+    }
+
     // TODO(user): If we have a model with scheduling + routing. We create
     // a lot of LNS generators. Investigate if we can reduce this number.
     if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
@@ -3616,7 +3627,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-              helper, "scheduling_time_windows_lns"),
+              helper, "scheduling_time_window_lns"),
           params, helper, &shared));
 
       const std::vector<std::vector<int>> intervals_in_constraints =
@@ -4521,6 +4532,12 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
   return SolveCpModel(model_proto, &model);
 }
 #endif  // !__PORTABLE_PLATFORM__
+
+void LoadAndSolveCpModelForTest(const CpModelProto& model_proto, Model* model) {
+  model->GetOrCreate<SharedResponseManager>()->InitializeObjective(model_proto);
+  LoadCpModel(model_proto, model);
+  SolveLoadedCpModel(model_proto, model);
+}
 
 }  // namespace sat
 }  // namespace operations_research

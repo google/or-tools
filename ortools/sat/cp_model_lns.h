@@ -227,6 +227,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
       const absl::flat_hash_set<int>& ignored_intervals,
       const CpSolverResponse& initial_solution, absl::BitGenRef random) const;
 
+  // Returns a copy of the problem proto with updated domains.
+  CpModelProto UpdatedModelProtoCopy() const;
+
   // The initial problem.
   // Note that the domain of the variables are not updated here.
   const CpModelProto& ModelProto() const { return model_proto_; }
@@ -519,6 +522,8 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, absl::BitGenRef random) final;
 };
 
+// This randomly extend a working set of variable by one variable directly
+// connected to that set.
 class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ArcGraphNeighborhoodGenerator(
@@ -559,6 +564,32 @@ class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
+};
+
+// Solves a local branching LP and greedily picks a set of variables with the
+// largest differences between the initial and local branching LP solutions,
+// breaking ties uniformly at random.
+//
+// This is based on Huang et al., "Local Branching Relaxation Heuristics for
+// Integer Linear Programs", 2023.
+class LocalBranchingLpBasedNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  // TODO(user): Restructure code so that we avoid circular dependency with
+  // solving functions. For now, we use solve_callback.
+  explicit LocalBranchingLpBasedNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name,
+      std::function<void(CpModelProto, Model*)> solve_callback,
+      ModelSharedTimeLimit* const global_time_limit)
+      : NeighborhoodGenerator(name, helper),
+        solve_callback_(std::move(solve_callback)),
+        global_time_limit_(global_time_limit) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+
+ private:
+  const std::function<void(CpModelProto, Model*)> solve_callback_;
+  ModelSharedTimeLimit* const global_time_limit_;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns a

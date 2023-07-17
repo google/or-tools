@@ -279,6 +279,22 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
   }
 }
 
+// A core cannot be all true.
+void FilterAssignedLiteral(const VariablesAssignment& assignment,
+                           std::vector<Literal>* core) {
+  int new_size = 0;
+  for (const Literal lit : *core) {
+    if (assignment.LiteralIsTrue(lit)) continue;
+    if (assignment.LiteralIsFalse(lit)) {
+      (*core)[0] = lit;
+      core->resize(1);
+      return;
+    }
+    (*core)[new_size++] = lit;
+  }
+  core->resize(new_size);
+}
+
 // This algorithm works by exploiting the unsat core returned by the SAT solver
 // when the problem is UNSAT. It starts by trying to solve the decision problem
 // where all the objective variables are set to their value with minimal cost,
@@ -1013,8 +1029,10 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     // TODO(user): We are suboptimal here because we use for upper bound the
     // current best objective, not best_obj - 1. This code is not really used
     // but we should still fix it.
-    const std::vector<Literal> assumptions = ReduceNodesAndExtractAssumptions(
-        upper_bound, stratified_lower_bound, &lower_bound, &nodes, solver);
+    ReduceNodes(upper_bound, &lower_bound, &nodes, solver);
+
+    const std::vector<Literal> assumptions =
+        ExtractAssumptions(stratified_lower_bound, nodes, solver);
     if (assumptions.empty()) return SatSolver::FEASIBLE;
 
     // Display the progress.
@@ -1061,7 +1079,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     // The lower bound will be increased by that much.
     const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
     previous_core_info =
-        absl::StrFormat("core:%u mw:%d", core.size(), min_weight.value());
+        absl::StrFormat("size:%u mw:%d", core.size(), min_weight.value());
 
     // Increase stratified_lower_bound according to the parameters.
     if (stratified_lower_bound < min_weight &&
@@ -1070,7 +1088,8 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
       stratified_lower_bound = min_weight;
     }
 
-    ProcessCore(core, min_weight, &repository, &nodes, solver, nullptr);
+    ProcessCore(core, min_weight, /*gap=*/upper_bound - lower_bound,
+                &repository, &nodes, solver, &previous_core_info, nullptr);
     max_depth = std::max(max_depth, nodes.back()->depth());
   }
 }
@@ -1602,10 +1621,23 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
+    // Note that the objective_var_ upper bound is the one from the "improving"
+    // problem, so if we have a feasible solution, it will be the best solution
+    // objective value - 1.
     const Coefficient upper_bound(
         integer_trail_->UpperBound(objective_var_).value() - offset.value());
-    const std::vector<Literal> assumptions = ReduceNodesAndExtractAssumptions(
-        upper_bound, stratified_lower_bound, &lower_bound, &nodes, sat_solver_);
+    ReduceNodes(upper_bound, &lower_bound, &nodes, sat_solver_);
+
+    // We adapt the stratified lower bound when the gap is small. All literals
+    // with such weight will be in an at_most_one relationship, which will lead
+    // to a nice encoding if we find a core.
+    const Coefficient gap = upper_bound - lower_bound;
+    if (stratified_lower_bound > (gap + 2) / 2) {
+      stratified_lower_bound = (gap + 2) / 2;
+    }
+
+    const std::vector<Literal> assumptions =
+        ExtractAssumptions(stratified_lower_bound, nodes, sat_solver_);
     if (assumptions.empty()) {
       stratified_lower_bound =
           MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
@@ -1637,13 +1669,17 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     VLOG(2) << "[Core] #nodes " << nodes.size()
             << " #assumptions:" << assumptions.size()
-            << " stratification:" << stratified_lower_bound;
+            << " stratification:" << stratified_lower_bound << " gap:" << gap;
 
     // Solve under the assumptions.
     //
-    // TODO(user): Find multiple core like in the "main" algorithm.
-    // this is just trying to solve with assumptions not involving the newly
-    // found core.
+    // TODO(user): Find multiple core like in the "main" algorithm. This is just
+    // trying to solve with assumptions not involving the newly found core.
+    //
+    // TODO(user): With stratification, sometime we just spend too much time
+    // trying to find a feasible solution/prove infeasibility and we could
+    // instead just use stratification=0 to find easty core and improve lower
+    // bound.
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model_);
     if (result == SatSolver::FEASIBLE) {
@@ -1664,18 +1700,19 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (parameters_->minimize_core()) {
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
     }
+    FilterAssignedLiteral(sat_solver_->Assignment(), &core);
+    if (core.empty()) return SatSolver::INFEASIBLE;
 
     // Compute the min weight of all the nodes in the core.
     // The lower bound will be increased by that much.
     const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
     previous_core_info =
-        absl::StrFormat("core:%u mw:%d d:%d", core.size(), min_weight.value(),
-                        nodes.back()->depth());
+        absl::StrFormat("size:%u mw:%d", core.size(), min_weight.value());
 
     // We only count an iter when we found a core.
     ++iter;
-    if (!ProcessCore(core, min_weight, &repository, &nodes, sat_solver_,
-                     implications_)) {
+    if (!ProcessCore(core, min_weight, gap, &repository, &nodes, sat_solver_,
+                     &previous_core_info, implications_)) {
       return SatSolver::INFEASIBLE;
     }
     max_depth = std::max(max_depth, nodes.back()->depth());
