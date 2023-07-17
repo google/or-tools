@@ -184,12 +184,12 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
            arg("lp_file"))
 #else
-      .def("import_from_lp_string", [](const std::string& lp_string) {
-        LOG(INFO) << "Parsing LP string is not compiled in";
-      })
-      .def("import_from_lp_file", [](const std::string& lp_file) {
-        LOG(INFO) << "Parsing LP file is not compiled in";
-      })
+            .def("import_from_lp_string", [](const std::string& lp_string) {
+              LOG(INFO) << "Parsing LP string is not compiled in";
+            })
+            .def("import_from_lp_file", [](const std::string& lp_file) {
+              LOG(INFO) << "Parsing LP file is not compiled in";
+            })
 #endif
       .def(
           "fill_model_from_sparse_data",
