@@ -220,6 +220,16 @@ class StrongInt {
     return static_cast<ValType>(value_);
   }
 
+  // Explicitly cast the raw value only if the underlying value is convertible
+  // to T.
+  template <typename T,
+            typename = std::enable_if_t<std::conjunction_v<
+                std::bool_constant<std::numeric_limits<T>::is_integer>,
+                std::is_convertible<ValueType, T>>>>
+  constexpr explicit operator T() const {
+    return static_cast<T>(value_);
+  }
+
   // -- UNARY OPERATORS --------------------------------------------------------
   ThisType& operator++() {  // prefix ++
     ++value_;
@@ -420,7 +430,7 @@ StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
 // Allows it to be used as a key to hashable containers.
 namespace std {
 template <typename StrongIntName, typename ValueType>
-struct hash<util_intops::StrongInt<StrongIntName, ValueType> >
+struct hash<util_intops::StrongInt<StrongIntName, ValueType>>
     : util_intops::StrongInt<StrongIntName, ValueType>::Hasher {};
 }  // namespace std
 
