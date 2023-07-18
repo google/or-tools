@@ -161,8 +161,10 @@ bool LoadBooleanProblem(const std::string& filename,
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
   } else if (absl::EndsWith(filename, ".cnf") ||
+             absl::EndsWith(filename, ".cnf.xz") ||
              absl::EndsWith(filename, ".cnf.gz") ||
              absl::EndsWith(filename, ".wcnf") ||
+             absl::EndsWith(filename, ".wcnf.xz") ||
              absl::EndsWith(filename, ".wcnf.gz")) {
     SatCnfReader reader(absl::GetFlag(FLAGS_wcnf_use_strong_slack));
     if (absl::GetFlag(FLAGS_fu_malik) || absl::GetFlag(FLAGS_linear_scan) ||

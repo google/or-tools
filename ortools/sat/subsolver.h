@@ -141,8 +141,7 @@ class SubSolver {
 // A simple wrapper to add a synchronization point in the list of subsolvers.
 class SynchronizationPoint : public SubSolver {
  public:
-  explicit SynchronizationPoint(const std::string& name,
-                                std::function<void()> f)
+  explicit SynchronizationPoint(absl::string_view name, std::function<void()> f)
       : SubSolver(name, HELPER), f_(std::move(f)) {}
   bool TaskIsAvailable() final { return false; }
   std::function<void()> GenerateTask(int64_t /*task_id*/) final {
