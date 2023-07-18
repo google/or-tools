@@ -2293,8 +2293,15 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
 }
 
 InnerStepOutcome Solver::TakeAdaptiveStep() {
-  bool force_numerical_termination = false;
-  for (bool accepted_step = false; !accepted_step;) {
+  InnerStepOutcome outcome = InnerStepOutcome::kSuccessful;
+  int inner_iterations = 0;
+  for (bool accepted_step = false; !accepted_step; ++inner_iterations) {
+    if (inner_iterations >= 60) {
+      LogInnerIterationLimitHit();
+      ResetAverageToCurrent();
+      outcome = InnerStepOutcome::kForceNumericalTermination;
+      break;
+    }
     const double primal_step_size = step_size_ / primal_weight_;
     const double dual_step_size = step_size_ * primal_weight_;
     NextSolutionAndDelta next_primal_solution =
@@ -2306,11 +2313,11 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
     if (movement == 0.0) {
       LogNumericalTermination();
       ResetAverageToCurrent();
-      force_numerical_termination = true;
+      outcome = InnerStepOutcome::kForceNumericalTermination;
       break;
     } else if (movement > kDivergentMovement) {
       LogNumericalTermination();
-      force_numerical_termination = true;
+      outcome = InnerStepOutcome::kForceNumericalTermination;
       break;
     }
     VectorXd next_dual_product = TransposedMatrixVectorProduct(
@@ -2335,7 +2342,7 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
       accepted_step = true;
     }
     const double total_steps_attempted =
-        num_rejected_steps_ + iterations_completed_ + 1;
+        num_rejected_steps_ + inner_iterations + iterations_completed_ + 1;
     // Our step sizes are a factor 1 - (`total_steps_attempted` + 1)^(-
     // `step_size_reduction_exponent`) smaller than they could be as a margin to
     // reduce rejected steps.
@@ -2362,14 +2369,10 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
     // step, we overall decrease `step_size_`. When `step_size_` is
     // sufficiently small we stop having rejected steps.
     step_size_ = std::min(first_term, second_term);
-    if (!accepted_step) {
-      ++num_rejected_steps_;
-    }
   }
-  if (force_numerical_termination) {
-    return InnerStepOutcome::kForceNumericalTermination;
-  }
-  return InnerStepOutcome::kSuccessful;
+  // `inner_iterations` is incremented for the accepted step.
+  num_rejected_steps_ += inner_iterations - 1;
+  return outcome;
 }
 
 InnerStepOutcome Solver::TakeConstantSizeStep() {

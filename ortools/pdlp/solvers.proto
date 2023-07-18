@@ -180,11 +180,12 @@ message AdaptiveLinesearchParams {
   // The step size reduction exponent defines a step size given by
   // (1 - (total_steps_attempted + 1)^(-step_size_reduction_exponent)) *
   // step_size_limit where step_size_limit is the maximum allowed step size at
-  // the current iteration.
+  // the current iteration. This should be between 0.1 and 1.
   optional double step_size_reduction_exponent = 1 [default = 0.3];
 
   // The step size growth exponent defines a step size given by (1 +
   // (total_steps_attempted + 1)^(-step_size_growth_exponent)) * step_size_.
+  // This should be between 0.1 and 1.
   optional double step_size_growth_exponent = 2 [default = 0.6];
 }
 

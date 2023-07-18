@@ -256,6 +256,13 @@ TEST(ValidateAdaptiveLinesearchParams, BadReductionExponent) {
   EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_low.message(), HasSubstr("step_size_reduction_exponent"));
 
+  AdaptiveLinesearchParams params_high;
+  params_high.set_step_size_reduction_exponent(2.0);
+  const absl::Status status_high =
+      ValidateAdaptiveLinesearchParams(params_high);
+  EXPECT_EQ(status_high.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_high.message(), HasSubstr("step_size_reduction_exponent"));
+
   AdaptiveLinesearchParams params_nan;
   params_nan.set_step_size_reduction_exponent(
       std::numeric_limits<double>::quiet_NaN());
@@ -270,6 +277,13 @@ TEST(ValidateAdaptiveLinesearchParams, BadGrowthExponent) {
   const absl::Status status_low = ValidateAdaptiveLinesearchParams(params_low);
   EXPECT_EQ(status_low.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_THAT(status_low.message(), HasSubstr("step_size_growth_exponent"));
+
+  AdaptiveLinesearchParams params_high;
+  params_high.set_step_size_growth_exponent(2.0);
+  const absl::Status status_high =
+      ValidateAdaptiveLinesearchParams(params_high);
+  EXPECT_EQ(status_high.code(), absl::StatusCode::kInvalidArgument);
+  EXPECT_THAT(status_high.message(), HasSubstr("step_size_growth_exponent"));
 
   AdaptiveLinesearchParams params_nan;
   params_nan.set_step_size_growth_exponent(

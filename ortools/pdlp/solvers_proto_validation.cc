@@ -122,15 +122,18 @@ absl::Status ValidateAdaptiveLinesearchParams(
   if (std::isnan(params.step_size_reduction_exponent())) {
     return InvalidArgumentError("step_size_reduction_exponent is NAN");
   }
-  if (params.step_size_reduction_exponent() <= 0) {
+  if (params.step_size_reduction_exponent() < 0.1 ||
+      params.step_size_reduction_exponent() > 1.0) {
     return InvalidArgumentError(
-        "step_size_reduction_exponent must be positive");
+        "step_size_reduction_exponent must be between 0.1 and 1.0 inclusive");
   }
   if (std::isnan(params.step_size_growth_exponent())) {
     return InvalidArgumentError("step_size_growth_exponent is NAN");
   }
-  if (params.step_size_growth_exponent() <= 0) {
-    return InvalidArgumentError("step_size_growth_exponent must be positive");
+  if (params.step_size_growth_exponent() < 0.1 ||
+      params.step_size_growth_exponent() > 1.0) {
+    return InvalidArgumentError(
+        "step_size_growth_exponent must be between 0.1 and 1.0 inclusive");
   }
   return OkStatus();
 }
