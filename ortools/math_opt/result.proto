@@ -316,6 +316,7 @@ message SolveResultProto {
     pdlp.ConvergenceInformation convergence_information = 1;
   }
 
+  reserved 8;
   oneof solver_specific_output {
     GScipOutput gscip_output = 7;
     PdlpOutput pdlp_output = 9;
