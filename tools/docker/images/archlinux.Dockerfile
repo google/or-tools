@@ -23,8 +23,11 @@ RUN pacman -Syu --noconfirm jdk-openjdk maven
 ENV JAVA_HOME=/usr/lib/jvm/default
 
 # Install Python
-RUN pacman -Syu --noconfirm python python-pip
-RUN python -m pip install absl-py mypy-protobuf
+RUN pacman -Syu --noconfirm python python-pip \
+ python-wheel python-virtualenv \
+ python-numpy python-pandas
+RUN python -m pip install --break-system-package \
+ absl-py mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
