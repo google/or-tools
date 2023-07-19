@@ -260,13 +260,19 @@ class Trail {
 
   // Enqueues the assignment that make the given literal true on the trail. This
   // should only be called on unassigned variables.
-  void Enqueue(Literal true_literal, int propagator_id) {
+  void SetCurrentPropagatorId(int propagator_id) {
+    current_info_.type = propagator_id;
+  }
+  void FastEnqueue(Literal true_literal) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
-    current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
     ++current_info_.trail_index;
+  }
+  void Enqueue(Literal true_literal, int propagator_id) {
+    SetCurrentPropagatorId(propagator_id);
+    FastEnqueue(true_literal);
   }
 
   // Specific Enqueue() version for the search decision.

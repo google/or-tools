@@ -1693,17 +1693,17 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     objective_scaling_factor_ *= static_cast<double>(gcd);
 
     // We update the offset accordingly.
-    const absl::int128 offset =
-        absl::int128(objective_integer_before_offset_) *
-            absl::int128(objective_integer_scaling_factor_) +
-        absl::int128(objective_integer_after_offset_);
+    absl::int128 offset = absl::int128(objective_integer_before_offset_) *
+                              absl::int128(objective_integer_scaling_factor_) +
+                          absl::int128(objective_integer_after_offset_);
 
-    if (objective_domain_.IsFixed() && objective_domain_.FixedValue() * gcd ==
-                                           -objective_integer_before_offset_) {
-      // We avoid a corner case where this would overflow but the objective is
-      // zero. In this case any factor work, so we just take 1 and avoid the
-      // overflow.
+    if (objective_domain_.IsFixed()) {
+      // To avoid overflow in (fixed_value * gcd + before_offset) * factor +
+      // after_offset because the objective is constant (and should fit on an
+      // int64_t), we can rewrite it as fixed_value + offset.
       objective_integer_scaling_factor_ = 1;
+      offset +=
+          absl::int128(gcd - 1) * absl::int128(objective_domain_.FixedValue());
     } else {
       objective_integer_scaling_factor_ *= gcd;
     }

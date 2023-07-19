@@ -721,7 +721,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
   // loop does slow down the code by a few percent.
   num_inspections_ += implications_[true_literal.Index()].size();
 
-  for (Literal literal : implications_[true_literal.Index()]) {
+  for (const Literal literal : implications_[true_literal.Index()]) {
     if (assignment.LiteralIsTrue(literal)) {
       // Note(user): I tried to update the reason here if the literal was
       // enqueued after the true_literal on the trail. This property is
@@ -739,7 +739,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
     } else {
       // Propagation.
       reasons_[trail->Index()] = true_literal.Negated();
-      trail->Enqueue(literal, propagator_id_);
+      trail->FastEnqueue(literal);
     }
   }
 
@@ -770,7 +770,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
         } else {
           // Propagation.
           reasons_[trail->Index()] = true_literal.Negated();
-          trail->Enqueue(literal.Negated(), propagator_id_);
+          trail->FastEnqueue(literal.Negated());
         }
       }
     }
@@ -784,6 +784,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     propagation_trail_index_ = trail->Index();
     return true;
   }
+  trail->SetCurrentPropagatorId(propagator_id_);
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
     if (!PropagateOnTrue(literal, trail)) return false;

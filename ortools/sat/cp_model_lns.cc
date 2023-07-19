@@ -443,6 +443,32 @@ std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
   return active_intervals;
 }
 
+std::vector<std::pair<int, int>>
+NeighborhoodGeneratorHelper::GetActiveRectangles(
+    const CpSolverResponse& initial_solution) const {
+  const std::vector<int> active_intervals =
+      GetActiveIntervals(initial_solution);
+  const absl::flat_hash_set<int> active_intervals_set(active_intervals.begin(),
+                                                      active_intervals.end());
+
+  std::vector<std::pair<int, int>> active_rectangles;
+  for (const int ct_index : TypeToConstraints(ConstraintProto::kNoOverlap2D)) {
+    const NoOverlap2DConstraintProto& ct =
+        model_proto_.constraints(ct_index).no_overlap_2d();
+    for (int i = 0; i < ct.x_intervals_size(); ++i) {
+      const int x_i = ct.x_intervals(i);
+      const int y_i = ct.y_intervals(i);
+      if (!active_intervals_set.contains(x_i) &&
+          !active_intervals_set.contains(y_i)) {
+        continue;
+      }
+      active_rectangles.push_back({x_i, y_i});
+    }
+  }
+
+  return active_rectangles;
+}
+
 std::vector<std::vector<int>>
 NeighborhoodGeneratorHelper::GetUniqueIntervalSets() const {
   std::vector<std::vector<int>> intervals_in_constraints;
@@ -2010,6 +2036,42 @@ Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
       {intervals_to_relax_.begin(), intervals_to_relax_.end()});
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
       intervals, initial_solution, random, helper_);
+}
+
+Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<std::pair<int, int>> rectangles_to_freeze =
+      helper_.GetActiveRectangles(initial_solution);
+  GetRandomSubset(1.0 - difficulty, &rectangles_to_freeze, random);
+
+  // ConstraintToVar() is not initialised for intervals. We need to parse them
+  // manually.
+  auto insert_vars_from_intervals =
+      [this](int i, absl::flat_hash_set<int>& vars_to_freeze) {
+        const ConstraintProto& ct = helper_.ModelProto().constraints(i);
+        for (const int lit : ct.enforcement_literal()) {
+          const int var = PositiveRef(lit);
+          vars_to_freeze.insert(var);
+        }
+        for (const int var : ct.interval().start().vars()) {
+          vars_to_freeze.insert(var);
+        }
+        for (const int var : ct.interval().end().vars()) {
+          vars_to_freeze.insert(var);
+        }
+        for (const int var : ct.interval().size().vars()) {
+          vars_to_freeze.insert(var);
+        }
+      };
+
+  absl::flat_hash_set<int> variables_to_freeze;
+  for (const auto& [x, y] : rectangles_to_freeze) {
+    insert_vars_from_intervals(x, variables_to_freeze);
+    insert_vars_from_intervals(y, variables_to_freeze);
+  }
+
+  return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 }
 
 Neighborhood RoutingRandomNeighborhoodGenerator::Generate(

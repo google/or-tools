@@ -223,15 +223,20 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   int no_overlap_2d_num_optional_rectangles = 0;
   int no_overlap_2d_num_linear_areas = 0;
   int no_overlap_2d_num_quadratic_areas = 0;
+  int no_overlap_2d_num_fixed_rectangles = 0;
 
   int cumulative_num_intervals = 0;
   int cumulative_num_optional_intervals = 0;
   int cumulative_num_variable_sizes = 0;
   int cumulative_num_variable_demands = 0;
+  int cumulative_num_fixed_intervals = 0;
 
   int no_overlap_num_intervals = 0;
   int no_overlap_num_optional_intervals = 0;
   int no_overlap_num_variable_sizes = 0;
+  int no_overlap_num_fixed_intervals = 0;
+
+  int num_fixed_intervals = 0;
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     std::string name = ConstraintCaseName(ct.constraint_case());
@@ -278,6 +283,19 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       return !model_proto.constraints(i).enforcement_literal().empty();
     };
 
+    auto interval_is_fixed = [&variable_is_fixed,
+                              expression_is_fixed](const ConstraintProto& ct) {
+      if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
+        return false;
+      }
+      for (const int lit : ct.enforcement_literal()) {
+        if (!variable_is_fixed(lit)) return false;
+      }
+      return (expression_is_fixed(ct.interval().start()) &&
+              expression_is_fixed(ct.interval().size()) &&
+              expression_is_fixed(ct.interval().end()));
+    };
+
     // For pure Boolean constraints, we also display the total number of literal
     // involved as this gives a good idea of the problem size.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
@@ -296,6 +314,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                ConstraintProto::ConstraintCase::kLinMax) {
       name_to_num_expressions[name] += ct.lin_max().exprs().size();
     } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kInterval) {
+      if (interval_is_fixed(ct)) num_fixed_intervals++;
+    } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kNoOverlap2D) {
       const int num_boxes = ct.no_overlap_2d().x_intervals_size();
       no_overlap_2d_num_rectangles += num_boxes;
@@ -313,6 +334,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         } else if (num_fixed == 1) {
           no_overlap_2d_num_linear_areas++;
         }
+        if (interval_is_fixed(model_proto.constraints(x_interval)) &&
+            interval_is_fixed(model_proto.constraints(y_interval))) {
+          no_overlap_2d_num_fixed_rectangles++;
+        }
       }
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kNoOverlap) {
@@ -325,6 +350,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         }
         if (!interval_has_fixed_size(interval)) {
           no_overlap_num_variable_sizes++;
+        }
+        if (interval_is_fixed(model_proto.constraints(interval))) {
+          no_overlap_num_fixed_intervals++;
         }
       }
     } else if (ct.constraint_case() ==
@@ -341,6 +369,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         }
         if (!expression_is_fixed(ct.cumulative().demands(i))) {
           cumulative_num_variable_demands++;
+        }
+        if (interval_is_fixed(model_proto.constraints(interval))) {
+          cumulative_num_fixed_intervals++;
         }
       }
     }
@@ -513,7 +544,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                       " (#complex_domain: ", name_to_num_complex_domain[name],
                       ")");
     }
-    if (name == "kNoOverlap2D") {
+    if (name == "kInterval" && num_fixed_intervals > 0) {
+      absl::StrAppend(&constraints.back(), " (#fixed: ", num_fixed_intervals,
+                      ")");
+    } else if (name == "kNoOverlap2D") {
       absl::StrAppend(&constraints.back(),
                       " (#rectangles: ", no_overlap_2d_num_rectangles);
       if (no_overlap_2d_num_optional_rectangles > 0) {
@@ -527,6 +561,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       if (no_overlap_2d_num_quadratic_areas > 0) {
         absl::StrAppend(&constraints.back(), ", #quadratic_areas: ",
                         no_overlap_2d_num_quadratic_areas);
+      }
+      if (no_overlap_2d_num_fixed_rectangles > 0) {
+        absl::StrAppend(&constraints.back(), ", #fixed_rectangles: ",
+                        no_overlap_2d_num_fixed_rectangles);
       }
       absl::StrAppend(&constraints.back(), ")");
     } else if (name == "kCumulative") {
@@ -544,6 +582,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         absl::StrAppend(&constraints.back(), ", #variable_demands: ",
                         cumulative_num_variable_demands);
       }
+      if (cumulative_num_fixed_intervals > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #fixed_intervals: ", cumulative_num_fixed_intervals);
+      }
       absl::StrAppend(&constraints.back(), ")");
     } else if (name == "kNoOverlap") {
       absl::StrAppend(&constraints.back(),
@@ -555,6 +597,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       if (no_overlap_num_variable_sizes > 0) {
         absl::StrAppend(&constraints.back(),
                         ", #variable_sizes: ", no_overlap_num_variable_sizes);
+      }
+      if (no_overlap_num_fixed_intervals > 0) {
+        absl::StrAppend(&constraints.back(),
+                        ", #fixed_intervals: ", no_overlap_num_fixed_intervals);
       }
       absl::StrAppend(&constraints.back(), ")");
     }
@@ -3096,7 +3142,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         lns_fragment.name(), ".pb.txt");
+                         lns_fragment.name(), "_", source_info, ".pb.txt");
         LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
         CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
       }
@@ -3173,7 +3219,7 @@ class LnsSolver : public SubSolver {
           if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
             const std::string name =
                 absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                             debug_copy.name(), ".pb.txt");
+                             debug_copy.name(), "_", source_info, ".pb.txt");
             LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
             CHECK(WriteModelProtoToFile(debug_copy, name));
           }
@@ -3637,6 +3683,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints,
                 "scheduling_resource_windows_lns"),
+            params, helper, &shared));
+      }
+      if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty()) {
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+                helper, "packing_rectangles_lns"),
             params, helper, &shared));
       }
     }

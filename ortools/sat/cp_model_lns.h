@@ -208,6 +208,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   std::vector<int> GetActiveIntervals(
       const CpSolverResponse& initial_solution) const;
 
+  // Returns the list of active rectangles appearing in no_overlap_2d
+  // constraints according to the initial_solution and the parameter
+  // lns_focus_on_performed_intervals. If true, this method returns the list of
+  // performed rectangles in the solution. If false, it returns all rectangles
+  // of the model.
+  std::vector<std::pair<int, int>> GetActiveRectangles(
+      const CpSolverResponse& initial_solution) const;
+
   // Returns the set of unique intervals list appearing in a no_overlap,
   // cumulative, or as a dimension of a no_overlap_2d constraint.
   std::vector<std::vector<int>> GetUniqueIntervalSets() const;
@@ -670,6 +678,20 @@ class SchedulingResourceWindowsNeighborhoodGenerator
  private:
   const std::vector<std::vector<int>> intervals_in_constraints_;
   absl::flat_hash_set<int> intervals_to_relax_;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This select a
+// random set of rectangles (i.e. a pair of intervals) of the problem according
+// to the difficulty. Then, fix all variables in the selected intervals.
+class RandomRectanglesPackingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RandomRectanglesPackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
 };
 
 // This routing based LNS generator will relax random arcs in all the paths of
