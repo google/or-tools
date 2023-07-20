@@ -307,6 +307,9 @@ PYBIND11_MODULE(model_builder_helper, m) {
            })
       .def("set_constraint_name", &ModelBuilderHelper::SetConstraintName,
            arg("ct_index"), arg("name"))
+      .def("set_constraint_coefficient",
+           &ModelBuilderHelper::SetConstraintCoefficient, arg("ct_index"),
+           arg("var_index"), arg("coeff"))
       .def("num_variables", &ModelBuilderHelper::num_variables)
       .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
            arg("var_index"))

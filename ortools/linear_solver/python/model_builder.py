@@ -1455,6 +1455,28 @@ class ModelSolver:
             return pd.NA
         return self.__solve_helper.reduced_cost(var.index)
 
+    def dual_values(self, constraints: _IndexOrSeries) -> pd.Series:
+        """Returns the dual values of the input constraints.
+
+        If `constraints` is a `pd.Index`, then the output will be indexed by the
+        constraints. If `constraints` is a `pd.Series` indexed by the underlying
+        dimensions, then the output will be indexed by the same underlying
+        dimensions.
+
+        Args:
+          constraints (Union[pd.Index, pd.Series]): The set of constraints from
+          which to get the dual values.
+
+        Returns:
+          pd.Series: The dual_values of all constraints in the set.
+        """
+        if not self.__solve_helper.has_solution():
+            return _attribute_series(func=lambda v: pd.NA, values=constraints)
+        return _attribute_series(
+            func=lambda v: self.__solve_helper.dual_value(v.index),
+            values=constraints,
+        )
+
     def dual_value(self, ct: LinearConstraint) -> np.double:
         """Returns the dual value of a linear constraint after solve."""
         if not self.__solve_helper.has_solution():

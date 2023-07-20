@@ -74,6 +74,7 @@ class ModelBuilderHelper {
   void SetConstraintUpperBound(int ct_index, double ub);
   void AddConstraintTerm(int ct_index, int var_index, double coeff);
   void SetConstraintName(int ct_index, const std::string& name);
+  void SetConstraintCoefficient(int ct_index, int var_index, double coeff);
 
   int num_variables() const;
   double VarLowerBound(int var_index) const;

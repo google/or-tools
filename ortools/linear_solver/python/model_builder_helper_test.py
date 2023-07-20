@@ -184,6 +184,30 @@ class PywrapModelBuilderHelperTest(absltest.TestCase):
         self.assertEqual((10,), var_array.shape)
         self.assertEqual(model.var_name(var_array[3]), "var_3")
 
+    def test_set_coefficient(self):
+        var_lb = np.array([-1.0, -2.0])
+        var_ub = np.array([np.inf, np.inf])
+        obj = np.array([10.0, 20.0])
+        con_lb = np.array([-5.0, -6.0])
+        con_ub = np.array([5.0, 6.0])
+        constraint_matrix = sparse.csr_matrix(np.array([[1.0, 3.0], [2.0, 4.0]]))
+
+        model = model_builder_helper.ModelBuilderHelper()
+        model.fill_model_from_sparse_data(
+            var_lb, var_ub, obj, con_lb, con_ub, constraint_matrix
+        )
+        # Here, we add new variables to test that we are able to set coefficients
+        # for variables that are not yet in the constraint.
+        var_index1 = model.add_var()
+        var_index2 = model.add_var()
+        model.set_constraint_coefficient(0, var_index2, 5.0)
+        model.set_constraint_coefficient(0, var_index1, 6.0)
+        self.assertEqual([1.0, 3.0, 5.0, 6.0], model.constraint_coefficients(0))
+        # Here, we test that we are able to set coefficients for variables whose
+        # index in the constraint is different from its index in the model.
+        model.set_constraint_coefficient(0, var_index2, 7.0)
+        self.assertEqual([1.0, 3.0, 7.0, 6.0], model.constraint_coefficients(0))
+
 
 if __name__ == "__main__":
     absltest.main()

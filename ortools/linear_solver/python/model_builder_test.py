@@ -1845,19 +1845,28 @@ class SolverTest(parameterized.TestCase):
         self.assertLen(model.get_linear_constraints(), 3)
         solver = mb.ModelSolver("glop")
         test_red_cost = solver.reduced_costs(model.get_variables())
+        test_dual_values = solver.dual_values(model.get_variables())
         self.assertLen(test_red_cost, 3)
+        self.assertLen(test_dual_values, 3)
         for reduced_cost in test_red_cost:
             self.assertTrue(pd.isna(reduced_cost))
+        for dual_value in test_dual_values:
+            self.assertTrue(pd.isna(dual_value))
         run = solver.solve(model)
         self.assertEqual(run, mb.SolveStatus.OPTIMAL)
         i = solver.values(model.get_variables())
         self.assertSequenceAlmostEqual(i, [2, 0, 1])
         red_cost = solver.reduced_costs(model.get_variables())
+        dual_val = solver.dual_values(model.get_linear_constraints())
         self.assertSequenceAlmostEqual(red_cost, [0, -3, 0])
+        self.assertSequenceAlmostEqual(dual_val, [1, 0, 1])
         self.assertAlmostEqual(2, solver.value(x[0]))
         self.assertAlmostEqual(0, solver.reduced_cost((x[0])))
         self.assertAlmostEqual(-3, solver.reduced_cost((x[1])))
         self.assertAlmostEqual(0, solver.reduced_cost((x[2])))
+        self.assertAlmostEqual(1, solver.dual_value((x[0])))
+        self.assertAlmostEqual(0, solver.dual_value((x[1])))
+        self.assertAlmostEqual(1, solver.dual_value((x[2])))
 
 
 if __name__ == "__main__":
