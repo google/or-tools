@@ -1034,7 +1034,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[-math.inf],
             upper_bounds=[0],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1064,7 +1064,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[0],
             upper_bounds=[math.inf],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1075,7 +1075,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[-math.inf],
             upper_bounds=[3],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1086,7 +1086,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[3],
             upper_bounds=[3],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1097,7 +1097,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[3],
             upper_bounds=[math.inf],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(

@@ -142,6 +142,7 @@ void ModelBuilderHelper::SetConstraintUpperBound(int ct_index, double ub) {
 
 void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
                                            double coeff) {
+  if (coeff == 0.0) return;
   MPConstraintProto* ct_proto = model_.mutable_constraint(ct_index);
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
@@ -149,6 +150,7 @@ void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
 
 void ModelBuilderHelper::SafeAddConstraintTerm(int ct_index, int var_index,
                                                double coeff) {
+  if (coeff == 0.0) return;
   MPConstraintProto* ct_proto = model_.mutable_constraint(ct_index);
   for (int i = 0; i < ct_proto->var_index_size(); ++i) {
     if (ct_proto->var_index(i) == var_index) {
