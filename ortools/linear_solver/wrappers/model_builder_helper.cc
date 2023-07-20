@@ -147,6 +147,21 @@ void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
   ct_proto->add_coefficient(coeff);
 }
 
+void ModelBuilderHelper::SafeAddConstraintTerm(int ct_index, int var_index,
+                                               double coeff) {
+  MPConstraintProto* ct_proto = model_.mutable_constraint(ct_index);
+  for (int i = 0; i < ct_proto->var_index_size(); ++i) {
+    if (ct_proto->var_index(i) == var_index) {
+      ct_proto->set_coefficient(i, coeff + ct_proto->coefficient(i));
+      return;
+    }
+  }
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
+  ct_proto->add_var_index(var_index);
+  ct_proto->add_coefficient(coeff);
+}
+
 void ModelBuilderHelper::SetConstraintName(int ct_index,
                                            const std::string& name) {
   model_.mutable_constraint(ct_index)->set_name(name);

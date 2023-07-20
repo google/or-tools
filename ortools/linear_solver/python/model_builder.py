@@ -722,8 +722,13 @@ class LinearConstraint:
     def __repr__(self):
         return self.__str__()
 
+    def set_coefficient(self, var: Variable, coeff: NumberT) -> None:
+        """Sets the coefficient of the variable in the constraint."""
+        self.__helper.set_constraint_coefficient(self.__index, var.index, coeff)
+
     def add_term(self, var: Variable, coeff: NumberT) -> None:
-        self.__helper.add_term_to_constraint(self.__index, var.index, coeff)
+        """Adds var * coeff to the constraint."""
+        self.__helper.safe_add_term_to_constraint(self.__index, var.index, coeff)
 
 
 class ModelBuilder:

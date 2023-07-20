@@ -306,6 +306,28 @@ ENDATA
         solver = mb.ModelSolver("sat")
         self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(model))
 
+    def test_add_term(self):
+        model = mb.ModelBuilder()
+        x = model.new_int_var(0.0, 4.0, "x")
+        y = model.new_int_var(0.0, 4.0, "y")
+        z = model.new_int_var(0.0, 4.0, "z")
+        t = model.new_int_var(0.0, 4.0, "t")
+        ct = model.add(x + 2 * y == 3)
+        self.assertEqual(ct.helper.constraint_var_indices(ct.index), [0, 1])
+        self.assertEqual(ct.helper.constraint_coefficients(ct.index), [1, 2])
+        ct.add_term(x, 2)
+        self.assertEqual(ct.helper.constraint_var_indices(ct.index), [0, 1])
+        self.assertEqual(ct.helper.constraint_coefficients(ct.index), [3, 2])
+        ct.set_coefficient(x, 5)
+        self.assertEqual(ct.helper.constraint_var_indices(ct.index), [0, 1])
+        self.assertEqual(ct.helper.constraint_coefficients(ct.index), [5, 2])
+        ct.add_term(z, 4)
+        self.assertEqual(ct.helper.constraint_var_indices(ct.index), [0, 1, 2])
+        self.assertEqual(ct.helper.constraint_coefficients(ct.index), [5, 2, 4])
+        ct.set_coefficient(t, -1)
+        self.assertEqual(ct.helper.constraint_var_indices(ct.index), [0, 1, 2, 3])
+        self.assertEqual(ct.helper.constraint_coefficients(ct.index), [5, 2, 4, -1])
+
     def test_issue_3614(self):
         total_number_of_choices = 5 + 1
         total_unique_products = 3

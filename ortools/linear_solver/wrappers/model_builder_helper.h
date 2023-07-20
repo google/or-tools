@@ -73,6 +73,8 @@ class ModelBuilderHelper {
   void SetConstraintLowerBound(int ct_index, double lb);
   void SetConstraintUpperBound(int ct_index, double ub);
   void AddConstraintTerm(int ct_index, int var_index, double coeff);
+  // Safe version that checks is does not create duplicate entries.
+  void SafeAddConstraintTerm(int ct_index, int var_index, double coeff);
   void SetConstraintName(int ct_index, const std::string& name);
   void SetConstraintCoefficient(int ct_index, int var_index, double coeff);
 

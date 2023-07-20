@@ -305,6 +305,9 @@ PYBIND11_MODULE(model_builder_helper, m) {
                helper->AddConstraintTerm(ct_index, i, c);
              }
            })
+      .def("safe_add_term_to_constraint",
+           &ModelBuilderHelper::SafeAddConstraintTerm, arg("ct_index"),
+           arg("var_index"), arg("coeff"))
       .def("set_constraint_name", &ModelBuilderHelper::SetConstraintName,
            arg("ct_index"), arg("name"))
       .def("set_constraint_coefficient",
