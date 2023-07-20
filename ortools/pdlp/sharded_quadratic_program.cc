@@ -116,6 +116,19 @@ void ScaleMatrix(
   });
 }
 
+void ReplaceLargeValuesWithInfinity(const double threshold,
+                                    const Sharder& sharder,
+                                    Eigen::VectorXd& vector) {
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
+    auto vector_shard = shard(vector);
+    for (int64_t i = 0; i < vector_shard.size(); ++i) {
+      if (vector_shard[i] <= -threshold) vector_shard[i] = -kInfinity;
+      if (vector_shard[i] >= threshold) vector_shard[i] = kInfinity;
+    }
+  });
+}
+
 }  // namespace
 
 void ShardedQuadraticProgram::RescaleQuadraticProgram(
@@ -151,6 +164,14 @@ void ShardedQuadraticProgram::RescaleQuadraticProgram(
   ScaleMatrix(row_scaling_vec, col_scaling_vec,
               transposed_constraint_matrix_sharder_,
               transposed_constraint_matrix_);
+}
+
+void ShardedQuadraticProgram::ReplaceLargeConstraintBoundsWithInfinity(
+    const double threshold) {
+  ReplaceLargeValuesWithInfinity(threshold, DualSharder(),
+                                 qp_.constraint_lower_bounds);
+  ReplaceLargeValuesWithInfinity(threshold, DualSharder(),
+                                 qp_.constraint_upper_bounds);
 }
 
 }  // namespace operations_research::pdlp

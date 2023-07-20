@@ -118,15 +118,15 @@ class MpsReaderDimensionAndNames {
   void CleanUp() {}
   double ConstraintLowerBound(IndexType index) { return 0; }
   double ConstraintUpperBound(IndexType index) { return 0; }
-  IndexType FindOrCreateConstraint(const std::string& row_name) {
-    const auto [iterator, success_unused] =
-        row_name_to_index_.insert({row_name, row_name_to_index_.size()});
-    return iterator->second;
+  IndexType FindOrCreateConstraint(absl::string_view row_name) {
+    const auto [it, success_unused] = row_name_to_index_.try_emplace(
+        row_name, static_cast<IndexType>(row_name_to_index_.size()));
+    return it->second;
   }
-  IndexType FindOrCreateVariable(const std::string& col_name) {
-    const auto [iterator, success_unused] =
-        col_name_to_index_.insert({col_name, col_name_to_index_.size()});
-    return iterator->second;
+  IndexType FindOrCreateVariable(absl::string_view col_name) {
+    const auto [it, success_unused] = col_name_to_index_.try_emplace(
+        col_name, static_cast<IndexType>(col_name_to_index_.size()));
+    return it->second;
   }
   void SetConstraintBounds(IndexType row_index, double lower_bound,
                            double upper_bound) {}
@@ -135,7 +135,7 @@ class MpsReaderDimensionAndNames {
     ++added_non_zeros_;
   }
   void SetIsLazy(IndexType row_index) {}
-  void SetName(const std::string& problem_name) {}
+  void SetName(absl::string_view problem_name) {}
   void SetObjectiveCoefficient(IndexType index, double coefficient) {}
   void SetObjectiveDirection(bool maximize) {}
   void SetObjectiveOffset(double offset) {}
@@ -149,7 +149,7 @@ class MpsReaderDimensionAndNames {
                          double upper_bound) {}
   double VariableLowerBound(IndexType index) { return 0; }
   double VariableUpperBound(IndexType index) { return 0; }
-  absl::Status CreateIndicatorConstraint(const std::string& row_name,
+  absl::Status CreateIndicatorConstraint(absl::string_view row_name,
                                          IndexType col_index, bool var_value) {
     absl::string_view message =
         "Indicator constraints not supported, failed to parse file";
@@ -160,7 +160,7 @@ class MpsReaderDimensionAndNames {
   // Lookup constant functions. They assume that `row_name` or `col_name`,
   // respectively, have been previously added to the internal set of rows or
   // variables. The functions QFAIL if this is not true.
-  IndexType FindVariableOrDie(const std::string& col_name) const {
+  IndexType FindVariableOrDie(absl::string_view col_name) const {
     const auto it = col_name_to_index_.find(col_name);
     if (it == col_name_to_index_.end()) {
       LOG(QFATAL) << absl::StrFormat(
@@ -169,7 +169,7 @@ class MpsReaderDimensionAndNames {
     }
     return it->second;
   }
-  IndexType FindConstraintOrDie(const std::string& row_name) const {
+  IndexType FindConstraintOrDie(absl::string_view row_name) const {
     const auto it = row_name_to_index_.find(row_name);
     if (it == row_name_to_index_.end()) {
       LOG(QFATAL) << absl::StrFormat(
@@ -283,10 +283,10 @@ class MpsReaderQpDataWrapper {
   double ConstraintUpperBound(IndexType index) {
     return quadratic_program_.constraint_upper_bounds[index];
   }
-  IndexType FindOrCreateConstraint(const std::string& row_name) {
+  IndexType FindOrCreateConstraint(absl::string_view row_name) {
     return dimension_and_names_.FindConstraintOrDie(row_name);
   }
-  IndexType FindOrCreateVariable(const std::string& col_name) {
+  IndexType FindOrCreateVariable(absl::string_view col_name) {
     return dimension_and_names_.FindVariableOrDie(col_name);
   }
   void SetConstraintBounds(IndexType index, double lower_bound,
@@ -303,9 +303,9 @@ class MpsReaderQpDataWrapper {
     LOG_FIRST_N(WARNING, 1) << "Lazy constraint information lost, treated as "
                                "regular constraint instead";
   }
-  void SetName(const std::string& problem_name) {
+  void SetName(absl::string_view problem_name) {
     if (include_names_) {
-      quadratic_program_.problem_name = problem_name;
+      quadratic_program_.problem_name = std::string(problem_name);
     }
   }
   void SetObjectiveCoefficient(IndexType index, double coefficient) {
@@ -338,7 +338,7 @@ class MpsReaderQpDataWrapper {
   double VariableUpperBound(IndexType index) {
     return quadratic_program_.variable_upper_bounds[index];
   }
-  absl::Status CreateIndicatorConstraint(const std::string& row_name,
+  absl::Status CreateIndicatorConstraint(absl::string_view row_name,
                                          IndexType col_index, bool var_value) {
     // This function should never be called, as the code must fail on
     // `MpsReaderDimensionAndNames::CreateIndicatorConstraint` before.

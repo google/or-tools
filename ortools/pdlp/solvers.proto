@@ -402,12 +402,12 @@ message PrimalDualHybridGradientParams {
   // dimensions, and num_threads.
   repeated int32 random_projection_seeds = 28 [packed = true];
 
-  // When computing relative feasibility norms, constraint bounds with absolute
-  // value at least this threshold are treated as infinite, and hence not
-  // included in the relative feasibility norm.
-  // NOTE: This affects only the relative convergence criteria (and problem
-  // statistics LOG()ed at the start of the run). A smaller value makes the
-  // relative convergence criteria stronger.
+  // Constraint bounds with absolute value at least this threshold are replaced
+  // with infinities.
+  // NOTE: This primarily affects the relative convergence criteria. A smaller
+  // value makes the relative convergence criteria stronger. It also affects the
+  // problem statistics LOG()ed at the start of the run, and the default initial
+  // primal weight, since that is based on the norm of the bounds.
   optional double infinite_constraint_bound_threshold = 22 [default = inf];
 
   // See https://developers.google.com/optimization/lp/pdlp_math for notation.

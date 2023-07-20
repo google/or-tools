@@ -243,43 +243,6 @@ TEST(ProblemStatsTest, ModifiedTestDiagonalQp1) {
   EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 2.0);
 }
 
-// This is like `SmallLp`, except that an `infinite_bound_threshold` of 10
-// treats the first bound as infinite, leaving [0, 7, 4, 1] as the combined
-// bounds vector.
-TEST(ProblemStatsTest, TestLpWithInfiniteConstraintBoundThreshold) {
-  ShardedQuadraticProgram lp(TestLp(), 2, 2);
-  const QuadraticProgramStats stats =
-      ComputeStats(lp, /*infinite_constraint_bound_threshold=*/10);
-
-  EXPECT_EQ(stats.num_variables(), 4);
-  EXPECT_EQ(stats.num_constraints(), 4);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_col_min_l_inf_norm(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_row_min_l_inf_norm(), 1.0);
-  EXPECT_EQ(stats.constraint_matrix_num_nonzeros(), 9);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_max(), 4.0);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_min(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_abs_avg(), 14.5 / 9.0);
-  EXPECT_DOUBLE_EQ(stats.constraint_matrix_l2_norm(), std::sqrt(31.25));
-  EXPECT_DOUBLE_EQ(stats.objective_vector_abs_max(), 5.5);
-  EXPECT_DOUBLE_EQ(stats.objective_vector_abs_min(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.objective_vector_abs_avg(), 2.375);
-  EXPECT_DOUBLE_EQ(stats.objective_vector_l2_norm(), std::sqrt(36.25));
-  EXPECT_EQ(stats.objective_matrix_num_nonzeros(), 0);
-  EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_max(), 0.0);
-  EXPECT_DOUBLE_EQ(stats.objective_matrix_abs_min(), 0.0);
-  EXPECT_THAT(stats.objective_matrix_abs_avg(), IsNan());
-  EXPECT_DOUBLE_EQ(stats.objective_matrix_l2_norm(), 0.0);
-  EXPECT_EQ(stats.variable_bound_gaps_num_finite(), 1);
-  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_max(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_min(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_avg(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.variable_bound_gaps_l2_norm(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.combined_bounds_max(), 7.0);
-  EXPECT_DOUBLE_EQ(stats.combined_bounds_min(), 1.0);
-  EXPECT_DOUBLE_EQ(stats.combined_bounds_avg(), 3.0);
-  EXPECT_DOUBLE_EQ(stats.combined_bounds_l2_norm(), std::sqrt(66.0));
-}
-
 TEST(ProblemStatsTest, NoFiniteGaps) {
   ShardedQuadraticProgram lp(SmallInvalidProblemLp(), 2, 2);
   const QuadraticProgramStats stats = ComputeStats(lp);

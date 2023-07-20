@@ -958,8 +958,9 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
     solve_log.set_instance_name(*Qp().problem_name);
   }
   *solve_log.mutable_params() = params;
-  *solve_log.mutable_original_problem_stats() =
-      ComputeStats(sharded_qp_, params.infinite_constraint_bound_threshold());
+  sharded_qp_.ReplaceLargeConstraintBoundsWithInfinity(
+      params.infinite_constraint_bound_threshold());
+  *solve_log.mutable_original_problem_stats() = ComputeStats(sharded_qp_);
   const QuadraticProgramStats& original_problem_stats =
       solve_log.original_problem_stats();
   if (auto maybe_result = CheckProblemStats(
@@ -1048,8 +1049,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
 
   ComputeAndApplyRescaling(params, starting_primal_solution,
                            starting_dual_solution);
-  *solve_log.mutable_preprocessed_problem_stats() =
-      ComputeStats(sharded_qp_, params.infinite_constraint_bound_threshold());
+  *solve_log.mutable_preprocessed_problem_stats() = ComputeStats(sharded_qp_);
   if (params.verbosity_level() >= 1) {
     LogInfoWithoutPrefix(
         absl::StrCat("Problem stats after ", preprocessing_string));

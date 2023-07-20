@@ -97,6 +97,10 @@ class ShardedQuadraticProgram {
     qp_.objective_vector.swap(objective);
   }
 
+  // Replaces constraint bounds whose absolute value is >= `threshold` with
+  // the corresponding infinity.
+  void ReplaceLargeConstraintBoundsWithInfinity(double threshold);
+
  private:
   QuadraticProgram qp_;
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>

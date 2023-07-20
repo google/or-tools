@@ -80,13 +80,12 @@ VectorXd ShardedWeightedAverage::ComputeAverage() const {
 
 namespace {
 
-double CombineBounds(const double v1, const double v2,
-                     const double infinite_bound_threshold) {
+double CombineBounds(const double v1, const double v2) {
   double max = 0.0;
-  if (std::abs(v1) < infinite_bound_threshold) {
+  if (std::abs(v1) < kInfinity) {
     max = std::abs(v1);
   }
-  if (std::abs(v2) < infinite_bound_threshold) {
+  if (std::abs(v2) < kInfinity) {
     max = std::max(max, std::abs(v2));
   }
   return max;
@@ -235,17 +234,14 @@ VectorInfo MatrixAbsElementInfo(
 
 VectorInfo CombinedBoundsInfo(const VectorXd& rhs_upper_bounds,
                               const VectorXd& rhs_lower_bounds,
-                              const Sharder& sharder,
-                              const double infinite_bound_threshold =
-                                  std::numeric_limits<double>::infinity()) {
+                              const Sharder& sharder) {
   std::vector<VectorInfoAccumulator> local_accumulator(sharder.NumShards());
   sharder.ParallelForEachShard([&](const Sharder::Shard& shard) {
     VectorInfoAccumulator shard_accumulator;
     const auto lb_shard = shard(rhs_lower_bounds);
     const auto ub_shard = shard(rhs_upper_bounds);
     for (int64_t i = 0; i < lb_shard.size(); ++i) {
-      shard_accumulator.Add(
-          CombineBounds(ub_shard[i], lb_shard[i], infinite_bound_threshold));
+      shard_accumulator.Add(CombineBounds(ub_shard[i], lb_shard[i]));
     }
     local_accumulator[shard.Index()] = std::move(shard_accumulator);
   });
@@ -271,9 +267,7 @@ InfNormInfo ConstraintMatrixRowColInfo(
 
 }  // namespace
 
-QuadraticProgramStats ComputeStats(
-    const ShardedQuadraticProgram& qp,
-    const double infinite_constraint_bound_threshold) {
+QuadraticProgramStats ComputeStats(const ShardedQuadraticProgram& qp) {
   // Caution: if the constraint matrix is empty, elementwise operations
   // (like `.coeffs().maxCoeff()` or `.minCoeff()`) will fail.
   InfNormInfo cons_matrix_norm_info = ConstraintMatrixRowColInfo(
@@ -282,12 +276,12 @@ QuadraticProgramStats ComputeStats(
       qp.PrimalSharder(), qp.DualSharder());
   VectorInfo cons_matrix_info = MatrixAbsElementInfo(
       qp.Qp().constraint_matrix, qp.ConstraintMatrixSharder());
-  VectorInfo combined_bounds_info = CombinedBoundsInfo(
-      qp.Qp().constraint_lower_bounds, qp.Qp().constraint_upper_bounds,
-      qp.DualSharder(), infinite_constraint_bound_threshold);
-  VectorInfo combined_variable_bounds_info = CombinedBoundsInfo(
-      qp.Qp().variable_lower_bounds, qp.Qp().variable_upper_bounds,
-      qp.PrimalSharder(), kInfinity);
+  VectorInfo combined_bounds_info =
+      CombinedBoundsInfo(qp.Qp().constraint_lower_bounds,
+                         qp.Qp().constraint_upper_bounds, qp.DualSharder());
+  VectorInfo combined_variable_bounds_info =
+      CombinedBoundsInfo(qp.Qp().variable_lower_bounds,
+                         qp.Qp().variable_upper_bounds, qp.PrimalSharder());
   VectorInfo obj_vec_info =
       ComputeVectorInfo(qp.Qp().objective_vector, qp.PrimalSharder());
   VectorInfo gaps_info =

@@ -75,9 +75,7 @@ class ShardedWeightedAverage {
 };
 
 // Returns a `QuadraticProgramStats` for a `ShardedQuadraticProgram`.
-QuadraticProgramStats ComputeStats(const ShardedQuadraticProgram& qp,
-                                   double infinite_constraint_bound_threshold =
-                                       std::numeric_limits<double>::infinity());
+QuadraticProgramStats ComputeStats(const ShardedQuadraticProgram& qp);
 
 // `LInfRuizRescaling` and `L2NormRescaling` rescale the (scaled) constraint
 // matrix of the LP by updating the scaling vectors in-place. More specifically,

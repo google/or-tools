@@ -118,5 +118,16 @@ TEST(RescaleProblem, BasicTest) {
               EigenArrayEq<double>({4, 0.25}));
 }
 
+TEST(ShardedQuadraticProgramTest, ReplaceLargeConstraintBoundsWithInfinity) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestLp(), num_threads, num_shards);
+  sharded_qp.ReplaceLargeConstraintBoundsWithInfinity(3.0);
+  EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds,
+              ElementsAre(kInfinity, -kInfinity, -kInfinity, -1));
+  EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds,
+              ElementsAre(kInfinity, kInfinity, kInfinity, 1));
+}
+
 }  // namespace
 }  // namespace operations_research::pdlp

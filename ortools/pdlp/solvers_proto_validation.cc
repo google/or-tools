@@ -268,9 +268,9 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   if (std::isnan(params.infinite_constraint_bound_threshold())) {
     return InvalidArgumentError("infinite_constraint_bound_threshold is NAN");
   }
-  if (params.infinite_constraint_bound_threshold() < 0.0) {
+  if (params.infinite_constraint_bound_threshold() <= 0.0) {
     return InvalidArgumentError(
-        "infinite_constraint_bound_threshold must be non-negative");
+        "infinite_constraint_bound_threshold must be positive");
   }
   if (std::isnan(params.diagonal_qp_trust_region_solver_tolerance())) {
     return InvalidArgumentError(
