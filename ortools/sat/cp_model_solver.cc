@@ -23,6 +23,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <tuple>
 #include <utility>
@@ -211,13 +212,15 @@ void DumpModelProto(const M& proto, const std::string& name) {
 // =============================================================================
 
 std::string CpModelStats(const CpModelProto& model_proto) {
-  absl::btree_map<std::string, int> num_constraints_by_name;
-  absl::btree_map<std::string, int> num_reif_constraints_by_name;
-  absl::btree_map<std::string, int> num_multi_reif_constraints_by_name;
-  absl::btree_map<std::string, int> name_to_num_literals;
-  absl::btree_map<std::string, int> name_to_num_terms;
-  absl::btree_map<std::string, int> name_to_num_complex_domain;
-  absl::btree_map<std::string, int> name_to_num_expressions;
+  // Note that we only store pointer to "constant" string literals. This is
+  // slightly faster and take less space for model with millions of constraints.
+  absl::flat_hash_map<char const*, int> name_to_num_constraints;
+  absl::flat_hash_map<char const*, int> name_to_num_reified;
+  absl::flat_hash_map<char const*, int> name_to_num_multi_reified;
+  absl::flat_hash_map<char const*, int> name_to_num_literals;
+  absl::flat_hash_map<char const*, int> name_to_num_terms;
+  absl::flat_hash_map<char const*, int> name_to_num_complex_domain;
+  absl::flat_hash_map<char const*, int> name_to_num_expressions;
 
   int no_overlap_2d_num_rectangles = 0;
   int no_overlap_2d_num_optional_rectangles = 0;
@@ -239,23 +242,24 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   int num_fixed_intervals = 0;
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
-    std::string name = ConstraintCaseName(ct.constraint_case());
-
     // We split the linear constraints into 3 buckets has it gives more insight
     // on the type of problem we are facing.
+    char const* name;
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-      if (ct.linear().vars_size() == 0) name += "0";
-      if (ct.linear().vars_size() == 1) name += "1";
-      if (ct.linear().vars_size() == 2) name += "2";
-      if (ct.linear().vars_size() == 3) name += "3";
-      if (ct.linear().vars_size() > 3) name += "N";
+      if (ct.linear().vars_size() == 0) name = "kLinear0";
+      if (ct.linear().vars_size() == 1) name = "kLinear1";
+      if (ct.linear().vars_size() == 2) name = "kLinear2";
+      if (ct.linear().vars_size() == 3) name = "kLinear3";
+      if (ct.linear().vars_size() > 3) name = "kLinearN";
+    } else {
+      name = ConstraintCaseName(ct.constraint_case()).data();
     }
 
-    num_constraints_by_name[name]++;
+    name_to_num_constraints[name]++;
     if (!ct.enforcement_literal().empty()) {
-      num_reif_constraints_by_name[name]++;
+      name_to_num_reified[name]++;
       if (ct.enforcement_literal().size() > 1) {
-        num_multi_reif_constraints_by_name[name]++;
+        name_to_num_multi_reified[name]++;
       }
     }
 
@@ -455,12 +459,12 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
     std::vector<std::string> obj_vars_strings;
     if (num_boolean_variables_in_objective > 0) {
-      obj_vars_strings.push_back(
-          absl::StrCat("#bools:", num_boolean_variables_in_objective));
+      obj_vars_strings.push_back(absl::StrCat(
+          "#bools: ", FormatCounter(num_boolean_variables_in_objective)));
     }
     if (num_integer_variables_in_objective > 0) {
-      obj_vars_strings.push_back(
-          absl::StrCat("#ints:", num_integer_variables_in_objective));
+      obj_vars_strings.push_back(absl::StrCat(
+          "#ints: ", FormatCounter(num_integer_variables_in_objective)));
     }
 
     const std::string objective_string =
@@ -471,21 +475,24 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                    ? absl::StrCat(" (", absl::StrJoin(obj_vars_strings, " "),
                                   " in floating point objective)")
                    : "");
-    absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
+    absl::StrAppend(&result,
+                    "#Variables: ", FormatCounter(model_proto.variables_size()),
                     objective_string, "\n");
   }
   if (num_vars_per_domains.contains(Domain(0, 1))) {
     // We always list Boolean first.
     const int num_bools = num_vars_per_domains[Domain(0, 1)];
-    const std::string temp = absl::StrCat("  - ", num_bools, " Booleans in ",
-                                          Domain(0, 1).ToString(), "\n");
+    const std::string temp =
+        absl::StrCat("  - ", FormatCounter(num_bools), " Booleans in ",
+                     Domain(0, 1).ToString(), "\n");
     absl::StrAppend(&result, Summarize(temp));
     num_vars_per_domains.erase(Domain(0, 1));
   }
   if (num_vars_per_domains.size() < 100) {
     for (const auto& entry : num_vars_per_domains) {
-      const std::string temp = absl::StrCat("  - ", entry.second, " in ",
-                                            entry.first.ToString(), "\n");
+      const std::string temp =
+          absl::StrCat("  - ", FormatCounter(entry.second), " in ",
+                       entry.first.ToString(), "\n");
       absl::StrAppend(&result, Summarize(temp));
     }
   } else {
@@ -498,7 +505,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       max_complexity = std::max(
           max_complexity, static_cast<int64_t>(entry.first.NumIntervals()));
     }
-    absl::StrAppend(&result, "  - ", num_vars_per_domains.size(),
+    absl::StrAppend(&result, "  - ", FormatCounter(num_vars_per_domains.size()),
                     " different domains in [", min, ",", max,
                     "] with a largest complexity of ", max_complexity, ".\n");
   }
@@ -511,38 +518,37 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   std::vector<std::string> constraints;
-  constraints.reserve(num_constraints_by_name.size());
-  for (const auto& entry : num_constraints_by_name) {
-    const std::string& name = entry.first;
-    constraints.push_back(absl::StrCat("#", name, ": ", entry.second));
-    if (num_reif_constraints_by_name.contains(name)) {
-      if (num_multi_reif_constraints_by_name.contains(name)) {
-        absl::StrAppend(&constraints.back(),
-                        " (#enforced: ", num_reif_constraints_by_name[name],
-                        " #multi: ", num_multi_reif_constraints_by_name[name],
-                        ")");
+  constraints.reserve(name_to_num_constraints.size());
+  for (const auto& [c_name, count] : name_to_num_constraints) {
+    const std::string name(c_name);
+    constraints.push_back(absl::StrCat("#", name, ": ", FormatCounter(count)));
+    if (name_to_num_reified.contains(c_name)) {
+      if (name_to_num_multi_reified.contains(c_name)) {
+        absl::StrAppend(
+            &constraints.back(),
+            " (#enforced: ", FormatCounter(name_to_num_reified[c_name]),
+            " #multi: ", FormatCounter(name_to_num_multi_reified[c_name]), ")");
       } else {
-        absl::StrAppend(&constraints.back(),
-                        " (#enforced: ", num_reif_constraints_by_name[name],
-                        ")");
+        absl::StrAppend(&constraints.back(), " (#enforced: ",
+                        FormatCounter(name_to_num_reified[c_name]), ")");
       }
     }
-    if (name_to_num_literals.contains(name)) {
-      absl::StrAppend(&constraints.back(),
-                      " (#literals: ", name_to_num_literals[name], ")");
+    if (name_to_num_literals.contains(c_name)) {
+      absl::StrAppend(&constraints.back(), " (#literals: ",
+                      FormatCounter(name_to_num_literals[c_name]), ")");
     }
-    if (name_to_num_terms.contains(name)) {
+    if (name_to_num_terms.contains(c_name)) {
       absl::StrAppend(&constraints.back(),
-                      " (#terms: ", name_to_num_terms[name], ")");
-    }
-    if (name_to_num_expressions.contains(name)) {
-      absl::StrAppend(&constraints.back(),
-                      " (#expressions: ", name_to_num_expressions[name], ")");
-    }
-    if (name_to_num_complex_domain.contains(name)) {
-      absl::StrAppend(&constraints.back(),
-                      " (#complex_domain: ", name_to_num_complex_domain[name],
+                      " (#terms: ", FormatCounter(name_to_num_terms[c_name]),
                       ")");
+    }
+    if (name_to_num_expressions.contains(c_name)) {
+      absl::StrAppend(&constraints.back(), " (#expressions: ",
+                      FormatCounter(name_to_num_expressions[c_name]), ")");
+    }
+    if (name_to_num_complex_domain.contains(c_name)) {
+      absl::StrAppend(&constraints.back(), " (#complex_domain: ",
+                      FormatCounter(name_to_num_complex_domain[c_name]), ")");
     }
     if (name == "kInterval" && num_fixed_intervals > 0) {
       absl::StrAppend(&constraints.back(), " (#fixed: ", num_fixed_intervals,
@@ -1464,8 +1470,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
       model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
 
   // Load the constraints.
-  absl::btree_set<std::string> unsupported_types;
   int num_ignored_constraints = 0;
+  absl::flat_hash_set<ConstraintProto::ConstraintCase> unsupported_types;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) {
       ++num_ignored_constraints;
@@ -1473,7 +1479,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     }
 
     if (!LoadConstraint(ct, model)) {
-      unsupported_types.insert(ConstraintCaseName(ct.constraint_case()));
+      unsupported_types.insert(ct.constraint_case());
       continue;
     }
 
@@ -1504,8 +1510,13 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   }
   if (!unsupported_types.empty()) {
     VLOG(1) << "There is unsupported constraints types in this model: ";
-    for (const std::string& type : unsupported_types) {
-      VLOG(1) << " - " << type;
+    std::vector<absl::string_view> names;
+    for (const ConstraintProto::ConstraintCase type : unsupported_types) {
+      names.push_back(ConstraintCaseName(type));
+    }
+    std::sort(names.begin(), names.end());
+    for (const absl::string_view name : names) {
+      VLOG(1) << " - " << name;
     }
     return unsat();
   }
@@ -4157,10 +4168,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
              absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
-  CpModelProto new_cp_model_proto;
-  CpModelProto mapping_proto;
-  auto context = std::make_unique<PresolveContext>(model, &new_cp_model_proto,
-                                                   &mapping_proto);
+
+  // Note: Allocating in an arena significantly speed up destruction (free) for
+  // large messages.
+  google::protobuf::Arena arena;
+  CpModelProto* new_cp_model_proto =
+      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
+  CpModelProto* mapping_proto =
+      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
+  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
+                                                   mapping_proto);
 
   if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
     VLOG(1) << "Model found infeasible during copy";
@@ -4212,7 +4229,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // final response.
   if (model_proto.has_floating_point_objective()) {
     shared_response_manager->AddFinalResponsePostprocessor(
-        [&params, &model_proto, &mapping_proto,
+        [&params, &model_proto, mapping_proto,
          &logger](CpSolverResponse* response) {
           if (response->solution().empty()) return;
 
@@ -4229,8 +4246,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           // Also copy the scaled objective which must be in the mapping model.
           // This can be useful for some client, like if they want to do
           // multi-objective optimization in stages.
-          if (!mapping_proto.has_objective()) return;
-          const CpObjectiveProto& integer_obj = mapping_proto.objective();
+          if (!mapping_proto->has_objective()) return;
+          const CpObjectiveProto& integer_obj = mapping_proto->objective();
           *response->mutable_integer_objective() = integer_obj;
 
           // If requested, compute a correct lb from the one on the integer
@@ -4301,7 +4318,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
 
     // Clear them from the new proto.
-    new_cp_model_proto.clear_assumptions();
+    new_cp_model_proto->clear_assumptions();
 
     context->InitializeNewDomains();
     for (const int ref : model_proto.assumptions()) {
@@ -4330,18 +4347,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Presolved ", CpModelStats(new_cp_model_proto));
+  SOLVER_LOG(logger, "Presolved ", CpModelStats(*new_cp_model_proto));
 
   if (params.cp_model_presolve()) {
     shared_response_manager->AddSolutionPostprocessor(
-        [&model_proto, &params, &mapping_proto, &model,
+        [&model_proto, &params, mapping_proto, &model,
          &postsolve_mapping](std::vector<int64_t>* solution) {
-          AddPostsolveClauses(postsolve_mapping, model, &mapping_proto);
+          AddPostsolveClauses(postsolve_mapping, model, mapping_proto);
           PostsolveResponseWrapper(params, model_proto.variables_size(),
-                                   mapping_proto, postsolve_mapping, solution);
+                                   *mapping_proto, postsolve_mapping, solution);
         });
     shared_response_manager->AddResponsePostprocessor(
-        [&model_proto, &params, &mapping_proto,
+        [&model_proto, &params, mapping_proto,
          &postsolve_mapping](CpSolverResponse* response) {
           // Map back the sufficient assumptions for infeasibility.
           for (int& ref :
@@ -4356,17 +4373,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                 model_proto,
                 std::vector<int64_t>(response->solution().begin(),
                                      response->solution().end()),
-                &mapping_proto, &postsolve_mapping))
+                mapping_proto, &postsolve_mapping))
                 << "postsolved solution";
           }
           if (params.fill_tightened_domains_in_response()) {
             // TODO(user): for now, we just use the domain infered during
             // presolve.
-            if (mapping_proto.variables().size() >=
+            if (mapping_proto->variables().size() >=
                 model_proto.variables().size()) {
               for (int i = 0; i < model_proto.variables().size(); ++i) {
                 *response->add_tightened_variables() =
-                    mapping_proto.variables(i);
+                    mapping_proto->variables(i);
               }
             }
           }
@@ -4423,14 +4440,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    DumpModelProto(new_cp_model_proto, "presolved_model");
-    DumpModelProto(mapping_proto, "mapping_model");
+    DumpModelProto(*new_cp_model_proto, "presolved_model");
+    DumpModelProto(*mapping_proto, "mapping_model");
 
     // If the model is convertible to a MIP, we dump it too.
     //
     // TODO(user): We could try to dump our linear relaxation too.
     MPModelProto mip_model;
-    if (ConvertCpModelProtoToMPModelProto(new_cp_model_proto, &mip_model)) {
+    if (ConvertCpModelProtoToMPModelProto(*new_cp_model_proto, &mip_model)) {
       DumpModelProto(mip_model, "presolved_mp_model");
     }
   }
@@ -4438,13 +4455,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   if (params.stop_after_presolve() || shared_time_limit->LimitReached()) {
     int64_t num_terms = 0;
-    for (const ConstraintProto& ct : new_cp_model_proto.constraints()) {
+    for (const ConstraintProto& ct : new_cp_model_proto->constraints()) {
       num_terms += static_cast<int>(UsedVariables(ct).size());
     }
     SOLVER_LOG(
         logger, "Stopped after presolve.",
-        "\nPresolvedNumVariables: ", new_cp_model_proto.variables().size(),
-        "\nPresolvedNumConstraints: ", new_cp_model_proto.constraints().size(),
+        "\nPresolvedNumVariables: ", new_cp_model_proto->variables().size(),
+        "\nPresolvedNumConstraints: ", new_cp_model_proto->constraints().size(),
         "\nPresolvedNumTerms: ", num_terms);
 
     CpSolverResponse status_response;
@@ -4460,8 +4477,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // response manager. Note that the presolve will always fill it with the
   // trivial min/max value if the user left it empty. This avoids to display
   // [-infinity, infinity] for the initial objective search space.
-  if (new_cp_model_proto.has_objective()) {
-    shared_response_manager->InitializeObjective(new_cp_model_proto);
+  if (new_cp_model_proto->has_objective()) {
+    shared_response_manager->InitializeObjective(*new_cp_model_proto);
     shared_response_manager->SetGapLimitsFromParameters(params);
   }
 
@@ -4481,22 +4498,22 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // hint will be infeasible, so the activities of the variables will be
   // different.
   if (!params.enumerate_all_solutions()) {
-    TestSolutionHintForFeasibility(new_cp_model_proto, logger,
+    TestSolutionHintForFeasibility(*new_cp_model_proto, logger,
                                    shared_response_manager);
   } else {
-    TestSolutionHintForFeasibility(new_cp_model_proto, logger, nullptr);
+    TestSolutionHintForFeasibility(*new_cp_model_proto, logger, nullptr);
   }
 
   if (params.symmetry_level() > 1) {
-    DetectAndAddSymmetryToProto(params, &new_cp_model_proto, logger);
+    DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger);
   }
 
-  LoadDebugSolution(new_cp_model_proto, model);
+  LoadDebugSolution(*new_cp_model_proto, model);
 
   // Linear model (used by feasibility_jump and violation_ls)
   if (params.num_workers() > 1 || params.test_feasibility_jump() ||
       params.num_violation_ls() > 0) {
-    LinearModel* linear_model = new LinearModel(new_cp_model_proto);
+    LinearModel* linear_model = new LinearModel(*new_cp_model_proto);
     model->TakeOwnership(linear_model);
     model->Register(linear_model);
     linear_model->Initialize();
@@ -4508,7 +4525,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #else   // __PORTABLE_PLATFORM__
   if (params.num_workers() > 1 || params.interleave_search() ||
       !params.subsolvers().empty() || params.test_feasibility_jump()) {
-    SolveCpModelParallel(new_cp_model_proto, model);
+    SolveCpModelParallel(*new_cp_model_proto, model);
 #endif  // __PORTABLE_PLATFORM__
   } else if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
     SOLVER_LOG(logger, "");
@@ -4527,17 +4544,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         model->GetOrCreate<SharedStatistics>());
     local_model.Register<SharedResponseManager>(shared_response_manager);
 
-    LoadCpModel(new_cp_model_proto, &local_model);
+    LoadCpModel(*new_cp_model_proto, &local_model);
 
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, absl::StrFormat("Starting sequential search at %.2fs",
                                        wall_timer->Get()));
     if (params.repair_hint()) {
-      MinimizeL1DistanceWithHint(new_cp_model_proto, &local_model);
+      MinimizeL1DistanceWithHint(*new_cp_model_proto, &local_model);
     } else {
-      QuickSolveWithHint(new_cp_model_proto, &local_model);
+      QuickSolveWithHint(*new_cp_model_proto, &local_model);
     }
-    SolveLoadedCpModel(new_cp_model_proto, &local_model);
+    SolveLoadedCpModel(*new_cp_model_proto, &local_model);
 
     // Export statistics.
     CpSolverResponse status_response;

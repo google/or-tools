@@ -8501,7 +8501,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     ++num_inclusions;
 
     // Store the coeff of the subset linear constraint in a map.
-    const ConstraintProto subset_ct =
+    const ConstraintProto& subset_ct =
         context_->working_model->constraints(subset_c);
     const LinearConstraintProto& subset_lin = subset_ct.linear();
     coeff_map.clear();

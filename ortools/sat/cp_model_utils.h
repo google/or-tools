@@ -65,6 +65,9 @@ struct IndexReferences {
   std::vector<int> literals;
 };
 IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct);
+void GetReferencesUsedByConstraint(const ConstraintProto& ct,
+                                   std::vector<int>* variables,
+                                   std::vector<int>* literals);
 
 // Applies the given function to all variables/literals/intervals indices of the
 // constraint. This function is used in a few places to have a "generic" code
@@ -78,7 +81,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& function,
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
 // Note(user): There is no such function in the proto API as of 16/01/2017.
-std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case);
+absl::string_view ConstraintCaseName(
+    ConstraintProto::ConstraintCase constraint_case);
 
 // Returns the sorted list of variables used by a constraint.
 // Note that this include variable used as a literal.

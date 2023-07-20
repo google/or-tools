@@ -1478,6 +1478,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
+        "//ortools/base:stl_util",
         "//ortools/util:strong_integers",
     ],
 )

@@ -224,16 +224,18 @@ int Run() {
   solver->SetParameters(parameters);
 
   // Read the problem.
+  google::protobuf::Arena arena;
+  CpModelProto* cp_model =
+      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
   LinearBooleanProblem problem;
-  CpModelProto cp_model;
-  if (!LoadBooleanProblem(absl::GetFlag(FLAGS_input), &problem, &cp_model)) {
+  if (!LoadBooleanProblem(absl::GetFlag(FLAGS_input), &problem, cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;
   }
   if (!absl::GetFlag(FLAGS_use_cp_model)) {
     LOG(INFO) << "Converting to CpModelProto ...";
-    cp_model = BooleanProblemToCpModelproto(problem);
+    *cp_model = BooleanProblemToCpModelproto(problem);
   }
 
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
@@ -242,7 +244,7 @@ int Run() {
     problem.Clear();  // We no longer need it, release memory.
     Model model;
     model.Add(NewSatParameters(parameters));
-    const CpSolverResponse response = SolveCpModel(cp_model, &model);
+    const CpSolverResponse response = SolveCpModel(*cp_model, &model);
 
     if (!absl::GetFlag(FLAGS_output).empty()) {
       if (absl::EndsWith(absl::GetFlag(FLAGS_output), "txt")) {

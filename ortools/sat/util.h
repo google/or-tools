@@ -119,6 +119,16 @@ int64_t SafeDoubleToInt64(double value);
 // -ClosestMultiple(-x) which is important for how this is used.
 int64_t ClosestMultiple(int64_t value, int64_t base);
 
+// Assuming n "literal" in [0, n), and a graph such that graph[i] list the
+// literal in [0, n) implied to false when the literal with index i is true,
+// this returns an heuristic decomposition of the literals into disjoint at most
+// ones.
+//
+// Note(user): Symmetrize the matrix if not already, maybe rephrase in term
+// of undirected graph, and clique decomposition.
+std::vector<absl::Span<int>> AtMostOneDecomposition(
+    const std::vector<std::vector<int>>& graph, std::vector<int>* buffer);
+
 // Given a linear equation "sum coeff_i * X_i <= rhs. We can rewrite it using
 // ClosestMultiple() as "base * new_terms + error <= rhs" where error can be
 // bounded using the provided bounds on each variables. This will return true if

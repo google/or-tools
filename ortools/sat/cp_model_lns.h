@@ -184,7 +184,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   }
 
   // Constraints <-> Variables graph.
-  // Note that only non-constant variable are listed here.
+  // Important:
+  //   - The constraint index is NOT related to the one in the cp_model.
+  //   - Only non-constant var are listed in ConstraintToVar().
   const std::vector<std::vector<int>>& ConstraintToVar() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return constraint_to_var_;

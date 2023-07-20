@@ -857,5 +857,59 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
   return output;
 }
 
+// TODO(user): Add heuristic to control order of clique growth.
+// Note that all our returned cliques are maximal though (excluding the nodes
+// already added to previous cliques).
+std::vector<absl::Span<int>> AtMostOneDecomposition(
+    const std::vector<std::vector<int>>& graph, std::vector<int>* buffer) {
+  const int n = graph.size();
+
+  std::vector<int> candidates;
+  std::vector<bool> taken(n, false);
+  std::vector<bool> temp(n, false);
+
+  int buffer_index = 0;
+  buffer->resize(n);
+  std::vector<absl::Span<int>> result;
+  for (int i = 0; i < n; ++i) {
+    if (taken[i]) continue;
+
+    // Save start of amo and output i.
+    const int start = buffer_index;
+    taken[i] = true;
+    (*buffer)[buffer_index++] = i;
+
+    candidates.clear();
+    for (const int c : graph[i]) {
+      if (!taken[c]) candidates.push_back(c);
+    }
+    while (!candidates.empty()) {
+      // Extend at most one.
+      const int next = candidates.front();
+
+      // Add to current amo.
+      taken[next] = true;
+      (*buffer)[buffer_index++] = next;
+
+      // Filter candidates.
+      for (const int head : graph[next]) temp[head] = true;
+      int new_size = 0;
+      for (const int c : candidates) {
+        if (taken[c]) continue;
+        if (!temp[c]) continue;
+        candidates[new_size++] = c;
+      }
+      candidates.resize(new_size);
+      for (const int head : graph[next]) temp[head] = false;
+    }
+
+    // output amo.
+    result.push_back(
+        absl::MakeSpan(buffer->data() + start, buffer_index - start));
+  }
+  DCHECK_EQ(buffer_index, n);
+  return result;
+}
+
 }  // namespace sat
 }  // namespace operations_research

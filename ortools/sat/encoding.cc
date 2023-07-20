@@ -25,6 +25,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -625,43 +626,6 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
     return solver->AddUnitClause(core[0].Negated());
   }
 
-  // Are the literal in amo relationship?
-  // - If min_weight is large enough, we can infer that.
-  // - If the size is small we can infer this manually.
-  //
-  // TODO(user): improve the HeuristicAmoPartition() for small case, i.e. use
-  // full propagation. Maybe we can merge with MinimizeCoreWithPropagation().
-  bool in_exactly_one = (2 * min_weight) > gap;
-  if (!in_exactly_one && core.size() == 2) {
-    const Literal cost0 = core[0].Negated();
-    const Literal cost1 = core[1].Negated();
-    const bool ok = solver->EnqueueDecisionIfNotConflicting(cost0);
-    if (!ok) {
-      // cost0 cannot be true! so cost1 must be true.
-      return solver->AddUnitClause(cost1);
-    }
-
-    if (solver->Assignment().LiteralIsFalse(cost1)) {
-      // If the literal are in AMO, we make sure the solver will not forget that
-      // by adding the exactly one below.
-      in_exactly_one = true;
-
-      // Tricky: we need the two nodes to be "Boolean nodes", otherwise while
-      // we have an "at most one" between the assumption we don't necessarily
-      // have an at most one between the nodes.
-      if (!solver->ResetToLevelZero()) return false;
-      for (const EncodingNode* node : *nodes) {
-        if (node->AssumptionIs(core[0]) || node->AssumptionIs(core[1])) {
-          if (node->current_ub() != node->ub() || node->size() != 1) {
-            // TODO(user): We could still improve the encoding in this case.
-            in_exactly_one = false;
-          }
-        }
-      }
-    }
-    if (!solver->ResetToLevelZero()) return false;
-  }
-
   // Remove from nodes the EncodingNode in the core and put them in to_merge.
   std::vector<EncodingNode*> to_merge;
   {
@@ -697,32 +661,88 @@ bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
     nodes->resize(new_size);
   }
 
-  // Amongst the node to merge, if many are leaf nodes in an "at most one"
-  // relationship, it is super advantageous to exploit it during merging as
-  // we can regroup all nodes from an at most one in a single new node with a
-  // depth of 1.
+  // Are the literal in amo relationship?
+  // - If min_weight is large enough, we can infer that.
+  // - If the size is small we can infer this via propagation.
+  bool in_exactly_one = (2 * min_weight) > gap;
+
+  // Amongst the node to merge, if many are boolean nodes in an "at most one"
+  // relationship, it is super advantageous to exploit it during merging as we
+  // can regroup all nodes from an at most one in a single new node with a depth
+  // of 1.
   if (!in_exactly_one && implications != nullptr) {
-    std::vector<Literal> leaves;
+    // Collect "boolean nodes".
+    std::vector<Literal> bool_nodes;
     absl::flat_hash_map<LiteralIndex, int> node_indices;
     for (int i = 0; i < to_merge.size(); ++i) {
       const EncodingNode& node = *to_merge[i];
+
+      // TODO(user): Why is there issue if we consider higher level?
       if (node.depth() != 0) continue;
       if (node.size() != 1) continue;
       if (node.ub() != node.lb() + 1) continue;
       if (node_indices.contains(node.literal(0).Index())) continue;
       node_indices[node.literal(0).Index()] = i;
-      leaves.push_back(node.literal(0));
+      bool_nodes.push_back(node.literal(0));
     }
 
-    int num_in_decompo = 0;
-    const std::vector<absl::Span<const Literal>> decomposition =
-        implications->HeuristicAmoPartition(&leaves);
+    // For "small" core, with O(n) full propagation, we can discover possible
+    // at most ones. This is a bit costly but can significantly reduce the
+    // number of Booleans needed and has a good positive impact.
+    std::vector<int> buffer;
+    std::vector<absl::Span<const Literal>> decomposition;
+    if (bool_nodes.size() < 100 && bool_nodes.size() > 1) {
+      const auto& assignment = solver->Assignment();
+      const int size = bool_nodes.size();
+      std::vector<std::vector<int>> graph(size);
+      for (int i = 0; i < size; ++i) {
+        if (!solver->ResetToLevelZero()) return false;
+        if (!solver->EnqueueDecisionIfNotConflicting(bool_nodes[i])) {
+          // TODO(user): this node is closed and can be removed from the core.
+          continue;
+        }
+        for (int j = 0; j < size; ++j) {
+          if (i == j) continue;
+          if (assignment.LiteralIsFalse(bool_nodes[j])) {
+            graph[i].push_back(j);
+
+            // Unit propagation is not always symmetric.
+            graph[j].push_back(i);
+          }
+
+          // TODO(user): If assignment.LiteralIsTrue(bool_nodes[j]) We can
+          // minimize the core here by removing bool_nodes[i] from it. Note
+          // however that since we already minimized the core, this is
+          // unlikely to happen.
+        }
+      }
+      if (!solver->ResetToLevelZero()) return false;
+
+      for (std::vector<int>& adj : graph) {
+        gtl::STLSortAndRemoveDuplicates(&adj);
+      }
+      const std::vector<absl::Span<int>> index_decompo =
+          AtMostOneDecomposition(graph, &buffer);
+
+      // Convert.
+      std::vector<Literal> new_order;
+      for (const int i : buffer) new_order.push_back(bool_nodes[i]);
+      bool_nodes = new_order;
+      for (const auto span : index_decompo) {
+        if (span.size() == 1) continue;
+        decomposition.push_back(absl::MakeSpan(
+            bool_nodes.data() + (span.data() - buffer.data()), span.size()));
+      }
+    } else {
+      decomposition = implications->HeuristicAmoPartition(&bool_nodes);
+    }
 
     // Same case as above, all the nodes in the core are in a exactly_one.
     if (decomposition.size() == 1 && decomposition[0].size() == core.size()) {
       in_exactly_one = true;
     }
 
+    int num_in_decompo = 0;
     if (!in_exactly_one) {
       for (const auto amo : decomposition) {
         num_in_decompo += amo.size();
