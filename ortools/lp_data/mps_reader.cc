@@ -44,7 +44,7 @@ class DataWrapper<LinearProgram> {
     data_->Clear();
   }
 
-  void SetName(const std::string& name) { data_->SetName(name); }
+  void SetName(absl::string_view name) { data_->SetName(std::string(name)); }
 
   void SetObjectiveDirection(bool maximize) {
     data_->SetMaximizationProblem(maximize);
@@ -54,8 +54,8 @@ class DataWrapper<LinearProgram> {
     data_->SetObjectiveOffset(objective_offset);
   }
 
-  int FindOrCreateConstraint(const std::string& name) {
-    return data_->FindOrCreateConstraint(name).value();
+  int FindOrCreateConstraint(absl::string_view name) {
+    return data_->FindOrCreateConstraint(std::string(name)).value();
   }
   void SetConstraintBounds(int index, double lower_bound, double upper_bound) {
     data_->SetConstraintBounds(RowIndex(index), lower_bound, upper_bound);
@@ -77,8 +77,8 @@ class DataWrapper<LinearProgram> {
     return data_->constraint_upper_bounds()[RowIndex(row_index)];
   }
 
-  int FindOrCreateVariable(const std::string& name) {
-    return data_->FindOrCreateVariable(name).value();
+  int FindOrCreateVariable(absl::string_view name) {
+    return data_->FindOrCreateVariable(std::string(name)).value();
   }
   void SetVariableTypeToInteger(int index) {
     data_->SetVariableType(ColIndex(index),
@@ -100,8 +100,8 @@ class DataWrapper<LinearProgram> {
     return data_->variable_upper_bounds()[ColIndex(index)];
   }
 
-  absl::Status CreateIndicatorConstraint(std::string row_name, int col_index,
-                                         bool col_value) {
+  absl::Status CreateIndicatorConstraint(absl::string_view row_name,
+                                         int col_index, bool col_value) {
     return absl::UnimplementedError(
         "LinearProgram does not support indicator constraints.");
   }
@@ -126,7 +126,7 @@ class DataWrapper<MPModelProto> {
     semi_continuous_variables_.clear();
   }
 
-  void SetName(const std::string& name) { data_->set_name(name); }
+  void SetName(absl::string_view name) { data_->set_name(name); }
 
   void SetObjectiveDirection(bool maximize) { data_->set_maximize(maximize); }
 
@@ -134,7 +134,7 @@ class DataWrapper<MPModelProto> {
     data_->set_objective_offset(objective_offset);
   }
 
-  int FindOrCreateConstraint(const std::string& name) {
+  int FindOrCreateConstraint(absl::string_view name) {
     const auto it = constraint_indices_by_name_.find(name);
     if (it != constraint_indices_by_name_.end()) return it->second;
 
@@ -170,7 +170,7 @@ class DataWrapper<MPModelProto> {
     return data_->constraint(row_index).upper_bound();
   }
 
-  int FindOrCreateVariable(const std::string& name) {
+  int FindOrCreateVariable(absl::string_view name) {
     const auto it = variable_indices_by_name_.find(name);
     if (it != variable_indices_by_name_.end()) return it->second;
 
@@ -201,8 +201,8 @@ class DataWrapper<MPModelProto> {
     return data_->variable(index).upper_bound();
   }
 
-  absl::Status CreateIndicatorConstraint(std::string cst_name, int var_index,
-                                         bool var_value) {
+  absl::Status CreateIndicatorConstraint(absl::string_view cst_name,
+                                         int var_index, bool var_value) {
     const auto it = constraint_indices_by_name_.find(cst_name);
     if (it == constraint_indices_by_name_.end()) {
       return absl::InvalidArgumentError(

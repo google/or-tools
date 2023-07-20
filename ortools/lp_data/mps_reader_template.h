@@ -281,6 +281,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -290,7 +291,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/util/filelineiter.h"
 
@@ -316,12 +316,11 @@ enum class MPSReaderFormat { kAutoDetect, kFree, kFixed };
 // - `double ConstraintUpperBound(IndexType index)`: Returns the (currently
 //              stored) upper bound for 'Constraint[index]'; where 'index' is
 //              a value previously returned by `FindOrCreateConstraint`.
-// - `IndexType FindOrCreateConstraint(const std::string& row_name)`: Returns
-// the
-//              (internally assigned) index to the constraint of the given
+// - `IndexType FindOrCreateConstraint(absl::string_view row_name)`: Returns
+//              the (internally assigned) index to the constraint of the given
 //              name. If `row_name` is new, the constraint must be created with
 //              a zero lower bound and a zero upper bound.
-// - `IndexType FindOrCreateVariable(const std::string& col_name)`: Returns the
+// - `IndexType FindOrCreateVariable(absl::string_view col_name)`: Returns the
 //              (internally assigned) index to the variable of the given name.
 //              Newly created variables should have a zero objective, zero
 //              lower bound, infinity upper bound, and be considered as
@@ -343,7 +342,7 @@ enum class MPSReaderFormat { kAutoDetect, kFree, kFixed };
 //              problem definition, but it might be advantageous to add them
 //              as 'cuts' when solving the problem; where `row_index` is a
 //              value previously returned by `FindOrCreateConstraint`.
-// - `void SetName(const std::string&)`: Stores the model's name.
+// - `void SetName(absl::string_view)`: Stores the model's name.
 // - 'void SetObjectiveCoefficient(IndexType index, double coefficient)`:
 //              Stores `coefficient` as the new objective coefficient for
 //              'Variable[index]'; where `index` is a value previously
@@ -370,7 +369,7 @@ enum class MPSReaderFormat { kAutoDetect, kFree, kFixed };
 // - `double VariableUpperBound(IndexType index)`: Returns the (currently)
 //              stored upper bound for 'Variable[index'; where `index` is a
 //              value previously returned by `FindOrCreateVariable`.
-// - `absl::Status CreateIndicatorConstraint(const std::string& row_name,
+// - `absl::Status CreateIndicatorConstraint(absl::string_view row_name,
 //              IndexType col_index, bool var_value)`: Marks constraint named
 //              `row_name` to be an 'indicator constraint', that should hold
 //              if 'Variable[col_index]' holds value 0 if `var_value`==false,
@@ -479,8 +478,8 @@ class MPSReaderTemplate {
 
   // Safely converts a string to a numerical type. Returns an error if the
   // string passed as parameter is ill-formed.
-  absl::StatusOr<double> GetDoubleFromString(const std::string& str);
-  absl::StatusOr<bool> GetBoolFromString(const std::string& str);
+  absl::StatusOr<double> GetDoubleFromString(absl::string_view str);
+  absl::StatusOr<bool> GetBoolFromString(absl::string_view str);
 
   // Different types of variables, as defined in the MPS file specification.
   // Note these are more precise than the ones in PrimalSimplex.
@@ -507,23 +506,22 @@ class MPSReaderTemplate {
   };
 
   // Stores a bound value of a given type, for a given column name.
-  absl::Status StoreBound(const std::string& bound_type_mnemonic,
-                          const std::string& column_name,
-                          const std::string& bound_value, DataWrapper* data);
+  absl::Status StoreBound(absl::string_view bound_type_mnemonic,
+                          absl::string_view column_name,
+                          absl::string_view bound_value, DataWrapper* data);
 
   // Stores a coefficient value for a column number and a row name.
-  absl::Status StoreCoefficient(IndexType col, const std::string& row_name,
-                                const std::string& row_value,
-                                DataWrapper* data);
+  absl::Status StoreCoefficient(IndexType col, absl::string_view row_name,
+                                absl::string_view row_value, DataWrapper* data);
 
   // Stores a right-hand-side value for a row name.
-  absl::Status StoreRightHandSide(const std::string& row_name,
-                                  const std::string& row_value,
+  absl::Status StoreRightHandSide(absl::string_view row_name,
+                                  absl::string_view row_value,
                                   DataWrapper* data);
 
   // Stores a range constraint of value row_value for a row name.
-  absl::Status StoreRange(const std::string& row_name,
-                          const std::string& range_value, DataWrapper* data);
+  absl::Status StoreRange(absl::string_view row_name,
+                          absl::string_view range_value, DataWrapper* data);
 
   // Returns an InvalidArgumentError with the given error message, postfixed by
   // the current line of the .mps file (number and contents).
@@ -662,12 +660,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
   }
 
   // TODO(b/284163180): Fix handling of sections and data in `free_form`.
-  std::string section;
   if (line_[0] != '\0' && line_[0] != ' ') {
-    section = GetFirstWord();
-    section_ = gtl::FindWithDefault(section_name_to_id_map_, section,
-                                    SectionId::kUnknownSection);
-    if (section_ == SectionId::kUnknownSection) {
+    if (const auto it = section_name_to_id_map_.find(GetFirstWord());
+        it != section_name_to_id_map_.end()) {
+      section_ = it->second;
+    } else {
       return InvalidArgumentError("Unknown section.");
     }
     if (section_ == SectionId::kComment) {
@@ -750,11 +747,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRowsSection(
   }
   const std::string row_type_name = fields_[0];
   const std::string row_name = fields_[1];
-  RowTypeId row_type = gtl::FindWithDefault(row_name_to_id_map_, row_type_name,
-                                            RowTypeId::kUnknownRowType);
-  if (row_type == RowTypeId::kUnknownRowType) {
+  const auto it = row_name_to_id_map_.find(row_type_name);
+  if (it == row_name_to_id_map_.end()) {
     return InvalidArgumentError("Unknown row type.");
   }
+  RowTypeId row_type = it->second;
 
   // The first NONE constraint is used as the objective.
   if (objective_name_.empty() && row_type == RowTypeId::kNone) {
@@ -931,7 +928,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessIndicatorsSection(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreCoefficient(
-    IndexType col, const std::string& row_name, const std::string& row_value,
+    IndexType col, absl::string_view row_name, absl::string_view row_value,
     DataWrapper* data) {
   if (row_name.empty() || row_name == "$") {
     return absl::OkStatus();
@@ -954,7 +951,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreCoefficient(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
-    const std::string& row_name, const std::string& row_value,
+    absl::string_view row_name, absl::string_view row_value,
     DataWrapper* data) {
   if (row_name.empty()) return absl::OkStatus();
 
@@ -984,7 +981,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreRange(
-    const std::string& row_name, const std::string& range_value,
+    absl::string_view row_name, absl::string_view range_value,
     DataWrapper* data) {
   if (row_name.empty()) return absl::OkStatus();
 
@@ -1013,14 +1010,13 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRange(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
-    const std::string& bound_type_mnemonic, const std::string& column_name,
-    const std::string& bound_value, DataWrapper* data) {
-  const BoundTypeId bound_type_id =
-      gtl::FindWithDefault(bound_name_to_id_map_, bound_type_mnemonic,
-                           BoundTypeId::kUnknownBoundType);
-  if (bound_type_id == BoundTypeId::kUnknownBoundType) {
+    absl::string_view bound_type_mnemonic, absl::string_view column_name,
+    absl::string_view bound_value, DataWrapper* data) {
+  const auto it = bound_name_to_id_map_.find(bound_type_mnemonic);
+  if (it == bound_name_to_id_map_.end()) {
     return InvalidArgumentError("Unknown bound type.");
   }
+  const BoundTypeId bound_type_id = it->second;
   const IndexType col = data->FindOrCreateVariable(column_name);
   if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
     data->SetVariableTypeToInteger(col);
@@ -1210,7 +1206,7 @@ bool MPSReaderTemplate<DataWrapper>::IsCommentOrBlank() const {
 
 template <class DataWrapper>
 absl::StatusOr<double> MPSReaderTemplate<DataWrapper>::GetDoubleFromString(
-    const std::string& str) {
+    absl::string_view str) {
   double result;
   if (!absl::SimpleAtod(str, &result)) {
     return InvalidArgumentError(
@@ -1224,7 +1220,7 @@ absl::StatusOr<double> MPSReaderTemplate<DataWrapper>::GetDoubleFromString(
 
 template <class DataWrapper>
 absl::StatusOr<bool> MPSReaderTemplate<DataWrapper>::GetBoolFromString(
-    const std::string& str) {
+    absl::string_view str) {
   int result;
   if (!absl::SimpleAtoi(str, &result) || result < 0 || result > 1) {
     return InvalidArgumentError(
