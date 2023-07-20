@@ -458,11 +458,10 @@ NeighborhoodGeneratorHelper::GetActiveRectangles(
     for (int i = 0; i < ct.x_intervals_size(); ++i) {
       const int x_i = ct.x_intervals(i);
       const int y_i = ct.y_intervals(i);
-      if (!active_intervals_set.contains(x_i) &&
-          !active_intervals_set.contains(y_i)) {
-        continue;
+      if (active_intervals_set.contains(x_i) ||
+          active_intervals_set.contains(y_i)) {
+        active_rectangles.push_back({x_i, y_i});
       }
-      active_rectangles.push_back({x_i, y_i});
     }
   }
 
@@ -2045,24 +2044,10 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
       helper_.GetActiveRectangles(initial_solution);
   GetRandomSubset(1.0 - difficulty, &rectangles_to_freeze, random);
 
-  // ConstraintToVar() is not initialised for intervals. We need to parse them
-  // manually.
   auto insert_vars_from_intervals =
       [this](int i, absl::flat_hash_set<int>& vars_to_freeze) {
         const ConstraintProto& ct = helper_.ModelProto().constraints(i);
-        for (const int lit : ct.enforcement_literal()) {
-          const int var = PositiveRef(lit);
-          vars_to_freeze.insert(var);
-        }
-        for (const int var : ct.interval().start().vars()) {
-          vars_to_freeze.insert(var);
-        }
-        for (const int var : ct.interval().end().vars()) {
-          vars_to_freeze.insert(var);
-        }
-        for (const int var : ct.interval().size().vars()) {
-          vars_to_freeze.insert(var);
-        }
+        for (const int var : UsedVariables(ct)) vars_to_freeze.insert(var);
       };
 
   absl::flat_hash_set<int> variables_to_freeze;

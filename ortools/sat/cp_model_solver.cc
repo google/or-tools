@@ -3106,7 +3106,7 @@ class LnsSolver : public SubSolver {
       // Copy the rest of the model and overwrite the name.
       CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
           helper_->ModelProto(), context.get());
-      lns_fragment.set_name(absl::StrCat("lns_", task_id));
+      lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
 
       // Overwrite solution hinting.
       if (neighborhood.delta.has_solution_hint()) {
@@ -3153,7 +3153,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         lns_fragment.name(), "_", source_info, ".pb.txt");
+                         lns_fragment.name(), ".pb.txt");
         LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
         CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
       }
@@ -3230,7 +3230,7 @@ class LnsSolver : public SubSolver {
           if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
             const std::string name =
                 absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                             debug_copy.name(), "_", source_info, ".pb.txt");
+                             debug_copy.name(), ".pb.txt");
             LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
             CHECK(WriteModelProtoToFile(debug_copy, name));
           }
