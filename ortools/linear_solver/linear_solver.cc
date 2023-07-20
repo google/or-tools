@@ -1395,6 +1395,8 @@ void MPSolver::SetStartingLpBasis(
   interface_->SetStartingLpBasis(variable_statuses, constraint_statuses);
 }
 
+double MPSolver::solver_infinity() { return interface_->infinity(); }
+
 MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
                               const std::string& name) {
   const int var_index = NumVariables();

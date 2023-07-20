@@ -37,6 +37,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/gscip/legacy_scip_params.h"
@@ -49,6 +50,7 @@
 #include "scip/cons_quadratic.h"
 #include "scip/pub_var.h"
 #include "scip/scip.h"
+#include "scip/scip_numerics.h"
 #include "scip/scip_param.h"
 #include "scip/scip_prob.h"
 #include "scip/scip_var.h"
@@ -64,6 +66,22 @@ ABSL_FLAG(std::string, scip_proto_solver_output_cip_file, "",
           "reporting bugs to SCIP.");
 namespace operations_research {
 namespace {
+
+// Clamp to SCIP's finite range, setting infinities to the SCIP infinities.
+absl::StatusOr<double> ScipInfClamp(SCIP* scip, const double d) {
+  if (std::isnan(d)) {
+    return absl::InvalidArgumentError("Cannot clamp a NaN.");
+  }
+  const double kScipInf = SCIPinfinity(scip);
+  if (d > -kScipInf && d < kScipInf) {
+    return d;
+  }
+  const double clamped = std::clamp(d, -kScipInf, kScipInf);
+  LOG_EVERY_N_SEC(WARNING, 5) << "A bound was clamped to SCIP's 'infinite' "
+                                 "value for safety; this may affect results. "
+                              << "Was: " << d << ", is now: " << clamped;
+  return clamped;
+}
 
 // This function will create a new constraint if the indicator constraint has
 // both a lower bound and an upper bound.
@@ -101,10 +119,11 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
   }
 
   if (ind.constraint().upper_bound() < kInfinity) {
+    ASSIGN_OR_RETURN(const double upper_bound,
+                     ScipInfClamp(scip, ind.constraint().upper_bound()));
     RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
         scip, scip_cst, gen_cst.name().c_str(), ind_var, size,
-        tmp_variables->data(), tmp_coefficients->data(),
-        ind.constraint().upper_bound(),
+        tmp_variables->data(), tmp_coefficients->data(), upper_bound,
         /*initial=*/!ind.constraint().is_lazy(),
         /*separate=*/true,
         /*enforce=*/true,
@@ -119,13 +138,14 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
     scip_cst = &scip_constraints->back();
   }
   if (ind.constraint().lower_bound() > -kInfinity) {
+    ASSIGN_OR_RETURN(const double lower_bound,
+                     ScipInfClamp(scip, ind.constraint().lower_bound()));
     for (int i = 0; i < size; ++i) {
       (*tmp_coefficients)[i] *= -1;
     }
     RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
         scip, scip_cst, gen_cst.name().c_str(), ind_var, size,
-        tmp_variables->data(), tmp_coefficients->data(),
-        -ind.constraint().lower_bound(),
+        tmp_variables->data(), tmp_coefficients->data(), -lower_bound,
         /*initial=*/!ind.constraint().is_lazy(),
         /*separate=*/true,
         /*enforce=*/true,
@@ -243,6 +263,10 @@ absl::Status AddQuadraticConstraint(
     (*tmp_qcoefficients)[i] = quad_cst.qcoefficient(i);
   }
 
+  ASSIGN_OR_RETURN(const double lower_bound,
+                   ScipInfClamp(scip, quad_cst.lower_bound()));
+  ASSIGN_OR_RETURN(const double upper_bound,
+                   ScipInfClamp(scip, quad_cst.upper_bound()));
   RETURN_IF_SCIP_ERROR(
       SCIPcreateConsBasicQuadratic(scip,
                                    /*cons=*/scip_cst,
@@ -254,8 +278,8 @@ absl::Status AddQuadraticConstraint(
                                    /*quadvars1=*/tmp_qvariables1->data(),
                                    /*quadvars2=*/tmp_qvariables2->data(),
                                    /*quadcoefs=*/tmp_qcoefficients->data(),
-                                   /*lhs=*/quad_cst.lower_bound(),
-                                   /*rhs=*/quad_cst.upper_bound()));
+                                   /*lhs=*/lower_bound,
+                                   /*rhs=*/upper_bound));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   return absl::OkStatus();
 }
@@ -377,6 +401,8 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   CHECK(scip_cst != nullptr);
   CHECK(tmp_variables != nullptr);
   CHECK(gen_cst.has_min_constraint() || gen_cst.has_max_constraint());
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
   const auto& minmax = gen_cst.has_min_constraint() ? gen_cst.min_constraint()
                                                     : gen_cst.max_constraint();
   const absl::btree_set<int> unique_var_indices(minmax.var_index().begin(),
@@ -393,10 +419,15 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
     CHECK(vars.size() == vals.size());
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
+    ASSIGN_OR_RETURN(const double scip_lower_bound,
+                     ScipInfClamp(scip, lower_bound));
+    ASSIGN_OR_RETURN(const double scip_upper_bound,
+                     ScipInfClamp(scip, upper_bound));
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
         scip, /*cons=*/&scip_cons,
         /*name=*/name.c_str(), /*nvars=*/vars.size(), /*vars=*/vars.data(),
-        /*vals=*/vals.data(), /*lhs=*/lower_bound, /*rhs=*/upper_bound));
+        /*vals=*/vals.data(), /*lhs=*/scip_lower_bound,
+        /*rhs=*/scip_upper_bound));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
     cons.push_back(scip_cons);
@@ -427,7 +458,6 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   // Add all of the inequality constraints.
-  constexpr double kInfinity = std::numeric_limits<double>::infinity();
   cons.clear();
   for (const int var_index : unique_var_indices) {
     vars = {scip_resultant_var, scip_variables[var_index]};
@@ -733,9 +763,13 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
 
   for (int v = 0; v < model.variable_size(); ++v) {
     const MPVariableProto& variable = model.variable(v);
+    ASSIGN_OR_RETURN(const double lower_bound,
+                     ScipInfClamp(scip, variable.lower_bound()));
+    ASSIGN_OR_RETURN(const double upper_bound,
+                     ScipInfClamp(scip, variable.upper_bound()));
     RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(
         scip, /*var=*/&scip_variables[v], /*name=*/variable.name().c_str(),
-        /*lb=*/variable.lower_bound(), /*ub=*/variable.upper_bound(),
+        /*lb=*/lower_bound, /*ub=*/upper_bound,
         /*obj=*/variable.objective_coefficient(),
         /*vartype=*/variable.is_integer() ? SCIP_VARTYPE_INTEGER
                                           : SCIP_VARTYPE_CONTINUOUS));
@@ -754,12 +788,16 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
         ct_variables[i] = scip_variables[constraint.var_index(i)];
         ct_coefficients[i] = constraint.coefficient(i);
       }
+      ASSIGN_OR_RETURN(const double lower_bound,
+                       ScipInfClamp(scip, constraint.lower_bound()));
+      ASSIGN_OR_RETURN(const double upper_bound,
+                       ScipInfClamp(scip, constraint.upper_bound()));
       RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
           scip, /*cons=*/&scip_constraints[c],
           /*name=*/constraint.name().c_str(),
           /*nvars=*/constraint.var_index_size(), /*vars=*/ct_variables.data(),
           /*vals=*/ct_coefficients.data(),
-          /*lhs=*/constraint.lower_bound(), /*rhs=*/constraint.upper_bound(),
+          /*lhs=*/lower_bound, /*rhs=*/upper_bound,
           /*initial=*/!constraint.is_lazy(),
           /*separate=*/true,
           /*enforce=*/true,

@@ -49,11 +49,10 @@
 //       --dump_response=/tmp/foo.response \
 //       2>/tmp/foo.err
 
-#include <algorithm>
 #include <cstdio>
+#include <iostream>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/status/status.h"
@@ -61,11 +60,9 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"

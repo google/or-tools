@@ -1825,6 +1825,40 @@ class SolverTest(parameterized.TestCase):
         else:
             self.assertAlmostEqual(model_solver.objective_value, 0)
 
+    def test_simple_problem(self):
+        # max 5x1 + 4x2 + 3x3
+        # s.t 2x1 + 3x2 +  x3 <= 5
+        #     4x1 +  x2 + 2x3 <= 11
+        #     3x1 + 4x2 + 2x3 <= 8
+        #      x1,   x2,   x3 >= 0
+        # Values = (2,0,1)
+        # Reduced Costs = (0,-3,0)
+        model = mb.ModelBuilder()
+        x = model.new_var_series(
+            "x", pd.Index(range(3)), lower_bounds=0, is_integral=True
+        )
+        self.assertLen(model.get_variables(), 3)
+        model.maximize(x.dot([5, 4, 3]))
+        model.add(x.dot([2, 3, 1]) <= 5)
+        model.add(x.dot([4, 1, 2]) <= 11)
+        model.add(x.dot([3, 4, 2]) <= 8)
+        self.assertLen(model.get_linear_constraints(), 3)
+        solver = mb.ModelSolver("glop")
+        test_red_cost = solver.reduced_costs(model.get_variables())
+        self.assertLen(test_red_cost, 3)
+        for reduced_cost in test_red_cost:
+            self.assertTrue(pd.isna(reduced_cost))
+        run = solver.solve(model)
+        self.assertEqual(run, mb.SolveStatus.OPTIMAL)
+        i = solver.values(model.get_variables())
+        self.assertSequenceAlmostEqual(i, [2, 0, 1])
+        red_cost = solver.reduced_costs(model.get_variables())
+        self.assertSequenceAlmostEqual(red_cost, [0, -3, 0])
+        self.assertAlmostEqual(2, solver.value(x[0]))
+        self.assertAlmostEqual(0, solver.reduced_cost((x[0])))
+        self.assertAlmostEqual(-3, solver.reduced_cost((x[1])))
+        self.assertAlmostEqual(0, solver.reduced_cost((x[2])))
+
 
 if __name__ == "__main__":
     absltest.main()

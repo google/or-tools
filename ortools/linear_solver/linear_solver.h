@@ -717,6 +717,7 @@ class MPSolver {
    * You can use -MPSolver::infinity() for negative infinity.
    */
   static double infinity() { return std::numeric_limits<double>::infinity(); }
+  double solver_infinity();
 
   /**
    * Controls (or queries) the amount of output produced by the underlying
@@ -1763,6 +1764,8 @@ class MPSolverInterface {
       const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
     LOG(FATAL) << "Not supported by this solver.";
   }
+
+  virtual double infinity() { return std::numeric_limits<double>::infinity(); }
 
   virtual bool InterruptSolve() { return false; }
 
