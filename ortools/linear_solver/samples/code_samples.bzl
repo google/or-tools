@@ -45,6 +45,7 @@ def code_sample_py(name):
         main = name + ".py",
         deps = [
             requirement("absl-py"),
+            requirement("protobuf"),
             requirement("numpy"),
             requirement("pandas"),
             "//ortools/linear_solver/python:model_builder",
@@ -63,6 +64,7 @@ def code_sample_py(name):
         ],
         deps = [
             requirement("absl-py"),
+            requirement("protobuf"),
             requirement("numpy"),
             requirement("pandas"),
         ],
