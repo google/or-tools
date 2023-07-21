@@ -136,6 +136,7 @@ search_python_module(
   PACKAGE mypy-protobuf
   NO_VERSION)
 set(PROTO_PYS)
+set(PROTO_MYPYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
@@ -157,9 +158,11 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
   set(PROTO_PY ${PROJECT_BINARY_DIR}/python/${PROTO_DIR}/${PROTO_NAME}_pb2.py)
-  #message(STATUS "protoc py: ${PROTO_PY}")
+  set(PROTO_MYPY ${PROJECT_BINARY_DIR}/python/${PROTO_DIR}/${PROTO_NAME}_pb2.pyi)
+  #message(STATUS "protoc(py) py: ${PROTO_PY}")
+  #message(STATUS "protoc(py) mypy: ${PROTO_MYPY}")
   add_custom_command(
-    OUTPUT ${PROTO_PY}
+    OUTPUT ${PROTO_PY} ${PROTO_MYPY}
     COMMAND ${PROTOC_PRG}
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
@@ -170,10 +173,12 @@ foreach(PROTO_FILE IN LISTS proto_py_files)
     COMMENT "Generate Python 3 protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
+  list(APPEND PROTO_MYPYS ${PROTO_MYPY})
 endforeach()
 add_custom_target(Py${PROJECT_NAME}_proto
   DEPENDS
     ${PROTO_PYS}
+    ${PROTO_MYPYS}
     ${PROJECT_NAMESPACE}::ortools)
 
 ###################
