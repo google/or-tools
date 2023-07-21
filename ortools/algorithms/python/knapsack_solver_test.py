@@ -75,15 +75,17 @@ class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
         #        KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER)
         #    if cbc_profit != generic_profit:
         #      return self._invalid_solution
-
-        scip_profit = self.SolveKnapsackProblemUsingSpecificSolver(
-            profits,
-            weights,
-            capacities,
-            knapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
-        )
-        if scip_profit != generic_profit:
-            return self._invalid_solution
+        try:
+            scip_profit = self.SolveKnapsackProblemUsingSpecificSolver(
+                profits,
+                weights,
+                capacities,
+                knapsack_solver.SolverType.KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
+            )
+            if scip_profit != generic_profit:
+                return self._invalid_solution
+        except AttributeError:
+            print("SCIP support not compiled in")
 
         if len(weights) > 1:
             return generic_profit
