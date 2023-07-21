@@ -3701,6 +3701,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
                 helper, "packing_rectangles_lns"),
             params, helper, &shared));
+        subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SlicePackingNeighborhoodGenerator>(
+                helper, "packing_slice_lns"),
+            params, helper, &shared));
       }
     }
 

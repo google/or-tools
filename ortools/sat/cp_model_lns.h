@@ -696,6 +696,19 @@ class RandomRectanglesPackingNeighborhoodGenerator
                         double difficulty, absl::BitGenRef random) final;
 };
 
+// Only make sense for problems with no_overlap_2d constraints. This select a
+// slice on one dimension, and fix the variables of all rectangles not strictly
+// included in this slice.
+class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SlicePackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
 // This routing based LNS generator will relax random arcs in all the paths of
 // the circuit or routes constraints.
 class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
