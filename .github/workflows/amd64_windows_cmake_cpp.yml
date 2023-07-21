@@ -8,7 +8,10 @@ jobs:
     # ref: https://github.com/actions/runner-images
     strategy:
       matrix:
-        runner: [windows-2022, windows-2019]
+        runner: [
+          windows-2022,
+          #windows-2019,
+        ]
       fail-fast: false # Don't cancel all jobs if one fails.
     runs-on: ${{ matrix.runner }}
     #runs-on: windows-latest
