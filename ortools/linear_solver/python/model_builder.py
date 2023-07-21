@@ -37,7 +37,7 @@ import dataclasses
 import math
 import numbers
 import typing
-from typing import Callable, Mapping, Optional, Sequence, Union
+from typing import Callable, Mapping, Optional, Sequence, Union, cast
 
 import numpy as np
 from numpy import typing as npt
@@ -1017,8 +1017,8 @@ class ModelBuilder:
         if (
             isinstance(is_integral, bool)
             and is_integral
-            and isinstance(lower_bounds, NumberT)
-            and isinstance(upper_bounds, NumberT)
+            and mbn.is_a_number(lower_bounds)
+            and mbn.is_a_number(upper_bounds)
             and math.isfinite(lower_bounds)
             and math.isfinite(upper_bounds)
             and math.ceil(lower_bounds) > math.floor(upper_bounds)
@@ -1583,8 +1583,8 @@ def _as_flat_linear_expression(base_expr: LinearExprT) -> _LinearExpression:
             to_process.append((expr._right, coeff))
         elif isinstance(expr, Variable):
             terms[expr] += coeff
-        elif isinstance(expr, NumberT):
-            offset += coeff * expr
+        elif mbn.is_a_number(expr):
+            offset += coeff * cast(NumberT, expr)
         elif isinstance(expr, _Product):
             to_process.append((expr._expression, coeff * expr._coefficient))
         elif isinstance(expr, _LinearExpression):
@@ -1680,7 +1680,7 @@ def _convert_to_series_and_validate_index(
       TypeError: If the type of `value_or_series` is not recognized.
       ValueError: If the index does not match.
     """
-    if isinstance(value_or_series, (bool, NumberT)):
+    if mbn.is_a_number(value_or_series) or isinstance(value_or_series, bool):
         result = pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):

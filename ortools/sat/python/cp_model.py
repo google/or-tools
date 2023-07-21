@@ -1188,8 +1188,8 @@ class CpModel:
         if not name.isidentifier():
             raise ValueError("name={} is not a valid identifier".format(name))
         if (
-            isinstance(lower_bounds, IntegralT)
-            and isinstance(upper_bounds, IntegralT)
+            cmh.is_integral(lower_bounds)
+            and cmh.is_integral(upper_bounds)
             and lower_bounds > upper_bounds
         ):
             raise ValueError(
@@ -2984,7 +2984,7 @@ def _ConvertToSeriesAndValidateIndex(
       TypeError: If the type of `value_or_series` is not recognized.
       ValueError: If the index does not match.
     """
-    if isinstance(value_or_series, (bool, IntegralT)):
+    if cmh.is_integral(value_or_series) or isinstance(value_or_series, bool):
         result = pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):
