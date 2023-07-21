@@ -509,25 +509,26 @@ int64_t GetLinearExpressionValue(const LinearExpressionProto& expr,
   return result;
 }
 
-struct StartEndInterval {
+struct StartEndIndex {
   int64_t start;
   int64_t end;
-  int interval_index;
-  bool operator<(const StartEndInterval& o) const {
-    return std::tie(start, end, interval_index) <
-           std::tie(o.start, o.end, o.interval_index);
+  int index_in_input_vector;
+  bool operator<(const StartEndIndex& o) const {
+    return std::tie(start, end, index_in_input_vector) <
+           std::tie(o.start, o.end, o.index_in_input_vector);
   }
 };
 
 // Selects all intervals in a random time window to meet the difficulty
 // requirement.
-std::vector<int> SelectIntervalsInRandomTimeWindow(
+std::vector<int> SelectIndicesInRandomTimeWindow(
     const std::vector<int>& intervals, const CpModelProto& model_proto,
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  std::vector<StartEndInterval> start_end_intervals;
-  for (const int i : intervals) {
-    const ConstraintProto& interval_ct = model_proto.constraints(i);
+  std::vector<StartEndIndex> start_end_indices;
+  for (int index = 0; index < intervals.size(); ++index) {
+    const int interval = intervals[index];
+    const ConstraintProto& interval_ct = model_proto.constraints(interval);
     // We only look at intervals that are performed in the solution. The
     // unperformed intervals should be automatically freed during the
     // generation phase.
@@ -543,16 +544,16 @@ std::vector<int> SelectIntervalsInRandomTimeWindow(
         interval_ct.interval().start(), initial_solution);
     const int64_t end_value = GetLinearExpressionValue(
         interval_ct.interval().end(), initial_solution);
-    start_end_intervals.push_back({start_value, end_value, i});
+    start_end_indices.push_back({start_value, end_value, index});
   }
 
-  if (start_end_intervals.empty()) return {};
+  if (start_end_indices.empty()) return {};
 
-  std::sort(start_end_intervals.begin(), start_end_intervals.end());
-  const int relaxed_size = std::floor(difficulty * start_end_intervals.size());
+  std::sort(start_end_indices.begin(), start_end_indices.end());
+  const int relaxed_size = std::floor(difficulty * start_end_indices.size());
 
   std::uniform_int_distribution<int> random_var(
-      0, start_end_intervals.size() - relaxed_size - 1);
+      0, start_end_indices.size() - relaxed_size - 1);
   // TODO(user): Consider relaxing more than one time window
   // intervals. This seems to help with Giza models.
   const int random_start_index = random_var(random);
@@ -562,83 +563,15 @@ std::vector<int> SelectIntervalsInRandomTimeWindow(
   // TODO(user): We could do things differently (include all tasks <= some
   // end). The difficulty is that the number of relaxed tasks will differ from
   // the target. We could also tie break tasks randomly.
-  std::sort(start_end_intervals.begin() + random_start_index,
-            start_end_intervals.end(),
-            [](const StartEndInterval& a, const StartEndInterval& b) {
-              return std::tie(a.end, a.interval_index) <
-                     std::tie(b.end, b.interval_index);
+  std::sort(start_end_indices.begin() + random_start_index,
+            start_end_indices.end(),
+            [](const StartEndIndex& a, const StartEndIndex& b) {
+              return std::tie(a.end, a.index_in_input_vector) <
+                     std::tie(b.end, b.index_in_input_vector);
             });
   std::vector<int> result;
   for (int i = random_start_index; i < random_start_index + relaxed_size; ++i) {
-    result.push_back(start_end_intervals[i].interval_index);
-  }
-  return result;
-}
-
-struct StartEndRectangle {
-  int64_t start;
-  int64_t end;
-  int interval_index;
-  int other_interval_index;
-  bool operator<(const StartEndRectangle& o) const {
-    return std::tie(start, end, interval_index, other_interval_index) <
-           std::tie(o.start, o.end, o.interval_index, o.other_interval_index);
-  }
-};
-
-// Selects all intervals in a random time window to meet the difficulty
-// requirement.
-std::vector<std::pair<int, int>> SelectRectangleInRandomSliceOfFirstDimension(
-    const std::vector<std::pair<int, int>>& rectangles,
-    const CpModelProto& model_proto, const CpSolverResponse& initial_solution,
-    double difficulty, absl::BitGenRef random) {
-  std::vector<StartEndRectangle> start_end_rectangles;
-  for (const auto& [i, j] : rectangles) {
-    const ConstraintProto& interval_ct = model_proto.constraints(i);
-    // We only look at intervals that are performed in the solution. The
-    // unperformed intervals should be automatically freed during the
-    // generation phase.
-    if (interval_ct.enforcement_literal().size() == 1) {
-      const int enforcement_ref = interval_ct.enforcement_literal(0);
-      const int enforcement_var = PositiveRef(enforcement_ref);
-      const int64_t value = initial_solution.solution(enforcement_var);
-      if (RefIsPositive(enforcement_ref) == (value == 0)) {
-        continue;
-      }
-    }
-    const int64_t start_value = GetLinearExpressionValue(
-        interval_ct.interval().start(), initial_solution);
-    const int64_t end_value = GetLinearExpressionValue(
-        interval_ct.interval().end(), initial_solution);
-    start_end_rectangles.push_back({start_value, end_value, i, j});
-  }
-
-  if (start_end_rectangles.empty()) return {};
-
-  std::sort(start_end_rectangles.begin(), start_end_rectangles.end());
-  const int relaxed_size = std::floor(difficulty * start_end_rectangles.size());
-
-  std::uniform_int_distribution<int> random_var(
-      0, start_end_rectangles.size() - relaxed_size - 1);
-  // TODO(user): Consider relaxing more than one time window
-  // intervals. This seems to help with Giza models.
-  const int random_start_index = random_var(random);
-
-  // We want to minimize the time window relaxed, so we now sort the interval
-  // after the first selected intervals by end value.
-  // TODO(user): We could do things differently (include all tasks <= some
-  // end). The difficulty is that the number of relaxed tasks will differ from
-  // the target. We could also tie break tasks randomly.
-  std::sort(start_end_rectangles.begin() + random_start_index,
-            start_end_rectangles.end(),
-            [](const StartEndRectangle& a, const StartEndRectangle& b) {
-              return std::tie(a.end, a.interval_index) <
-                     std::tie(b.end, b.interval_index);
-            });
-  std::vector<std::pair<int, int>> result;
-  for (int i = random_start_index; i < random_start_index + relaxed_size; ++i) {
-    result.push_back({start_end_rectangles[i].interval_index,
-                      start_end_rectangles[i].other_interval_index});
+    result.push_back(start_end_indices[i].index_in_input_vector);
   }
   return result;
 }
@@ -2080,9 +2013,14 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   if (active_intervals.empty()) return helper_.FullNeighborhood();
 
-  const std::vector<int> intervals_to_relax =
-      SelectIntervalsInRandomTimeWindow(active_intervals, helper_.ModelProto(),
-                                        initial_solution, difficulty, random);
+  const std::vector<int> selected_indices =
+      SelectIndicesInRandomTimeWindow(active_intervals, helper_.ModelProto(),
+                                      initial_solution, difficulty, random);
+  std::vector<int> intervals_to_relax;
+  intervals_to_relax.reserve(selected_indices.size());
+  for (const int index : selected_indices) {
+    intervals_to_relax.push_back(active_intervals[index]);
+  }
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
       intervals_to_relax, initial_solution, random, helper_);
 }
@@ -2092,9 +2030,11 @@ Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
     absl::BitGenRef random) {
   intervals_to_relax_.clear();
   for (const std::vector<int>& intervals : intervals_in_constraints_) {
-    const std::vector<int> selected = SelectIntervalsInRandomTimeWindow(
+    const std::vector<int> selected_indices = SelectIndicesInRandomTimeWindow(
         intervals, helper_.ModelProto(), initial_solution, difficulty, random);
-    intervals_to_relax_.insert(selected.begin(), selected.end());
+    for (const int index : selected_indices) {
+      intervals_to_relax_.insert(intervals[index]);
+    }
   }
 
   if (intervals_to_relax_.empty()) return helper_.FullNeighborhood();
@@ -2112,16 +2052,10 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
       helper_.GetActiveRectangles(initial_solution);
   GetRandomSubset(1.0 - difficulty, &rectangles_to_freeze, random);
 
-  auto insert_vars_from_intervals =
-      [this](int i, absl::flat_hash_set<int>& vars_to_freeze) {
-        const ConstraintProto& ct = helper_.ModelProto().constraints(i);
-        for (const int var : UsedVariables(ct)) vars_to_freeze.insert(var);
-      };
-
   absl::flat_hash_set<int> variables_to_freeze;
   for (const auto& [x, y] : rectangles_to_freeze) {
-    insert_vars_from_intervals(x, variables_to_freeze);
-    insert_vars_from_intervals(y, variables_to_freeze);
+    InsertVariablesFromConstraint(helper_.ModelProto(), x, variables_to_freeze);
+    InsertVariablesFromConstraint(helper_.ModelProto(), y, variables_to_freeze);
   }
 
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
@@ -2130,34 +2064,31 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
 Neighborhood SlicePackingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  std::vector<std::pair<int, int>> active_rectangles =
+  const std::vector<std::pair<int, int>> active_rectangles =
       helper_.GetActiveRectangles(initial_solution);
-  if (absl::Bernoulli(random, 0.5)) {  // Switch dimensions.
-    for (auto& [x, y] : active_rectangles) {
-      std::swap(x, y);
-    }
+  const bool use_first_dimension = absl::Bernoulli(random, 0.5);
+  std::vector<int> projected_intervals;
+  projected_intervals.reserve(active_rectangles.size());
+  for (const auto& [x, y] : active_rectangles) {
+    projected_intervals.push_back(use_first_dimension ? x : y);
   }
 
-  const std::vector<std::pair<int, int>> rectangles_to_relax =
-      SelectRectangleInRandomSliceOfFirstDimension(
-          active_rectangles, helper_.ModelProto(), initial_solution, difficulty,
-          random);
-  absl::flat_hash_set<std::pair<int, int>> rectangles_to_relax_set(
-      rectangles_to_relax.begin(), rectangles_to_relax.end());
-
-  auto insert_vars_from_intervals =
-      [this](int i, absl::flat_hash_set<int>& vars_to_freeze) {
-        const ConstraintProto& ct = helper_.ModelProto().constraints(i);
-        for (const int var : UsedVariables(ct)) vars_to_freeze.insert(var);
-      };
+  const std::vector<int> indices_to_relax =
+      SelectIndicesInRandomTimeWindow(projected_intervals, helper_.ModelProto(),
+                                      initial_solution, difficulty, random);
+  std::vector<bool> indices_to_fix(active_rectangles.size(), true);
+  for (const int index : indices_to_relax) indices_to_fix[index] = false;
 
   absl::flat_hash_set<int> variables_to_freeze;
-  for (const auto& [x, y] : active_rectangles) {
-    if (rectangles_to_relax_set.contains({x, y})) {
-      continue;
+  for (int index = 0; index < active_rectangles.size(); ++index) {
+    if (indices_to_fix[index]) {
+      InsertVariablesFromConstraint(helper_.ModelProto(),
+                                    active_rectangles[index].first,
+                                    variables_to_freeze);
+      InsertVariablesFromConstraint(helper_.ModelProto(),
+                                    active_rectangles[index].second,
+                                    variables_to_freeze);
     }
-    insert_vars_from_intervals(x, variables_to_freeze);
-    insert_vars_from_intervals(y, variables_to_freeze);
   }
 
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);

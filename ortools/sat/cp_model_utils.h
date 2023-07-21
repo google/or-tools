@@ -91,6 +91,14 @@ std::vector<int> UsedVariables(const ConstraintProto& ct);
 // Returns the sorted list of interval used by a constraint.
 std::vector<int> UsedIntervals(const ConstraintProto& ct);
 
+// Insert variables in a constraint into a set.
+template <typename Set>
+void InsertVariablesFromConstraint(const CpModelProto& model_proto, int index,
+                                   Set& output) {
+  const ConstraintProto& ct = model_proto.constraints(index);
+  for (const int var : UsedVariables(ct)) output.insert(var);
+}
+
 // Returns true if a proto.domain() contain the given value.
 // The domain is expected to be encoded as a sorted disjoint interval list.
 template <typename ProtoWithDomain>
