@@ -15,7 +15,7 @@
 """Tests for ModelBuilder."""
 
 import math
-from typing import Any, Callable, Mapping, Union
+from typing import Any, Dict, Callable, Mapping, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -1669,7 +1669,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_solve_status(
         self,
-        solver: dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,
