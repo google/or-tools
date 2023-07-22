@@ -1005,8 +1005,8 @@ class ModelBuilder:
         if not name.isidentifier():
             raise ValueError("name={} is not a valid identifier".format(name))
         if (
-            isinstance(lower_bounds, NumberT)
-            and isinstance(upper_bounds, NumberT)
+            mbn.is_a_number(lower_bounds)
+            and mbn.is_a_number(upper_bounds)
             and lower_bounds > upper_bounds
         ):
             raise ValueError(
