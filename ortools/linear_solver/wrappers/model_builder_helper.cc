@@ -318,7 +318,24 @@ ModelSolverHelper::ModelSolverHelper(const std::string& solver_name) {
 }
 
 bool ModelSolverHelper::SolverIsSupported() const {
-  return solver_type_.has_value();
+  if (!solver_type_.has_value()) return false;
+  if (solver_type_.value() == MPModelRequest::GLOP_LINEAR_PROGRAMMING) {
+    return true;
+  }
+#ifdef USE_PDLP
+  if (solver_type_.value() == MPModelRequest::PDLP_LINEAR_PROGRAMMING) {
+    return true;
+  }
+#endif  // USE_PDLP
+  if (solver_type_.value() == MPModelRequest::SAT_INTEGER_PROGRAMMING) {
+    return true;
+  }
+#ifdef USE_SCIP
+  if (solver_type_.value() == MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
+#endif  // USE_SCIP
+  return false;
 }
 
 void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
