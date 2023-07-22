@@ -64,6 +64,9 @@ class ModelBuilderTest(absltest.TestCase):
         self.assertEqual(-math.inf, c2.lower_bound)
 
         solver = mb.ModelSolver(solver_name)
+        if not solver.solver_is_supported():
+            print(f'Solver {solver_name} is not supported')
+            return
         self.assertTrue(pd.isna(solver.value(x1)))
         self.assertTrue(pd.isna(solver.value(x2)))
         self.assertTrue(pd.isna(solver.value(x3)))
@@ -1687,6 +1690,9 @@ class SolverTest(parameterized.TestCase):
             objective_expression=objective_expression,
         )
         model_solver = mb.ModelSolver(solver["name"])
+        if not model_solver.solver_is_supported():
+            print(f'Solver {solver["name"]} is not supported')
+            return
         if solver.get("solver_specific_parameters"):
             model_solver.set_solver_specific_parameters(
                 solver.get("solver_specific_parameters")
@@ -1753,6 +1759,9 @@ class SolverTest(parameterized.TestCase):
             objective_expression=objective_expression,
         )
         model_solver = mb.ModelSolver(solver["name"])
+        if not model_solver.solver_is_supported():
+            print(f'Solver {solver["name"]} is not supported')
+            return
         if solver.get("solver_specific_parameters"):
             model_solver.set_solver_specific_parameters(
                 solver.get("solver_specific_parameters")
@@ -1828,6 +1837,9 @@ class SolverTest(parameterized.TestCase):
             objective_expression=objective_expression,
         )
         model_solver = mb.ModelSolver(solver["name"])
+        if not model_solver.solver_is_supported():
+            print(f'Solver {solver["name"]} is not supported')
+            return
         if solver.get("solver_specific_parameters"):
             model_solver.set_solver_specific_parameters(
                 solver.get("solver_specific_parameters")
