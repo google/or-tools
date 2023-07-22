@@ -1735,7 +1735,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_get_variable_values(
         self,
-        solver: dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,
@@ -1810,7 +1810,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_get_objective_value(
         self,
-        solver: dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,
