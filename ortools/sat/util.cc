@@ -857,58 +857,126 @@ std::vector<std::vector<absl::InlinedVector<int64_t, 2>>> FullyCompressTuples(
   return output;
 }
 
-// TODO(user): Add heuristic to control order of clique growth.
-// Note that all our returned cliques are maximal though (excluding the nodes
-// already added to previous cliques).
-std::vector<absl::Span<int>> AtMostOneDecomposition(
-    const std::vector<std::vector<int>>& graph, std::vector<int>* buffer) {
-  const int n = graph.size();
+namespace {
 
-  std::vector<int> candidates;
-  std::vector<bool> taken(n, false);
-  std::vector<bool> temp(n, false);
+class CliqueDecomposition {
+ public:
+  CliqueDecomposition(const std::vector<std::vector<int>>& graph,
+                      absl::BitGenRef random, std::vector<int>* buffer)
+      : graph_(graph), random_(random), buffer_(buffer) {
+    const int n = graph.size();
+    permutation_.resize(n);
+    buffer_->resize(n);
 
-  int buffer_index = 0;
-  buffer->resize(n);
-  std::vector<absl::Span<int>> result;
-  for (int i = 0; i < n; ++i) {
-    if (taken[i]) continue;
-
-    // Save start of amo and output i.
-    const int start = buffer_index;
-    taken[i] = true;
-    (*buffer)[buffer_index++] = i;
-
-    candidates.clear();
-    for (const int c : graph[i]) {
-      if (!taken[c]) candidates.push_back(c);
-    }
-    while (!candidates.empty()) {
-      // Extend at most one.
-      const int next = candidates.front();
-
-      // Add to current amo.
-      taken[next] = true;
-      (*buffer)[buffer_index++] = next;
-
-      // Filter candidates.
-      for (const int head : graph[next]) temp[head] = true;
-      int new_size = 0;
-      for (const int c : candidates) {
-        if (taken[c]) continue;
-        if (!temp[c]) continue;
-        candidates[new_size++] = c;
-      }
-      candidates.resize(new_size);
-      for (const int head : graph[next]) temp[head] = false;
-    }
-
-    // output amo.
-    result.push_back(
-        absl::MakeSpan(buffer->data() + start, buffer_index - start));
+    // TODO(user): Start by sorting by decreasing size of adjacency list?
+    for (int i = 0; i < n; ++i) permutation_[i] = i;
   }
-  DCHECK_EQ(buffer_index, n);
-  return result;
+
+  // This works in O(m). All possible decomposition are reachable, depending on
+  // the initial permutation.
+  //
+  // TODO(user): It can be made faster within the same complexity though.
+  void DecomposeGreedily() {
+    decomposition_.clear();
+    candidates_.clear();
+
+    const int n = graph_.size();
+    taken_.assign(n, false);
+    temp_.assign(n, false);
+
+    int buffer_index = 0;
+    for (const int i : permutation_) {
+      if (taken_[i]) continue;
+
+      // Save start of amo and output i.
+      const int start = buffer_index;
+      taken_[i] = true;
+      (*buffer_)[buffer_index++] = i;
+
+      candidates_.clear();
+      for (const int c : graph_[i]) {
+        if (!taken_[c]) candidates_.push_back(c);
+      }
+      while (!candidates_.empty()) {
+        // Extend at most one with lowest possible permutation index.
+        int next = candidates_.front();
+        for (const int n : candidates_) {
+          if (permutation_[n] < permutation_[next]) next = n;
+        }
+
+        // Add to current amo.
+        taken_[next] = true;
+        (*buffer_)[buffer_index++] = next;
+
+        // Filter candidates.
+        // TODO(user): With a sorted graph_, same complexity, but likely faster.
+        for (const int head : graph_[next]) temp_[head] = true;
+        int new_size = 0;
+        for (const int c : candidates_) {
+          if (taken_[c]) continue;
+          if (!temp_[c]) continue;
+          candidates_[new_size++] = c;
+        }
+        candidates_.resize(new_size);
+        for (const int head : graph_[next]) temp_[head] = false;
+      }
+
+      // Output amo.
+      decomposition_.push_back(
+          absl::MakeSpan(buffer_->data() + start, buffer_index - start));
+    }
+    DCHECK_EQ(buffer_index, n);
+  }
+
+  // We follow the heuristic in the paper: "Partitioning Networks into Cliques:
+  // A Randomized Heuristic Approach", David Chaluppa, 2014.
+  //
+  // Note that by keeping the local order of each clique, we cannot make the
+  // order "worse". And each new call to DecomposeGreedily() can only reduce
+  // the number of clique in the cover.
+  void ChangeOrder() {
+    if (absl::Bernoulli(random_, 0.5)) {
+      std::reverse(decomposition_.begin(), decomposition_.end());
+    } else {
+      std::shuffle(decomposition_.begin(), decomposition_.end(), random_);
+    }
+
+    int out_index = 0;
+    for (const absl::Span<const int> clique : decomposition_) {
+      for (const int i : clique) {
+        permutation_[out_index++] = i;
+      }
+    }
+  }
+
+  const std::vector<absl::Span<int>>& decomposition() const {
+    return decomposition_;
+  }
+
+ private:
+  const std::vector<std::vector<int>>& graph_;
+  absl::BitGenRef random_;
+  std::vector<int>* buffer_;
+
+  std::vector<absl::Span<int>> decomposition_;
+  std::vector<int> candidates_;
+  std::vector<int> permutation_;
+  std::vector<bool> taken_;
+  std::vector<bool> temp_;
+};
+
+}  // namespace
+
+std::vector<absl::Span<int>> AtMostOneDecomposition(
+    const std::vector<std::vector<int>>& graph, absl::BitGenRef random,
+    std::vector<int>* buffer) {
+  CliqueDecomposition decomposer(graph, random, buffer);
+  for (int pass = 0; pass < 10; ++pass) {
+    decomposer.DecomposeGreedily();
+    if (decomposer.decomposition().size() == 1) break;
+    decomposer.ChangeOrder();
+  }
+  return decomposer.decomposition();
 }
 
 }  // namespace sat

@@ -599,15 +599,13 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   // non-overlapping small cores without the need to have dedicated
   // non-overlapping core finder.
   // TODO(user): It could still be beneficial to add one. Experiments.
-  std::deque<EncodingNode> repository;
-  std::vector<EncodingNode*> nodes;
+  ObjectiveEncoder encoder(model_);
   if (vars.empty()) {
     // All Booleans.
     for (int i = 0; i < literals.size(); ++i) {
       CHECK_GT(coefficients[i], 0);
-      repository.emplace_back(literals[i]);
-      nodes.push_back(&repository.back());
-      nodes.back()->set_weight(coefficients[i]);
+      encoder.AddBaseNode(
+          EncodingNode::LiteralNode(literals[i], coefficients[i]));
     }
   } else {
     // Use integer encoding.
@@ -620,21 +618,22 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       if (var_ub - var_lb == 1) {
         const Literal lit = integer_encoder_->GetOrCreateAssociatedLiteral(
             IntegerLiteral::GreaterOrEqual(var, var_ub));
-        repository.emplace_back(lit);
+        encoder.AddBaseNode(EncodingNode::LiteralNode(lit, coefficients[i]));
       } else {
-        // TODO(user): This might not be idea if there are holes in the domain.
+        // TODO(user): This might not be ideal if there are holes in the domain.
         // It should work by adding duplicates literal, but we should be able to
         // be more efficient.
-        int lb = 0;
-        int ub = static_cast<int>(var_ub.value() - var_lb.value());
-        repository.emplace_back(lb, ub, [var, var_lb, this](int x) {
-          return integer_encoder_->GetOrCreateAssociatedLiteral(
-              IntegerLiteral::GreaterOrEqual(var,
-                                             var_lb + IntegerValue(x + 1)));
-        });
+        const int lb = 0;
+        const int ub = static_cast<int>(var_ub.value() - var_lb.value());
+        encoder.AddBaseNode(EncodingNode::GenericNode(
+            lb, ub,
+            [var, var_lb, this](int x) {
+              return integer_encoder_->GetOrCreateAssociatedLiteral(
+                  IntegerLiteral::GreaterOrEqual(var,
+                                                 var_lb + IntegerValue(x + 1)));
+            },
+            coefficients[i]));
       }
-      nodes.push_back(&repository.back());
-      nodes.back()->set_weight(coefficients[i]);
     }
   }
 
@@ -646,7 +645,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
   Coefficient stratified_lower_bound(0);
   if (parameters_->max_sat_stratification() !=
       SatParameters::STRATIFICATION_NONE) {
-    for (EncodingNode* n : nodes) {
+    for (EncodingNode* n : encoder.nodes()) {
       stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
     }
   }
@@ -663,7 +662,8 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     // objective value - 1.
     const Coefficient upper_bound(
         integer_trail_->UpperBound(objective_var_).value() - offset.value());
-    ReduceNodes(upper_bound, &lower_bound, &nodes, sat_solver_);
+    ReduceNodes(upper_bound, &lower_bound, encoder.mutable_nodes(),
+                sat_solver_);
 
     // We adapt the stratified lower bound when the gap is small. All literals
     // with such weight will be in an at_most_one relationship, which will lead
@@ -673,11 +673,11 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       stratified_lower_bound = (gap + 2) / 2;
     }
 
-    const std::vector<Literal> assumptions =
-        ExtractAssumptions(stratified_lower_bound, nodes, sat_solver_);
+    const std::vector<Literal> assumptions = ExtractAssumptions(
+        stratified_lower_bound, encoder.nodes(), sat_solver_);
     if (assumptions.empty()) {
       stratified_lower_bound =
-          MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
+          MaxNodeWeightSmallerThan(encoder.nodes(), stratified_lower_bound);
       if (stratified_lower_bound > 0) continue;
 
       // We do not have any assumptions anymore, but we still need to see
@@ -699,12 +699,12 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
           absl::StrFormat("bool_core num_cores:%d [%s] assumptions:%u "
                           "depth:%d fixed_bools:%d/%d",
-                          iter, previous_core_info, nodes.size(), max_depth,
-                          num_fixed, num_bools),
+                          iter, previous_core_info, encoder.nodes().size(),
+                          max_depth, num_fixed, num_bools),
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 
-    VLOG(2) << "[Core] #nodes " << nodes.size()
+    VLOG(2) << "[Core] #nodes " << encoder.nodes().size()
             << " #assumptions:" << assumptions.size()
             << " stratification:" << stratified_lower_bound << " gap:" << gap;
 
@@ -726,7 +726,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       // If not all assumptions were taken, continue with a lower stratified
       // bound. Otherwise we have an optimal solution.
       stratified_lower_bound =
-          MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
+          MaxNodeWeightSmallerThan(encoder.nodes(), stratified_lower_bound);
       if (stratified_lower_bound > 0) continue;
       return SatSolver::INFEASIBLE;
     }
@@ -742,17 +742,16 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // Compute the min weight of all the nodes in the core.
     // The lower bound will be increased by that much.
-    const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
+    const Coefficient min_weight = ComputeCoreMinWeight(encoder.nodes(), core);
     previous_core_info =
         absl::StrFormat("size:%u mw:%d", core.size(), min_weight.value());
 
     // We only count an iter when we found a core.
     ++iter;
-    if (!ProcessCore(core, min_weight, gap, &repository, &nodes, sat_solver_,
-                     &previous_core_info, implications_)) {
+    if (!encoder.ProcessCore(core, min_weight, gap, &previous_core_info)) {
       return SatSolver::INFEASIBLE;
     }
-    max_depth = std::max(max_depth, nodes.back()->depth());
+    max_depth = std::max(max_depth, encoder.nodes().back()->depth());
   }
 
   return SatSolver::FEASIBLE;  // shouldn't reach here.

@@ -24,6 +24,7 @@
 #include <deque>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -60,16 +61,15 @@ class EncodingNode {
  public:
   EncodingNode() = default;
 
-  // Constructs a EncodingNode of size one, just formed by the given literal.
-  explicit EncodingNode(Literal l);
-
-  // Constructs a node with value in [lb, ub].
+  // Static creation functions.
+  //
+  // The generic version constructs a node with value in [lb, ub].
   // New literal "<=x" will be constructed using create_lit(x).
-  EncodingNode(int lb, int ub, std::function<Literal(int x)> create_lit);
-
-  // Create a node with no literal and constant weight.
-  // TODO(user): Transform functions above to factory like this.
   static EncodingNode ConstantNode(Coefficient weight);
+  static EncodingNode LiteralNode(Literal l, Coefficient weight);
+  static EncodingNode GenericNode(int lb, int ub,
+                                  std::function<Literal(int x)> create_lit,
+                                  Coefficient weight);
 
   // Creates a "full" encoding node on n new variables, the represented number
   // beeing in [lb, ub = lb + n). The variables are added to the given solver
@@ -205,18 +205,6 @@ EncodingNode* LazyMergeAllNodeWithPQAndIncreaseLb(
     Coefficient weight, const std::vector<EncodingNode*>& nodes,
     SatSolver* solver, std::deque<EncodingNode>* repository);
 
-// Returns a vector with one new EncodingNode by variable in the given
-// objective. Sets the offset to the negated sum of the negative coefficient,
-// because in this case we negate the literals to have only positive
-// coefficients.
-std::vector<EncodingNode*> CreateInitialEncodingNodes(
-    const std::vector<Literal>& literals,
-    const std::vector<Coefficient>& coeffs, Coefficient* offset,
-    std::deque<EncodingNode>* repository);
-std::vector<EncodingNode*> CreateInitialEncodingNodes(
-    const LinearObjective& objective_proto, Coefficient* offset,
-    std::deque<EncodingNode>* repository);
-
 // Reduces the nodes using the now fixed literals, update the lower-bound, and
 // returns the set of assumptions for the next round of the core-based
 // algorithm. Returns an empty set of assumptions if everything is fixed.
@@ -237,34 +225,52 @@ Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
 Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
                                      Coefficient upper_bound);
 
-// Updates the encoding using the given core. The literals in the core must
-// match the order in nodes. Returns false if the model become infeasible.
-//
-// If "implications" is not null, we try to exploit at_most_ones between
-// literal of the core for a better Boolean encoding.
-bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
-                 Coefficient gap, std::deque<EncodingNode>* repository,
-                 std::vector<EncodingNode*>* nodes, SatSolver* solver,
-                 std::string* info,
-                 BinaryImplicationGraph* implications = nullptr);
+// The class reponsible for processing cores and maintaining a Boolean encoding
+// of the linear objective.
+class ObjectiveEncoder {
+ public:
+  explicit ObjectiveEncoder(Model* model)
+      : sat_solver_(model->GetOrCreate<SatSolver>()),
+        implications_(model->GetOrCreate<BinaryImplicationGraph>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
-// There is more than one way to create new assumptions and encode the
-// information from this core. This is slightly different from ProcessCore() and
-// follow the algorithm used by many of the top max-SAT solver under the name
-// incremental OLL. This is described in:
-// António Morgado, Carmine Dodaro, Joao Marques-Silva. "Core-Guided MaxSAT
-// with Soft Cardinality Constraints". CP 2014. pp. 564-573.
-// António Morgado, Alexey Ignatiev, Joao Marques-Silva. "MSCG: Robust
-// Core-Guided MaxSAT Solving." JSAT 9. 2014. pp. 129-134.
-//
-// TODO(user): The last time this was tested, it was however not as good as the
-// ProcessCore() version. That might change as we code/change more heuristic, so
-// we keep it around.
-bool ProcessCoreWithAlternativeEncoding(const std::vector<Literal>& core,
-                                        Coefficient min_weight,
-                                        std::deque<EncodingNode>* repository,
-                                        std::vector<EncodingNode*>* nodes,
-                                        SatSolver* solver);
+  // Updates the encoding using the given core. The literals in the core must
+  // match the order in nodes. Returns false if the model become infeasible.
+  bool ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+                   Coefficient gap, std::string* info);
+
+  void AddBaseNode(EncodingNode node) {
+    repository_.push_back(std::move(node));
+    nodes_.push_back(&repository_.back());
+  }
+
+  // TODO(user): Remove mutable version once refactoring is done.
+  const std::vector<EncodingNode*>& nodes() const { return nodes_; }
+  std::vector<EncodingNode*>* mutable_nodes() { return &nodes_; }
+
+ private:
+  // There is more than one way to create new assumptions and encode the
+  // information from this core. This is slightly different from ProcessCore()
+  // and follow the algorithm used by many of the top max-SAT solver under the
+  // name incremental OLL. This is described in: António Morgado, Carmine
+  // Dodaro, Joao Marques-Silva. "Core-Guided MaxSAT with Soft Cardinality
+  // Constraints". CP 2014. pp. 564-573. António Morgado, Alexey Ignatiev, Joao
+  // Marques-Silva. "MSCG: Robust Core-Guided MaxSAT Solving." JSAT 9. 2014. pp.
+  // 129-134.
+  //
+  // TODO(user): The last time this was tested, it was however not as good as
+  // the ProcessCore() version. That might change as we code/change more
+  // heuristic, so we keep it around.
+  const bool alternative_encoding_ = false;
+
+  // Nodes point into repository_.
+  std::vector<EncodingNode*> nodes_;
+  std::deque<EncodingNode> repository_;
+
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implications_;
+  ModelRandomGenerator* random_;
+};
 
 }  // namespace sat
 }  // namespace operations_research

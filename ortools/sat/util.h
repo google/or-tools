@@ -127,7 +127,8 @@ int64_t ClosestMultiple(int64_t value, int64_t base);
 // Note(user): Symmetrize the matrix if not already, maybe rephrase in term
 // of undirected graph, and clique decomposition.
 std::vector<absl::Span<int>> AtMostOneDecomposition(
-    const std::vector<std::vector<int>>& graph, std::vector<int>* buffer);
+    const std::vector<std::vector<int>>& graph, absl::BitGenRef random,
+    std::vector<int>* buffer);
 
 // Given a linear equation "sum coeff_i * X_i <= rhs. We can rewrite it using
 // ClosestMultiple() as "base * new_terms + error <= rhs" where error can be
