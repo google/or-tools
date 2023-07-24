@@ -25,7 +25,7 @@ command -v swig | xargs echo "swig: " | tee -a test.log
 if [[ ${PLATFORM} == "arm64" ]]; then
   local -r PY=(3.8 3.9 3.10 3.11)
 else
-  local -r PY=(3.7 3.8 3.9 3.10 3.11)
+  local -r PY=(3.8 3.9 3.10 3.11)
 fi
 
 for i in "${PY[@]}"; do
