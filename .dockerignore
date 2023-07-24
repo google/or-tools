@@ -11,21 +11,21 @@
 .clang-format
 
 # Bazel
-bazel/doc
+bazel/docs
 bazel/README.md
 bazel/cache
 bazel/docker
 bazel/Makefile
 
 # CMake
-cmake/doc
+cmake/docs
 cmake/README.md
 cmake/cache
 cmake/docker
 cmake/Makefile
 
 # Makefile
-makefiles/doc
+makefiles/docs
 makefiles/README.md
 makefiles/cache
 makefiles/docker
