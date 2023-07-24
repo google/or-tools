@@ -75,6 +75,7 @@ class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
         #        KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER)
         #    if cbc_profit != generic_profit:
         #      return self._invalid_solution
+
         try:
             scip_profit = self.SolveKnapsackProblemUsingSpecificSolver(
                 profits,
