@@ -15,7 +15,7 @@
 """Tests for ModelBuilder."""
 
 import math
-from typing import Any, Dict, Callable, Mapping, Union
+from typing import Any, Callable, Dict, Mapping, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -65,7 +65,7 @@ class ModelBuilderTest(absltest.TestCase):
 
         solver = mb.ModelSolver(solver_name)
         if not solver.solver_is_supported():
-            print(f'Solver {solver_name} is not supported')
+            print(f"Solver {solver_name} is not supported")
             return
         self.assertTrue(pd.isna(solver.value(x1)))
         self.assertTrue(pd.isna(solver.value(x2)))
