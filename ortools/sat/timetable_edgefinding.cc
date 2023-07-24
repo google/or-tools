@@ -96,7 +96,7 @@ void TimeTableEdgeFinding::BuildTimeTable() {
   IntegerValue height = IntegerValue(0);
   IntegerValue energy = IntegerValue(0);
 
-  // We don't care since at the beginning heigh is zero, and previous_time will
+  // We don't care since at the beginning height is zero, and previous_time will
   // be correct after the first iteration.
   IntegerValue previous_time = IntegerValue(0);
 

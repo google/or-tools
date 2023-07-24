@@ -1400,7 +1400,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(10, solver.Value(x))
         self.assertEqual(-5, solver.Value(y))
 
-        self.assertRegex(log_callback.Log(), "Parameters.*log_to_stdout.*")
+        self.assertRegex(log_callback.Log(), ".*log_to_stdout.*")
 
     def testIssue2762(self):
         print("testIssue2762")

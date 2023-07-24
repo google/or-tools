@@ -17,14 +17,11 @@
 #include <functional>
 #include <vector>
 
-#include "absl/random/bit_gen_ref.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -45,82 +42,9 @@ namespace sat {
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core);
 
+// Remove fixed literals from the core.
 void FilterAssignedLiteral(const VariablesAssignment& assignment,
                            std::vector<Literal>* core);
-
-// Because the Solve*() functions below are also used in scripts that requires a
-// special output format, we use this to tell them whether or not to use the
-// default logging framework or simply stdout. Most users should just use
-// DEFAULT_LOG.
-enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
-
-// All the Solve*() functions below reuse the SatSolver::Status with a slightly
-// different meaning:
-// - FEASIBLE: The problem has been solved to optimality.
-// - INFEASIBLE: Same meaning, the decision version is already unsat.
-// - LIMIT_REACHED: we may have some feasible solution (if solution is
-//   non-empty), but the optimality is not proven.
-
-// Implements the "Fu & Malik" algorithm described in:
-// Zhaohui Fu, Sharad Malik, "On solving the Partial MAX-SAT problem", 2006,
-// International Conference on Theory and Applications of Satisfiability
-// Testing. (SAT’06), LNCS 4121.
-//
-// This algorithm requires all the objective weights to be the same (CHECKed)
-// and currently only works on minimization problems. The problem is assumed to
-// be already loaded into the given solver.
-//
-// TODO(user): double-check the correctness if the objective coefficients are
-// negative.
-SatSolver::Status SolveWithFuMalik(LogBehavior log,
-                                   const LinearBooleanProblem& problem,
-                                   SatSolver* solver,
-                                   std::vector<bool>* solution);
-
-// The WPM1 algorithm is a generalization of the Fu & Malik algorithm to
-// weighted problems. Note that if all objective weights are the same, this is
-// almost the same as SolveWithFuMalik() but the encoding of the constraints is
-// slightly different.
-//
-// Ansotegui, C., Bonet, M.L., Levy, J.: Solving (weighted) partial MaxSAT
-// through satisﬁability testing. In: Proc. of the 12th Int. Conf. on Theory and
-// Applications of Satisﬁability Testing (SAT’09). pp. 427-440 (2009)
-SatSolver::Status SolveWithWPM1(LogBehavior log,
-                                const LinearBooleanProblem& problem,
-                                SatSolver* solver, std::vector<bool>* solution);
-
-// Solves num_times the decision version of the given problem with different
-// random parameters. Keep the best solution (regarding the objective) and
-// returns it in solution. The problem is assumed to be already loaded into the
-// given solver.
-SatSolver::Status SolveWithRandomParameters(
-    LogBehavior log, const LinearBooleanProblem& problem, int num_times,
-    absl::BitGenRef random, SatSolver* solver, std::vector<bool>* solution);
-
-// Starts by solving the decision version of the given LinearBooleanProblem and
-// then simply add a constraint to find a lower objective that the current best
-// solution and repeat until the problem becomes unsat.
-//
-// The problem is assumed to be already loaded into the given solver. If
-// solution is initially a feasible solution, the search will starts from there.
-// solution will be updated with the best solution found so far.
-SatSolver::Status SolveWithLinearScan(LogBehavior log,
-                                      const LinearBooleanProblem& problem,
-                                      SatSolver* solver,
-                                      std::vector<bool>* solution);
-
-// Similar algorithm as the one used by qmaxsat, this is a linear scan with the
-// at-most k constraint encoded in SAT. This only works on problems with
-// constant weights.
-SatSolver::Status SolveWithCardinalityEncoding(
-    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
-    std::vector<bool>* solution);
-
-// This is an original algorithm. It is a mix between the cardinality encoding
-// and the Fu & Malik algorithm. It also works on general weighted instances.
-SatSolver::Status SolveWithCardinalityEncodingAndCore(
-    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
-    std::vector<bool>* solution);
 
 // Model-based API to minimize a given IntegerVariable by solving a sequence of
 // decision problem. Each problem is solved using SolveIntegerProblem(). Returns
