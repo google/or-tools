@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/fedora
-FROM fedora:36 AS env
+FROM fedora:39 AS env
 
 #############
 ##  SETUP  ##
@@ -21,7 +21,7 @@ RUN dnf -y update \
 # Install .Net
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
+&& dnf -y install dotnet-sdk-6.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
