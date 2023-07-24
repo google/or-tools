@@ -35,7 +35,7 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PLATFORM: x86_64 aarch64
-\t* PYTHON_VERSION: 3 36 37 38 39 310
+\t* PYTHON_VERSION: 3 38 39 310 311 312
 note: PYTHON_VERSION=3 will generate for all pythons which could take time...
 
 OPTIONS
