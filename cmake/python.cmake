@@ -80,7 +80,7 @@ function(search_python_module)
       OUTPUT_VARIABLE MODULE_VERSION
       ERROR_QUIET
       OUTPUT_STRIP_TRAILING_WHITESPACE
-      )
+    )
   endif()
   if(${_RESULT} STREQUAL "0")
     message(STATUS "Found python module: \"${MODULE_NAME}\" (found version \"${MODULE_VERSION}\")")
@@ -90,7 +90,8 @@ function(search_python_module)
       execute_process(
         COMMAND ${Python3_EXECUTABLE} -m pip install --user ${MODULE_PACKAGE}
         OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
+        COMMAND_ERROR_IS_FATAL ANY
+      )
     else()
       message(FATAL_ERROR "Can't find python module: \"${MODULE_NAME}\", please install it using your system package manager.")
     endif()
