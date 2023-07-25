@@ -63,9 +63,13 @@ ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Install Python
 RUN yum -y update \
-&& yum -y install python3 python3-devel python3-pip numpy \
+&& yum -y install \
+ rh-python38-python rh-python38-python-devel \
+ rh-python38-python-pip rh-python38-python-numpy \
 && yum clean all \
-&& rm -rf /var/cache/yum
+&& rm -rf /var/cache/yum \
+&& echo "source /opt/rh/rh-python38/enable" >> /etc/bashrc
+RUN python -m pip install absl-py mypy-protobuf
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
