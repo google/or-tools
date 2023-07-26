@@ -52,6 +52,22 @@ void SetCoverModel::AddElementToSubset(int element, int subset) {
   row_view_is_valid_ = false;
 }
 
+// Reserves num_subsets columns in the model.
+void SetCoverModel::ReserveNumSubsets(int num_subsets) {
+  SubsetIndex size(num_subsets);
+  columns_.resize(size, SparseColumn());
+  subset_costs_.resize(size, 0.0);
+}
+
+// Reserves num_elements rows in the column indexed by subset.
+void SetCoverModel::ReserveNumElementsInSubset(int num_elements, int subset) {
+  const SubsetIndex size = std::max(columns_.size(), SubsetIndex(subset + 1));
+  subset_costs_.resize(size, 0.0);
+  columns_.resize(size, SparseColumn());
+  const EntryIndex num_entries(num_elements);
+  columns_[SubsetIndex(subset)].reserve(num_entries);
+}
+
 void SetCoverModel::CreateSparseRowView() {
   if (row_view_is_valid_) {
     return;

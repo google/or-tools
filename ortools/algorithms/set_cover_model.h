@@ -115,6 +115,12 @@ class SetCoverModel {
   // the elements.
   bool ComputeFeasibility() const;
 
+  // Reserves num_subsets columns in the model.
+  void ReserveNumSubsets(int num_subsets);
+
+  // Reserves num_elements rows in the column indexed by subset.
+  void ReserveNumElementsInSubset(int num_elements, int subset);
+
  private:
   // Number of elements.
   ElementIndex num_elements_;
