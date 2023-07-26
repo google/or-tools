@@ -4866,20 +4866,21 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                            [FirstSolutionStrategy::BEST_INSERTION]));
 
   // Local cheapest cost insertion
+  const RoutingSearchParameters::PairInsertionStrategy lcci_pair_strategy =
+      search_parameters
+          .local_cheapest_cost_insertion_pickup_delivery_strategy();
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION] =
           CreateIntVarFilteredDecisionBuilder<
               LocalCheapestInsertionFilteredHeuristic>(
-              /*evaluator=*/nullptr,
-              RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR,
+              /*evaluator=*/nullptr, lcci_pair_strategy,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
                                       /*filter_with_cp_solver=*/false}));
   IntVarFilteredDecisionBuilder* const strong_lcci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
-          /*evaluator=*/nullptr,
-          RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR,
+          /*evaluator=*/nullptr, lcci_pair_strategy,
           GetOrCreateLocalSearchFilterManager(
               search_parameters, {/*filter_objective=*/true,
                                   /*filter_with_cp_solver=*/true}));

@@ -35,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 55
+// Next ID: 56
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -123,9 +123,13 @@ message RoutingSearchParameters {
     // Order by increasing by cost(pickup) + cost(delivery).
     BEST_PICKUP_DELIVERY_PAIR_MULTITOUR = 3;
   }
-  // Choice of insertion strategy for pickup/delivery pairs,
-  // used in local cheapest insertion, both first solution heuristic and LNS.
+  // Choice of insertion strategy for pickup/delivery pairs, used in local
+  // cheapest insertion, both first solution heuristic and LNS.
   PairInsertionStrategy local_cheapest_insertion_pickup_delivery_strategy = 49;
+  // Choice of insertion strategy for pickup/delivery pairs, used in local
+  // cheapest cost insertion, both first solution heuristic and LNS.
+  PairInsertionStrategy local_cheapest_cost_insertion_pickup_delivery_strategy =
+      55;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.

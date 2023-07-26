@@ -68,6 +68,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_cheapest_insertion_add_unperformed_entries(false);
   p.set_local_cheapest_insertion_pickup_delivery_strategy(
       RoutingSearchParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
+  p.set_local_cheapest_cost_insertion_pickup_delivery_strategy(
+      RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
       p.mutable_local_search_operators();
   o->set_use_relocate(BOOL_TRUE);

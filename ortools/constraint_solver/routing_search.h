@@ -44,6 +44,7 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -1032,7 +1033,8 @@ class LocalCheapestInsertionFilteredHeuristic
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-      LocalSearchFilterManager* filter_manager);
+      LocalSearchFilterManager* filter_manager,
+      BinCapacities* bin_capacities = nullptr);
   ~LocalCheapestInsertionFilteredHeuristic() override {}
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
@@ -1056,9 +1058,9 @@ class LocalCheapestInsertionFilteredHeuristic
 
   /// Computes the possible simultaneous insertion positions of the pair
   /// 'pickup' and 'delivery'. Sorts them according to the current cost
-  /// evaluator. If a timeout is detected returns std::nullopt.
-  std::optional<std::vector<PickupDeliveryInsertion>>
-  ComputeEvaluatorSortedPairPositions(int64_t pickup, int64_t delivery);
+  /// evaluator.
+  std::vector<PickupDeliveryInsertion> ComputeEvaluatorSortedPairPositions(
+      int pickup, int delivery);
 
   // Tries to insert any alternative of the given pair,
   // ordered by cost of pickup insertion, then by cost of delivery insertion.
@@ -1086,6 +1088,7 @@ class LocalCheapestInsertionFilteredHeuristic
 
   // Marks whether a node has already been tried for insertion.
   std::vector<bool> visited_;
+  BinCapacities* const bin_capacities_;
 };
 
 /// Filtered-base decision builder based on the addition heuristic, extending

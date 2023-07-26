@@ -2225,16 +2225,13 @@ LocalCheapestInsertionFilteredHeuristic::
         RoutingModel* model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-        LocalSearchFilterManager* filter_manager)
+        LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities)
     : CheapestInsertionFilteredHeuristic(model, std::move(stop_search),
                                          std::move(evaluator), nullptr,
                                          filter_manager),
       update_start_end_distances_per_node_(true),
-      pair_insertion_strategy_(pair_insertion_strategy) {
-  DCHECK(evaluator_ != nullptr ||
-         pair_insertion_strategy_ ==
-             RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR);
-}
+      pair_insertion_strategy_(pair_insertion_strategy),
+      bin_capacities_(bin_capacities) {}
 
 void LocalCheapestInsertionFilteredHeuristic::Initialize() {
   // Avoid recomputing if used in a local search operator.
@@ -2263,19 +2260,27 @@ bool LocalCheapestInsertionFilteredHeuristic::InsertPair(
 
 void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
     const RoutingModel::IndexPair& index_pair) {
-  for (int64_t pickup : index_pair.first) {
+  for (int pickup : index_pair.first) {
     std::vector<NodeInsertion> pickup_insertions =
         ComputeEvaluatorSortedPositions(pickup);
-    for (int64_t delivery : index_pair.second) {
+    for (int delivery : index_pair.second) {
       if (StopSearch()) return;
       for (const NodeInsertion& pickup_insertion : pickup_insertions) {
         const int vehicle = pickup_insertion.vehicle;
+        if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
+                                   {pickup, delivery}, vehicle)) {
+          continue;
+        }
         for (const NodeInsertion& delivery_insertion :
              ComputeEvaluatorSortedPositionsOnRouteAfter(
                  delivery, pickup, Value(pickup_insertion.insert_after),
                  vehicle)) {
           if (InsertPair(pickup, pickup_insertion.insert_after, delivery,
                          delivery_insertion.insert_after, vehicle)) {
+            if (bin_capacities_) {
+              bin_capacities_->AddItemToBin(pickup, vehicle);
+              bin_capacities_->AddItemToBin(delivery, vehicle);
+            }
             return;
           }
         }
@@ -2287,17 +2292,20 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
 
 void LocalCheapestInsertionFilteredHeuristic::InsertBestPair(
     const RoutingModel::IndexPair& index_pair) {
-  for (int64_t pickup : index_pair.first) {
-    for (int64_t delivery : index_pair.second) {
+  for (int pickup : index_pair.first) {
+    for (int delivery : index_pair.second) {
       if (StopSearch()) return;
-      std::optional<std::vector<PickupDeliveryInsertion>>
-          sorted_pair_positions =
-              ComputeEvaluatorSortedPairPositions(pickup, delivery);
-      if (!sorted_pair_positions.has_value()) return;
+      std::vector<PickupDeliveryInsertion> sorted_pair_positions =
+          ComputeEvaluatorSortedPairPositions(pickup, delivery);
+      if (sorted_pair_positions.empty()) continue;
       for (const auto [insert_pickup_after, insert_delivery_after, unused_value,
-                       vehicle] : *sorted_pair_positions) {
+                       vehicle] : sorted_pair_positions) {
         if (InsertPair(pickup, insert_pickup_after, delivery,
                        insert_delivery_after, vehicle)) {
+          if (bin_capacities_) {
+            bin_capacities_->AddItemToBin(pickup, vehicle);
+            bin_capacities_->AddItemToBin(delivery, vehicle);
+          }
           return;
         }
         if (StopSearch()) return;
@@ -2361,11 +2369,15 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
     }
   };
 
-  for (int64_t pickup : index_pair.first) {
+  for (int pickup : index_pair.first) {
     if (StopSearch()) return;
-    for (int64_t delivery : index_pair.second) {
+    for (int delivery : index_pair.second) {
       insertion_container_.Clear();
       for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+        if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
+                                   {pickup, delivery}, vehicle)) {
+          continue;
+        }
         fill_path(vehicle);
         insertion_generator_.AppendPickupDeliveryMultitourInsertions(
             pickup, delivery, vehicle, path, node_is_pickup, node_is_delivery,
@@ -2396,7 +2408,14 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
           previous_node = insertion.node;
           previous_succ = succ;
         }
-        if (Evaluate(/*commit=*/true).has_value()) return;
+        if (Evaluate(/*commit=*/true).has_value()) {
+          // Insertion succeeded.
+          if (bin_capacities_) {
+            bin_capacities_->AddItemToBin(pickup, vehicle);
+            bin_capacities_->AddItemToBin(delivery, vehicle);
+          }
+          return;
+        }
       }
     }
   }
@@ -2450,6 +2469,7 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
     }
   }
   std::sort(pair_domain_sizes.begin(), pair_domain_sizes.end());
+  // Multitour needs to know if a node is a pickup, delivery, or single.
   std::vector<bool> node_is_pickup, node_is_delivery;
   if (pair_insertion_strategy_ ==
       RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR_MULTITOUR) {
@@ -2462,6 +2482,16 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
       }
       for (const int delivery : index_pair.second) {
         node_is_delivery[delivery] = true;
+      }
+    }
+  }
+  // Fill vehicle bins with nodes that are already inserted.
+  if (bin_capacities_) {
+    bin_capacities_->ClearItems();
+    for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+      const int start = Value(model()->Start(vehicle));
+      for (int node = start; !model()->IsEnd(node); node = Value(node)) {
+        bin_capacities_->AddItemToBin(node, vehicle);
       }
     }
   }
@@ -2506,6 +2536,9 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
       InsertBetween(node, insertion.insert_after, Value(insertion.insert_after),
                     insertion.vehicle);
       if (Evaluate(/*commit=*/true).has_value()) {
+        if (bin_capacities_) {
+          bin_capacities_->AddItemToBin(node, insertion.vehicle);
+        }
         break;
       }
     }
@@ -2517,16 +2550,19 @@ std::vector<LocalCheapestInsertionFilteredHeuristic::NodeInsertion>
 LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
     int64_t node) {
   DCHECK(!Contains(node));
-  std::vector<NodeInsertion> sorted_insertions;
   const int size = model()->Size();
-  if (node < size) {
-    for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-      const int64_t start = model()->Start(vehicle);
-      AppendInsertionPositionsAfter(node, start, Value(start), vehicle,
-                                    /*ignore_cost=*/false, &sorted_insertions);
+  if (node >= size) return {};
+  std::vector<NodeInsertion> sorted_insertions;
+  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    if (bin_capacities_ &&
+        !bin_capacities_->CheckAdditionFeasibility(node, vehicle)) {
+      continue;
     }
-    std::sort(sorted_insertions.begin(), sorted_insertions.end());
+    const int64_t start = model()->Start(vehicle);
+    AppendInsertionPositionsAfter(node, start, Value(start), vehicle,
+                                  /*ignore_cost=*/false, &sorted_insertions);
   }
+  std::sort(sorted_insertions.begin(), sorted_insertions.end());
   return sorted_insertions;
 }
 
@@ -2536,30 +2572,33 @@ LocalCheapestInsertionFilteredHeuristic::
                                                 int64_t next_after_start,
                                                 int vehicle) {
   DCHECK(!Contains(node));
-  std::vector<NodeInsertion> sorted_insertions;
   const int size = model()->Size();
-  if (node < size) {
-    AppendInsertionPositionsAfter(node, start, next_after_start, vehicle,
-                                  /*ignore_cost=*/false, &sorted_insertions);
-    std::sort(sorted_insertions.begin(), sorted_insertions.end());
-  }
+  if (node >= size) return {};
+  std::vector<NodeInsertion> sorted_insertions;
+  AppendInsertionPositionsAfter(node, start, next_after_start, vehicle,
+                                /*ignore_cost=*/false, &sorted_insertions);
+  std::sort(sorted_insertions.begin(), sorted_insertions.end());
   return sorted_insertions;
 }
 
-std::optional<std::vector<PickupDeliveryInsertion>>
+std::vector<PickupDeliveryInsertion>
 LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
-    int64_t pickup, int64_t delivery) {
+    int pickup, int delivery) {
   std::vector<PickupDeliveryInsertion> sorted_pickup_delivery_insertions;
   const int size = model()->Size();
   DCHECK_LT(pickup, size);
   DCHECK_LT(delivery, size);
   for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
+                               {pickup, delivery}, vehicle)) {
+      continue;
+    }
     int64_t insert_pickup_after = model()->Start(vehicle);
     while (!model()->IsEnd(insert_pickup_after)) {
       const int64_t insert_pickup_before = Value(insert_pickup_after);
       int64_t insert_delivery_after = pickup;
       while (!model()->IsEnd(insert_delivery_after)) {
-        if (StopSearch()) return std::nullopt;
+        if (StopSearch()) return {};
         const int64_t insert_delivery_before =
             insert_delivery_after == pickup ? insert_pickup_before
                                             : Value(insert_delivery_after);
@@ -2592,8 +2631,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
   }
   std::sort(sorted_pickup_delivery_insertions.begin(),
             sorted_pickup_delivery_insertions.end());
-  return std::optional<std::vector<PickupDeliveryInsertion>>{
-      sorted_pickup_delivery_insertions};
+  return sorted_pickup_delivery_insertions;
 }
 
 // CheapestAdditionFilteredHeuristic
