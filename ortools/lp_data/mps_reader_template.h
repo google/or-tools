@@ -732,10 +732,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessObjectiveSenseSection(
     DataWrapper* data) {
-  if (fields_.size() != 1 && fields_[0] != "MIN" && fields_[0] != "MAX") {
+  absl::string_view field = absl::StripAsciiWhitespace(line_);
+  if (field != "MIN" && field != "MAX") {
     return InvalidArgumentError("Expected objective sense (MAX or MIN).");
   }
-  data->SetObjectiveDirection(/*maximize=*/fields_[0] == "MAX");
+  data->SetObjectiveDirection(/*maximize=*/field == "MAX");
   return absl::OkStatus();
 }
 
