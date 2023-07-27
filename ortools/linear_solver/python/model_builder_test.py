@@ -30,6 +30,16 @@ from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder as mb
 
 
+def build_dict(expr: mb.LinearExprT) -> Dict[mb.Variable, float]:
+    res = {}
+    for i, c in zip(expr.variable_indices, expr.coefficients):
+        if not c:
+            continue
+        var = mb.Variable(expr.helper, lb=i, ub=None, is_integral=None, name=None)
+        res[var] = c
+    return res
+
+
 class ModelBuilderTest(absltest.TestCase):
     # Number of decimal places to use for numerical tolerance for
     # checking primal, dual, objective values and other values.
@@ -204,7 +214,7 @@ ENDATA
             np.array([1, 1, 1], dtype=np.double), e1.coefficients
         )
         self.assertEqual(e1.constant, 0.0)
-        self.assertEqual(e1.pretty_string(), "x + y + z")
+        self.assertEqual(e1.__str__(), "x + y + z")
 
         e2 = mb.LinearExpr.sum([e1, 4.0])
         np_testing.assert_array_equal(expected_vars, e2.variable_indices)
@@ -212,7 +222,7 @@ ENDATA
             np.array([1, 1, 1], dtype=np.double), e2.coefficients
         )
         self.assertEqual(e2.constant, 4.0)
-        self.assertEqual(e2.pretty_string(), "x + y + z + 4.0")
+        self.assertEqual(e2.__str__(), "x + y + z + 4.0")
 
         e3 = mb.LinearExpr.term(e2, 2)
         np_testing.assert_array_equal(expected_vars, e3.variable_indices)
@@ -220,7 +230,7 @@ ENDATA
             np.array([2, 2, 2], dtype=np.double), e3.coefficients
         )
         self.assertEqual(e3.constant, 8.0)
-        self.assertEqual(e3.pretty_string(), "2.0 * x + 2.0 * y + 2.0 * z + 8.0")
+        self.assertEqual(e3.__str__(), "2.0 * x + 2.0 * y + 2.0 * z + 8.0")
 
         e4 = mb.LinearExpr.weighted_sum([x, t], [-1, 1], constant=2)
         np_testing.assert_array_equal(
@@ -230,7 +240,7 @@ ENDATA
             np.array([-1, 1], dtype=np.double), e4.coefficients
         )
         self.assertEqual(e4.constant, 2.0)
-        self.assertEqual(e4.pretty_string(), "-x + t + 2.0")
+        self.assertEqual(e4.__str__(), "-x + t + 2.0")
 
         e4b = mb.LinearExpr.weighted_sum([e4 * 3], [1])
         np_testing.assert_array_equal(
@@ -240,17 +250,17 @@ ENDATA
             np.array([-3, 3], dtype=np.double), e4b.coefficients
         )
         self.assertEqual(e4b.constant, 6.0)
-        self.assertEqual(e4b.pretty_string(), "-3.0 * x + 3.0 * t + 6.0")
+        self.assertEqual(e4b.__str__(), "-3.0 * x + 3.0 * t + 6.0")
 
         e5 = mb.LinearExpr.sum([e1, -3, e4])
         np_testing.assert_array_equal(
-            np.array([0, 1, 2, 0, 3], dtype=np.int32), e5.variable_indices
+            np.array([1, 2, 3], dtype=np.int32), e5.variable_indices
         )
         np_testing.assert_array_equal(
-            np.array([1, 1, 1, -1, 1], dtype=np.double), e5.coefficients
+            np.array([1, 1, 1], dtype=np.double), e5.coefficients
         )
         self.assertEqual(e5.constant, -1.0)
-        self.assertEqual(e5.pretty_string(), "x + y + z - x + t - 1.0")
+        self.assertEqual(e5.__str__(), "y + z + t - 1.0")
 
         e6 = mb.LinearExpr.term(x, 2.0, constant=1.0)
         np_testing.assert_array_equal(
@@ -375,6 +385,40 @@ ENDATA
         self.assertEqual(ct.left.index, x.index)
         self.assertEqual(ct.right.index, y.index)
 
+    def test_create_false_ct(self):
+        # Create the model.
+        model = mb.ModelBuilder()
+        x = model.new_num_var(0.0, math.inf, "x")
+
+        ct = model.add(False)
+        self.assertTrue(ct.is_always_false())
+        self.assertRaises(ValueError, ct.add_term, x, 1)
+
+        model.maximize(x)
+
+        solver = mb.ModelSolver("glop")
+        status = solver.solve(model)
+        self.assertEqual(status, mb.SolveStatus.INFEASIBLE)
+
+    def test_create_true_ct(self):
+        # Create the model.
+        model = mb.ModelBuilder()
+        x = model.new_num_var(0.0, 5.0, "x")
+
+        ct = model.add(True)
+        self.assertEqual(ct.lower_bound, 0.0)
+        self.assertEqual(ct.upper_bound, 0.0)
+        ct.add_term(var=x, coeff=1)
+
+        model.maximize(x)
+
+        solver = mb.ModelSolver("glop")
+        status = solver.solve(model)
+
+        self.assertEqual(status, mb.SolveStatus.OPTIMAL)
+        # Note that ct is binding.
+        self.assertEqual(0.0, solver.objective_value)
+
 
 class InternalHelperTest(absltest.TestCase):
     def test_anonymous_variables(self):
@@ -433,22 +477,22 @@ class LinearBaseTest(parameterized.TestCase):
         dict(
             testcase_name="x[0] + 5",
             expr=lambda x, y: x[0] + 5,
-            expected_repr="5.0 + x[0]",
+            expected_repr="x[0] + 5.0",
         ),
         dict(
             testcase_name="x[0] - 5",
             expr=lambda x, y: x[0] - 5,
-            expected_repr="-5.0 + x[0]",
+            expected_repr="x[0] - 5.0",
         ),
         dict(
             testcase_name="5 - x[0]",
             expr=lambda x, y: 5 - x[0],
-            expected_repr="5.0 - x[0]",
+            expected_repr="-x[0] + 5.0",
         ),
         dict(
             testcase_name="5 + x[0]",
             expr=lambda x, y: 5 + x[0],
-            expected_repr="5.0 + x[0]",
+            expected_repr="x[0] + 5.0",
         ),
         dict(
             testcase_name="x[0] + y[0]",
@@ -458,12 +502,12 @@ class LinearBaseTest(parameterized.TestCase):
         dict(
             testcase_name="x[0] + y[0] + 5",
             expr=lambda x, y: x[0] + y[0] + 5,
-            expected_repr="5.0 + x[0] + y[0]",
+            expected_repr="x[0] + y[0] + 5.0",
         ),
         dict(
             testcase_name="5 + x[0] + y[0]",
             expr=lambda x, y: 5 + x[0] + y[0],
-            expected_repr="5.0 + x[0] + y[0]",
+            expected_repr="x[0] + y[0] + 5.0",
         ),
         dict(
             testcase_name="5 + x[0] - x[0]",
@@ -473,7 +517,7 @@ class LinearBaseTest(parameterized.TestCase):
         dict(
             testcase_name="5 + x[0] - y[0]",
             expr=lambda x, y: 5 + x[0] - y[0],
-            expected_repr="5.0 + x[0] - y[0]",
+            expected_repr="x[0] - y[0] + 5.0",
         ),
         dict(
             testcase_name="x.sum()",
@@ -483,18 +527,23 @@ class LinearBaseTest(parameterized.TestCase):
         dict(
             testcase_name="x.add(y, fill_value=0).sum() + 5",
             expr=lambda x, y: x.add(y, fill_value=0).sum() + 5,
-            expected_repr="5.0 + x[0] + x[1] + x[2] + y[0] + y[1] + ...",
+            expected_repr="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5.0",
+        ),
+        dict(
+            testcase_name="sum(x, y + 5)",
+            expr=lambda x, y: mb.LinearExpr.sum([x.sum(), y.sum() + 5]),
+            expected_repr="x[0] + x[1] + x[2] + y[0] + y[1] + ... + 5.0",
         ),
         # Product
         dict(
             testcase_name="- x.sum()",
             expr=lambda x, y: -x.sum(),
-            expected_repr="- x[0] - x[1] - x[2]",
+            expected_repr="-x[0] - x[1] - x[2]",
         ),
         dict(
             testcase_name="5 - x.sum()",
             expr=lambda x, y: 5 - x.sum(),
-            expected_repr="5.0 - x[0] - x[1] - x[2]",
+            expected_repr="-x[0] - x[1] - x[2] + 5.0",
         ),
         dict(
             testcase_name="x.sum() / 2.0",
@@ -935,8 +984,8 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             name="true",
             bounded_exprs=lambda x, y: True,
             constraint_count=1,
-            lower_bounds=[-math.inf],
-            upper_bounds=[math.inf],
+            lower_bounds=[0.0],
+            upper_bounds=[0.0],
             expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
@@ -945,8 +994,8 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             name="true",
             bounded_exprs=lambda x, y: pd.Series(True),
             constraint_count=1,
-            lower_bounds=[-math.inf],
-            upper_bounds=[math.inf],
+            lower_bounds=[0.0],
+            upper_bounds=[0.0],
             expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
@@ -955,8 +1004,8 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             name="false",
             bounded_exprs=lambda x, y: False,
             constraint_count=1,
-            lower_bounds=[-1],
-            upper_bounds=[-1],
+            lower_bounds=[1.0],
+            upper_bounds=[-1.0],
             expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
@@ -965,8 +1014,8 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             name="false",
             bounded_exprs=lambda x, y: pd.Series(False),
             constraint_count=1,
-            lower_bounds=[-1],
-            upper_bounds=[-1],
+            lower_bounds=[1.0],
+            upper_bounds=[-1.0],
             expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
@@ -1047,7 +1096,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[0],
             upper_bounds=[0],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1057,7 +1106,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             constraint_count=1,
             lower_bounds=[0],
             upper_bounds=[0],
-            expression_terms=lambda x, y: [{x[0]: 0}],
+            expression_terms=lambda x, y: [{}],
             expression_offsets=[0],
         ),
         dict(
@@ -1384,7 +1433,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
             expr_terms = expression_terms(x, y)
             self.assertLen(linear_constraint_expressions, len(expr_terms))
             for expr, expr_term in zip(linear_constraint_expressions, expr_terms):
-                self.assertDictEqual(expr._terms, expr_term)
+                self.assertDictEqual(build_dict(expr), expr_term)
             self.assertSequenceAlmostEqual(
                 [expr._offset for expr in linear_constraint_expressions],
                 expression_offsets,
@@ -1423,10 +1472,14 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         expr2: mb._LinearExpression,
     ) -> None:
         """Test that the two linear expressions are almost equal."""
-        for variable, coeff in expr1._terms.items():
-            self.assertAlmostEqual(expr2._terms.get(variable, 0), coeff)
-        for variable, coeff in expr2._terms.items():
-            self.assertAlmostEqual(expr1._terms.get(variable, 0), coeff)
+        self.assertEqual(len(expr1.variable_indices), len(expr2.variable_indices))
+        if expr1.variable_indices:
+            self.assertSequenceEqual(expr1.variable_indices, expr2.variable_indices)
+            self.assertSequenceAlmostEqual(
+                expr1.coefficients, expr2.coefficients, places=5
+            )
+        else:
+            self.assertEmpty(expr2.coefficients)
         self.assertAlmostEqual(expr1._offset, expr2._offset)
 
     @parameterized.product(
@@ -1462,7 +1515,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         # Set and check for old objective.
         model.maximize(old_objective_expression)
         got_objective_expression = model.objective_expression()
-        for var_coeff in got_objective_expression._terms.values():
+        for var_coeff in got_objective_expression.coefficients:
             self.assertAlmostEqual(var_coeff, 0)
         self.assertAlmostEqual(got_objective_expression._offset, 1)
 
@@ -1859,6 +1912,8 @@ class SolverTest(parameterized.TestCase):
         else:
             self.assertAlmostEqual(model_solver.objective_value, 0)
 
+
+class ModelBuilderExamplesTest(absltest.TestCase):
     def test_simple_problem(self):
         # max 5x1 + 4x2 + 3x3
         # s.t 2x1 + 3x2 +  x3 <= 5
@@ -1901,6 +1956,81 @@ class SolverTest(parameterized.TestCase):
         self.assertAlmostEqual(1, solver.dual_value((x[0])))
         self.assertAlmostEqual(0, solver.dual_value((x[1])))
         self.assertAlmostEqual(1, solver.dual_value((x[2])))
+
+    def test_graph_k_color(self):
+        # Assign a color to each vertex of graph, s.t that no two adjacent
+        # vertices share the same color. Assume N vertices, and max number of
+        # colors is K
+        # Consider graph with edges:
+        # Edge 1: (0,1)
+        # Edge 2: (0,2)
+        # Edge 3: (1,3)
+        # Trying to color graph with at most 3 colors (0, 1, 2)
+        # Two sets of variables:
+        # x - pandas series representing coloring status of nodes
+        # y - pandas series indicating whether color has been used
+        # Min: y0 + y1 + y2
+        # s.t: Every vertex must be assigned exactly one color
+        #      if two vertices are adjacent they cannot have the same color
+
+        model = mb.ModelBuilder()
+        num_colors = 3
+        num_nodes = 4
+        x = model.new_var_series(
+            "x",
+            pd.MultiIndex.from_product(
+                (range(num_nodes), range(num_colors)),
+                names=["node", "color"],
+            ),
+            lower_bounds=0,
+            upper_bounds=1,
+            is_integral=True,
+        )
+        y = model.new_var_series(
+            "y",
+            pd.Index(range(num_colors), name="color"),
+            lower_bounds=0,
+            upper_bounds=1,
+            is_integral=True,
+        )
+        model.minimize(y.dot([1, 1, 1]))
+        # Every vertex must be assigned exactly one color
+        model.add(x.groupby("node").sum().apply(lambda expr: expr == 1))
+        # If a vertex i is assigned to a color j then color j is used:
+        # namely, we re-arrange the terms to express: "x - y <= 0".
+        model.add(x.sub(y, fill_value=0).apply(lambda expr: expr <= 0))
+        # if two vertices are adjacent they cannot have the same color j
+        for j in range(num_colors):
+            model.add(x[0, j] + x[1, j] <= 1)
+            model.add(x[0, j] + x[2, j] <= 1)
+            model.add(x[1, j] + x[3, j] <= 1)
+        solver = mb.ModelSolver("sat")
+        run = solver.solve(model)
+        self.assertEqual(run, mb.SolveStatus.OPTIMAL)
+        self.assertEqual(solver.objective_value, 2)
+
+    def test_knapsack_problem(self):
+        # Basic Knapsack Problem: Given N items,
+        # with N different weights and values, find the maximum possible value of
+        # the Items while meeting a weight requirement
+        # We have 3 items:
+        # Item x1: Weight = 10, Value = 60
+        # Item x2: Weight = 20, Value = 100
+        # Item x3: Weight = 30, Value = 120
+        # Max: 60x1 + 100x2 + 120x3
+        # s.t: 10x1 +  20x2 +  30x3  <= 50
+        model = mb.ModelBuilder()
+        x = model.new_bool_var_series("x", pd.Index(range(3)))
+        self.assertLen(model.get_variables(), 3)
+        model.maximize(x.dot([60, 100, 120]))
+        model.add(x.dot([10, 20, 30]) <= 50)
+        self.assertLen(model.get_linear_constraints(), 1)
+        solver = mb.ModelSolver("sat")
+        run = solver.solve(model)
+        self.assertEqual(run, mb.SolveStatus.OPTIMAL)
+        i = solver.values(model.get_variables())
+        self.assertEqual(solver.objective_value, 220)
+        self.assertSequenceAlmostEqual(i, [0, 1, 1])
 
 
 if __name__ == "__main__":

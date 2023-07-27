@@ -32,12 +32,11 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 import abc
-import collections
 import dataclasses
 import math
 import numbers
 import typing
-from typing import Callable, Mapping, Optional, Sequence, Union, cast
+from typing import Callable, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 from numpy import typing as npt
@@ -59,6 +58,9 @@ _VariableOrConstraint = Union["LinearConstraint", "Variable"]
 
 # Forward solve statuses.
 SolveStatus = mbh.SolveStatus
+
+
+# pylint: disable=protected-access
 
 
 class LinearExpr(metaclass=abc.ABCMeta):
@@ -126,7 +128,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
         coefficients: Sequence[NumberT],
         *,
         constant: NumberT = 0.0,
-    ) -> Union[NumberT, "_WeightedSum"]:
+    ) -> Union[NumberT, "_LinearExpression"]:
         """Creates `sum(expressions[i] * coefficients[i]) + constant`.
 
         It can perform simple simplifications and returns different object,
@@ -138,7 +140,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
           constant: a numerical constant.
 
         Returns:
-          a _WeightedSum instance or a numerical constant.
+          a _LinearExpression instance or a numerical constant.
         """
         if len(expressions) != len(coefficients):
             raise ValueError(
@@ -148,46 +150,9 @@ class LinearExpr(metaclass=abc.ABCMeta):
         checked_constant: np.double = mbn.assert_is_a_number(constant)
         if not expressions:
             return checked_constant
-
-        # Collect sub-arrays to concatenate.
-        indices = []
-        coeffs = []
-        helper = None
-        for e, c in zip(expressions, coefficients):
-            if mbn.is_zero(c):
-                continue
-
-            if mbn.is_a_number(e):
-                checked_constant += np.double(c * e)
-            elif isinstance(e, Variable):
-                if not helper:
-                    helper = e.helper
-                indices.append(np.array([e.index], dtype=np.int32))
-                coeffs.append(np.array([c], dtype=np.double))
-            elif isinstance(e, _WeightedSum):
-                if not helper:
-                    helper = e.helper
-                checked_constant += np.double(c * e.constant)
-                indices.append(e.variable_indices)
-                coeffs.append(e.coefficients * c)
-            elif isinstance(e, LinearExpr):
-                expr = _as_flat_linear_expression(e)
-                # pylint: disable=protected-access
-                checked_constant += np.double(c * expr._offset)
-                for variable, coeff in expr._terms.items():
-                    if not helper:
-                        helper = variable.helper
-                    indices.append(np.array([variable.index], dtype=np.int32))
-                    coeffs.append(np.array([coeff * c], dtype=np.double))
-
-        if helper:
-            return _WeightedSum(
-                helper=helper,
-                variable_indices=np.concatenate(indices, axis=0),
-                coefficients=np.concatenate(coeffs, axis=0),
-                constant=checked_constant,
-            )
-        return checked_constant
+        return _sum_as_flat_linear_expression(
+            to_process=list(zip(expressions, coefficients)), offset=checked_constant
+        )
 
     @classmethod
     def term(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
@@ -218,22 +183,10 @@ class LinearExpr(metaclass=abc.ABCMeta):
             return expression
         if mbn.is_a_number(expression):
             return np.double(expression) * checked_coefficient + checked_constant
-        if isinstance(expression, Variable):
-            return _WeightedSum(
-                helper=expression.helper,
-                variable_indices=np.array([expression.index], dtype=np.int32),
-                coefficients=np.array([checked_coefficient], dtype=np.double),
-                constant=checked_constant,
-            )
-        if isinstance(expression, _WeightedSum):
-            return _WeightedSum(
-                helper=expression.helper,
-                variable_indices=np.copy(expression.variable_indices),
-                coefficients=expression.coefficients * checked_coefficient,
-                constant=expression.constant * checked_coefficient + checked_constant,
-            )
         if isinstance(expression, LinearExpr):
-            return expression * checked_coefficient + checked_constant
+            return _as_flat_linear_expression(
+                expression * checked_coefficient + checked_constant
+            )
         raise TypeError(f"Unknown expression {expression!r} of type {type(expression)}")
 
     def __hash__(self):
@@ -278,89 +231,6 @@ class LinearExpr(metaclass=abc.ABCMeta):
         return BoundedLinearExpression(
             self - arg, -math.inf, 0
         )  # pytype: disable=wrong-arg-types  # numpy-scalars
-
-
-class _WeightedSum(LinearExpr):
-    """Represents sum(ai * xi) + b."""
-
-    def __init__(
-        self,
-        helper: mbh.ModelBuilderHelper,
-        *,
-        variable_indices: npt.NDArray[np.int32],
-        coefficients: npt.NDArray[np.double],
-        constant: np.double = np.double(0.0),
-    ):
-        super().__init__()
-        self.__helper: mbh.ModelBuilderHelper = helper
-        self.__variable_indices: npt.NDArray[np.int32] = variable_indices
-        self.__coefficients: npt.NDArray[np.double] = mbn.assert_is_a_number_array(
-            coefficients
-        )
-        self.__constant: np.double = constant
-
-    def multiply_by(self, arg: NumberT) -> LinearExprT:
-        if mbn.is_zero(arg):
-            return 0.0  # pytype: disable=bad-return-type  # numpy-scalars
-        if self.__variable_indices.size > 0:
-            return _WeightedSum(
-                helper=self.__helper,
-                variable_indices=np.copy(self.__variable_indices),
-                coefficients=self.__coefficients * arg,
-                constant=self.__constant * arg,
-            )
-        else:
-            return self.constant * arg
-
-    @property
-    def helper(self) -> mbh.ModelBuilderHelper:
-        return self.__helper
-
-    @property
-    def variable_indices(self) -> npt.NDArray[np.int32]:
-        return self.__variable_indices
-
-    @property
-    def coefficients(self) -> npt.NDArray[np.double]:
-        return self.__coefficients
-
-    @property
-    def constant(self) -> np.double:
-        return self.__constant
-
-    def pretty_string(self) -> str:
-        """Pretty print a linear expression into a string."""
-        output: str = ""
-        for index, coeff in zip(self.variable_indices, self.coefficients):
-            var_name = Variable(self.helper, index, None, None, None).name
-
-            if not output and mbn.is_one(coeff):
-                output = var_name
-            elif not output and mbn.is_minus_one(coeff):
-                output = f"-{var_name}"
-            elif not output:
-                output = f"{coeff} * {var_name}"
-            elif mbn.is_one(coeff):
-                output += f" + {var_name}"
-            elif mbn.is_minus_one(coeff):
-                output += f" - {var_name}"
-            elif coeff > 0.0:
-                output += f" + {coeff} * {var_name}"
-            elif coeff < 0.0:
-                output += " - {-coeff} * {var_name}"
-        if self.constant > 0:
-            output += f" + {self.constant}"
-        elif self.constant < 0:
-            output += f" - {-self.constant}"
-        if not output:
-            output = "0.0"
-        return output
-
-    def __repr__(self):
-        return (
-            f"WeightedSum(indices = {self.variable_indices}, coefficients ="
-            f" {self.coefficients}, constant = {self.constant})"
-        )
 
 
 class Variable(LinearExpr):
@@ -494,11 +364,6 @@ class Variable(LinearExpr):
     def __hash__(self):
         return hash((self.__helper, self.__index))
 
-    def multiply_by(self, arg: NumberT) -> LinearExprT:
-        return LinearExpr.weighted_sum(
-            [self], [arg], constant=0.0
-        )  # pytype: disable=wrong-arg-types  # numpy-scalars
-
 
 class _BoundedLinearExpr(metaclass=abc.ABCMeta):
     """Interface for types that can build bounded linear (boolean) expressions.
@@ -525,10 +390,10 @@ class _BoundedLinearExpr(metaclass=abc.ABCMeta):
         """
 
 
-def _add_linear_constraint(
-    constraint: Union[bool, _BoundedLinearExpr],
+def _add_linear_constraint_to_helper(
+    bounded_expr: Union[bool, _BoundedLinearExpr],
     helper: mbh.ModelBuilderHelper,
-    name: str,
+    name: Optional[str],
 ):
     """Creates a new linear constraint in the helper.
 
@@ -536,7 +401,7 @@ def _add_linear_constraint(
     BoundedLinearExpressions).
 
     Args:
-      constraint: The constraint to be created.
+      bounded_expr: The bounded expression used to create the constraint.
       helper: The helper to create the constraint.
       name: The name of the constraint to be created.
 
@@ -546,22 +411,23 @@ def _add_linear_constraint(
     Raises:
       TypeError: If constraint is an invalid type.
     """
-    if isinstance(constraint, bool):
+    if isinstance(bounded_expr, bool):
         c = LinearConstraint(helper)
-        helper.set_constraint_name(c.index, name)
-        if constraint:
-            # constraint that is always feasible: -inf <= nothing <= inf
-            helper.set_constraint_lower_bound(c.index, -math.inf)
-            helper.set_constraint_upper_bound(c.index, math.inf)
+        if name is not None:
+            helper.set_constraint_name(c.index, name)
+        if bounded_expr:
+            # constraint that is always feasible: 0.0 <= nothing <= 0.0
+            helper.set_constraint_lower_bound(c.index, 0.0)
+            helper.set_constraint_upper_bound(c.index, 0.0)
         else:
-            # constraint that is always infeasible: -1 <= nothing <= -1
-            helper.set_constraint_lower_bound(c.index, -1)
+            # constraint that is always infeasible: +oo <= nothing <= -oo
+            helper.set_constraint_lower_bound(c.index, 1)
             helper.set_constraint_upper_bound(c.index, -1)
         return c
-    if isinstance(constraint, _BoundedLinearExpr):
+    if isinstance(bounded_expr, _BoundedLinearExpr):
         # pylint: disable=protected-access
-        return constraint._add_linear_constraint(helper, name)
-    raise TypeError("invalid type={}".format(type(constraint)))
+        return bounded_expr._add_linear_constraint(helper, name)
+    raise TypeError("invalid type={}".format(type(bounded_expr)))
 
 
 @dataclasses.dataclass(repr=False, eq=False, frozen=True)
@@ -646,17 +512,19 @@ class BoundedLinearExpression(_BoundedLinearExpr):
         )
 
     def _add_linear_constraint(
-        self, helper: mbh.ModelBuilderHelper, name: str
+        self, helper: mbh.ModelBuilderHelper, name: Optional[str]
     ) -> "LinearConstraint":
         c = LinearConstraint(helper)
-        expr = _as_flat_linear_expression(self.__expr)
+        flat_expr = _as_flat_linear_expression(self.__expr)
         # pylint: disable=protected-access
-        for variable, coeff in expr._terms.items():
-            helper.add_term_to_constraint(c.index, variable.index, coeff)
-        helper.set_constraint_lower_bound(c.index, self.__lb - expr._offset)
-        helper.set_constraint_upper_bound(c.index, self.__ub - expr._offset)
+        helper.add_terms_to_constraint(
+            c.index, flat_expr._variable_indices, flat_expr._coefficients
+        )
+        helper.set_constraint_lower_bound(c.index, self.__lb - flat_expr._offset)
+        helper.set_constraint_upper_bound(c.index, self.__ub - flat_expr._offset)
         # pylint: enable=protected-access
-        helper.set_constraint_name(c.index, name)
+        if name is not None:
+            helper.set_constraint_name(c.index, name)
         return c
 
 
@@ -716,18 +584,38 @@ class LinearConstraint:
     def name(self, name: str) -> None:
         return self.__helper.set_constraint_name(self.__index, name)
 
+    def is_always_false(self) -> bool:
+        """Returns True if the constraint is always false.
+
+        Usually, it means that it was created by model.add(False)
+        """
+        return self.lower_bound > self.upper_bound
+
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return self.__str__()
+        return (
+            f"LinearConstraint({self.name}, lb={self.lower_bound},"
+            f" ub={self.upper_bound},"
+            f" var_indices={self.helper.constraint_var_indices(self.index)},"
+            f" coefficients={self.helper.constraint_coefficients(self.index)})"
+        )
 
     def set_coefficient(self, var: Variable, coeff: NumberT) -> None:
         """Sets the coefficient of the variable in the constraint."""
+        if self.is_always_false():
+            raise ValueError(
+                f"Constraint {self.index} is always false and cannot be modified"
+            )
         self.__helper.set_constraint_coefficient(self.__index, var.index, coeff)
 
     def add_term(self, var: Variable, coeff: NumberT) -> None:
         """Adds var * coeff to the constraint."""
+        if self.is_always_false():
+            raise ValueError(
+                f"Constraint {self.index} is always false and cannot be modified"
+            )
         self.__helper.safe_add_term_to_constraint(self.__index, var.index, coeff)
 
 
@@ -1165,28 +1053,13 @@ class ModelBuilder:
             self.__helper.set_constraint_lower_bound(ct.index, lb)
             self.__helper.set_constraint_upper_bound(ct.index, ub)
             self.__helper.add_term_to_constraint(ct.index, linear_expr.index, 1.0)
-        elif isinstance(linear_expr, _WeightedSum):
-            self.__helper.set_constraint_lower_bound(
-                ct.index, lb - linear_expr.constant
-            )
-            self.__helper.set_constraint_upper_bound(
-                ct.index, ub - linear_expr.constant
-            )
-            self.__helper.add_terms_to_constraint(
-                ct.index, linear_expr.variable_indices, linear_expr.coefficients
-            )
         elif isinstance(linear_expr, LinearExpr):
             flat_expr = _as_flat_linear_expression(linear_expr)
             # pylint: disable=protected-access
             self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr._offset)
             self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr._offset)
-            variable_indices = []
-            coefficients = []
-            for variable, coeff in flat_expr._terms.items():
-                variable_indices.append(variable.index)
-                coefficients.append(coeff)
             self.__helper.add_terms_to_constraint(
-                ct.index, variable_indices, coefficients
+                ct.index, flat_expr._variable_indices, flat_expr._coefficients
             )
         else:
             raise TypeError(
@@ -1206,38 +1079,31 @@ class ModelBuilder:
 
         Returns:
           An instance of the `Constraint` class.
+
+        Note that a special treatment is done when the argument does not contain any
+        variable, and thus evaluates to True or False.
+
+        model.add(True) will create a constraint 0 <= empty sum <= 0
+
+        model.add(False) will create a constraint inf <= empty sum <= -inf
+
+        you can check the if a constraint is always false (lb=inf, ub=-inf) by
+        calling LinearConstraint.is_always_false()
         """
-        if isinstance(ct, BoundedLinearExpression):
-            return self.add_linear_constraint(
-                ct.expression, ct.lower_bound, ct.upper_bound, name
-            )
-        elif isinstance(ct, VarEqVar):
-            new_ct = LinearConstraint(self.__helper)
-            new_ct.lower_bound = 0.0
-            new_ct.upper_bound = 0.0
-            new_ct.add_term(
-                ct.left, 1.0
-            )  # pytype: disable=wrong-arg-types  # numpy-scalars
-            new_ct.add_term(
-                ct.right, -1.0
-            )  # pytype: disable=wrong-arg-types  # numpy-scalars
-            return new_ct
+        if isinstance(ct, _BoundedLinearExpr):
+            return ct._add_linear_constraint(self.__helper, name)
+        elif isinstance(ct, bool):
+            return _add_linear_constraint_to_helper(ct, self.__helper, name)
         elif isinstance(ct, pd.Series):
             return pd.Series(
                 index=ct.index,
                 data=[
-                    _add_linear_constraint(expr, self.__helper, f"{name}[{i}]")
+                    _add_linear_constraint_to_helper(
+                        expr, self.__helper, f"{name}[{i}]"
+                    )
                     for (i, expr) in zip(ct.index, ct)
                 ],
             )
-        elif ct and isinstance(ct, bool):
-            return self.add_linear_constraint(
-                linear_expr=0.0
-            )  # Evaluate to True.  # pytype: disable=wrong-arg-types  # numpy-scalars
-        elif not ct and isinstance(ct, bool):
-            return self.add_linear_constraint(
-                1.0, 0.0, 0.0
-            )  # Evaluate to False.  # pytype: disable=wrong-arg-types  # numpy-scalars
         else:
             raise TypeError("Not supported: ModelBuilder.Add(" + str(ct) + ")")
 
@@ -1260,21 +1126,13 @@ class ModelBuilder:
             self.helper.set_objective_offset(linear_expr)
         elif isinstance(linear_expr, Variable):
             self.helper.set_var_objective_coefficient(linear_expr.index, 1.0)
-        elif isinstance(linear_expr, _WeightedSum):
-            self.helper.set_objective_offset(linear_expr.constant)
-            self.helper.set_objective_coefficients(
-                linear_expr.variable_indices, linear_expr.coefficients
-            )
         elif isinstance(linear_expr, LinearExpr):
             flat_expr = _as_flat_linear_expression(linear_expr)
             # pylint: disable=protected-access
             self.helper.set_objective_offset(flat_expr._offset)
-            variable_indices = []
-            coefficients = []
-            for variable, coeff in flat_expr._terms.items():
-                variable_indices.append(variable.index)
-                coefficients.append(coeff)
-            self.helper.set_objective_coefficients(variable_indices, coefficients)
+            self.helper.set_objective_coefficients(
+                flat_expr._variable_indices, flat_expr._coefficients
+            )
         else:
             raise TypeError(
                 f"Not supported: ModelBuilder.minimize/maximize({linear_expr})"
@@ -1293,6 +1151,7 @@ class ModelBuilder:
             sum(
                 variable * self.__helper.var_objective_coefficient(variable.index)
                 for variable in self.get_variables()
+                if self.__helper.var_objective_coefficient(variable.index) != 0.0
             )
             + self.__helper.objective_offset()
         )
@@ -1392,20 +1251,12 @@ class ModelSolver:
             return expr
         elif isinstance(expr, Variable):
             return self.__solve_helper.var_value(expr.index)
-        elif isinstance(expr, _WeightedSum):
-            return self.__solve_helper.expression_value(
-                expr.variable_indices, expr.coefficients, expr.constant
-            )
         elif isinstance(expr, LinearExpr):
             flat_expr = _as_flat_linear_expression(expr)
-            variable_indices = []
-            coefficients = []
-            # pylint: disable=protected-access
-            for variable, coeff in flat_expr._terms.items():
-                variable_indices.append(variable.index)
-                coefficients.append(coeff)
             return self.__solve_helper.expression_value(
-                variable_indices, coefficients, flat_expr._offset
+                flat_expr._variable_indices,
+                flat_expr._coefficients,
+                flat_expr._offset,
             )
         else:
             raise TypeError(f"Unknown expression {expr!r} of type {type(expr)}")
@@ -1533,76 +1384,122 @@ _MAX_LINEAR_EXPRESSION_REPR_TERMS = 5
 class _LinearExpression(LinearExpr):
     """For variables x, an expression: offset + sum_{i in I} coeff_i * x_i."""
 
-    __slots__ = ("_terms", "_offset")
+    __slots__ = ("_variable_indices", "_coefficients", "_offset", "_helper")
 
-    _terms: Mapping["Variable", float]
+    _variable_indices: npt.NDArray[np.int32]
+    _coefficients: npt.NDArray[np.double]
     _offset: float
+    _helper: Optional[mbh.ModelBuilderHelper]
+
+    @property
+    def variable_indices(self) -> npt.NDArray[np.int32]:
+        return self._variable_indices
+
+    @property
+    def coefficients(self) -> npt.NDArray[np.double]:
+        return self._coefficients
+
+    @property
+    def constant(self) -> float:
+        return self._offset
+
+    @property
+    def helper(self) -> Optional[mbh.ModelBuilderHelper]:
+        return self._helper
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
+        if self._helper is None:
+            return str(self._offset)
+
         result = []
-        if self._offset != 0.0:
-            result.append(str(self._offset))
-        sorted_keys = sorted(self._terms.keys(), key=str)
-        num_displayed_terms = 0
-        for variable in sorted_keys:
-            if num_displayed_terms == _MAX_LINEAR_EXPRESSION_REPR_TERMS:
+        for index, coeff in zip(self.variable_indices, self.coefficients):
+            if len(result) >= _MAX_LINEAR_EXPRESSION_REPR_TERMS:
                 result.append(" + ...")
                 break
-            coefficient = self._terms[variable]
-            if coefficient == 0.0:
-                continue
-            if result:
-                if coefficient > 0:
-                    result.append(" + ")
-                else:
-                    result.append(" - ")
-            elif coefficient < 0:
-                result.append("- ")
-            if abs(coefficient) != 1.0:
-                result.append(f"{abs(coefficient)} * ")
-            result.append(f"{variable}")
-            num_displayed_terms += 1
+            var_name = Variable(self._helper, index, None, None, None).name
+            if not result and mbn.is_one(coeff):
+                result.append(var_name)
+            elif not result and mbn.is_minus_one(coeff):
+                result.append(f"-{var_name}")
+            elif not result:
+                result.append(f"{coeff} * {var_name}")
+            elif mbn.is_one(coeff):
+                result.append(f" + {var_name}")
+            elif mbn.is_minus_one(coeff):
+                result.append(f" - {var_name}")
+            elif coeff > 0.0:
+                result.append(f" + {coeff} * {var_name}")
+            elif coeff < 0.0:
+                result.append(f" - {-coeff} * {var_name}")
+
+        if not result:
+            return f"{self.constant}"
+        if self.constant > 0:
+            result.append(f" + {self.constant}")
+        elif self.constant < 0:
+            result.append(f" - {-self.constant}")
         return "".join(result)
 
 
-def _as_flat_linear_expression(base_expr: LinearExprT) -> _LinearExpression:
-    """Converts floats, ints and Linear objects to a LinearExpression."""
-    # pylint: disable=protected-access
-    if isinstance(base_expr, _LinearExpression):
-        return base_expr
-    terms = collections.defaultdict(lambda: 0.0)
-    offset: float = 0.0
-    to_process = [(base_expr, 1.0)]
+def _sum_as_flat_linear_expression(
+    to_process: List[Tuple[LinearExprT, float]], offset: float = 0.0
+) -> _LinearExpression:
+    """Creates a _LinearExpression as the sum of terms."""
+    indices = []
+    coeffs = []
+    helper = None
     while to_process:  # Flatten AST of LinearTypes.
         expr, coeff = to_process.pop()
         if isinstance(expr, _Sum):
             to_process.append((expr._left, coeff))
             to_process.append((expr._right, coeff))
         elif isinstance(expr, Variable):
-            terms[expr] += coeff
+            indices.append([expr.index])
+            coeffs.append([coeff])
+            if helper is None:
+                helper = expr.helper
         elif mbn.is_a_number(expr):
             offset += coeff * cast(NumberT, expr)
         elif isinstance(expr, _Product):
             to_process.append((expr._expression, coeff * expr._coefficient))
         elif isinstance(expr, _LinearExpression):
             offset += coeff * expr._offset
-            for variable, variable_coefficient in expr._terms.items():
-                terms[variable] += coeff * variable_coefficient
-        elif isinstance(expr, _WeightedSum):
-            offset += coeff * expr.constant
-            for variable_index, variable_coefficient in zip(
-                expr.variable_indices, expr.coefficients
-            ):
-                variable = Variable(expr.helper, variable_index, None, None, None)
-                terms[variable] += coeff * variable_coefficient
+            if expr._helper is not None:
+                indices.append(expr.variable_indices)
+                coeffs.append(np.multiply(expr.coefficients, coeff))
+                if helper is None:
+                    helper = expr._helper
         else:
             raise TypeError(
                 "Unrecognized linear expression: " + str(expr) + f" {type(expr)}"
             )
-    return _LinearExpression(terms, offset)
+
+    if helper is not None:
+        all_indices: npt.NDArray[np.int32] = np.concatenate(indices, axis=0)
+        all_coeffs: npt.NDArray[np.double] = np.concatenate(coeffs, axis=0)
+        sorted_indices, sorted_coefficients = helper.sort_and_regroup_terms(
+            all_indices, all_coeffs
+        )
+        return _LinearExpression(sorted_indices, sorted_coefficients, offset, helper)
+    else:
+        assert not indices
+        assert not coeffs
+        return _LinearExpression(
+            _variable_indices=np.zeros(dtype=np.int32, shape=[0]),
+            _coefficients=np.zeros(dtype=np.double, shape=[0]),
+            _offset=offset,
+            _helper=None,
+        )
+
+
+def _as_flat_linear_expression(base_expr: LinearExprT) -> _LinearExpression:
+    """Converts floats, ints and Linear objects to a LinearExpression."""
+    if isinstance(base_expr, _LinearExpression):
+        return base_expr
+    return _sum_as_flat_linear_expression(to_process=[(base_expr, 1.0)], offset=0.0)
 
 
 @dataclasses.dataclass(repr=False, eq=False, frozen=True)

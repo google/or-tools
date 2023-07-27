@@ -73,13 +73,7 @@ absl::StatusOr<double> ScipInfClamp(SCIP* scip, const double d) {
     return absl::InvalidArgumentError("Cannot clamp a NaN.");
   }
   const double kScipInf = SCIPinfinity(scip);
-  if (d > -kScipInf && d < kScipInf) {
-    return d;
-  }
   const double clamped = std::clamp(d, -kScipInf, kScipInf);
-  LOG_EVERY_N_SEC(WARNING, 5) << "A bound was clamped to SCIP's 'infinite' "
-                                 "value for safety; this may affect results. "
-                              << "Was: " << d << ", is now: " << clamped;
   return clamped;
 }
 

@@ -121,7 +121,7 @@ void BuildModelFromSparseData(
 }
 
 std::vector<std::pair<int, double>> SortedGroupedTerms(
-    const std::vector<int>& indices, const std::vector<double>& coefficients) {
+    absl::Span<const int> indices, absl::Span<const double> coefficients) {
   CHECK_EQ(indices.size(), coefficients.size());
   std::vector<std::pair<int, double>> terms;
   terms.reserve(indices.size());
@@ -139,14 +139,15 @@ std::vector<std::pair<int, double>> SortedGroupedTerms(
       });
   int pos = 0;
   for (int i = 0; i < terms.size(); ++i) {
-    if (i == 0 || terms[i].first != terms[i - 1].first) {
-      if (i != pos) {
-        terms[pos] = terms[i];
-      }
-      pos++;
-    } else {
-      terms[pos].second += terms[i].second;
+    const int var = terms[i].first;
+    double coeff = terms[i].second;
+    while (i + 1 < terms.size() && terms[i + 1].first == var) {
+      coeff += terms[i + 1].second;
+      ++i;
     }
+    if (coeff == 0.0) continue;
+    terms[pos] = {var, coeff};
+    ++pos;
   }
   terms.resize(pos);
   return terms;
@@ -341,7 +342,22 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("set_maximize", &ModelBuilderHelper::SetMaximize, arg("maximize"))
       .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
-      .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset);
+      .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
+      .def("sort_and_regroup_terms",
+           [](ModelBuilderHelper* helper, py::array_t<int> indices,
+              py::array_t<double> coefficients) {
+             const std::vector<std::pair<int, double>> terms =
+                 SortedGroupedTerms(indices, coefficients);
+             std::vector<int> sorted_indices;
+             std::vector<double> sorted_coefficients;
+             sorted_indices.reserve(terms.size());
+             sorted_coefficients.reserve(terms.size());
+             for (const auto& [i, c] : terms) {
+               sorted_indices.push_back(i);
+               sorted_coefficients.push_back(c);
+             }
+             return std::make_pair(sorted_indices, sorted_coefficients);
+           });
 
   py::enum_<SolveStatus>(m, "SolveStatus")
       .value("OPTIMAL", SolveStatus::OPTIMAL)
