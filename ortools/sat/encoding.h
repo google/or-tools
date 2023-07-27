@@ -146,6 +146,7 @@ class EncodingNode {
   int depth() const { return depth_; }
 
   int lb() const { return lb_; }
+  int weight_lb() const { return weight_lb_; }
   int current_ub() const { return lb_ + literals_.size(); }
   int ub() const { return ub_; }
   EncodingNode* child_a() const { return child_a_; }

@@ -105,6 +105,7 @@ void EncodingNode::InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
   child_a_ = nullptr;
   child_b_ = nullptr;
   lb_ = 0;
+  ub_ = 1;
   depth_ = 0;
   for_sorting_ = var;
   std::vector<Literal> clause{new_literal.Negated()};
@@ -112,7 +113,6 @@ void EncodingNode::InitializeAmoNode(absl::Span<EncodingNode* const> nodes,
     // node_lit => new_lit.
     clause.push_back(node->literals_[0]);
     solver->AddBinaryClause(node->literals_[0].Negated(), new_literal);
-    lb_ += node->lb_;
     depth_ = std::max(node->depth_ + 1, depth_);
     for_sorting_ = std::min(for_sorting_, node->for_sorting_);
   }
@@ -656,10 +656,9 @@ bool ObjectiveEncoder::ProcessCore(const std::vector<Literal>& core,
     for (int i = 0; i < to_merge.size(); ++i) {
       const EncodingNode& node = *to_merge[i];
 
-      // TODO(user): Why is there issue if we consider higher level?
-      if (node.depth() != 0) continue;
       if (node.size() != 1) continue;
       if (node.ub() != node.lb() + 1) continue;
+      if (node.weight_lb() != node.lb()) continue;
       if (node_indices.contains(node.literal(0).Index())) continue;
       node_indices[node.literal(0).Index()] = i;
       bool_nodes.push_back(node.literal(0));
@@ -670,7 +669,7 @@ bool ObjectiveEncoder::ProcessCore(const std::vector<Literal>& core,
     // number of Booleans needed and has a good positive impact.
     std::vector<int> buffer;
     std::vector<absl::Span<const Literal>> decomposition;
-    if (bool_nodes.size() < 100 && bool_nodes.size() > 1) {
+    if (bool_nodes.size() < 300 && bool_nodes.size() > 1) {
       const auto& assignment = sat_solver_->Assignment();
       const int size = bool_nodes.size();
       std::vector<std::vector<int>> graph(size);

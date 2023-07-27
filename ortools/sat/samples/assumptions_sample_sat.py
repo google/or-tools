@@ -55,11 +55,7 @@ def main():
     # Print solution.
     # [START print_solution]
     print(f"Status = {solver.StatusName(status)}")
-    if status == cp_model.INFEASIBLE:
-        print(
-            "SufficientAssumptionsForInfeasibility = "
-            f"{solver.SufficientAssumptionsForInfeasibility()}"
-        )
+ 
     # [END print_solution]
 
 

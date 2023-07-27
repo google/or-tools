@@ -100,7 +100,8 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
   solver->Backtrack(0);
   solver->SetAssumptionLevel(0);
   if (candidate.size() < core->size()) {
-    VLOG(1) << "minimization " << core->size() << " -> " << candidate.size();
+    VLOG(1) << "minimization with propag " << core->size() << " -> "
+            << candidate.size();
 
     // We want to preserve the order of literal in the response.
     absl::flat_hash_set<LiteralIndex> set;
@@ -113,6 +114,82 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     }
     core->resize(new_size);
   }
+}
+
+void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
+                            std::vector<Literal>* core) {
+  if (solver->ModelIsUnsat()) return;
+
+  // TODO(user): tune.
+  if (core->size() > 100 || core->size() == 1) return;
+
+  const bool old_log_state = solver->mutable_logger()->LoggingIsEnabled();
+  solver->mutable_logger()->EnableLogging(false);
+
+  const int old_size = core->size();
+  std::vector<Literal> assumptions;
+  absl::flat_hash_set<LiteralIndex> removed_once;
+  while (true) {
+    if (limit->LimitReached()) break;
+
+    // Find a not yet removed literal to remove.
+    // We prefer to remove high indices since these are more likely to be of
+    // high depth.
+    //
+    // TODO(user): Properly use the node depth instead.
+    int to_remove = -1;
+    for (int i = core->size(); --i >= 0;) {
+      const Literal l = (*core)[i];
+      const auto [_, inserted] = removed_once.insert(l.Index());
+      if (inserted) {
+        to_remove = i;
+        break;
+      }
+    }
+    if (to_remove == -1) break;
+
+    assumptions.clear();
+    for (int i = 0; i < core->size(); ++i) {
+      if (i == to_remove) continue;
+      assumptions.push_back((*core)[i]);
+    }
+
+    const auto status = solver->ResetAndSolveWithGivenAssumptions(
+        assumptions, /*max_number_of_conflicts=*/1000);
+    if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+      *core = solver->GetLastIncompatibleDecisions();
+    }
+  }
+
+  if (core->size() < old_size) {
+    VLOG(1) << "minimization with search " << old_size << " -> "
+            << core->size();
+  }
+
+  solver->ResetToLevelZero();
+  solver->mutable_logger()->EnableLogging(old_log_state);
+}
+
+bool ProbeLiteral(Literal assumption, SatSolver* solver) {
+  if (solver->ModelIsUnsat()) return false;
+
+  const bool old_log_state = solver->mutable_logger()->LoggingIsEnabled();
+  solver->mutable_logger()->EnableLogging(false);
+
+  // Note that since we only care about Booleans here, even if we have a
+  // feasible solution, it might not be feasible for the full cp_model.
+  //
+  // TODO(user): Still use it if the problem is Boolean only.
+  const auto status = solver->ResetAndSolveWithGivenAssumptions(
+      {assumption}, /*max_number_of_conflicts=*/1'000);
+  solver->ResetToLevelZero();
+  if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+    solver->AddUnitClause(assumption.Negated());
+    solver->Propagate();
+  }
+
+  solver->mutable_logger()->EnableLogging(old_log_state);
+  return solver->Assignment().LiteralIsAssigned(assumption);
 }
 
 // A core cannot be all true.
@@ -664,25 +741,6 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
         integer_trail_->UpperBound(objective_var_).value() - offset.value());
     ReduceNodes(upper_bound, &lower_bound, encoder.mutable_nodes(),
                 sat_solver_);
-
-    // We adapt the stratified lower bound when the gap is small. All literals
-    // with such weight will be in an at_most_one relationship, which will lead
-    // to a nice encoding if we find a core.
-    const Coefficient gap = upper_bound - lower_bound;
-    if (stratified_lower_bound > (gap + 2) / 2) {
-      stratified_lower_bound = (gap + 2) / 2;
-    }
-
-    const std::vector<Literal> assumptions = ExtractAssumptions(
-        stratified_lower_bound, encoder.nodes(), sat_solver_);
-    if (assumptions.empty()) {
-      stratified_lower_bound =
-          MaxNodeWeightSmallerThan(encoder.nodes(), stratified_lower_bound);
-      if (stratified_lower_bound > 0) continue;
-
-      // We do not have any assumptions anymore, but we still need to see
-      // if the problem is feasible or not!
-    }
     const IntegerValue new_obj_lb(lower_bound.value() + offset.value());
     if (new_obj_lb > integer_trail_->LowerBound(objective_var_)) {
       if (!integer_trail_->Enqueue(
@@ -704,6 +762,36 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 
+    if (parameters_->cover_optimization() && encoder.nodes().size() > 1) {
+      if (ProbeLiteral(
+              encoder.mutable_nodes()->back()->GetAssumption(sat_solver_),
+              sat_solver_)) {
+        previous_core_info = "cover";
+        continue;
+      }
+    }
+
+    // We adapt the stratified lower bound when the gap is small. All literals
+    // with such weight will be in an at_most_one relationship, which will lead
+    // to a nice encoding if we find a core.
+    const Coefficient gap = upper_bound - lower_bound;
+    if (stratified_lower_bound > (gap + 2) / 2) {
+      stratified_lower_bound = (gap + 2) / 2;
+    }
+    std::vector<Literal> assumptions;
+    while (true) {
+      assumptions = ExtractAssumptions(stratified_lower_bound, encoder.nodes(),
+                                       sat_solver_);
+      if (!assumptions.empty()) break;
+
+      stratified_lower_bound =
+          MaxNodeWeightSmallerThan(encoder.nodes(), stratified_lower_bound);
+      if (stratified_lower_bound > 0) continue;
+
+      // We do not have any assumptions anymore, but we still need to see
+      // if the problem is feasible or not!
+      break;
+    }
     VLOG(2) << "[Core] #nodes " << encoder.nodes().size()
             << " #assumptions:" << assumptions.size()
             << " stratification:" << stratified_lower_bound << " gap:" << gap;
@@ -736,6 +824,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     std::vector<Literal> core = sat_solver_->GetLastIncompatibleDecisions();
     if (parameters_->minimize_core()) {
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
+      MinimizeCoreWithSearch(time_limit_, sat_solver_, &core);
     }
     FilterAssignedLiteral(sat_solver_->Assignment(), &core);
     if (core.empty()) return SatSolver::INFEASIBLE;

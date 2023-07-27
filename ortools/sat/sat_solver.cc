@@ -1057,10 +1057,13 @@ int64_t NextMultipleOf(int64_t value, int64_t interval) {
 }  // namespace
 
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
-    const std::vector<Literal>& assumptions) {
+    const std::vector<Literal>& assumptions, int64_t max_number_of_conflicts) {
   SCOPED_TIME_STAT(&stats_);
   if (!ResetWithGivenAssumptions(assumptions)) return UnsatStatus();
-  return SolveInternal(time_limit_);
+  return SolveInternal(time_limit_,
+                       max_number_of_conflicts >= 0
+                           ? max_number_of_conflicts
+                           : parameters_->max_number_of_conflicts());
 }
 
 SatSolver::Status SatSolver::StatusWithLog(Status status) {
@@ -1082,10 +1085,13 @@ void SatSolver::SetAssumptionLevel(int assumption_level) {
 }
 
 SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
-  return SolveInternal(time_limit == nullptr ? time_limit_ : time_limit);
+  return SolveInternal(time_limit == nullptr ? time_limit_ : time_limit,
+                       parameters_->max_number_of_conflicts());
 }
 
-SatSolver::Status SatSolver::Solve() { return SolveInternal(time_limit_); }
+SatSolver::Status SatSolver::Solve() {
+  return SolveInternal(time_limit_, parameters_->max_number_of_conflicts());
+}
 
 void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
   CHECK(Assignment().VariableIsAssigned(variable));
@@ -1231,7 +1237,8 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
 }
 
-SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
+SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
+                                           int64_t max_number_of_conflicts) {
   SCOPED_TIME_STAT(&stats_);
   if (model_is_unsat_) return INFEASIBLE;
 
@@ -1275,10 +1282,9 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
   const int64_t kFailureLimit =
-      parameters_->max_number_of_conflicts() ==
-              std::numeric_limits<int64_t>::max()
+      max_number_of_conflicts == std::numeric_limits<int64_t>::max()
           ? std::numeric_limits<int64_t>::max()
-          : counters_.num_failures + parameters_->max_number_of_conflicts();
+          : counters_.num_failures + max_number_of_conflicts;
 
   // Starts search.
   for (;;) {

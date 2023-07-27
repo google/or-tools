@@ -215,7 +215,8 @@ class SatSolver {
   // If ASSUMPTIONS_UNSAT is returned, it is possible to get a "core" of unsat
   // assumptions by calling GetLastIncompatibleDecisions().
   Status ResetAndSolveWithGivenAssumptions(
-      const std::vector<Literal>& assumptions);
+      const std::vector<Literal>& assumptions,
+      int64_t max_number_of_conflicts = -1);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -468,6 +469,9 @@ class SatSolver {
     return trail_->Index();
   }
 
+  // Hack to allow to temporarily disable logging if it is enabled.
+  SolverLogger* mutable_logger() { return logger_; }
+
  private:
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned
@@ -478,7 +482,7 @@ class SatSolver {
   bool PropagateAndStopAfterOneConflictResolution();
 
   // All Solve() functions end up calling this one.
-  Status SolveInternal(TimeLimit* time_limit);
+  Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.

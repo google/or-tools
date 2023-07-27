@@ -2984,7 +2984,7 @@ def _ConvertToSeriesAndValidateIndex(
       TypeError: If the type of `value_or_series` is not recognized.
       ValueError: If the index does not match.
     """
-    if cmh.is_integral(value_or_series) or isinstance(value_or_series, bool):
+    if cmh.is_integral(value_or_series):
         result = pd.Series(data=value_or_series, index=index)
     elif isinstance(value_or_series, pd.Series):
         if value_or_series.index.equals(index):

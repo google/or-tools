@@ -42,6 +42,11 @@ namespace sat {
 void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
                                  std::vector<Literal>* core);
 
+void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
+                            std::vector<Literal>* core);
+
+bool ProbeLiteral(Literal assumption, SatSolver* solver);
+
 // Remove fixed literals from the core.
 void FilterAssignedLiteral(const VariablesAssignment& assignment,
                            std::vector<Literal>* core);
