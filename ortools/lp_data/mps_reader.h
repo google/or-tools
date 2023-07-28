@@ -24,27 +24,13 @@
 #ifndef OR_TOOLS_LP_DATA_MPS_READER_H_
 #define OR_TOOLS_LP_DATA_MPS_READER_H_
 
-#include <limits>
-#include <memory>
 #include <string>
-#include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/flags/declare.h"
+#include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/numbers.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
-#include "ortools/base/map_util.h"
-#include "ortools/base/protobuf_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/lp_types.h"
-#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace glop {

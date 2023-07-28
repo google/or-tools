@@ -281,6 +281,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -299,6 +300,122 @@ namespace operations_research {
 // Forms of MPS format supported, either detected automatically, or free
 // format, or fixed (width) format.
 enum class MPSReaderFormat { kAutoDetect, kFree, kFixed };
+
+// Implementation details.
+namespace internal {
+
+// Maximum number of 'fields' in an MPS line, either in fixed or free format.
+static constexpr int kNumMpsFields = 6;
+
+// Enum for MPS section ids.
+enum class MPSSectionId {
+  kUnknownSection,
+  kComment,
+  kName,
+  kObjsense,
+  kRows,
+  kLazycons,
+  kColumns,
+  kRhs,
+  kRanges,
+  kBounds,
+  kIndicators,
+  kEndData
+};
+
+// Helper class holding a single line of an MPS file (or string), able to
+// split/parse the line, and query fields within it.
+class MPSLineInfo {
+ public:
+  // At creation, no fields are detected. To identify
+  // fields (according to the format), call `SplitLineIntoFields`. Note that
+  // `line` must outlive the object.
+  static absl::StatusOr<MPSLineInfo> Create(int64_t line_num, bool free_form,
+                                            absl::string_view line) {
+    // Deal with windows end of line characters and trailing white space.
+    line = absl::StripTrailingAsciiWhitespace(line);
+    if (!free_form && absl::StrContains(line, '\t')) {
+      return absl::InvalidArgumentError("File contains tabs.");
+    }
+    return MPSLineInfo(line_num, free_form, line);
+  }
+
+  // Returns a view of the line.
+  absl::string_view GetLine() const { return line_; }
+
+  // TODO(b/284163180): Fix handling of sections and data in `free_form`.
+  // Returns true if the line defines a new section.
+  bool IsNewSection() const { return line_[0] != '\0' && line_[0] != ' '; }
+
+  // If `SplitLineIntoFields` has not been called, returns 0, otherwise it
+  // returns the number of fields detected during `SplitLineIntoFields`. What
+  // constitutes a 'field' depends on the format (fixed or free) used at
+  // creation time. See the previous description of MPS fixed and free formats
+  // for more details.
+  int GetFieldsSize() const { return fields_.size(); }
+
+  // Splits into fields the line.
+  absl::Status SplitLineIntoFields(MPSSectionId section);
+
+  // Returns true if the line matches the fixed format.
+  bool IsFixedFormat() const;
+
+  // Returns the word starting at position 0 in the line. If the line is empty,
+  // or if the line starts with a space, returns `""`.
+  absl::string_view GetFirstWord() const;
+
+  // Returns true if the line contains a comment (starting with '*') or
+  // if it is a blank line.
+  bool IsCommentOrBlank() const;
+
+  // Helper function that returns the index-th field in the line.
+  // Note that what constitutes a 'field' depends on the format of the line
+  // (i.e. free form or fixed form). See the previous description of fixed and
+  // free MPS format for more details. Note that `index` must be smaller than
+  // `GetFieldsSize()` and non negative, otherwise the behavior is undefined.
+  // Furthermore, until `SplitLineIntoFields` is called, `GetFieldsSize()` is
+  // always zero.
+  absl::string_view GetField(int index) const { return fields_[index]; }
+
+  // After calling `SplitLineIntoFields` has been called, returns the offset at
+  // which to start the parsing of fields within the line. See the preceding
+  // discussion on free and fixed MPS format for details on what constitutes a
+  // field in a line.
+  //  If in fixed form, the offset is 0.
+  //  If in fixed form and the number of fields is odd, it is 1,
+  //  otherwise it is 0.
+  // This is useful when processing RANGES and RHS sections.
+  // If `SplitLineIntoFields` has not been called before, returns 0.
+  int GetFieldOffset() const { return free_form_ ? fields_.size() & 1 : 0; }
+
+  // Returns an absl::InvalidArgumentError with the given error message,
+  // postfixed by the line of the .mps file (number and contents).
+  absl::Status InvalidArgumentError(absl::string_view error_message) const;
+
+  // Appends the line of the .mps file (number and contents) to the
+  // status if it's an error message.
+  absl::Status AppendLineToError(const absl::Status& status) const;
+
+ private:
+  MPSLineInfo(int64_t line_num, bool free_form, absl::string_view line)
+      : free_form_{free_form}, line_num_{line_num}, line_{line} {}
+
+  // Boolean set to true if the reader expects a free-form MPS file.
+  const bool free_form_;
+
+  // Storage of the fields for the line.
+  absl::InlinedVector<absl::string_view, internal::kNumMpsFields> fields_;
+
+  // The current line number (passed at construction time).
+  const int64_t line_num_;
+
+  // The line being parsed (with ASCII trailing white space removed, that
+  // includes windows end of line, new line, space, vertical tab and horizontal
+  // tab).
+  const absl::string_view line_;
+};
+
+}  // namespace internal
 
 // Templated `MPS` reader. The template class `DataWrapper` must provide:
 // type:
@@ -408,78 +525,49 @@ class MPSReaderTemplate {
  private:
   static constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
-  // Number of fields in one line of MPS file.
-  static constexpr int kNumFields = 6;
-
-  // Starting positions of each of the fields for fixed format.
-  static constexpr int kFieldStartPos[kNumFields] = {1, 4, 14, 24, 39, 49};
-
-  // Lengths of each of the fields for fixed format.
-  static constexpr int kFieldLength[kNumFields] = {2, 8, 8, 12, 8, 12};
-
-  // Positions where there should be spaces for fixed format.
-  static constexpr int kSpacePos[12] = {12, 13, 22, 23, 36, 37,
-                                        38, 47, 48, 61, 62, 63};
-
   // Resets the object to its initial value before reading a new file.
   void Reset();
 
   // Displays some information on the last loaded file.
   void DisplaySummary();
 
-  // Get each field for a given line.
-  absl::Status SplitLineIntoFields();
-
-  // Returns true if the line matches the fixed format.
-  bool IsFixedFormat();
-
-  // Get the first word in a line.
-  std::string GetFirstWord() const;
-
-  // Returns true if the line contains a comment (starting with '*') or
-  // if it is a blank line.
-  bool IsCommentOrBlank() const;
-
-  // Helper function that returns fields_[offset + index].
-  const std::string& GetField(int offset, int index) const {
-    return fields_[offset + index];
-  }
-
-  // Returns the offset at which to start the parsing of fields_.
-  //  If in fixed form, the offset is 0.
-  //  If in fixed form and the number of fields is odd, it is 1,
-  //  otherwise it is 0.
-  // This is useful when processing RANGES and RHS sections.
-  int GetFieldOffset() const { return free_form_ ? fields_.size() & 1 : 0; }
-
   // Line processor.
   absl::Status ProcessLine(absl::string_view line, DataWrapper* data);
 
   // Process section OBJSENSE in MPS file.
-  absl::Status ProcessObjectiveSenseSection(DataWrapper* data);
+  absl::Status ProcessObjectiveSenseSection(
+      const internal::MPSLineInfo& line_info, DataWrapper* data);
 
   // Process section ROWS in the MPS file.
-  absl::Status ProcessRowsSection(bool is_lazy, DataWrapper* data);
+  absl::Status ProcessRowsSection(const internal::MPSLineInfo& line_info,
+                                  bool is_lazy, DataWrapper* data);
 
   // Process section COLUMNS in the MPS file.
-  absl::Status ProcessColumnsSection(DataWrapper* data);
+  absl::Status ProcessColumnsSection(const internal::MPSLineInfo& line_info,
+                                     DataWrapper* data);
 
   // Process section RHS in the MPS file.
-  absl::Status ProcessRhsSection(DataWrapper* data);
+  absl::Status ProcessRhsSection(const internal::MPSLineInfo& line_info,
+                                 DataWrapper* data);
 
   // Process section RANGES in the MPS file.
-  absl::Status ProcessRangesSection(DataWrapper* data);
+  absl::Status ProcessRangesSection(const internal::MPSLineInfo& line_info,
+                                    DataWrapper* data);
 
   // Process section BOUNDS in the MPS file.
-  absl::Status ProcessBoundsSection(DataWrapper* data);
+  absl::Status ProcessBoundsSection(const internal::MPSLineInfo& line_info,
+                                    DataWrapper* data);
 
   // Process section INDICATORS in the MPS file.
-  absl::Status ProcessIndicatorsSection(DataWrapper* data);
+  absl::Status ProcessIndicatorsSection(const internal::MPSLineInfo& line_info,
+                                        DataWrapper* data);
 
   // Safely converts a string to a numerical type. Returns an error if the
   // string passed as parameter is ill-formed.
-  absl::StatusOr<double> GetDoubleFromString(absl::string_view str);
-  absl::StatusOr<bool> GetBoolFromString(absl::string_view str);
+  absl::StatusOr<double> GetDoubleFromString(
+      absl::string_view str, const internal::MPSLineInfo& line_info);
+  absl::StatusOr<bool> GetBoolFromString(
+      absl::string_view str, const internal::MPSLineInfo& line_info);
 
   // Different types of variables, as defined in the MPS file specification.
   // Note these are more precise than the ones in PrimalSimplex.
@@ -506,61 +594,39 @@ class MPSReaderTemplate {
   };
 
   // Stores a bound value of a given type, for a given column name.
-  absl::Status StoreBound(absl::string_view bound_type_mnemonic,
+  absl::Status StoreBound(const internal::MPSLineInfo& line_info,
+                          absl::string_view bound_type_mnemonic,
                           absl::string_view column_name,
                           absl::string_view bound_value, DataWrapper* data);
 
   // Stores a coefficient value for a column number and a row name.
-  absl::Status StoreCoefficient(IndexType col, absl::string_view row_name,
+  absl::Status StoreCoefficient(const internal::MPSLineInfo& line_info,
+                                IndexType col, absl::string_view row_name,
                                 absl::string_view row_value, DataWrapper* data);
 
   // Stores a right-hand-side value for a row name.
-  absl::Status StoreRightHandSide(absl::string_view row_name,
+  absl::Status StoreRightHandSide(const internal::MPSLineInfo& line_info,
+                                  absl::string_view row_name,
                                   absl::string_view row_value,
                                   DataWrapper* data);
 
   // Stores a range constraint of value row_value for a row name.
-  absl::Status StoreRange(absl::string_view row_name,
+  absl::Status StoreRange(const internal::MPSLineInfo& line_info,
+                          absl::string_view row_name,
                           absl::string_view range_value, DataWrapper* data);
-
-  // Returns an InvalidArgumentError with the given error message, postfixed by
-  // the current line of the .mps file (number and contents).
-  absl::Status InvalidArgumentError(const std::string& error_message);
-
-  // Appends the current line of the .mps file (number and contents) to the
-  // status if it's an error message.
-  absl::Status AppendLineToError(const absl::Status& status);
 
   // Boolean set to true if the reader expects a free-form MPS file.
   bool free_form_;
 
-  // Storage of the fields for a line of the MPS file.
-  std::vector<std::string> fields_;
-
   // Stores the name of the objective row.
   std::string objective_name_;
 
-  // Enum for section ids.
-  enum class SectionId {
-    kUnknownSection,
-    kComment,
-    kName,
-    kObjsense,
-    kRows,
-    kLazycons,
-    kColumns,
-    kRhs,
-    kRanges,
-    kBounds,
-    kIndicators,
-    kEndData
-  };
-
   // Id of the current section of MPS file.
-  SectionId section_;
+  internal::MPSSectionId section_;
 
   // Maps section mnemonic --> section id.
-  absl::flat_hash_map<std::string, SectionId> section_name_to_id_map_;
+  absl::flat_hash_map<std::string, internal::MPSSectionId>
+      section_name_to_id_map_;
 
   // Maps row type mnemonic --> row type id.
   absl::flat_hash_map<std::string, RowTypeId> row_name_to_id_map_;
@@ -573,9 +639,6 @@ class MPSReaderTemplate {
 
   // The current line number in the file being parsed.
   int64_t line_num_;
-
-  // The current line in the file being parsed.
-  std::string line_;
 
   // A row of Booleans. is_binary_by_default_[col] is true if col
   // appeared within a scope started by INTORG and ended with INTEND markers.
@@ -649,32 +712,28 @@ template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
                                                          DataWrapper* data) {
   ++line_num_;
-  // Deal with windows end of line characters.
-  absl::ConsumeSuffix(&line, "\r");
-  line_ = std::string(line);
-  if (IsCommentOrBlank()) {
+  ASSIGN_OR_RETURN(internal::MPSLineInfo line_info,
+                   internal::MPSLineInfo::Create(line_num_, free_form_, line));
+  if (line_info.IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
-  }
-  if (!free_form_ && absl::StrContains(line_, '\t')) {
-    return InvalidArgumentError("File contains tabs.");
   }
 
   // TODO(b/284163180): Fix handling of sections and data in `free_form`.
-  if (line_[0] != '\0' && line_[0] != ' ') {
-    if (const auto it = section_name_to_id_map_.find(GetFirstWord());
+  if (line_info.IsNewSection()) {
+    if (const auto it = section_name_to_id_map_.find(line_info.GetFirstWord());
         it != section_name_to_id_map_.end()) {
       section_ = it->second;
     } else {
-      return InvalidArgumentError("Unknown section.");
+      return line_info.InvalidArgumentError("Unknown section.");
     }
-    if (section_ == SectionId::kComment) {
+    if (section_ == internal::MPSSectionId::kComment) {
       return absl::OkStatus();
     }
-    if (section_ == SectionId::kObjsense) {
+    if (section_ == internal::MPSSectionId::kObjsense) {
       return absl::OkStatus();
     }
-    if (section_ == SectionId::kName) {
-      RETURN_IF_ERROR(SplitLineIntoFields());
+    if (section_ == internal::MPSSectionId::kName) {
+      RETURN_IF_ERROR(line_info.SplitLineIntoFields(section_));
       // NOTE(user): The name may differ between fixed and free forms. In
       // fixed form, the name has at most 8 characters, and starts at a specific
       // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
@@ -682,17 +741,18 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
       // TODO(user): Return an error for fixed form if the problem name
       // does not fit.
       if (free_form_) {
-        if (fields_.size() >= 2) {
-          data->SetName(fields_[1]);
+        if (line_info.GetFieldsSize() >= 2) {
+          data->SetName(line_info.GetField(1));
         }
       } else {
-        const std::vector<std::string> free_fields =
-            absl::StrSplit(line_, absl::ByAnyChar(" \t"), absl::SkipEmpty());
-        const std::string free_name =
+        const std::vector<absl::string_view> free_fields = absl::StrSplit(
+            line_info.GetLine(), absl::ByAnyChar(" \t"), absl::SkipEmpty());
+        const absl::string_view free_name =
             free_fields.size() >= 2 ? free_fields[1] : "";
-        const std::string fixed_name = fields_.size() >= 3 ? fields_[2] : "";
+        const absl::string_view fixed_name =
+            line_info.GetFieldsSize() >= 3 ? line_info.GetField(2) : "";
         if (free_name != fixed_name) {
-          return InvalidArgumentError(
+          return line_info.InvalidArgumentError(
               "Fixed form invalid: name differs between free and fixed "
               "forms.");
         }
@@ -701,40 +761,41 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
     }
     return absl::OkStatus();
   }
-  RETURN_IF_ERROR(SplitLineIntoFields());
+  RETURN_IF_ERROR(line_info.SplitLineIntoFields(section_));
   switch (section_) {
-    case SectionId::kName:
-      return InvalidArgumentError("Second NAME field.");
-    case SectionId::kObjsense:
-      return ProcessObjectiveSenseSection(data);
-    case SectionId::kRows:
-      return ProcessRowsSection(/*is_lazy=*/false, data);
-    case SectionId::kLazycons:
-      return ProcessRowsSection(/*is_lazy=*/true, data);
-    case SectionId::kColumns:
-      return ProcessColumnsSection(data);
-    case SectionId::kRhs:
-      return ProcessRhsSection(data);
-    case SectionId::kRanges:
-      return ProcessRangesSection(data);
-    case SectionId::kBounds:
-      return ProcessBoundsSection(data);
-    case SectionId::kIndicators:
-      return ProcessIndicatorsSection(data);
-    case SectionId::kEndData:  // Do nothing.
+    case internal::MPSSectionId::kName:
+      return line_info.InvalidArgumentError("Second NAME field.");
+    case internal::MPSSectionId::kObjsense:
+      return ProcessObjectiveSenseSection(line_info, data);
+    case internal::MPSSectionId::kRows:
+      return ProcessRowsSection(line_info, /*is_lazy=*/false, data);
+    case internal::MPSSectionId::kLazycons:
+      return ProcessRowsSection(line_info, /*is_lazy=*/true, data);
+    case internal::MPSSectionId::kColumns:
+      return ProcessColumnsSection(line_info, data);
+    case internal::MPSSectionId::kRhs:
+      return ProcessRhsSection(line_info, data);
+    case internal::MPSSectionId::kRanges:
+      return ProcessRangesSection(line_info, data);
+    case internal::MPSSectionId::kBounds:
+      return ProcessBoundsSection(line_info, data);
+    case internal::MPSSectionId::kIndicators:
+      return ProcessIndicatorsSection(line_info, data);
+    case internal::MPSSectionId::kEndData:  // Do nothing.
       break;
     default:
-      return InvalidArgumentError("Unknown section.");
+      return line_info.InvalidArgumentError("Unknown section.");
   }
   return absl::OkStatus();
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessObjectiveSenseSection(
-    DataWrapper* data) {
-  absl::string_view field = absl::StripAsciiWhitespace(line_);
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
+  absl::string_view field = absl::StripAsciiWhitespace(line_info.GetLine());
   if (field != "MIN" && field != "MAX") {
-    return InvalidArgumentError("Expected objective sense (MAX or MIN).");
+    return line_info.InvalidArgumentError(
+        "Expected objective sense (MAX or MIN).");
   }
   data->SetObjectiveDirection(/*maximize=*/field == "MAX");
   return absl::OkStatus();
@@ -742,22 +803,22 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessObjectiveSenseSection(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessRowsSection(
-    bool is_lazy, DataWrapper* data) {
-  if (fields_.size() < 2) {
-    return InvalidArgumentError("Not enough fields in ROWS section.");
+    const internal::MPSLineInfo& line_info, bool is_lazy, DataWrapper* data) {
+  if (line_info.GetFieldsSize() < 2) {
+    return line_info.InvalidArgumentError("Not enough fields in ROWS section.");
   }
-  const std::string row_type_name = fields_[0];
-  const std::string row_name = fields_[1];
+  const absl::string_view row_type_name = line_info.GetField(0);
+  const absl::string_view row_name = line_info.GetField(1);
   const auto it = row_name_to_id_map_.find(row_type_name);
   if (it == row_name_to_id_map_.end()) {
-    return InvalidArgumentError("Unknown row type.");
+    return line_info.InvalidArgumentError("Unknown row type.");
   }
   RowTypeId row_type = it->second;
 
   // The first NONE constraint is used as the objective.
   if (objective_name_.empty() && row_type == RowTypeId::kNone) {
     row_type = RowTypeId::kObjective;
-    objective_name_ = row_name;
+    objective_name_ = std::string(row_name);
   } else {
     if (row_type == RowTypeId::kNone) {
       ++num_unconstrained_rows_;
@@ -789,19 +850,20 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRowsSection(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
   // Take into account the INTORG and INTEND markers.
-  if (absl::StrContains(line_, "'MARKER'")) {
-    if (absl::StrContains(line_, "'INTORG'")) {
-      VLOG(2) << "Entering integer marker.\n" << line_;
+  if (absl::StrContains(line_info.GetLine(), "'MARKER'")) {
+    if (absl::StrContains(line_info.GetLine(), "'INTORG'")) {
+      VLOG(2) << "Entering integer marker.\n" << line_info.GetLine();
       if (in_integer_section_) {
-        return InvalidArgumentError("Found INTORG inside the integer section.");
+        return line_info.InvalidArgumentError(
+            "Found INTORG inside the integer section.");
       }
       in_integer_section_ = true;
-    } else if (absl::StrContains(line_, "'INTEND'")) {
-      VLOG(2) << "Leaving integer marker.\n" << line_;
+    } else if (absl::StrContains(line_info.GetLine(), "'INTEND'")) {
+      VLOG(2) << "Leaving integer marker.\n" << line_info.GetLine();
       if (!in_integer_section_) {
-        return InvalidArgumentError(
+        return line_info.InvalidArgumentError(
             "Found INTEND without corresponding INTORG.");
       }
       in_integer_section_ = false;
@@ -809,12 +871,13 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
     return absl::OkStatus();
   }
   const int start_index = free_form_ ? 0 : 1;
-  if (fields_.size() < start_index + 3) {
-    return InvalidArgumentError("Not enough fields in COLUMNS section.");
+  if (line_info.GetFieldsSize() < start_index + 3) {
+    return line_info.InvalidArgumentError(
+        "Not enough fields in COLUMNS section.");
   }
-  const std::string& column_name = GetField(start_index, 0);
-  const std::string& row1_name = GetField(start_index, 1);
-  const std::string& row1_value = GetField(start_index, 2);
+  const absl::string_view column_name = line_info.GetField(start_index + 0);
+  const absl::string_view row1_name = line_info.GetField(start_index + 1);
+  const absl::string_view row1_value = line_info.GetField(start_index + 2);
   const IndexType col = data->FindOrCreateVariable(column_name);
   is_binary_by_default_.resize(col + 1, false);
   if (in_integer_section_) {
@@ -825,95 +888,97 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
   } else {
     data->SetVariableBounds(col, 0.0, kInfinity);
   }
-  RETURN_IF_ERROR(StoreCoefficient(col, row1_name, row1_value, data));
-  if (fields_.size() == start_index + 4) {
-    return InvalidArgumentError("Unexpected number of fields.");
+  RETURN_IF_ERROR(
+      StoreCoefficient(line_info, col, row1_name, row1_value, data));
+  if (line_info.GetFieldsSize() == start_index + 4) {
+    return line_info.InvalidArgumentError("Unexpected number of fields.");
   }
-  if (fields_.size() - start_index > 4) {
-    const std::string& row2_name = GetField(start_index, 3);
-    const std::string& row2_value = GetField(start_index, 4);
-    RETURN_IF_ERROR(StoreCoefficient(col, row2_name, row2_value, data));
+  if (line_info.GetFieldsSize() - start_index > 4) {
+    const absl::string_view row2_name = line_info.GetField(start_index + 3);
+    const absl::string_view row2_value = line_info.GetField(start_index + 4);
+    RETURN_IF_ERROR(
+        StoreCoefficient(line_info, col, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessRhsSection(
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
   const int start_index = free_form_ ? 0 : 2;
-  const int offset = start_index + GetFieldOffset();
-  if (fields_.size() < offset + 2) {
-    return InvalidArgumentError("Not enough fields in RHS section.");
+  const int offset = start_index + line_info.GetFieldOffset();
+  if (line_info.GetFieldsSize() < offset + 2) {
+    return line_info.InvalidArgumentError("Not enough fields in RHS section.");
   }
-  // const std::string& rhs_name = fields_[0]; is not used
-  const std::string& row1_name = GetField(offset, 0);
-  const std::string& row1_value = GetField(offset, 1);
-  RETURN_IF_ERROR(StoreRightHandSide(row1_name, row1_value, data));
-  if (fields_.size() - start_index >= 4) {
-    const std::string& row2_name = GetField(offset, 2);
-    const std::string& row2_value = GetField(offset, 3);
-    RETURN_IF_ERROR(StoreRightHandSide(row2_name, row2_value, data));
+  // const absl::string_view rhs_name = line_info.GetField(0); is not used
+  const absl::string_view row1_name = line_info.GetField(offset);
+  const absl::string_view row1_value = line_info.GetField(offset + 1);
+  RETURN_IF_ERROR(StoreRightHandSide(line_info, row1_name, row1_value, data));
+  if (line_info.GetFieldsSize() - start_index >= 4) {
+    const absl::string_view row2_name = line_info.GetField(offset + 2);
+    const absl::string_view row2_value = line_info.GetField(offset + 3);
+    RETURN_IF_ERROR(StoreRightHandSide(line_info, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessRangesSection(
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
   const int start_index = free_form_ ? 0 : 2;
-  const int offset = start_index + GetFieldOffset();
-  if (fields_.size() < offset + 2) {
-    return InvalidArgumentError("Not enough fields in RHS section.");
+  const int offset = start_index + line_info.GetFieldOffset();
+  if (line_info.GetFieldsSize() < offset + 2) {
+    return line_info.InvalidArgumentError("Not enough fields in RHS section.");
   }
-  // const std::string& range_name = fields_[0]; is not used
-  const std::string& row1_name = GetField(offset, 0);
-  const std::string& row1_value = GetField(offset, 1);
-  RETURN_IF_ERROR(StoreRange(row1_name, row1_value, data));
-  if (fields_.size() - start_index >= 4) {
-    const std::string& row2_name = GetField(offset, 2);
-    const std::string& row2_value = GetField(offset, 3);
-    RETURN_IF_ERROR(StoreRange(row2_name, row2_value, data));
+  // const absl::string_view range_name = line_info.GetField(0); is not used
+  const absl::string_view row1_name = line_info.GetField(offset);
+  const absl::string_view row1_value = line_info.GetField(offset + 1);
+  RETURN_IF_ERROR(StoreRange(line_info, row1_name, row1_value, data));
+  if (line_info.GetFieldsSize() - start_index >= 4) {
+    const absl::string_view row2_name = line_info.GetField(offset + 2);
+    const absl::string_view row2_value = line_info.GetField(offset + 3);
+    RETURN_IF_ERROR(StoreRange(line_info, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessBoundsSection(
-    DataWrapper* data) {
-  if (fields_.size() < 3) {
-    return InvalidArgumentError("Not enough fields in BOUNDS section.");
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
+  if (line_info.GetFieldsSize() < 3) {
+    return line_info.InvalidArgumentError(
+        "Not enough fields in BOUNDS section.");
   }
-  const std::string bound_type_mnemonic = fields_[0];
-  const std::string bound_row_name = fields_[1];
-  const std::string column_name = fields_[2];
-  std::string bound_value;
-  if (fields_.size() >= 4) {
-    bound_value = fields_[3];
-  }
-  return StoreBound(bound_type_mnemonic, column_name, bound_value, data);
+  const absl::string_view bound_type_mnemonic = line_info.GetField(0);
+  const absl::string_view column_name = line_info.GetField(2);
+  const absl::string_view bound_value =
+      (line_info.GetFieldsSize() >= 4) ? line_info.GetField(3) : "";
+  return StoreBound(line_info, bound_type_mnemonic, column_name, bound_value,
+                    data);
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessIndicatorsSection(
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, DataWrapper* data) {
   // TODO(user): Enforce section order. This section must come after
   // anything related to constraints, or we'll have partial data inside the
   // indicator constraints.
-  if (fields_.size() < 4) {
-    return InvalidArgumentError("Not enough fields in INDICATORS section.");
+  if (line_info.GetFieldsSize() < 4) {
+    return line_info.InvalidArgumentError(
+        "Not enough fields in INDICATORS section.");
   }
 
-  const std::string type = fields_[0];
+  const absl::string_view type = line_info.GetField(0);
   if (type != "IF") {
-    return InvalidArgumentError(
+    return line_info.InvalidArgumentError(
         "Indicator constraints must start with \"IF\".");
   }
-  const std::string row_name = fields_[1];
-  const std::string column_name = fields_[2];
-  const std::string column_value = fields_[3];
+  const absl::string_view row_name = line_info.GetField(1);
+  const absl::string_view column_name = line_info.GetField(2);
+  const absl::string_view column_value = line_info.GetField(3);
 
   bool value;
-  ASSIGN_OR_RETURN(value, GetBoolFromString(column_value));
+  ASSIGN_OR_RETURN(value, GetBoolFromString(column_value, line_info));
 
   const IndexType col = data->FindOrCreateVariable(column_name);
   // Variables used in indicator constraints become Boolean by default.
@@ -921,24 +986,26 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessIndicatorsSection(
   data->SetVariableBounds(col, std::max(0.0, data->VariableLowerBound(col)),
                           std::min(1.0, data->VariableUpperBound(col)));
 
-  RETURN_IF_ERROR(
-      AppendLineToError(data->CreateIndicatorConstraint(row_name, col, value)));
+  RETURN_IF_ERROR(line_info.AppendLineToError(
+      data->CreateIndicatorConstraint(row_name, col, value)));
 
   return absl::OkStatus();
 }
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreCoefficient(
-    IndexType col, absl::string_view row_name, absl::string_view row_value,
+    const internal::MPSLineInfo& line_info, IndexType col,
+    absl::string_view row_name, absl::string_view row_value,
     DataWrapper* data) {
   if (row_name.empty() || row_name == "$") {
     return absl::OkStatus();
   }
 
   double value;
-  ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
+  ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
   if (value == kInfinity || value == -kInfinity) {
-    return InvalidArgumentError("Constraint coefficients cannot be infinity.");
+    return line_info.InvalidArgumentError(
+        "Constraint coefficients cannot be infinity.");
   }
   if (value == 0.0) return absl::OkStatus();
   if (row_name == objective_name_) {
@@ -952,14 +1019,14 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreCoefficient(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
-    absl::string_view row_name, absl::string_view row_value,
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, absl::string_view row_name,
+    absl::string_view row_value, DataWrapper* data) {
   if (row_name.empty()) return absl::OkStatus();
 
   if (row_name != objective_name_) {
     const IndexType row = data->FindOrCreateConstraint(row_name);
     double value;
-    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
+    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
 
     // The row type is encoded in the bounds, so at this point we have either
     // (-kInfinity, 0.0], [0.0, 0.0] or [0.0, kInfinity). We use the right
@@ -974,7 +1041,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
     // line with what the MPS writer does and what Gurobi's MPS format
     // expects.
     double value;
-    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
+    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
     data->SetObjectiveOffset(-value);
   }
   return absl::OkStatus();
@@ -982,13 +1049,13 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreRange(
-    absl::string_view row_name, absl::string_view range_value,
-    DataWrapper* data) {
+    const internal::MPSLineInfo& line_info, absl::string_view row_name,
+    absl::string_view range_value, DataWrapper* data) {
   if (row_name.empty()) return absl::OkStatus();
 
   const IndexType row = data->FindOrCreateConstraint(row_name);
   double range;
-  ASSIGN_OR_RETURN(range, GetDoubleFromString(range_value));
+  ASSIGN_OR_RETURN(range, GetDoubleFromString(range_value, line_info));
 
   double lower_bound = data->ConstraintLowerBound(row);
   double upper_bound = data->ConstraintUpperBound(row);
@@ -1011,11 +1078,12 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRange(
 
 template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
+    const internal::MPSLineInfo& line_info,
     absl::string_view bound_type_mnemonic, absl::string_view column_name,
     absl::string_view bound_value, DataWrapper* data) {
   const auto it = bound_name_to_id_map_.find(bound_type_mnemonic);
   if (it == bound_name_to_id_map_.end()) {
-    return InvalidArgumentError("Unknown bound type.");
+    return line_info.InvalidArgumentError("Unknown bound type.");
   }
   const BoundTypeId bound_type_id = it->second;
   const IndexType col = data->FindOrCreateVariable(column_name);
@@ -1037,7 +1105,8 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
   }
   switch (bound_type_id) {
     case BoundTypeId::kLowerBound: {
-      ASSIGN_OR_RETURN(lower_bound, GetDoubleFromString(bound_value));
+      ASSIGN_OR_RETURN(lower_bound,
+                       GetDoubleFromString(bound_value, line_info));
       // TODO(b/285121446): Decide to keep or remove this corner case behavior.
       // LI with the value 0.0 specifies general integers with no upper bound.
       if (bound_type_mnemonic == "LI" && lower_bound == 0.0) {
@@ -1046,16 +1115,19 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
       break;
     }
     case BoundTypeId::kUpperBound: {
-      ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
+      ASSIGN_OR_RETURN(upper_bound,
+                       GetDoubleFromString(bound_value, line_info));
       break;
     }
     case BoundTypeId::kSemiContinuous: {
-      ASSIGN_OR_RETURN(upper_bound, GetDoubleFromString(bound_value));
+      ASSIGN_OR_RETURN(upper_bound,
+                       GetDoubleFromString(bound_value, line_info));
       data->SetVariableTypeToSemiContinuous(col);
       break;
     }
     case BoundTypeId::kFixedVariable: {
-      ASSIGN_OR_RETURN(lower_bound, GetDoubleFromString(bound_value));
+      ASSIGN_OR_RETURN(lower_bound,
+                       GetDoubleFromString(bound_value, line_info));
       upper_bound = lower_bound;
       break;
     }
@@ -1075,7 +1147,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
       break;
     case BoundTypeId::kUnknownBoundType:
     default:
-      return InvalidArgumentError("Unknown bound type.");
+      return line_info.InvalidArgumentError("Unknown bound type.");
   }
   is_binary_by_default_[col] = false;
   data->SetVariableBounds(col, lower_bound, upper_bound);
@@ -1085,26 +1157,24 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
 template <class DataWrapper>
 MPSReaderTemplate<DataWrapper>::MPSReaderTemplate()
     : free_form_(true),
-      fields_(kNumFields),
-      section_(SectionId::kUnknownSection),
+      section_(internal::MPSSectionId::kUnknownSection),
       section_name_to_id_map_(),
       row_name_to_id_map_(),
       bound_name_to_id_map_(),
       integer_type_names_set_(),
       line_num_(0),
-      line_(),
       in_integer_section_(false),
       num_unconstrained_rows_(0) {
-  section_name_to_id_map_["NAME"] = SectionId::kName;
-  section_name_to_id_map_["OBJSENSE"] = SectionId::kObjsense;
-  section_name_to_id_map_["ROWS"] = SectionId::kRows;
-  section_name_to_id_map_["LAZYCONS"] = SectionId::kLazycons;
-  section_name_to_id_map_["COLUMNS"] = SectionId::kColumns;
-  section_name_to_id_map_["RHS"] = SectionId::kRhs;
-  section_name_to_id_map_["RANGES"] = SectionId::kRanges;
-  section_name_to_id_map_["BOUNDS"] = SectionId::kBounds;
-  section_name_to_id_map_["INDICATORS"] = SectionId::kIndicators;
-  section_name_to_id_map_["ENDATA"] = SectionId::kEndData;
+  section_name_to_id_map_["NAME"] = internal::MPSSectionId::kName;
+  section_name_to_id_map_["OBJSENSE"] = internal::MPSSectionId::kObjsense;
+  section_name_to_id_map_["ROWS"] = internal::MPSSectionId::kRows;
+  section_name_to_id_map_["LAZYCONS"] = internal::MPSSectionId::kLazycons;
+  section_name_to_id_map_["COLUMNS"] = internal::MPSSectionId::kColumns;
+  section_name_to_id_map_["RHS"] = internal::MPSSectionId::kRhs;
+  section_name_to_id_map_["RANGES"] = internal::MPSSectionId::kRanges;
+  section_name_to_id_map_["BOUNDS"] = internal::MPSSectionId::kBounds;
+  section_name_to_id_map_["INDICATORS"] = internal::MPSSectionId::kIndicators;
+  section_name_to_id_map_["ENDATA"] = internal::MPSSectionId::kEndData;
   row_name_to_id_map_["E"] = RowTypeId::kEquality;
   row_name_to_id_map_["L"] = RowTypeId::kLessThan;
   row_name_to_id_map_["G"] = RowTypeId::kGreaterThan;
@@ -1127,7 +1197,6 @@ MPSReaderTemplate<DataWrapper>::MPSReaderTemplate()
 
 template <class DataWrapper>
 void MPSReaderTemplate<DataWrapper>::Reset() {
-  fields_.resize(kNumFields);
   line_num_ = 0;
   in_integer_section_ = false;
   num_unconstrained_rows_ = 0;
@@ -1144,103 +1213,28 @@ void MPSReaderTemplate<DataWrapper>::DisplaySummary() {
 }
 
 template <class DataWrapper>
-bool MPSReaderTemplate<DataWrapper>::IsFixedFormat() {
-  for (const int i : kSpacePos) {
-    if (i >= line_.length()) break;
-    if (line_[i] != ' ') return false;
-  }
-  return true;
-}
-
-template <class DataWrapper>
-absl::Status MPSReaderTemplate<DataWrapper>::SplitLineIntoFields() {
-  if (free_form_) {
-    fields_ = absl::StrSplit(line_, absl::ByAnyChar(" \t"), absl::SkipEmpty());
-    if (fields_.size() > kNumFields) {
-      return InvalidArgumentError("Found too many fields.");
-    }
-  } else {
-    // Note: the name should also comply with the fixed format guidelines
-    // (maximum 8 characters) but in practice there are many problem files in
-    // the netlib archive that are in fixed format and have a long name. We
-    // choose to ignore these cases and treat them as fixed format anyway.
-    if (section_ != SectionId::kName && !IsFixedFormat()) {
-      return InvalidArgumentError("Line is not in fixed format.");
-    }
-    const int length = line_.length();
-    // Several parts of the code assume that `fields_` has the right number of
-    // fields detected.
-    fields_.clear();
-    for (int i = 0; i < kNumFields; ++i) {
-      if (kFieldStartPos[i] < length) {
-        fields_.push_back(line_.substr(kFieldStartPos[i], kFieldLength[i]));
-        fields_.back().erase(fields_.back().find_last_not_of(" ") + 1);
-      }
-    }
-  }
-  return absl::OkStatus();
-}
-
-template <class DataWrapper>
-std::string MPSReaderTemplate<DataWrapper>::GetFirstWord() const {
-  if (line_[0] == ' ') {
-    return std::string("");
-  }
-  const int first_space_pos = line_.find(' ');
-  const std::string first_word = line_.substr(0, first_space_pos);
-  return first_word;
-}
-
-template <class DataWrapper>
-bool MPSReaderTemplate<DataWrapper>::IsCommentOrBlank() const {
-  const char* line = line_.c_str();
-  if (*line == '*') {
-    return true;
-  }
-  for (; *line != '\0'; ++line) {
-    if (*line != ' ' && *line != '\t') {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <class DataWrapper>
 absl::StatusOr<double> MPSReaderTemplate<DataWrapper>::GetDoubleFromString(
-    absl::string_view str) {
+    absl::string_view str, const internal::MPSLineInfo& line_info) {
   double result;
   if (!absl::SimpleAtod(str, &result)) {
-    return InvalidArgumentError(
+    return line_info.InvalidArgumentError(
         absl::StrCat("Failed to convert \"", str, "\" to double."));
   }
   if (std::isnan(result)) {
-    return InvalidArgumentError("Found NaN value.");
+    return line_info.InvalidArgumentError("Found NaN value.");
   }
   return result;
 }
 
 template <class DataWrapper>
 absl::StatusOr<bool> MPSReaderTemplate<DataWrapper>::GetBoolFromString(
-    absl::string_view str) {
+    absl::string_view str, const internal::MPSLineInfo& line_info) {
   int result;
   if (!absl::SimpleAtoi(str, &result) || result < 0 || result > 1) {
-    return InvalidArgumentError(
+    return line_info.InvalidArgumentError(
         absl::StrCat("Failed to convert \"", str, "\" to bool."));
   }
   return result;
-}
-
-template <class DataWrapper>
-absl::Status MPSReaderTemplate<DataWrapper>::InvalidArgumentError(
-    const std::string& error_message) {
-  return AppendLineToError(absl::InvalidArgumentError(error_message));
-}
-
-template <class DataWrapper>
-absl::Status MPSReaderTemplate<DataWrapper>::AppendLineToError(
-    const absl::Status& status) {
-  return util::StatusBuilder(status).SetAppend()
-         << " Line " << line_num_ << ": \"" << line_ << "\".";
 }
 
 }  //  namespace operations_research

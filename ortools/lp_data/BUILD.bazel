@@ -296,6 +296,7 @@ cc_library(
 
 cc_library(
     name = "mps_reader_template",
+    srcs = ["mps_reader_template.cc"],
     hdrs = ["mps_reader_template.h"],
     deps = [
         "//ortools/base",
@@ -304,6 +305,7 @@ cc_library(
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -317,22 +319,16 @@ cc_library(
     hdrs = ["mps_reader.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
         ":lp_print_utils",
         ":mps_reader_template",
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
         "//ortools/base:protobuf_util",
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/util:filelineiter",
         "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],

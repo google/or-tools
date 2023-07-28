@@ -24,9 +24,9 @@
 #include <type_traits>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 

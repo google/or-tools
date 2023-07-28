@@ -20,7 +20,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
