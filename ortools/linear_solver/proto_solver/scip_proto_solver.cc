@@ -74,6 +74,12 @@ absl::StatusOr<double> ScipInfClamp(SCIP* scip, const double d) {
   }
   const double kScipInf = SCIPinfinity(scip);
   const double clamped = std::clamp(d, -kScipInf, kScipInf);
+  if (d != clamped) {
+    VLOG_EVERY_N_SEC(1, 5)
+        << "A bound was clamped to SCIP's 'infinite' value for safety; this "
+           "may affect results. Was: "
+        << d << ", is now: " << clamped;
+  }
   return clamped;
 }
 

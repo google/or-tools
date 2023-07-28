@@ -21,6 +21,8 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"

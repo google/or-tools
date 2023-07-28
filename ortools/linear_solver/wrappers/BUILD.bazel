@@ -36,6 +36,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:file",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
