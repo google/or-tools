@@ -93,6 +93,9 @@ target_compile_options(flatzinc PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 ## Properties
 if(NOT APPLE)
   set_target_properties(flatzinc PROPERTIES VERSION ${PROJECT_VERSION})
+  if(UNIX)
+    set_target_properties(flatzinc PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
 else()
   # Clang don't support version x.y.z with z > 255
   set_target_properties(flatzinc PROPERTIES
@@ -113,14 +116,6 @@ if(WIN32)
 endif()
 ## Alias
 add_library(${PROJECT_NAMESPACE}::flatzinc ALIAS flatzinc)
-
-
-if(APPLE)
-  set(CMAKE_INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
-endif()
 
 
 # fzn-ortools Binary
@@ -146,6 +141,17 @@ target_compile_options(fzn PUBLIC ${FLATZINC_COMPILE_OPTIONS})
 target_link_libraries(fzn PRIVATE ${PROJECT_NAMESPACE}::flatzinc)
 ## Alias
 add_executable(${PROJECT_NAME}::fzn ALIAS fzn)
+## INSTALL_RPATH
+if(APPLE)
+  set_target_properties(fzn PROPERTIES
+                        INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+             OUTPUT_VARIABLE libdir_relative_path)
+  set_target_properties(fzn PROPERTIES
+                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+endif()
 
 
 # Parser-main Binary
