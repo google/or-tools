@@ -92,7 +92,6 @@ int64_t SetCoverReader::ParseNextInteger() {
 
 SetCoverModel ReadBeasleySetCoverProblem(absl::string_view filename) {
   SetCoverModel model;
-  constexpr absl::LogSeverity INFO = absl::LogSeverity::kInfo;
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
@@ -119,7 +118,6 @@ SetCoverModel ReadBeasleySetCoverProblem(absl::string_view filename) {
 
 SetCoverModel ReadRailSetCoverProblem(absl::string_view filename) {
   SetCoverModel model;
-  constexpr absl::LogSeverity INFO = absl::LogSeverity::kInfo;
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
