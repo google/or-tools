@@ -36,10 +36,10 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
@@ -609,6 +609,10 @@ class GlobalCheapestInsertionFilteredHeuristic
   void DetectUsedVehicles(std::vector<bool>* is_vehicle_used,
                           std::vector<int>* unused_vehicles,
                           absl::flat_hash_set<int>* used_vehicles);
+
+  /// Returns true of the vehicle's route is not empty or if the vehicle is the
+  /// representative of its class and type.
+  bool IsCheapestClassRepresentative(int vehicle) const;
 
   /// Inserts the (farthest_seeds_ratio_ * model()->vehicles()) nodes farthest
   /// from the start/ends of the available vehicle routes as seeds on their

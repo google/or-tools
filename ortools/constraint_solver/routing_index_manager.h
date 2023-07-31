@@ -17,9 +17,9 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {

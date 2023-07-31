@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -1041,14 +1041,14 @@ bool RelocateSubtrip::RelocateSubTripFromPickup(const int64_t chain_first_node,
       return false;
     }
     const int pair = pair_of_node_[current];
-    if (is_delivery_node_[current] && !opened_pairs_bitset_[pair]) {
+    if (IsDeliveryNode(current) && !opened_pairs_bitset_[pair]) {
       rejected_nodes_.push_back(current);
     } else {
       subtrip_nodes_.push_back(current);
-      if (is_pickup_node_[current]) {
+      if (IsPickupNode(current)) {
         ++num_opened_pairs;
         opened_pairs_bitset_[pair] = true;
-      } else if (is_delivery_node_[current]) {
+      } else if (IsDeliveryNode(current)) {
         --num_opened_pairs;
         opened_pairs_bitset_[pair] = false;
       }
@@ -1089,14 +1089,14 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(
       return false;
     }
     const int pair = pair_of_node_[current];
-    if (is_pickup_node_[current] && !opened_pairs_bitset_[pair]) {
+    if (IsPickupNode(current) && !opened_pairs_bitset_[pair]) {
       rejected_nodes_.push_back(current);
     } else {
       subtrip_nodes_.push_back(current);
-      if (is_delivery_node_[current]) {
+      if (IsDeliveryNode(current)) {
         ++num_opened_pairs;
         opened_pairs_bitset_[pair] = true;
-      } else if (is_pickup_node_[current]) {
+      } else if (IsPickupNode(current)) {
         --num_opened_pairs;
         opened_pairs_bitset_[pair] = false;
       }
@@ -1128,9 +1128,9 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(
 bool RelocateSubtrip::MakeNeighbor() {
   const auto do_move = [this](int64_t node, int64_t insertion_node) {
     if (IsInactive(node)) return false;
-    if (is_pickup_node_[node]) {
+    if (IsPickupNode(node)) {
       return RelocateSubTripFromPickup(node, insertion_node);
-    } else if (is_delivery_node_[node]) {
+    } else if (IsDeliveryNode(node)) {
       return RelocateSubTripFromDelivery(node, insertion_node);
     } else {
       return false;
@@ -1188,10 +1188,11 @@ bool ExchangeSubtrip::MakeNeighbor() {
     const int64_t node = BaseNode(0);
     const int64_t neighbor = GetNeighborForBaseNode(0);
     if (IsInactive(neighbor)) return false;
-    if (is_delivery_node_[node] && is_delivery_node_[Prev(neighbor)]) {
+    if (IsDeliveryNode(node) && IsDeliveryNode(Prev(neighbor))) {
       node0 = node;
       node1 = Prev(neighbor);
-    } else if (is_pickup_node_[neighbor] && is_pickup_node_[Next(node)]) {
+    } else if (IsPickupNode(neighbor) && !IsPathEnd(Next(node)) &&
+               IsPickupNode(Next(node))) {
       node0 = Next(node);
       node1 = neighbor;
     } else {
@@ -1234,12 +1235,12 @@ bool ExchangeSubtrip::MakeNeighbor() {
   const bool concatenated01 = last0 == subtrip1_.front();
   const bool concatenated10 = last1 == subtrip0_.front();
 
-  if (is_delivery_node_[node0]) std::swap(subtrip1_, rejects0_);
+  if (IsDeliveryNode(node0)) std::swap(subtrip1_, rejects0_);
   path0_.insert(path0_.end(), subtrip1_.begin(), subtrip1_.end());
   path0_.insert(path0_.end(), rejects0_.begin(), rejects0_.end());
   path0_.push_back(last0);
 
-  if (is_delivery_node_[node1]) std::swap(subtrip0_, rejects1_);
+  if (IsDeliveryNode(node1)) std::swap(subtrip0_, rejects1_);
   path1_.insert(path1_.end(), subtrip0_.begin(), subtrip0_.end());
   path1_.insert(path1_.end(), rejects1_.begin(), rejects1_.end());
   path1_.push_back(last1);
@@ -1266,12 +1267,12 @@ bool ExchangeSubtrip::ExtractChainsAndCheckCanonical(
     int64_t base_node, std::vector<int64_t>* rejects,
     std::vector<int64_t>* subtrip) {
   const bool extracted =
-      is_pickup_node_[base_node]
+      IsPickupNode(base_node)
           ? ExtractChainsFromPickup(base_node, rejects, subtrip)
           : ExtractChainsFromDelivery(base_node, rejects, subtrip);
   if (!extracted) return false;
   // Check canonicality.
-  return !is_delivery_node_[base_node] ||
+  return !IsDeliveryNode(base_node) ||
          pair_of_node_[subtrip->front()] != pair_of_node_[subtrip->back()] ||
          !rejects->empty();
 }
@@ -1279,7 +1280,7 @@ bool ExchangeSubtrip::ExtractChainsAndCheckCanonical(
 bool ExchangeSubtrip::ExtractChainsFromPickup(int64_t base_node,
                                               std::vector<int64_t>* rejects,
                                               std::vector<int64_t>* subtrip) {
-  DCHECK(is_pickup_node_[base_node]);
+  DCHECK(IsPickupNode(base_node));
   DCHECK(rejects->empty());
   DCHECK(subtrip->empty());
   // Iterate from base_node forwards while maintaining the set of opened pairs.
@@ -1289,14 +1290,14 @@ bool ExchangeSubtrip::ExtractChainsFromPickup(int64_t base_node,
   int current = base_node;
   do {
     const int pair = pair_of_node_[current];
-    if (is_delivery_node_[current] && !opened_pairs_set_[pair]) {
+    if (IsDeliveryNode(current) && !opened_pairs_set_[pair]) {
       rejects->push_back(current);
     } else {
       subtrip->push_back(current);
-      if (is_pickup_node_[current]) {
+      if (IsPickupNode(current)) {
         ++num_opened_pairs;
         opened_pairs_set_[pair] = true;
-      } else if (is_delivery_node_[current]) {
+      } else if (IsDeliveryNode(current)) {
         --num_opened_pairs;
         opened_pairs_set_[pair] = false;
       }
@@ -1309,7 +1310,7 @@ bool ExchangeSubtrip::ExtractChainsFromPickup(int64_t base_node,
 bool ExchangeSubtrip::ExtractChainsFromDelivery(int64_t base_node,
                                                 std::vector<int64_t>* rejects,
                                                 std::vector<int64_t>* subtrip) {
-  DCHECK(is_delivery_node_[base_node]);
+  DCHECK(IsDeliveryNode(base_node));
   DCHECK(rejects->empty());
   DCHECK(subtrip->empty());
   // Iterate from base_node backwards while maintaining the set of opened pairs.
@@ -1319,14 +1320,14 @@ bool ExchangeSubtrip::ExtractChainsFromDelivery(int64_t base_node,
   int current = base_node;
   do {
     const int pair = pair_of_node_[current];
-    if (is_pickup_node_[current] && !opened_pairs_set_[pair]) {
+    if (IsPickupNode(current) && !opened_pairs_set_[pair]) {
       rejects->push_back(current);
     } else {
       subtrip->push_back(current);
-      if (is_delivery_node_[current]) {
+      if (IsDeliveryNode(current)) {
         ++num_opened_pairs;
         opened_pairs_set_[pair] = true;
-      } else if (is_pickup_node_[current]) {
+      } else if (IsPickupNode(current)) {
         --num_opened_pairs;
         opened_pairs_set_[pair] = false;
       }

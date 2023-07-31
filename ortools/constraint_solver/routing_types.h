@@ -20,7 +20,7 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 

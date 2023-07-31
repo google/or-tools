@@ -648,6 +648,17 @@ class RelocateSubtrip : public PathOperator {
   /// Relocates the subtrip ending at chain_first_node. It must be a delivery.
   bool RelocateSubTripFromDelivery(int64_t chain_last_node,
                                    int64_t insertion_node);
+  bool IsPickupNode(int64_t node) const {
+    DCHECK_LT(node, is_pickup_node_.size());
+    DCHECK_GE(node, 0);
+    return is_pickup_node_[node];
+  }
+  bool IsDeliveryNode(int64_t node) const {
+    DCHECK_LT(node, is_delivery_node_.size());
+    DCHECK_GE(node, 0);
+    return is_delivery_node_[node];
+  }
+
   std::vector<bool> is_pickup_node_;
   std::vector<bool> is_delivery_node_;
   std::vector<int> pair_of_node_;
@@ -706,6 +717,16 @@ class ExchangeSubtrip : public PathOperator {
                                  std::vector<int64_t>* rejects,
                                  std::vector<int64_t>* subtrip);
   void SetPath(const std::vector<int64_t>& path, int path_id);
+  bool IsPickupNode(int64_t node) const {
+    DCHECK_LT(node, is_pickup_node_.size());
+    DCHECK_GE(node, 0);
+    return is_pickup_node_[node];
+  }
+  bool IsDeliveryNode(int64_t node) const {
+    DCHECK_LT(node, is_delivery_node_.size());
+    DCHECK_GE(node, 0);
+    return is_delivery_node_[node];
+  }
 
   // Precompute some information about nodes.
   std::vector<bool> is_pickup_node_;
