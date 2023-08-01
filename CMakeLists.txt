@@ -282,7 +282,7 @@ if(BUILD_DOTNET)
   message(STATUS ".Net C# language version: ${DOTNET_LANG}")
 
   set(DOTNET_SAMPLE_LANG "8.0" CACHE STRING "Specify the C# language version for samples (default \"8.0\")")
-  message(STATUS ".Net C# language version: ${DOTNET_SAMPLE_LANG}")
+  message(STATUS ".Net Samples C# language version: ${DOTNET_SAMPLE_LANG}")
 
   # Targeted Framework Moniker
   # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
