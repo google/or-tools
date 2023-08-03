@@ -679,7 +679,6 @@ class SchedulingResourceWindowsNeighborhoodGenerator
 
  private:
   const std::vector<std::vector<int>> intervals_in_constraints_;
-  absl::flat_hash_set<int> intervals_to_relax_;
 };
 
 // Only make sense for problems with no_overlap_2d constraints. This select a

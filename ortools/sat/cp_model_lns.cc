@@ -2028,21 +2028,19 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
-  intervals_to_relax_.clear();
+  std::vector<int> intervals_to_relax;
   for (const std::vector<int>& intervals : intervals_in_constraints_) {
     const std::vector<int> selected_indices = SelectIndicesInRandomTimeWindow(
         intervals, helper_.ModelProto(), initial_solution, difficulty, random);
     for (const int index : selected_indices) {
-      intervals_to_relax_.insert(intervals[index]);
+      intervals_to_relax.push_back(intervals[index]);
     }
   }
 
-  if (intervals_to_relax_.empty()) return helper_.FullNeighborhood();
-
-  const std::vector<int> intervals(
-      {intervals_to_relax_.begin(), intervals_to_relax_.end()});
+  if (intervals_to_relax.empty()) return helper_.FullNeighborhood();
+  gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-      intervals, initial_solution, random, helper_);
+      intervals_to_relax, initial_solution, random, helper_);
 }
 
 Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
