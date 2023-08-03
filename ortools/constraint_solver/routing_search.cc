@@ -330,12 +330,7 @@ const Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
     while (!model_->IsEnd(node)) {
       const int64_t next = next_accessor(node);
       DCHECK_NE(next, node);
-      SetValue(node, next);
-      // TODO(user): Add vehicle values to delta when this method will be
-      // used with cost filtering. The code should be similar to this:
-      // if (HasSecondaryVars()) {
-      //   SetValue(SecondaryVarIndex(node), v);
-      // }
+      SetNext(node, next, v);
       SetVehicleIndex(node, v);
       node = next;
     }
@@ -430,10 +425,7 @@ bool RoutingFilteredHeuristic::InitializeSolution() {
     int64_t node = model()->Start(vehicle);
     while (!model()->IsEnd(node) && Var(node)->Bound()) {
       const int64_t next = Var(node)->Min();
-      SetValue(node, next);
-      if (HasSecondaryVars()) {
-        SetValue(SecondaryVarIndex(node), vehicle);
-      }
+      SetNext(node, next, vehicle);
       SetVehicleIndex(node, vehicle);
       node = next;
     }
@@ -448,18 +440,12 @@ bool RoutingFilteredHeuristic::InitializeSolution() {
     int64_t node = start_chain_ends_[vehicle];
     if (!model()->IsEnd(node)) {
       int64_t next = end_chain_starts_[vehicle];
-      SetValue(node, next);
-      if (HasSecondaryVars()) {
-        SetValue(SecondaryVarIndex(node), vehicle);
-      }
+      SetNext(node, next, vehicle);
       SetVehicleIndex(node, vehicle);
       node = next;
       while (!model()->IsEnd(node)) {
         next = Var(node)->Min();
-        SetValue(node, next);
-        if (HasSecondaryVars()) {
-          SetValue(SecondaryVarIndex(node), vehicle);
-        }
+        SetNext(node, next, vehicle);
         SetVehicleIndex(node, vehicle);
         node = next;
       }
@@ -477,7 +463,7 @@ void RoutingFilteredHeuristic::MakeDisjunctionNodesUnperformed(int64_t node) {
   model()->ForEachNodeInDisjunctionWithMaxCardinalityFromIndex(
       node, 1, [this, node](int alternate) {
         if (node != alternate && !Contains(alternate)) {
-          SetValue(alternate, alternate);
+          SetNext(alternate, alternate, -1);
         }
       });
 }
@@ -488,10 +474,7 @@ bool RoutingFilteredHeuristic::MakeUnassignedNodesUnperformed() {
   for (int index = 0; index < model_->Size(); ++index) {
     DCHECK(!IsSecondaryVar(index));
     if (!Contains(index)) {
-      SetValue(index, index);
-      if (HasSecondaryVars()) {
-        SetValue(SecondaryVarIndex(index), -1);
-      }
+      SetNext(index, index, -1);
     }
   }
   return true;
@@ -527,11 +510,13 @@ void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
   }
   for (int index = 0; index < num_nexts; ++index) {
     if (to_make_unperformed[index] || !Contains(index)) continue;
+    const int vehicle =
+        HasSecondaryVars() ? Value(SecondaryVarIndex(index)) : 0;
     int64_t next = Value(index);
     while (next < num_nexts && to_make_unperformed[next]) {
       const int64_t next_of_next = Value(next);
-      SetValue(index, next_of_next);
-      SetValue(next, next);
+      SetNext(index, next_of_next, vehicle);
+      SetNext(next, next, -1);
       next = next_of_next;
     }
   }
@@ -888,8 +873,8 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertPairs(
       const int entry_vehicle = entry->vehicle();
       if (entry_vehicle == -1) {
         // Pair is unperformed.
-        SetValue(pickup, pickup);
-        SetValue(delivery, delivery);
+        SetNext(pickup, pickup, -1);
+        SetNext(delivery, delivery, -1);
         if (!Evaluate(/*commit=*/true).has_value()) {
           DeletePairEntry(entry, &priority_queue, &pickup_to_entries,
                           &delivery_to_entries);
@@ -1212,7 +1197,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
       if (entry_vehicle == -1) {
         DCHECK(all_vehicles);
         // Make node unperformed.
-        SetValue(node_to_insert, node_to_insert);
+        SetNext(node_to_insert, node_to_insert, -1);
         if (!Evaluate(/*commit=*/true).has_value()) {
           queue.Pop();
         }
@@ -2770,13 +2755,13 @@ bool CheapestAdditionFilteredHeuristic::BuildSolutionInternal() {
             }
             // Insert "next" after "index", and before "end" if it is not the
             // end already.
-            SetValue(index, next);
+            SetNext(index, next, vehicle);
             if (!model()->IsEnd(next)) {
-              SetValue(next, end);
+              SetNext(next, end, vehicle);
               MakeDisjunctionNodesUnperformed(next);
               if (delivery != kUnassigned) {
-                SetValue(next, delivery);
-                SetValue(delivery, end);
+                SetNext(next, delivery, vehicle);
+                SetNext(delivery, end, vehicle);
                 MakeDisjunctionNodesUnperformed(delivery);
               }
             }
@@ -3358,11 +3343,9 @@ int SavingsFilteredHeuristic::StartNewRouteWithBestVehicleOfType(
     }
     // Try to commit the arc on this vehicle.
     DCHECK(VehicleIsEmpty(vehicle));
-    const int64_t start = model()->Start(vehicle);
-    const int64_t end = model()->End(vehicle);
-    SetValue(start, before_node);
-    SetValue(before_node, after_node);
-    SetValue(after_node, end);
+    SetNext(model()->Start(vehicle), before_node, vehicle);
+    SetNext(before_node, after_node, vehicle);
+    SetNext(after_node, model()->End(vehicle), vehicle);
     return Evaluate(/*commit=*/true).has_value();
   };
 
@@ -3637,8 +3620,8 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
         ++in_index;
         // Extending after after_node
         if (!Contains(after_after_node)) {
-          SetValue(after_node, after_after_node);
-          SetValue(after_after_node, end);
+          SetNext(after_node, after_after_node, vehicle);
+          SetNext(after_after_node, end, vehicle);
           if (Evaluate(/*commit=*/true).has_value()) {
             in_index = 0;
             after_node = after_after_node;
@@ -3649,8 +3632,8 @@ void SequentialSavingsFilteredHeuristic::BuildRoutesFromSavings() {
         CHECK_GE(before_before_node, 0);
         ++out_index;
         if (!Contains(before_before_node)) {
-          SetValue(start, before_before_node);
-          SetValue(before_before_node, before_node);
+          SetNext(start, before_before_node, vehicle);
+          SetNext(before_before_node, before_node, vehicle);
           if (Evaluate(/*commit=*/true).has_value()) {
             out_index = 0;
             before_node = before_before_node;
@@ -3764,8 +3747,8 @@ void ParallelSavingsFilteredHeuristic::BuildRoutesFromSavings() {
         }
 
         // Try adding after_node on route of before_node.
-        SetValue(before_node, after_node);
-        SetValue(after_node, end);
+        SetNext(before_node, after_node, vehicle);
+        SetNext(after_node, end, vehicle);
         if (Evaluate(/*commit=*/true).has_value()) {
           if (first_node_on_route_[vehicle] != before_node) {
             // before_node is no longer the start or end of its route
@@ -3797,8 +3780,8 @@ void ParallelSavingsFilteredHeuristic::BuildRoutesFromSavings() {
         }
 
         // Try adding before_node on route of after_node.
-        SetValue(before_node, after_node);
-        SetValue(start, before_node);
+        SetNext(before_node, after_node, vehicle);
+        SetNext(start, before_node, vehicle);
         if (Evaluate(/*commit=*/true).has_value()) {
           if (last_node_on_route_[vehicle] != after_node) {
             // after_node is no longer the start or end of its route
@@ -3836,12 +3819,13 @@ void ParallelSavingsFilteredHeuristic::MergeRoutes(int first_vehicle,
     unused_vehicle = first_vehicle;
   }
 
-  SetValue(before_node, after_node);
-  SetValue(model()->Start(unused_vehicle), model()->End(unused_vehicle));
+  SetNext(before_node, after_node, used_vehicle);
+  SetNext(model()->Start(unused_vehicle), model()->End(unused_vehicle),
+          unused_vehicle);
   if (used_vehicle == first_vehicle) {
-    SetValue(new_last_node, model()->End(used_vehicle));
+    SetNext(new_last_node, model()->End(used_vehicle), used_vehicle);
   } else {
-    SetValue(model()->Start(used_vehicle), new_first_node);
+    SetNext(model()->Start(used_vehicle), new_first_node, used_vehicle);
   }
   bool committed = Evaluate(/*commit=*/true).has_value();
   if (!committed &&
@@ -3849,12 +3833,13 @@ void ParallelSavingsFilteredHeuristic::MergeRoutes(int first_vehicle,
           model()->GetVehicleClassIndexOfVehicle(second_vehicle).value()) {
     // Try committing on other vehicle instead.
     std::swap(used_vehicle, unused_vehicle);
-    SetValue(before_node, after_node);
-    SetValue(model()->Start(unused_vehicle), model()->End(unused_vehicle));
+    SetNext(before_node, after_node, used_vehicle);
+    SetNext(model()->Start(unused_vehicle), model()->End(unused_vehicle),
+            unused_vehicle);
     if (used_vehicle == first_vehicle) {
-      SetValue(new_last_node, model()->End(used_vehicle));
+      SetNext(new_last_node, model()->End(used_vehicle), used_vehicle);
     } else {
-      SetValue(model()->Start(used_vehicle), new_first_node);
+      SetNext(model()->Start(used_vehicle), new_first_node, used_vehicle);
     }
     committed = Evaluate(/*commit=*/true).has_value();
   }
@@ -3951,8 +3936,8 @@ bool ChristofidesFilteredHeuristic::BuildSolutionInternal() {
       if (StopSearch()) return false;
       int next = indices[path[i]];
       if (!Contains(next)) {
-        SetValue(prev, next);
-        SetValue(next, end);
+        SetNext(prev, next, vehicle);
+        SetNext(next, end, vehicle);
         if (Evaluate(/*commit=*/true).has_value()) {
           prev = next;
         }

@@ -299,6 +299,10 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   bool VehicleIsEmpty(int vehicle) const {
     return Value(model()->Start(vehicle)) == model()->End(vehicle);
   }
+  void SetNext(int64_t node, int64_t next, int vehicle) {
+    SetValue(node, next);
+    if (HasSecondaryVars()) SetValue(SecondaryVarIndex(node), vehicle);
+  }
 
  private:
   /// Initializes the current solution with empty or partial vehicle routes.
