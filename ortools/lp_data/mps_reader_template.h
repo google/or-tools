@@ -285,12 +285,12 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/strip.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/util/filelineiter.h"
@@ -310,7 +310,6 @@ static constexpr int kNumMpsFields = 6;
 // Enum for MPS section ids.
 enum class MPSSectionId {
   kUnknownSection,
-  kComment,
   kName,
   kObjsense,
   kRows,
@@ -323,13 +322,15 @@ enum class MPSSectionId {
   kEndData
 };
 
-// Helper class holding a single line of an MPS file (or string), able to
-// split/parse the line, and query fields within it.
+// Represents a single line of an MPS file (or string), and its corresponding
+// fields.
 class MPSLineInfo {
  public:
-  // At creation, no fields are detected. To identify
-  // fields (according to the format), call `SplitLineIntoFields`. Note that
-  // `line` must outlive the object.
+  // Creates an `MPSLineInfo` for `line`, which should outlive this object. If
+  // the line is a comment line, does not split the line into fields. Returns
+  // InvalidArgumentError if `free_form == false` and `line` contains a
+  // forbidden character ('\t'), or if when splitting the line into
+  // fields too many fields are detected.
   static absl::StatusOr<MPSLineInfo> Create(int64_t line_num, bool free_form,
                                             absl::string_view line) {
     // Deal with windows end of line characters and trailing white space.
@@ -337,7 +338,11 @@ class MPSLineInfo {
     if (!free_form && absl::StrContains(line, '\t')) {
       return absl::InvalidArgumentError("File contains tabs.");
     }
-    return MPSLineInfo(line_num, free_form, line);
+    MPSLineInfo line_info = MPSLineInfo(line_num, free_form, line);
+    if (!line_info.IsCommentOrBlank()) {
+      RETURN_IF_ERROR(line_info.SplitLineIntoFields());
+    }
+    return line_info;
   }
 
   // Returns a view of the line.
@@ -347,15 +352,10 @@ class MPSLineInfo {
   // Returns true if the line defines a new section.
   bool IsNewSection() const { return line_[0] != '\0' && line_[0] != ' '; }
 
-  // If `SplitLineIntoFields` has not been called, returns 0, otherwise it
-  // returns the number of fields detected during `SplitLineIntoFields`. What
-  // constitutes a 'field' depends on the format (fixed or free) used at
-  // creation time. See the previous description of MPS fixed and free formats
-  // for more details.
+  // Returns the number of fields in the line. What constitutes a 'field'
+  // depends on the format (fixed or free) used at creation time. See the
+  // previous description of MPS fixed and free formats for more details.
   int GetFieldsSize() const { return fields_.size(); }
-
-  // Splits into fields the line.
-  absl::Status SplitLineIntoFields(MPSSectionId section);
 
   // Returns true if the line matches the fixed format.
   bool IsFixedFormat() const;
@@ -399,6 +399,9 @@ class MPSLineInfo {
  private:
   MPSLineInfo(int64_t line_num, bool free_form, absl::string_view line)
       : free_form_{free_form}, line_num_{line_num}, line_{line} {}
+
+  // Splits into fields the line.
+  absl::Status SplitLineIntoFields();
 
   // Boolean set to true if the reader expects a free-form MPS file.
   const bool free_form_;
@@ -712,7 +715,7 @@ template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
                                                          DataWrapper* data) {
   ++line_num_;
-  ASSIGN_OR_RETURN(internal::MPSLineInfo line_info,
+  ASSIGN_OR_RETURN(const internal::MPSLineInfo line_info,
                    internal::MPSLineInfo::Create(line_num_, free_form_, line));
   if (line_info.IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
@@ -726,14 +729,17 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
     } else {
       return line_info.InvalidArgumentError("Unknown section.");
     }
-    if (section_ == internal::MPSSectionId::kComment) {
-      return absl::OkStatus();
-    }
-    if (section_ == internal::MPSSectionId::kObjsense) {
-      return absl::OkStatus();
+    if (!free_form_ && !line_info.IsFixedFormat()) {
+      if (section_ != internal::MPSSectionId::kName) {
+        // Note: the name should also comply with the fixed format guidelines
+        // (maximum 8 characters) but in practice there are many problem files
+        // in the netlib archive that are in fixed format and have a long name.
+        // We choose to ignore these cases and treat them as fixed format
+        // anyway.
+        return line_info.InvalidArgumentError("Line is not in fixed format.");
+      }
     }
     if (section_ == internal::MPSSectionId::kName) {
-      RETURN_IF_ERROR(line_info.SplitLineIntoFields(section_));
       // NOTE(user): The name may differ between fixed and free forms. In
       // fixed form, the name has at most 8 characters, and starts at a specific
       // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
@@ -761,7 +767,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
     }
     return absl::OkStatus();
   }
-  RETURN_IF_ERROR(line_info.SplitLineIntoFields(section_));
+  // This test is made after the IsNewSection() section, so that the NAME
+  // section can be tested specially.
+  if (!free_form_ && !line_info.IsFixedFormat()) {
+    return line_info.InvalidArgumentError("Line is not in fixed format.");
+  }
   switch (section_) {
     case internal::MPSSectionId::kName:
       return line_info.InvalidArgumentError("Second NAME field.");

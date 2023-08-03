@@ -13,23 +13,10 @@
 
 #include "ortools/lp_data/mps_reader_template.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <limits>
-#include <string>
-#include <vector>
-
-#include "absl/log/check.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/match.h"
-#include "absl/strings/numbers.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_split.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/string_view.h"
-#include "absl/strings/strip.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research::internal {
@@ -60,7 +47,7 @@ bool MPSLineInfo::IsFixedFormat() const {
   return true;
 }
 
-absl::Status MPSLineInfo::SplitLineIntoFields(const MPSSectionId section) {
+absl::Status MPSLineInfo::SplitLineIntoFields() {
   if (free_form_) {
     absl::string_view remaining_line = absl::StripLeadingAsciiWhitespace(line_);
     // Although using `fields_ = StrSplit(line, ByAnyChar(" \t))` is shorter to
@@ -82,13 +69,6 @@ absl::Status MPSLineInfo::SplitLineIntoFields(const MPSSectionId section) {
           absl::StripLeadingAsciiWhitespace(remaining_line.substr(pos));
     }
   } else {
-    // Note: the name should also comply with the fixed format guidelines
-    // (maximum 8 characters) but in practice there are many problem files in
-    // the netlib archive that are in fixed format and have a long name. We
-    // choose to ignore these cases and treat them as fixed format anyway.
-    if (section != MPSSectionId::kName && !IsFixedFormat()) {
-      return InvalidArgumentError("Line is not in fixed format.");
-    }
     const int line_size = line_.size();
     for (int i = 0; i < kNumMpsFields; ++i) {
       if (kFieldStartPos[i] >= line_size) break;
