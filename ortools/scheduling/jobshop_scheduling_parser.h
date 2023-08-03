@@ -19,7 +19,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 
 namespace operations_research {
