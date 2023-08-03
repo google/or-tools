@@ -11,8 +11,10 @@ CMD ["/bin/sh"]
 RUN apk add --no-cache swig
 
 # Python
-RUN apk add --no-cache python3-dev py3-pip py3-wheel
-RUN python3 -m pip install absl-py mypy-protobuf
+RUN apk add --no-cache python3-dev py3-pip py3-wheel py3-virtualenv \
+ py3-numpy py3-pandas py3-matplotlib
+RUN rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED \
+&& python3 -m pip install absl-py mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
