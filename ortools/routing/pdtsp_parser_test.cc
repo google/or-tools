@@ -19,8 +19,8 @@
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/path.h"
+#include "ortools/base/types.h"
 
 #if defined(_MSC_VER)
 #define ROOT_DIR "../../../../../../../"

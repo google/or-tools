@@ -46,7 +46,7 @@
 
 #include "absl/base/port.h"  // disable some warnings on Windows
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 

@@ -22,8 +22,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/string_array.h"

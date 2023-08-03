@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 
 namespace operations_research {

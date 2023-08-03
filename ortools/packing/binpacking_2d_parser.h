@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 
 namespace operations_research {

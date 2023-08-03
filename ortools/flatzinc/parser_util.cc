@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.tab.hh"
 #include "ortools/util/string_array.h"
