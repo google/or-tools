@@ -2032,6 +2032,76 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         self.assertEqual(solver.objective_value, 220)
         self.assertSequenceAlmostEqual(i, [0, 1, 1])
 
+    def test_max_flow_problem(self):
+        # Testing max flow problem with 8 nodes
+        # 0-8, source 0, target 8
+        # Edges:
+        # (0,1), (0,2), (0,3), (1,4), (2,4),(2,5), (2,6), (3,5), (4,7), (5,7), (6,7)
+        # Variables: flow_var- pandas series of flows, indexed by edges
+        # Max: flow[(0,1)] + flow[(0,2)] + flow[(0,3)]
+        # S.t: flow[(0,1)] <= 3
+        #      flow[(0,2)] <= 2
+        #      flow[(0,3)] <= 2
+        #      flow[(1,4)] <= 5
+        #      flow[(1,5)] <= 1
+        #      flow[(2,4)] <= 1
+        #      flow[(2,5)] <= 3
+        #      flow[(2,6)] <= 1
+        #      flow[(3,5)] <= 1
+        #      flow[(4,7)] <= 4
+        #      flow[(5,7)] <= 2
+        #      flow[(6,7)] <= 4
+        # Flow conservation constraints:
+        #      flow[(0,1)] = flow[(1,4)] + flow[(1,5)]
+        #      flow[(0,2)] = flow[(2,4)] + flow[(2,5)] + flow[(2,6)]
+        #      flow[(0,3)] = flow[(3,5)]
+        #      flow[(1,4)] + flow[(2,4)] = flow[(4,7)]
+        #      flow[(1,5)] + flow[(2,5)] + flow[(3,5)] = X[(5,7)]
+        #      flow[(2,6)] = flow[(6,7)]
+
+        model = mb.ModelBuilder()
+        nodes = [1, 2, 3, 4, 5, 6]
+        edge_capacities = pd.Series(
+            {
+                (0, 1): 3,
+                (0, 2): 2,
+                (0, 3): 2,
+                (1, 4): 5,
+                (1, 5): 1,
+                (2, 4): 1,
+                (2, 5): 3,
+                (2, 6): 1,
+                (3, 5): 1,
+                (4, 7): 4,
+                (5, 7): 2,
+                (6, 7): 4,
+            }
+        )
+        flow_var = model.new_var_series(
+            "flow_var",
+            pd.MultiIndex.from_tuples(
+                edge_capacities.index, names=("source", "target")
+            ),
+            lower_bounds=0,
+            is_integral=True,
+        )
+        self.assertLen(model.get_variables(), 12)
+        model.maximize(flow_var[0, :].sum())
+        model.add(
+            (flow_var - edge_capacities).apply(lambda expr: expr <= 0),
+            name="capacity_constraint",
+        )
+        for node in nodes:
+            # must specify constraint name when directly comparing two variables
+            model.add(
+                flow_var.xs(node, level=0).sum() == flow_var.xs(node, level=1).sum(),
+                name="flow_conservation",
+            )
+        solver = mb.ModelSolver("sat")
+        run = solver.solve(model)
+        self.assertEqual(run, mb.SolveStatus.OPTIMAL)
+        self.assertEqual(solver.objective_value, 6)
+
 
 if __name__ == "__main__":
     absltest.main()
