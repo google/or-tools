@@ -84,8 +84,13 @@ else()
   endforeach()
 endif()
 
-if(BUILD_SHARED_LIBS AND MSVC)
-  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+if(MSVC)
+  if(NOT BUILD_SHARED_LIBS)
+    # With CMake 3.27+ ZERO_CHECK target will create a cyclic dependencies error.
+    set(CMAKE_SUPPRESS_REGENERATION TRUE)
+  else()
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  endif()
 endif()
 
 # Disable CTest targets
