@@ -147,20 +147,26 @@ class SharedTreeManager {
   // Returns the number of splits each worker should propose this restart.
   int SplitsToGeneratePerWorker() const;
 
-  // Syncs the state of path with the internal search tree.
-  // Clears `path` and returns false if the assigned subtree is closed.
+  // Syncs the state of path with the shared search tree.
+  // Clears `path` and returns false if the assigned subtree is closed or a
+  // restart has invalidated the path.
   bool SyncTree(ProtoTrail& path) ABSL_LOCKS_EXCLUDED(mu_);
 
   // Assigns a path prefix that the worker should explore.
   void ReplaceTree(ProtoTrail& path);
 
   // Asserts that the subtree in path up to `level` contains no improving
-  // solutions.
+  // solutions. Clears path.
   void CloseTree(ProtoTrail& path, int level);
 
   // Called by workers in order to split the shared tree.
   // `path` may or may not be extended by one level, branching on `decision`.
   void ProposeSplit(ProtoTrail& path, ProtoLiteral decision);
+
+  void Restart() {
+    absl::MutexLock l(&mu_);
+    RestartLockHeld();
+  }
 
  private:
   struct Node {
@@ -173,17 +179,18 @@ class SharedTreeManager {
     bool closed = false;
     bool implied = false;
   };
+  bool IsValid(const ProtoTrail& path) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* GetSibling(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void Split(std::vector<std::pair<Node*, int>>& nodes, ProtoLiteral lit)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* MakeSubtree(Node* parent, ProtoLiteral literal)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void ProcessNodeChanges() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  std::vector<std::pair<Node*, int>> GetAssignedNodes(ProtoTrail& path)
+  std::vector<std::pair<Node*, int>> GetAssignedNodes(const ProtoTrail& path)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void AssignLeaf(ProtoTrail& path, Node* leaf)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  void Restart() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  void RestartLockHeld() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   std::string ShortStatus() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
   mutable absl::Mutex mu_;
@@ -227,17 +234,19 @@ class SharedTreeWorker {
 
  private:
   // Syncs the assigned tree with the local trail, ensuring that any new
-  // implicatons are synced. This is a noop if the search is deeper than the
-  // assigned tree. Returns false if any clauses were added or for any other
-  // reason we might need to re-perform propagation.
+  // implications are synced. This is a noop if the search is deeper than the
+  // assigned tree. Returns false if the problem is unsat.
   bool SyncWithLocalTrail();
+  void SyncWithSharedTree();
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   LiteralIndex NextDecision();
+  void MaybeProposeSplit();
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
   bool AddImplications(absl::Span<const ProtoLiteral> implied_literals);
+  bool AddDecisionImplication(Literal literal, int level);
 
   const std::vector<Literal>& DecisionReason(int level);
 
@@ -256,6 +265,8 @@ class SharedTreeWorker {
   SearchHeuristics* heuristics_;
 
   ProtoTrail assigned_tree_;
+  std::vector<Literal> assigned_tree_literals_;
+
   int splits_wanted_ = 1;
 
   std::vector<Literal> reason_;
