@@ -207,12 +207,12 @@ function build_python() {
   echo "check python3..."
   command -v python3 | xargs echo "python3: " | tee -a build.log
   python3 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-  python3 -m pip install --upgrade --user pip
-  python3 -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
+  python3 -m pip install --upgrade --user --break-system-package pip
+  python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy-protobuf virtualenv
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-  protoc-gen-mypy --version | grep "3\.2\.0"
+  protoc-gen-mypy --version | grep "3\.5\.0"
 
   # Clean and build
   echo -n "Cleaning Python 3..." | tee -a build.log
