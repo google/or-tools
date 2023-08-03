@@ -17,11 +17,11 @@ BACKSLASH_SPACE := $(empty)\ $(empty)
 
 # Let's discover something about where we run
 ifeq ($(OS),Windows_NT)
-OS = Windows
+OS := Windows
 endif
 ifeq ($(OS),Windows)
-  PLATFORM=WIN64
-  SHELL = cmd.exe
+  PLATFORM := WIN64
+  SHELL := cmd.exe
 endif
 
 # Unix specific part.
@@ -164,7 +164,7 @@ ifneq ($(PLATFORM),WIN64)
 else # Windows specific part.
   # Check 64 bit.
   ifneq ("$(Platform)","x64")  # Visual Studio 2019/2022 64 bit
-    $(warning "Only 64 bit compilation is supported")
+    $(error "Only 64 bit compilation is supported")
   else
     CPU = x64
   endif
