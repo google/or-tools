@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "ortools/base/basictypes.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/sat/sat_solver.h"
