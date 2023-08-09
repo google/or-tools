@@ -178,7 +178,9 @@ absl::Span<const int> ProtoTrail::NodeIds(int level) const {
 }
 
 absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
-  DCHECK_LE(level, decision_indexes_.size());
+  if (level > decision_indexes_.size()) {
+    return absl::MakeSpan(literals_.data(), 0);
+  }
   int start = level == 0 ? 0 : decision_indexes_[level - 1] + 1;
   int end = level == decision_indexes_.size() ? node_ids_.size()
                                               : decision_indexes_[level];
@@ -561,20 +563,19 @@ bool SharedTreeWorker::AddImplications(
 }
 
 bool SharedTreeWorker::SyncWithLocalTrail() {
-  if (sat_solver_->CurrentDecisionLevel() > assigned_tree_.MaxLevel()) {
-    return sat_solver_->FinishPropagation() && helper_->BeforeTakingDecision();
-  }
-  while (sat_solver_->CurrentDecisionLevel() <= assigned_tree_.MaxLevel()) {
+  while (true) {
+    if (!sat_solver_->FinishPropagation()) return false;
     // Ensure we are at fixed point w.r.t. implications in the tree up to the
     // current level.
-    while (AddImplications(
-        assigned_tree_.Implications(sat_solver_->CurrentDecisionLevel()))) {
-      if (!sat_solver_->FinishPropagation()) return false;
+    if (AddImplications(
+            assigned_tree_.Implications(sat_solver_->CurrentDecisionLevel()))) {
+      continue;
     }
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
-    // Make sure the next assigned decision makes sense if there is one.
+    if (level >= assigned_tree_.MaxLevel()) break;
     if (level == assigned_tree_.MaxLevel()) break;
+    // The next decision is assigned, make sure it makes sense.
     const Literal next_decision = assigned_tree_literals_[level];
     if (!sat_solver_->Assignment().LiteralIsAssigned(next_decision)) break;
     if (sat_solver_->Assignment().LiteralIsFalse(next_decision)) {

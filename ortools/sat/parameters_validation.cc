@@ -101,6 +101,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(min_num_lns_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(shared_tree_num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(interleave_batch_size, 0, kMaxReasonableParallelism);
+  TEST_IN_RANGE(focus_on_terms_in_objective_lb_search_probability, 0.0, 1.0);
 
   // TODO(user): Consider using annotations directly in the proto for these
   // validation. It is however not open sourced.

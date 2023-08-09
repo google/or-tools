@@ -1721,6 +1721,7 @@ cc_binary(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:path",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:proto_utils",

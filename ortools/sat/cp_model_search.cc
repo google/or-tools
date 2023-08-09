@@ -508,16 +508,17 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   {
     SatParameters new_params = base_params;
-    new_params.set_linearization_level(1);
     new_params.set_use_objective_lb_search(true);
-    if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
-    }
-    strategies["objective_lb_search"] = new_params;
 
     new_params.set_linearization_level(0);
     strategies["objective_lb_search_no_lp"] = new_params;
 
+    new_params.set_linearization_level(1);
+    strategies["objective_lb_search"] = new_params;
+
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddDualSchedulingHeuristics(new_params);
+    }
     new_params.set_linearization_level(2);
     strategies["objective_lb_search_max_lp"] = new_params;
   }
@@ -548,6 +549,9 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["probing_no_lp"] = new_params;
 
     new_params.set_linearization_level(2);
+    // We want to spend more time on the LP here.
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;
   }
 
@@ -673,6 +677,15 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (num_workers_to_generate >= 24) {
       names.push_back("objective_shaving_search");
     }
+    if (num_workers_to_generate >= 26) {
+      names.push_back("objective_lb_search_no_lp");
+    }
+    if (num_workers_to_generate >= 28) {
+      names.push_back("objective_lb_search_max_lp");
+    }
+    if (num_workers_to_generate >= 30) {
+      names.push_back("core_max_lp");
+    }
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
@@ -725,7 +738,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     if (params.use_probing_search() && cp_model.variables().empty()) continue;
 
     if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
-      // Disable core search if only 1 term in the objective.
+      // Disable core search if there is only 1 term in the objective.
       if (cp_model.objective().vars().size() == 1 &&
           params.optimize_with_core()) {
         continue;

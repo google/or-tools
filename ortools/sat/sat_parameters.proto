@@ -1036,6 +1036,12 @@ message SatParameters {
   // minimizing) starting from the lower bound of the objective.
   optional bool use_objective_lb_search = 228 [default = false];
 
+  // With the given probability, objective_lb_search will fix each terms of the
+  // objective following an random order computed each time search returns to
+  // the root node.
+  optional double focus_on_terms_in_objective_lb_search_probability = 231
+      [default = 0.5];
+
   // This search differs from the previous search as it will not use assumptions
   // to bound the objective, and it will recreate a full model with the
   // hardcoded objective value.

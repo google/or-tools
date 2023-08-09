@@ -11,12 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstdint>
 #include <cstdlib>
-#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -24,42 +20,22 @@
 #include "absl/log/check.h"
 #include "absl/log/flags.h"
 #include "absl/log/initialize.h"
-#include "absl/random/random.h"
-#include "absl/status/status.h"
 #include "absl/strings/match.h"
-#include "absl/strings/numbers.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
-#include "ortools/base/timer.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/mps_reader.h"
-#include "ortools/lp_data/proto_utils.h"
+#include "ortools/base/path.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/opb_reader.h"
-#include "ortools/sat/optimization.h"
-#include "ortools/sat/pb_constraint.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_cnf_reader.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/sat/simplification.h"
-#include "ortools/sat/symmetry.h"
 #include "ortools/util/file_util.h"
-#include "ortools/util/logging.h"
-#include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(
     std::string, input, "",
@@ -83,7 +59,25 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-bool LoadBooleanProblem(const std::string& filename, CpModelProto* cp_model) {
+void TryToRemoveSuffix(absl::string_view suffix, std::string* str) {
+  if (file::Extension(*str) == suffix) *str = file::Stem(*str);
+}
+
+std::string ExtractName(const std::string& full_filename) {
+  std::string filename = std::string(file::Basename(full_filename));
+  // The order is important as '.pb.txt.gz' is a common suffix.
+  TryToRemoveSuffix("gz", &filename);
+  TryToRemoveSuffix("txt", &filename);
+  TryToRemoveSuffix("pb", &filename);
+  TryToRemoveSuffix("pbtxt", &filename);
+  TryToRemoveSuffix("proto", &filename);
+  TryToRemoveSuffix("prototxt", &filename);
+  TryToRemoveSuffix("textproto", &filename);
+  TryToRemoveSuffix("bin", &filename);
+  return filename;
+}
+
+bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -106,6 +100,9 @@ bool LoadBooleanProblem(const std::string& filename, CpModelProto* cp_model) {
     LOG(INFO) << "Reading a CpModelProto.";
     *cp_model = ReadFileToProtoOrDie<CpModelProto>(filename);
   }
+  if (cp_model->name().empty()) {
+    cp_model->set_name(ExtractName(filename));
+  }
   return true;
 }
 
@@ -127,7 +124,7 @@ int Run() {
   google::protobuf::Arena arena;
   CpModelProto* cp_model =
       google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
-  if (!LoadBooleanProblem(absl::GetFlag(FLAGS_input), cp_model)) {
+  if (!LoadProblem(absl::GetFlag(FLAGS_input), cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;
