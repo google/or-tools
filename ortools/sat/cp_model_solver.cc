@@ -23,14 +23,17 @@
 #include <memory>
 #include <random>
 #include <string>
-#include <string_view>
 #include <thread>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/random/distributions.h"
+#include "google/protobuf/arena.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/intervals.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
@@ -3669,26 +3672,24 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           params, helper, &shared));
     }
 
-    // TODO(user): If we have a model with scheduling + routing. We create
-    // a lot of LNS generators. Investigate if we can reduce this number.
-    if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
-        !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty() ||
-        !helper->TypeToConstraints(ConstraintProto::kCumulative).empty()) {
+    const bool has_no_overlap_or_cumulative =
+        !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
+        !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
+    const bool has_no_overlap2d =
+        !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
+
+    // Scheduling (no_overlap and cumulative) specific LNS.
+    const std::vector<std::vector<int>> intervals_in_constraints =
+        helper->GetUniqueIntervalSets();
+    if (has_no_overlap_or_cumulative) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
               helper, "scheduling_intervals_lns"),
           params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
-              helper, "scheduling_precedences_lns"),
-          params, helper, &shared));
-      subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
               helper, "scheduling_time_window_lns"),
           params, helper, &shared));
-
-      const std::vector<std::vector<int>> intervals_in_constraints =
-          helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2) {
         subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
@@ -3696,16 +3697,30 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                 "scheduling_resource_windows_lns"),
             params, helper, &shared));
       }
-      if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty()) {
-        subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
-                helper, "packing_rectangles_lns"),
-            params, helper, &shared));
-        subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<SlicePackingNeighborhoodGenerator>(
-                helper, "packing_slice_lns"),
-            params, helper, &shared));
-      }
+    }
+
+    // Packing (no_overlap_2d) Specific LNS.
+    if (has_no_overlap2d) {
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+              helper, "packing_rectangles_lns"),
+          params, helper, &shared));
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
+              helper, "packing_precedences_lns"),
+          params, helper, &shared));
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<SlicePackingNeighborhoodGenerator>(
+              helper, "packing_slice_lns"),
+          params, helper, &shared));
+    }
+
+    // Generic scheduling/packing LNS.
+    if (has_no_overlap_or_cumulative || has_no_overlap2d) {
+      subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
+              helper, "scheduling_precedences_lns"),
+          params, helper, &shared));
     }
 
     const int num_circuit = static_cast<int>(

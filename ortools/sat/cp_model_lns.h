@@ -683,11 +683,26 @@ class SchedulingResourceWindowsNeighborhoodGenerator
 
 // Only make sense for problems with no_overlap_2d constraints. This select a
 // random set of rectangles (i.e. a pair of intervals) of the problem according
-// to the difficulty. Then, fix all variables in the selected intervals.
+// to the difficulty. Then fix all variables in the selected intervals.
 class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomRectanglesPackingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, absl::BitGenRef random) final;
+};
+
+// Only make sense for problems with no_overlap_2d constraints. This select a
+// random set of rectangles (i.e. a pair of intervals) of the problem according
+// to the difficulty. Then add all implied precedences from the current
+// positions of the rectangles in this
+class RandomPrecedencesPackingNeighborhoodGenerator
+    : public NeighborhoodGenerator {
+ public:
+  explicit RandomPrecedencesPackingNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 

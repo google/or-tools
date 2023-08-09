@@ -60,6 +60,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -2059,6 +2060,23 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
   }
 
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
+}
+
+Neighborhood RandomPrecedencesPackingNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<std::pair<int, int>> rectangles_to_relax =
+      helper_.GetActiveRectangles(initial_solution);
+  GetRandomSubset(difficulty, &rectangles_to_relax, random);
+  std::vector<int> intervals_to_relax;
+  for (const auto& [x, y] : rectangles_to_relax) {
+    intervals_to_relax.push_back(x);
+    intervals_to_relax.push_back(y);
+  }
+  gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
+
+  return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
+      intervals_to_relax, initial_solution, random, helper_);
 }
 
 Neighborhood SlicePackingNeighborhoodGenerator::Generate(
