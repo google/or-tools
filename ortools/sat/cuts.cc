@@ -76,7 +76,7 @@ std::string CutTerm::DebugString() const {
 }
 
 std::string CutData::DebugString() const {
-  std::string result = absl::StrCat("CutData rhs=", rhs, "\n");
+  std::string result = absl::StrCat("CutData rhs="/*, rhs*/, "\n");
   for (const CutTerm& term : terms) {
     absl::StrAppend(&result, term.DebugString(), "\n");
   }
@@ -2003,9 +2003,14 @@ FlowCoverCutHelper::~FlowCoverCutHelper() {
 }
 
 std::string SingleNodeFlow::DebugString() const {
-  return absl::StrCat("#in:", in_flow.size(), " #out:", out_flow.size(),
-                      " demand:", demand, " #bool:", num_bool,
-                      " #lb:", num_to_lb, " #ub:", num_to_ub);
+  return absl::StrCat(
+      "#in:", in_flow.size()
+      ," #out:", out_flow.size()
+      //," demand:", demand
+      ," #bool:", num_bool
+      ," #lb:", num_to_lb
+      ," #ub:", num_to_ub
+      );
 }
 
 // The flow info of a linear term is always the same.
