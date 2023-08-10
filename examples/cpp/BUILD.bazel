@@ -771,6 +771,18 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "strawberry_fields_with_column_generation_test",
+    srcs = ["strawberry_fields_with_column_generation.cc"],
+    size = "large",
+    args = ["--colgen_instance=4"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 # Dimacs assignment problems
 cc_library(
     name = "print_dimacs_assignment",
