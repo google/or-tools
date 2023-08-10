@@ -1029,6 +1029,17 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "slitherlink_sat_test",
+    srcs = ["slitherlink_sat.cc"],
+    size = "small",
+    deps = [
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "uncapacitated_facility_location",
     srcs = ["uncapacitated_facility_location.cc"],
@@ -1045,6 +1056,17 @@ cc_binary(
 cc_binary(
     name = "variable_intervals_sat",
     srcs = ["variable_intervals_sat.cc"],
+    deps = [
+        "//ortools/sat:cp_model",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:time_limit",
+    ],
+)
+
+cc_test(
+    name = "variable_intervals_sat_test",
+    srcs = ["variable_intervals_sat.cc"],
+    size = "small",
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:sat_parameters_cc_proto",
