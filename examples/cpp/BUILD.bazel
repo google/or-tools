@@ -11,6 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+exports_files(
+    [
+        "shift_minimization.dat",
+    ],
+)
+
+
 # Constraint solver examples.
 cc_binary(
     name = "binpacking_2d_sat",
@@ -170,6 +177,28 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "jobshop_sat_ft06",
+    srcs = [
+        "jobshop_sat.cc",
+    ],
+    size = "small",
+    args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
+    data = ["//ortools/scheduling/testdata:ft06"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:timer",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:model",
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_binary(
     name = "magic_sequence_sat",
     srcs = ["magic_sequence_sat.cc"],
@@ -200,6 +229,26 @@ cc_binary(
     srcs = [
         "shift_minimization_sat.cc",
     ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "shift_minimization_sat_test",
+    srcs = [
+        "shift_minimization_sat.cc",
+    ],
+    size = "medium",
+    args = ["--input $(rootpath //examples/cpp:shift_minimization.dat)"],
+    data = ["//examples/cpp:shift_minimization.dat"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
