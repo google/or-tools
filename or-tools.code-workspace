@@ -135,5 +135,10 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "maven.view": "hierarchical",
     "git.ignoreLimitWarning": true,
+    "python.analysis.extraPaths": [
+      "${workspaceRoot}",
+      "${workspaceRoot}/ortools/gen",
+      "${workspaceRoot}/dependencies/sources/protobuf-3.6.1/python"
+    ],
 	}
 }

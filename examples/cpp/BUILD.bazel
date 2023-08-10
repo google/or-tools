@@ -27,6 +27,24 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "binpacking_2d_sat_class01_instance2_test",
+    size = "medium",
+    srcs = [
+        "binpacking_2d_sat.cc",
+    ],
+    args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    deps = [
+        "//ortools/base",
+        "//ortools/packing:binpacking_2d_parser",
+        "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
+        "//ortools/sat:cp_model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
 cc_binary(
     name = "constraint_programming_cp",
     srcs = ["constraint_programming_cp.cc"],
@@ -72,9 +90,40 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "dobble_ls_test",
+    srcs = ["dobble_ls.cc"],
+    size = "medium",
+    args = ["--time_limit_in_ms=10000"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/constraint_solver:cp",
+        "//ortools/util:bitset",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "golomb_sat",
     srcs = ["golomb_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "golomb_sat_test",
+    size = "medium",
+    srcs = ["golomb_sat.cc"],
+    args = ["--size 5"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -222,6 +271,28 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "network_routing_sat_test",
+    size = "medium",
+    srcs = ["network_routing_sat.cc"],
+    args = ["--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/graph:shortest_paths",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "//ortools/util:tuple_set",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "nqueens",
     srcs = ["nqueens.cc"],
@@ -236,6 +307,20 @@ cc_binary(
 
 cc_binary(
     name = "sports_scheduling_sat",
+    srcs = ["sports_scheduling_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "sports_scheduling_sat_test",
+    size = "medium",
     srcs = ["sports_scheduling_sat.cc"],
     deps = [
         "//ortools/base",
@@ -465,6 +550,27 @@ cc_binary(
 cc_binary(
     name = "mps_driver",
     srcs = ["mps_driver.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:timer",
+        "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/util:proto_tools",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "mps_driver_test",
+    size = "small",
+    srcs = ["mps_driver.cc"],
+    args = ["--input $(rootpath //ortools/linear_solver/testdata:maximization.mps)"],
+    data = ["//ortools/linear_solver/testdata:maximization.mps"],
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
