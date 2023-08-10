@@ -15,6 +15,7 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files(
     [
+        "1D__bpp_scholl__bin2data.N2W2B1R0.vbp",
         "Class_01.2bp",
     ],
 )

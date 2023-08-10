@@ -32,7 +32,7 @@
 #include "ortools/packing/vector_bin_packing_parser.h"
 
 ABSL_FLAG(std::string, input, "", "Vector Bin Packing (.vpb) data file name.");
-ABSL_FLAG(std::string, params, "",
+ABSL_FLAG(std::string, params, "num_workers:16,max_time_in_seconds:10",
           "Parameters in solver specific text format.");
 ABSL_FLAG(std::string, solver, "sat", "Solver to use: sat, scip");
 ABSL_FLAG(double, time_limit, 900.0, "Time limit in seconds");

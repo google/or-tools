@@ -14,9 +14,9 @@
 exports_files(
     [
         "shift_minimization.dat",
+        "wt40.txt",
     ],
 )
-
 
 # Constraint solver examples.
 cc_binary(
@@ -61,6 +61,16 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "constraint_programming_cp-test",
+    size = "small",
+    srcs = ["constraint_programming_cp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+    ],
+)
+
 cc_binary(
     name = "costas_array_sat",
     srcs = ["costas_array_sat.cc"],
@@ -75,8 +85,72 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "costas_array_sat_model1_test",
+    size = "medium",
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=1",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "costas_array_sat_model2_test",
+    size = "medium",
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=2",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "costas_array_sat_model3_test",
+    size = "medium",
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=3",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "cryptarithm_sat",
+    srcs = ["cryptarithm_sat.cc"],
+    deps = [
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+    ],
+)
+
+cc_test(
+    name = "cryptarithm_sat_test",
+    size = "small",
     srcs = ["cryptarithm_sat.cc"],
     deps = [
         "//ortools/sat:cp_model",
@@ -99,8 +173,8 @@ cc_binary(
 
 cc_test(
     name = "dobble_ls_test",
-    srcs = ["dobble_ls.cc"],
     size = "medium",
+    srcs = ["dobble_ls.cc"],
     args = ["--time_limit_in_ms=10000"],
     deps = [
         "//ortools/base",
@@ -158,6 +232,24 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "knapsack_2d_sat_class01_instance2_test",
+    size = "medium",
+    srcs = [
+        "knapsack_2d_sat.cc",
+    ],
+    args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    deps = [
+        "//ortools/base",
+        "//ortools/packing:binpacking_2d_parser",
+        "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
+        "//ortools/sat:cp_model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
 cc_binary(
     name = "jobshop_sat",
     srcs = [
@@ -179,10 +271,10 @@ cc_binary(
 
 cc_test(
     name = "jobshop_sat_ft06",
+    size = "small",
     srcs = [
         "jobshop_sat.cc",
     ],
-    size = "small",
     args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
     data = ["//ortools/scheduling/testdata:ft06"],
     deps = [
@@ -212,8 +304,35 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "magic_sequence_sat_test",
+    size = "medium",
+    srcs = ["magic_sequence_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "multi_knapsack_sat",
+    srcs = [
+        "multi_knapsack_sat.cc",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "@com_google_absl//absl/flags:flag",
+    ],
+)
+
+cc_test(
+    name = "multi_knapsack_sat_test",
+    size = "medium",
     srcs = [
         "multi_knapsack_sat.cc",
     ],
@@ -243,10 +362,10 @@ cc_binary(
 
 cc_test(
     name = "shift_minimization_sat_test",
+    size = "medium",
     srcs = [
         "shift_minimization_sat.cc",
     ],
-    size = "medium",
     args = ["--input $(rootpath //examples/cpp:shift_minimization.dat)"],
     data = ["//examples/cpp:shift_minimization.dat"],
     deps = [
@@ -286,8 +405,51 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "weighted_tardiness_sat_test",
+    size = "medium",
+    srcs = [
+        "weighted_tardiness_sat.cc",
+    ],
+    args = ["--input $(rootpath //examples/cpp:wt40.txt)"],
+    data = ["//examples/cpp:wt40.txt"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:disjunctive",
+        "//ortools/sat:integer",
+        "//ortools/sat:integer_expr",
+        "//ortools/sat:intervals",
+        "//ortools/sat:model",
+        "//ortools/sat:optimization",
+        "//ortools/sat:precedences",
+        "//ortools/sat:sat_solver",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
 cc_binary(
     name = "magic_square_sat",
+    srcs = ["magic_square_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "magic_square_sat_test",
+    size = "medium",
     srcs = ["magic_square_sat.cc"],
     deps = [
         "//ortools/base",
@@ -354,6 +516,18 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "nqueens_test",
+    srcs = ["nqueens.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/constraint_solver:cp",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 cc_binary(
     name = "sports_scheduling_sat",
     srcs = ["sports_scheduling_sat.cc"],
@@ -386,6 +560,27 @@ cc_binary(
     srcs = [
         "vector_bin_packing_solver.cc",
     ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/packing:arc_flow_builder",
+        "//ortools/packing:arc_flow_solver",
+        "//ortools/packing:vector_bin_packing_cc_proto",
+        "//ortools/packing:vector_bin_packing_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "vector_bin_packing_solver_test",
+    size = "medium",
+    srcs = [
+        "vector_bin_packing_solver.cc",
+    ],
+    args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
+    data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -520,8 +715,32 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "integer_programming_test",
+    size = "small",
+    srcs = ["integer_programming.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_binary(
     name = "linear_programming",
+    srcs = ["linear_programming.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "linear_programming_test",
+    size = "small",
     srcs = ["linear_programming.cc"],
     deps = [
         "//ortools/base",
@@ -646,9 +865,32 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "linear_assignment_api_test",
+    size = "small",
+    srcs = ["linear_assignment_api.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:ebert_graph",
+        "//ortools/graph:linear_assignment",
+    ],
+)
+
 # Flow C++ Example
 cc_binary(
     name = "flow_api",
+    srcs = ["flow_api.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:ebert_graph",
+        "//ortools/graph:max_flow",
+        "//ortools/graph:min_cost_flow",
+    ],
+)
+
+cc_test(
+    name = "flow_api_test",
+    size = "small",
     srcs = ["flow_api.cc"],
     deps = [
         "//ortools/base",
@@ -667,8 +909,28 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "max_flow_test",
+    size = "small",
+    srcs = ["max_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:max_flow",
+    ],
+)
+
 cc_binary(
     name = "min_cost_flow",
+    srcs = ["min_cost_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:min_cost_flow",
+    ],
+)
+
+cc_test(
+    name = "min_cost_flow_test",
+    size = "small",
     srcs = ["min_cost_flow.cc"],
     deps = [
         "//ortools/base",
