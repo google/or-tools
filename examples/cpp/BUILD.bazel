@@ -62,7 +62,7 @@ cc_binary(
 )
 
 cc_test(
-    name = "constraint_programming_cp-test",
+    name = "constraint_programming_cp_test",
     size = "small",
     srcs = ["constraint_programming_cp.cc"],
     deps = [
