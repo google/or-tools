@@ -66,7 +66,7 @@ std::string CutTerm::DebugString() const {
 }
 
 std::string CutData::DebugString() const {
-  std::string result = absl::StrCat("CutData rhs="/*, rhs*/, "\n");
+  std::string result = absl::StrCat("CutData rhs=", rhs, "\n");
   for (const CutTerm& term : terms) {
     absl::StrAppend(&result, term.DebugString(), "\n");
   }
@@ -1996,7 +1996,7 @@ std::string SingleNodeFlow::DebugString() const {
   return absl::StrCat(
       "#in:", in_flow.size()
       ," #out:", out_flow.size()
-      //," demand:", demand
+      ," demand:", demand
       ," #bool:", num_bool
       ," #lb:", num_to_lb
       ," #ub:", num_to_ub

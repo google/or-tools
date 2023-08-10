@@ -53,13 +53,4 @@ enum LogSeverity {
 };
 }  // namespace google
 
-namespace absl {
-template <typename Sink>
-void AbslStringify(Sink& sink, absl::int128 v) {
-  std::ostringstream oss;
-  oss << v;
-  sink.Append(oss.str());
-}
-}  // namespace absl
-
 #endif  // OR_TOOLS_BASE_LOGGING_H_
