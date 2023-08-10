@@ -24,6 +24,7 @@
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
+#include "absl/numeric/int128.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -51,5 +52,14 @@ enum LogSeverity {
   GLOG_FATAL = static_cast<int>(absl::LogSeverity::kFatal),
 };
 }  // namespace google
+
+namespace absl {
+template <typename Sink>
+void AbslStringify(Sink& sink, absl::int128 v) {
+  std::ostringstream oss;
+  oss << v;
+  sink.Append(oss.str());
+}
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_
