@@ -12,7 +12,7 @@
 # limitations under the License.
 
 exports_files([
-    "protobuf-v23.3.patch",
+    "protobuf-v23.4.patch",
     "pybind11_bazel.patch",
     "pybind11_protobuf.patch",
 ])
