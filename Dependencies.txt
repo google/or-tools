@@ -1,4 +1,4 @@
-Protobuf=v23.4
+Protobuf=v24.0
 abseil-cpp=20230802.0
 Cbc=2.10.7
 Cgl=0.60.5

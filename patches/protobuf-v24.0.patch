@@ -1,21 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index dc09f63db..7341519d8 100644
+index ac0d03c3a..ac8aee8a7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -17,6 +17,12 @@ if (POLICY CMP0077)
-   cmake_policy(SET CMP0077 NEW)
- endif (POLICY CMP0077)
- 
-+# find_package() uses <PackageName>_ROOT variables.
-+# New in CMake 3.12: https://cmake.org/cmake/help/latest/policy/CMP0074.html
-+if(POLICY CMP0074)
-+  cmake_policy(SET CMP0074 NEW)
-+endif()
-+
- # Project
- project(protobuf C CXX)
- 
-@@ -55,7 +61,7 @@ else (BUILD_SHARED_LIBS)
+@@ -41,7 +41,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -24,7 +11,7 @@ index dc09f63db..7341519d8 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -178,24 +184,16 @@ endif()
+@@ -158,24 +158,16 @@ endif()
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -46,20 +33,20 @@ index dc09f63db..7341519d8 100644
 -    set(ZLIB_INCLUDE_DIRECTORIES)
 -    set(ZLIB_LIBRARIES)
 -  endif (ZLIB_FOUND)
-+  if (NOT TARGET ZLIB::ZLIB)
-+    find_package(ZLIB REQUIRED)
-+  endif()
-+  set(HAVE_ZLIB 1)
-+  # FindZLIB module define ZLIB_INCLUDE_DIRS variable
-+  # Set ZLIB_INCLUDE_DIRECTORIES for compatible
-+  set(ZLIB_INCLUDE_DIRECTORIES ${ZLIB_INCLUDE_DIRECTORIES} ${ZLIB_INCLUDE_DIRS})
-+  # Using imported target if exists
-+  set(ZLIB_LIBRARIES ZLIB::ZLIB)
-+  set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)\n  find_package(ZLIB REQUIRED)\nendif()")
++ if (NOT TARGET ZLIB::ZLIB)
++   find_package(ZLIB REQUIRED)
++ endif()
++ set(HAVE_ZLIB 1)
++ # FindZLIB module define ZLIB_INCLUDE_DIRS variable
++ # Set ZLIB_INCLUDE_DIRECTORIES for compatible
++ set(ZLIB_INCLUDE_DIRECTORIES ${ZLIB_INCLUDE_DIRECTORIES} ${ZLIB_INCLUDE_DIRS})
++ # Using imported target if exists
++ set(ZLIB_LIBRARIES ZLIB::ZLIB)
++ set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)\n  find_package(ZLIB REQUIRED)\nendif()")
  endif (protobuf_WITH_ZLIB)
  
- if (HAVE_ZLIB)
-@@ -321,7 +319,6 @@ else (MSVC)
+ # We need to link with libatomic on systems that do not have builtin atomics, or
+@@ -277,7 +269,6 @@ else (MSVC)
  endif (MSVC)
  
  include_directories(
@@ -68,10 +55,10 @@ index dc09f63db..7341519d8 100644
    ${protobuf_SOURCE_DIR}/src)
  
 diff --git a/cmake/libprotobuf.cmake b/cmake/libprotobuf.cmake
-index 715ffb51c..16edf9dcf 100644
+index 422754a1a..ea91898d5 100644
 --- a/cmake/libprotobuf.cmake
 +++ b/cmake/libprotobuf.cmake
-@@ -25,7 +25,9 @@ endif()
+@@ -26,7 +26,9 @@ endif()
  if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
    target_link_libraries(libprotobuf PRIVATE log)
  endif()
@@ -80,5 +67,5 @@ index 715ffb51c..16edf9dcf 100644
 +  ${protobuf_SOURCE_DIR}/src
 +  ${protobuf_SOURCE_DIR})
  target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})
+ protobuf_configure_target(libprotobuf)
  if(protobuf_BUILD_SHARED_LIBS)
-   target_compile_definitions(libprotobuf
