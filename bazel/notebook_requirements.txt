@@ -8,6 +8,10 @@ absl-py==1.4.0
     # via -r bazel/notebook_requirements.in
 anyio==3.7.0
     # via jupyter-server
+appnope==0.1.3
+    # via
+    #   ipykernel
+    #   ipython
 argon2-cffi==21.3.0
     # via jupyter-server
 argon2-cffi-bindings==21.2.0
@@ -262,7 +266,7 @@ terminado==0.17.1
     #   jupyter-server-terminals
 tinycss2==1.2.1
     # via nbconvert
-tornado==6.3.2
+tornado==6.3.3
     # via
     #   -r bazel/notebook_requirements.in
     #   ipykernel
