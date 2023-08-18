@@ -35,7 +35,7 @@
     <Compile Include="@FILE_NAME@" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageReference Include="xunit" Version="2.5.0" />
-	<PackageReference Include="xunit.runner.console" Version="2.5.0" />
+    <PackageReference Include="xunit.runner.console" Version="2.5.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.0" />
     <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
   </ItemGroup>
