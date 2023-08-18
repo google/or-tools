@@ -65,6 +65,7 @@
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/ebert_graph.h"
@@ -3999,7 +4000,8 @@ void RoutingModel::CreateNeighborhoodOperators(
             parameters.local_cheapest_insertion_pickup_delivery_strategy(),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
-                {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}));
+                {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
+            bin_capacities_.get());
       };
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS] =
       solver_->RevAlloc(new FilteredHeuristicCloseNodesLNSOperator(
@@ -4407,6 +4409,60 @@ LocalSearchFilterManager* RoutingModel::GetOrCreateLocalSearchFilterManager(
     local_search_filter_managers_[options] = local_search_filter_manager;
   }
   return local_search_filter_manager;
+}
+
+std::unique_ptr<BinCapacities> MakeBinCapacities(
+    const std::vector<RoutingDimension*>& dimensions,
+    const PathsMetadata& paths_metadata) {
+  const int num_vehicles = paths_metadata.NumPaths();
+  auto bin_capacities = std::make_unique<BinCapacities>(num_vehicles);
+  std::vector<BinCapacities::LoadLimit> load_limits;
+  for (const RoutingDimension* dimension : dimensions) {
+    // If the dimension is not unary, skip.
+    if (dimension->GetUnaryTransitEvaluator(0) == nullptr) continue;
+    // If the dimension has no constant-signed transit evaluator, skip.
+    if (dimension->AllTransitEvaluatorSignsAreUnknown()) continue;
+    // For each vehicle, if the sign of its evaluator is constant,
+    // set a transit evaluator to pass to BinCapacities.
+    load_limits.assign(num_vehicles, {.max_load = kint64max,
+                                      .soft_max_load = 0,
+                                      .cost_above_soft_max_load = 0});
+    for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
+      const RoutingModel::TransitEvaluatorSign sign =
+          dimension->GetTransitEvaluatorSign(vehicle);
+      if (sign == RoutingModel::kTransitEvaluatorSignUnknown) continue;
+      // Vehicle load changes monotonically along the route.
+      // If transit signs are >= 0, the min load is at start, the max at end.
+      // If transit signs are <= 0, the max load is at start, the min at end.
+      // The encoding into BinCapacities associates a bin dimension with this
+      // routing dimension, with bin capacity = vehicle capacity - min load,
+      // and bin item size = abs(transit(node)).
+      int64_t min_node = paths_metadata.Starts()[vehicle];
+      int64_t max_node = paths_metadata.Ends()[vehicle];
+      if (sign == RoutingModel::kTransitEvaluatorSignNegativeOrZero) {
+        std::swap(min_node, max_node);
+      }
+      const int64_t load_min =
+          std::max<int64_t>(0, dimension->CumulVar(min_node)->Min());
+      const int64_t load_max =
+          std::min(dimension->vehicle_capacities()[vehicle],
+                   dimension->CumulVar(max_node)->Max());
+      load_limits[vehicle].max_load = CapSub(load_max, load_min);
+      if (dimension->HasCumulVarSoftUpperBound(max_node)) {
+        load_limits[vehicle].soft_max_load =
+            CapSub(dimension->GetCumulVarSoftUpperBound(max_node), load_min);
+        load_limits[vehicle].cost_above_soft_max_load =
+            dimension->GetCumulVarSoftUpperBoundCoefficient(max_node);
+      }
+    }
+    bin_capacities->AddDimension(
+        [dimension](int node, int vehicle) {
+          return CapAbs(dimension->GetUnaryTransitEvaluator(vehicle)(node));
+        },
+        load_limits);
+  }
+  if (bin_capacities->NumDimensions() == 0) bin_capacities.reset(nullptr);
+  return bin_capacities;
 }
 
 namespace {
@@ -4846,7 +4902,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
               lci_pair_strategy,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/false,
-                                      /*filter_with_cp_solver=*/false}));
+                                      /*filter_with_cp_solver=*/false}),
+              bin_capacities_.get());
   IntVarFilteredDecisionBuilder* const strong_lci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
@@ -4854,9 +4911,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
             return GetArcCostForVehicle(i, j, vehicle);
           },
           lci_pair_strategy,
-          GetOrCreateLocalSearchFilterManager(
-              search_parameters, {/*filter_objective=*/false,
-                                  /*filter_with_cp_solver=*/true}));
+          GetOrCreateLocalSearchFilterManager(search_parameters,
+                                              {/*filter_objective=*/false,
+                                               /*filter_with_cp_solver=*/true}),
+          bin_capacities_.get());
   first_solution_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] = solver_->Try(
           first_solution_filtered_decision_builders_
@@ -4876,14 +4934,16 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
               /*evaluator=*/nullptr, lcci_pair_strategy,
               GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/true,
-                                      /*filter_with_cp_solver=*/false}));
+                                      /*filter_with_cp_solver=*/false}),
+              bin_capacities_.get());
   IntVarFilteredDecisionBuilder* const strong_lcci =
       CreateIntVarFilteredDecisionBuilder<
           LocalCheapestInsertionFilteredHeuristic>(
           /*evaluator=*/nullptr, lcci_pair_strategy,
-          GetOrCreateLocalSearchFilterManager(
-              search_parameters, {/*filter_objective=*/true,
-                                  /*filter_with_cp_solver=*/true}));
+          GetOrCreateLocalSearchFilterManager(search_parameters,
+                                              {/*filter_objective=*/true,
+                                               /*filter_with_cp_solver=*/true}),
+          bin_capacities_.get());
   first_solution_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION] = solver_->Try(
           first_solution_filtered_decision_builders_
@@ -5895,6 +5955,16 @@ int64_t RoutingDimension::GetTransitValue(int64_t from_index, int64_t to_index,
                                           int64_t vehicle) const {
   DCHECK(transit_evaluator(vehicle) != nullptr);
   return transit_evaluator(vehicle)(from_index, to_index);
+}
+
+bool RoutingDimension::AllTransitEvaluatorSignsAreUnknown() const {
+  for (const int evaluator_index : class_evaluators_) {
+    if (model()->transit_evaluator_sign_[evaluator_index] !=
+        RoutingModel::kTransitEvaluatorSignUnknown) {
+      return false;
+    }
+  }
+  return true;
 }
 
 SortedDisjointIntervalList RoutingDimension::GetAllowedIntervalsInRange(

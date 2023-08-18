@@ -185,6 +185,7 @@
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/util/bitset.h"
@@ -236,6 +237,8 @@ class PathsMetadata {
   int GetPath(int64_t start_or_end_node) const {
     return path_of_node_[start_or_end_node];
   }
+  int NumPaths() const { return start_of_path_.size(); }
+  const std::vector<int64_t>& Paths() const { return path_of_node_; }
   const std::vector<int64_t>& Starts() const { return start_of_path_; }
   const std::vector<int64_t>& Ends() const { return end_of_path_; }
 
@@ -1750,6 +1753,11 @@ class RoutingModel {
   DecisionBuilder* MakeSelfDependentDimensionFinalizer(
       const RoutingDimension* dimension);
 
+  const PathsMetadata& GetPathsMetadata() const { return paths_metadata_; }
+#ifndef SWIG
+  BinCapacities* GetBinCapacities() { return bin_capacities_.get(); }
+#endif  // SWIG
+
  private:
   /// Local search move operator usable in routing.
   enum RoutingLocalSearchOperator {
@@ -2410,6 +2418,9 @@ class RoutingModel {
   std::vector<std::unique_ptr<StateDependentTransitCallbackCache>>
       state_dependent_transit_evaluators_cache_;
 
+  // Returns global BinCapacities state, may be nullptr.
+  std::unique_ptr<BinCapacities> bin_capacities_;
+
   friend class RoutingDimension;
   friend class RoutingModelInspector;
   friend class ResourceGroup::Resource;
@@ -2963,6 +2974,7 @@ class RoutingDimension {
     return model()->transit_evaluator_sign_[evaluator_index] ==
            RoutingModel::kTransitEvaluatorSignPositiveOrZero;
   }
+  bool AllTransitEvaluatorSignsAreUnknown() const;
   RoutingModel::TransitEvaluatorSign GetTransitEvaluatorSign(
       int vehicle) const {
     const int evaluator_index = class_evaluators_[vehicle_to_class_[vehicle]];

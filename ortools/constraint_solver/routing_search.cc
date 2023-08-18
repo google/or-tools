@@ -300,7 +300,7 @@ void IntVarFilteredHeuristic::ResetSolution() {
   SynchronizeFilters();
 }
 
-Assignment* const IntVarFilteredHeuristic::BuildSolution() {
+Assignment* IntVarFilteredHeuristic::BuildSolution() {
   // Initialize must be called before the state of the heuristic is changed, in
   // particular before InitializeSolution() and BuildSolutionInternal().
   Initialize();

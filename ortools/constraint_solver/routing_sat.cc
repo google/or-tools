@@ -23,7 +23,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/time/time.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
@@ -34,6 +33,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -758,13 +758,17 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
 
   // Set literals for vehicle performing node.
   for (int cp_node = 1; cp_node < num_cp_nodes; cp_node++) {
+    const int routing_index = cp_node - 1;
     // For starts and ends nodes vehicle_performs_node variables already set.
-    if (model.IsStart(cp_node - 1) || model.IsEnd(cp_node - 1)) continue;
+    if (model.IsStart(routing_index) || model.IsEnd(routing_index)) continue;
     // Each node should be performed by 1 vehicle, or be unperformed.
     // SUM(vehicle)(vehicle_performs_node[vehicle][cp_node]) + loop(cp_node) = 1
     std::vector<std::pair<int, double>> var_coeffs;
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
-      vehicle_performs_node[vehicle][cp_node] = AddVariable(cp_model, 0, 1);
+      vehicle_performs_node[vehicle][cp_node] =
+          model.VehicleVar(routing_index)->Contains(vehicle)
+              ? AddVariable(cp_model, 0, 1)
+              : AddVariable(cp_model, 0, 0);
       var_coeffs.push_back({vehicle_performs_node[vehicle][cp_node], 1});
     }
     var_coeffs.push_back({is_unperformed[cp_node], 1});

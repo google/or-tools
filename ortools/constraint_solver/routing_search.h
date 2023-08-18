@@ -21,7 +21,6 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -36,16 +35,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/mathutil.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_utils.h"
-#include "ortools/util/bitset.h"
 
 namespace operations_research {
 
@@ -182,7 +176,7 @@ class IntVarFilteredHeuristic {
 
   /// Builds a solution. Returns the resulting assignment if a solution was
   /// found, and nullptr otherwise.
-  Assignment* const BuildSolution();
+  Assignment* BuildSolution();
 
   /// Returns statistics on search, number of decisions sent to filters, number
   /// of decisions rejected by filters.

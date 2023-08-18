@@ -47,6 +47,7 @@ class BinCapacities {
   void AddDimension(
       std::function<int64_t(int, int)> load_demand_of_item_for_bin,
       std::vector<LoadLimit> load_limit_per_bin);
+  int NumDimensions() const { return load_demands_per_dimension_.size(); }
 
   // Checks whether adding item(s) is feasible w.r.t. dimensions.
   bool CheckAdditionFeasibility(int item, int bin) const;
