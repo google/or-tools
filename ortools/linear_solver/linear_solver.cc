@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <utility>
@@ -40,11 +41,11 @@
 #include "absl/time/time.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"

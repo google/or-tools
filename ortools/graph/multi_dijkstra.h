@@ -51,8 +51,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 

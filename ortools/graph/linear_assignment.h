@@ -206,9 +206,9 @@
 
 #include "absl/flags/declare.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"

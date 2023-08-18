@@ -176,9 +176,9 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 

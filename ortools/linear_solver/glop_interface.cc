@@ -20,8 +20,8 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"

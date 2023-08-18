@@ -175,9 +175,9 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"

@@ -62,9 +62,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"

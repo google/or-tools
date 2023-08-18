@@ -168,9 +168,9 @@
 #include "absl/base/port.h"
 #include "absl/debugging/leak_check.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
 
 namespace util {

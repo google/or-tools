@@ -96,8 +96,8 @@
 #include <vector>
 
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"

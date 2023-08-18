@@ -16,9 +16,9 @@
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 

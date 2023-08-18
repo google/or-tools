@@ -32,8 +32,8 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/eulerian_path.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"

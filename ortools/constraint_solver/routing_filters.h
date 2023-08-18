@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
