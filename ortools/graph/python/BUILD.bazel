@@ -12,6 +12,11 @@
 # limitations under the License.
 
 # Python wrapper for graph libraries.
+#
+# shortest_paths.h is not wrapped; prefer using other, more complete libraries,
+# such as:
+# - graph-tool: https://graph-tool.skewed.de/
+# - NetworkX: https://networkx.org/
 
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
