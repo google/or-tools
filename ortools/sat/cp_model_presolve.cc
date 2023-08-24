@@ -8451,6 +8451,37 @@ void CpModelPresolver::DetectDuplicateConstraints() {
              " time=", wall_timer.Get(), "s");
 }
 
+namespace {
+
+// Add factor * subset_ct to the given superset_ct.
+void Substitute(int64_t factor,
+                const absl::flat_hash_map<int, int64_t>& subset_coeff_map,
+                const Domain& subset_rhs, const Domain& superset_rhs,
+                LinearConstraintProto* mutable_linear) {
+  int new_size = 0;
+  const int old_size = mutable_linear->vars().size();
+  for (int i = 0; i < old_size; ++i) {
+    const int var = mutable_linear->vars(i);
+    int64_t coeff = mutable_linear->coeffs(i);
+    const auto it = subset_coeff_map.find(var);
+    if (it != subset_coeff_map.end()) {
+      coeff -= factor * it->second;
+      if (coeff == 0) continue;
+    }
+
+    mutable_linear->set_vars(new_size, var);
+    mutable_linear->set_coeffs(new_size, coeff);
+    ++new_size;
+  }
+  mutable_linear->mutable_vars()->Truncate(new_size);
+  mutable_linear->mutable_coeffs()->Truncate(new_size);
+  FillDomainInProto(
+      superset_rhs.AdditionWith(subset_rhs.MultiplicationBy(-factor)),
+      mutable_linear);
+}
+
+}  // namespace
+
 void CpModelPresolver::DetectDominatedLinearConstraints() {
   if (context_->time_limit()->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
@@ -8459,9 +8490,23 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  // We will reuse the constraint <-> variable graph as a storage for the
-  // inclusion detection.
-  InclusionDetector detector(context_->ConstraintToVarsGraph());
+  // Because we only deal with linear constraint and we want to ignore the
+  // enforcement part, we reuse the variable list in the inclusion detector.
+  // Note that we ignore "unclean" constraint, so we only have positive
+  // reference there.
+  class Storage {
+   public:
+    explicit Storage(CpModelProto* proto) : proto_(*proto) {}
+    int size() const { return static_cast<int>(proto_.constraints().size()); }
+    absl::Span<const int> operator[](int c) const {
+      return absl::MakeSpan(proto_.constraints(c).linear().vars());
+    }
+
+   private:
+    const CpModelProto& proto_;
+  };
+  Storage storage(context_->working_model);
+  InclusionDetector detector(storage);
   detector.SetWorkLimit(context_->params().presolve_inclusion_work_limit());
 
   // Because we use the constraint <-> variable graph, we cannot modify it
@@ -8477,8 +8522,11 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     const ConstraintProto& ct = context_->working_model->constraints(c);
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
 
-    // TODO(user): We can deal with enforced constraints in some situation.
-    if (!ct.enforcement_literal().empty()) continue;
+    // We only look at long enforced constraint to avoid all the linear of size
+    // one or two which can be numerous.
+    if (!ct.enforcement_literal().empty()) {
+      if (ct.linear().vars().size() < 3) continue;
+    }
 
     if (!LinearConstraintIsClean(ct.linear())) {
       // This shouldn't happen except in potential corner cases were the
@@ -8514,7 +8562,11 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
     // the common positions. Note that assuming subset has been gcd reduced,
     // there is not point considering factor_b != 1.
     bool perfect_match = true;
+
+    // Find interesting factor of the subset that cancels terms of the superset.
     int64_t factor = 0;
+    int64_t min_pos_factor = std::numeric_limits<int64_t>::max();
+    int64_t max_neg_factor = std::numeric_limits<int64_t>::min();
 
     // Lets compute the implied domain of the linear expression
     // "superset - subset". Note that we actually do not need exact inclusion
@@ -8530,11 +8582,19 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       const int var = superset_lin.vars(i);
       int64_t coeff = superset_lin.coeffs(i);
       const auto it = coeff_map.find(var);
+
       if (it != coeff_map.end()) {
         const int64_t subset_coeff = it->second;
+
+        const int64_t div = coeff / subset_coeff;
+        if (div > 0) {
+          min_pos_factor = std::min(div, min_pos_factor);
+        } else {
+          max_neg_factor = std::max(div, max_neg_factor);
+        }
+
         if (perfect_match) {
           if (coeff % subset_coeff == 0) {
-            const int64_t div = coeff / subset_coeff;
             if (factor == 0) {
               // Note that factor can be negative.
               factor = div;
@@ -8550,104 +8610,122 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
         coeff -= subset_coeff;
       }
       if (coeff == 0) continue;
-      if (coeff > 0) {
-        diff_min_activity += coeff * context_->MinOf(var);
-        diff_max_activity += coeff * context_->MaxOf(var);
-      } else {
-        diff_min_activity += coeff * context_->MaxOf(var);
-        diff_max_activity += coeff * context_->MinOf(var);
-      }
+      context_->CappedUpdateMinMaxActivity(var, coeff, &diff_min_activity,
+                                           &diff_max_activity);
     }
 
     const Domain diff_domain(diff_min_activity, diff_max_activity);
-    const Domain subset_ct_domain = ReadDomainFromProto(subset_lin);
-    const Domain superset_ct_domain = ReadDomainFromProto(superset_lin);
+    const Domain subset_rhs = ReadDomainFromProto(subset_lin);
+    const Domain superset_rhs = ReadDomainFromProto(superset_lin);
 
     // Case 1: superset is redundant.
     // We process this one first as it let us remove the longest constraint.
-    const Domain implied_superset_domain =
-        subset_ct_domain.AdditionWith(diff_domain)
-            .IntersectionWith(cached_expr_domain[superset_c]);
-    if (implied_superset_domain.IsIncludedIn(superset_ct_domain)) {
-      context_->UpdateRuleStats(
-          "linear inclusion: redundant containing constraint");
-      context_->working_model->mutable_constraints(superset_c)->Clear();
-      constraint_indices_to_clean.push_back(superset_c);
-      detector.StopProcessingCurrentSuperset();
-      return;
-    }
-
-    // Case 2: subset is redundant.
-    const Domain implied_subset_domain =
-        superset_ct_domain.AdditionWith(diff_domain.Negation())
-            .IntersectionWith(cached_expr_domain[subset_c]);
-    if (implied_subset_domain.IsIncludedIn(subset_ct_domain)) {
-      context_->UpdateRuleStats(
-          "linear inclusion: redundant included constraint");
-      context_->working_model->mutable_constraints(subset_c)->Clear();
-      constraint_indices_to_clean.push_back(subset_c);
-      detector.StopProcessingCurrentSubset();
-      return;
-    }
-
-    // When we have equality constraint, we might try substitution. For now we
-    // only try that when we have a perfect inclusion with the same coefficients
-    // after multiplication by factor.
-    if (perfect_match) {
-      CHECK_NE(factor, 0);
-      if (subset_ct_domain.IsFixed()) {
-        // Rewrite the constraint by removing subset from it and updating
-        // the domain to domain - factor * subset_domain.
-        //
-        // This seems always beneficial, although we might miss some
-        // oportunities for constraint included in the superset if we do that
-        // too early.
-        context_->UpdateRuleStats("linear inclusion: subset is equality");
-        int new_size = 0;
-        auto* mutable_linear =
-            context_->working_model->mutable_constraints(superset_c)
-                ->mutable_linear();
-        for (int i = 0; i < mutable_linear->vars().size(); ++i) {
-          const int var = mutable_linear->vars(i);
-          const int64_t coeff = mutable_linear->coeffs(i);
-          const auto it = coeff_map.find(var);
-          if (it != coeff_map.end()) {
-            CHECK_EQ(factor * it->second, coeff);
-            continue;
-          }
-          mutable_linear->set_vars(new_size, var);
-          mutable_linear->set_coeffs(new_size, coeff);
-          ++new_size;
-        }
-        mutable_linear->mutable_vars()->Truncate(new_size);
-        mutable_linear->mutable_coeffs()->Truncate(new_size);
-        FillDomainInProto(superset_ct_domain.AdditionWith(
-                              subset_ct_domain.MultiplicationBy(-factor)),
-                          mutable_linear);
+    //
+    // Important: because of how we computed the inclusion, the diff_domain is
+    // only valid if none of the enforcement appear in the subset.
+    //
+    // TODO(user): Compute the correct infered domain in this case.
+    if (subset_ct.enforcement_literal().empty()) {
+      const Domain implied_superset_domain =
+          subset_rhs.AdditionWith(diff_domain)
+              .IntersectionWith(cached_expr_domain[superset_c]);
+      if (implied_superset_domain.IsIncludedIn(superset_rhs)) {
+        context_->UpdateRuleStats(
+            "linear inclusion: redundant containing constraint");
+        context_->working_model->mutable_constraints(superset_c)->Clear();
         constraint_indices_to_clean.push_back(superset_c);
         detector.StopProcessingCurrentSuperset();
         return;
-      } else {
-        // Propagate domain on the superset - subset variables.
-        // TODO(user): We can probably still do that if the inclusion is not
-        // perfect.
-        temp_ct_.Clear();
-        auto* mutable_linear = temp_ct_.mutable_linear();
+      }
+    }
+
+    // Case 2: subset is redundant.
+    if (superset_ct.enforcement_literal().empty()) {
+      const Domain implied_subset_domain =
+          superset_rhs.AdditionWith(diff_domain.Negation())
+              .IntersectionWith(cached_expr_domain[subset_c]);
+      if (implied_subset_domain.IsIncludedIn(subset_rhs)) {
+        context_->UpdateRuleStats(
+            "linear inclusion: redundant included constraint");
+        context_->working_model->mutable_constraints(subset_c)->Clear();
+        constraint_indices_to_clean.push_back(subset_c);
+        detector.StopProcessingCurrentSubset();
+        return;
+      }
+    }
+
+    // If the subset is an equality, and we can add a factor of it to the
+    // superset so that the activity range is guaranteed to be tighter, we
+    // always do it. This should both sparsify the problem but also lead to
+    // tighter propagation.
+    if (subset_rhs.IsFixed() && subset_ct.enforcement_literal().empty()) {
+      const int64_t best_factor =
+          max_neg_factor > -min_pos_factor ? max_neg_factor : min_pos_factor;
+
+      // Compute the activity range before and after. Because our pos/neg factor
+      // are the smallest possible, if one is undefined then we are guaranteed
+      // to be tighter, and do not need to compute this.
+      //
+      // TODO(user): can we compute the best factor that make this as tight as
+      // possible instead? that looks doable.
+      bool is_tigher = true;
+      if (min_pos_factor != std::numeric_limits<int64_t>::max() &&
+          max_neg_factor != std::numeric_limits<int64_t>::min()) {
+        int64_t min_before = 0;
+        int64_t max_before = 0;
+        int64_t min_after = CapProd(best_factor, subset_rhs.FixedValue());
+        int64_t max_after = min_after;
         for (int i = 0; i < superset_lin.vars().size(); ++i) {
           const int var = superset_lin.vars(i);
-          const int64_t coeff = superset_lin.coeffs(i);
           const auto it = coeff_map.find(var);
-          if (it != coeff_map.end()) continue;
-          mutable_linear->add_vars(var);
-          mutable_linear->add_coeffs(coeff);
+          if (it == coeff_map.end()) continue;
+
+          const int64_t coeff_before = superset_lin.coeffs(i);
+          const int64_t coeff_after = coeff_before - best_factor * it->second;
+          context_->CappedUpdateMinMaxActivity(var, coeff_before, &min_before,
+                                               &max_before);
+          context_->CappedUpdateMinMaxActivity(var, coeff_after, &min_after,
+                                               &max_after);
         }
-        FillDomainInProto(superset_ct_domain.AdditionWith(
-                              subset_ct_domain.MultiplicationBy(-factor)),
-                          mutable_linear);
-        PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
-        if (context_->ModelIsUnsat()) detector.Stop();
+        is_tigher = min_after >= min_before && max_after <= max_before;
       }
-      if (superset_ct_domain.IsFixed()) {
+      if (is_tigher) {
+        context_->UpdateRuleStats("linear inclusion: sparsify superset");
+        Substitute(best_factor, coeff_map, subset_rhs, superset_rhs,
+                   context_->working_model->mutable_constraints(superset_c)
+                       ->mutable_linear());
+        constraint_indices_to_clean.push_back(superset_c);
+        detector.StopProcessingCurrentSuperset();
+        return;
+      }
+    }
+
+    // We do a bit more if we have an exact match and factor * subset is exactly
+    // a subpart of the superset constraint.
+    if (perfect_match && subset_ct.enforcement_literal().empty() &&
+        superset_ct.enforcement_literal().empty()) {
+      CHECK_NE(factor, 0);
+
+      // Propagate domain on the superset - subset variables.
+      // TODO(user): We can probably still do that if the inclusion is not
+      // perfect.
+      temp_ct_.Clear();
+      auto* mutable_linear = temp_ct_.mutable_linear();
+      for (int i = 0; i < superset_lin.vars().size(); ++i) {
+        const int var = superset_lin.vars(i);
+        const int64_t coeff = superset_lin.coeffs(i);
+        const auto it = coeff_map.find(var);
+        if (it != coeff_map.end()) continue;
+        mutable_linear->add_vars(var);
+        mutable_linear->add_coeffs(coeff);
+      }
+      FillDomainInProto(
+          superset_rhs.AdditionWith(subset_rhs.MultiplicationBy(-factor)),
+          mutable_linear);
+      PropagateDomainsInLinear(/*ct_index=*/-1, &temp_ct_);
+      if (context_->ModelIsUnsat()) detector.Stop();
+
+      if (superset_rhs.IsFixed()) {
         if (subset_lin.vars().size() + 1 == superset_lin.vars().size()) {
           // Because we propagated the equation on the singleton variable above,
           // and we have an equality, the subset is redundant!

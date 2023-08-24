@@ -22,12 +22,25 @@
 #include <string>
 #include <vector>
 
-#include "absl/memory/memory.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/meta/type_traits.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/bop_base.h"
+#include "ortools/bop/bop_parameters.pb.h"
+#include "ortools/bop/bop_solution.h"
+#include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
-#include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {

@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <numeric>  // must be call before fenv_access see: https://github.com/microsoft/STL/issues/2613
@@ -40,8 +41,6 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
-
-#include "ortools/base/types.h"
 
 #if defined(_MSC_VER)
 static inline double isnan(double value) { return _isnan(value); }

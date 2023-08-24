@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <utility>
@@ -25,8 +26,6 @@
 
 #include "absl/base/casts.h"
 #include "absl/base/internal/endian.h"
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

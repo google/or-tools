@@ -13,10 +13,7 @@
 
 #include <stdlib.h>
 
-#include <memory>
-
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"

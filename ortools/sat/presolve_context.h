@@ -171,6 +171,18 @@ class PresolveContext {
     return {min_activity, max_activity};
   }
 
+  // Utility function.
+  void CappedUpdateMinMaxActivity(int var, int64_t coeff, int64_t* min_activity,
+                                  int64_t* max_activity) {
+    if (coeff > 0) {
+      *min_activity = CapAdd(*min_activity, CapProd(coeff, MinOf(var)));
+      *max_activity = CapAdd(*max_activity, CapProd(coeff, MaxOf(var)));
+    } else {
+      *min_activity = CapAdd(*min_activity, CapProd(coeff, MaxOf(var)));
+      *max_activity = CapAdd(*max_activity, CapProd(coeff, MinOf(var)));
+    }
+  }
+
   // This methods only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 

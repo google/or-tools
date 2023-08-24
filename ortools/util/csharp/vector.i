@@ -15,8 +15,8 @@
 %include "ortools/base/base.i"
 
 %{
+#include <cstdint>
 #include <vector>
-#include "ortools/base/types.h"
 %}
 
 // Typemaps to represent arguments of types:

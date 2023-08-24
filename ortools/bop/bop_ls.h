@@ -27,6 +27,8 @@
 #ifndef OR_TOOLS_BOP_BOP_LS_H_
 #define OR_TOOLS_BOP_BOP_LS_H_
 
+#include <stddef.h>
+
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -35,16 +37,20 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
+#include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {

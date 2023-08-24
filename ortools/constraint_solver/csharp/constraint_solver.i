@@ -45,11 +45,11 @@ class RegularLimitParameters;
 %{
 #include <setjmp.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <functional>
 
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"

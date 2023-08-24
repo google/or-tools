@@ -18,8 +18,6 @@
 #include <cmath>
 #include <cstdint>
 
-#include "ortools/base/types.h"
-
 namespace operations_research {
 
 // Basic adaptive [0.0, 1.0] parameter that can be increased or decreased with a

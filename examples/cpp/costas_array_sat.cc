@@ -32,8 +32,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 

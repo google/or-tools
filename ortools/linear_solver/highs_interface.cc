@@ -149,8 +149,7 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
   result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
-  LOG_IF(ERROR, DEBUG_MODE && !response->has_solver_specific_info())
-      << *response;
+  LOG_IF(DFATAL, !response->has_solver_specific_info()) << *response;
   // if (!solve_log_.ParseFromString(response->solver_specific_info())) {
   //   LOG(DFATAL) << "Unable to parse Highs's SolveLog from
   //   solver_specific_info";

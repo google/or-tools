@@ -15,8 +15,8 @@
 %include "ortools/base/base.i"
 
 %{
+#include <cstdint>
 #include <vector>
-#include "ortools/base/types.h"
 %}
 
 // SWIG macros to be used in generating C# wrappers for C++ protocol

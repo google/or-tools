@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <math.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
@@ -20,15 +18,10 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
-#include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
-#include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/filelineiter.h"

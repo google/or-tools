@@ -13,19 +13,33 @@
 
 #include "ortools/bop/integral_solver.h"
 
-#include <math.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/bop/bop_solver.h"
+#include "ortools/bop/bop_types.h"
+#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_decomposer.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/lp_data/sparse_vector.h"
+#include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/fp_utils.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
+// MOE:end_strip
 
 namespace operations_research {
 namespace bop {

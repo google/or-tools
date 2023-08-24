@@ -23,6 +23,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace {

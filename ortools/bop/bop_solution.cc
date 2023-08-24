@@ -14,9 +14,14 @@
 #include "ortools/bop/bop_solution.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/bop/bop_types.h"
+#include "ortools/sat/boolean_problem.pb.h"
 
 namespace operations_research {
 namespace bop {

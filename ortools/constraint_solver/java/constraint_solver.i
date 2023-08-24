@@ -127,6 +127,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 %{
 #include <setjmp.h>
+
 #include <vector>
 
 #include "ortools/base/types.h"

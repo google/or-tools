@@ -20,8 +20,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
-#include "ortools/base/types.h"
 #include "ortools/base/path.h"
+#include "ortools/base/types.h"
 
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 

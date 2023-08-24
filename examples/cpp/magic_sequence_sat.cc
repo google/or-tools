@@ -25,8 +25,8 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.h"
 
 ABSL_FLAG(int, size, 50, "Size of the problem.");

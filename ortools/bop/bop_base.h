@@ -20,12 +20,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/types.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
+#include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
@@ -36,9 +38,9 @@
 namespace operations_research {
 namespace bop {
 
+class ProblemState;
 // Forward declaration.
 struct LearnedInfo;
-class ProblemState;
 
 // Base class used to optimize a ProblemState.
 // Optimizers implementing this class are used in a sort of portfolio and

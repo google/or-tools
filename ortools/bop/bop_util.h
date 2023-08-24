@@ -16,10 +16,9 @@
 
 #include <vector>
 
-#include "ortools/base/types.h"
-#include "ortools/base/types.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {

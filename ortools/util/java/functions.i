@@ -26,8 +26,9 @@
 %include "std_string.i"
 
 %{
+#include <cstdint>
 #include <functional>
-#include "ortools/base/types.h"
+
 #include "ortools/util/functions_swig_helpers.h"
 %}
 

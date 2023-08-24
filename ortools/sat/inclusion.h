@@ -211,6 +211,7 @@ class InclusionDetector {
   bool stop_with_current_superset_;
   std::vector<uint64_t> signatures_;
   std::vector<std::vector<int>> one_watcher_;  // Index in candidates_.
+  std::vector<int> superset_elements_;
   std::vector<bool> is_in_superset_;
 };
 
@@ -294,7 +295,6 @@ inline void InclusionDetector<Storage>::DetectInclusions(
     stop_with_current_superset_ = false;
     if (candidate.CanBeSuperset()) {
       const Candidate& superset = candidate;
-      const auto& superset_elements = candidate_elements;
 
       // Bitset should be cleared.
       DCHECK(std::all_of(is_in_superset_.begin(), is_in_superset_.end(),
@@ -303,12 +303,22 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       // Find any subset included in current superset.
       work_done_ += 2 * superset.size;
       if (work_done_ > work_limit_) return Stop();
-      for (const int e : superset_elements) {
+
+      // We make a copy because process() might alter the content of the
+      // storage when it returns "stop_with_current_superset_" and we need
+      // to clean is_in_superset_ properly.
+      //
+      // TODO(user): Alternatively, we could clean is_in_superset_ in the
+      // call to StopProcessingCurrentSuperset() and force client to call it
+      // before altering the superset content.
+      superset_elements_.assign(candidate_elements.begin(),
+                                candidate_elements.end());
+      for (const int e : superset_elements_) {
         is_in_superset_[e] = true;
       }
 
       const uint64_t superset_signature = signatures_.back();
-      for (const int superset_e : superset_elements) {
+      for (const int superset_e : superset_elements_) {
         for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
           const int c_index = one_watcher_[superset_e][i];
           const Candidate& subset = candidates_[c_index];
@@ -348,7 +358,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       }
 
       // Cleanup.
-      for (const int e : superset_elements) {
+      for (const int e : superset_elements_) {
         is_in_superset_[e] = false;
       }
     }

@@ -14,13 +14,11 @@
 #ifndef OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
 #define OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
 
-#include <cmath>
-#include <limits>
+#include <cstddef>
+#include <vector>
 
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace glop {
@@ -159,7 +157,7 @@ struct ScatteredVector {
     ClearNonZerosIfTooDense(kDefaultRatioForUsingDenseIteration);
   }
 
-  // Returns an over-estimate of the number of non-zeros. This is actually
+  // Returns an overestimate of the number of non-zeros. This is actually
   // exact for sparse vector, or the full size otherwise.
   size_t NumNonZerosEstimate() const {
     return non_zeros.empty() ? values.size().value() : non_zeros.size();

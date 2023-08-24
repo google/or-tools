@@ -16,20 +16,14 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
-#include "ortools/bop/bop_solution.h"
-#include "ortools/bop/bop_types.h"
-#include "ortools/bop/bop_util.h"
 #include "ortools/glop/lp_solver.h"
-#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/time_limit.h"
 

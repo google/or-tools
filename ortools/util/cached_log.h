@@ -14,13 +14,9 @@
 #ifndef OR_TOOLS_UTIL_CACHED_LOG_H_
 #define OR_TOOLS_UTIL_CACHED_LOG_H_
 
-#include <math.h>
-
+#include <cstdint>
 #include <vector>
 
-#include "ortools/base/types.h"
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
 namespace operations_research {

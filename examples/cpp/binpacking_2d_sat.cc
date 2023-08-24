@@ -21,12 +21,17 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/packing/binpacking_2d_parser.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 
 ABSL_FLAG(std::string, input, "", "Input file.");
 ABSL_FLAG(int, instance, -1, "Instance number if the file.");
@@ -35,8 +40,6 @@ ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
 ABSL_FLAG(bool, symmetry_breaking, true, "Use symmetry breaking constraints");
-ABSL_FLAG(bool, alternate_model, true,
-          "A different way to express the objective");
 
 namespace operations_research {
 namespace sat {
@@ -66,10 +69,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     sum_of_items_area += shape.dimensions(0) * shape.dimensions(1);
   }
 
-  // Take the ceil of the ratio.
-  const int64_t trivial_lb =
-      (sum_of_items_area + area_of_one_bin - 1) / area_of_one_bin;
-
+  const int64_t trivial_lb = CeilOfRatio(sum_of_items_area, area_of_one_bin);
   LOG(INFO) << "Trivial lower bound of the number of bins = " << trivial_lb;
   const int max_bins = absl::GetFlag(FLAGS_max_bins) == 0
                            ? trivial_lb * 2
@@ -97,7 +97,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 
   // Exactly one bin is selected for each item.
   for (int item = 0; item < num_items; ++item) {
-    cp_model.AddEquality(LinearExpr::Sum(item_to_bin[item]), 1);
+    cp_model.AddExactlyOne(item_to_bin[item]);
   }
 
   // Manages positions and sizes for each item.
@@ -134,51 +134,36 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(FATAL) << num_dimensions << " dimensions not supported.";
   }
 
-  if (absl::GetFlag(FLAGS_alternate_model)) {
-    const IntVar obj = cp_model.NewIntVar(Domain(trivial_lb, max_bins));
-    cp_model.Minimize(obj);
-    for (int b = trivial_lb; b < max_bins; ++b) {
-      for (int item = 0; item < num_items; ++item) {
-        cp_model.AddGreaterOrEqual(obj, b + 1)
-            .OnlyEnforceIf(item_to_bin[item][b]);
-      }
-    }
-  } else {
-    // Maintain one Boolean variable per bin that indicates if the bin is used
-    // or not.
-    std::vector<BoolVar> bin_is_used(max_bins);
-    for (int b = 0; b < max_bins; ++b) {
-      bin_is_used[b] = cp_model.NewBoolVar();
-      // Link bin_is_used[i] with the items in bin i.
-      std::vector<BoolVar> all_items_in_bin;
-      for (int item = 0; item < num_items; ++item) {
-        cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
-        all_items_in_bin.push_back(item_to_bin[item][b]);
-      }
-      cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
-    }
+  // Maintain one Boolean variable per bin that indicates if the bin is used
+  // or not.
+  std::vector<BoolVar> bin_is_used(max_bins);
+  for (int b = 0; b < max_bins; ++b) {
+    bin_is_used[b] = cp_model.NewBoolVar();
 
-    // Symmetry breaking.
-    if (absl::GetFlag(FLAGS_symmetry_breaking)) {
-      // Forces the number of items per bin to decrease.
-      std::vector<IntVar> num_items_in_bin(max_bins);
-      for (int b = 0; b < max_bins; ++b) {
-        num_items_in_bin[b] = cp_model.NewIntVar({0, num_items});
-        std::vector<BoolVar> items_in_bins;
-        for (int item = 0; item < num_items; ++item) {
-          items_in_bins.push_back(item_to_bin[item][b]);
-        }
-        cp_model.AddEquality(num_items_in_bin[b],
-                             LinearExpr::Sum(items_in_bins));
-      }
-      for (int b = 1; b < max_bins; ++b) {
-        cp_model.AddGreaterOrEqual(num_items_in_bin[b - 1],
-                                   num_items_in_bin[b]);
+    // Link bin_is_used[i] with the items in bin i.
+    std::vector<BoolVar> all_items_in_bin;
+    for (int item = 0; item < num_items; ++item) {
+      cp_model.AddImplication(item_to_bin[item][b], bin_is_used[b]);
+      all_items_in_bin.push_back(item_to_bin[item][b]);
+    }
+    cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
+  }
+
+  // Objective.
+  const IntVar obj = cp_model.NewIntVar({trivial_lb, max_bins});
+  cp_model.Minimize(obj);
+  for (int b = trivial_lb; b + 1 < max_bins; ++b) {
+    cp_model.AddGreaterOrEqual(obj, b + 1).OnlyEnforceIf(bin_is_used[b]);
+    cp_model.AddImplication(bin_is_used[b + 1], bin_is_used[b]);
+  }
+
+  if (absl::GetFlag(FLAGS_symmetry_breaking)) {
+    // Symmetry breaking: item[i] is in bin <= i for the first max_bins items.
+    for (int i = 0; i + 1 < max_bins; ++i) {
+      for (int b = i + 1; b < max_bins; ++b) {
+        cp_model.FixVariable(item_to_bin[i][b], false);
       }
     }
-
-    // Objective.
-    cp_model.Minimize(LinearExpr::Sum(bin_is_used));
   }
 
   // Setup parameters.
@@ -191,6 +176,14 @@ void LoadAndSolve(const std::string& file_name, int instance) {
         absl::GetFlag(FLAGS_params), &parameters))
         << absl::GetFlag(FLAGS_params);
   }
+
+  // If number of workers is >= 16 and < 24, we prefer replacing
+  // objective_lb_search by objective_shaving_search.
+  if (parameters.num_workers() >= 16 && parameters.num_workers() < 24) {
+    parameters.add_ignore_subsolvers("objective_lb_search");
+    parameters.add_extra_subsolvers("objective_shaving_search");
+  }
+
   // We rely on the solver default logging to log the number of bins.
   const CpSolverResponse response =
       SolveWithParameters(cp_model.Build(), parameters);

@@ -18,21 +18,23 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/bop/bop_fs.h"
-#include "ortools/bop/bop_lns.h"
-#include "ortools/bop/bop_ls.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/threadpool.h"
+#include "ortools/bop/bop_base.h"
+#include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_portfolio.h"
-#include "ortools/bop/bop_util.h"
-#include "ortools/bop/complete_optimizer.h"
-#include "ortools/glop/lp_solver.h"
-#include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/bop/bop_solution.h"
+#include "ortools/bop/bop_types.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/lp_utils.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/util/bitset.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/util/stats.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {

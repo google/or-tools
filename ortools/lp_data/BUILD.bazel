@@ -76,7 +76,6 @@ cc_library(
     deps = [
         ":base",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",

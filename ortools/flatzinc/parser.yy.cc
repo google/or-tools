@@ -709,10 +709,10 @@ static const flex_int32_t yy_rule_can_match_eol[32] = {
 /* Allow parameter passing to and from the bison parser. */
 /* Rename yy to orfz_ in public functions. */
 #line 11 "./ortools/flatzinc/parser.lex"
+#include <cstdint>
 #include <string>
 
 #include "absl/strings/numbers.h"
-#include "ortools/base/types.h"
 #include "ortools/flatzinc/parser.tab.hh"
 #if defined(_MSC_VER)
 #define YY_NO_UNISTD_H

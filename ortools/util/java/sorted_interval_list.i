@@ -16,8 +16,9 @@
 %include "ortools/util/java/vector.i"
 
 %{
+#include <cstdint>
 #include <vector>
-#include "ortools/base/types.h"
+
 #include "ortools/util/sorted_interval_list.h"
 %}
 

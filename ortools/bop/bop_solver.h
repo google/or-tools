@@ -36,20 +36,11 @@
 //   const BopSolveStatus solve_status = bop_solver.Solve();
 //   if (solve_status == BopSolveStatus::OPTIMAL_SOLUTION_FOUND) { ... }
 
-#include <string>
-#include <vector>
-
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/glop/lp_solver.h"
 #include "ortools/sat/boolean_problem.pb.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 

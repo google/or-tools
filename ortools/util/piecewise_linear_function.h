@@ -20,17 +20,11 @@
 #ifndef OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 #define OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 
-#include <algorithm>
+#include <cstdint>
 #include <functional>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "ortools/base/types.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
-#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 // This structure stores one straight line. It contains the start point, the

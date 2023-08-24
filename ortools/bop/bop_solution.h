@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BOP_BOP_SOLUTION_H_
 #define OR_TOOLS_BOP_BOP_SOLUTION_H_
 
+#include <stddef.h>
+
 #include <cstdint>
 #include <string>
 
@@ -22,6 +24,7 @@
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/pb_constraint.h"
 
 namespace operations_research {
 namespace bop {
