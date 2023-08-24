@@ -25,11 +25,14 @@ void SetCoverModel::AddEmptySubset(Cost cost) {
   row_view_is_valid_ = false;
 }
 
-void SetCoverModel::AddElementToLastSubset(int element) {
-  ElementIndex new_element(element);
-  columns_.back().push_back(new_element);
-  num_elements_ = std::max(num_elements_, new_element + 1);
+void SetCoverModel::AddElementToLastSubset(ElementIndex element) {
+  columns_.back().push_back(element);
+  num_elements_ = std::max(num_elements_, element + 1);
   row_view_is_valid_ = false;
+}
+
+void SetCoverModel::AddElementToLastSubset(int element) {
+  AddElementToLastSubset(ElementIndex(element));
 }
 
 void SetCoverModel::SetSubsetCost(int subset, Cost cost) {

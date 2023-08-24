@@ -14,7 +14,7 @@
 // TODO(user): make this SWIG file comply with the SWIG style guide.
 %include "ortools/base/base.i"
 
-%import "ortools/base/integral_types.h"
+%import "ortools/base/types.h"
 
 // --------- std::vector<data> wrapping ----------
 

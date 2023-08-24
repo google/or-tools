@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_GZIPFILE_H_
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/basictypes.h"  // for Ownership enum
+#include "ortools/base/types.h"  // for Ownership enum
 #include "zlib.h"                     // for Z_DEFAULT_COMPRESSION
 
 class File;

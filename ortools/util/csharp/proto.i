@@ -16,7 +16,7 @@
 
 %{
 #include <vector>
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 %}
 
 // SWIG macros to be used in generating C# wrappers for C++ protocol

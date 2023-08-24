@@ -26,8 +26,8 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

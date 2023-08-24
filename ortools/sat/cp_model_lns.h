@@ -698,7 +698,7 @@ class RandomRectanglesPackingNeighborhoodGenerator
 // Only make sense for problems with no_overlap_2d constraints. This select a
 // random set of rectangles (i.e. a pair of intervals) of the problem according
 // to the difficulty. Then add all implied precedences from the current
-// positions of the rectangles in this
+// positions of the rectangles in this selected subset.
 class RandomPrecedencesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:

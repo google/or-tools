@@ -27,9 +27,9 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/basictypes.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

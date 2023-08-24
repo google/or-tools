@@ -23,8 +23,8 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 

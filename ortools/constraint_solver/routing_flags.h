@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
 /// Neighborhood activation/deactivation

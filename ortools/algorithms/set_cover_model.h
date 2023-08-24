@@ -101,6 +101,7 @@ class SetCoverModel {
   // Adds an element to the last subset created. In matrix terms, this adds a
   // 1 on row 'element' of the current last column of the matrix.
   void AddElementToLastSubset(int element);
+  void AddElementToLastSubset(ElementIndex element);
 
   // Sets 'cost' to an already existing 'subset'.
   void SetSubsetCost(int subset, Cost cost);

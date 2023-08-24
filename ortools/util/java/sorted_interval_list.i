@@ -17,7 +17,7 @@
 
 %{
 #include <vector>
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/util/sorted_interval_list.h"
 %}
 

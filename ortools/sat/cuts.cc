@@ -1993,14 +1993,9 @@ FlowCoverCutHelper::~FlowCoverCutHelper() {
 }
 
 std::string SingleNodeFlow::DebugString() const {
-  return absl::StrCat(
-      "#in:", in_flow.size()
-      ," #out:", out_flow.size()
-      ," demand:", demand
-      ," #bool:", num_bool
-      ," #lb:", num_to_lb
-      ," #ub:", num_to_ub
-      );
+  return absl::StrCat("#in:", in_flow.size(), " #out:", out_flow.size(),
+                      " demand:", demand, " #bool:", num_bool,
+                      " #lb:", num_to_lb, " #ub:", num_to_ub);
 }
 
 // The flow info of a linear term is always the same.

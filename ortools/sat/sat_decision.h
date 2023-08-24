@@ -18,8 +18,8 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"

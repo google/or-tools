@@ -16,7 +16,7 @@
 
 %{
 #include <vector>
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 %}
 
 // Typemaps to represent arguments of types:

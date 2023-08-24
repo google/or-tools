@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 

@@ -16,7 +16,7 @@
 
 #include "absl/flags/declare.h"
 #include "absl/log/log.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 ABSL_DECLARE_FLAG(int, v);
 

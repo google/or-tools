@@ -272,8 +272,8 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/util/python/__init__.py CONTENT "")
 
 file(COPY
-  ortools/linear_solver/linear_solver_natural_api.py
-  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver)
+  ortools/linear_solver/python/linear_solver_natural_api.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
 file(COPY
   ortools/linear_solver/python/model_builder.py
   ortools/linear_solver/python/model_builder_numbers.py

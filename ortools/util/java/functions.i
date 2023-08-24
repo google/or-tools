@@ -27,7 +27,7 @@
 
 %{
 #include <functional>
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/util/functions_swig_helpers.h"
 %}
 

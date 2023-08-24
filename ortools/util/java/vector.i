@@ -20,7 +20,7 @@
 
 %{
 #include <vector>
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 %}
 
 // Typemaps to represents arguments of types "const std::vector<CType>&" or

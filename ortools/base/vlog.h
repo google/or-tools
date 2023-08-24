@@ -31,7 +31,7 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/vlog_is_on.h"
 
 // Log only in verbose mode.

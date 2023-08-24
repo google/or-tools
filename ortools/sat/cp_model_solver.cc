@@ -907,8 +907,12 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
   // We want == 0 or <= 0 if use_equality = false.
   const bool lb_required = use_equality;
   const bool ub_required = true;
-  SplitAndLoadIntermediateConstraints(lb_required, ub_required, &vars, &coeffs,
-                                      model);
+
+  // Split if linear is large.
+  if (vars.size() > model->GetOrCreate<SatParameters>()->linear_split_size()) {
+    SplitAndLoadIntermediateConstraints(lb_required, ub_required, &vars,
+                                        &coeffs, model);
+  }
 
   // Load the top-level constraint.
   if (lb_required) {
@@ -3675,12 +3679,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     const bool has_no_overlap_or_cumulative =
         !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
         !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
-    const bool has_no_overlap2d =
-        !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
 
     // Scheduling (no_overlap and cumulative) specific LNS.
-    const std::vector<std::vector<int>> intervals_in_constraints =
-        helper->GetUniqueIntervalSets();
     if (has_no_overlap_or_cumulative) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
@@ -3690,6 +3690,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
               helper, "scheduling_time_window_lns"),
           params, helper, &shared));
+      const std::vector<std::vector<int>> intervals_in_constraints =
+          helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2) {
         subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
@@ -3700,6 +3702,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
 
     // Packing (no_overlap_2d) Specific LNS.
+    const bool has_no_overlap2d =
+        !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
     if (has_no_overlap2d) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(

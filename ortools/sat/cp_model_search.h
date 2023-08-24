@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"

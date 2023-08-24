@@ -19,9 +19,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"

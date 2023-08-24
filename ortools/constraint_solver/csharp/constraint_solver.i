@@ -49,7 +49,7 @@ class RegularLimitParameters;
 #include <vector>
 #include <functional>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"

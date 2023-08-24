@@ -32,7 +32,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/basictypes.h"
+#include "ortools/base/types.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"

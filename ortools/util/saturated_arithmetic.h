@@ -18,7 +18,7 @@
 #include <limits>
 
 #include "absl/base/casts.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 
 // This file contains implementations for saturated addition, subtraction and

@@ -41,7 +41,7 @@
 #include <type_traits>
 
 #include "absl/base/port.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 namespace gtl {
 

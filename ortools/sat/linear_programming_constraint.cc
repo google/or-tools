@@ -763,11 +763,10 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   // A dual-unbounded problem is infeasible. We use the dual ray reason.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
     if (parameters_.use_exact_lp_reason()) {
-      if (!FillExactDualRayReason()) return true;
-    } else {
-      FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
-                              &integer_reason_);
+      return PropagateExactDualRay();
     }
+    FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
+                            &integer_reason_);
     return integer_trail_->ReportConflict(integer_reason_);
   }
 
@@ -781,7 +780,7 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
     if (parameters_.use_exact_lp_reason()) {
-      if (!ExactLpReasonning()) return false;
+      if (!PropagateExactLpReason()) return false;
 
       // Display when the inexact bound would have propagated more.
       if (VLOG_IS_ON(2)) {
@@ -1888,32 +1887,6 @@ absl::int128 LinearProgrammingConstraint::GetImpliedLowerBound(
   return lower_bound;
 }
 
-// TODO(user): combine this with RelaxLinearReason() to avoid the extra
-// magnitude vector and the weird precondition of RelaxLinearReason().
-void LinearProgrammingConstraint::SetImpliedLowerBoundReason(
-    const LinearConstraint& terms, IntegerValue slack) {
-  integer_reason_.clear();
-  std::vector<IntegerValue> magnitudes;
-  const int size = terms.vars.size();
-  for (int i = 0; i < size; ++i) {
-    const IntegerVariable var = terms.vars[i];
-    const IntegerValue coeff = terms.coeffs[i];
-    CHECK_NE(coeff, 0);
-    if (coeff > 0) {
-      magnitudes.push_back(coeff);
-      integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
-    } else {
-      magnitudes.push_back(-coeff);
-      integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(var));
-    }
-  }
-  CHECK_GE(slack, 0);
-  if (slack > 0) {
-    integer_trail_->RelaxLinearReason(slack, magnitudes, &integer_reason_);
-  }
-  integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
-}
-
 bool LinearProgrammingConstraint::ScalingCanOverflow(
     int power, bool take_objective_into_account,
     const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
@@ -2215,6 +2188,27 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
   if (adjusted) ++num_adjusts_;
 }
 
+bool LinearProgrammingConstraint::PropagateLpConstraint(
+    const LinearConstraint& ct) {
+  DCHECK(constraint_manager_.DebugCheckConstraint(ct));
+  if (ct.vars.empty()) {
+    if (ct.ub >= 0) return true;
+    return integer_trail_->ReportConflict({});  // Unsat.
+  }
+
+  IntegerSumLE128* cp_constraint =
+      new IntegerSumLE128({}, ct.vars, ct.coeffs, ct.ub, model_);
+  if (trail_->CurrentDecisionLevel() == 0) {
+    // Since we will never ask the reason for a constraint at level 0, we just
+    // keep the last one.
+    optimal_constraints_.clear();
+  }
+  optimal_constraints_.emplace_back(cp_constraint);
+  rev_optimal_constraints_size_ = optimal_constraints_.size();
+  if (!cp_constraint->PropagateAtLevelZero()) return false;
+  return cp_constraint->Propagate();
+}
+
 // The "exact" computation go as follow:
 //
 // Given any INTEGER linear combination of the LP constraints, we can create a
@@ -2229,7 +2223,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
 // will get an EXACT objective lower bound that is more or less the same as the
 // inexact bound given by the LP relaxation. This allows to derive exact reasons
 // for any propagation done by this constraint.
-bool LinearProgrammingConstraint::ExactLpReasonning() {
+bool LinearProgrammingConstraint::PropagateExactLpReason() {
   // Clear old reason and deductions.
   integer_reason_.clear();
   deductions_.clear();
@@ -2282,7 +2276,6 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   tmp_constraint_.vars.push_back(objective_cp_);
   tmp_constraint_.coeffs.push_back(-obj_scale);
   DivideByGCD(&tmp_constraint_);
-  DCHECK(constraint_manager_.DebugCheckConstraint(tmp_constraint_));
 
   // Corner case where prevent overflow removed all terms.
   if (tmp_constraint_.vars.empty()) {
@@ -2290,21 +2283,10 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
     return tmp_constraint_.ub >= 0;
   }
 
-  IntegerSumLE128* cp_constraint =
-      new IntegerSumLE128({}, tmp_constraint_.vars, tmp_constraint_.coeffs,
-                          tmp_constraint_.ub, model_);
-  if (trail_->CurrentDecisionLevel() == 0) {
-    // Since we will never ask the reason for a constraint at level 0, we just
-    // keep the last one.
-    optimal_constraints_.clear();
-  }
-  optimal_constraints_.emplace_back(cp_constraint);
-  rev_optimal_constraints_size_ = optimal_constraints_.size();
-  if (!cp_constraint->PropagateAtLevelZero()) return false;
-  return cp_constraint->Propagate();
+  return PropagateLpConstraint(tmp_constraint_);
 }
 
-bool LinearProgrammingConstraint::FillExactDualRayReason() {
+bool LinearProgrammingConstraint::PropagateExactDualRay() {
   IntegerValue scaling;
   const glop::DenseColumn ray = simplex_.GetDualRay();
   tmp_lp_multipliers_.clear();
@@ -2318,7 +2300,7 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
       /*ignore_trivial_constraints=*/true, tmp_lp_multipliers_, &scaling);
   if (scaling == 0) {
     VLOG(1) << "Isse while computing the exact dual ray reason. Aborting.";
-    return false;
+    return true;
   }
 
   IntegerValue new_constraint_ub;
@@ -2332,19 +2314,14 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
   tmp_scattered_vector_.ConvertToLinearConstraint(
       integer_variables_, new_constraint_ub, &tmp_constraint_);
   DivideByGCD(&tmp_constraint_);
-  DCHECK(constraint_manager_.DebugCheckConstraint(tmp_constraint_));
+
+  // This should result in a conflict if the precision is good enough.
+  if (!PropagateLpConstraint(tmp_constraint_)) return false;
 
   const absl::int128 implied_lb = GetImpliedLowerBound(tmp_constraint_);
-  if (implied_lb <= absl::int128(tmp_constraint_.ub.value())) {
-    VLOG(1) << "LP exact dual ray not infeasible,"
-            << " implied_lb: " << implied_lb
-            << " ub: " << tmp_constraint_.ub.value();
-    return false;
-  }
-  const IntegerValue slack = static_cast<int64_t>(
-      std::min(absl::int128(std::numeric_limits<int64_t>::max() - 1),
-               (implied_lb - absl::int128(tmp_constraint_.ub.value())) - 1));
-  SetImpliedLowerBoundReason(tmp_constraint_, slack);
+  VLOG(1) << "LP exact dual ray not infeasible,"
+          << " implied_lb: " << implied_lb
+          << " ub: " << tmp_constraint_.ub.value();
   return true;
 }
 

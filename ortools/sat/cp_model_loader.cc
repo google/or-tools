@@ -1350,7 +1350,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   // equal to the intermediate sum, independently of the enforcement.
   const bool pseudo_boolean = !HasEnforcementLiteral(ct) &&
                               ct.linear().domain_size() == 2 && all_booleans;
-  if (ct.linear().vars().size() > 100 && !pseudo_boolean) {
+  if (!pseudo_boolean &&
+      ct.linear().vars().size() > params.linear_split_size()) {
     const auto& domain = ct.linear().domain();
     SplitAndLoadIntermediateConstraints(
         domain.size() > 2 || min_sum < domain[0],

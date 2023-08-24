@@ -13,7 +13,7 @@
 
 %include "ortools/base/base.i"
 
-%import "ortools/base/integral_types.h"
+%import "ortools/base/types.h"
 
 namespace operations_research {
 %define PY_PROTO_TYPEMAP(PythonModule, PythonType, CppType)

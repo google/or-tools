@@ -41,7 +41,7 @@
 #include <xmmintrin.h>
 #endif
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 #if defined(_MSC_VER)
 static inline double isnan(double value) { return _isnan(value); }

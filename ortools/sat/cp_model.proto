@@ -351,8 +351,13 @@ message ConstraintProto {
     BoolArgumentProto bool_xor = 5;
 
     // The int_div constraint forces the target to equal exprs[0] / exprs[1].
-    // In particular, exprs[1] can never take the value 0. Also, as for now, we
-    // do not support exprs[1] spanning across 0.
+    // The division is "rounded" towards zero, so we can have for instance
+    // (2 = 12 / 5) or (-3 = -10 / 3). If you only want exact integer division,
+    // then you should use instead of t = a / b, the int_prod constraint
+    // a = b * t.
+    //
+    // Note that this forces exprs[1] to never take the value 0.
+    // Important: currently we do not support exprs[1] spanning across 0.
     LinearArgumentProto int_div = 7;
 
     // The int_mod constraint forces the target to equal exprs[0] % exprs[1].

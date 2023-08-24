@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 %}
 
 %include "typemaps.i"

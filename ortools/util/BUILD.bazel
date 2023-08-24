@@ -104,7 +104,7 @@ cc_library(
     hdrs = ["cached_log.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:basictypes",
+        "//ortools/base:types",
     ],
 )
 
@@ -160,7 +160,7 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
-        "//ortools/base:basictypes",
+        "//ortools/base:types",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",

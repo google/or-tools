@@ -25,7 +25,7 @@
 #include <string>
 #include <utility>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 class FunctionSwigTestHelpers {

@@ -36,10 +36,10 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -1413,9 +1413,9 @@ class GenericLiteralWatcher : public SatPropagator {
 
   // No-op overload for "constant" IntegerVariable that are sometimes templated
   // as an IntegerValue.
-  void WatchLowerBound(IntegerValue i, int id) {}
-  void WatchUpperBound(IntegerValue i, int id) {}
-  void WatchIntegerVariable(IntegerValue v, int id) {}
+  void WatchLowerBound(IntegerValue /*i*/, int /*id*/) {}
+  void WatchUpperBound(IntegerValue /*i*/, int /*id*/) {}
+  void WatchIntegerVariable(IntegerValue /*v*/, int /*id*/) {}
 
   // Registers a reversible class with a given propagator. This class will be
   // changed to the correct state just before the propagator is called.
@@ -1436,7 +1436,7 @@ class GenericLiteralWatcher : public SatPropagator {
   // Alternatively, one can directly get the underlying RevRepository<int> with
   // a call to model.Get<>(), and use SaveWithStamp() before each modification
   // to have just a slight overhead per int updates. This later option is what
-  // is usually done in a CP solver at the cost of a sligthly more complex API.
+  // is usually done in a CP solver at the cost of a slightly more complex API.
   void RegisterReversibleInt(int id, int* rev);
 
   // Returns the number of registered propagators.

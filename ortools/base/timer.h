@@ -17,7 +17,7 @@
 #include "absl/log/check.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/macros.h"
 
 class WallTimer {

@@ -712,7 +712,7 @@ static const flex_int32_t yy_rule_can_match_eol[32] = {
 #include <string>
 
 #include "absl/strings/numbers.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/flatzinc/parser.tab.hh"
 #if defined(_MSC_VER)
 #define YY_NO_UNISTD_H

@@ -20,8 +20,8 @@
 #include <vector>
 
 #include "absl/base/casts.h"
-#include "ortools/base/basictypes.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 

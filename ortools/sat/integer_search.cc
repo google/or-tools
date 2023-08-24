@@ -17,7 +17,6 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
-#include <numeric>
 #include <random>
 #include <vector>
 
@@ -337,69 +336,26 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
 
 // TODO(user): Do we need a mechanism to reduce the range of possible gaps
 // when nothing gets proven? This could be a parameter or some adaptative code.
-std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(
-    Model* model, double focus_on_terms_probability) {
+std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
   const IntegerVariable obj_var = objective_definition->objective_var;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* random = model->GetOrCreate<ModelRandomGenerator>();
 
-  std::vector<int> random_order;
-  if (objective_definition->vars.size() > 1) {
-    random_order.resize(objective_definition->vars.size());
-    std::iota(random_order.begin(), random_order.end(), 0);
-  }
-
-  const auto random_slack = [random](IntegerValue lb, IntegerValue ub) {
-    const IntegerValue mid = (ub - lb) / 2;
-    return absl::LogUniform<int64_t>(*random, 0, mid.value());
-  };
-
-  return [obj_var, integer_trail, sat_solver, random, random_order,
-          objective_definition, random_slack,
-          focus_on_terms_probability]() mutable {
+  return [obj_var, integer_trail, sat_solver, random]() {
     BooleanOrIntegerLiteral result;
     const int level = sat_solver->CurrentDecisionLevel();
-    if (random_order.empty() ||
-        absl::Bernoulli(*random, 1.0 - focus_on_terms_probability)) {
-      if (level > 0 || obj_var == kNoIntegerVariable ||
-          integer_trail->IsFixed(obj_var)) {
-        return result;
-      }
+    if (level > 0 || obj_var == kNoIntegerVariable) return result;
 
-      const IntegerValue obj_lb = integer_trail->LowerBound(obj_var);
-      const IntegerValue obj_ub = integer_trail->UpperBound(obj_var);
-      const IntegerValue new_ub = obj_lb + random_slack(obj_lb, obj_ub);
-      result.integer_literal = IntegerLiteral::LowerOrEqual(obj_var, new_ub);
-      return result;
-    }
+    const IntegerValue obj_lb = integer_trail->LowerBound(obj_var);
+    const IntegerValue obj_ub = integer_trail->UpperBound(obj_var);
+    if (obj_lb == obj_ub) return result;
+    const IntegerValue mid = (obj_ub - obj_lb) / 2;
+    const IntegerValue new_ub =
+        obj_lb + absl::LogUniform<int64_t>(*random, 0, mid.value());
 
-    if (level == 0) {
-      VLOG(2) << "ShaveObjectiveLb: randomize " << random_order.size()
-              << " terms";
-      DCHECK_EQ(random_order.size(), objective_definition->vars.size());
-      std::shuffle(random_order.begin(), random_order.end(), *random);
-    }
-
-    for (const int index : random_order) {
-      const IntegerVariable var = objective_definition->vars[index];
-      const IntegerValue coeff = objective_definition->coeffs[index];
-      if (integer_trail->IsFixed(var) || coeff == 0) continue;
-
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      const IntegerValue ub = integer_trail->UpperBound(var);
-      const IntegerValue slack = random_slack(lb, ub);
-      if (coeff > 0) {
-        result.integer_literal = IntegerLiteral::LowerOrEqual(var, lb + slack);
-      } else {
-        result.integer_literal =
-            IntegerLiteral::GreaterOrEqual(var, ub - slack);
-      }
-      return result;
-    }
-
-    // Returns no-decision.
+    result.integer_literal = IntegerLiteral::LowerOrEqual(obj_var, new_ub);
     return result;
   };
 }
@@ -742,12 +698,8 @@ void ConfigureSearchHeuristics(Model* model) {
           SequentialSearch({decision_policy, heuristics.fixed_search});
       decision_policy = IntegerValueSelectionHeuristic(decision_policy, model);
       if (parameters.use_objective_lb_search()) {
-        heuristics.decision_policies = {SequentialSearch(
-            {ShaveObjectiveLb(
-                 model,
-                 parameters
-                     .focus_on_terms_in_objective_lb_search_probability()),
-             decision_policy})};
+        heuristics.decision_policies = {
+            SequentialSearch({ShaveObjectiveLb(model), decision_policy})};
       } else {
         heuristics.decision_policies = {decision_policy};
       }
@@ -1073,6 +1025,7 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
         // We need to check after the probing that the literal is not fixed,
         // otherwise we just go to the next decision.
         if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
+          decision = kNoLiteralIndex;
           continue;
         }
       }

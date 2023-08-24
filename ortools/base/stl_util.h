@@ -32,7 +32,7 @@
 
 #include "absl/meta/type_traits.h"
 #include "absl/strings/internal/resize_uninitialized.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/macros.h"
 
 namespace gtl {

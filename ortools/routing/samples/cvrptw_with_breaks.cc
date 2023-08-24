@@ -35,7 +35,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"

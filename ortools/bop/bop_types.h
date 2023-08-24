@@ -18,7 +18,7 @@
 #include <ostream>
 #include <string>
 
-#include "ortools/base/basictypes.h"
+#include "ortools/base/types.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/strong_integers.h"
 

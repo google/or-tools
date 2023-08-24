@@ -20,7 +20,7 @@
 #include <functional>
 #include <memory>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 // RangeIntToIntFunction is an interface to int64_t->int64_t functions

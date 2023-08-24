@@ -1208,6 +1208,7 @@ class PathCumulFilter : public BasePathFilter {
 
   LocalDimensionCumulOptimizer* optimizer_;
   LocalDimensionCumulOptimizer* mp_optimizer_;
+  const std::function<int64_t(int64_t)> path_accessor_;
   const bool filter_objective_cost_;
   // This boolean indicates if the LP optimizer can be used if necessary to
   // optimize the dimension cumuls.
@@ -1246,6 +1247,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       name_(dimension.name()),
       optimizer_(routing_model.GetMutableLocalCumulLPOptimizer(dimension)),
       mp_optimizer_(routing_model.GetMutableLocalCumulMPOptimizer(dimension)),
+      path_accessor_([this](int64_t node) { return GetNext(node); }),
       filter_objective_cost_(filter_objective_cost),
       can_use_lp_(can_use_lp),
       propagate_own_objective_value_(propagate_own_objective_value) {
@@ -1509,8 +1511,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         DCHECK(optimizer != nullptr);
         const DimensionSchedulingStatus status =
             optimizer->ComputeRouteCumulCostWithoutFixedTransits(
-                vehicle, [this](int64_t node) { return Value(node); },
-                &lp_cumul_cost_value);
+                vehicle, path_accessor_, &lp_cumul_cost_value);
         switch (status) {
           case DimensionSchedulingStatus::INFEASIBLE:
             lp_cumul_cost_value = 0;
@@ -1518,8 +1519,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
           case DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY:
             DCHECK(mp_optimizer_ != nullptr);
             if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-                    vehicle, [this](int64_t node) { return Value(node); },
-                    &lp_cumul_cost_value) ==
+                    vehicle, path_accessor_, &lp_cumul_cost_value) ==
                 DimensionSchedulingStatus::INFEASIBLE) {
               lp_cumul_cost_value = 0;
             }
@@ -1852,8 +1852,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       int64_t path_delta_cost_with_lp = 0;
       const DimensionSchedulingStatus status =
           optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-              vehicle, [this](int64_t node) { return GetNext(node); },
-              &path_delta_cost_with_lp);
+              vehicle, path_accessor_, &path_delta_cost_with_lp);
       if (status == DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }
@@ -1886,8 +1885,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       const int vehicle = start_to_vehicle_[start];
       int64_t path_delta_cost_with_mp = 0;
       if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-              vehicle, [this](int64_t node) { return GetNext(node); },
-              &path_delta_cost_with_mp) ==
+              vehicle, path_accessor_, &path_delta_cost_with_mp) ==
           DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }

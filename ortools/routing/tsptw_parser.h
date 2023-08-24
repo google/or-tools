@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/routing/simple_graph.h"
 
 namespace operations_research {

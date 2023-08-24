@@ -24,7 +24,7 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
