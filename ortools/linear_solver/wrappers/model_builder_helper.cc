@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"

@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_GZIPFILE_H_
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"  // for Ownership enum
+#include "ortools/base/basictypes.h"  // for Ownership enum
 #include "zlib.h"                     // for Z_DEFAULT_COMPRESSION
 
 class File;
@@ -27,11 +27,6 @@ enum class AppendedStreams {
   kConcatenateStreams,
   kIgnoreAppendedData,
 };
-
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
 
 // Return a readonly file that contains a uncompressed version of
 // another File.

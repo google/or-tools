@@ -261,6 +261,7 @@ cc_library(
         "//ortools/base:accurate_sum",
         "//ortools/base:dynamic_library",
         "//ortools/base:hash",
+        "//ortools/base:logging",
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",

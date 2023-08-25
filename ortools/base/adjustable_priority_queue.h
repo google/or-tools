@@ -20,8 +20,6 @@
 #include <list>
 #include <vector>
 
-#include "ortools/base/types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
 template <typename T, typename Comparator>
@@ -39,8 +37,8 @@ class AdjustablePriorityQueue {
  public:
   // The objects references 'c' and 'm' are not required to be alive for the
   // lifetime of this object.
-  AdjustablePriorityQueue() {}
-  AdjustablePriorityQueue(const Comp& c) : c_(c) {}
+  AdjustablePriorityQueue() = default;
+  explicit AdjustablePriorityQueue(const Comp& c) : c_(c) {}
   AdjustablePriorityQueue(const AdjustablePriorityQueue&) = delete;
   AdjustablePriorityQueue& operator=(const AdjustablePriorityQueue&) = delete;
   AdjustablePriorityQueue(AdjustablePriorityQueue&&) = default;

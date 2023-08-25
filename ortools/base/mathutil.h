@@ -17,11 +17,10 @@
 #include <math.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "absl/base/casts.h"
-#include "ortools/base/types.h"
-#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 

@@ -14,6 +14,7 @@
 // Initial version of this code was written by Daniel Junglas (IBM)
 #if defined(USE_CPLEX)
 
+#include <cstdint>
 #include <limits>
 #include <memory>
 
@@ -21,7 +22,6 @@
 #include "absl/strings/str_split.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {

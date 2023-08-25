@@ -15,8 +15,6 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#include "ortools/base/types.h"
 %}
 
 %include "typemaps.i"

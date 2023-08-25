@@ -35,7 +35,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

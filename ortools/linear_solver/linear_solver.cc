@@ -45,7 +45,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
-#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"

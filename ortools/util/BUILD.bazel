@@ -242,6 +242,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
+        "//ortools/base:types",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",

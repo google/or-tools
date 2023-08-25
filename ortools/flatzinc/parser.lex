@@ -8,8 +8,8 @@
 %option prefix="orfz_"
 
 %{
+#include <cstdint>
 #include <string>
-#include "ortools/base/integral_types.h"
 #include "absl/strings/numbers.h"
 #include "ortools/flatzinc/parser.tab.hh"
 #if defined(_MSC_VER)

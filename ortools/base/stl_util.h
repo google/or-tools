@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <deque>
 #include <forward_list>
 #include <functional>
@@ -32,7 +33,6 @@
 
 #include "absl/meta/type_traits.h"
 #include "absl/strings/internal/resize_uninitialized.h"
-#include "ortools/base/types.h"
 #include "ortools/base/macros.h"
 
 namespace gtl {

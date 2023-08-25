@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_FILE_H_
 #define OR_TOOLS_BASE_FILE_H_
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -24,7 +25,6 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 

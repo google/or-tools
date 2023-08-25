@@ -16,20 +16,18 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "absl/base/port.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/declare.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"
 
 /**

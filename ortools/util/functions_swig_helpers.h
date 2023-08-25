@@ -18,7 +18,6 @@
 // in Java. It is #included by java/functions.i.
 
 #include <cstdint>
-#include <functional>
 #include <string>
 
 namespace operations_research {

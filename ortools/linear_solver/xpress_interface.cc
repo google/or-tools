@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <fstream>
 #include <istream>
 #include <limits>
@@ -27,7 +28,6 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {

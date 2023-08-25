@@ -26,6 +26,7 @@
 #define OR_TOOLS_UTIL_FILELINEITER_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 
 #include "ortools/base/file.h"

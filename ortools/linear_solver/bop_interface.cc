@@ -27,7 +27,6 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/integral_solver.h"
 #include "ortools/linear_solver/linear_solver.h"

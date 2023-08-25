@@ -46,6 +46,7 @@ cc_library(
         "init_google.h",
         "logging.h",
         "stl_logging.h",
+        "types.h",
         "version.h",
     ],
     copts = [
@@ -61,9 +62,9 @@ cc_library(
     }),
     deps = [
         ":commandlineflags",
-        ":types",
         ":logging",
         ":macros",
+        ":types",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -92,20 +93,18 @@ cc_library(
     ],
     deps = [
         ":base",
-        ":types",
     ],
 )
 
 cc_library(
-    name = "types",
-    hdrs = ["types.h"],
+    name = "basictypes",
+    hdrs = ["basictypes.h"],
 )
 
 cc_library(
     name = "bitmap",
     srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
-    deps = [":types"],
 )
 
 cc_library(
@@ -235,7 +234,7 @@ cc_library(
     hdrs = ["gzipfile.h"],
     deps = [
         ":base",
-        ":types",
+        ":basictypes",
         ":file",
         ":path",
         "@com_google_absl//absl/strings",
@@ -261,7 +260,6 @@ cc_library(
         "hash.h",
     ],
     deps = [
-        ":types",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -318,6 +316,11 @@ cc_library(
 )
 
 cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+)
+
+cc_library(
     name = "vlog",
     srcs = ["vlog_is_on.cc"],
     hdrs = [
@@ -325,7 +328,6 @@ cc_library(
         "vlog_is_on.h",
     ],
     deps = [
-        ":types",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -348,7 +350,6 @@ cc_library(
     hdrs = ["mathutil.h"],
     deps = [
         ":base",
-        ":types",
     ],
 )
 
@@ -483,7 +484,6 @@ cc_library(
     srcs = ["strtoint.cc"],
     hdrs = ["strtoint.h"],
     deps = [
-        ":types",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
@@ -494,7 +494,6 @@ cc_library(
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = [
-        ":types",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -514,7 +513,6 @@ cc_library(
     srcs = ["timer.cc"],
     hdrs = ["timer.h"],
     deps = [
-        ":types",
         ":macros",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/time",
@@ -531,7 +529,7 @@ cc_library(
     srcs = ["zipfile.cc"],
     hdrs = ["zipfile.h"],
     deps = [
-        ":types",
+        ":basictypes",
         ":file",
         ":path",
         ":stl_util",
