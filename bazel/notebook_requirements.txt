@@ -102,8 +102,9 @@ jupyter-events==0.6.3
     # via jupyter-server
 jupyter-lsp==2.2.0
     # via jupyterlab
-jupyter-server==2.7.0
+jupyter-server==2.7.2
     # via
+    #   -r bazel/notebook_requirements.in
     #   jupyter-lsp
     #   jupyterlab
     #   jupyterlab-server
@@ -238,7 +239,7 @@ rfc3986-validator==0.1.1
     #   jupyter-events
 scipy==1.11.1
     # via -r bazel/notebook_requirements.in
-send2trash==1.8.0
+send2trash==1.8.2
     # via jupyter-server
 six==1.16.0
     # via
