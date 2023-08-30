@@ -1,11 +1,11 @@
 {
-  "id": "com.google.or-tools",
-  "name": "OR Tools",
-  "description": "Google's Operations Research tools FlatZinc interface",
+  "id": "com.google.ortools.sat",
+  "name": "OR Tools CP-SAT-LP",
+  "description": "Google's Operations Research CP-SAT-LP FlatZinc interface",
   "version": "@PROJECT_VERSION@",
-  "mznlib": "../ortools",
+  "mznlib": "../cpsatlp",
   "executable": "@FZ_REL_INSTALL_BINARY@",
-  "tags": ["ortools", "cp", "lcg", "int"],
+  "tags": ["cpsatlp", "cp", "lcg", "int"],
   "stdFlags": ["-a", "-f", "-p", "-r", "-s", "-v"],
   "extraFlags": [
     ["--params", "Provide parameters interpreted as a text SatParameters proto", "string", ""]

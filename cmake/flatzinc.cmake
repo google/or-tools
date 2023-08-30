@@ -118,7 +118,7 @@ endif()
 add_library(${PROJECT_NAMESPACE}::flatzinc ALIAS flatzinc)
 
 
-# fzn-ortools Binary
+# fzn-cp-sat-lp Binary
 add_executable(fzn
   ortools/flatzinc/fz.cc
   )
@@ -132,7 +132,7 @@ set_target_properties(fzn PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
-  OUTPUT_NAME fzn-${PROJECT_NAME}
+  OUTPUT_NAME fzn-cp-sat-lp
   )
 target_compile_features(fzn PUBLIC cxx_std_17)
 target_compile_definitions(fzn PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
@@ -168,7 +168,7 @@ set_target_properties(fzn-parser_test PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
-  OUTPUT_NAME fzn-parser-${PROJECT_NAME}
+  OUTPUT_NAME fzn-parser-cp-sat-lp
   )
 target_compile_features(fzn-parser_test PUBLIC cxx_std_17)
 target_compile_definitions(fzn-parser_test PUBLIC ${FLATZINC_COMPILE_DEFINITIONS})
@@ -182,10 +182,10 @@ add_executable(${PROJECT_NAME}::fzn-parser_test ALIAS fzn-parser_test)
 # MiniZinc solver configuration
 file(RELATIVE_PATH FZ_REL_INSTALL_BINARY
   ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/minizinc/solvers
-  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fzn-${PROJECT_NAME})
+  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/fzn-cp-sat-lp)
 configure_file(
-  ortools/flatzinc/ortools.msc.in
-  ${PROJECT_BINARY_DIR}/ortools.msc
+  ortools/flatzinc/cpsatlp.msc.in
+  ${PROJECT_BINARY_DIR}/cpsatlp.msc
   @ONLY)
 
 # Install rules
@@ -199,7 +199,7 @@ install(TARGETS flatzinc fzn #fzn-parser_test
   )
 
 install(DIRECTORY ortools/flatzinc/mznlib/
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/minizinc/ortools
+  DESTINATION ${DATAROOTDIR}/minizinc/cpsatlp
   FILES_MATCHING PATTERN "*.mzn")
-install(FILES ${PROJECT_BINARY_DIR}/ortools.msc
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/minizinc/solvers)
+install(FILES ${PROJECT_BINARY_DIR}/cpsatlp.msc
+  DESTINATION ${DATAROOTDIR}/minizinc/solvers)

@@ -34,6 +34,6 @@ RUN rm -rf build
 RUN cmake -S. -Bbuild -DBUILD_PYTHON=OFF -DBUILD_JAVA=OFF -DBUILD_DOTNET=OFF -DUSE_SCIP=OFF -DUSE_COINOR=OFF -DBUILD_DEPS=ON
 RUN cmake --build build --target all -j16
 
-RUN ln -s /root/or-tools/build/bin/fzn-ortools /entry_data/fzn-exec
+RUN ln -s /root/or-tools/build/bin/fzn-cp-sat-lp /entry_data/fzn-exec
 
 RUN cp /root/or-tools/ortools/flatzinc/mznlib/*mzn /entry_data/mzn-lib
