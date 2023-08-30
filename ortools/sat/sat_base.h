@@ -32,7 +32,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/model.h"
@@ -138,6 +137,10 @@ class VariablesAssignment {
  public:
   VariablesAssignment() = default;
   explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
+
+  // This type is neither copyable nor movable.
+  VariablesAssignment(const VariablesAssignment&) = delete;
+  VariablesAssignment& operator=(const VariablesAssignment&) = delete;
   void Resize(int num_variables) {
     assignment_.Resize(LiteralIndex(num_variables << 1));
   }
@@ -190,8 +193,6 @@ class VariablesAssignment {
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
   // - If both are false, then the variable (and the literal) is unassigned.
   Bitset64<LiteralIndex> assignment_;
-
-  DISALLOW_COPY_AND_ASSIGN(VariablesAssignment);
 };
 
 // Forward declaration.
@@ -251,6 +252,10 @@ class Trail {
     current_info_.trail_index = 0;
     current_info_.level = 0;
   }
+
+  // This type is neither copyable nor movable.
+  Trail(const Trail&) = delete;
+  Trail& operator=(const Trail&) = delete;
 
   void Resize(int num_variables);
 
@@ -474,8 +479,6 @@ class Trail {
 
   std::function<bool(absl::Span<const Literal> clause)> debug_checker_ =
       nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(Trail);
 };
 
 // Base class for all the SAT constraints.
@@ -483,6 +486,10 @@ class SatPropagator {
  public:
   explicit SatPropagator(const std::string& name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}
+
+  // This type is neither copyable nor movable.
+  SatPropagator(const SatPropagator&) = delete;
+  SatPropagator& operator=(const SatPropagator&) = delete;
   virtual ~SatPropagator() = default;
 
   // Sets/Gets this propagator unique id.
@@ -548,9 +555,6 @@ class SatPropagator {
   const std::string name_;
   int propagator_id_;
   int propagation_trail_index_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(SatPropagator);
 };
 
 // ########################  Implementations below  ########################

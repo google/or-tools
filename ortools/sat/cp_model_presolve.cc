@@ -2875,12 +2875,14 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
       lb_infeasible_.AddMultiples(e.magnitude, saved_range);
 
       // For a <= constraint, the max_feasible + error is still feasible.
-      if (lb_feasible_.CurrentMax() + max_error <= lb_feasible_.Bound()) {
+      if (CapAdd(lb_feasible_.CurrentMax(), max_error) <=
+          lb_feasible_.Bound()) {
         simplify_lb = true;
       }
       // For a <= constraint describing the infeasible set, the max_infeasible +
       // error is still infeasible.
-      if (lb_infeasible_.CurrentMax() + max_error <= lb_infeasible_.Bound()) {
+      if (CapAdd(lb_infeasible_.CurrentMax(), max_error) <=
+          lb_infeasible_.Bound()) {
         simplify_lb = true;
       }
     } else {
@@ -2890,10 +2892,12 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     if (use_ub) {
       ub_feasible_.AddMultiples(e.magnitude, saved_range);
       ub_infeasible_.AddMultiples(e.magnitude, saved_range);
-      if (ub_feasible_.CurrentMax() + max_error <= ub_feasible_.Bound()) {
+      if (CapAdd(ub_feasible_.CurrentMax(), max_error) <=
+          ub_feasible_.Bound()) {
         simplify_ub = true;
       }
-      if (ub_infeasible_.CurrentMax() + max_error <= ub_infeasible_.Bound()) {
+      if (CapAdd(ub_infeasible_.CurrentMax(), max_error) <=
+          ub_infeasible_.Bound()) {
         simplify_ub = true;
       }
     } else {
@@ -3443,36 +3447,29 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // SubstituteVariable() function cannot fail this way.
     if (rhs.Min() != rhs.Max()) continue;
 
-    // Only consider "implied free" variables. Note that the coefficient of
-    // magnitude 1 is important otherwise we can't easily remove the
-    // constraint since the fact that the sum of the other terms must be a
-    // multiple of coeff will not be enforced anymore.
-    if (context_->DomainOf(var) != new_domain) continue;
-    if (std::abs(var_coeff) != 1) continue;
-    if (context_->params().presolve_substitution_level() <= 0) continue;
-
     // NOTE: The mapping doesn't allow us to remove a variable if
     // 'keep_all_feasible_solutions' is true.
     if (context_->keep_all_feasible_solutions) continue;
 
-    bool is_in_objective = false;
-    if (context_->VarToConstraints(var).contains(-1)) {
-      is_in_objective = true;
-      DCHECK(context_->ObjectiveMap().contains(var));
-    }
+    // Only consider "implied free" variables. Note that the coefficient of
+    // magnitude 1 is important otherwise we can't easily remove the
+    // constraint since the fact that the sum of the other terms must be a
+    // multiple of coeff will not be enforced anymore.
+    if (std::abs(var_coeff) != 1) continue;
+    if (context_->params().presolve_substitution_level() <= 0) continue;
 
-    // Only consider low degree columns.
-    int col_size = context_->VarToConstraints(var).size();
-    if (is_in_objective) col_size--;
-    const int row_size = ct->linear().vars_size();
+    // Only consider substitution that reduce the number of entries.
+    const bool is_in_objective = context_->VarToConstraints(var).contains(-1);
+    {
+      int col_size = context_->VarToConstraints(var).size();
+      if (is_in_objective) col_size--;
+      const int row_size = ct->linear().vars_size();
 
-    // This is actually an upper bound on the number of entries added since
-    // some of them might already be present.
-    const int num_entries_added = (row_size - 1) * (col_size - 1);
-    const int num_entries_removed = col_size + row_size - 1;
-
-    if (num_entries_added > num_entries_removed) {
-      continue;
+      // This is actually an upper bound on the number of entries added since
+      // some of them might already be present.
+      const int num_entries_added = (row_size - 1) * (col_size - 1);
+      const int num_entries_removed = col_size + row_size - 1;
+      if (num_entries_added > num_entries_removed) continue;
     }
 
     // Check pre-conditions on all the constraints in which this variable
@@ -3498,34 +3495,110 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
           break;
         }
       }
+      if (abort) break;
       others.push_back(c);
     }
     if (abort) continue;
 
+    // If the domain implied by this constraint is the same as the current
+    // domain of the variable, this variable is implied free. Otherwise, we
+    // check if the intersection with the domain implied by another constraint
+    // make it implied free.
+    if (context_->DomainOf(var) != new_domain) {
+      // We only do that for doubleton because we don't want the propagation to
+      // be less strong. If we were to replace this variable in other constraint
+      // the implied bound from the linear expression might not be as good.
+      //
+      // TODO(user): We still substitute even if this happens in the objective
+      // though. Is that good?
+      if (others.size() != 1) continue;
+      const ConstraintProto& other_ct =
+          context_->working_model->constraints(others.front());
+      if (!other_ct.enforcement_literal().empty()) continue;
+
+      // Compute the implied domain using the other constraint.
+      // We only do that if it is not too long to avoid quadratic worst case.
+      const LinearConstraintProto& other_lin = other_ct.linear();
+      if (other_lin.vars().size() > 100) continue;
+      Domain implied = ReadDomainFromProto(other_lin);
+      int64_t other_coeff = 0;
+      for (int i = 0; i < other_lin.vars().size(); ++i) {
+        const int v = other_lin.vars(i);
+        const int64_t coeff = other_lin.coeffs(i);
+        if (v == var) {
+          // It is possible the constraint is not canonical if it wasn't
+          // processed yet !
+          other_coeff += coeff;
+        } else {
+          implied =
+              implied
+                  .AdditionWith(context_->DomainOf(v).MultiplicationBy(-coeff))
+                  .RelaxIfTooComplex();
+        }
+      }
+      if (other_coeff == 0) continue;
+      implied = implied.InverseMultiplicationBy(other_coeff);
+
+      // Since we compute it, we can as well update the domain right now.
+      // This is also needed for postsolve to have a tight domain.
+      if (!context_->IntersectDomainWith(var, implied)) return false;
+      if (context_->IsFixed(var)) continue;
+      if (new_domain.IntersectionWith(implied) != context_->DomainOf(var)) {
+        continue;
+      }
+
+      context_->UpdateRuleStats("linear: doubleton free");
+    }
+
+    // Substitute in objective.
+    // This can fail in overflow corner cases, so we abort before doing any
+    // actual changes.
+    if (is_in_objective &&
+        !context_->SubstituteVariableInObjective(var, var_coeff, *ct)) {
+      continue;
+    }
+
     // Do the actual substitution.
+    ConstraintProto copy_if_we_abort;
     for (const int c : others) {
-      // TODO(user): In some corner cases, this might create integer overflow
-      // issues. The danger is limited since the range of the linear
-      // expression used in the definition do not exceed the domain of the
-      // variable we substitute.
-      const bool ok = SubstituteVariable(
-          var, var_coeff, *ct, context_->working_model->mutable_constraints(c));
-      if (!ok) {
+      // TODO(user): The copy is needed to have a simpler overflow-checking
+      // code were we check once the substitution is done. If needed we could
+      // optimize that, but with more code.
+      copy_if_we_abort = context_->working_model->constraints(c);
+
+      // In some corner cases, this might violate our overflow precondition or
+      // even create an overflow. The danger is limited since the range of the
+      // linear expression used in the definition do not exceed the domain of
+      // the variable we substitute. But this is not the case for the doubleton
+      // case above.
+      if (!SubstituteVariable(
+              var, var_coeff, *ct,
+              context_->working_model->mutable_constraints(c))) {
+        // The function do not modify the constraint.
+        // It is possible we already started performing substitution, but that
+        // is usually not the case, and still correct.
+        //
         // This can happen if the constraint was not canonicalized and the
         // variable is actually not there (we have var - var for instance).
         CanonicalizeLinear(context_->working_model->mutable_constraints(c));
+        abort = true;
+        break;
+      }
+
+      if (PossibleIntegerOverflow(
+              *context_->working_model,
+              context_->working_model->constraints(c).linear().vars(),
+              context_->working_model->constraints(c).linear().coeffs())) {
+        // Revert the change in this case.
+        *context_->working_model->mutable_constraints(c) = copy_if_we_abort;
+        abort = true;
+        break;
       }
 
       // TODO(user): We should re-enqueue these constraints for presolve.
       context_->UpdateConstraintVariableUsage(c);
     }
-
-    // Substitute in objective.
-    // This can only fail in corner cases.
-    if (is_in_objective &&
-        !context_->SubstituteVariableInObjective(var, var_coeff, *ct)) {
-      continue;
-    }
+    if (abort) continue;
 
     context_->UpdateRuleStats(
         absl::StrCat("linear: variable substitution ", others.size()));
@@ -3539,11 +3612,9 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // assign var. We do that by putting it fist.
     CHECK_EQ(context_->VarToConstraints(var).size(), 1);
     context_->MarkVariableAsRemoved(var);
-    const int ct_index = context_->mapping_model->constraints().size();
-    *context_->mapping_model->add_constraints() = *ct;
-    LinearConstraintProto* mapping_linear_ct =
-        context_->mapping_model->mutable_constraints(ct_index)
-            ->mutable_linear();
+    ConstraintProto* mapping_ct = context_->mapping_model->add_constraints();
+    *mapping_ct = *ct;
+    LinearConstraintProto* mapping_linear_ct = mapping_ct->mutable_linear();
     std::swap(mapping_linear_ct->mutable_vars()->at(0),
               mapping_linear_ct->mutable_vars()->at(i));
     std::swap(mapping_linear_ct->mutable_coeffs()->at(0),
@@ -9839,8 +9910,8 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
 }
 
 void CpModelPresolver::TryToSimplifyDomain(int var) {
-  CHECK(RefIsPositive(var));
-  CHECK(context_->ConstraintVariableGraphIsUpToDate());
+  DCHECK(RefIsPositive(var));
+  DCHECK(context_->ConstraintVariableGraphIsUpToDate());
   if (context_->ModelIsUnsat()) return;
   if (context_->IsFixed(var)) return;
   if (context_->VariableWasRemoved(var)) return;

@@ -22,7 +22,6 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -47,6 +46,10 @@ class BooleanXorPropagator : public PropagatorInterface {
         trail_(trail),
         integer_trail_(integer_trail) {}
 
+  // This type is neither copyable nor movable.
+  BooleanXorPropagator(const BooleanXorPropagator&) = delete;
+  BooleanXorPropagator& operator=(const BooleanXorPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -56,8 +59,6 @@ class BooleanXorPropagator : public PropagatorInterface {
   std::vector<Literal> literal_reason_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
 };
 
 // If we have:
@@ -78,6 +79,12 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
                                     absl::Span<const Literal> enforcements,
                                     Model* model);
 
+  // This type is neither copyable nor movable.
+  GreaterThanAtLeastOneOfPropagator(const GreaterThanAtLeastOneOfPropagator&) =
+      delete;
+  GreaterThanAtLeastOneOfPropagator& operator=(
+      const GreaterThanAtLeastOneOfPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -92,8 +99,6 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
 
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(GreaterThanAtLeastOneOfPropagator);
 };
 
 // ============================================================================

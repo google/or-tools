@@ -23,7 +23,6 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -156,6 +155,11 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   AllDifferentBoundsPropagator(const std::vector<AffineExpression>& expressions,
                                IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  AllDifferentBoundsPropagator(const AllDifferentBoundsPropagator&) = delete;
+  AllDifferentBoundsPropagator& operator=(const AllDifferentBoundsPropagator&) =
+      delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -223,8 +227,6 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 
   // Temporary integer reason.
   std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);
 };
 
 }  // namespace sat

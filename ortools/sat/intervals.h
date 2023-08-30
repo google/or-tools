@@ -26,7 +26,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/implied_bounds.h"
@@ -60,6 +59,10 @@ class IntervalsRepository {
       : model_(model),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
+
+  // This type is neither copyable nor movable.
+  IntervalsRepository(const IntervalsRepository&) = delete;
+  IntervalsRepository& operator=(const IntervalsRepository&) = delete;
 
   // Returns the current number of intervals in the repository.
   // The interval will always be identified by an integer in [0, num_intervals).
@@ -186,8 +189,6 @@ class IntervalsRepository {
       std::pair<SchedulingConstraintHelper*, std::vector<AffineExpression>>,
       SchedulingDemandHelper*>
       demand_helper_repository_;
-
-  DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };
 
 // An helper struct to sort task by time. This is used by the

@@ -28,7 +28,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -50,6 +49,10 @@ namespace sat {
 class SatPostsolver {
  public:
   explicit SatPostsolver(int num_variables);
+
+  // This type is neither copyable nor movable.
+  SatPostsolver(const SatPostsolver&) = delete;
+  SatPostsolver& operator=(const SatPostsolver&) = delete;
 
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
@@ -126,8 +129,6 @@ class SatPostsolver {
   // This will stores the fixed variables value and later the postsolved
   // assignment.
   VariablesAssignment assignment_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatPostsolver);
 };
 
 // This class holds a SAT problem (i.e. a set of clauses) and the logic to
@@ -153,6 +154,10 @@ class SatPresolver {
         num_trivial_clauses_(0),
         drat_proof_handler_(nullptr),
         logger_(logger) {}
+
+  // This type is neither copyable nor movable.
+  SatPresolver(const SatPresolver&) = delete;
+  SatPresolver& operator=(const SatPresolver&) = delete;
 
   void SetParameters(const SatParameters& params) { parameters_ = params; }
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
@@ -365,8 +370,6 @@ class SatPresolver {
   DratProofHandler* drat_proof_handler_;
   TimeLimit* time_limit_ = nullptr;
   SolverLogger* logger_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
 
 // Visible for testing. Returns true iff:

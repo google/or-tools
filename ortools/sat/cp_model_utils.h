@@ -223,6 +223,7 @@ constexpr uint64_t kDefaultFingerprintSeed = 0xa5b85c5e198ed849;
 template <class T>
 inline uint64_t FingerprintRepeatedField(
     const google::protobuf::RepeatedField<T>& sequence, uint64_t seed) {
+  if (sequence.empty()) return seed;
   return fasthash64(reinterpret_cast<const char*>(sequence.data()),
                     sequence.size() * sizeof(T), seed);
 }

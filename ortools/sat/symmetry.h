@@ -19,7 +19,6 @@
 
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/stats.h"
@@ -61,6 +60,11 @@ namespace sat {
 class SymmetryPropagator : public SatPropagator {
  public:
   SymmetryPropagator();
+
+  // This type is neither copyable nor movable.
+  SymmetryPropagator(const SymmetryPropagator&) = delete;
+  SymmetryPropagator& operator=(const SymmetryPropagator&) = delete;
+
   ~SymmetryPropagator() override;
 
   bool Propagate(Trail* trail) final;
@@ -153,7 +157,6 @@ class SymmetryPropagator : public SatPropagator {
   mutable StatsGroup stats_;
   int num_propagations_;
   int num_conflicts_;
-  DISALLOW_COPY_AND_ASSIGN(SymmetryPropagator);
 };
 
 }  // namespace sat

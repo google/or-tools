@@ -28,7 +28,6 @@
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
@@ -1099,6 +1098,10 @@ class PropagationGraph {
         deterministic_time_limit(solver->deterministic_time() +
                                  deterministic_time_limit) {}
 
+  // This type is neither copyable nor movable.
+  PropagationGraph(const PropagationGraph&) = delete;
+  PropagationGraph& operator=(const PropagationGraph&) = delete;
+
   // Returns the set of node adjacent to the given one.
   // Interface needed by FindStronglyConnectedComponents(), note that it needs
   // to be const.
@@ -1134,8 +1137,6 @@ class PropagationGraph {
   mutable std::vector<int32_t> scratchpad_;
   SatSolver* const solver_;
   const double deterministic_time_limit;
-
-  DISALLOW_COPY_AND_ASSIGN(PropagationGraph);
 };
 
 void ProbeAndFindEquivalentLiteral(

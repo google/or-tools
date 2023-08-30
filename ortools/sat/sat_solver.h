@@ -34,7 +34,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
@@ -64,6 +63,11 @@ class SatSolver {
  public:
   SatSolver();
   explicit SatSolver(Model* model);
+
+  // This type is neither copyable nor movable.
+  SatSolver(const SatSolver&) = delete;
+  SatSolver& operator=(const SatSolver&) = delete;
+
   ~SatSolver();
 
   // TODO(user): Remove. This is temporary for accessing the model deep within
@@ -874,8 +878,6 @@ class SatSolver {
 
   std::function<void(Literal, Literal)> shared_binary_clauses_callback_ =
       nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 
 // Tries to minimize the given UNSAT core with a really simple heuristic.

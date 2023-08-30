@@ -880,15 +880,13 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
     sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
     sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
     for (const int64_t v : {prod1, prod2, sum_min, sum_max}) {
-      if (v == std::numeric_limits<int64_t>::max() ||
-          v == std::numeric_limits<int64_t>::min())
-        return true;
+      if (AtMinOrMaxInt64(v)) return true;
     }
   }
 
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
-  // We might also create an intermediate variable to represent the sum. It
+  // We might also create an intermediate variable to represent the sum.
   if (sum_min < std::numeric_limits<int64_t>::min() / 2) return true;
   if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
   return false;

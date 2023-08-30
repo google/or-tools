@@ -97,6 +97,9 @@ class DomainDeductions {
 
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
+//
+// This might return false and NOT modify ConstraintProto in case of overflow
+// or other issue with the substitution.
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 

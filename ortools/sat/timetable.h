@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -113,6 +112,10 @@ class TimeTablingPerTask : public PropagatorInterface {
                      SchedulingConstraintHelper* helper,
                      SchedulingDemandHelper* demands, Model* model);
 
+  // This type is neither copyable nor movable.
+  TimeTablingPerTask(const TimeTablingPerTask&) = delete;
+  TimeTablingPerTask& operator=(const TimeTablingPerTask&) = delete;
+
   bool Propagate() final;
 
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -205,8 +208,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   // This allow to simplify the profile for common usage.
   bool has_demand_equal_to_capacity_ = false;
   IntegerValue initial_max_demand_;
-
-  DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };
 
 }  // namespace sat

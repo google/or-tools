@@ -1191,17 +1191,25 @@ std::string PresolveContext::AffineRelationDebugString(int ref) const {
 
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
-  for (int i = domains.size(); i < working_model->variables_size(); ++i) {
+  const int new_size = working_model->variables().size();
+  DCHECK_GE(new_size, domains.size());
+  if (domains.size() == new_size) return;
+
+  modified_domains.Resize(new_size);
+  var_with_reduced_small_degree.Resize(new_size);
+  var_to_constraints_.resize(new_size);
+  var_to_num_linear1_.resize(new_size);
+
+  // We mark the domain as modified so we will look at these new variable during
+  // our presolve loop.
+  for (int i = domains.size(); i < new_size; ++i) {
+    modified_domains.Set(i);
     domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
     if (domains.back().IsEmpty()) {
       is_unsat_ = true;
       return;
     }
   }
-  modified_domains.Resize(domains.size());
-  var_with_reduced_small_degree.Resize(domains.size());
-  var_to_constraints_.resize(domains.size());
-  var_to_num_linear1_.resize(domains.size());
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {

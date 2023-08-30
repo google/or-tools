@@ -530,7 +530,11 @@ void FeasibilityJumpSolver::RecomputeAllJumps() {
 int FeasibilityJumpSolver::UpdateConstraintWeights(bool linear_mode) {
   ++num_weight_updates_;
 
-  const double kMaxWeight = 1e50;
+  // Because we update the weight incrementally, it is better to not have a
+  // super hight magnitude, otherwise doing +max_weight and then -max_weight
+  // will just ignore any constraint with a small weight and our
+  // DCHECK(JumpIsUpToDate(var)) will fail more often.
+  const double kMaxWeight = 1e10;
   const double kBumpFactor = 1.0 / params_.feasibility_jump_decay();
   LinearIncrementalEvaluator* linear_evaluator =
       evaluator_->MutableLinearEvaluator();
@@ -594,6 +598,10 @@ int FeasibilityJumpSolver::UpdateConstraintWeights(bool linear_mode) {
 
 // Important: This is for debugging, but unfortunately it currently change the
 // deterministic time and hence the overall algo behavior.
+//
+// TODO(user): Because we keep updating the score incrementally and we might
+// have large constraint weight, we might have a pretty bad precision on
+// the score though, so it is possible this fail.
 bool FeasibilityJumpSolver::JumpIsUpToDate(int var) {
   const int64_t old_jump = jump_values_[var];
   const double old_score = jump_scores_[var];
@@ -601,7 +609,7 @@ bool FeasibilityJumpSolver::JumpIsUpToDate(int var) {
   CHECK_EQ(jump_values_[var], old_jump);  // No change
   const double relative =
       std::max({std::abs(jump_scores_[var]), std::abs(old_score), 1.0});
-  return std::abs(jump_scores_[var] - old_score) / relative < 1e-6;
+  return std::abs(jump_scores_[var] - old_score) / relative < 1e-2;
 }
 
 bool FeasibilityJumpSolver::DoSomeLinearIterations() {
@@ -683,28 +691,10 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
         }
       }
 
-      if (good_jumps_.empty()) {
-        // TODO(user): Re-enable the code. It can be a bit slow currently
-        // especially since in many situations it doesn't achieve anything.
-        if (true) break;
-
-        bool time_limit_crossed = false;
-        if (ScanAllVariables(solution, /*linear_mode=*/true, &best_var,
-                             &best_value, &best_score, &time_limit_crossed)) {
-          VLOG(2) << name()
-                  << " scans and finds improving solution (var:" << best_var
-                  << " value:" << best_value << ", delta:" << best_score << ")";
-          ++num_repairs_with_full_scan_;
-        } else if (time_limit_crossed) {
-          return false;
-        } else {
-          break;
-        }
-      } else {
-        const int64_t var_change = best_value - solution[best_var];
-        DCHECK_EQ(best_score, linear_evaluator->WeightedViolationDelta(
-                                  weights_, best_var, var_change));
-      }
+      if (good_jumps_.empty()) break;
+      const int64_t var_change = best_value - solution[best_var];
+      DCHECK_EQ(best_score, linear_evaluator->WeightedViolationDelta(
+                                weights_, best_var, var_change));
 
       CHECK_NE(best_var, -1);
       CHECK_NE(best_index, -1);

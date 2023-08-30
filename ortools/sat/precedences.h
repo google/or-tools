@@ -22,7 +22,6 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
@@ -121,6 +120,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
     integer_trail_->RegisterWatcher(&modified_vars_);
     watcher_->SetPropagatorPriority(watcher_id_, 0);
   }
+
+  // This type is neither copyable nor movable.
+  PrecedencesPropagator(const PrecedencesPropagator&) = delete;
+  PrecedencesPropagator& operator=(const PrecedencesPropagator&) = delete;
   ~PrecedencesPropagator() override;
 
   bool Propagate() final;
@@ -362,8 +365,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   int64_t num_cycles_ = 0;
   int64_t num_pushes_ = 0;
   int64_t num_enforcement_pushes_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(PrecedencesPropagator);
 };
 
 // =============================================================================

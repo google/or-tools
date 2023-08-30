@@ -37,7 +37,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
@@ -459,6 +458,10 @@ class IntegerEncoder {
         domains_(*model->GetOrCreate<IntegerDomains>()),
         num_created_variables_(0) {}
 
+  // This type is neither copyable nor movable.
+  IntegerEncoder(const IntegerEncoder&) = delete;
+  IntegerEncoder& operator=(const IntegerEncoder&) = delete;
+
   ~IntegerEncoder() {
     VLOG(1) << "#variables created = " << num_created_variables_;
   }
@@ -712,8 +715,6 @@ class IntegerEncoder {
   // Temporary memory used by FullyEncodeVariable().
   std::vector<IntegerValue> tmp_values_;
   std::vector<ValueLiteralPair> tmp_encoding_;
-
-  DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
 
 // This class maintains a set of integer variables with their current bounds.
@@ -731,6 +732,10 @@ class IntegerTrail : public SatPropagator {
         parameters_(*model->GetOrCreate<SatParameters>()) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
+
+  // This type is neither copyable nor movable.
+  IntegerTrail(const IntegerTrail&) = delete;
+  IntegerTrail& operator=(const IntegerTrail&) = delete;
   ~IntegerTrail() final;
 
   // SatPropagator interface. These functions make sure the current bounds
@@ -1301,8 +1306,6 @@ class IntegerTrail : public SatPropagator {
   std::function<bool(absl::Span<const Literal> clause,
                      absl::Span<const IntegerLiteral> integers)>
       debug_checker_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
 
 // Base class for CP like propagators.
@@ -1357,6 +1360,11 @@ class RevIntegerValueRepository : public RevRepository<IntegerValue> {
 class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
+
+  // This type is neither copyable nor movable.
+  GenericLiteralWatcher(const GenericLiteralWatcher&) = delete;
+  GenericLiteralWatcher& operator=(const GenericLiteralWatcher&) = delete;
+
   ~GenericLiteralWatcher() final = default;
 
   // Memory optimization: you can call this before registering watchers.
@@ -1522,8 +1530,6 @@ class GenericLiteralWatcher : public SatPropagator {
       level_zero_modified_variable_callback_;
 
   std::function<bool()> stop_propagation_callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
 
 // ============================================================================

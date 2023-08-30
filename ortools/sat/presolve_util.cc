@@ -31,6 +31,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
@@ -152,7 +153,7 @@ int64_t GetVarCoeffAndCopyOtherTerms(
 // Helper method for variable substituion. Sorts and merges the terms in 'terms'
 // and adds them to 'proto'.
 template <typename ProtoWithVarsAndCoeffs>
-void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
+bool SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
                        ProtoWithVarsAndCoeffs* proto) {
   proto->clear_vars();
   proto->clear_coeffs();
@@ -160,9 +161,10 @@ void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
   int current_var = 0;
   int64_t current_coeff = 0;
   for (const auto& entry : *terms) {
-    CHECK(RefIsPositive(entry.first));
+    DCHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
-      current_coeff += entry.second;
+      current_coeff = CapAdd(current_coeff, entry.second);
+      if (AtMinOrMaxInt64(current_coeff)) return false;
     } else {
       if (current_coeff != 0) {
         proto->add_vars(current_var);
@@ -176,11 +178,12 @@ void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
     proto->add_vars(current_var);
     proto->add_coeffs(current_coeff);
   }
+  return true;
 }
 
 // Adds all the terms from the var definition constraint with given var
 // coefficient.
-void AddTermsFromVarDefinition(const int var, const int64_t var_coeff,
+bool AddTermsFromVarDefinition(const int var, const int64_t var_coeff,
                                const ConstraintProto& definition,
                                std::vector<std::pair<int, int64_t>>* terms) {
   const int definition_size = definition.linear().vars().size();
@@ -195,9 +198,11 @@ void AddTermsFromVarDefinition(const int var, const int64_t var_coeff,
     if (ref == var) {
       continue;
     } else {
-      terms->push_back({ref, -coeff * var_coeff});
+      terms->push_back({ref, CapProd(-coeff, var_coeff)});
+      if (AtMinOrMaxInt64(terms->back().second)) return false;
     }
   }
+  return true;
 }
 }  // namespace
 
@@ -214,7 +219,9 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
 
   if (var_coeff_in_definition < 0) var_coeff *= -1;
 
-  AddTermsFromVarDefinition(var, var_coeff, definition, &terms);
+  if (!AddTermsFromVarDefinition(var, var_coeff, definition, &terms)) {
+    return false;
+  }
 
   // The substitution is correct only if we don't loose information here.
   // But for a constant definition rhs that is always the case.
@@ -223,10 +230,11 @@ bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
   offset = offset.MultiplicationBy(-var_coeff, &exact);
   CHECK(exact);
 
+  if (!SortAndMergeTerms(&terms, ct->mutable_linear())) {
+    return false;
+  }
   const Domain rhs = ReadDomainFromProto(ct->linear());
   FillDomainInProto(rhs.AdditionWith(offset), ct->mutable_linear());
-
-  SortAndMergeTerms(&terms, ct->mutable_linear());
   return true;
 }
 

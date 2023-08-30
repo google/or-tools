@@ -25,7 +25,6 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
@@ -193,6 +192,10 @@ class MinPropagator : public PropagatorInterface {
   MinPropagator(const std::vector<IntegerVariable>& vars,
                 IntegerVariable min_var, IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  MinPropagator(const MinPropagator&) = delete;
+  MinPropagator& operator=(const MinPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -202,8 +205,6 @@ class MinPropagator : public PropagatorInterface {
   IntegerTrail* integer_trail_;
 
   std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(MinPropagator);
 };
 
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
@@ -248,6 +249,10 @@ class ProductPropagator : public PropagatorInterface {
   ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
                     IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  ProductPropagator(const ProductPropagator&) = delete;
+  ProductPropagator& operator=(const ProductPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -270,8 +275,6 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression p_;
 
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(ProductPropagator);
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -282,6 +285,10 @@ class DivisionPropagator : public PropagatorInterface {
  public:
   DivisionPropagator(AffineExpression num, AffineExpression denom,
                      AffineExpression div, IntegerTrail* integer_trail);
+
+  // This type is neither copyable nor movable.
+  DivisionPropagator(const DivisionPropagator&) = delete;
+  DivisionPropagator& operator=(const DivisionPropagator&) = delete;
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -308,8 +315,6 @@ class DivisionPropagator : public PropagatorInterface {
   const AffineExpression negated_num_;
   const AffineExpression negated_div_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
@@ -318,6 +323,10 @@ class FixedDivisionPropagator : public PropagatorInterface {
  public:
   FixedDivisionPropagator(AffineExpression a, IntegerValue b,
                           AffineExpression c, IntegerTrail* integer_trail);
+
+  // This type is neither copyable nor movable.
+  FixedDivisionPropagator(const FixedDivisionPropagator&) = delete;
+  FixedDivisionPropagator& operator=(const FixedDivisionPropagator&) = delete;
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -328,8 +337,6 @@ class FixedDivisionPropagator : public PropagatorInterface {
   const AffineExpression c_;
 
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
 };
 
 // Propagates target == expr % mod. Basic version, we don't extract any special
@@ -338,6 +345,10 @@ class FixedModuloPropagator : public PropagatorInterface {
  public:
   FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
                         AffineExpression target, IntegerTrail* integer_trail);
+
+  // This type is neither copyable nor movable.
+  FixedModuloPropagator(const FixedModuloPropagator&) = delete;
+  FixedModuloPropagator& operator=(const FixedModuloPropagator&) = delete;
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -354,8 +365,6 @@ class FixedModuloPropagator : public PropagatorInterface {
   const AffineExpression negated_expr_;
   const AffineExpression negated_target_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(FixedModuloPropagator);
 };
 
 // Propagates x * x = s.
@@ -365,6 +374,10 @@ class SquarePropagator : public PropagatorInterface {
   SquarePropagator(AffineExpression x, AffineExpression s,
                    IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  SquarePropagator(const SquarePropagator&) = delete;
+  SquarePropagator& operator=(const SquarePropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -372,8 +385,6 @@ class SquarePropagator : public PropagatorInterface {
   const AffineExpression x_;
   const AffineExpression s_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(SquarePropagator);
 };
 
 // =============================================================================

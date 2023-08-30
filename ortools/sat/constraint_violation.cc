@@ -266,6 +266,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
       const int var = row_var_buffer_[i];
       jump_scores[var] -= enforcement_change;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -285,6 +286,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     jump_scores[var] +=
         weight_delta * static_cast<double>(new_distance - old_distance);
     if (!in_last_affected_variables_[var]) {
+      in_last_affected_variables_[var] = true;
       last_affected_variables_.push_back(var);
     }
   }
@@ -307,6 +309,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
       const int var = row_var_buffer_[i];
       jump_scores[var] -= weight_time_violation;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -327,6 +330,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
       jump_scores[var] +=
           weight * static_cast<double>(new_distance - old_distance);
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -349,6 +353,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
       const int var = row_var_buffer_[i];
       jump_scores[var] += weight_time_violation;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -369,6 +374,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
       jump_scores[var] -=
           weight * static_cast<double>(new_distance - old_distance);
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -390,6 +396,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     if (jump_values[var] == 1) {
       jump_scores[var] += score_change;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -400,6 +407,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     if (jump_values[var] == 0) {
       jump_scores[var] += score_change;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -427,6 +435,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
       const int var = row_var_buffer_[i];
       jump_scores[var] += delta;
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }
@@ -455,6 +464,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
       jump_scores[var] +=
           weight * static_cast<double>(old_a_minus_new_a + new_b - old_b);
       if (!in_last_affected_variables_[var]) {
+        in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       }
     }

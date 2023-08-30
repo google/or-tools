@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -64,6 +63,10 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   TimeTableEdgeFinding(AffineExpression capacity,
                        SchedulingConstraintHelper* helper,
                        SchedulingDemandHelper* demands, Model* model);
+
+  // This type is neither copyable nor movable.
+  TimeTableEdgeFinding(const TimeTableEdgeFinding&) = delete;
+  TimeTableEdgeFinding& operator=(const TimeTableEdgeFinding&) = delete;
 
   bool Propagate() final;
 
@@ -115,8 +118,6 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   // List of task that should participate in the reason.
   std::vector<int> reason_tasks_fully_included_in_window_;
   std::vector<int> reason_tasks_partially_included_in_window_;
-
-  DISALLOW_COPY_AND_ASSIGN(TimeTableEdgeFinding);
 };
 
 }  // namespace sat

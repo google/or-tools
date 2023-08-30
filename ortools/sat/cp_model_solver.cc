@@ -3385,7 +3385,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   const bool testing = params.use_lns_only() || params.test_feasibility_jump();
 
-  // We currently only use the feasiblity pump if it is enabled and some other
+  // We currently only use the feasibility pump if it is enabled and some other
   // parameters are not on.
   const bool use_feasibility_pump = params.use_feasibility_pump() &&
                                     params.linearization_level() > 0 &&

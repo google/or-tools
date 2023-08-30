@@ -28,7 +28,6 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/typeid.h"
 
 namespace operations_research {
@@ -57,6 +56,10 @@ class Model {
    * name them for debugging or logging.
    */
   explicit Model(std::string name) : name_(name) {}
+
+  // This type is neither copyable nor movable.
+  Model(const Model&) = delete;
+  Model& operator=(const Model&) = delete;
 
   /**
    * This makes it possible  to have a nicer API on the client side, and it
@@ -220,8 +223,6 @@ class Model {
   // don't care too much about efficiency here and this was easier to get
   // working.
   std::vector<std::unique_ptr<DeleteInterface>> cleanup_list_;
-
-  DISALLOW_COPY_AND_ASSIGN(Model);
 };
 
 }  // namespace sat
