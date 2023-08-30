@@ -287,9 +287,9 @@ jupyter-events==0.6.3 \
     --hash=sha256:57a2749f87ba387cd1bfd9b22a0875b889237dbf2edc2121ebb22bde47036c17 \
     --hash=sha256:9a6e9995f75d1b7146b436ea24d696ce3a35bfa8bfe45e0c33c334c79464d0b3
     # via jupyter-server
-jupyter-server==2.7.0 \
-    --hash=sha256:36da0a266d31a41ac335a366c88933c17dfa5bb817a48f5c02c16d303bc9477f \
-    --hash=sha256:6a77912aff643e53fa14bdb2634884b52b784a4be77ce8e93f7283faed0f0849
+jupyter-server==2.7.2 \
+    --hash=sha256:98a375347b580e837e7016007c24680a4261ed8ad7cd35196ac087d229f48e5a \
+    --hash=sha256:d64fb4e593907290e5df916e3c9399c15ab2cd7bdb71cbcd1d36452dbfb30523
     # via
     #   nbclassic
     #   notebook-shim
@@ -786,9 +786,9 @@ scipy==1.10.0 \
     --hash=sha256:c8b3cbc636a87a89b770c6afc999baa6bcbb01691b5ccbbc1b1791c7c0a07540 \
     --hash=sha256:e096b062d2efdea57f972d232358cb068413dc54eec4f24158bcbb5cb8bddfd8
     # via -r notebook_requirements.in
-send2trash==1.8.0 \
-    --hash=sha256:d2c24762fd3759860a0aff155e45871447ea58d2be6bdd39b5c8f966a0c99c2d \
-    --hash=sha256:f20eaadfdb517eaca5ce077640cb261c7d2698385a6a0f072a4a5447fd49fa08
+send2trash==1.8.2 \
+    --hash=sha256:a384719d99c07ce1eefd6905d2decb6f8b7ed054025bb0e618919f945de4f679 \
+    --hash=sha256:c132d59fa44b9ca2b1699af5c86f57ce9f4c5eb56629d5d55fbb7a35f84e2312
     # via
     #   jupyter-server
     #   nbclassic
