@@ -20,3 +20,4 @@ plotly==5.15.0
 notebook==7.0.2
 tornado==6.3.3
 Pygments==2.15.0
+jupyter-server==2.7.2
