@@ -46,6 +46,9 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
+// abseil 20230802 already provides support for int128 to string type conversion.
+// https://github.com/abseil/abseil-cpp/commit/34eb767645347f100bdd66fc1e35eee96e357961
+#if defined(ABSL_LTS_RELEASE_VERSION) && ABSL_LTS_RELEASE_VERSION < 20230802
 // TODO(user): move to or-tools/base/logging.h
 namespace absl {
 template <typename Sink>
@@ -55,6 +58,7 @@ void AbslStringify(Sink& sink, absl::int128 v) {
   sink.Append(oss.str());
 }
 }  // namespace absl
+#endif  // defined(ABSL_LTS_RELEASE_VERSION) && ABSL_LTS_RELEASE_VERSION < 20230802
 
 namespace operations_research {
 namespace sat {
