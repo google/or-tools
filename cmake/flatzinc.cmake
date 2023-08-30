@@ -199,7 +199,7 @@ install(TARGETS flatzinc fzn #fzn-parser_test
   )
 
 install(DIRECTORY ortools/flatzinc/mznlib/
-  DESTINATION ${DATAROOTDIR}/minizinc/cpsatlp
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/cpsatlp
   FILES_MATCHING PATTERN "*.mzn")
 install(FILES ${PROJECT_BINARY_DIR}/cpsatlp.msc
-  DESTINATION ${DATAROOTDIR}/minizinc/solvers)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers)
