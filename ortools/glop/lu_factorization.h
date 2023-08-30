@@ -38,6 +38,10 @@ class LuFactorization {
  public:
   LuFactorization();
 
+  // This type is neither copyable nor movable.
+  LuFactorization(const LuFactorization&) = delete;
+  LuFactorization& operator=(const LuFactorization&) = delete;
+
   // Returns true if the LuFactorization is a factorization of the identity
   // matrix. In this state, all the Solve() functions will work for any
   // vector dimension.
@@ -298,8 +302,6 @@ class LuFactorization {
 
   // The class doing the Markowitz LU factorization.
   Markowitz markowitz_;
-
-  DISALLOW_COPY_AND_ASSIGN(LuFactorization);
 };
 
 }  // namespace glop

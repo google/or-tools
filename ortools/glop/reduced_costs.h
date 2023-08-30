@@ -58,6 +58,10 @@ class ReducedCosts {
                const BasisFactorization& basis_factorization,
                absl::BitGenRef random);
 
+  // This type is neither copyable nor movable.
+  ReducedCosts(const ReducedCosts&) = delete;
+  ReducedCosts& operator=(const ReducedCosts&) = delete;
+
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
   bool NeedsBasisRefactorization() const;
@@ -286,8 +290,6 @@ class ReducedCosts {
   std::vector<bool*> watchers_;
 
   double deterministic_time_ = 0.0;
-
-  DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
 };
 
 // Maintains the list of dual infeasible positions and their associated prices.

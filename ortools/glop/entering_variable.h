@@ -49,6 +49,10 @@ class EnteringVariable {
   EnteringVariable(const VariablesInfo& variables_info, absl::BitGenRef random,
                    ReducedCosts* reduced_costs);
 
+  // This type is neither copyable nor movable.
+  EnteringVariable(const EnteringVariable&) = delete;
+  EnteringVariable& operator=(const EnteringVariable&) = delete;
+
   // Dual optimization phase (i.e. phase II) ratio test.
   // Returns the index of the entering column given that we want to move along
   // the "update" row vector in the direction given by the sign of
@@ -133,8 +137,6 @@ class EnteringVariable {
 
   // Counter for the deterministic time.
   int64_t num_operations_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(EnteringVariable);
 };
 
 }  // namespace glop

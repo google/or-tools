@@ -45,7 +45,6 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/stl_util.h"
@@ -208,6 +207,11 @@ class DenseIntTopologicalSorterTpl {
         num_edges_(0),
         num_edges_added_since_last_duplicate_removal_(0) {}
 
+  // This type is neither copyable nor movable.
+  DenseIntTopologicalSorterTpl(const DenseIntTopologicalSorterTpl&) = delete;
+  DenseIntTopologicalSorterTpl& operator=(const DenseIntTopologicalSorterTpl&) =
+      delete;
+
   // Performs in constant amortized time.  Calling this will make all
   // node indices in [0 .. node_index] be valid node indices.  If you
   // can avoid using AddNode(), you should!  If you know the number of
@@ -269,9 +273,6 @@ class DenseIntTopologicalSorterTpl {
   // RemoveDuplicates(). See the .cc.
   int num_edges_;  // current total number of edges.
   int num_edges_added_since_last_duplicate_removal_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(DenseIntTopologicalSorterTpl);
 };
 
 extern template class DenseIntTopologicalSorterTpl<false>;
@@ -323,6 +324,10 @@ template <typename T, bool stable_sort = false,
 class TopologicalSorter {
  public:
   TopologicalSorter() {}
+
+  // This type is neither copyable nor movable.
+  TopologicalSorter(const TopologicalSorter&) = delete;
+  TopologicalSorter& operator=(const TopologicalSorter&) = delete;
   ~TopologicalSorter() {}
 
   // Adds a node to the graph, if it has not already been added via
@@ -436,8 +441,6 @@ class TopologicalSorter {
   int LookupOrInsertNode(const T& node) {
     return gtl::LookupOrInsert(&node_to_index_, node, node_to_index_.size());
   }
-
-  DISALLOW_COPY_AND_ASSIGN(TopologicalSorter);
 };
 
 namespace internal {

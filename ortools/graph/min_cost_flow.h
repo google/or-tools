@@ -176,7 +176,6 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
@@ -251,6 +250,12 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   // number of nodes and arcs, to potentially gain performance.
   explicit SimpleMinCostFlow(NodeIndex reserve_num_nodes = 0,
                              ArcIndex reserve_num_arcs = 0);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  SimpleMinCostFlow(const SimpleMinCostFlow&) = delete;
+  SimpleMinCostFlow& operator=(const SimpleMinCostFlow&) = delete;
+#endif
 
   // Adds a directed arc from tail to head to the underlying graph with
   // a given capacity and cost per unit of flow.
@@ -351,8 +356,6 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   FlowQuantity maximum_flow_;
 
   bool scale_prices_ = true;
-
-  DISALLOW_COPY_AND_ASSIGN(SimpleMinCostFlow);
 };
 
 // Generic MinCostFlow that works with StarGraph and all the graphs handling
@@ -388,6 +391,12 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // need to be fully built yet, but its capacity reservation is used to
   // initialize the memory of this class.
   explicit GenericMinCostFlow(const Graph* graph);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  GenericMinCostFlow(const GenericMinCostFlow&) = delete;
+  GenericMinCostFlow& operator=(const GenericMinCostFlow&) = delete;
+#endif
 
   // Returns the graph associated to the current object.
   const Graph* graph() const { return graph_; }
@@ -660,8 +669,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Whether to scale prices, see SimpleMinCostFlow::SetPriceScaling().
   bool scale_prices_ = true;
-
-  DISALLOW_COPY_AND_ASSIGN(GenericMinCostFlow);
 };
 
 #if !SWIG

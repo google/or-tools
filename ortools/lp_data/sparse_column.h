@@ -134,6 +134,11 @@ class RandomAccessSparseColumn {
   // Creates a RandomAccessSparseColumn.
   // Runs in O(num_rows).
   explicit RandomAccessSparseColumn(RowIndex num_rows);
+
+  // This type is neither copyable nor movable.
+  RandomAccessSparseColumn(const RandomAccessSparseColumn&) = delete;
+  RandomAccessSparseColumn& operator=(const RandomAccessSparseColumn&) = delete;
+
   virtual ~RandomAccessSparseColumn();
 
   // Clears the column.
@@ -189,8 +194,6 @@ class RandomAccessSparseColumn {
 
   // Stack to store changes.
   std::vector<RowIndex> row_change_;
-
-  DISALLOW_COPY_AND_ASSIGN(RandomAccessSparseColumn);
 };
 
 }  // namespace glop

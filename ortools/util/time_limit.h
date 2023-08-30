@@ -25,7 +25,6 @@
 #include "absl/flags/declare.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"
@@ -392,6 +391,10 @@ class NestedTimeLimit {
   NestedTimeLimit(TimeLimit* base_time_limit, double limit_in_seconds,
                   double deterministic_limit);
 
+  // This type is neither copyable nor movable.
+  NestedTimeLimit(const NestedTimeLimit&) = delete;
+  NestedTimeLimit& operator=(const NestedTimeLimit&) = delete;
+
   /**
    * Updates elapsed deterministic time in the base time limit object.
    */
@@ -423,8 +426,6 @@ class NestedTimeLimit {
  private:
   TimeLimit* const base_time_limit_;
   TimeLimit time_limit_;
-
-  DISALLOW_COPY_AND_ASSIGN(NestedTimeLimit);
 };
 
 // ################## Implementations below #####################

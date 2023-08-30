@@ -82,6 +82,11 @@ void LineBreaker::Append(const std::string& s) {
 class MPModelProtoExporter {
  public:
   explicit MPModelProtoExporter(const MPModelProto& model);
+
+  // This type is neither copyable nor movable.
+  MPModelProtoExporter(const MPModelProtoExporter&) = delete;
+  MPModelProtoExporter& operator=(const MPModelProtoExporter&) = delete;
+
   bool ExportModelAsLpFormat(const MPModelExportOptions& options,
                              std::string* output);
   bool ExportModelAsMpsFormat(const MPModelExportOptions& options,
@@ -207,8 +212,6 @@ class MPModelProtoExporter {
   // Format for MPS file lines.
   std::unique_ptr<absl::ParsedFormat<'s', 's'>> mps_header_format_;
   std::unique_ptr<absl::ParsedFormat<'s', 's'>> mps_format_;
-
-  DISALLOW_COPY_AND_ASSIGN(MPModelProtoExporter);
 };
 
 }  // namespace

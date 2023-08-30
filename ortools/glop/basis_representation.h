@@ -55,6 +55,11 @@ namespace glop {
 class EtaMatrix {
  public:
   EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction);
+
+  // This type is neither copyable nor movable.
+  EtaMatrix(const EtaMatrix&) = delete;
+  EtaMatrix& operator=(const EtaMatrix&) = delete;
+
   virtual ~EtaMatrix();
 
   // Solves the system y.E = c, 'c' beeing the initial value of 'y'.
@@ -100,8 +105,6 @@ class EtaMatrix {
   // stored in eta_col_coefficient_ instead.
   DenseColumn eta_coeff_;
   SparseColumn sparse_eta_coeff_;
-
-  DISALLOW_COPY_AND_ASSIGN(EtaMatrix);
 };
 
 // An eta factorization corresponds to the product of k eta matrices,
@@ -112,6 +115,11 @@ class EtaMatrix {
 class EtaFactorization {
  public:
   EtaFactorization();
+
+  // This type is neither copyable nor movable.
+  EtaFactorization(const EtaFactorization&) = delete;
+  EtaFactorization& operator=(const EtaFactorization&) = delete;
+
   virtual ~EtaFactorization();
 
   // Deletes all eta matrices.
@@ -136,8 +144,6 @@ class EtaFactorization {
 
  private:
   std::vector<EtaMatrix*> eta_matrix_;
-
-  DISALLOW_COPY_AND_ASSIGN(EtaFactorization);
 };
 
 // A basis factorization is the product of an eta factorization and
@@ -155,6 +161,11 @@ class BasisFactorization {
  public:
   BasisFactorization(const CompactSparseMatrix* compact_matrix,
                      const RowToColMapping* basis);
+
+  // This type is neither copyable nor movable.
+  BasisFactorization(const BasisFactorization&) = delete;
+  BasisFactorization& operator=(const BasisFactorization&) = delete;
+
   virtual ~BasisFactorization();
 
   // Sets the parameters for this component.
@@ -382,8 +393,6 @@ class BasisFactorization {
   // mutable because the Solve() functions are const but need to update this.
   double last_factorization_deterministic_time_ = 0.0;
   mutable double deterministic_time_;
-
-  DISALLOW_COPY_AND_ASSIGN(BasisFactorization);
 };
 
 }  // namespace glop

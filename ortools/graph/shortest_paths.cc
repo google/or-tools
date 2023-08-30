@@ -208,6 +208,10 @@ void PathTree::GetPath(NodeIndex from, NodeIndex to,
 class DistanceContainer : public PathContainerImpl {
  public:
   DistanceContainer() : reverse_sources_(), distances_() {}
+
+  // This type is neither copyable nor movable.
+  DistanceContainer(const DistanceContainer&) = delete;
+  DistanceContainer& operator=(const DistanceContainer&) = delete;
   ~DistanceContainer() override {}
   void Initialize(const std::vector<NodeIndex>& sources,
                   const std::vector<NodeIndex>& destinations,
@@ -253,14 +257,17 @@ class DistanceContainer : public PathContainerImpl {
   }
 
   std::vector<std::vector<PathDistance> > distances_;
-
-  DISALLOW_COPY_AND_ASSIGN(DistanceContainer);
 };
 
 // Path container which stores explicit paths and distances between path nodes.
 class InMemoryCompactPathContainer : public DistanceContainer {
  public:
   InMemoryCompactPathContainer() : trees_(), destinations_() {}
+
+  // This type is neither copyable nor movable.
+  InMemoryCompactPathContainer(const InMemoryCompactPathContainer&) = delete;
+  InMemoryCompactPathContainer& operator=(const InMemoryCompactPathContainer&) =
+      delete;
   ~InMemoryCompactPathContainer() override {}
   void Initialize(const std::vector<NodeIndex>& sources,
                   const std::vector<NodeIndex>& destinations,
@@ -291,8 +298,6 @@ class InMemoryCompactPathContainer : public DistanceContainer {
  private:
   std::vector<PathTree> trees_;
   std::vector<NodeIndex> destinations_;
-
-  DISALLOW_COPY_AND_ASSIGN(InMemoryCompactPathContainer);
 };
 
 // Priority queue node entry in the boundary of the Dijkstra algorithm.

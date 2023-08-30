@@ -47,6 +47,10 @@ class Permutation {
 
   explicit Permutation(IndexType size) : perm_(size.value(), IndexType(0)) {}
 
+  // This type is neither copyable nor movable.
+  Permutation(const Permutation&) = delete;
+  Permutation& operator=(const Permutation&) = delete;
+
   IndexType size() const { return IndexType(perm_.size()); }
   bool empty() const { return perm_.empty(); }
 
@@ -87,8 +91,6 @@ class Permutation {
 
  private:
   absl::StrongVector<IndexType, IndexType> perm_;
-
-  DISALLOW_COPY_AND_ASSIGN(Permutation);
 };
 
 typedef Permutation<RowIndex> RowPermutation;

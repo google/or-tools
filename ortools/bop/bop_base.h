@@ -120,6 +120,10 @@ class ProblemState {
  public:
   explicit ProblemState(const sat::LinearBooleanProblem& problem);
 
+  // This type is neither copyable nor movable.
+  ProblemState(const ProblemState&) = delete;
+  ProblemState& operator=(const ProblemState&) = delete;
+
   // Sets parameters, used for instance to get the tolerance, the gap limit...
   void SetParameters(const BopParameters& parameters) {
     parameters_ = parameters;
@@ -242,8 +246,6 @@ class ProblemState {
 
   // Manage the set of the problem binary clauses (including the learned ones).
   sat::BinaryClauseManager binary_clause_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(ProblemState);
 };
 
 // This struct represents what has been learned on the problem state by

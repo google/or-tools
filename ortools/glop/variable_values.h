@@ -52,6 +52,10 @@ class VariableValues {
                  DualEdgeNorms* dual_edge_norms,
                  DynamicMaximum<RowIndex>* dual_prices);
 
+  // This type is neither copyable nor movable.
+  VariableValues(const VariableValues&) = delete;
+  VariableValues& operator=(const VariableValues&) = delete;
+
   // Getters for the variable values.
   Fractional Get(ColIndex col) const { return variable_values_[col]; }
   const DenseRow& GetDenseRow() const { return variable_values_; }
@@ -175,8 +179,6 @@ class VariableValues {
 
   // A temporary scattered column that is always reset to all zero after use.
   ScatteredColumn initially_all_zero_scratchpad_;
-
-  DISALLOW_COPY_AND_ASSIGN(VariableValues);
 };
 
 template <typename Rows>

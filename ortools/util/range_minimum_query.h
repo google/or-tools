@@ -48,6 +48,10 @@ class RangeMinimumQuery {
   explicit RangeMinimumQuery(std::vector<T> array);
   RangeMinimumQuery(std::vector<T> array, Compare cmp);
 
+  // This type is neither copyable nor movable.
+  RangeMinimumQuery(const RangeMinimumQuery&) = delete;
+  RangeMinimumQuery& operator=(const RangeMinimumQuery&) = delete;
+
   // Returns the minimum (w.r.t. Compare) arr[x], where x is contained in
   // [from, to).
   T GetMinimumFromRange(int from, int to) const;
@@ -58,8 +62,6 @@ class RangeMinimumQuery {
   // cache_[k][i] = min(arr, i, i+2^k).
   std::vector<std::vector<T>> cache_;
   Compare cmp_;
-
-  DISALLOW_COPY_AND_ASSIGN(RangeMinimumQuery);
 };
 
 // RangeMinimumIndexQuery is similar to RangeMinimumQuery, but
@@ -69,6 +71,10 @@ class RangeMinimumIndexQuery {
  public:
   explicit RangeMinimumIndexQuery(std::vector<T> array);
   RangeMinimumIndexQuery(std::vector<T> array, Compare cmp);
+
+  // This type is neither copyable nor movable.
+  RangeMinimumIndexQuery(const RangeMinimumIndexQuery&) = delete;
+  RangeMinimumIndexQuery& operator=(const RangeMinimumIndexQuery&) = delete;
 
   // Returns an index idx from [from, to) such that arr[idx] is the minimum
   // value of arr over the interval [from, to).
@@ -86,7 +92,6 @@ class RangeMinimumIndexQuery {
     Compare cmp;
   } cmp_;
   const RangeMinimumQuery<int, IndexComparator> rmq_;
-  DISALLOW_COPY_AND_ASSIGN(RangeMinimumIndexQuery);
 };
 
 // RangeMinimumQuery implementation

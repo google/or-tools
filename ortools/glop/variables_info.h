@@ -57,6 +57,10 @@ class VariablesInfo {
   // Takes references to the linear program data we need.
   explicit VariablesInfo(const CompactSparseMatrix& matrix);
 
+  // This type is neither copyable nor movable.
+  VariablesInfo(const VariablesInfo&) = delete;
+  VariablesInfo& operator=(const VariablesInfo&) = delete;
+
   // Updates the internal bounds and recomputes the variable types from the
   // bounds (this is the only function that changes them).
   //
@@ -236,8 +240,6 @@ class VariablesInfo {
   // Whether we are between the calls TransformToDualPhaseIProblem() and
   // EndDualPhaseI().
   bool in_dual_phase_one_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(VariablesInfo);
 };
 
 }  // namespace glop

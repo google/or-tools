@@ -47,6 +47,10 @@ class UpdateRow {
             const VariablesInfo& variables_info, const RowToColMapping& basis,
             const BasisFactorization& basis_factorization);
 
+  // This type is neither copyable nor movable.
+  UpdateRow(const UpdateRow&) = delete;
+  UpdateRow& operator=(const UpdateRow&) = delete;
+
   // Invalidates the current update row and unit_row_left_inverse so the next
   // call to ComputeUpdateRow() will recompute everything and not just return
   // right away.
@@ -162,8 +166,6 @@ class UpdateRow {
   // Glop standard classes.
   GlopParameters parameters_;
   Stats stats_;
-
-  DISALLOW_COPY_AND_ASSIGN(UpdateRow);
 };
 
 }  // namespace glop

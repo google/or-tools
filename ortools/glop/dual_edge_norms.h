@@ -51,6 +51,10 @@ class DualEdgeNorms {
   // Takes references to the linear program data we need.
   explicit DualEdgeNorms(const BasisFactorization& basis_factorization);
 
+  // This type is neither copyable nor movable.
+  DualEdgeNorms(const DualEdgeNorms&) = delete;
+  DualEdgeNorms& operator=(const DualEdgeNorms&) = delete;
+
   // Clears, i.e. reset the object to its initial value. This will trigger a
   // full norm recomputation on the next GetEdgeSquaredNorms().
   void Clear();
@@ -136,8 +140,6 @@ class DualEdgeNorms {
 
   // Whether we should recompute the norm from scratch.
   bool recompute_edge_squared_norms_;
-
-  DISALLOW_COPY_AND_ASSIGN(DualEdgeNorms);
 };
 
 }  // namespace glop

@@ -159,7 +159,6 @@
 #include "absl/time/time.h"
 #include "absl/types/optional.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
@@ -239,6 +238,13 @@ class MPSolver {
 
   /// Create a solver with the given name and underlying solver backend.
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  MPSolver(const MPSolver&) = delete;
+  MPSolver& operator=(const MPSolver&) = delete;
+#endif
+
   virtual ~MPSolver();
 
   /**
@@ -953,8 +959,6 @@ class MPSolver {
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, ModelProtoNamesPolicy name_policy,
       bool check_model_validity, std::string* error_message);
-
-  DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
 
 inline bool SolverTypeIsMip(MPSolver::OptimizationProblemType solver_type) {
@@ -988,6 +992,12 @@ inline std::string AbslUnparseFlag(
 /// A class to express a linear objective.
 class MPObjective {
  public:
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  MPObjective(const MPObjective&) = delete;
+  MPObjective& operator=(const MPObjective&) = delete;
+#endif
+
   /**
    *  Clears the offset, all variables and coefficients, and the optimization
    * direction.
@@ -1110,13 +1120,17 @@ class MPObjective {
   absl::flat_hash_map<const MPVariable*, double> coefficients_;
   // Constant term.
   double offset_;
-
-  DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
 
 /// The class for variables of a Mathematical Programming (MP) model.
 class MPVariable {
  public:
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  MPVariable(const MPVariable&) = delete;
+  MPVariable& operator=(const MPVariable&) = delete;
+#endif
+
   /// Returns the name of the variable.
   const std::string& name() const { return name_; }
 
@@ -1234,7 +1248,6 @@ class MPVariable {
   double reduced_cost_;
   int branching_priority_ = 0;
   MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
 
 /**
@@ -1244,6 +1257,12 @@ class MPVariable {
  */
 class MPConstraint {
  public:
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  MPConstraint(const MPConstraint&) = delete;
+  MPConstraint& operator=(const MPConstraint&) = delete;
+#endif
+
   /// Returns the name of the constraint.
   const std::string& name() const { return name_; }
 
@@ -1398,7 +1417,6 @@ class MPConstraint {
 
   double dual_value_;
   MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
 
 /**
@@ -1518,6 +1536,12 @@ class MPSolverParameters {
   /// The constructor sets all parameters to their default value.
   MPSolverParameters();
 
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  MPSolverParameters(const MPSolverParameters&) = delete;
+  MPSolverParameters& operator=(const MPSolverParameters&) = delete;
+#endif
+
   /// Sets a double parameter to a specific value.
   void SetDoubleParam(MPSolverParameters::DoubleParam param, double value);
 
@@ -1563,8 +1587,6 @@ class MPSolverParameters {
   // solver's default value. Only parameters for which the wrapper
   // does not define a default value need such an indicator.
   bool lp_algorithm_is_default_;
-
-  DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
 
 // Whether the given MPSolverResponseStatus (of a solve) would yield an RPC

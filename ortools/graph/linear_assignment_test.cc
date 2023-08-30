@@ -70,6 +70,10 @@ struct AssignmentProblemSetup {
         cycle_handler_scoped(assignment_scoped->ArcAnnotationCycleHandler()),
         cycle_handler(cycle_handler_scoped.get()) {}
 
+  // This type is neither copyable nor movable.
+  AssignmentProblemSetup(const AssignmentProblemSetup&) = delete;
+  AssignmentProblemSetup& operator=(const AssignmentProblemSetup&) = delete;
+
   virtual ~AssignmentProblemSetup() { delete &assignment->Graph(); }
 
   void Finalize() {
@@ -86,9 +90,6 @@ struct AssignmentProblemSetup {
   std::unique_ptr<PermutationCycleHandler<typename GraphType::ArcIndex>>
       cycle_handler_scoped;
   PermutationCycleHandler<typename GraphType::ArcIndex>* cycle_handler;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AssignmentProblemSetup);
 };
 
 // A fixture template to collect the types of graphs on which we want to base

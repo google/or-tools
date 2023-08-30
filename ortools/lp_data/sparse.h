@@ -73,6 +73,11 @@ class SparseMatrix {
 #if (!defined(_MSC_VER) || _MSC_VER >= 1800)
   SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
+
+  // This type is neither copyable nor movable.
+  SparseMatrix(const SparseMatrix&) = delete;
+  SparseMatrix& operator=(const SparseMatrix&) = delete;
+
 #endif
   // Clears internal data structure, i.e. erases all the columns and set
   // the number of rows to zero.
@@ -211,8 +216,6 @@ class SparseMatrix {
   // Number of rows. This is needed as sparse columns don't have a maximum
   // number of rows.
   RowIndex num_rows_;
-
-  DISALLOW_COPY_AND_ASSIGN(SparseMatrix);
 };
 
 // A matrix constructed from a list of already existing SparseColumn. This class
@@ -338,6 +341,10 @@ class CompactSparseMatrix {
   explicit CompactSparseMatrix(const SparseMatrix& matrix) {
     PopulateFromMatrixView(MatrixView(matrix));
   }
+
+  // This type is neither copyable nor movable.
+  CompactSparseMatrix(const CompactSparseMatrix&) = delete;
+  CompactSparseMatrix& operator=(const CompactSparseMatrix&) = delete;
 
   // Creates a CompactSparseMatrix from the given MatrixView. The matrices are
   // the same, only the representation differ. Note that the entry order in
@@ -506,9 +513,6 @@ class CompactSparseMatrix {
   StrictITIVector<EntryIndex, Fractional> coefficients_;
   StrictITIVector<EntryIndex, RowIndex> rows_;
   StrictITIVector<ColIndex, EntryIndex> starts_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(CompactSparseMatrix);
 };
 
 inline Fractional CompactSparseMatrix::ConstView::ColumnScalarProduct(
@@ -583,6 +587,10 @@ class CompactSparseMatrixView {
 class TriangularMatrix : private CompactSparseMatrix {
  public:
   TriangularMatrix() : all_diagonal_coefficients_are_one_(true) {}
+
+  // This type is neither copyable nor movable.
+  TriangularMatrix(const TriangularMatrix&) = delete;
+  TriangularMatrix& operator=(const TriangularMatrix&) = delete;
 
   // Only a subset of the functions from CompactSparseMatrix are exposed (note
   // the private inheritance). They are extended to deal with diagonal
@@ -917,8 +925,6 @@ class TriangularMatrix : private CompactSparseMatrix {
   // TODO(user): Use this during the "normal" hyper-sparse solves so that
   // we can benefit from the pruned lower matrix there?
   StrictITIVector<ColIndex, EntryIndex> pruned_ends_;
-
-  DISALLOW_COPY_AND_ASSIGN(TriangularMatrix);
 };
 
 }  // namespace glop

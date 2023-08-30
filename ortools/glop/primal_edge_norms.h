@@ -64,6 +64,10 @@ class PrimalEdgeNorms {
                   const VariablesInfo& variables_info,
                   const BasisFactorization& basis_factorization);
 
+  // This type is neither copyable nor movable.
+  PrimalEdgeNorms(const PrimalEdgeNorms&) = delete;
+  PrimalEdgeNorms& operator=(const PrimalEdgeNorms&) = delete;
+
   // Clears, i.e. resets the object to its initial value. This will trigger
   // a recomputation for the next Get*() method call.
   void Clear();
@@ -225,8 +229,6 @@ class PrimalEdgeNorms {
   // Boolean(s) to set to false when the norms are changed outside of the
   // UpdateBeforeBasisPivot() function.
   std::vector<bool*> watchers_;
-
-  DISALLOW_COPY_AND_ASSIGN(PrimalEdgeNorms);
 };
 
 }  // namespace glop

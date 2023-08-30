@@ -31,6 +31,11 @@ namespace bop {
 class IntegralSolver {
  public:
   IntegralSolver();
+
+  // This type is neither copyable nor movable.
+  IntegralSolver(const IntegralSolver&) = delete;
+  IntegralSolver& operator=(const IntegralSolver&) = delete;
+
   ~IntegralSolver() = default;
 
   // Sets the solver parameters.
@@ -72,8 +77,6 @@ class IntegralSolver {
   glop::DenseRow variable_values_;
   glop::Fractional objective_value_;
   glop::Fractional best_bound_;
-
-  DISALLOW_COPY_AND_ASSIGN(IntegralSolver);
 };
 }  // namespace bop
 }  // namespace operations_research

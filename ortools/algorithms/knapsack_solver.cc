@@ -547,6 +547,10 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
  public:
   explicit KnapsackBruteForceSolver(const std::string& solver_name);
 
+  // This type is neither copyable nor movable.
+  KnapsackBruteForceSolver(const KnapsackBruteForceSolver&) = delete;
+  KnapsackBruteForceSolver& operator=(const KnapsackBruteForceSolver&) = delete;
+
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
             const std::vector<std::vector<int64_t>>& weights,
@@ -566,8 +570,6 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
   int64_t capacity_;
   int64_t best_solution_profit_;
   uint32_t best_solution_;
-
-  DISALLOW_COPY_AND_ASSIGN(KnapsackBruteForceSolver);
 };
 
 KnapsackBruteForceSolver::KnapsackBruteForceSolver(

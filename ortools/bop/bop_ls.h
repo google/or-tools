@@ -63,6 +63,10 @@ class SatWrapper {
  public:
   explicit SatWrapper(sat::SatSolver* sat_solver);
 
+  // This type is neither copyable nor movable.
+  SatWrapper(const SatWrapper&) = delete;
+  SatWrapper& operator=(const SatWrapper&) = delete;
+
   // Returns the current state of the solver propagation trail.
   std::vector<sat::Literal> FullSatTrail() const;
 
@@ -107,7 +111,6 @@ class SatWrapper {
 
  private:
   sat::SatSolver* sat_solver_;
-  DISALLOW_COPY_AND_ASSIGN(SatWrapper);
 };
 
 // Forward declaration.
@@ -281,6 +284,12 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   explicit AssignmentAndConstraintFeasibilityMaintainer(
       const sat::LinearBooleanProblem& problem, absl::BitGenRef random);
 
+  // This type is neither copyable nor movable.
+  AssignmentAndConstraintFeasibilityMaintainer(
+      const AssignmentAndConstraintFeasibilityMaintainer&) = delete;
+  AssignmentAndConstraintFeasibilityMaintainer& operator=(
+      const AssignmentAndConstraintFeasibilityMaintainer&) = delete;
+
   // When we construct the problem, we treat the objective as one constraint.
   // This is the index of this special "objective" constraint.
   static const ConstraintIndex kObjectiveConstraint;
@@ -426,8 +435,6 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   NonOrderedSetHasher<ConstraintIndexWithDirection> constraint_set_hasher_;
   absl::flat_hash_map<uint64_t, std::vector<sat::Literal>>
       hash_to_potential_repairs_;
-
-  DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
 };
 
 // This class is an utility class used to select which infeasible constraint to
@@ -454,6 +461,11 @@ class OneFlipConstraintRepairer {
       const sat::LinearBooleanProblem& problem,
       const AssignmentAndConstraintFeasibilityMaintainer& maintainer,
       const sat::VariablesAssignment& sat_assignment);
+
+  // This type is neither copyable nor movable.
+  OneFlipConstraintRepairer(const OneFlipConstraintRepairer&) = delete;
+  OneFlipConstraintRepairer& operator=(const OneFlipConstraintRepairer&) =
+      delete;
 
   static const ConstraintIndex kInvalidConstraint;
   static const TermIndex kInitTerm;
@@ -506,8 +518,6 @@ class OneFlipConstraintRepairer {
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;
-
-  DISALLOW_COPY_AND_ASSIGN(OneFlipConstraintRepairer);
 };
 
 // This class is used to iterate on all assignments that can be obtained by
@@ -522,6 +532,12 @@ class LocalSearchAssignmentIterator {
                                 int max_num_broken_constraints,
                                 absl::BitGenRef random,
                                 SatWrapper* sat_wrapper);
+
+  // This type is neither copyable nor movable.
+  LocalSearchAssignmentIterator(const LocalSearchAssignmentIterator&) = delete;
+  LocalSearchAssignmentIterator& operator=(
+      const LocalSearchAssignmentIterator&) = delete;
+
   ~LocalSearchAssignmentIterator();
 
   // Parameters of the LS algorithm.
@@ -650,8 +666,6 @@ class LocalSearchAssignmentIterator {
   int64_t num_improvements_;
   int64_t num_improvements_by_one_flip_repairs_;
   int64_t num_inspected_one_flip_repairs_;
-
-  DISALLOW_COPY_AND_ASSIGN(LocalSearchAssignmentIterator);
 };
 
 }  // namespace bop

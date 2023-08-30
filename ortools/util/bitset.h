@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 
 namespace operations_research {
@@ -433,6 +432,10 @@ class Bitset64 {
       : size_(Value(size) > 0 ? size : IndexType(0)),
         data_(BitLength64(Value(size_))) {}
 
+  // This type is neither copyable nor movable.
+  Bitset64(const Bitset64&) = delete;
+  Bitset64& operator=(const Bitset64&) = delete;
+
   ConstView const_view() const { return ConstView(this); }
 
   // Returns how many bits this Bitset64 can hold.
@@ -657,7 +660,6 @@ class Bitset64 {
 
   template <class OtherIndexType>
   friend class Bitset64;
-  DISALLOW_COPY_AND_ASSIGN(Bitset64);
 };
 
 // Specialized version of Bitset64 that allows to query the last bit set more
@@ -667,6 +669,10 @@ class BitQueue64 {
   BitQueue64() : size_(), top_(-1), data_() {}
   explicit BitQueue64(int size)
       : size_(size), top_(-1), data_(BitLength64(size), 0) {}
+
+  // This type is neither copyable nor movable.
+  BitQueue64(const BitQueue64&) = delete;
+  BitQueue64& operator=(const BitQueue64&) = delete;
 
   void IncreaseSize(int size) {
     CHECK_GE(size, size_);
@@ -726,7 +732,6 @@ class BitQueue64 {
   int size_;
   int top_;
   std::vector<uint64_t> data_;
-  DISALLOW_COPY_AND_ASSIGN(BitQueue64);
 };
 
 // The specialization of Value() for IntType and int64_t.
@@ -753,6 +758,10 @@ class SparseBitset {
  public:
   SparseBitset() {}
   explicit SparseBitset(IntegerType size) : bitset_(size) {}
+
+  // This type is neither copyable nor movable.
+  SparseBitset(const SparseBitset&) = delete;
+  SparseBitset& operator=(const SparseBitset&) = delete;
   IntegerType size() const { return bitset_.size(); }
   void SparseClearAll() {
     for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
@@ -825,7 +834,6 @@ class SparseBitset {
  private:
   Bitset64<IntegerType> bitset_;
   std::vector<IntegerType> to_clear_;
-  DISALLOW_COPY_AND_ASSIGN(SparseBitset);
 };
 
 }  // namespace operations_research

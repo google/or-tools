@@ -19,7 +19,6 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -57,6 +56,10 @@ class MonoidOperationTree {
  public:
   // Constructs a MonoidOperationTree able to store 'size' operands.
   explicit MonoidOperationTree(int size);
+
+  // This type is neither copyable nor movable.
+  MonoidOperationTree(const MonoidOperationTree&) = delete;
+  MonoidOperationTree& operator=(const MonoidOperationTree&) = delete;
 
   // Returns the root of the tree, containing the result of the operation.
   const T& result() const { return *result_; }
@@ -132,8 +135,6 @@ class MonoidOperationTree {
 
   // A pointer to the root node
   T const* result_;
-
-  DISALLOW_COPY_AND_ASSIGN(MonoidOperationTree);
 };
 
 // --------------------------------------------------------------------- //
