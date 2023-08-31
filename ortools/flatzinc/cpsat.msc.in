@@ -1,9 +1,9 @@
 {
   "id": "com.google.ortools.sat",
-  "name": "OR Tools CP-SAT-LP",
+  "name": "OR Tools CP-SAT",
   "description": "Google's Operations Research CP-SAT-LP FlatZinc interface",
   "version": "@PROJECT_VERSION@",
-  "mznlib": "../cpsatlp",
+  "mznlib": "../cpsat",
   "executable": "@FZ_REL_INSTALL_BINARY@",
   "tags": ["cpsatlp", "cp", "lcg", "int"],
   "stdFlags": ["-a", "-f", "-p", "-r", "-s", "-v"],
