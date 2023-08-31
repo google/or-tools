@@ -35,6 +35,10 @@ list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
 endif()
+if(BUILD_MATH_OPT)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MATH_OPT")
+  set(MATH_OPT_DIR math_opt)
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
@@ -188,6 +192,13 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
   )
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE math_opt_proto_files RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solvers/*.proto"
+  )
+  list(APPEND proto_files ${math_opt_proto_files})
+endif()
 if(USE_PDLP)
   file(GLOB_RECURSE pdlp_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND proto_files ${pdlp_proto_files})
@@ -261,6 +272,7 @@ foreach(SUBPROJECT IN ITEMS
  bop
  constraint_solver
  ${GLPK_DIR}
+ ${MATH_OPT_DIR}
  ${PDLP_DIR}
  ${GSCIP_DIR}
  glop

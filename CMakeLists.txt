@@ -121,6 +121,10 @@ message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
 message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 
+## MathOpt
+CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
+message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
@@ -401,7 +405,15 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-foreach(SAMPLES IN ITEMS algorithms graph glop constraint_solver linear_solver pdlp sat)
+foreach(SAMPLES IN ITEMS
+ algorithms
+ graph
+ glop
+ constraint_solver
+ linear_solver
+ ${MATH_OPT_DIR}
+ ${PDLP_DIR}
+ sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
 
