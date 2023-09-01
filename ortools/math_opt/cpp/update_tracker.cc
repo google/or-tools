@@ -40,12 +40,12 @@ UpdateTracker::UpdateTracker(const std::shared_ptr<ModelStorage>& storage)
       update_tracker_(storage->NewUpdateTracker()) {}
 
 absl::StatusOr<std::optional<ModelUpdateProto>>
-UpdateTracker::ExportModelUpdate() {
+UpdateTracker::ExportModelUpdate(const bool remove_names) {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
   if (storage == nullptr) {
     return absl::InvalidArgumentError(internal::kModelIsDestroyed);
   }
-  return storage->ExportModelUpdate(update_tracker_);
+  return storage->ExportModelUpdate(update_tracker_, remove_names);
 }
 
 absl::Status UpdateTracker::AdvanceCheckpoint() {
@@ -57,12 +57,13 @@ absl::Status UpdateTracker::AdvanceCheckpoint() {
   return absl::OkStatus();
 }
 
-absl::StatusOr<ModelProto> UpdateTracker::ExportModel() const {
+absl::StatusOr<ModelProto> UpdateTracker::ExportModel(
+    const bool remove_names) const {
   const std::shared_ptr<ModelStorage> storage = storage_.lock();
   if (storage == nullptr) {
     return absl::InvalidArgumentError(internal::kModelIsDestroyed);
   }
-  return storage->ExportModel();
+  return storage->ExportModel(remove_names);
 }
 
 }  // namespace math_opt

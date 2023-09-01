@@ -13,10 +13,11 @@
 
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
-#ifndef OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_RESULT_H_
-#define OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#define OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
 
 #include <ostream>
+#include <string>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -72,6 +73,10 @@ struct ModelSubset {
   // True if this object corresponds to the empty subset.
   bool empty() const;
 
+  // Returns a detailed string description of the contents of the model subset.
+  // (not the component names, use `<<` for that instead).
+  std::string ToString() const;
+
   absl::flat_hash_map<Variable, Bounds> variable_bounds;
   absl::flat_hash_set<Variable> variable_integrality;
   absl::flat_hash_map<LinearConstraint, Bounds> linear_constraints;
@@ -85,23 +90,23 @@ struct ModelSubset {
 std::ostream& operator<<(std::ostream& out, const ModelSubset::Bounds& bounds);
 std::ostream& operator<<(std::ostream& out, const ModelSubset& model_subset);
 
-struct InfeasibleSubsystemResult {
-  // Returns the `InfeasibleSubsystemResult` equivalent to `proto`.
+struct ComputeInfeasibleSubsystemResult {
+  // Returns the `ComputeInfeasibleSubsystemResult` equivalent to `proto`.
   //
   // Returns an error when:
   //   * `model` does not contain a variable or constraint associated with an
   //     index present in `proto.infeasible_subsystem`.
-  //   * ValidateInfeasibleSubsystemResultNoModel(result_proto) fails.
-  static absl::StatusOr<InfeasibleSubsystemResult> FromProto(
+  //   * ValidateComputeInfeasibleSubsystemResultNoModel(result_proto) fails.
+  static absl::StatusOr<ComputeInfeasibleSubsystemResult> FromProto(
       const ModelStorage* model,
-      const InfeasibleSubsystemResultProto& result_proto);
+      const ComputeInfeasibleSubsystemResultProto& result_proto);
 
   // Returns the proto equivalent of this object.
   //
   // The caller should use CheckModelStorage() before calling this function as
   // it does not check internal consistency of the referenced variables and
   // constraints.
-  InfeasibleSubsystemResultProto Proto() const;
+  ComputeInfeasibleSubsystemResultProto Proto() const;
 
   // Returns a failure if this object contains references to a model other than
   // `expected_storage` (which must not be nullptr).
@@ -126,8 +131,8 @@ struct InfeasibleSubsystemResult {
 };
 
 std::ostream& operator<<(std::ostream& out,
-                         const InfeasibleSubsystemResult& result);
+                         const ComputeInfeasibleSubsystemResult& result);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_

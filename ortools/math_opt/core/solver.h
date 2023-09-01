@@ -102,8 +102,8 @@ class Solver {
     SolveInterrupter* interrupter = nullptr;
   };
 
-  // Arguments used when calling InfeasibleSubsystem().
-  struct InfeasibleSubsystemArgs {
+  // Arguments used when calling ComputeInfeasibleSubsystem().
+  struct ComputeInfeasibleSubsystemArgs {
     SolveParametersProto parameters;
 
     // An optional callback for messages emitted by the solver.
@@ -151,16 +151,16 @@ class Solver {
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update);
 
   // Computes an infeasible subsystem of `model`.
-  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
-      const InfeasibleSubsystemArgs& infeasible_subsystem_args);
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(const ComputeInfeasibleSubsystemArgs& arguments);
 
   // A shortcut for calling Solver::New() and then
-  // Solver()::InfeasibleSubsystem()
-  static absl::StatusOr<InfeasibleSubsystemResultProto>
-  NonIncrementalInfeasibleSubsystem(
+  // Solver()::ComputeInfeasibleSubsystem()
+  static absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  NonIncrementalComputeInfeasibleSubsystem(
       const ModelProto& model, SolverTypeProto solver_type,
       const InitArgs& init_args,
-      const InfeasibleSubsystemArgs& infeasible_subsystem_args);
+      const ComputeInfeasibleSubsystemArgs& compute_infeasible_subsystem_args);
 
  private:
   Solver(std::unique_ptr<SolverInterface> underlying_solver,

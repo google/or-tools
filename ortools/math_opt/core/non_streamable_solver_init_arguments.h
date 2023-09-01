@@ -132,6 +132,47 @@ struct NonStreamableSolverInitArgumentsHelper
   }
 };
 
+// Value-like class holding an optional NonStreamableSolverInitArguments. On
+// copy it clones it.
+//
+// NonStreamableSolverInitArgumentsValue::get() gives access the pointed
+// arguments. The implicit constructor from NonStreamableSolverInitArguments is
+// used to build new instance.
+class NonStreamableSolverInitArgumentsValue {
+ public:
+  // Initializes with no value.
+  NonStreamableSolverInitArgumentsValue() = default;
+
+  // Initializes with the provided value, cloning it.
+  NonStreamableSolverInitArgumentsValue(  // NOLINT
+      const NonStreamableSolverInitArguments& non_streamable);
+
+  // Clones other.get() if not nullptr.
+  NonStreamableSolverInitArgumentsValue(
+      const NonStreamableSolverInitArgumentsValue& other);
+
+  // Clones other.get() if not nullptr.
+  NonStreamableSolverInitArgumentsValue& operator=(
+      const NonStreamableSolverInitArgumentsValue& other);
+
+  // Steals other.get() and resets it to nullptr.
+  NonStreamableSolverInitArgumentsValue(
+      NonStreamableSolverInitArgumentsValue&& other) = default;
+
+  // Steals other.get() and resets it to nullptr.
+  NonStreamableSolverInitArgumentsValue& operator=(
+      NonStreamableSolverInitArgumentsValue&& other) = default;
+
+  // Return a pointer on the value; nullptr if unset (default value).
+  const NonStreamableSolverInitArguments* get() const {
+    return non_streamable_.get();
+  }
+
+ private:
+  // The pointed value.
+  std::unique_ptr<const NonStreamableSolverInitArguments> non_streamable_;
+};
+
 }  // namespace math_opt
 }  // namespace operations_research
 

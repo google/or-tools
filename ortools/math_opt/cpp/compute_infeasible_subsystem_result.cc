@@ -11,12 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/cpp/infeasible_subsystem_result.h"
+#include "ortools/math_opt/cpp/compute_infeasible_subsystem_result.h"
 
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <ostream>
+#include <sstream>
 #include <string>
+#include <tuple>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
@@ -32,6 +35,7 @@
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos1_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos2_constraint.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -44,6 +48,8 @@
 #include "ortools/util/status_macros.h"
 
 namespace operations_research::math_opt {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 ModelSubset::Bounds ModelSubset::Bounds::FromProto(
     const ModelSubsetProto::Bounds& bounds_proto) {
@@ -220,6 +226,83 @@ bool ModelSubset::empty() const {
          sos2_constraints.empty() && indicator_constraints.empty();
 }
 
+std::string ModelSubset::ToString() const {
+  std::stringstream str;
+  str << "Model Subset:\n";
+  const auto stream_object = [&str](const auto& object) {
+    str << "  " << object << ": " << object.ToString() << "\n";
+  };
+  const auto stream_bounded_object =
+      [&str](const auto& object, const BoundedQuadraticExpression& as_expr,
+             const Bounds& bounds) {
+        if (bounds.empty()) {
+          return;
+        }
+        // We only want to only print the bounds appearing in the subset. The <<
+        // operator for `BoundedQuadraticExpression`s will ignore -/+inf bound
+        // values for the lower/upper bounds, respectively (assuming that at
+        // least one is finite, otherwise it chooses to print one bound
+        // arbitrarily). So, to suppress bounds not in the subset, it suffices
+        // to set their value to the appropriate infinity.
+        const double lb = bounds.lower ? as_expr.lower_bound : -kInf;
+        const double ub = bounds.upper ? as_expr.upper_bound : kInf;
+        str << "  " << object << ": " << (lb <= as_expr.expression <= ub)
+            << "\n";
+      };
+
+  str << " Variable bounds:\n";
+  for (const Variable variable : SortedKeys(variable_bounds)) {
+    stream_bounded_object(
+        variable, variable.lower_bound() <= variable <= variable.upper_bound(),
+        variable_bounds.at(variable));
+  }
+  str << " Variable integrality:\n";
+  for (const Variable variable : SortedElements(variable_integrality)) {
+    str << "  " << variable << "\n";
+  }
+  str << " Linear constraints:\n";
+  for (const LinearConstraint constraint : SortedKeys(linear_constraints)) {
+    stream_bounded_object(constraint, constraint.AsBoundedLinearExpression(),
+                          linear_constraints.at(constraint));
+  }
+  if (!quadratic_constraints.empty()) {
+    str << " Quadratic constraints:\n";
+    for (const QuadraticConstraint constraint :
+         SortedKeys(quadratic_constraints)) {
+      stream_bounded_object(constraint,
+                            constraint.AsBoundedQuadraticExpression(),
+                            quadratic_constraints.at(constraint));
+    }
+  }
+  if (!second_order_cone_constraints.empty()) {
+    str << " Second-order cone constraints:\n";
+    for (const SecondOrderConeConstraint constraint :
+         SortedElements(second_order_cone_constraints)) {
+      stream_object(constraint);
+    }
+  }
+  if (!sos1_constraints.empty()) {
+    str << " SOS1 constraints:\n";
+    for (const Sos1Constraint constraint : SortedElements(sos1_constraints)) {
+      stream_object(constraint);
+    }
+  }
+  if (!sos2_constraints.empty()) {
+    str << " SOS2 constraints:\n";
+    for (const Sos2Constraint constraint : SortedElements(sos2_constraints)) {
+      stream_object(constraint);
+    }
+  }
+  if (!indicator_constraints.empty()) {
+    str << " Indicator constraints:\n";
+    for (const IndicatorConstraint constraint :
+         SortedElements(indicator_constraints)) {
+      stream_object(constraint);
+    }
+  }
+  return str.str();
+}
+
 std::ostream& operator<<(std::ostream& out, const ModelSubset& model_subset) {
   const auto stream_bounds_map = [&out](const auto& map,
                                         const absl::string_view name) {
@@ -261,30 +344,34 @@ std::ostream& operator<<(std::ostream& out, const ModelSubset& model_subset) {
   return out;
 }
 
-absl::StatusOr<InfeasibleSubsystemResult> InfeasibleSubsystemResult::FromProto(
+absl::StatusOr<ComputeInfeasibleSubsystemResult>
+ComputeInfeasibleSubsystemResult::FromProto(
     const ModelStorage* const model,
-    const InfeasibleSubsystemResultProto& result_proto) {
-  InfeasibleSubsystemResult result;
+    const ComputeInfeasibleSubsystemResultProto& result_proto) {
+  ComputeInfeasibleSubsystemResult result;
   const std::optional<FeasibilityStatus> feasibility =
       EnumFromProto(result_proto.feasibility());
   if (!feasibility.has_value()) {
     return absl::InvalidArgumentError(
-        "InfeasibleSubsystemResultProto.feasibility must be specified");
+        "ComputeInfeasibleSubsystemResultProto.feasibility must be specified");
   }
   // We intentionally call this validator after checking `feasibility` so that
   // we can return a friendlier message for UNSPECIFIED.
-  RETURN_IF_ERROR(ValidateInfeasibleSubsystemResultNoModel(result_proto));
+  RETURN_IF_ERROR(
+      ValidateComputeInfeasibleSubsystemResultNoModel(result_proto));
   result.feasibility = *feasibility;
   OR_ASSIGN_OR_RETURN3(
       result.infeasible_subsystem,
       ModelSubset::FromProto(model, result_proto.infeasible_subsystem()),
-      _ << "invalid InfeasibleSubsystemResultProto.infeasible_subsystem");
+      _ << "invalid "
+           "ComputeInfeasibleSubsystemResultProto.infeasible_subsystem");
   result.is_minimal = result_proto.is_minimal();
   return result;
 }
 
-InfeasibleSubsystemResultProto InfeasibleSubsystemResult::Proto() const {
-  InfeasibleSubsystemResultProto proto;
+ComputeInfeasibleSubsystemResultProto ComputeInfeasibleSubsystemResult::Proto()
+    const {
+  ComputeInfeasibleSubsystemResultProto proto;
   proto.set_feasibility(EnumToProto(feasibility));
   if (!infeasible_subsystem.empty()) {
     *proto.mutable_infeasible_subsystem() = infeasible_subsystem.Proto();
@@ -293,13 +380,13 @@ InfeasibleSubsystemResultProto InfeasibleSubsystemResult::Proto() const {
   return proto;
 }
 
-absl::Status InfeasibleSubsystemResult::CheckModelStorage(
+absl::Status ComputeInfeasibleSubsystemResult::CheckModelStorage(
     const ModelStorage* const expected_storage) const {
   return infeasible_subsystem.CheckModelStorage(expected_storage);
 }
 
 std::ostream& operator<<(std::ostream& out,
-                         const InfeasibleSubsystemResult& result) {
+                         const ComputeInfeasibleSubsystemResult& result) {
   out << "{feasibility: " << result.feasibility
       << ", infeasible_subsystem: " << result.infeasible_subsystem
       << ", is_minimal: " << (result.is_minimal ? "true" : "false") << "}";

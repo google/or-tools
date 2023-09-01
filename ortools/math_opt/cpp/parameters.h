@@ -254,9 +254,8 @@ struct SolveParameters {
   // Enables printing the solver implementation traces. These traces are sent
   // to the standard output stream.
   //
-  // Note that if the solver supports message callback and the user registers a
-  // callback for it, then this parameter value is ignored and no traces are
-  // printed.
+  // Note that if the user registers a message callback, then this parameter
+  // value is ignored and no traces are printed.
   bool enable_output = false;
 
   // Maximum time a solver should spend on the problem.

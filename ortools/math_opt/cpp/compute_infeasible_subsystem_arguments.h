@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
-#define OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
+#define OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
 
 #include "ortools/math_opt/core/solve_interrupter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/message_callback.h"    // IWYU pragma: export
@@ -20,8 +20,8 @@
 
 namespace operations_research::math_opt {
 
-// Arguments passed to InfeasibleSubsystem() to control the solver.
-struct InfeasibleSubsystemArguments {
+// Arguments passed to ComputeInfeasibleSubsystem() to control the solver.
+struct ComputeInfeasibleSubsystemArguments {
   // Model independent parameters, e.g. time limit.
   SolveParameters parameters;
 
@@ -37,8 +37,8 @@ struct InfeasibleSubsystemArguments {
   //
   //   // To print messages to stdout with a prefix.
   //   ASSIGN_OR_RETURN(
-  //     const InfeasibleSubsystemResult result,
-  //     InfeasibleSubsystem(model, SolverType::kGurobi,
+  //     const ComputeInfeasibleSubsystemResult result,
+  //     ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //           { .message_callback = PrinterMessageCallback(std::cout,
   //                                                        "logs| "); });
   MessageCallback message_callback = nullptr;
@@ -55,8 +55,8 @@ struct InfeasibleSubsystemArguments {
   //     interrupter->Interrupt();
   //   });
   //
-  //   ASSIGN_OR_RETURN(const InfeasibleSubsystemResult result,
-  //                    InfeasibleSubsystem(model, SolverType::kGurobi,
+  //   ASSIGN_OR_RETURN(const ComputeInfeasibleSubsystemResult result,
+  //                    ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //                          { .interrupter = interrupter.get() });
   //
   SolveInterrupter* interrupter = nullptr;
@@ -64,4 +64,4 @@ struct InfeasibleSubsystemArguments {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_

@@ -14,8 +14,11 @@
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
+#include <optional>
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
@@ -35,6 +38,34 @@
 
 namespace operations_research {
 namespace math_opt {
+namespace {
+constexpr double kInf = std::numeric_limits<double>::infinity();
+}  // namespace
+
+ObjectiveBoundsProto GetObjectiveBounds(const SolveResultProto& solve_result) {
+  if (solve_result.termination().has_objective_bounds()) {
+    return solve_result.termination().objective_bounds();
+  }
+  ObjectiveBoundsProto objective_bounds;
+  objective_bounds.set_primal_bound(
+      solve_result.solve_stats().best_primal_bound());
+  objective_bounds.set_dual_bound(solve_result.solve_stats().best_dual_bound());
+  return objective_bounds;
+}
+
+ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result) {
+  if (solve_result.termination().has_problem_status()) {
+    return solve_result.termination().problem_status();
+  }
+  ProblemStatusProto problem_status;
+  problem_status.set_primal_status(
+      solve_result.solve_stats().problem_status().primal_status());
+  problem_status.set_dual_status(
+      solve_result.solve_stats().problem_status().dual_status());
+  problem_status.set_primal_or_dual_infeasible(
+      solve_result.solve_stats().problem_status().primal_or_dual_infeasible());
+  return problem_status;
+}
 
 void RemoveSparseDoubleVectorZeros(SparseDoubleVectorProto& sparse_vector) {
   CHECK_EQ(sparse_vector.ids_size(), sparse_vector.values_size());
@@ -148,6 +179,205 @@ TerminationProto TerminateForReason(const TerminationReasonProto reason,
                                     const absl::string_view detail) {
   TerminationProto result;
   result.set_reason(reason);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+ObjectiveBoundsProto MakeTrivialBounds(const bool is_maximize) {
+  ObjectiveBoundsProto bounds;
+  bounds.set_primal_bound(is_maximize ? -kInf : +kInf);
+  bounds.set_dual_bound(is_maximize ? +kInf : -kInf);
+  return bounds;
+}
+
+namespace {
+ObjectiveBoundsProto MakeUnboundedBounds(const bool is_maximize) {
+  ObjectiveBoundsProto bounds;
+  bounds.set_primal_bound(is_maximize ? +kInf : -kInf);
+  bounds.set_dual_bound(bounds.primal_bound());
+  return bounds;
+}
+}  // namespace
+
+TerminationProto TerminateForReason(const bool is_maximize,
+                                    const TerminationReasonProto reason,
+                                    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(reason);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  result.mutable_problem_status()->set_dual_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto OptimalTerminationProto(const double finite_primal_objective,
+                                         const double dual_objective,
+                                         const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_OPTIMAL);
+  result.mutable_objective_bounds()->set_primal_bound(finite_primal_objective);
+  result.mutable_objective_bounds()->set_dual_bound(dual_objective);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_FEASIBLE);
+  result.mutable_problem_status()->set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto UnboundedTerminationProto(const bool is_maximize,
+                                           const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_UNBOUNDED);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_FEASIBLE);
+  result.mutable_problem_status()->set_dual_status(
+      FEASIBILITY_STATUS_INFEASIBLE);
+  *result.mutable_objective_bounds() = MakeUnboundedBounds(is_maximize);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto InfeasibleTerminationProto(
+    bool is_maximize, const FeasibilityStatusProto dual_feasibility_status,
+    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_INFEASIBLE);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_INFEASIBLE);
+  result.mutable_problem_status()->set_dual_status(dual_feasibility_status);
+  *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
+  if (dual_feasibility_status == FEASIBILITY_STATUS_FEASIBLE) {
+    result.mutable_objective_bounds()->set_dual_bound(
+        result.objective_bounds().primal_bound());
+  }
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto LimitTerminationProto(
+    const bool is_maximize, const LimitProto limit,
+    const std::optional<double> optional_finite_primal_objective,
+    const std::optional<double> optional_dual_objective,
+    const absl::string_view detail) {
+  if (optional_finite_primal_objective.has_value()) {
+    return FeasibleTerminationProto(is_maximize, limit,
+                                    *optional_finite_primal_objective,
+                                    optional_dual_objective, detail);
+  }
+  return NoSolutionFoundTerminationProto(is_maximize, limit,
+                                         optional_dual_objective, detail);
+}
+
+TerminationProto LimitTerminationProto(
+    LimitProto limit, const double primal_objective,
+    const double dual_objective, const bool claim_dual_feasible_solution_exists,
+    const absl::string_view detail) {
+  TerminationProto result;
+  if (std::isfinite(primal_objective)) {
+    result.set_reason(TERMINATION_REASON_FEASIBLE);
+    result.mutable_problem_status()->set_primal_status(
+        FEASIBILITY_STATUS_FEASIBLE);
+  } else {
+    result.set_reason(TERMINATION_REASON_NO_SOLUTION_FOUND);
+    result.mutable_problem_status()->set_primal_status(
+        FEASIBILITY_STATUS_UNDETERMINED);
+  }
+  if (claim_dual_feasible_solution_exists) {
+    result.mutable_problem_status()->set_dual_status(
+        FEASIBILITY_STATUS_FEASIBLE);
+  } else {
+    result.mutable_problem_status()->set_dual_status(
+        FEASIBILITY_STATUS_UNDETERMINED);
+  }
+  result.mutable_objective_bounds()->set_primal_bound(primal_objective);
+  result.mutable_objective_bounds()->set_dual_bound(dual_objective);
+  result.set_limit(limit);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto CutoffTerminationProto(bool is_maximize,
+                                        const absl::string_view detail) {
+  return NoSolutionFoundTerminationProto(
+      is_maximize, LIMIT_CUTOFF, /*optional_dual_objective=*/std::nullopt,
+      detail);
+}
+
+TerminationProto NoSolutionFoundTerminationProto(
+    const bool is_maximize, const LimitProto limit,
+    const std::optional<double> optional_dual_objective,
+    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_NO_SOLUTION_FOUND);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  result.mutable_problem_status()->set_dual_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
+  if (optional_dual_objective.has_value()) {
+    result.mutable_objective_bounds()->set_dual_bound(*optional_dual_objective);
+    result.mutable_problem_status()->set_dual_status(
+        FEASIBILITY_STATUS_FEASIBLE);
+  }
+  result.set_limit(limit);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto FeasibleTerminationProto(
+    const bool is_maximize, const LimitProto limit,
+    const double primal_objective,
+    const std::optional<double> optional_dual_objective,
+    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_FEASIBLE);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_FEASIBLE);
+  result.mutable_problem_status()->set_dual_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
+  result.mutable_objective_bounds()->set_primal_bound(primal_objective);
+  if (optional_dual_objective.has_value()) {
+    result.mutable_objective_bounds()->set_dual_bound(*optional_dual_objective);
+    result.mutable_problem_status()->set_dual_status(
+        FEASIBILITY_STATUS_FEASIBLE);
+  }
+  result.set_limit(limit);
+  if (!detail.empty()) {
+    result.set_detail(std::string(detail));
+  }
+  return result;
+}
+
+TerminationProto InfeasibleOrUnboundedTerminationProto(
+    bool is_maximize, const FeasibilityStatusProto dual_feasibility_status,
+    const absl::string_view detail) {
+  TerminationProto result;
+  result.set_reason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
+  result.mutable_problem_status()->set_primal_status(
+      FEASIBILITY_STATUS_UNDETERMINED);
+  result.mutable_problem_status()->set_dual_status(dual_feasibility_status);
+  if (dual_feasibility_status == FEASIBILITY_STATUS_UNDETERMINED) {
+    result.mutable_problem_status()->set_primal_or_dual_infeasible(true);
+  }
+  *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
   if (!detail.empty()) {
     result.set_detail(std::string(detail));
   }
@@ -310,6 +540,20 @@ bool UpdateIsSupported(const ModelUpdateProto& update,
     }
   }
   return true;
+}
+
+void UpgradeSolveResultProtoForStatsMigration(
+    SolveResultProto& solve_result_proto) {
+  *solve_result_proto.mutable_termination()->mutable_problem_status() =
+      GetProblemStatus(solve_result_proto);
+  *solve_result_proto.mutable_solve_stats()->mutable_problem_status() =
+      GetProblemStatus(solve_result_proto);
+  *solve_result_proto.mutable_termination()->mutable_objective_bounds() =
+      GetObjectiveBounds(solve_result_proto);
+  solve_result_proto.mutable_solve_stats()->set_best_primal_bound(
+      solve_result_proto.termination().objective_bounds().primal_bound());
+  solve_result_proto.mutable_solve_stats()->set_best_dual_bound(
+      solve_result_proto.termination().objective_bounds().dual_bound());
 }
 
 }  // namespace math_opt

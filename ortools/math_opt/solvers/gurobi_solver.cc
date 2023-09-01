@@ -17,7 +17,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -580,55 +579,75 @@ GurobiSolver::SosConstraintData::DependentElements() const {
 
 absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     const int gurobi_status, const SolutionClaims solution_claims) {
+  ASSIGN_OR_RETURN(const double best_primal_bound,
+                   GetBestPrimalBound(
+                       /*has_primal_feasible_solution=*/solution_claims
+                           .primal_feasible_solution_exists));
+
+  ASSIGN_OR_RETURN(double best_dual_bound, GetBestDualBound());
+  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   switch (gurobi_status) {
     case GRB_OPTIMAL:
-      return TerminateForReason(TERMINATION_REASON_OPTIMAL);
+      // TODO(b/290359402): it appears Gurobi could return an infinite
+      // best_dual_bound (e.g in Qp/Qc/Socp/multi-obj tests). If so, we could
+      // improve the bound by using the target absolute and relative GAPs (and
+      // best_primal_bound).
+      return OptimalTerminationProto(best_primal_bound, best_dual_bound);
     case GRB_INFEASIBLE:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE);
+      return InfeasibleTerminationProto(
+          is_maximize, solution_claims.dual_feasible_solution_exists
+                           ? FEASIBILITY_STATUS_FEASIBLE
+                           : FEASIBILITY_STATUS_UNDETERMINED);
     case GRB_UNBOUNDED:
+      // GRB_UNBOUNDED does necessarily imply the primal is feasible
+      // https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
       if (solution_claims.primal_feasible_solution_exists) {
-        return TerminateForReason(TERMINATION_REASON_UNBOUNDED);
+        return UnboundedTerminationProto(is_maximize);
       }
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
-                                "Gurobi status GRB_UNBOUNDED");
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_INFEASIBLE,
+          "Gurobi status GRB_UNBOUNDED");
     case GRB_INF_OR_UNBD:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
-                                "Gurobi status GRB_INF_OR_UNBD");
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED,
+          "Gurobi status GRB_UNBOUNDED");
     case GRB_CUTOFF:
-      return TerminateForLimit(LIMIT_CUTOFF,
-                               /*feasible=*/false, "Gurobi status GRB_CUTOFF");
+      return CutoffTerminationProto(is_maximize, "Gurobi status GRB_CUTOFF");
     case GRB_ITERATION_LIMIT:
-      return TerminateForLimit(
-          LIMIT_ITERATION,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_ITERATION, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_NODE_LIMIT:
-      return TerminateForLimit(
-          LIMIT_NODE,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_NODE, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_TIME_LIMIT:
-      return TerminateForLimit(
-          LIMIT_TIME,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_TIME, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_SOLUTION_LIMIT:
-      return TerminateForLimit(
-          LIMIT_SOLUTION,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_SOLUTION, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_INTERRUPTED:
-      return TerminateForLimit(
-          LIMIT_INTERRUPTED,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_INTERRUPTED, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_NUMERIC:
-      return TerminateForReason(TERMINATION_REASON_NUMERICAL_ERROR);
+      return TerminateForReason(is_maximize,
+                                TERMINATION_REASON_NUMERICAL_ERROR);
     case GRB_SUBOPTIMAL:
-      return TerminateForReason(TERMINATION_REASON_IMPRECISE);
+      return TerminateForReason(is_maximize, TERMINATION_REASON_IMPRECISE);
     case GRB_USER_OBJ_LIMIT:
-      // TODO(b/214567536): maybe we should override
+      // Note: maybe we should override
       // solution_claims.primal_feasible_solution_exists to true or false
       // depending on whether objective_limit and best_bound_limit triggered
       // this. Not sure if it's possible to detect this though.
-      return TerminateForLimit(
-          LIMIT_OBJECTIVE,
-          /*feasible=*/solution_claims.primal_feasible_solution_exists);
+      return LimitTerminationProto(
+          LIMIT_OBJECTIVE, best_primal_bound, best_dual_bound,
+          solution_claims.dual_feasible_solution_exists);
     case GRB_LOADED:
       return absl::InternalError(
           "Error creating termination reason, unexpected gurobi status code "
@@ -852,59 +871,6 @@ absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
   return dual_ray;
 }
 
-absl::StatusOr<ProblemStatusProto> GurobiSolver::GetProblemStatus(
-    const int grb_termination, const SolutionClaims solution_claims) {
-  ProblemStatusProto problem_status;
-
-  // Set default statuses
-  problem_status.set_primal_status(FEASIBILITY_STATUS_UNDETERMINED);
-  problem_status.set_dual_status(FEASIBILITY_STATUS_UNDETERMINED);
-
-  // Set feasibility statuses
-  if (solution_claims.primal_feasible_solution_exists) {
-    problem_status.set_primal_status(FEASIBILITY_STATUS_FEASIBLE);
-  }
-  if (solution_claims.dual_feasible_solution_exists) {
-    problem_status.set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
-  }
-
-  // Process infeasible conclusions from grb_termination.
-  switch (grb_termination) {
-    case GRB_INFEASIBLE:
-      problem_status.set_primal_status(FEASIBILITY_STATUS_INFEASIBLE);
-      if (solution_claims.primal_feasible_solution_exists) {
-        return absl::InternalError(
-            "GRB_INT_ATTR_STATUS == GRB_INFEASIBLE, but a primal feasible "
-            "solution was returned.");
-      }
-      break;
-    case GRB_UNBOUNDED:
-      // GRB_UNBOUNDED does necessarily imply the primal is feasible
-      // https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
-      problem_status.set_dual_status(FEASIBILITY_STATUS_INFEASIBLE);
-      if (solution_claims.dual_feasible_solution_exists) {
-        return absl::InternalError(
-            "GRB_INT_ATTR_STATUS == GRB_UNBOUNDED, but a dual feasible "
-            "solution was returned or exists.");
-      }
-      break;
-    case GRB_INF_OR_UNBD:
-      problem_status.set_primal_or_dual_infeasible(true);
-      if (solution_claims.primal_feasible_solution_exists) {
-        return absl::InternalError(
-            "GRB_INT_ATTR_STATUS == GRB_INF_OR_UNBD, but a primal feasible "
-            "solution was returned.");
-      }
-      if (solution_claims.dual_feasible_solution_exists) {
-        return absl::InternalError(
-            "GRB_INT_ATTR_STATUS == GRB_INF_OR_UNBD, but a dual feasible "
-            "solution was returned or exists.");
-      }
-      break;
-  }
-  return problem_status;
-}
-
 absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     const absl::Time start, const ModelSolveParametersProto& model_parameters) {
   SolveResultProto result;
@@ -933,11 +899,10 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     }
   }
 
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats(),
-                   GetSolveStats(start, solution_claims));
-
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    ConvertTerminationReason(grb_termination, solution_claims));
+
+  ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
   return std::move(result);
 }
 
@@ -1033,10 +998,10 @@ GurobiSolver::QuadraticConstraintInIIS(
   return result;
 }
 
-absl::StatusOr<InfeasibleSubsystemResultProto>
-GurobiSolver::ExtractInfeasibleSubsystemResultProto(
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+GurobiSolver::ExtractComputeInfeasibleSubsystemResultProto(
     const bool proven_infeasible) {
-  InfeasibleSubsystemResultProto result;
+  ComputeInfeasibleSubsystemResultProto result;
   if (!proven_infeasible) {
     result.set_feasibility(FEASIBILITY_STATUS_UNDETERMINED);
     return result;
@@ -1133,25 +1098,11 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetSolutions(
 }
 
 absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
-    const absl::Time start, const SolutionClaims solution_claims) {
+    const absl::Time start) const {
   SolveStatsProto solve_stats;
 
   CHECK_OK(util_time::EncodeGoogleApiProto(absl::Now() - start,
                                            solve_stats.mutable_solve_time()));
-
-  ASSIGN_OR_RETURN(const double best_primal_bound,
-                   GetBestPrimalBound(
-                       /*has_primal_feasible_solution=*/solution_claims
-                           .primal_feasible_solution_exists));
-  solve_stats.set_best_primal_bound(best_primal_bound);
-
-  ASSIGN_OR_RETURN(double best_dual_bound, GetBestDualBound());
-  solve_stats.set_best_dual_bound(best_dual_bound);
-
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
-  ASSIGN_OR_RETURN((*solve_stats.mutable_problem_status()),
-                   GetProblemStatus(grb_termination, solution_claims));
 
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_ITERCOUNT)) {
     ASSIGN_OR_RETURN(const double simplex_iters_double,
@@ -1229,10 +1180,11 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
   //
   // If this is a multi-objective model, Gurobi v10 does not expose ObjBound.
   // Instead, we fake its existence for optimal solves only.
+  // By convention infeasible MIPs are always dual feasible.
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists = num_solutions > 0,
       .dual_feasible_solution_exists =
-          std::isfinite(best_dual_bound) ||
+          std::isfinite(best_dual_bound) || grb_termination == GRB_INFEASIBLE ||
           (is_multi_objective_mode() && grb_termination == GRB_OPTIMAL)};
 
   // Check consistency of solutions, bounds and statuses.
@@ -1351,7 +1303,7 @@ absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
   // primal infeasible solutions.
   if (has_primal_feasible_solution &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJVAL)) {
-    // TODO(b/195295177): Discuss if this should be removed. Unlike the dual
+    // TODO(b/290359402): Discuss if this should be removed. Unlike the dual
     // case below, it appears infesible models do not return GRB_DBL_ATTR_OBJVAL
     // equal to GRB_INFINITY (GRB_DBL_ATTR_OBJVAL is just unavailable). Hence,
     // this may not be needed and may not be consistent (e.g. we should explore
@@ -1475,7 +1427,7 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
     dual_solution.set_objective_value(obj_val);
   }
-  // TODO(b/195295177): explore using GRB_DBL_ATTR_OBJBOUND to set the dual
+  // TODO(b/290359402): explore using GRB_DBL_ATTR_OBJBOUND to set the dual
   // objective. As described in go/gurobi-objval-bug, this could provide the
   // dual objective in some cases.
 
@@ -1486,7 +1438,7 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   } else if (grb_termination == GRB_UNBOUNDED) {
     dual_solution.set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
   }
-  // TODO(b/195295177): We could use gurobi's dual solution quality measures
+  // TODO(b/290359402): We could use gurobi's dual solution quality measures
   // for further upgrade the dual feasibility but it likely is only useful
   // for phase II of dual simplex because:
   //   * the quality measures seem to evaluate if the basis is dual feasible
@@ -2972,10 +2924,10 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 }
 
 // TODO(b/277339044): Remove code duplication with GurobiSolver::Solve().
-absl::StatusOr<InfeasibleSubsystemResultProto>
-GurobiSolver::InfeasibleSubsystem(const SolveParametersProto& parameters,
-                                  MessageCallback message_cb,
-                                  SolveInterrupter* const interrupter) {
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+GurobiSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                                         MessageCallback message_cb,
+                                         SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:
@@ -3051,8 +3003,9 @@ GurobiSolver::InfeasibleSubsystem(const SolveParametersProto& parameters,
                             gurobi_cb_data->message_callback_data);
   }
 
-  ASSIGN_OR_RETURN(InfeasibleSubsystemResultProto iis_result,
-                   ExtractInfeasibleSubsystemResultProto(proven_infeasible));
+  ASSIGN_OR_RETURN(
+      ComputeInfeasibleSubsystemResultProto iis_result,
+      ExtractComputeInfeasibleSubsystemResultProto(proven_infeasible));
   // Reset Gurobi parameters.
   // TODO(b/277246682): ensure that resetting parameters does not degrade
   // incrementalism performance.

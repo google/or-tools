@@ -13,10 +13,7 @@
 
 #include "ortools/math_opt/core/solver.h"
 
-#include <atomic>
-#include <functional>
 #include <memory>
-#include <string>
 #include <utility>
 
 #include "absl/log/check.h"
@@ -27,6 +24,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solver_debug.h"
@@ -63,8 +61,8 @@ absl::Status ToInternalError(const absl::Status original) {
 // previous call to one of them failed.
 absl::Status PreviousFatalFailureOccurred() {
   return absl::InvalidArgumentError(
-      "a previous call to Solve(), InfeasibleSubsystem(), or Update() failed, "
-      "the Solver can't be used anymore");
+      "a previous call to Solve(), ComputeInfeasibleSubsystem(), or Update() "
+      "failed, the Solver can't be used anymore");
 }
 
 }  // namespace
@@ -138,13 +136,15 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
     };
   }
 
-  ASSIGN_OR_RETURN(const SolveResultProto result,
+  ASSIGN_OR_RETURN(SolveResultProto result,
                    underlying_solver_->Solve(arguments.parameters,
                                              arguments.model_parameters,
                                              arguments.message_callback,
                                              arguments.callback_registration,
                                              cb, arguments.interrupter));
-
+  // TODO(b/290091715): Remove once language specific structs can use new
+  // messages.
+  UpgradeSolveResultProtoForStatsMigration(result);
   // We consider errors in `result` to be internal errors, but
   // `ValidateResult()` will return an InvalidArgumentError. So here we convert
   // the error.
@@ -184,8 +184,9 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto& model_update) {
   return true;
 }
 
-absl::StatusOr<InfeasibleSubsystemResultProto> Solver::InfeasibleSubsystem(
-    const InfeasibleSubsystemArgs& infeasible_subsystem_args) {
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+Solver::ComputeInfeasibleSubsystem(
+    const ComputeInfeasibleSubsystemArgs& arguments) {
   ASSIGN_OR_RETURN(const auto guard,
                    ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
 
@@ -197,33 +198,32 @@ absl::StatusOr<InfeasibleSubsystemResultProto> Solver::InfeasibleSubsystem(
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
 
-  RETURN_IF_ERROR(ValidateSolveParameters(infeasible_subsystem_args.parameters))
+  RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
       << "invalid parameters";
 
-  ASSIGN_OR_RETURN(const InfeasibleSubsystemResultProto result,
-                   underlying_solver_->InfeasibleSubsystem(
-                       infeasible_subsystem_args.parameters,
-                       infeasible_subsystem_args.message_callback,
-                       infeasible_subsystem_args.interrupter));
+  ASSIGN_OR_RETURN(const ComputeInfeasibleSubsystemResultProto result,
+                   underlying_solver_->ComputeInfeasibleSubsystem(
+                       arguments.parameters, arguments.message_callback,
+                       arguments.interrupter));
 
   // We consider errors in `result` to be internal errors, but
   // `ValidateInfeasibleSubsystemResult()` will return an InvalidArgumentError.
   // So here we convert the error.
   RETURN_IF_ERROR(ToInternalError(
-      ValidateInfeasibleSubsystemResult(result, model_summary_)));
+      ValidateComputeInfeasibleSubsystemResult(result, model_summary_)));
 
   fatal_failure_occurred_ = false;
   return result;
 }
 
-absl::StatusOr<InfeasibleSubsystemResultProto>
-Solver::NonIncrementalInfeasibleSubsystem(
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+Solver::NonIncrementalComputeInfeasibleSubsystem(
     const ModelProto& model, const SolverTypeProto solver_type,
     const InitArgs& init_args,
-    const InfeasibleSubsystemArgs& infeasible_subsystem_args) {
+    const ComputeInfeasibleSubsystemArgs& compute_infeasible_subsystem_args) {
   ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
                    Solver::New(solver_type, model, init_args));
-  return solver->InfeasibleSubsystem(infeasible_subsystem_args);
+  return solver->ComputeInfeasibleSubsystem(compute_infeasible_subsystem_args);
 }
 
 namespace internal {

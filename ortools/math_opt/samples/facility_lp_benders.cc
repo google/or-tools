@@ -71,8 +71,8 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/status_macros.h"
 
-ABSL_FLAG(int, num_facilities, 3000, "Number of facilities.");
-ABSL_FLAG(int, num_locations, 50, "Number of locations.");
+ABSL_FLAG(int, num_facilities, 750, "Number of facilities.");
+ABSL_FLAG(int, num_locations, 12, "Number of locations.");
 ABSL_FLAG(double, edge_probability, 0.99, "Edge probability.");
 ABSL_FLAG(double, benders_precission, 1e-9, "Benders target precission.");
 ABSL_FLAG(double, location_demand, 1, "Client demands.");

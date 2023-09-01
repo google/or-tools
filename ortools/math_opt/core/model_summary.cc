@@ -31,7 +31,6 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
-#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -130,6 +129,7 @@ ModelSummary::ModelSummary(const bool check_names)
 absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
                                                   const bool check_names) {
   ModelSummary summary(check_names);
+  summary.maximize = model.objective().maximize();
   RETURN_IF_ERROR(summary.variables.BulkUpdate({}, model.variables().ids(),
                                                model.variables().names()))
       << "ModelProto.variables are invalid";
@@ -167,6 +167,9 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
 }
 
 absl::Status ModelSummary::Update(const ModelUpdateProto& model_update) {
+  if (model_update.objective_updates().has_direction_update()) {
+    maximize = model_update.objective_updates().direction_update();
+  }
   RETURN_IF_ERROR(variables.BulkUpdate(model_update.deleted_variable_ids(),
                                        model_update.new_variables().ids(),
                                        model_update.new_variables().names()))

@@ -849,7 +849,7 @@ class Model {
   // Returns a proto representation of the optimization model.
   //
   // See FromModelProto() to build a Model from a proto.
-  ModelProto ExportModel() const;
+  ModelProto ExportModel(bool remove_names = false) const;
 
   // Returns a tracker that can be used to generate a ModelUpdateProto with the
   // updates that happened since the last checkpoint. The tracker initial

@@ -43,6 +43,7 @@ cc_library(
     hdrs = ["mps_converter.h"],
     deps = [
         ":proto_converter",
+        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader",

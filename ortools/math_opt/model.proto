@@ -43,6 +43,8 @@ message VariablesProto {
 message ObjectiveProto {
   // false is minimize, true is maximize
   bool maximize = 1;
+
+  // Must be finite and not NaN.
   double offset = 2;
 
   // ObjectiveProto terms that are linear in the decision variables.

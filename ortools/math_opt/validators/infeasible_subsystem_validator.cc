@@ -78,10 +78,10 @@ absl::Status ValidateModelSubset(const ModelSubsetProto& model_subset,
   return absl::OkStatus();
 }
 
-absl::Status ValidateInfeasibleSubsystemResult(
-    const InfeasibleSubsystemResultProto& result,
+absl::Status ValidateComputeInfeasibleSubsystemResult(
+    const ComputeInfeasibleSubsystemResultProto& result,
     const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(ValidateInfeasibleSubsystemResultNoModel(result));
+  RETURN_IF_ERROR(ValidateComputeInfeasibleSubsystemResultNoModel(result));
   if (result.feasibility() == FEASIBILITY_STATUS_INFEASIBLE) {
     RETURN_IF_ERROR(
         ValidateModelSubset(result.infeasible_subsystem(), model_summary));
@@ -89,10 +89,10 @@ absl::Status ValidateInfeasibleSubsystemResult(
   return absl::OkStatus();
 }
 
-absl::Status ValidateInfeasibleSubsystemResultNoModel(
-    const InfeasibleSubsystemResultProto& result) {
+absl::Status ValidateComputeInfeasibleSubsystemResultNoModel(
+    const ComputeInfeasibleSubsystemResultProto& result) {
   RETURN_IF_ERROR(ValidateFeasibilityStatus(result.feasibility()))
-      << "bad InfeasibleSubsystemResultProto.feasibility";
+      << "bad ComputeInfeasibleSubsystemResultProto.feasibility";
   if (result.feasibility() != FEASIBILITY_STATUS_INFEASIBLE) {
     // Check that the `infeasible_subsystem` is empty by validating against an
     // empty ModelSummary.

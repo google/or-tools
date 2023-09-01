@@ -32,6 +32,7 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/io/names_removal.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -278,7 +279,7 @@ void ModelStorage::AddAuxiliaryObjectives(
   }
 }
 
-ModelProto ModelStorage::ExportModel() const {
+ModelProto ModelStorage::ExportModel(const bool remove_names) const {
   ModelProto result;
   result.set_name(name_);
   *result.mutable_variables() = variables_.Proto();
@@ -297,12 +298,18 @@ ModelProto ModelStorage::ExportModel() const {
   *result.mutable_sos1_constraints() = sos1_constraints_.Proto();
   *result.mutable_sos2_constraints() = sos2_constraints_.Proto();
   *result.mutable_indicator_constraints() = indicator_constraints_.Proto();
+  // Performance can be improved when remove_names is true by just not
+  // extracting the names above instead of clearing them below, but this will
+  // be more code, see discussion on cl/549469633 and prototype in cl/549369764.
+  if (remove_names) {
+    RemoveNames(result);
+  }
   return result;
 }
 
 std::optional<ModelUpdateProto>
 ModelStorage::UpdateTrackerData::ExportModelUpdate(
-    const ModelStorage& storage) const {
+    const ModelStorage& storage, const bool remove_names) const {
   // We must detect the empty case to prevent unneeded copies and merging in
   // ExportModelUpdate().
 
@@ -372,6 +379,9 @@ ModelStorage::UpdateTrackerData::ExportModelUpdate(
     *result.mutable_objective_updates() = std::move(primary);
     *result.mutable_auxiliary_objectives_updates() = std::move(auxiliary);
   }
+  if (remove_names) {
+    RemoveNames(result);
+  }
   // Note: Named returned value optimization (NRVO) does not apply here.
   return {std::move(result)};
 }
@@ -404,8 +414,9 @@ void ModelStorage::DeleteUpdateTracker(const UpdateTrackerId update_tracker) {
 }
 
 std::optional<ModelUpdateProto> ModelStorage::ExportModelUpdate(
-    const UpdateTrackerId update_tracker) const {
-  return update_trackers_.GetData(update_tracker).ExportModelUpdate(*this);
+    const UpdateTrackerId update_tracker, const bool remove_names) const {
+  return update_trackers_.GetData(update_tracker)
+      .ExportModelUpdate(*this, remove_names);
 }
 
 void ModelStorage::AdvanceCheckpoint(UpdateTrackerId update_tracker) {

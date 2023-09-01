@@ -58,9 +58,10 @@ class GScipSolver : public SolverInterface {
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
-  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
-      const SolveParametersProto& parameters, MessageCallback message_cb,
-      SolveInterrupter* interrupter) override;
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                             MessageCallback message_cb,
+                             SolveInterrupter* interrupter) override;
 
   // Returns the merged parameters and a list of warnings for unsupported
   // parameters.

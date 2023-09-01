@@ -80,7 +80,8 @@ class UpdateTracker {
   // if the update would have been empty.
   //
   // If fails if the Model has been destroyed.
-  absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdate();
+  absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdate(
+      bool remove_names = false);
 
   // Uses the current model state as the starting point to calculate the
   // ModelUpdateProto next time ExportModelUpdate() is called.
@@ -95,7 +96,7 @@ class UpdateTracker {
   // can avoid having to keep a reference to the Model model.
   //
   // If fails if the Model has been destroyed.
-  absl::StatusOr<ModelProto> ExportModel() const;
+  absl::StatusOr<ModelProto> ExportModel(bool remove_names = false) const;
 
  private:
   const std::weak_ptr<ModelStorage> storage_;

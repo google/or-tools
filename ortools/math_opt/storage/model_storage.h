@@ -537,7 +537,7 @@ class ModelStorage {
   // Returns a proto representation of the optimization model.
   //
   // See FromModelProto() to build a ModelStorage from a proto.
-  ModelProto ExportModel() const;
+  ModelProto ExportModel(bool remove_names = false) const;
 
   // Creates a tracker that can be used to generate a ModelUpdateProto with the
   // updates that happened since the last checkpoint. The tracker initial
@@ -611,7 +611,7 @@ class ModelStorage {
   //
   // It can be called concurrently for different update trackers though.
   std::optional<ModelUpdateProto> ExportModelUpdate(
-      UpdateTrackerId update_tracker) const;
+      UpdateTrackerId update_tracker, bool remove_names = false) const;
 
   // Uses the current model state as the starting point to calculate the
   // ModelUpdateProto next time ExportModelUpdate() is called.
@@ -662,7 +662,7 @@ class ModelStorage {
     //
     // Thread-safety: this method is threadsafe.
     std::optional<ModelUpdateProto> ExportModelUpdate(
-        const ModelStorage& storage) const;
+        const ModelStorage& storage, bool remove_names = false) const;
 
     // Use the current model state as the starting point to calculate the
     // ModelUpdateProto next time ExportSharedModelUpdate() is called.

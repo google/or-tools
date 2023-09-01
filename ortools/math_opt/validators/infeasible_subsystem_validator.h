@@ -23,11 +23,12 @@ namespace operations_research::math_opt {
 absl::Status ValidateModelSubset(const ModelSubsetProto& model_subset,
                                  const ModelSummary& summary);
 
-absl::Status ValidateInfeasibleSubsystemResult(
-    const InfeasibleSubsystemResultProto& result, const ModelSummary& summary);
+absl::Status ValidateComputeInfeasibleSubsystemResult(
+    const ComputeInfeasibleSubsystemResultProto& result,
+    const ModelSummary& summary);
 // Validates the internal consistency of the fields.
-absl::Status ValidateInfeasibleSubsystemResultNoModel(
-    const InfeasibleSubsystemResultProto& result);
+absl::Status ValidateComputeInfeasibleSubsystemResultNoModel(
+    const ComputeInfeasibleSubsystemResultProto& result);
 
 }  // namespace operations_research::math_opt
 

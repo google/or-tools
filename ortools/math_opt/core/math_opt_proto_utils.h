@@ -16,13 +16,14 @@
 
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "ortools/math_opt/callback.pb.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -31,6 +32,19 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 
 namespace operations_research::math_opt {
+
+// Returns solve_result.termination.objective_bounds if present. Otherwise,
+// it builds ObjectiveBoundsProto from
+// solve_result.solve_stats.best_primal/dual_bound
+// TODO(b/290091715): Remove once solve_stats.best_primal/dual_bound is removed
+// and we know termination.objective_bounds will always be present.
+ObjectiveBoundsProto GetObjectiveBounds(const SolveResultProto& solve_result);
+
+// Returns solve_result.termination.problem_status if present. Otherwise,
+// it returns solve_result.solve_stats.problem_status
+// TODO(b/290091715): Remove once solve_stats.problem_status is removed and we
+// know termination.problem_status will always be present.
+ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result);
 
 inline int NumVariables(const VariablesProto& variables) {
   return variables.ids_size();
@@ -132,17 +146,112 @@ absl::flat_hash_set<CallbackEventProto> EventSet(
 
 // Sets the reason to TERMINATION_REASON_FEASIBLE if feasible = true and
 // TERMINATION_REASON_NO_SOLUTION_FOUND otherwise.
+ABSL_DEPRECATED("Use LimitTerminationProto() instead")
 TerminationProto TerminateForLimit(LimitProto limit, bool feasible,
                                    absl::string_view detail = {});
 
+ABSL_DEPRECATED("Use FeasibleTerminationProto() instead")
 TerminationProto FeasibleTermination(LimitProto limit,
                                      absl::string_view detail = {});
 
+ABSL_DEPRECATED("Use NoSolutionFound() instead")
 TerminationProto NoSolutionFoundTermination(LimitProto limit,
                                             absl::string_view detail = {});
 
+ABSL_DEPRECATED(
+    "Use TerminateForReason(bool, TerminationReasonProto, absl::string_view) "
+    "instead")
 TerminationProto TerminateForReason(TerminationReasonProto reason,
                                     absl::string_view detail = {});
+
+ObjectiveBoundsProto MakeTrivialBounds(bool is_maximize);
+
+// Sets problem statuses to undetermined and sets trivial bounds independently
+// of the selected reason.
+TerminationProto TerminateForReason(bool is_maximize,
+                                    TerminationReasonProto reason,
+                                    absl::string_view detail = {});
+
+// finite_primal_objective must be finite for a valid TerminationProto to be
+// returned.
+// TODO(b/290359402): additionally require dual_objective to be finite.
+TerminationProto OptimalTerminationProto(double finite_primal_objective,
+                                         double dual_objective,
+                                         absl::string_view detail = {});
+
+// The convention for infeasible MIPs is that dual_feasibility_status is
+// feasible (There always exist a dual feasible convex relaxation of an
+// infeasible MIP).
+// dual_feasibility_status must not be unspecified for a valid TerminationProto
+// to be returned.
+TerminationProto InfeasibleTerminationProto(
+    bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
+    absl::string_view detail = {});
+
+// dual_feasibility_status must be infeasible or undetermined for a valid
+// TerminationProto to be returned.
+TerminationProto InfeasibleOrUnboundedTerminationProto(
+    bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
+    absl::string_view detail = {});
+
+TerminationProto UnboundedTerminationProto(bool is_maximize,
+                                           absl::string_view detail = {});
+
+// Assumes dual solution exists if optional_dual_objective is set even if
+// infinite (some solvers return feasible dual solutions without an objective
+// value). optional_dual_objective should not be set when limit is LIMIT_CUTOFF
+// for a valid TerminationProto to be returned (use
+// LimitCutoffTerminationProto() below instead).
+// TODO(b/290359402): Consider improving to require a finite dual bound when
+// dual feasible solutions are returned.
+TerminationProto NoSolutionFoundTerminationProto(
+    bool is_maximize, LimitProto limit,
+    std::optional<double> optional_dual_objective = std::nullopt,
+    absl::string_view detail = {});
+
+// finite_primal_objective should be finite and limit should not be LIMIT_CUTOFF
+// for a valid TerminationProto to be returned (use
+// LimitCutoffTerminationProto() below instead).
+// Assumes dual solution exists if optional_dual_objective is set even if
+// infinite (some solvers return feasible dual solutions without an objective
+// value)
+// TODO(b/290359402): Consider improving to require a finite dual bound when
+// dual feasible solutions are returned.
+TerminationProto FeasibleTerminationProto(
+    bool is_maximize, LimitProto limit, double finite_primal_objective,
+    std::optional<double> optional_dual_objective = std::nullopt,
+    absl::string_view detail = {});
+
+// Assumes primal solution exists if optional_finite_primal_objective is set.
+// If set, optional_finite_primal_objective should be finite if set for a valid
+// TerminationProto to be returned.
+// Assumes dual solution exists if optional_dual_objective is set even if
+// infinite (some solvers return feasible dual solutions without an objective
+// value)
+// TODO(b/290359402): Consider improving to require a finite dual bound when
+// dual feasible solutions are returned.
+TerminationProto LimitTerminationProto(
+    bool is_maximize, LimitProto limit,
+    std::optional<double> optional_finite_primal_objective,
+    std::optional<double> optional_dual_objective = std::nullopt,
+    absl::string_view detail = {});
+
+// Assumes primal solution exists if primal_objective is finite.
+// Assumes dual solution exists if claim_dual_feasible_solution_exists is true
+// even if dual_objective is infinite (some solvers return feasible dual
+// solutions without an objective value). If dual_objective is finite then
+// claim_dual_feasible_solution_exists must be true for a valid termination to
+// be returned.
+// TODO(b/290359402): Consider improving to require a finite dual bound when
+// dual feasible solutions are returned.
+TerminationProto LimitTerminationProto(LimitProto limit,
+                                       double primal_objective,
+                                       double dual_objective,
+                                       bool claim_dual_feasible_solution_exists,
+                                       absl::string_view detail = {});
+
+TerminationProto CutoffTerminationProto(bool is_maximize,
+                                        absl::string_view detail = {});
 
 enum class SupportType {
   kNotSupported = 1,
@@ -172,6 +281,9 @@ absl::Status ModelIsSupported(const ModelProto& model,
 // not implemented or supported according to `support_menu`.
 bool UpdateIsSupported(const ModelUpdateProto& update,
                        const SupportedProblemStructures& support_menu);
+
+void UpgradeSolveResultProtoForStatsMigration(
+    SolveResultProto& solve_result_proto);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inline functions implementations.

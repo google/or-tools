@@ -181,6 +181,7 @@ cc_library(
         "//ortools/math_opt/constraints/sos:storage",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/io:names_removal",
         "//ortools/math_opt/validators:model_validator",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
