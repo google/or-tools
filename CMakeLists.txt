@@ -115,9 +115,12 @@ endif()
 
 include(CMakeDependentOption)
 
+# Optional components (enabled by default)
+## Flatzinc
 CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
+## LP Parser
 CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
 message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 
@@ -128,6 +131,7 @@ message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
+## Samples
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
@@ -139,6 +143,7 @@ message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 
+## Examples
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
@@ -255,6 +260,7 @@ if(USE_PDLP)
 endif()
 
 ## SCIP
+# see: https://github.com/scipopt/scip
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)

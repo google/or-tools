@@ -32,6 +32,7 @@ list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
+# Optional Components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
 endif()
@@ -39,6 +40,8 @@ if(BUILD_MATH_OPT)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MATH_OPT")
   set(MATH_OPT_DIR math_opt)
 endif()
+
+# Optional solvers
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
