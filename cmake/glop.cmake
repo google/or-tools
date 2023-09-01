@@ -82,7 +82,6 @@ target_sources(glop PRIVATE
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
-  ortools/base/integral_types.h
   ortools/base/logging.h
   ortools/base/macros.h
   ortools/base/sysinfo.cc
@@ -302,7 +301,6 @@ install(FILES
   ortools/base/int_type.h
   ortools/base/strong_int.h
   ortools/base/strong_vector.h
-  ortools/base/integral_types.h
   ortools/base/logging.h
   ortools/base/macros.h
   ortools/base/recordio.h
