@@ -16,7 +16,8 @@ if(NOT BUILD_MATH_OPT)
 endif()
 
 file(GLOB_RECURSE _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/c_api/")
+list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
+list(FILTER _SRCS EXCLUDE REGEX "/c_api/.*example")
 list(FILTER _SRCS EXCLUDE REGEX "/tools/")
 list(FILTER _SRCS EXCLUDE REGEX "/samples/")
 
