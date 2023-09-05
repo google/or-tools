@@ -29,6 +29,7 @@ py_binary(
     deps = [
         "//ortools/linear_solver/python:model_builder",
         "//ortools/linear_solver/python:model_builder_helper",
+        "//ortools/sat/colab:flags",
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
         "//ortools/sat/python:cp_model_helper",

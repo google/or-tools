@@ -43,7 +43,7 @@ nbook = v3.reads_py('')
 nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 
 print('Adding copyright cell...')
-google = '##### Copyright 2022 Google LLC.'
+google = '##### Copyright 2023 Google LLC.'
 nbook['cells'].append(v4.new_markdown_cell(source=google, id='google'))
 
 print('Adding license cell...')
@@ -91,7 +91,7 @@ nbook['cells'].append(v4.new_code_cell(source=install_cmd, id='install'))
 
 print('Adding code cell...')
 all_blocks = ast.parse(text).body
-print(f'number of bocks: {len(all_blocks)}')
+print(f'number of blocks: {len(all_blocks)}')
 line_start = [c.lineno - 1 for c in all_blocks]
 line_start[0] = 0
 lines = text.split('\n')
@@ -121,54 +121,15 @@ for idx, (c_block, s, e) in enumerate(
     filtered_text = '\n'.join(filtered_lines)
     nbook['cells'].append(
         v4.new_markdown_cell(source=filtered_text, id='description'))
-  # Remove absl app and flags import
+  # Remove absl app import
   elif (isinstance(c_block, ast.ImportFrom) and c_block.module == 'absl'
-        and c_block.names[0].name in ('flags', 'app')):
+        and c_block.names[0].name == 'app'):
     print(f'Removing import {c_block.module}.{c_block.names[0].name}...')
-  # Rewrite `FLAGS = flags.FLAGS`
-  elif (isinstance(c_block, ast.Assign) and
-        isinstance(c_block.targets[0], ast.Name) and
-        c_block.targets[0].id == 'FLAGS'):
-    print('Adding FLAGS class...')
-    fixed_lines = ['class FLAGS: pass\n']
-    full_text += '\n'.join(fixed_lines) + '\n'
-  # Rewrite `flags.DEFINE_*(*)`
-  elif (isinstance(c_block, ast.Expr) and
-        isinstance(c_block.value, ast.Call) and
-        isinstance(c_block.value.func, ast.Attribute) and
-        c_block.value.func.value.id == 'flags'):
-    print('Adding FLAGS field...')
-    fixed_lines = []
-    attr = c_block.value.func.attr
-    if attr in ('DEFINE_integer', 'DEFINE_bool', 'DEFINE_string'):
-      args = c_block.value.args
-      # print(f'args: {args}')
-      name = args[0].value
-      if isinstance(args[1], ast.Constant):
-        value = args[1].value
-      elif isinstance(args[1], ast.UnaryOp):
-        if isinstance(args[1].op, ast.USub):
-          value = -1 * int(args[1].operand.value)
-        else:
-          print(f'unknown value operator: "{args[1].op}"')
-          sys.exit(2)
-      else:
-        print(f'unknown value: "{args[1]}"')
-        sys.exit(2)
-      comment = args[2].value
-
-      print(f'FLAGS.{name} = \'{value}\' # {comment}')
-      if attr in ('DEFINE_integer', 'DEFINE_bool'):
-        fixed_lines.append(f'FLAGS.{name} = {value} # {comment}\n')
-      else:
-        fixed_lines.append(f'FLAGS.{name} = \'{value}\' # {comment}\n')
-    else:
-      print(f'unknown method: "{attr}"')
-      sys.exit(2)
-    full_text += '\n'.join(fixed_lines)
-    # Add empty line after the last flags.DEFINE
-    if e-2 >= s and not lines[e-1] and not lines[e-2]:
-      full_text += '\n'
+  # rewrite absl flag import
+  elif (isinstance(c_block, ast.ImportFrom) and c_block.module == 'absl'
+        and c_block.names[0].name  =='flags'):
+    print(f'Rewrite import {c_block.module}.{c_block.names[0].name}...')
+    full_text += 'from ortools.sat.colab import flags\n'
   # Unwrap __main__ function
   elif (isinstance(c_block, ast.If) and
         c_block.test.comparators[0].s == '__main__'):
@@ -194,6 +155,8 @@ for idx, (c_block, s, e) in enumerate(
   else:
     print('Appending block...')
     filtered_lines = lines[s:e]
+    for i, line in enumerate(filtered_lines):
+        filtered_lines[i] = line.replace('DEFINE_', 'define_')
     filtered_lines = list(
         filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
     filtered_lines = list(

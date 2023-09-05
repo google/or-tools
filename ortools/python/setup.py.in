@@ -66,6 +66,7 @@ setup(
         '@PYTHON_PROJECT@.pdlp':['*.pyi'],
         '@PYTHON_PROJECT@.pdlp.python':['$<TARGET_FILE_NAME:pdlp_pybind11>'],
         '@PYTHON_PROJECT@.sat':['*.pyi'],
+        '@PYTHON_PROJECT@.sat.colab':['*.pyi'],
         '@PYTHON_PROJECT@.sat.python':['$<TARGET_FILE_NAME:swig_helper_pybind11>', '*.pyi'],
         '@PYTHON_PROJECT@.scheduling.python':['$<TARGET_FILE_NAME:rcpsp_pybind11>', '*.pyi'],
         '@PYTHON_PROJECT@.util.python':['$<TARGET_FILE_NAME:sorted_interval_list_pybind11>', '*.pyi'],

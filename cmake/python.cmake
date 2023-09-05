@@ -283,6 +283,7 @@ file(COPY
   ortools/sat/python/cp_model_helper.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
+  ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 
