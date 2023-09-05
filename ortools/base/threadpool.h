@@ -22,10 +22,12 @@
 #include <thread>  // NOLINT
 #include <vector>
 
+#include "absl/strings/string_view.h"
+
 namespace operations_research {
 class ThreadPool {
  public:
-  ThreadPool(const std::string& prefix, int num_threads);
+  ThreadPool(absl::string_view prefix, int num_threads);
   ~ThreadPool();
 
   void StartWorkers();

@@ -328,9 +328,13 @@ TEST(ConvexMinimumTest, ExhaustiveTest) {
       });
       total_num_queries += num_queries;
       max_num_queries = std::max(max_num_queries, num_queries);
-      ASSERT_EQ(value, 0);
-      ASSERT_GE(point, b1);
-      ASSERT_LE(point, b2);
+      EXPECT_EQ(value, 0);
+      EXPECT_GE(point, b1);
+      EXPECT_LE(point, b2);
+      // Fail after one example.
+      ASSERT_TRUE(value == 0 && b1 <= point && point <= b2)
+          << "queries: " << num_queries << " opt range: [" << b1 << ", " << b2
+          << "]";
     }
   }
 
@@ -378,4 +382,36 @@ TEST(ConvexMinimumTest, TwoQueriesIfSizeTwoReversed) {
   EXPECT_EQ(num_queries, 2);
 }
 
+TEST(RangeConvexMinimumTest, HugeRangeTest) {
+  int total_num_queries = 0;
+  int max_num_queries = 0;
+  for (int b1 = -100; b1 < 100; ++b1) {
+    for (int b2 = b1; b2 < b1 + 100; ++b2) {
+      int num_queries = 0;
+      const auto [point, value] = RangeConvexMinimum<int64_t, double>(
+          std::numeric_limits<int64_t>::min() / 2,
+          std::numeric_limits<int64_t>::max() / 2, [&](int64_t v) -> double {
+            ++num_queries;
+            if (v < b1) {
+              return b1 - v;
+            } else if (v > b2) {
+              return v - b2;
+            }
+            return 0;
+          });
+      total_num_queries += num_queries;
+      max_num_queries = std::max(max_num_queries, num_queries);
+      EXPECT_EQ(value, 0);
+      EXPECT_GE(point, b1);
+      EXPECT_LE(point, b2);
+      // Don't continue past the first failing example to limit the number of
+      // errors.
+      ASSERT_TRUE(value == 0 && b1 <= point && point <= b2)
+          << "queries: " << num_queries << " opt range: [" << b1 << ", " << b2
+          << "]";
+    }
+  }
+  // 80 is the worst case we would expect from ternary search: 2*log_3(2^63).
+  EXPECT_LE(max_num_queries, 80);
+}
 }  // namespace operations_research

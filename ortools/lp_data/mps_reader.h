@@ -29,6 +29,7 @@
 #include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 
@@ -36,10 +37,10 @@ namespace operations_research {
 namespace glop {
 
 // Parses an MPS model from a string.
-absl::StatusOr<MPModelProto> MpsDataToMPModelProto(const std::string& mps_data);
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data);
 
 // Parses an MPS model from a file.
-absl::StatusOr<MPModelProto> MpsFileToMPModelProto(const std::string& mps_file);
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file);
 
 // Implementation class. Please use the 2 functions above.
 //
@@ -54,17 +55,17 @@ class ABSL_DEPRECATED("Use the direct methods instead") MPSReader {
   enum Form { AUTO_DETECT, FREE, FIXED };
 
   // Parses instance from a file.
-  absl::Status ParseFile(const std::string& file_name, LinearProgram* data,
+  absl::Status ParseFile(absl::string_view file_name, LinearProgram* data,
                          Form form = AUTO_DETECT);
 
-  absl::Status ParseFile(const std::string& file_name, MPModelProto* data,
+  absl::Status ParseFile(absl::string_view file_name, MPModelProto* data,
                          Form form = AUTO_DETECT);
   // Loads instance from string. Useful with MapReduce. Automatically detects
   // the file's format (free or fixed).
-  absl::Status ParseProblemFromString(const std::string& source,
+  absl::Status ParseProblemFromString(absl::string_view source,
                                       LinearProgram* data,
                                       MPSReader::Form form = AUTO_DETECT);
-  absl::Status ParseProblemFromString(const std::string& source,
+  absl::Status ParseProblemFromString(absl::string_view source,
                                       MPModelProto* data,
                                       MPSReader::Form form = AUTO_DETECT);
 };

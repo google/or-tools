@@ -321,7 +321,7 @@ MPSReaderFormat TemplateFormat(MPSReader::Form form) {
 }  // namespace
 
 // Parses instance from a file.
-absl::Status MPSReader::ParseFile(const std::string& file_name,
+absl::Status MPSReader::ParseFile(absl::string_view file_name,
                                   LinearProgram* data, Form form) {
   DataWrapper<LinearProgram> data_wrapper(data);
   return MPSReaderTemplate<DataWrapper<LinearProgram>>()
@@ -329,7 +329,7 @@ absl::Status MPSReader::ParseFile(const std::string& file_name,
       .status();
 }
 
-absl::Status MPSReader::ParseFile(const std::string& file_name,
+absl::Status MPSReader::ParseFile(absl::string_view file_name,
                                   MPModelProto* data, Form form) {
   DataWrapper<MPModelProto> data_wrapper(data);
   return MPSReaderTemplate<DataWrapper<MPModelProto>>()
@@ -339,7 +339,7 @@ absl::Status MPSReader::ParseFile(const std::string& file_name,
 
 // Loads instance from string. Useful with MapReduce. Automatically detects
 // the file's format (free or fixed).
-absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
                                                LinearProgram* data,
                                                MPSReader::Form form) {
   DataWrapper<LinearProgram> data_wrapper(data);
@@ -348,7 +348,7 @@ absl::Status MPSReader::ParseProblemFromString(const std::string& source,
       .status();
 }
 
-absl::Status MPSReader::ParseProblemFromString(const std::string& source,
+absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
                                                MPModelProto* data,
                                                MPSReader::Form form) {
   DataWrapper<MPModelProto> data_wrapper(data);
@@ -357,8 +357,7 @@ absl::Status MPSReader::ParseProblemFromString(const std::string& source,
       .status();
 }
 
-absl::StatusOr<MPModelProto> MpsDataToMPModelProto(
-    const std::string& mps_data) {
+absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
   RETURN_IF_ERROR(
@@ -368,8 +367,7 @@ absl::StatusOr<MPModelProto> MpsDataToMPModelProto(
   return model;
 }
 
-absl::StatusOr<MPModelProto> MpsFileToMPModelProto(
-    const std::string& mps_file) {
+absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
   RETURN_IF_ERROR(

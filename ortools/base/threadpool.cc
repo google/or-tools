@@ -14,6 +14,7 @@
 #include "ortools/base/threadpool.h"
 
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research {
 void RunWorker(void* data) {
@@ -25,7 +26,7 @@ void RunWorker(void* data) {
   }
 }
 
-ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
+ThreadPool::ThreadPool(absl::string_view prefix, int num_workers)
     : num_workers_(num_workers) {}
 
 ThreadPool::~ThreadPool() {
