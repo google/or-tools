@@ -47,7 +47,7 @@ int64_t GetProcessMemoryUsage() {
   int64_t resident_memory = t_info.resident_size;
   return resident_memory;
 }
-#elif defined(__GNUC__) && !defined(__FreeBSD__)  // LINUX
+#elif defined(__GNUC__) && !defined(__FreeBSD__) && !defined(__EMSCRIPTEN__) // LINUX
 int64_t GetProcessMemoryUsage() {
   unsigned size = 0;
   char buf[30];

@@ -392,6 +392,46 @@ $(foreach stage,$(TOOLCHAIN_STAGES),$(eval $(call toolchain-stage-target,$(stage
 clean_toolchains: $(addprefix clean_toolchain_, $(TOOLCHAIN_STAGES))
 	-rmdir $(addprefix cache/, $(TOOLCHAIN_TARGETS))
 
+#########
+## WEB ##
+#########
+WEB_STAGES := env devel build test
+
+define make-web-stage-target =
+#$$(info STAGE: $1)
+#$$(info Create target: web_$1.)
+.PHONY: web_$1
+web_$1: docker/web/Dockerfile
+	#@docker image rm -f ${IMAGE}:web_$1 2>/dev/null
+	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:web_$1 -f $$< ..
+
+#$$(info Create target: save_web_$1 (debug).)
+.PHONY: save_web_$1
+save_web_$1: cache/web/docker_$1.tar
+cache/web/docker_$1.tar: web_$1
+	@rm -f $$@
+	mkdir -p cache/web
+	docker save ${IMAGE}:web_$1 -o $$@
+
+#$$(info Create target: sh_web_$1 (debug).)
+.PHONY: sh_web_$1
+sh_web_$1: web_$1
+	${DOCKER_RUN_CMD} -it --name ${IMAGE}_web_$1 ${IMAGE}:web_$1
+
+#$$(info Create target: clean_web_$1.)
+.PHONY: clean_web_$1
+clean_web_$1:
+	docker image rm -f ${IMAGE}:web_$1 2>/dev/null
+	rm -f cache/web/docker_$1.tar
+endef
+
+$(foreach stage,$(WEB_STAGES),$(eval $(call make-web-stage-target,$(stage))))
+
+## MERGE ##
+.PHONY: clean_web
+clean_web: $(addprefix clean_web_, $(WEB_STAGES))
+	rm -f cache/web
+
 #############
 ## VAGRANT ##
 #############
@@ -451,7 +491,7 @@ $(clean_glop_targets): clean_glop_%
 ###########
 ## CLEAN ##
 ###########
-targets = $(addprefix clean_, $(DISTROS))
+targets = $(addprefix clean_, $(DISTROS)) clean_web
 vms = $(addprefix clean_, $(VMS))
 glops = $(addprefix clean_glop_, $(STAGES))
 .PHONY: clean $(targets)
