@@ -12,6 +12,22 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+if(NOT USE_COINOR)
+  list(FILTER _SRCS EXCLUDE REGEX "/clp_proto_solver.")
+  list(FILTER _SRCS EXCLUDE REGEX "/cbc_proto_solver.")
+endif()
+if(NOT USE_GLPK)
+  list(FILTER _SRCS EXCLUDE REGEX "/glpk_proto_solver.")
+endif()
+if(NOT USE_HIGHS)
+  list(FILTER _SRCS EXCLUDE REGEX "/highs_proto_solver.")
+endif()
+if(NOT USE_PDLP)
+  list(FILTER _SRCS EXCLUDE REGEX "/pdlp_proto_solver.")
+endif()
+if(NOT USE_SCIP)
+  list(FILTER _SRCS EXCLUDE REGEX "/scip_proto_solver.")
+endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver_proto_solver)
 
