@@ -1775,36 +1775,25 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
-  // Initialize the fixed_search strategy.
+  // Initialize the search strategies.
   auto* search_heuristics = model->GetOrCreate<SearchHeuristics>();
-  if (parameters.search_branching() == SatParameters::PARTIAL_FIXED_SEARCH) {
-    search_heuristics->user_search =
-        ConstructUserSearchStrategy(model_proto, model);
-  }
+  search_heuristics->user_search =
+      ConstructUserSearchStrategy(model_proto, model);
+  search_heuristics->heuristic_search =
+      ConstructHeuristicSearchStrategy(model_proto, model);
+  search_heuristics->integer_completion_search =
+      ConstructIntegerCompletionSearchStrategy(mapping->GetVariableMapping(),
+                                               objective_var, model);
   search_heuristics->fixed_search = ConstructFixedSearchStrategy(
-      model_proto, mapping->GetVariableMapping(), objective_var, model);
+      search_heuristics->user_search, search_heuristics->heuristic_search,
+      search_heuristics->integer_completion_search);
   if (VLOG_IS_ON(3)) {
     search_heuristics->fixed_search =
         InstrumentSearchStrategy(model_proto, mapping->GetVariableMapping(),
                                  search_heuristics->fixed_search, model);
   }
-
-  // Initialize the "follow hint" strategy.
-  std::vector<BooleanOrIntegerVariable> vars;
-  std::vector<IntegerValue> values;
-  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-    const int ref = model_proto.solution_hint().vars(i);
-    CHECK(RefIsPositive(ref));
-    BooleanOrIntegerVariable var;
-    if (mapping->IsBoolean(ref)) {
-      var.bool_var = mapping->Literal(ref).Variable();
-    } else {
-      var.int_var = mapping->Integer(ref);
-    }
-    vars.push_back(var);
-    values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
-  }
-  search_heuristics->hint_search = FollowHint(vars, values, model);
+  search_heuristics->hint_search =
+      ConstructHintSearchStrategy(model_proto, mapping, model);
 
   // Create the CoreBasedOptimizer class if needed.
   if (parameters.optimize_with_core()) {
@@ -3080,6 +3069,8 @@ class LnsSolver : public SubSolver {
       local_params.set_symmetry_level(0);
       local_params.set_find_big_linear_overlap(false);
       local_params.set_solution_pool_size(1);  // Keep the best solution found.
+      local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+      local_params.set_search_random_variable_pool_size(3);
 
       Model local_model(lns_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
@@ -3512,12 +3503,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     for (int i = 0; i < num_violation_ls; ++i) {
       SatParameters local_params = params;
       local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
-      const bool use_decay = i % 2 == 1;
-      local_params.set_feasibility_jump_decay(use_decay ? 0.95 : 1.0);
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-          (use_decay ? "violation_ls_decay" : "violation_ls"),
-          SubSolver::INCOMPLETE, linear_model, local_params, shared.time_limit,
-          shared.response, shared.bounds.get(), shared.stats));
+          "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
+          shared.time_limit, shared.response, shared.bounds.get(),
+          shared.stats));
     }
   }
 
@@ -3561,57 +3550,46 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     const int num_first_solution_subsolvers =
         num_available - num_feasibility_jump;
 
-    // TODO(user): Limit number of options:
-    //   - remove the restart/no_restart options and improve restart heuristics?
-    //   - randomly select random or no randoms?
+    // TODO(user): Limit number of options by improving restart
+    // heuristic and randomizing other option at each restart?
     for (int i = 0; i < num_feasibility_jump; ++i) {
+      // We alternate with a bunch of heuristic.
       SatParameters local_params = params;
       local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
-      std::string name;
-      switch (i) {
-        case 0: {  // Use defaults.
-          local_params.set_feasibility_jump_decay(1.0);
-          local_params.set_feasibility_jump_var_randomization_probability(0.0);
-          name = "jump";
-          break;
-        }
-        case 1: {  // Adds randomized values on restart and decay.
-          local_params.set_feasibility_jump_decay(0.95);
-          local_params.set_feasibility_jump_var_randomization_probability(0.05);
-          name = "jump_decay_rnd_on_rst";
-          break;
-        }
-        case 2: {  // Adds perturbation and decay.
-          local_params.set_feasibility_jump_decay(0.95);
-          local_params.set_feasibility_jump_var_randomization_probability(0.05);
-          local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_decay_perturb";
-          break;
-        }
-        case 3: {  // Disable restarts and perturbations.
-          local_params.set_feasibility_jump_var_randomization_probability(0.0);
-          local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_no_rst";
-          break;
-        }
-        case 4: {  // Adds decay and disable restarts and perturbations.
-          local_params.set_feasibility_jump_decay(0.95);
-          local_params.set_feasibility_jump_var_randomization_probability(0.0);
-          local_params.set_feasibility_jump_enable_restarts(false);
-          name = "jump_decay_no_rst";
-          break;
-        }
-        default: {  // Alternate random_restarts and random_perturbations.
-          local_params.set_feasibility_jump_decay(0.95);
-          local_params.set_feasibility_jump_var_randomization_probability(0.05);
-          if (i % 2 == 0) {  // Adds randomized restart and decay.
-            name = "jump_decay_rnd_on_rst";
-          } else {  // Adds perturbation and decay.
-            local_params.set_feasibility_jump_enable_restarts(false);
-            name = "jump_decay_perturb";
-          }
-        }
+      std::string name = "fj";
+
+      // Long restart or quick restart.
+      if (i % 2 == 0) {
+        absl::StrAppend(&name, "_short");
+        local_params.set_feasibility_jump_restart_factor(1);
+      } else {
+        absl::StrAppend(&name, "_long");
+        local_params.set_feasibility_jump_restart_factor(100);
       }
+
+      // Linear or not.
+      if (i / 2 % 2 == 0) {
+        local_params.set_feasibility_jump_linearization_level(0);
+      } else {
+        absl::StrAppend(&name, "_lin");
+        local_params.set_feasibility_jump_linearization_level(2);
+      }
+
+      // Default restart, random restart, or perturb restart.
+      if (i / 4 % 3 == 0) {
+        absl::StrAppend(&name, "_default");
+        local_params.set_feasibility_jump_enable_restarts(true);
+        local_params.set_feasibility_jump_var_randomization_probability(0.0);
+      } else if (i / 4 % 3 == 1) {
+        absl::StrAppend(&name, "_random");
+        local_params.set_feasibility_jump_enable_restarts(true);
+        local_params.set_feasibility_jump_var_randomization_probability(0.05);
+      } else {
+        absl::StrAppend(&name, "_perturb");
+        local_params.set_feasibility_jump_enable_restarts(false);
+        local_params.set_feasibility_jump_var_randomization_probability(0.05);
+      }
+
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
           name, SubSolver::FIRST_SOLUTION, linear_model, local_params,
           shared.time_limit, shared.response, shared.bounds.get(),
@@ -4400,7 +4378,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                 << "postsolved solution";
           }
           if (params.fill_tightened_domains_in_response()) {
-            // TODO(user): for now, we just use the domain infered during
+            // TODO(user): for now, we just use the domain inferred during
             // presolve.
             if (mapping_proto->variables().size() >=
                 model_proto.variables().size()) {
@@ -4539,7 +4517,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     LinearModel* linear_model = new LinearModel(*new_cp_model_proto);
     model->TakeOwnership(linear_model);
     model->Register(linear_model);
-    linear_model->Initialize();
   }
 
 #if defined(__PORTABLE_PLATFORM__)

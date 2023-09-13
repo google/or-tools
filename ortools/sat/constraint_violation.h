@@ -14,12 +14,14 @@
 #ifndef OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
 #define OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -41,6 +43,10 @@ class LinearIncrementalEvaluator {
   //
   // In case of duplicate variables on the same constraint, the code assumes
   // constraints are built in-order as it checks for duplication.
+  //
+  // Note that the code assume that a Boolean variable DO NOT appear both in the
+  // enforcement list and in the constraint. Otherwise the update will just be
+  // wrong. This should be enforced by our presolve.
   void AddEnforcementLiteral(int ct_index, int lit);
   void AddLiteral(int ct_index, int lit, int64_t coeff = 1);
   void AddTerm(int ct_index, int var, int64_t coeff, int64_t offset = 0);
@@ -50,27 +56,31 @@ class LinearIncrementalEvaluator {
 
   // Important: this needs to be called after all constraint has been added
   // and before the class starts to be used. This is DCHECKed.
-  void PrecomputeCompactView();
+  void PrecomputeCompactView(absl::Span<const int64_t> var_max_variation);
 
   // Compute activities and update them.
   void ComputeInitialActivities(absl::Span<const int64_t> solution);
-  void Update(int var, int64_t delta);
+  void Update(int var, int64_t delta,
+              std::vector<std::pair<int, int64_t>>* violation_deltas = nullptr);
 
   // Function specific to the feasibility jump heuristic.
   // Note that the score of the changed variable will not be updated correctly!
-  void UpdateVariableAndScores(int var, int64_t delta,
-                               absl::Span<const int64_t> solution,
-                               absl::Span<const double> weights,
-                               absl::Span<const int64_t> jump_values,
-                               absl::Span<double> jump_scores);
-  void UpdateScoreOnWeightUpdate(int c, double weight_delta,
-                                 absl::Span<const int64_t> solution,
-                                 absl::Span<const int64_t> jump_values,
-                                 absl::Span<double> jump_scores);
+  void UpdateVariableAndScores(
+      int var, int64_t delta, absl::Span<const double> weights,
+      absl::Span<const int64_t> jump_deltas, absl::Span<double> jump_scores,
+      std::vector<std::pair<int, int64_t>>* violation_deltas = nullptr);
 
-  // Variables whose score was updated since the last clear.
-  // Note that we also include variable whose score might be the same but for
-  // which different jump values might have a changed score.
+  // Also for feasibility jump.
+  void UpdateScoreOnWeightUpdate(int c, absl::Span<const int64_t> jump_deltas,
+                                 absl::Span<double> var_to_score_change);
+
+  // Variables whose score might have decreased since the last clear for at
+  // least one jump value.
+  //
+  // Note that because we reason on a per-constraint basis, this is actually
+  // independent of the set of positive constraint weight used. We just list
+  // variable for which the contribution to the violation of one constraint
+  // might have decreased for any jump value.
   void ClearAffectedVariables();
   const std::vector<int>& VariablesAffectedByLastUpdate() const {
     return last_affected_variables_;
@@ -125,6 +135,14 @@ class LinearIncrementalEvaluator {
     return data[0].coefficient * delta;
   }
 
+  absl::Span<const int> ConstraintToVars(int c) const {
+    const SpanData& data = rows_[c];
+    const int size =
+        data.num_pos_literal + data.num_neg_literal + data.num_linear_entries;
+    if (size == 0) return {};
+    return absl::MakeSpan(&row_var_buffer_[data.start], size);
+  }
+
  private:
   // Cell in the sparse matrix.
   struct Entry {
@@ -155,31 +173,20 @@ class LinearIncrementalEvaluator {
     return absl::MakeSpan(&ct_buffer_[data.start], size);
   }
 
-  absl::Span<const int> ConstraintToVars(int c) const {
-    const SpanData& data = rows_[c];
-    const int size =
-        data.num_pos_literal + data.num_neg_literal + data.num_linear_entries;
-    if (size == 0) return {};
-    return absl::MakeSpan(&row_var_buffer_[data.start], size);
-  }
-
   void ComputeAndCacheDistance(int ct_index);
 
   // Incremental row-based update.
   void UpdateScoreOnNewlyEnforced(int c, double weight,
-                                  absl::Span<const int64_t> solution,
-                                  absl::Span<const int64_t> jump_values,
+                                  absl::Span<const int64_t> jump_deltas,
                                   absl::Span<double> jump_scores);
   void UpdateScoreOnNewlyUnenforced(int c, double weight,
-                                    absl::Span<const int64_t> solution,
-                                    absl::Span<const int64_t> jump_values,
+                                    absl::Span<const int64_t> jump_deltas,
                                     absl::Span<double> jump_scores);
   void UpdateScoreOfEnforcementIncrease(int c, double score_change,
-                                        absl::Span<const int64_t> jump_values,
+                                        absl::Span<const int64_t> jump_deltas,
                                         absl::Span<double> jump_scores);
   void UpdateScoreOnActivityChange(int c, double weight, int64_t activity_delta,
-                                   absl::Span<const int64_t> solution,
-                                   absl::Span<const int64_t> jump_values,
+                                   absl::Span<const int64_t> jump_deltas,
                                    absl::Span<double> jump_scores);
 
   // Constraint indexed data (static).
@@ -203,6 +210,12 @@ class LinearIncrementalEvaluator {
   std::vector<SpanData> rows_;
   std::vector<int> row_var_buffer_;
   std::vector<int64_t> row_coeff_buffer_;
+
+  // In order to avoid scanning long constraint we compute for each of them
+  // the maximum activity variation of one variable (max-min) * abs(coeff).
+  // If the current activity plus this is still feasible, then the constraint
+  // do not need to be scanned.
+  std::vector<int64_t> row_max_variations_;
 
   // Temporary data.
   std::vector<int> tmp_row_sizes_;
@@ -267,23 +280,18 @@ class CompiledConstraint {
 // Evaluation container for the local search.
 //
 // TODO(user): Ideas for constraint generated moves or sequences of moves?
+
+// Note(user): This class do not handle ALL constraint yet. So it is not because
+// there is no violation here that the solution will be feasible. It is
+// important to check feasibility once this is used. Note that in practice, we
+// can be lucky, and feasible on a subset of hard constraint is enough.
 class LsEvaluator {
  public:
-  // The model must outlive this class.
-  explicit LsEvaluator(const CpModelProto& model);
-
-  LsEvaluator(const CpModelProto& model,
+  // The cp_model must outlive this class.
+  explicit LsEvaluator(const CpModelProto& cp_model);
+  LsEvaluator(const CpModelProto& cp_model,
               const std::vector<bool>& ignored_constraints,
               const std::vector<ConstraintProto>& additional_constraints);
-
-  // For now, we don't support all constraints. You can still use the class, but
-  // it is not because there is no violation that the solution will be feasible
-  // in this case.
-  //
-  // TODO(user): On the miplib, some presolve add all_diff constraints which are
-  // not actually needed to be maintained here to have a feasible solution. Find
-  // a fix for that.
-  bool ModelIsSupported() const { return model_is_supported_; }
 
   // Intersects the domain of the objective with [lb..ub].
   // It returns true if a reduction of the domain took place.
@@ -308,8 +316,11 @@ class LsEvaluator {
   // Function specific to the linear only feasibility jump.
   void UpdateLinearScores(int var, int64_t value,
                           absl::Span<const double> weights,
-                          absl::Span<const int64_t> jump_values,
+                          absl::Span<const int64_t> jump_deltas,
                           absl::Span<double> jump_scores);
+  const std::vector<int>& VariablesAffectedByLastLinearUpdate() const {
+    return linear_evaluator_.VariablesAffectedByLastUpdate();
+  }
 
   // Simple summation metric for the constraint and objective violations.
   int64_t SumOfViolations();
@@ -318,8 +329,9 @@ class LsEvaluator {
   int64_t ObjectiveActivity() const;
 
   int64_t ObjectiveDelta(int var, int64_t delta) const {
-    return model_.has_objective() ? linear_evaluator_.ObjectiveDelta(var, delta)
-                                  : 0;
+    return cp_model_.has_objective()
+               ? linear_evaluator_.ObjectiveDelta(var, delta)
+               : 0;
   }
 
   // The number of "internal" constraints in the evaluator. This might not
@@ -340,12 +352,25 @@ class LsEvaluator {
   double WeightedNonLinearViolationDelta(absl::Span<const double> weights,
                                          int var, int64_t delta) const;
 
+  const LinearIncrementalEvaluator& LinearEvaluator() {
+    return linear_evaluator_;
+  }
   LinearIncrementalEvaluator* MutableLinearEvaluator() {
     return &linear_evaluator_;
   }
 
   // Returns the set of variables appearing in a violated constraint.
   std::vector<int> VariablesInViolatedConstraints() const;
+
+  // List of the currently violated constraints.
+  // - It is initialized by RecomputeViolatedList()
+  // - And incrementally maintained by UpdateVariableValue()
+  //
+  // The order depends on the algorithm used and shouldn't be
+  void RecomputeViolatedList(bool linear_only);
+  const std::vector<int>& ViolatedConstraints() const {
+    return violated_constraints_;
+  }
 
   // Indicates if the computed jump value is always the best choice.
   bool VariableOnlyInLinearConstraintWithConvexViolationChange(int var) const;
@@ -359,24 +384,65 @@ class LsEvaluator {
     return &current_solution_;
   }
 
+  const std::vector<std::pair<int, int64_t>>& last_update_violation_changes()
+      const {
+    return last_update_violation_changes_;
+  }
+
+  absl::Span<const int> ConstraintToVars(int c) const {
+    if (c < NumLinearConstraints()) {
+      return linear_evaluator_.ConstraintToVars(c);
+    }
+    return absl::MakeConstSpan(constraint_to_vars_[c - NumLinearConstraints()]);
+  }
+
+  // Note that the constraint indexing is different here than in the other
+  // functions.
+  absl::Span<const int> VarToGeneralConstraints(int var) const {
+    return var_to_constraints_[var];
+  }
+  absl::Span<const int> GeneralConstraintToVars(int general_c) const {
+    return constraint_to_vars_[general_c];
+  }
+
+  // TODO(user): Properly account all big time consumers.
+  double DeterministicTime() const {
+    return linear_evaluator_.DeterministicTime();
+  }
+
  private:
-  void CompileConstraintsAndObjective();
+  void CompileConstraintsAndObjective(
+      const std::vector<bool>& ignored_constraints,
+      const std::vector<ConstraintProto>& additional_constraints);
+
   void CompileOneConstraint(const ConstraintProto& ct_proto);
   void BuildVarConstraintGraph();
+  void UpdateViolatedList(int c);
 
-  const CpModelProto& model_;
-  std::vector<bool> ignored_constraints_;
-  const std::vector<ConstraintProto> additional_constraints_;
+  const CpModelProto& cp_model_;
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
-  std::vector<std::vector<int>> var_to_constraint_graph_;
+  std::vector<std::vector<int>> var_to_constraints_;
+  std::vector<std::vector<int>> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
-  // We need the mutable to evaluate a move.
+
+  // We need the mutable to evaluate a move by temporarily modifying solution.
   mutable std::vector<int64_t> current_solution_;
-  bool model_is_supported_ = true;
+
+  // List of violated constraints.
+  // Invariants:
+  // - pos_in_violated_constraints_[c] == -1 iff c not int violated_constraints_
+  // - violated_constraints_[pos_in_violated_constraints_[c]] = c
+  std::vector<int> pos_in_violated_constraints_;
+  std::vector<int> violated_constraints_;
+
+  // Constraint index and violation delta for the last update.
+  std::vector<std::pair<int, int64_t>> last_update_violation_changes_;
 };
 
+// ================================
 // Individual compiled constraints.
+// ================================
 
 // The violation of a bool_xor constraint is 0 or 1.
 class CompiledBoolXorConstraint : public CompiledConstraint {

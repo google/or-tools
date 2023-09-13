@@ -109,6 +109,13 @@ AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
 FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
 PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
 LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
+PSEUDO_COST_SEARCH = sat_parameters_pb2.SatParameters.PSEUDO_COST_SEARCH
+PORTFOLIO_WITH_QUICK_RESTART_SEARCH = (
+    sat_parameters_pb2.SatParameters.PORTFOLIO_WITH_QUICK_RESTART_SEARCH
+)
+HINT_SEARCH = sat_parameters_pb2.SatParameters.HINT_SEARCH
+PARTIAL_FIXED_SEARCH = sat_parameters_pb2.SatParameters.PARTIAL_FIXED_SEARCH
+RANDOMIZED_SEARCH = sat_parameters_pb2.SatParameters.RANDOMIZED_SEARCH
 
 # Type aliases
 IntegralT = Union[numbers.Integral, np.integer, int]

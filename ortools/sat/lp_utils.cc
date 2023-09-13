@@ -669,6 +669,7 @@ struct ConstraintScaler {
   double max_relative_coeff_error = 0.0;
   double max_absolute_rhs_error = 0.0;
   double max_scaling_factor = 0.0;
+  double min_scaling_factor = std::numeric_limits<double>::infinity();
 
   double wanted_precision = 1e-6;
   int64_t scaling_target = int64_t{1} << 50;
@@ -730,6 +731,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   max_relative_coeff_error =
       std::max(relative_coeff_error, max_relative_coeff_error);
   max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
+  min_scaling_factor = std::min(scaling_factor / gcd, min_scaling_factor);
 
   for (int i = 0; i < coefficients.size(); ++i) {
     const double scaled_value = coefficients[i] * scaling_factor;
@@ -1023,8 +1025,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
              (scaler.max_absolute_rhs_error > params.mip_check_precision()
                   ? " [Potentially IMPRECISE]"
                   : ""));
-  SOLVER_LOG(logger,
-             "Maximum constraint scaling factor: ", scaler.max_scaling_factor);
+  SOLVER_LOG(logger, "Constraint scaling factor range: [",
+             scaler.min_scaling_factor, ", ", scaler.max_scaling_factor, "]");
 
   // Since cp_model support a floating point objective, we use that. This will
   // allow us to scale the objective a bit later so we can potentially do more

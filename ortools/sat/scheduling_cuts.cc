@@ -647,6 +647,9 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
   result.only_run_at_level_zero = true;
   AppendVariablesToCumulativeCut(capacity, demands_helper, model, &result.vars);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  if (makespan.has_value() && !makespan.value().IsConstant()) {
+    result.vars.push_back(makespan.value().var);
+  }
   gtl::STLSortAndRemoveDuplicates(&result.vars);
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
@@ -702,6 +705,9 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
   CutGenerator result;
   result.only_run_at_level_zero = true;
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
+  if (makespan.has_value() && !makespan.value().IsConstant()) {
+    result.vars.push_back(makespan.value().var);
+  }
   gtl::STLSortAndRemoveDuplicates(&result.vars);
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
 

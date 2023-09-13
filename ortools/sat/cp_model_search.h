@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -77,13 +78,27 @@ class CpModelView {
 std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model);
 
+// Constructs a search strategy tailored for the current model.
+std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model);
+
+// Constructs an integer completion search strategy.
+std::function<BooleanOrIntegerLiteral()>
+ConstructIntegerCompletionSearchStrategy(
+    const std::vector<IntegerVariable>& variable_mapping,
+    IntegerVariable objective_var, Model* model);
+
+// Constructs a search strategy that follows the hints from the model.
+std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
+    const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model);
+
 // Constructs our "fixed" search strategy which start with
 // ConstructUserSearchStrategy() but is completed by a couple of automatic
 // heuristics.
 std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    IntegerVariable objective_var, Model* model);
+    std::function<BooleanOrIntegerLiteral()> user_search,
+    std::function<BooleanOrIntegerLiteral()> heuristic_search,
+    std::function<BooleanOrIntegerLiteral()> integer_completion);
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented

@@ -1178,7 +1178,7 @@ class SccGraph {
 
 bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // This was already called, and no new constraint where added. Note that new
-  // fixed variable cannote create new equivalence, only new binary clauses do.
+  // fixed variable cannot create new equivalence, only new binary clauses do.
   if (is_dag_) return true;
   WallTimer wall_timer;
   wall_timer.Start();
@@ -1527,17 +1527,17 @@ int ElementInIntersectionOrMinusOne(const std::vector<int>& a,
                                     const std::vector<int>& b) {
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b.begin(), b.end()));
+  if (a.empty() || b.empty()) return -1;
   int i = 0;
   int j = 0;
-  for (; i < a.size() && j < b.size();) {
+  while (true) {
     if (a[i] == b[j]) return a[i];
     if (a[i] < b[j]) {
-      ++i;
+      if (++i == a.size()) return -1;
     } else {
-      ++j;
+      if (++j == b.size()) return -1;
     }
   }
-  return -1;
 }
 
 }  // namespace

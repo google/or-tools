@@ -620,6 +620,8 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
 }
 
 void LinearProgrammingConstraint::SetLevel(int level) {
+  // Get rid of all optimal constraint each time we go back to level zero.
+  if (level == 0) rev_optimal_constraints_size_ = 0;
   optimal_constraints_.resize(rev_optimal_constraints_size_);
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
@@ -2196,20 +2198,25 @@ bool LinearProgrammingConstraint::PropagateLpConstraint(
     return integer_trail_->ReportConflict({});  // Unsat.
   }
 
-  IntegerSumLE128* cp_constraint =
-      new IntegerSumLE128({}, ct.vars, ct.coeffs, ct.ub, model_);
-  if (trail_->CurrentDecisionLevel() == 0) {
-    // Since we will never ask the reason for a constraint at level 0, we just
-    // keep the last one.
-    optimal_constraints_.clear();
-  }
-  optimal_constraints_.emplace_back(cp_constraint);
-  rev_optimal_constraints_size_ = optimal_constraints_.size();
+  std::unique_ptr<IntegerSumLE128> cp_constraint(
+      new IntegerSumLE128({}, ct.vars, ct.coeffs, ct.ub, model_));
+
+  // We always propagate level zero bounds first.
+  // If we are at level zero, there is nothing else to do.
   if (!cp_constraint->PropagateAtLevelZero()) return false;
-  return cp_constraint->Propagate();
+  if (trail_->CurrentDecisionLevel() == 0) return true;
+
+  // To optimize the memory usage, if the constraint didn't propagate anything,
+  // we don't need to keep it around.
+  const int64_t stamp = integer_trail_->num_enqueues();
+  const bool no_conflict = cp_constraint->Propagate();
+  if (no_conflict && integer_trail_->num_enqueues() == stamp) return true;
+  optimal_constraints_.push_back(std::move(cp_constraint));
+  rev_optimal_constraints_size_ = optimal_constraints_.size();
+  return no_conflict;
 }
 
-// The "exact" computation go as follow:
+// The "exact" computation go as follows:
 //
 // Given any INTEGER linear combination of the LP constraints, we can create a
 // new integer constraint that is valid (its computation must not overflow

@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <functional>
 #include <random>
+#include <tuple>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -388,7 +389,12 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
   auto* heuristic = model->GetOrCreate<SearchHeuristics>();
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [repo, heuristic, trail, integer_trail]() {
+  const int64_t randomization_size = std::max<int64_t>(
+      1,
+      model->GetOrCreate<SatParameters>()->search_random_variable_pool_size());
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+
+  return [repo, heuristic, trail, integer_trail, randomization_size, random]() {
     struct ToSchedule {
       // Variable to fix.
       LiteralIndex presence = kNoLiteralIndex;
@@ -398,8 +404,15 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       // Information to select best.
       IntegerValue size_min = kMaxIntegerValue;
       IntegerValue time = kMaxIntegerValue;
+      double noise = 0.5;
+
+      bool operator<(const ToSchedule& other) const {
+        return std::tie(time, size_min, noise) <
+               std::tie(other.time, other.size_min, other.noise);
+      }
     };
-    ToSchedule best;
+    std::vector<ToSchedule> top_decisions;
+    top_decisions.resize(1);
 
     // TODO(user): we should also precompute fixed precedences and only fix
     // interval that have all their predecessors fixed.
@@ -411,7 +424,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         IntegerValue time = integer_trail->LowerBound(repo->Start(i));
         if (repo->IsOptional(i)) {
           // For task whose presence is still unknown, our propagators should
-          // have propagated the minimium time as if it was present. So this
+          // have propagated the minimum time as if it was present. So this
           // should reflect the earliest time at which this interval can be
           // scheduled.
           time = std::max(time, integer_trail->ConditionalLowerBound(
@@ -425,16 +438,34 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         const IntegerValue size_min =
             std::max(integer_trail->LowerBound(repo->Size(i)),
                      integer_trail->LowerBound(repo->End(i)) - time);
-        if (time < best.time ||
-            (time == best.time && size_min < best.size_min)) {
-          best.presence = repo->IsOptional(i) ? repo->PresenceLiteral(i).Index()
-                                              : kNoLiteralIndex;
-          best.start = repo->Start(i);
-          best.end = repo->End(i);
-          best.time = time;
-          best.size_min = size_min;
+        const ToSchedule& worst = top_decisions.back();
+        const ToSchedule candidate(
+            {repo->IsOptional(i) ? repo->PresenceLiteral(i).Index()
+                                 : kNoLiteralIndex,
+             repo->Start(i), repo->End(i), time, size_min,
+             absl::Uniform(*random, 0.0, 1.0)});
+        if (top_decisions.size() < randomization_size || candidate < worst) {
+          if (top_decisions.size() == randomization_size) {
+            top_decisions.pop_back();
+          }
+          top_decisions.push_back(candidate);
+          if (top_decisions.size() > 1) {
+            std::sort(top_decisions.begin(), top_decisions.end());
+          }
         }
       }
+    }
+    const ToSchedule best =
+        top_decisions.size() == 1
+            ? top_decisions.front()
+            : top_decisions[absl::Uniform(
+                  *random, 0, static_cast<int>(top_decisions.size()))];
+    if (top_decisions.size() > 1) {
+      VLOG(2) << "Choose among " << top_decisions.size() << " " << best.time
+              << " " << best.size_min << "[t=" << top_decisions.front().time
+              << ", s=" << top_decisions.front().size_min
+              << ", t=" << top_decisions.back().time
+              << ", s=" << top_decisions.back().size_min << "]";
     }
     if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
 
@@ -477,7 +508,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
       }
 
-      // Everything is fixed, dettach the override.
+      // Everything is fixed, detach the override.
       const IntegerValue start = integer_trail->LowerBound(best.start);
       VLOG(2) << "Fixed @[" << start << ","
               << integer_trail->LowerBound(best.end) << "]"
@@ -496,19 +527,37 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 }
 
 std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
-    Model* model) {
+    bool lns_mode, Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
+  SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
 
-  // TODO(user): Add other policy and perform more experiments.
+  // TODO(user): Add other policies and perform more experiments.
   std::function<BooleanOrIntegerLiteral()> sat_policy =
       SatSolverHeuristic(model);
-  std::vector<std::function<BooleanOrIntegerLiteral()>> policies{
-      sat_policy, SequentialSearch({PseudoCost(model), sat_policy})};
+  std::vector<std::function<BooleanOrIntegerLiteral()>> policies;
+  std::vector<double> weights;
+
+  // Add sat search + fixed_search (to complete the search).
+  policies.push_back(SequentialSearch({sat_policy, heuristics.fixed_search}));
+  weights.push_back(5);
+
+  // Adds user defined search if present.
+  if (heuristics.user_search != nullptr) {
+    policies.push_back(SequentialSearch(
+        {heuristics.user_search, sat_policy, heuristics.fixed_search}));
+    weights.push_back(1);
+  }
+
+  // Always add heuristic search.
+  policies.push_back(SequentialSearch({heuristics.heuristic_search, sat_policy,
+                                       heuristics.integer_completion_search}));
+  weights.push_back(1);
+
   // The higher weight for the sat policy is because this policy actually
   // contains a lot of variation as we randomize the sat parameters.
   // TODO(user): Do more experiments to find better distribution.
-  std::discrete_distribution<int> var_dist{3 /*sat_policy*/, 1 /*Pseudo cost*/};
+  std::discrete_distribution<int> var_dist(weights.begin(), weights.end());
 
   // Value selection.
   std::vector<std::function<IntegerLiteral(IntegerVariable)>>
@@ -516,14 +565,19 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   std::vector<int> value_selection_weight;
 
   // LP Based value.
-  value_selection_heuristics.push_back([model](IntegerVariable var) {
-    return SplitAroundLpValue(PositiveVariable(var), model);
-  });
-  value_selection_weight.push_back(8);
+  const int linearization_level =
+      model->GetOrCreate<SatParameters>()->linearization_level();
+  if (LinearizedPartIsLarge(model)) {
+    value_selection_heuristics.push_back([model](IntegerVariable var) {
+      return SplitAroundLpValue(PositiveVariable(var), model);
+    });
+    value_selection_weight.push_back(linearization_level == 2 ? 4 : 2);
+  }
 
   // Solution based value.
-  auto* response_manager = model->Get<SharedResponseManager>();
-  if (response_manager != nullptr) {
+  if (!lns_mode) {
+    auto* response_manager = model->Get<SharedResponseManager>();
+    CHECK(response_manager != nullptr);
     value_selection_heuristics.push_back(
         [model, response_manager](IntegerVariable var) {
           return SplitUsingBestSolutionValueInRepository(
@@ -532,14 +586,8 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     value_selection_weight.push_back(5);
   }
 
-  // Middle value.
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  value_selection_heuristics.push_back([integer_trail](IntegerVariable var) {
-    return GreaterOrEqualToMiddleValue(var, integer_trail);
-  });
-  value_selection_weight.push_back(1);
-
   // Min value.
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   value_selection_heuristics.push_back([integer_trail](IntegerVariable var) {
     return AtMinValue(var, integer_trail);
   });
@@ -548,19 +596,52 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
   // Special case: Don't change the decision value.
   value_selection_weight.push_back(10);
 
-  // TODO(user): These distribution values are just guessed values. They need
-  // to be tuned.
+  // TODO(user): These distribution values are just guessed values. They
+  // need to be tuned.
   std::discrete_distribution<int> val_dist(value_selection_weight.begin(),
                                            value_selection_weight.end());
 
   int policy_index = 0;
   int val_policy_index = 0;
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* objective = model->Get<ObjectiveDefinition>();
   return [=]() mutable {
     if (sat_solver->CurrentDecisionLevel() == 0) {
       auto* random = model->GetOrCreate<ModelRandomGenerator>();
       RandomizeDecisionHeuristic(*random, model->GetOrCreate<SatParameters>());
       decision_policy->ResetDecisionHeuristic();
+
+      // Set some assignment preference.
+      // TODO(user): Also use LP value as assignment like in Bop.
+      if (objective != nullptr && absl::Bernoulli(*random, 0.2)) {
+        // Use Boolean objective as assignment preference.
+        IntegerValue max_abs_weight = 0;
+        for (const IntegerValue coeff : objective->coeffs) {
+          max_abs_weight = std::max(max_abs_weight, IntTypeAbs(coeff));
+        }
+        const double max_abs_weight_double = ToDouble(max_abs_weight);
+
+        const int objective_size = objective->vars.size();
+        for (int i = 0; i < objective_size; ++i) {
+          const IntegerVariable var = objective->vars[i];
+          if (integer_trail->LowerBound(var) != 0) continue;
+          if (integer_trail->UpperBound(var) != 1) continue;
+          const LiteralIndex index = encoder->GetAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(var, 1));
+          if (index == kNoLiteralIndex) continue;
+
+          const Literal literal(index);
+          const IntegerValue coeff = objective->coeffs[i];
+          const double abs_weight =
+              std::abs(ToDouble(objective->coeffs[i])) / max_abs_weight_double;
+
+          // Because this is a minimization problem, we prefer to assign a
+          // Boolean variable to its "low" objective value. So if a literal
+          // has a positive weight when true, we want to set it to false.
+          decision_policy->SetAssignmentPreference(
+              coeff > 0 ? literal.Negated() : literal, abs_weight);
+        }
+      }
 
       // Select the variable selection heuristic.
       policy_index = var_dist(*(random));
@@ -688,15 +769,11 @@ void ConfigureSearchHeuristics(Model* model) {
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   switch (parameters.search_branching()) {
     case SatParameters::AUTOMATIC_SEARCH: {
-      std::function<BooleanOrIntegerLiteral()> decision_policy;
-      if (parameters.randomize_search()) {
-        decision_policy = RandomizeOnRestartHeuristic(model);
-      } else {
-        decision_policy = SatSolverHeuristic(model);
-      }
-      decision_policy =
-          SequentialSearch({decision_policy, heuristics.fixed_search});
-      decision_policy = IntegerValueSelectionHeuristic(decision_policy, model);
+      std::function<BooleanOrIntegerLiteral()> decision_policy =
+          IntegerValueSelectionHeuristic(
+              SequentialSearch(
+                  {SatSolverHeuristic(model), heuristics.fixed_search}),
+              model);
       if (parameters.use_objective_lb_search()) {
         heuristics.decision_policies = {
             SequentialSearch({ShaveObjectiveLb(model), decision_policy})};
@@ -724,11 +801,20 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::PARTIAL_FIXED_SEARCH: {
-      heuristics.decision_policies = {
-          SequentialSearch({heuristics.user_search, SatSolverHeuristic(model),
-                            heuristics.fixed_search})};
-      auto no_restart = []() { return false; };
-      heuristics.restart_policies = {no_restart};
+      // Push user search if present.
+      if (heuristics.user_search != nullptr) {
+        heuristics.decision_policies.push_back(
+            SequentialSearch({heuristics.user_search, SatSolverHeuristic(model),
+                              heuristics.fixed_search}));
+      }
+
+      // Do a portfolio with the default sat heuristics.
+      heuristics.decision_policies.push_back(SequentialSearch(
+          {SatSolverHeuristic(model), heuristics.fixed_search}));
+
+      // Use default restart policies.
+      heuristics.restart_policies.assign(heuristics.decision_policies.size(),
+                                         SatSolverRestartPolicy(model));
       return;
     }
     case SatParameters::HINT_SEARCH: {
@@ -741,26 +827,9 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::PORTFOLIO_SEARCH: {
-      // TODO(user): This is not used in any of our default config. remove?
-      // It make also no sense to choose a value in the LP heuristic and then
-      // override it with IntegerValueSelectionHeuristic(), clean that up.
-      std::vector<std::function<BooleanOrIntegerLiteral()>> base_heuristics;
-      base_heuristics.push_back(heuristics.fixed_search);
-      for (const auto& ct :
-           *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
-        base_heuristics.push_back(
-            WrapIntegerLiteralHeuristic(ct->HeuristicLpReducedCostBinary()));
-        base_heuristics.push_back(
-            WrapIntegerLiteralHeuristic(ct->HeuristicLpMostInfeasibleBinary()));
-      }
-      heuristics.decision_policies = CompleteHeuristics(
-          base_heuristics, SequentialSearch({SatSolverHeuristic(model),
-                                             heuristics.fixed_search}));
-      for (auto& ref : heuristics.decision_policies) {
-        ref = IntegerValueSelectionHeuristic(ref, model);
-      }
-      heuristics.restart_policies.assign(heuristics.decision_policies.size(),
-                                         SatSolverRestartPolicy(model));
+      heuristics.decision_policies = {
+          RandomizeOnRestartHeuristic(/*lns_mode=*/true, model)};
+      heuristics.restart_policies = {SatSolverRestartPolicy(model)};
       return;
     }
     case SatParameters::LP_SEARCH: {
@@ -796,10 +865,17 @@ void ConfigureSearchHeuristics(Model* model) {
     }
     case SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH: {
       std::function<BooleanOrIntegerLiteral()> search = SequentialSearch(
-          {RandomizeOnRestartHeuristic(model), heuristics.fixed_search});
+          {RandomizeOnRestartHeuristic(/*lns_mode=*/false, model),
+           heuristics.fixed_search});
       heuristics.decision_policies = {search};
       heuristics.restart_policies = {
           RestartEveryKFailures(10, model->GetOrCreate<SatSolver>())};
+      return;
+    }
+    case SatParameters::RANDOMIZED_SEARCH: {
+      heuristics.decision_policies = {
+          RandomizeOnRestartHeuristic(/*lns_mode=*/false, model)};
+      heuristics.restart_policies = {SatSolverRestartPolicy(model)};
       return;
     }
   }
@@ -892,7 +968,7 @@ LiteralIndex IntegerSearchHelper::GetDecision(
     // Convert integer decision to literal one if needed.
     //
     // TODO(user): Ideally it would be cool to delay the creation even more
-    // until we have a conflict with these decisions, but it is currrently
+    // until we have a conflict with these decisions, but it is currently
     // hard to do so.
     if (new_decision.boolean_literal_index != kNoLiteralIndex) {
       decision = new_decision.boolean_literal_index;
@@ -904,7 +980,7 @@ LiteralIndex IntegerSearchHelper::GetDecision(
     if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
       // TODO(user): It would be nicer if this can never happen. For now, it
       // does because of the Propagate() not reaching the fixed point as
-      // mentionned in a TODO above. As a work-around, we display a message
+      // mentioned in a TODO above. As a work-around, we display a message
       // but do not crash and recall the decision heuristic.
       VLOG(1) << "Trying to take a decision that is already assigned!"
               << " Fix this. Continuing for now...";

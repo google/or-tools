@@ -84,6 +84,7 @@ int PresolveContext::GetFalseLiteral() { return NegatedRef(GetTrueLiteral()); }
 
 // a => b.
 void PresolveContext::AddImplication(int a, int b) {
+  if (a == b) return;
   ConstraintProto* const ct = working_model->add_constraints();
   ct->add_enforcement_literal(a);
   ct->mutable_bool_and()->add_literals(b);
@@ -2121,7 +2122,7 @@ void PresolveContext::LogInfo() {
       SOLVER_LOG(logger_, "  - rule '", entry.first, "' was applied 1 time.");
     } else {
       SOLVER_LOG(logger_, "  - rule '", entry.first, "' was applied ",
-                 entry.second, " times.");
+                 FormatCounter(entry.second), " times.");
     }
   }
 }

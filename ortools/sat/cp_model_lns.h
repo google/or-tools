@@ -495,7 +495,7 @@ class NeighborhoodGenerator {
 class RelaxRandomVariablesGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxRandomVariablesGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -510,7 +510,7 @@ class RelaxRandomVariablesGenerator : public NeighborhoodGenerator {
 class RelaxRandomConstraintsGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxRandomConstraintsGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -526,7 +526,7 @@ class RelaxRandomConstraintsGenerator : public NeighborhoodGenerator {
 class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit VariableGraphNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -537,7 +537,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ArcGraphNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -550,7 +550,7 @@ class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ConstraintGraphNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -588,7 +588,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
   // TODO(user): Restructure code so that we avoid circular dependency with
   // solving functions. For now, we use solve_callback.
   explicit LocalBranchingLpBasedNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name,
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name,
       std::function<void(CpModelProto, Model*)> solve_callback,
       ModelSharedTimeLimit* const global_time_limit)
       : NeighborhoodGenerator(name, helper),
@@ -626,7 +626,7 @@ class RandomIntervalSchedulingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomIntervalSchedulingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -642,7 +642,7 @@ class RandomPrecedenceSchedulingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomPrecedenceSchedulingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -654,7 +654,7 @@ class RandomPrecedenceSchedulingNeighborhoodGenerator
 class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit SchedulingTimeWindowNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -670,7 +670,7 @@ class SchedulingResourceWindowsNeighborhoodGenerator
   explicit SchedulingResourceWindowsNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper,
       const std::vector<std::vector<int>>& intervals_in_constraints,
-      const std::string& name)
+      absl::string_view name)
       : NeighborhoodGenerator(name, helper),
         intervals_in_constraints_(intervals_in_constraints) {}
 
@@ -688,7 +688,7 @@ class RandomRectanglesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomRectanglesPackingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -703,7 +703,7 @@ class RandomPrecedencesPackingNeighborhoodGenerator
     : public NeighborhoodGenerator {
  public:
   explicit RandomPrecedencesPackingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -757,7 +757,7 @@ class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
 class RoutingFullPathNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   RoutingFullPathNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -785,7 +785,7 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
       const SharedResponseManager* response_manager,
       const SharedLPSolutionRepository* lp_solutions,
       SharedIncompleteSolutionManager* incomplete_solutions,
-      const std::string& name)
+      absl::string_view name)
       : NeighborhoodGenerator(name, helper),
         response_manager_(response_manager),
         lp_solutions_(lp_solutions),

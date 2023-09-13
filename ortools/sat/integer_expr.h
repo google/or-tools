@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -104,13 +105,30 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // needed just before pushing something.
   void FillIntegerReason();
 
-  const std::vector<Literal> enforcement_literals_;
   const IntegerValue upper_bound_;
 
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  TimeLimit* time_limit_;
-  RevIntegerValueRepository* rev_integer_value_repository_;
+  // To gain a bit on memory (since we might have many linear constraint),
+  // we share this amongst all of them. Note that this is not accessed by
+  // two different thread though. Also the vector are only used as "temporary"
+  // so they are okay to be shared.
+  struct Shared {
+    explicit Shared(Model* model)
+        : assignment(model->GetOrCreate<Trail>()->Assignment()),
+          integer_trail(model->GetOrCreate<IntegerTrail>()),
+          time_limit(model->GetOrCreate<TimeLimit>()),
+          rev_integer_value_repository(
+              model->GetOrCreate<RevIntegerValueRepository>()) {}
+
+    const VariablesAssignment& assignment;
+    IntegerTrail* integer_trail;
+    TimeLimit* time_limit;
+    RevIntegerValueRepository* rev_integer_value_repository;
+
+    // Parallel vectors.
+    std::vector<IntegerLiteral> integer_reason;
+    std::vector<IntegerValue> reason_coeffs;
+  };
+  Shared* shared_;
 
   // Reversible sum of the lower bound of the fixed variables.
   bool is_registered_ = false;
@@ -122,15 +140,13 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // Those vectors are shuffled during search to ensure that the variables
   // (resp. coefficients) contained in the range [0, rev_num_fixed_vars_) of
   // vars_ (resp. coeffs_) are fixed (resp. belong to fixed variables).
-  std::vector<IntegerVariable> vars_;
-  std::vector<IntegerValue> coeffs_;
-  std::vector<IntegerValue> max_variations_;
+  const int size_;
+  std::unique_ptr<IntegerVariable[]> vars_;
+  std::unique_ptr<IntegerValue[]> coeffs_;
+  std::unique_ptr<IntegerValue[]> max_variations_;
 
+  // This is just the negation of the enforcement literal and it never changes.
   std::vector<Literal> literal_reason_;
-
-  // Parallel vectors.
-  std::vector<IntegerLiteral> integer_reason_;
-  std::vector<IntegerValue> reason_coeffs_;
 };
 
 using IntegerSumLE = LinearConstraintPropagator<false>;

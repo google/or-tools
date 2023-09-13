@@ -95,7 +95,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(max_deterministic_time);
 
   // Parallelism.
-  const int kMaxReasonableParallelism = 1'000'000;
+  const int kMaxReasonableParallelism = 10'000;
   TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(min_num_lns_workers, 0, kMaxReasonableParallelism);
@@ -113,7 +113,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(feasibility_jump_decay);
   TEST_NOT_NAN(feasibility_jump_var_randomization_probability);
   TEST_NOT_NAN(feasibility_jump_var_perburbation_range_ratio);
-  TEST_IN_RANGE(feasibility_jump_max_num_values_scanned, 2, 1'000'000'000);
   TEST_IN_RANGE(feasibility_jump_decay, 0.0, 1.0);
   TEST_IN_RANGE(feasibility_jump_var_randomization_probability, 0.0, 1.0);
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);

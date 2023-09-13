@@ -770,6 +770,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
   // For detecting near-duplicate constraint that can be made equivalent.
   // hash -> (ct_index, modified ref).
+  absl::flat_hash_set<int> equiv_ct_index_set;
   absl::flat_hash_map<uint64_t, std::pair<int, int>> equiv_modified_constraints;
   std::vector<int64_t> temp_data;
   std::vector<int64_t> other_temp_data;
@@ -779,8 +780,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   // a few situation.
   //
   // TODO(user): Cover all the cases.
-  int64_t work_done = 0;
-  const int64_t work_limit = static_cast<int64_t>(1e9);
   std::vector<bool> processed(num_vars, false);
   int64_t num_bool_in_near_duplicate_ct = 0;
   for (IntegerVariable var(0); var < num_locks_.size(); ++var) {
@@ -959,10 +958,13 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
         }
       }
 
-      // If We have two Booleans with a blocking constraint that differ just
-      // on them, we can make the Boolean equivalent. This is because they
-      // will be forced to their bad value only if it is needed for that
-      // constraint.
+      // If we have two Booleans, each with a single blocking constraint that is
+      // the same if we "swap" the Booleans reference, then we can make the
+      // Booleans equivalent. This is because they will be forced to their bad
+      // value only if it is needed by the other part of their respective
+      // blocking constraints. This is related to the
+      // FindAlmostIdenticalLinearConstraints() except that here we can deal
+      // with non-equality or enforced constraints.
       //
       // TODO(user): Generalize to non-Boolean. Also for Boolean, we might
       // miss some possible reduction if replacing X by 1 - X make a constraint
@@ -970,12 +972,14 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
       //
       // TODO(user): We can generalize to non-linear constraint.
       //
-      // TODO(user): Because this can be in num_var ^ 2 in some bad cases where
-      // each variable is only blocked by a long constraint, we impose a work
-      // limit. Improve?
-      if (ct.constraint_case() == ConstraintProto::kLinear &&
-          context->CanBeUsedAsLiteral(ref) && work_done < work_limit) {
-        work_done += ct.linear().vars().size();
+      // Optimization: Skip if this constraint was already used as a single
+      // blocking constraint of another variable. If this is the case, it cannot
+      // be equivalent to another constraint with "var" substituted, since
+      // otherwise var would have two blocking constraint. We can safely skip
+      // it. this make sure this is in O(num_entries) and not more.
+      if (equiv_ct_index_set.insert(ct_index).second &&
+          ct.constraint_case() == ConstraintProto::kLinear &&
+          context->CanBeUsedAsLiteral(ref)) {
         TransformLinearWithSpecialBoolean(ct, ref, &temp_data);
         const uint64_t hash =
             fasthash64(temp_data.data(), temp_data.size() * sizeof(int64_t),
@@ -996,6 +1000,8 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               ++num_bool_in_near_duplicate_ct;
               processed[PositiveRef(ref)] = true;
               processed[PositiveRef(other_ref)] = true;
+              context->UpdateRuleStats(
+                  "dual: equiv bool due to near-indentical constraints");
               context->StoreBooleanEqualityRelation(ref, other_ref);
 
               // We can delete one of the constraint since they are duplicate

@@ -29,6 +29,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
@@ -339,7 +340,7 @@ class SharedResponseManager {
   }
 
   // Debug only. Set dump prefix for solutions written to file.
-  void set_dump_prefix(const std::string& dump_prefix) {
+  void set_dump_prefix(absl::string_view dump_prefix) {
     dump_prefix_ = dump_prefix;
   }
 

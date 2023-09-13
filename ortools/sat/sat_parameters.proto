@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 257
+// NEXT TAG: 260
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -939,8 +939,7 @@ message SatParameters {
     // field.
     FIXED_SEARCH = 1;
 
-    // If used, the solver will use various generic heuristics in turn.
-    // This is not often used, prefer just using multi thread.
+    // Simple portfolio search used by LNS workers.
     PORTFOLIO_SEARCH = 2;
 
     // If used, the solver will use heuristics from the LP relaxation. This
@@ -967,6 +966,9 @@ message SatParameters {
     // search tree according to the specified fixed search strategy, but will
     // complete it using the default automatic search.
     PARTIAL_FIXED_SEARCH = 7;
+
+    // Randomized search. Used to increase entropy in the search.
+    RANDOMIZED_SEARCH = 8;
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
@@ -1079,20 +1081,17 @@ message SatParameters {
   // The test_feasibility_jump is used to only enable this for benchmarking.
   optional bool test_feasibility_jump = 240 [default = false];
 
-  // Max number of values scanned when scanning the domain of a variable.
-  // This number is checked to be >= 2 and <= 1e9.
-  optional int64 feasibility_jump_max_num_values_scanned = 245 [default = 4096];
+  // On each restart, we randomly choose if we use decay (with this parameter)
+  // or no decay.
+  optional double feasibility_jump_decay = 242 [default = 0.95];
 
-  // Feasibility jump focuses on the linear model, then switches to the full
-  // model when a linear feasible assignment is found. In the second phase, this
-  // parameters favors moves that keep the linear assignment feasible over move
-  // that will break it.
-  optional bool feasibility_jump_protect_linear_feasibility = 246
-      [default = true];
+  // How much do we linearize the problem in the local search code.
+  optional int32 feasibility_jump_linearization_level = 257 [default = 2];
 
-  // The following feasibility_jump parameters are meant to be used by the
-  // solver on the different workers that use feasibility_jump.
-  optional double feasibility_jump_decay = 242 [default = 1.0];
+  // This is a factor that directly influence the work before each restart.
+  // Setting this to zero disable restart, and increasing it lead to longer
+  // restarts.
+  optional int32 feasibility_jump_restart_factor = 258 [default = 1];
 
   // Probability for a variable to have a non default value upon restarts or
   // perturbations.
@@ -1116,6 +1115,9 @@ message SatParameters {
 
   // How long violation_ls should wait before perturbating a solution.
   optional int32 violation_ls_perturbation_period = 249 [default = 100];
+
+  // Search for ejection-chain-like moves in jump and violation_ls workers.
+  optional bool violation_ls_use_compound_moves = 259 [default = true];
 
   // Enables experimental workstealing-like shared tree search.
   // If non-zero, start this many complete worker threads to explore a shared
@@ -1267,14 +1269,10 @@ message SatParameters {
   // Randomize fixed search.
   optional bool randomize_search = 103 [default = false];
 
-  // Search randomization will collect equivalent 'max valued' variables, and
-  // pick one randomly. For instance, if the variable strategy is CHOOSE_FIRST,
-  // all unassigned variables are equivalent. If the variable strategy is
-  // CHOOSE_LOWEST_MIN, and `lm` is the current lowest min of all unassigned
-  // variables, then the set of max valued variables will be all unassigned
-  // variables where
-  //    lm <= variable min <= lm + search_randomization_tolerance
-  optional int64 search_randomization_tolerance = 104 [default = 0];
+  // Search randomization will collect the top
+  // 'search_random_variable_pool_size' valued variables, and pick one randomly.
+  // The value of the variable is specific to each strategy.
+  optional int64 search_random_variable_pool_size = 104 [default = 0];
 
   // If true, we automatically detect variables whose constraint are always
   // enforced by the same literal and we mark them as optional. This allows

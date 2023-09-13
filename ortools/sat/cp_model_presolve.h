@@ -190,6 +190,9 @@ class CpModelPresolver {
   // with duplicate linear expressions.
   void DetectDuplicateConstraints();
 
+  // Detects variable that must take different values.
+  void DetectDifferentVariables();
+
   // Detects if a linear constraint is "included" in another one, and do
   // related presolve.
   void DetectDominatedLinearConstraints();
@@ -262,6 +265,7 @@ class CpModelPresolver {
   // expression. We have two slightly different heuristic.
   //
   // TODO(user): consolidate them.
+  void FindAlmostIdenticalLinearConstraints();
   void FindBigHorizontalLinearOverlap();
   void FindBigVerticalLinearOverlap();
 
@@ -291,6 +295,7 @@ class CpModelPresolver {
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
   SolverLogger* logger_;
+  TimeLimit* time_limit_;
 
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
@@ -349,14 +354,19 @@ class ModelCopy {
   // Overwrites the out_model to be unsat. Returns false.
   bool CreateUnsatModel();
 
-  void CopyEnforcementLiterals(const ConstraintProto& orig,
-                               ConstraintProto* dest);
-  bool OneEnforcementLiteralIsFalse(const ConstraintProto& ct) const;
+  // Returns false if the constraint is never enforced and can be skipped.
+  bool PrepareEnforcementCopy(const ConstraintProto& ct);
+  bool PrepareEnforcementCopyWithDup(const ConstraintProto& ct);
+  void FinishEnforcementCopy(ConstraintProto* ct);
 
   // All these functions return false if the constraint is found infeasible.
   bool CopyBoolOr(const ConstraintProto& ct);
   bool CopyBoolOrWithDupSupport(const ConstraintProto& ct);
+  bool FinishBoolOrCopy();
+
   bool CopyBoolAnd(const ConstraintProto& ct);
+  bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
+
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
@@ -370,17 +380,18 @@ class ModelCopy {
   void CopyAndMapCumulative(const ConstraintProto& ct);
 
   PresolveContext* context_;
-  int64_t skipped_non_zero_ = 0;
 
   // Temp vectors.
   std::vector<int> non_fixed_variables_;
   std::vector<int64_t> non_fixed_coefficients_;
   absl::flat_hash_map<int, int> interval_mapping_;
   int starting_constraint_index_ = 0;
+
   std::vector<int> temp_enforcement_literals_;
+  absl::flat_hash_set<int> temp_enforcement_literals_set_;
 
   std::vector<int> temp_literals_;
-  absl::flat_hash_set<int> tmp_literals_set_;
+  absl::flat_hash_set<int> temp_literals_set_;
 };
 
 // Copy in_model to the model in the presolve context.

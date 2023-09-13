@@ -31,6 +31,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -969,7 +970,7 @@ CoverCutHelper::~CoverCutHelper() {
   if (shared_stats_ == nullptr) return;
 
   std::vector<std::pair<std::string, int64_t>> stats;
-  const auto add_stats = [&stats](const std::string& name, const CutStats& s) {
+  const auto add_stats = [&stats](absl::string_view name, const CutStats& s) {
     stats.push_back(
         {absl::StrCat(name, "num_overflows"), s.num_overflow_aborts});
     stats.push_back({absl::StrCat(name, "num_lifting"), s.num_lifting});

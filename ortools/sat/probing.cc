@@ -74,6 +74,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 
+    ++num_decisions_;
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
     const int saved_index = trail_.Index();
     sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
@@ -221,6 +222,7 @@ bool Prober::ProbeBooleanVariables(
   wall_timer.Start();
 
   // Reset statistics.
+  num_decisions_ = 0;
   num_new_binary_ = 0;
   num_new_holes_ = 0;
   num_new_integer_bounds_ = 0;

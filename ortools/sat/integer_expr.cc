@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <functional>
 #include <limits>
 #include <utility>
@@ -48,21 +49,22 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
     const std::vector<Literal>& enforcement_literals,
     const std::vector<IntegerVariable>& vars,
     const std::vector<IntegerValue>& coeffs, IntegerValue upper, Model* model)
-    : enforcement_literals_(enforcement_literals),
-      upper_bound_(upper),
-      trail_(model->GetOrCreate<Trail>()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      time_limit_(model->GetOrCreate<TimeLimit>()),
-      rev_integer_value_repository_(
-          model->GetOrCreate<RevIntegerValueRepository>()),
-      vars_(vars),
-      coeffs_(coeffs) {
+    : upper_bound_(upper),
+      shared_(
+          model->GetOrCreate<LinearConstraintPropagator<use_int128>::Shared>()),
+      size_(vars.size()),
+      vars_(new IntegerVariable[size_]),
+      coeffs_(new IntegerValue[size_]),
+      max_variations_(new IntegerValue[size_]) {
   // TODO(user): deal with this corner case.
-  CHECK(!vars_.empty());
-  max_variations_.resize(vars_.size());
+  CHECK(!vars.empty());
+
+  // Copy data.
+  memcpy(vars_.get(), vars.data(), size_ * sizeof(IntegerVariable));
+  memcpy(coeffs_.get(), coeffs.data(), size_ * sizeof(IntegerValue));
 
   // Handle negative coefficients.
-  for (int i = 0; i < vars.size(); ++i) {
+  for (int i = 0; i < size_; ++i) {
     if (coeffs_[i] < 0) {
       vars_[i] = NegationOf(vars_[i]);
       coeffs_[i] = -coeffs_[i];
@@ -70,6 +72,9 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
   }
 
   // Literal reason will only be used with the negation of enforcement_literals.
+  // It will stay constant. We also do not store enforcement_literals, but
+  // retrieve them from there.
+  literal_reason_.reserve(enforcement_literals.size());
   for (const Literal literal : enforcement_literals) {
     literal_reason_.push_back(literal.Negated());
   }
@@ -81,14 +86,14 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
 
 template <bool use_int128>
 void LinearConstraintPropagator<use_int128>::FillIntegerReason() {
-  integer_reason_.clear();
-  reason_coeffs_.clear();
-  const int num_vars = vars_.size();
-  for (int i = 0; i < num_vars; ++i) {
+  shared_->integer_reason.clear();
+  shared_->reason_coeffs.clear();
+  for (int i = 0; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
-    if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-      integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
-      reason_coeffs_.push_back(coeffs_[i]);
+    if (!shared_->integer_trail->VariableLowerBoundIsFromLevelZero(var)) {
+      shared_->integer_reason.push_back(
+          shared_->integer_trail->LowerBoundAsLiteral(var));
+      shared_->reason_coeffs.push_back(coeffs_[i]);
     }
   }
 }
@@ -130,7 +135,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
   // doing it to be sure we don't have overflow, since this is what we check
   // when creating constraints.
   absl::int128 lb_128 = 0;
-  for (int i = 0; i < vars_.size(); ++i) {
+  for (int i = 0; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     if (var == NegationOf(target_var)) {
@@ -138,7 +143,7 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
       target_var_present_negatively = true;
     }
 
-    const IntegerValue lb = integer_trail_->LowerBound(var);
+    const IntegerValue lb = shared_->integer_trail->LowerBound(var);
     lb_128 += absl::int128(coeff.value()) * absl::int128(lb.value());
     if (PositiveVariable(var) == PositiveVariable(integer_literal.var)) {
       var_coeff = coeff;
@@ -154,8 +159,8 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
   // The upper bound on NegationOf(target_var) are lb(-target) + slack / coeff.
   // So the lower bound on target_var is ub - slack / coeff.
   const absl::int128 slack128 = absl::int128(upper_bound_.value()) - lb_128;
-  const IntegerValue target_lb = integer_trail_->LowerBound(target_var);
-  const IntegerValue target_ub = integer_trail_->UpperBound(target_var);
+  const IntegerValue target_lb = shared_->integer_trail->LowerBound(target_var);
+  const IntegerValue target_ub = shared_->integer_trail->UpperBound(target_var);
   if (slack128 <= 0) {
     // TODO(user): If there is a conflict (negative slack) we can be more
     // precise.
@@ -170,9 +175,10 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     // We have var_coeff * var in the expression, the literal is var >= bound.
     // When it is false, it is not relevant as implied_lb used var >= lb.
     // When it is true, the diff is bound - lb.
-    const IntegerValue diff = std::max(
-        IntegerValue(0), integer_literal.bound -
-                             integer_trail_->LowerBound(integer_literal.var));
+    const IntegerValue diff =
+        std::max(IntegerValue(0),
+                 integer_literal.bound -
+                     shared_->integer_trail->LowerBound(integer_literal.var));
     const absl::int128 tighter_slack =
         std::max(absl::int128(0), slack128 - absl::int128(var_coeff.value()) *
                                                  absl::int128(diff.value()));
@@ -183,9 +189,10 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
     // We have var_coeff * -var in the expression, the literal is var >= bound.
     // When it is true, it is not relevant as implied_lb used -var >= -ub.
     // And when it is false it means var < bound, so -var >= -bound + 1
-    const IntegerValue diff = std::max(
-        IntegerValue(0), integer_trail_->UpperBound(integer_literal.var) -
-                             integer_literal.bound + 1);
+    const IntegerValue diff =
+        std::max(IntegerValue(0),
+                 shared_->integer_trail->UpperBound(integer_literal.var) -
+                     integer_literal.bound + 1);
     const absl::int128 tighter_slack =
         std::max(absl::int128(0), slack128 - absl::int128(var_coeff.value()) *
                                                  absl::int128(diff.value()));
@@ -201,9 +208,10 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // constraint.
   int num_unassigned_enforcement_literal = 0;
   LiteralIndex unique_unnasigned_literal = kNoLiteralIndex;
-  for (const Literal literal : enforcement_literals_) {
-    if (trail_->Assignment().LiteralIsFalse(literal)) return true;
-    if (!trail_->Assignment().LiteralIsTrue(literal)) {
+  for (const Literal negated_enforcement : literal_reason_) {
+    const Literal literal = negated_enforcement.Negated();
+    if (shared_->assignment.LiteralIsFalse(literal)) return true;
+    if (!shared_->assignment.LiteralIsTrue(literal)) {
       ++num_unassigned_enforcement_literal;
       unique_unnasigned_literal = literal.Index();
     }
@@ -216,7 +224,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // Save the current sum of fixed variables.
   if (is_registered_) {
     CHECK(!use_int128);
-    rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
+    shared_->rev_integer_value_repository->SaveState(&rev_lb_fixed_vars_);
   } else {
     rev_num_fixed_vars_ = 0;
     rev_lb_fixed_vars_ = 0;
@@ -225,12 +233,11 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // Compute the new lower bound and update the reversible structures.
   absl::int128 lb_128 = 0;
   IntegerValue lb_unfixed_vars = IntegerValue(0);
-  const int num_vars = vars_.size();
-  for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
+  for (int i = rev_num_fixed_vars_; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = integer_trail_->LowerBound(var);
-    const IntegerValue ub = integer_trail_->UpperBound(var);
+    const IntegerValue lb = shared_->integer_trail->LowerBound(var);
+    const IntegerValue ub = shared_->integer_trail->UpperBound(var);
     if (use_int128) {
       lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
       continue;
@@ -248,8 +255,8 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
       rev_lb_fixed_vars_ += lb * coeff;
     }
   }
-  time_limit_->AdvanceDeterministicTime(
-      static_cast<double>(num_vars - rev_num_fixed_vars_) * 1e-9);
+  shared_->time_limit->AdvanceDeterministicTime(
+      static_cast<double>(size_ - rev_num_fixed_vars_) * 5e-9);
 
   // If use_int128 is true, the slack or propagation slack can be larger than
   // this. To detect overflow with capped arithmetic, it is important the slack
@@ -264,25 +271,27 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
     if (slack128 < 0) {
       // It is fine if we don't relax as much as possible.
       // Note that RelaxLinearReason() is overflow safe.
-      slack = static_cast<int>(std::max(-max_slack, slack128));
+      slack = static_cast<int64_t>(std::max(-max_slack, slack128));
     }
   } else {
     slack = upper_bound_ - (rev_lb_fixed_vars_ + lb_unfixed_vars);
   }
   if (slack < 0) {
     FillIntegerReason();
-    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
-                                      &integer_reason_);
+    shared_->integer_trail->RelaxLinearReason(
+        -slack - 1, shared_->reason_coeffs, &shared_->integer_reason);
 
     if (num_unassigned_enforcement_literal == 1) {
       // Propagate the only non-true literal to false.
       const Literal to_propagate = Literal(unique_unnasigned_literal).Negated();
       std::vector<Literal> tmp = literal_reason_;
       tmp.erase(std::find(tmp.begin(), tmp.end(), to_propagate));
-      integer_trail_->EnqueueLiteral(to_propagate, tmp, integer_reason_);
+      shared_->integer_trail->EnqueueLiteral(to_propagate, tmp,
+                                             shared_->integer_reason);
       return true;
     }
-    return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
+    return shared_->integer_trail->ReportConflict(literal_reason_,
+                                                  shared_->integer_reason);
   }
 
   // We can only propagate more if all the enforcement literals are true.
@@ -290,21 +299,21 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
+  for (int i = rev_num_fixed_vars_; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
     // TODO(user): If the new ub fall into an hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = integer_trail_->LowerBound(var);
+    const IntegerValue lb = shared_->integer_trail->LowerBound(var);
 
     IntegerValue new_ub;
     IntegerValue propagation_slack;
     if (use_int128) {
       const absl::int128 coeff128 = absl::int128(coeff.value());
       const absl::int128 div128 = slack128 / coeff128;
-      const IntegerValue ub = integer_trail_->UpperBound(var);
+      const IntegerValue ub = shared_->integer_trail->UpperBound(var);
       if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
         continue;
       }
@@ -316,7 +325,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
       new_ub = lb + div;
       propagation_slack = (div + 1) * coeff - slack - 1;
     }
-    if (!integer_trail_->Enqueue(
+    if (!shared_->integer_trail->Enqueue(
             IntegerLiteral::LowerOrEqual(var, new_ub),
             /*lazy_reason=*/[this, propagation_slack](
                                 IntegerLiteral i_lit, int trail_index,
@@ -324,27 +333,31 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
                                 std::vector<int>* trail_indices_reason) {
               *literal_reason = literal_reason_;
               trail_indices_reason->clear();
-              reason_coeffs_.clear();
-              const int size = vars_.size();
-              for (int i = 0; i < size; ++i) {
+              shared_->reason_coeffs.clear();
+              for (int i = 0; i < size_; ++i) {
                 const IntegerVariable var = vars_[i];
                 if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
                   continue;
                 }
                 const int index =
-                    integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
+                    shared_->integer_trail->FindTrailIndexOfVarBefore(
+                        var, trail_index);
                 if (index >= 0) {
                   trail_indices_reason->push_back(index);
                   if (propagation_slack > 0) {
-                    reason_coeffs_.push_back(coeffs_[i]);
+                    shared_->reason_coeffs.push_back(coeffs_[i]);
                   }
                 }
               }
               if (propagation_slack > 0) {
-                integer_trail_->RelaxLinearReason(
-                    propagation_slack, reason_coeffs_, trail_indices_reason);
+                shared_->integer_trail->RelaxLinearReason(
+                    propagation_slack, shared_->reason_coeffs,
+                    trail_indices_reason);
               }
             })) {
+      // TODO(user): this is never supposed to happen since if we didn't have a
+      // conflict above, we should be able to reduce the upper bound. It might
+      // indicate an issue with our Boolean <-> integer encoding.
       return false;
     }
   }
@@ -356,25 +369,25 @@ template <bool use_int128>
 bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
   // TODO(user): Deal with enforcements. It is just a bit of code to read the
   // value of the literals at level zero.
-  if (!enforcement_literals_.empty()) return true;
+  if (!literal_reason_.empty()) return true;
 
   // Compute the new lower bound and update the reversible structures.
   absl::int128 lb_128 = 0;
   IntegerValue min_activity = IntegerValue(0);
-  const int num_vars = vars_.size();
-  for (int i = 0; i < num_vars; ++i) {
+  for (int i = 0; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
     if (use_int128) {
       lb_128 += absl::int128(lb.value()) * absl::int128(coeff.value());
     } else {
-      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+      const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
       max_variations_[i] = (ub - lb) * coeff;
       min_activity += lb * coeff;
     }
   }
-  time_limit_->AdvanceDeterministicTime(static_cast<double>(num_vars * 1e-9));
+  shared_->time_limit->AdvanceDeterministicTime(
+      static_cast<double>(size_ * 1e-9));
 
   // Conflict?
   IntegerValue slack;
@@ -382,27 +395,27 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
   if (use_int128) {
     slack128 = absl::int128(upper_bound_.value()) - lb_128;
     if (slack128 < 0) {
-      return integer_trail_->ReportConflict({}, {});
+      return shared_->integer_trail->ReportConflict({}, {});
     }
   } else {
     slack = upper_bound_ - min_activity;
     if (slack < 0) {
-      return integer_trail_->ReportConflict({}, {});
+      return shared_->integer_trail->ReportConflict({}, {});
     }
   }
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  for (int i = 0; i < num_vars; ++i) {
+  for (int i = 0; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    const IntegerValue lb = shared_->integer_trail->LevelZeroLowerBound(var);
 
     IntegerValue new_ub;
     if (use_int128) {
-      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+      const IntegerValue ub = shared_->integer_trail->LevelZeroUpperBound(var);
       const absl::int128 div128 = slack128 / absl::int128(coeff.value());
       if (absl::int128(lb.value()) + div128 >= absl::int128(ub.value())) {
         continue;
@@ -412,8 +425,8 @@ bool LinearConstraintPropagator<use_int128>::PropagateAtLevelZero() {
       const IntegerValue div = slack / coeff;
       new_ub = lb + div;
     }
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
-                                 {})) {
+    if (!shared_->integer_trail->Enqueue(
+            IntegerLiteral::LowerOrEqual(var, new_ub), {}, {})) {
       return false;
     }
   }
@@ -426,15 +439,15 @@ void LinearConstraintPropagator<use_int128>::RegisterWith(
     GenericLiteralWatcher* watcher) {
   is_registered_ = true;
   const int id = watcher->Register(this);
-  for (const IntegerVariable& var : vars_) {
-    watcher->WatchLowerBound(var, id);
+  for (int i = 0; i < size_; ++i) {
+    watcher->WatchLowerBound(vars_[i], id);
   }
-  for (const Literal literal : enforcement_literals_) {
+  for (const Literal negated_enforcement : literal_reason_) {
     // We only watch the true direction.
     //
     // TODO(user): if there is more than one, maybe we should watch more to
     // propagate a "conflict" as soon as only one is unassigned?
-    watcher->WatchLiteral(Literal(literal), id);
+    watcher->WatchLiteral(negated_enforcement.Negated(), id);
   }
   watcher->RegisterReversibleInt(id, &rev_num_fixed_vars_);
 }

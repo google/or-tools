@@ -34,6 +34,8 @@
 
 namespace operations_research::sat {
 
+class CompoundMoveBuilder;
+
 // Implements and heuristic similar to the one described in the paper:
 // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
 // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
@@ -112,17 +114,31 @@ class FeasibilityJumpSolver : public SubSolver {
   bool DoSomeGeneralIterations();
 
   // Returns true if an improving move was found.
-  bool ScanAllVariables(absl::Span<const int64_t> solution, bool linear_mode,
-                        int* improving_var, int64_t* improving_value,
-                        double* improving_delta, bool* time_limit_crossed);
+  bool ScanRelevantVariables(absl::Span<const double> weights,
+                             int* improving_var, int64_t* improving_value,
+                             double* improving_score, bool* time_limit_crossed);
 
-  // Return the number of infeasible constraints.
-  int UpdateConstraintWeights(bool linear_mode);
+  // Increases the weight of the currently infeasible constraints.
+  void UpdateViolatedConstraintWeights();
 
   // Returns true if changing this variable to its jump value reduces weighted
   // violation, or has no impact on weighted violation but reduces the
   // objective.
   bool IsGood(int var) const;
+
+  void RecomputeVarsToScan();
+  // Returns true if it is possible that `var` may have value that reduces
+  // weighted violation or improve the objective.
+  // Note that this is independent of the actual weights used.
+  bool ShouldScan(int var) const;
+  void AddVarToScan(int var);
+  bool MustRecomputeJumpOnGeneralUpdate(int var) const;
+
+  // Resets the weights used to find compound moves. Only modifies weights that
+  // have changed, but the invariant below holds for all constraints:
+  // compound_weights[c] = weights_[c] if c is violated, and epsilon *
+  // weights_[c] otherwise.
+  void ResetChangedCompoundWeights();
 
   const LinearModel* linear_model_;
   SatParameters params_;
@@ -145,17 +161,26 @@ class FeasibilityJumpSolver : public SubSolver {
   std::vector<bool> var_has_two_values_;
 
   // For each variable, we store:
-  // - A jump value, which is different from the current solution, except for
-  //   fixed variable.
+  // - A jump delta which represent a change in variable value:
+  //   new_value = old + delta, which is non-zero except for fixed variable.
   // - The associated weighted feasibility violation change if we take this
   //   jump.
   std::vector<bool> jump_need_recomputation_;
-  std::vector<int64_t> jump_values_;
+  std::vector<int64_t> jump_deltas_;
   std::vector<double> jump_scores_;
+  std::vector<double> for_weight_update_;
 
   // The score of a solution is just the sum of infeasibility of each
   // constraint weighted by these scores.
   std::vector<double> weights_;
+  // If using compound moves, these will be discounted on a new incumbent then
+  // re-converge to `weights_` after some exploration.
+  // Search will repeatedly pick moves with negative WeightedViolationDelta
+  // using these weights.
+  std::vector<double> compound_weights_;
+
+  std::vector<bool> in_compound_weight_changed_;
+  std::vector<int> compound_weight_changed_;
 
   // Depending on the options, we use an exponentially decaying constraint
   // weight like for SAT activities.
@@ -174,25 +199,100 @@ class FeasibilityJumpSolver : public SubSolver {
 
   std::vector<int64_t> tmp_breakpoints_;
 
+  // Each time we reset the weight, we might randomly change this to update
+  // them with decay or not.
+  bool use_decay_ = true;
+
+  // Each batch, randomly decide if we will use compound moves or not.
+  bool use_compound_moves_ = false;
+
   // Statistics
   absl::Time last_logging_time_;
   int64_t num_batches_ = 0;
   int64_t num_linear_evals_ = 0;
   int64_t num_general_evals_ = 0;
   int64_t num_general_moves_ = 0;
+  int64_t num_compound_moves_ = 0;
   int64_t num_linear_moves_ = 0;
-  int64_t num_partial_scans_ = 0;
   int64_t num_perturbations_ = 0;
-  int64_t num_repairs_with_full_scan_ = 0;
   int64_t num_restarts_ = 0;
   int64_t num_solutions_imported_ = 0;
   int64_t num_weight_updates_ = 0;
 
-  // Temporary storage.
-  std::vector<int> tmp_to_scan_;
+  // A list of variables that might be relevant to check in general iterations.
+  std::vector<bool> in_vars_to_scan_;
+  std::vector<int> vars_to_scan_;
+  std::unique_ptr<CompoundMoveBuilder> move_;
+
+  // Counts the number of violated constraints each var is in.
+  // Only maintained in general iterations as jump_score_ is used for filtering
+  // moves in linear iterations.
+  std::vector<int> num_violated_constraints_per_var_;
 
   // Info on the last solution loaded.
   int64_t last_solution_rank_ = std::numeric_limits<int64_t>::max();
+};
+
+// This class helps keep track of moves that change more than one variable.
+// Mainly this class keeps track of how to backtrack back to the local minimum
+// as you make a sequence of exploratory moves, so in order to commit a compound
+// move, you just need to call `Clear` instead of Backtracking over the changes.
+class CompoundMoveBuilder {
+ public:
+  CompoundMoveBuilder(LsEvaluator* evaluator, int num_variables)
+      : evaluator_(evaluator), var_on_stack_(num_variables, false) {}
+
+  // Adds an atomic move to the stack.
+  // `var` must not be on the stack (this is DCHECKed).
+  void Push(int var, int64_t prev_value, double score);
+
+  // Sets var, val and score to a move that will revert the most recent atomic
+  // move on the stack, and pops this move from the stack.
+  // Returns false if the stack is empty.
+  bool Backtrack(int* var, int64_t* value, double* score);
+
+  // Removes all moves on the stack.
+  void Clear();
+
+  // Returns the number of variables in the move.
+  int Size() const { return stack_.size(); }
+
+  // Returns true if this var has been set in this move already,
+  bool OnStack(int var) const;
+
+  // Returns the sum of scores of atomic moved pushed to this compound move.
+  double Score() const {
+    return stack_.empty() ? 0.0 : stack_.back().cumulative_score;
+  }
+
+  // Returns the sum of objective deltas from the root.
+  double ObjectiveDelta() const {
+    return stack_.empty() ? 0.0 : stack_.back().cumulative_objective_delta;
+  }
+
+  // Returns true if this move reduces weighted violation, or improves the
+  // objective without increasing violation.
+  bool IsImproving() const;
+
+  // Returns the number of backtracking moves that have been applied.
+  int NumBacktracks() const { return num_backtracks_; }
+
+ private:
+  struct UnitMove {
+    int var;
+    int64_t prev_value;
+    // Note that this stores the score of reverting to prev_value.
+    double score;
+    // Instead of tracking this on the compound move, we store the partial sums
+    // to avoid numerical issues causing negative scores after backtracking.
+    double cumulative_score;
+    double cumulative_objective_delta;
+  };
+  LsEvaluator* evaluator_;
+  std::vector<bool> var_on_stack_;
+  std::vector<UnitMove> stack_;
+
+  int64_t num_backtracks_ = 0;
 };
 
 }  // namespace operations_research::sat
