@@ -140,6 +140,9 @@ target_compile_features(${PROJECT_NAME} PUBLIC
   $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
+if(MSVC)
+  target_link_options(${PROJECT_NAME} INTERFACE "/WHOLEARCHIVE:${PROJECT_NAME}")
+endif()
 
 # Properties
 if(NOT APPLE)
