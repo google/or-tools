@@ -472,7 +472,6 @@ function(add_cxx_sample FILE_NAME)
     set_target_properties(${SAMPLE_NAME} PROPERTIES
                           INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
-
   install(TARGETS ${SAMPLE_NAME})
 
   if(BUILD_TESTING)
@@ -509,7 +508,6 @@ function(add_cxx_example FILE_NAME)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES
                           INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
-
   install(TARGETS ${EXAMPLE_NAME})
 
   if(BUILD_TESTING)
