@@ -15,6 +15,7 @@ file(GLOB _SRCS "*.h" "*.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/solve.cc
 )
+list(FILTER _SRCS EXCLUDE REGEX "/model_exporter_main\\.cc")
 if(USE_SCIP)
   list(APPEND _SRCS ${LPI_GLOP_SRC})
 endif()
