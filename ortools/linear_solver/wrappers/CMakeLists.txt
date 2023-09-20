@@ -25,7 +25,6 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   absl::status
-  protobuf::libprotobuf
   $<$<BOOL:${USE_SCIP}>:libscip>
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::_linear_solver_wrappers ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+#add_library(${PROJECT_NAMESPACE}::linear_solver_wrappers ALIAS ${NAME})

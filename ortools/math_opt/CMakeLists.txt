@@ -15,39 +15,27 @@ if(NOT BUILD_MATH_OPT)
   return()
 endif()
 
-file(GLOB_RECURSE _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
-list(FILTER _SRCS EXCLUDE REGEX "/c_api/.*example")
-list(FILTER _SRCS EXCLUDE REGEX "/tools/")
-list(FILTER _SRCS EXCLUDE REGEX "/samples/")
-
-if(NOT USE_GLPK)
-  list(FILTER _SRCS EXCLUDE REGEX "/glpk/")
-  list(FILTER _SRCS EXCLUDE REGEX "/glpk_.*.h$")
-  list(FILTER _SRCS EXCLUDE REGEX "/glpk_.*.cc$")
-endif()
-
-if(NOT USE_SCIP)
-  list(FILTER _SRCS EXCLUDE REGEX "/gscip/")
-  list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.h$")
-  list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.cc$")
-endif()
+add_subdirectory(core)
+add_subdirectory(constraints)
+add_subdirectory(cpp)
+add_subdirectory(io)
+add_subdirectory(labs)
+add_subdirectory(solvers)
+add_subdirectory(storage)
+add_subdirectory(validators)
 
 set(NAME ${PROJECT_NAME}_math_opt)
-
-# Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
-add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
-target_include_directories(${NAME} PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
-target_link_libraries(${NAME} PRIVATE
-  absl::strings
-  protobuf::libprotobuf
-  $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
-  $<$<BOOL:${USE_SCIP}>:libscip>
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::math_opt ALIAS ${NAME})
+add_library(${NAME} OBJECT)
+target_sources(${NAME} PUBLIC
+  $<TARGET_OBJECTS:${NAME}_core>
+  $<TARGET_OBJECTS:${NAME}_cpp>
+  $<TARGET_OBJECTS:${NAME}_io>
+  $<TARGET_OBJECTS:${NAME}_labs>
+  $<TARGET_OBJECTS:${NAME}_solvers>
+  $<TARGET_OBJECTS:${NAME}_storage>
+  $<TARGET_OBJECTS:${NAME}_validators>
+)
+target_link_libraries(${NAME} INTERFACE
+  ${NAME}_constraints
+)
+install(TARGETS ${PROJECT_NAME}_math_opt EXPORT ${PROJECT_NAME}Targets)

@@ -35,7 +35,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::memory
   absl::strings
   absl::str_format
-  protobuf::libprotobuf
   Eigen3::Eigen
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::pdlp ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+#add_library(${PROJECT_NAMESPACE}::pdlp ALIAS ${NAME})

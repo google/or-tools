@@ -11,22 +11,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
-set(NAME ${PROJECT_NAME}_glop)
+add_subdirectory(indicator)
+add_subdirectory(quadratic)
+add_subdirectory(second_order_cone)
+add_subdirectory(sos)
+add_subdirectory(util)
 
-# Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
-add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
-target_include_directories(${NAME} PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR})
-target_link_libraries(${NAME} PRIVATE
-  absl::memory
-  absl::strings
-  absl::str_format
-  protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
-#add_library(${PROJECT_NAMESPACE}::glop ALIAS ${NAME})
+set(NAME ${PROJECT_NAME}_math_opt_constraints)
+add_library(${NAME} OBJECT)
+target_sources(${NAME} PUBLIC
+  $<TARGET_OBJECTS:${NAME}_indicator>
+  $<TARGET_OBJECTS:${NAME}_quadratic>
+  $<TARGET_OBJECTS:${NAME}_second_order_cone>
+  $<TARGET_OBJECTS:${NAME}_sos>
+  $<TARGET_OBJECTS:${NAME}_util>
+)
+install(TARGETS ${PROJECT_NAME}_math_opt_constraints EXPORT ${PROJECT_NAME}Targets)

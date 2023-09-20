@@ -29,5 +29,5 @@ target_link_libraries(${NAME} PRIVATE
   absl::memory
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::algorithms ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+#add_library(${PROJECT_NAMESPACE}::algorithms ALIAS ${NAME})

@@ -11,22 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
-set(NAME ${PROJECT_NAME}_glop)
+set(NAME ${PROJECT_NAME}_math_opt_cpp)
+add_library(${NAME} OBJECT)
 
-# Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
-add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
-target_include_directories(${NAME} PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR})
+file(GLOB _SRCS "*.h" "*.cc")
+target_sources(${NAME} PRIVATE ${_SRCS})
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(${NAME} PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
-  absl::memory
   absl::strings
-  absl::str_format
-  protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
-#add_library(${PROJECT_NAMESPACE}::glop ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::math_opt_proto)
