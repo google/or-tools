@@ -235,6 +235,10 @@ if(USE_GLPK)
   message(STATUS "Build GLPK: ${BUILD_GLPK}")
 endif()
 
+## GUROBI
+# Since it is dynamicaly loaded upon use, OFF is currently not supported.
+CMAKE_DEPENDENT_OPTION(USE_GUROBI "Use the Gurobi solver" ON "BUILD_CXX" OFF)
+
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
 CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" OFF "BUILD_CXX" OFF)

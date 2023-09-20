@@ -52,6 +52,9 @@ if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
   set(GLPK_DIR glpk)
 endif()
+if(USE_GUROBI)
+  set(GUROBI_DIR gurobi)
+endif()
 if(USE_HIGHS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_HIGHS")
 endif()
@@ -283,7 +286,7 @@ foreach(SUBPROJECT IN ITEMS
  ${GSCIP_DIR}
  glop
  graph
- gurobi
+ ${GUROBI_DIR}
  init
  linear_solver
  lp_data
