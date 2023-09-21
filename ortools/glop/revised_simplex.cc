@@ -25,6 +25,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -3701,7 +3702,7 @@ void RevisedSimplex::DisplayErrors() {
 namespace {
 
 std::string StringifyMonomialWithFlags(const Fractional a,
-                                       const std::string& x) {
+                                       absl::string_view x) {
   return StringifyMonomial(
       a, x, absl::GetFlag(FLAGS_simplex_display_numbers_as_fractions));
 }
