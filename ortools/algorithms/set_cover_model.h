@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
+#include <vector>
+
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 
 // Representation class for the weighted set-covering problem.
@@ -72,7 +74,8 @@ class SetCoverModel {
         row_view_is_valid_(false),
         subset_costs_(),
         columns_(),
-        rows_() {}
+        rows_(),
+        all_subsets_() {}
 
   // Current number of elements to be covered in the model, i.e. the number of
   // elements in S. In matrix terms, this is the number of rows.
@@ -93,6 +96,9 @@ class SetCoverModel {
 
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
+
+  // Returns the list of indices for the subsets in the model.
+  std::vector<SubsetIndex> all_subsets() const { return all_subsets_; }
 
   // Adds an empty subset with a cost to the problem. In matrix terms, this
   // adds a column to the matrix.
@@ -123,6 +129,10 @@ class SetCoverModel {
   void ReserveNumElementsInSubset(int num_elements, int subset);
 
  private:
+  // Updates the all_subsets_ vector so that it always contains 0 to
+  // columns.size() - 1
+  void UpdateAllSubsetsList(SubsetIndex new_size);
+
   // Number of elements.
   ElementIndex num_elements_;
 
@@ -139,6 +149,12 @@ class SetCoverModel {
   // Vector of rows. Each row corresponds to an element and contains the
   // subsets containing the element.
   SparseRowView rows_;
+
+  // Vector of indices from 0 to columns.size() - 1. (Like std::iota, but built
+  // incrementally.) Used to (un)focus optimization algorithms on the complete
+  // problem.
+  // TODO(user): use this to enable deletion and recycling of columns/subsets.
+  std::vector<SubsetIndex> all_subsets_;
 };
 
 }  // namespace operations_research

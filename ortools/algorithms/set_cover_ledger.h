@@ -129,6 +129,12 @@ class SetCoverLedger {
   // Checks that coverage_  and marginal_impacts_ are consistent with  choices.
   bool CheckCoverageAndMarginalImpacts(const SubsetBoolVector& choices) const;
 
+  // Returns the subsets that are unused that could be used to cover the still
+  // uncovered subsets.
+  std::vector<SubsetIndex> ComputeSettableSubsets() const;
+
+  std::vector<SubsetIndex> ComputeResettableSubsets() const;
+
  private:
   // Recomputes the cost from scratch from c.
   Cost ComputeCost(const SubsetBoolVector& c) const;

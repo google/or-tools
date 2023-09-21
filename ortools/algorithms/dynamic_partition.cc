@@ -336,33 +336,4 @@ void SimpleDynamicPartition::Refine(
   }
 }
 
-std::vector<absl::Span<const int>> SimpleDynamicPartition::GetParts(
-    std::vector<int>* buffer) {
-  const int num_elements = part_of_.size();
-  const int num_parts = size_of_part_.size();
-  buffer->resize(num_elements);
-
-  std::vector<absl::Span<const int>> result(num_parts);
-  if (result.empty()) return result;
-
-  // Compute start of each part in buffer.
-  std::vector<int>& starts = temp_data_by_part_;
-  starts.resize(num_parts, 0);
-  for (int i = 1; i < num_parts; ++i) {
-    starts[i] = starts[i - 1] + size_of_part_[i - 1];
-  }
-
-  // Fill result.
-  for (int i = 0; i < num_parts; ++i) {
-    result[i] = absl::MakeSpan(&(*buffer)[starts[i]], size_of_part_[i]);
-  }
-
-  // Copy elements in order and at their place.
-  for (int element = 0; element < num_elements; ++element) {
-    (*buffer)[starts[part_of_[element]]++] = element;
-  }
-  starts.clear();
-  return result;
-}
-
 }  // namespace operations_research

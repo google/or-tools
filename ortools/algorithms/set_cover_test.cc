@@ -13,8 +13,16 @@
 
 #include "ortools/algorithms/set_cover.h"
 
+#include <limits>
+#include <string>
+#include <vector>
+
+#include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -78,6 +86,25 @@ SetCoverModel CreateKnightsCoverModel(int num_rows, int num_cols) {
     }
   }
   return model;
+}
+
+void DisplayKnightsCoverSolution(const SubsetBoolVector& choices, int num_rows,
+                                 int num_cols) {
+  std::string line;
+  std::string separator = "+";
+  for (int col = 0; col < num_cols; ++col) {
+    absl::StrAppend(&separator, "-+");
+  }
+  LOG(INFO) << separator;
+  for (int row = 0; row < num_rows; ++row) {
+    line = "|";
+    for (int col = 0; col < num_cols; ++col) {
+      const SubsetIndex subset(row * num_cols + col);
+      absl::StrAppend(&line, choices[subset] ? "X|" : " |");
+    }
+    LOG(INFO) << line;
+    LOG(INFO) << separator;
+  }
 }
 
 #ifdef NDEBUG
@@ -157,6 +184,61 @@ TEST(SetCoverTest, KnightsCoverTrivial) {
   CHECK(steepest.NextSolution(100000));
   LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
   EXPECT_TRUE(ledger.CheckSolution());
+}
+
+TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
+  const int BoardSize = 15;
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverLedger ledger(&model);
+
+  GreedySolutionGenerator greedy(&ledger);
+  CHECK(greedy.NextSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+
+  SteepestSearch steepest(&ledger);
+  CHECK(steepest.NextSolution(10000));
+  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+  EXPECT_TRUE(ledger.CheckSolution());
+
+  GuidedTabuSearch gts(&ledger);
+  CHECK(gts.NextSolution(10000));
+  LOG(INFO) << "GuidedTabuSearch cost: " << ledger.cost();
+  EXPECT_TRUE(ledger.CheckSolution());
+  DisplayKnightsCoverSolution(ledger.GetSolution(), BoardSize, BoardSize);
+}
+
+TEST(SetCoverTest, KnightsCoverRandomClear) {
+  const int BoardSize = 15;
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverLedger ledger(&model);
+  Cost best_cost = std::numeric_limits<Cost>::max();
+  SubsetBoolVector best_choices = ledger.GetSolution();
+  std::vector<SubsetIndex> focus = model.all_subsets();
+  for (int i = 0; i < 10000; ++i) {
+    GreedySolutionGenerator greedy(&ledger);
+    CHECK(greedy.NextSolution(focus));
+    // LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+
+    SteepestSearch steepest(&ledger);
+    CHECK(steepest.NextSolution(focus, 10000));
+    // LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+    EXPECT_TRUE(ledger.CheckSolution());
+    if (ledger.cost() < best_cost) {
+      best_cost = ledger.cost();
+      best_choices = ledger.GetSolution();
+      LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
+    }
+    ledger.LoadSolution(best_choices);
+    ClearProportionRandomly(0.1, &ledger);
+    // focus = ledger.ComputeSettableSubsets();
+  }
+  if (ledger.cost() < 0) {
+    // The best solution found until now has a cost of 350.
+    // http://www.contestcen.com/kn50.htm
+    DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+    CHECK_GE(ledger.cost(), 350);
+  }
+  DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
 }
 
 void BM_Steepest(benchmark::State& state) {

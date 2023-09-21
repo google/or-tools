@@ -20,6 +20,8 @@
 
 #include "absl/log/check.h"
 #include "absl/random/random.h"
+#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_utils.h"
 #include "ortools/base/logging.h"
 
@@ -30,8 +32,16 @@ constexpr SubsetIndex kNotFound(-1);
 // TrivialSolutionGenerator.
 
 bool TrivialSolutionGenerator::NextSolution() {
+  return NextSolution(ledger_->model()->all_subsets());
+}
+
+bool TrivialSolutionGenerator::NextSolution(
+    const std::vector<SubsetIndex>& focus) {
   const SubsetIndex num_subsets(ledger_->model()->num_subsets());
-  SubsetBoolVector choices(num_subsets, true);
+  SubsetBoolVector choices(num_subsets, false);
+  for (const SubsetIndex subset : focus) {
+    choices[subset] = true;
+  }
   ledger_->LoadSolution(choices);
   return true;
 }
@@ -39,17 +49,15 @@ bool TrivialSolutionGenerator::NextSolution() {
 // RandomSolutionGenerator.
 
 bool RandomSolutionGenerator::NextSolution() {
-  const SubsetIndex num_subsets(ledger_->model()->num_subsets());
-  std::vector<SubsetIndex> random_subset_order(num_subsets.value());
-  std::iota(random_subset_order.begin(), random_subset_order.end(),
-            SubsetIndex(0));
-  std::shuffle(random_subset_order.begin(), random_subset_order.end(),
-               absl::BitGen());
-  const ElementIndex num_elements(ledger_->model()->num_elements());
-  for (const SubsetIndex subset : random_subset_order) {
-    if (ledger_->num_elements_covered() == num_elements) {
-      break;
-    }
+  return NextSolution(ledger_->model()->all_subsets());
+}
+
+bool RandomSolutionGenerator::NextSolution(
+    const std::vector<SubsetIndex>& focus) {
+  std::vector<SubsetIndex> shuffled = focus;
+  std::shuffle(shuffled.begin(), shuffled.end(), absl::BitGen());
+  for (const SubsetIndex subset : shuffled) {
+    if (ledger_->is_selected(subset)) continue;
     if (ledger_->marginal_impacts(subset) != 0) {
       ledger_->Toggle(subset, true);
     }
@@ -76,13 +84,17 @@ void GreedySolutionGenerator::UpdatePriorities(
 }
 
 bool GreedySolutionGenerator::NextSolution() {
+  return NextSolution(ledger_->model()->all_subsets());
+}
+
+bool GreedySolutionGenerator::NextSolution(
+    const std::vector<SubsetIndex>& focus) {
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
-  const SubsetIndex num_subsets(ledger_->model()->num_subsets());
   ledger_->MakeDataConsistent();
 
   // The priority is the minimum marginal cost increase. Since the
   // priority queue returns the smallest value, we use the opposite.
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
+  for (const SubsetIndex subset : focus) {
     if (!ledger_->is_selected(subset) &&
         ledger_->marginal_impacts(subset) != 0) {
       const Cost marginal_cost_increase =
@@ -122,13 +134,17 @@ void SteepestSearch::UpdatePriorities(
 }
 
 bool SteepestSearch::NextSolution(int num_iterations) {
+  return NextSolution(ledger_->model()->all_subsets(), num_iterations);
+}
+
+bool SteepestSearch::NextSolution(const std::vector<SubsetIndex>& focus,
+                                  int num_iterations) {
   // Return false if ledger_ contains no solution.
   if (!ledger_->CheckSolution()) return false;
-  const SparseColumnView& columns = ledger_->model()->columns();
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
   // Create priority queue with cost of using a subset, by decreasing order.
   // Do it only for removable subsets.
-  for (SubsetIndex subset(0); subset < columns.size(); ++subset) {
+  for (const SubsetIndex subset : focus) {
     // The priority is the gain from removing the subset from the solution.
     if (ledger_->is_selected(subset) && ledger_->is_removable(subset)) {
       pq_.Add(subset, subset_costs[subset]);
@@ -157,11 +173,8 @@ void GuidedTabuSearch::Initialize() {
   const SparseColumnView& columns = ledger_->model()->columns();
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
   times_penalized_.AssignToZero(columns.size());
-  penalized_costs_ = subset_costs;
-  gts_priorities_ = subset_costs;
-  for (SubsetIndex subset(0); subset < gts_priorities_.size(); ++subset) {
-    gts_priorities_[subset] /= columns[subset].size().value();
-  }
+  augmented_costs_ = subset_costs;
+  utilities_ = subset_costs;
 }
 
 namespace {
@@ -171,30 +184,25 @@ bool FlipCoin() {
 }
 }  // namespace
 
-void GuidedTabuSearch::UpdatePenalties(
-    const std::vector<SubsetIndex>& impacted_subsets) {
-  const SparseColumnView& columns = ledger_->model()->columns();
+void GuidedTabuSearch::UpdatePenalties(const std::vector<SubsetIndex>& focus) {
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
-  const ElementIndex num_elements(ledger_->model()->num_elements());
-  Cost largest_priority = -1.0;
-  for (SubsetIndex subset(0); subset < columns.size(); ++subset) {
+  Cost max_utility = -1.0;
+  for (const SubsetIndex subset : focus) {
     if (ledger_->is_selected(subset)) {
-      const ElementIndex num_elements_already_covered =
-          num_elements - ledger_->marginal_impacts(subset);
-      largest_priority = std::max(largest_priority, gts_priorities_[subset]) /
-                         num_elements_already_covered.value();
+      max_utility = std::max(max_utility, utilities_[subset]);
     }
   }
-  const double radius = radius_factor_ * largest_priority;
-  for (SubsetIndex subset(0); subset < columns.size(); ++subset) {
+  const double epsilon_utility = epsilon_ * max_utility;
+  for (const SubsetIndex subset : focus) {
     if (ledger_->is_selected(subset)) {
-      const double subset_priority = gts_priorities_[subset];
-      if ((largest_priority - subset_priority <= radius) && FlipCoin()) {
+      const double utility = utilities_[subset];
+      if ((max_utility - utility <= epsilon_utility) && FlipCoin()) {
         ++times_penalized_[subset];
         const int times_penalized = times_penalized_[subset];
-        const Cost cost = subset_costs[subset] / columns[subset].size().value();
-        gts_priorities_[subset] = cost / (1 + times_penalized);
-        penalized_costs_[subset] =
+        const Cost cost =
+            subset_costs[subset];  // / columns[subset].size().value();
+        utilities_[subset] = cost / (1 + times_penalized);
+        augmented_costs_[subset] =
             cost * (1 + penalty_factor_ * times_penalized);
       }
     }
@@ -202,43 +210,47 @@ void GuidedTabuSearch::UpdatePenalties(
 }
 
 bool GuidedTabuSearch::NextSolution(int num_iterations) {
-  const SparseColumnView& columns = ledger_->model()->columns();
+  return NextSolution(ledger_->model()->all_subsets(), num_iterations);
+}
+
+bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
+                                    int num_iterations) {
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
   constexpr Cost kMaxPossibleCost = std::numeric_limits<Cost>::max();
   Cost best_cost = ledger_->cost();
-  Cost total_pen_cost = 0;
-  for (const Cost pen_cost : penalized_costs_) {
-    total_pen_cost += pen_cost;
-  }
   SubsetBoolVector best_choices = ledger_->GetSolution();
+  Cost augmented_cost =
+      std::accumulate(augmented_costs_.begin(), augmented_costs_.end(), 0.0);
   for (int iteration = 0; iteration < num_iterations; ++iteration) {
-    Cost smallest_penalized_cost_increase = kMaxPossibleCost;
+    Cost best_delta = kMaxPossibleCost;
     SubsetIndex best_subset = kNotFound;
-    for (SubsetIndex subset(0); subset < columns.size(); ++subset) {
-      const Cost penalized_delta = penalized_costs_[subset];
-      DVLOG(1) << "Subset: " << subset.value() << " at "
-               << ledger_->is_selected(subset)
-               << " is removable = " << ledger_->is_removable(subset)
-               << " penalized_delta = " << penalized_delta
-               << " smallest_penalized_cost_increase = "
-               << smallest_penalized_cost_increase;
-      if (!ledger_->is_selected(subset)) {
-        // Try to use subset in solution, if its penalized delta is good.
-        if (penalized_delta < smallest_penalized_cost_increase) {
-          smallest_penalized_cost_increase = penalized_delta;
+    for (const SubsetIndex subset : focus) {
+      const Cost delta = augmented_costs_[subset];
+      DVLOG(1) << "Subset, " << subset.value() << ", at ,"
+               << ledger_->is_selected(subset) << ", is removable =, "
+               << ledger_->is_removable(subset) << ", delta =, " << delta
+               << ", best_delta =, " << best_delta;
+      if (ledger_->is_selected(subset)) {
+        // Try to remove subset from solution, if the gain from removing is
+        // worth it:
+        if (-delta < best_delta &&
+            // and it can be removed, and
+            ledger_->is_removable(subset) &&
+            // it is not Tabu OR decreases the actual cost (aspiration):
+            (!tabu_list_.Contains(subset) ||
+             ledger_->cost() - subset_costs[subset] < best_cost)) {
+          best_delta = -delta;
           best_subset = subset;
         }
       } else {
-        // Try to remove subset from solution, if the gain from removing, is
-        // OK:
-        if (-penalized_delta < smallest_penalized_cost_increase &&
-            // and it can be removed, and
-            ledger_->is_removable(subset) &&
-            // it is not Tabu OR decreases the actual cost:
-            (!tabu_list_.Contains(subset) ||
-             ledger_->cost() - subset_costs[subset] < best_cost)) {
-          smallest_penalized_cost_increase = -penalized_delta;
-          best_subset = subset;
+        // Try to use subset in solution, if its penalized delta is good.
+        if (delta < best_delta) {
+          // The limit kMaxPossibleCost is ill-defined,
+          // there is always a best_subset. Is it intended?
+          if (!tabu_list_.Contains(subset)) {
+            best_delta = delta;
+            best_subset = subset;
+          }
         }
       }
     }
@@ -246,16 +258,27 @@ bool GuidedTabuSearch::NextSolution(int num_iterations) {
       ledger_->LoadSolution(best_choices);
       return true;
     }
-    total_pen_cost += smallest_penalized_cost_increase;
-    const std::vector<SubsetIndex> impacted_subsets =
-        ledger_->Toggle(best_subset, !ledger_->is_selected(best_subset));
-    UpdatePenalties(impacted_subsets);
+    DVLOG(1) << "Best subset, " << best_subset.value() << ", at ,"
+             << ledger_->is_selected(best_subset) << ", is removable = ,"
+             << ledger_->is_removable(best_subset) << ", best_delta = ,"
+             << best_delta;
+
+    UpdatePenalties(focus);
     tabu_list_.Add(best_subset);
+    const std::vector<SubsetIndex> impacted_subsets =
+        ledger_->UnsafeToggle(best_subset, !ledger_->is_selected(best_subset));
+    // TODO(user): make the cost computation incremental.
+    augmented_cost =
+        std::accumulate(augmented_costs_.begin(), augmented_costs_.end(), 0.0);
+
+    DVLOG(1) << "Iteration, " << iteration << ", current cost = ,"
+             << ledger_->cost() << ", best cost = ," << best_cost
+             << ", penalized cost = ," << augmented_cost;
     if (ledger_->cost() < best_cost) {
-      LOG(INFO) << "Iteration:" << iteration
-                << ", current cost = " << ledger_->cost()
-                << ", best cost = " << best_cost
-                << ", penalized cost = " << total_pen_cost;
+      LOG(INFO) << "Updated best cost, "
+                << "Iteration, " << iteration << ", current cost = ,"
+                << ledger_->cost() << ", best cost = ," << best_cost
+                << ", penalized cost = ," << augmented_cost;
       best_cost = ledger_->cost();
       best_choices = ledger_->GetSolution();
     }
@@ -264,6 +287,33 @@ bool GuidedTabuSearch::NextSolution(int num_iterations) {
   DCHECK(ledger_->CheckConsistency());
   DCHECK(ledger_->CheckSolution());
   return true;
+}
+
+std::vector<SubsetIndex> ClearProportionRandomly(double proportion,
+                                                 SetCoverLedger* ledger) {
+  return ClearProportionRandomly(ledger->model()->all_subsets(), proportion,
+                                 ledger);
+}
+
+std::vector<SubsetIndex> ClearProportionRandomly(
+    const std::vector<SubsetIndex>& focus, double proportion,
+    SetCoverLedger* ledger) {
+  CHECK_LE(proportion, 1.0);
+  CHECK_GE(proportion, 0.0);
+  std::vector<SubsetIndex> choice_indices;
+  for (const SubsetIndex subset : focus) {
+    if (ledger->is_selected(subset)) {
+      choice_indices.push_back(subset);
+    }
+  }
+  std::shuffle(choice_indices.begin(), choice_indices.end(), absl::BitGen());
+  const int num_subsets_to_clear = proportion * choice_indices.size();
+  choice_indices.resize(num_subsets_to_clear);
+  for (const SubsetIndex subset : choice_indices) {
+    // Use UnsafeToggle because we allow non-solutions.
+    ledger->UnsafeToggle(subset, false);
+  }
+  return choice_indices;
 }
 
 }  // namespace operations_research

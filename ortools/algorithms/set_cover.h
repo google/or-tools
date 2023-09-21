@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_utils.h"
 
 namespace operations_research {
@@ -33,13 +34,14 @@ namespace operations_research {
 // A mix of the guided local search (GLS) and Tabu Search (TS) metaheuristic
 // is also provided.
 //
-// TODO(user): add Large Neighborhood Search that removes a collection of T_j
-// (with a parameterized way to choose them), and that runs the algorithm here
-// on the corresponding subproblem.
+// The term 'focus' hereafter means a subset of the T_j's designated by their
+// indices. Focus make it possible to run the algorithms on the corresponding
+// subproblems.
 //
-// TODO(user): make Large Neighborhood Search concurrent, solving independent
+// TODO(user): make the different algorithms concurrent, solving independent
 // subproblems in different threads.
-
+// TODO(user): implement Large Neighborhood Search
+//
 // An obvious idea is to take all the T_j's (or equivalently to set all the
 // x_j's to 1). It's a bit silly but fast, and we can improve on it later using
 // local search.
@@ -51,6 +53,10 @@ class TrivialSolutionGenerator {
   // TODO(user): Add time-outs and exit with a partial solution. This seems
   // unlikely, though.
   bool NextSolution();
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(const std::vector<SubsetIndex>& focus);
 
  private:
   // The ledger on which the algorithm will run.
@@ -68,6 +74,10 @@ class RandomSolutionGenerator {
 
   // Returns true if a solution was found.
   bool NextSolution();
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(const std::vector<SubsetIndex>& focus);
 
  private:
   // The ledger on which the algorithm will run.
@@ -100,6 +110,10 @@ class GreedySolutionGenerator {
   // TODO(user): Add time-outs and exit with a partial solution.
   bool NextSolution();
 
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(const std::vector<SubsetIndex>& focus);
+
  private:
   // Updates the priorities on the impacted_subsets.
   void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets);
@@ -126,6 +140,8 @@ class SteepestSearch {
   // Returns true if a solution was found within num_iterations.
   // TODO(user): Add time-outs and exit with a partial solution.
   bool NextSolution(int num_iterations);
+
+  bool NextSolution(const std::vector<SubsetIndex>& focus, int num_iterations);
 
  private:
   // Updates the priorities on the impacted_subsets.
@@ -168,8 +184,8 @@ class GuidedTabuSearch {
         pq_(ledger_),
         lagrangian_factor_(kDefaultLagrangianFactor),
         penalty_factor_(kDefaultPenaltyFactor),
-        radius_factor_(kDefaultRadiusFactor),
-        penalized_costs_(),
+        epsilon_(kDefaultEpsilon),
+        augmented_costs_(),
         times_penalized_(),
         tabu_list_(SubsetIndex(kDefaultTabuListSize)) {
     Initialize();
@@ -182,14 +198,18 @@ class GuidedTabuSearch {
   // num_iterations iterations.
   bool NextSolution(int num_iterations);
 
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(const std::vector<SubsetIndex>& focus, int num_iterations);
+
   // TODO(user): re-introduce this is the code. It was used to favor
   // subsets with the same marginal costs but that would cover more elements.
   // But first, see if it makes sense to compute it.
   void SetLagrangianFactor(double factor) { lagrangian_factor_ = factor; }
   double GetLagrangianFactor() const { return lagrangian_factor_; }
 
-  void SetRadiusFactor(double r) { radius_factor_ = r; }
-  double GetRadius() const { return radius_factor_; }
+  void SetEpsilon(double r) { epsilon_ = r; }
+  double GetEpsilon() const { return epsilon_; }
 
   // Setters and getters for the Guided Tabu Search algorithm parameters.
   void SetPenaltyFactor(double factor) { penalty_factor_ = factor; }
@@ -199,11 +219,8 @@ class GuidedTabuSearch {
   int GetTabuListSize() const { return tabu_list_.size(); }
 
  private:
-  // Updates the priorities on the impacted_subsets.
-  void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets);
-
-  // Updates the penalties on the impacted_subsets.
-  void UpdatePenalties(const std::vector<SubsetIndex>& impacted_subsets);
+  // Updates the penalties on the subsets in focus.
+  void UpdatePenalties(const std::vector<SubsetIndex>& focus);
 
   // The ledger on which the algorithm will run.
   SetCoverLedger* ledger_;
@@ -219,31 +236,35 @@ class GuidedTabuSearch {
   static constexpr double kPenaltyUpdateEpsilon = 1e-1;
 
   // Guided Tabu Search parameters.
-  static constexpr double kDefaultPenaltyFactor = 0.2;
+  static constexpr double kDefaultPenaltyFactor = 0.3;
   double penalty_factor_;
 
   // Tabu Search parameters.
-  static constexpr double kDefaultRadiusFactor = 1e-8;
-  double radius_factor_;
+  static constexpr double kDefaultEpsilon = 1e-8;
+  double epsilon_;
 
   // Penalized costs for each subset as used in Guided Tabu Search.
-  SubsetCostVector penalized_costs_;
+  SubsetCostVector augmented_costs_;
 
   // The number of times each subset was penalized during Guided Tabu Search.
   SubsetCountVector times_penalized_;
 
   // TODO(user): remove and use priority_queue.
-  // Priorities for the different subsets.
-  // They are similar to the marginal cost of using a particular subset,
-  // defined as the cost of the subset divided by the number of elements that
-  // are still not covered.
-  SubsetCostVector gts_priorities_;
+  // Utilities for the different subsets. They are updated ("penalized") costs.
+  SubsetCostVector utilities_;
 
   // Tabu search-related data.
   static constexpr int kDefaultTabuListSize = 17;  // Nice prime number.
   TabuList<SubsetIndex> tabu_list_;
 };
 
+// Randomly clears a proportion (between 0 and 1) of the solution.
+std::vector<SubsetIndex> ClearProportionRandomly(double proportion,
+                                                 SetCoverLedger* ledger);
+
+std::vector<SubsetIndex> ClearProportionRandomly(
+    const std::vector<SubsetIndex>& focus, double proportion,
+    SetCoverLedger* ledger);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_SET_COVER_H_
