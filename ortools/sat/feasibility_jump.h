@@ -207,7 +207,6 @@ class FeasibilityJumpSolver : public SubSolver {
   bool use_compound_moves_ = false;
 
   // Statistics
-  absl::Time last_logging_time_;
   int64_t num_batches_ = 0;
   int64_t num_linear_evals_ = 0;
   int64_t num_general_evals_ = 0;

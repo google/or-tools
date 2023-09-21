@@ -268,7 +268,8 @@ bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
 #if defined(__PORTABLE_PLATFORM__)
   return false;
 #else   // !defined(__PORTABLE_PLATFORM__)
-  if (absl::EndsWith(filename, "txt")) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, "textproto")) {
     std::string proto_string;
     google::protobuf::TextFormat::Printer printer;
     SetupTextFormatPrinter(&printer);

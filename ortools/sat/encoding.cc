@@ -669,7 +669,8 @@ bool ObjectiveEncoder::ProcessCore(const std::vector<Literal>& core,
     // number of Booleans needed and has a good positive impact.
     std::vector<int> buffer;
     std::vector<absl::Span<const Literal>> decomposition;
-    if (bool_nodes.size() < 300 && bool_nodes.size() > 1) {
+    if (params_.core_minimization_level() > 1 && bool_nodes.size() < 300 &&
+        bool_nodes.size() > 1) {
       const auto& assignment = sat_solver_->Assignment();
       const int size = bool_nodes.size();
       std::vector<std::vector<int>> graph(size);

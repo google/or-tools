@@ -45,6 +45,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -492,8 +493,9 @@ void FindCpModelSymmetries(
       problem, &equivalence_classes, logger));
   if (graph == nullptr) return;
 
-  SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ", graph->num_nodes(),
-             " nodes and ", graph->num_arcs(), " arcs.");
+  SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ",
+             FormatCounter(graph->num_nodes()), " nodes and ",
+             FormatCounter(graph->num_arcs()), " arcs.");
   if (graph->num_nodes() == 0) return;
 
   if (params.symmetry_level() < 3 && graph->num_nodes() > 1e6 &&

@@ -3070,7 +3070,7 @@ class LnsSolver : public SubSolver {
       local_params.set_find_big_linear_overlap(false);
       local_params.set_solution_pool_size(1);  // Keep the best solution found.
       local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
-      local_params.set_search_random_variable_pool_size(3);
+      local_params.set_search_random_variable_pool_size(5);
 
       Model local_model(lns_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
@@ -3825,6 +3825,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Log statistics.
   // TODO(user): Store and display first solution solvers.
   if (logger->LoggingIsEnabled()) {
+    logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
     SOLVER_LOG(logger, "");
 
     if (params.log_subsolver_statistics()) {

@@ -203,11 +203,13 @@ class VarDomination {
   // This hold the first phase best candidate.
   // Warning, the initial candidates span can overlap in the shared_buffer_.
   std::vector<IntegerVariable> shared_buffer_;
+  absl::StrongVector<IntegerVariable, bool> has_initial_candidates_;
   absl::StrongVector<IntegerVariable, IntegerVariableSpan> initial_candidates_;
 
   // This will hold the final result.
   // Buffer with independent content for each vars.
   std::vector<IntegerVariable> buffer_;
+  std::vector<IntegerVariable> other_buffer_;
   absl::StrongVector<IntegerVariable, IntegerVariableSpan> dominating_vars_;
 };
 
@@ -268,21 +270,19 @@ class DualBoundStrengthening {
 
   // How many times can_freely_decrease_until_[var] was set by a constraints.
   // If only one constraint is blocking, we can do more presolve.
-  absl::StrongVector<IntegerVariable, int64_t> num_locks_;
+  absl::StrongVector<IntegerVariable, int> num_locks_;
 
   // If num_locks_[var] == 1, this will be the unique constraint that block var
   // in this direction. Note that it can be set to -1 if this wasn't recorded.
-  absl::StrongVector<IntegerVariable, int64_t> locking_ct_index_;
+  absl::StrongVector<IntegerVariable, int> locking_ct_index_;
 
   int num_deleted_constraints_ = 0;
 };
 
-// Detect the variable dominance relations within the given model. Note that
-// to avoid doing too much work, we might miss some relations. This does two
-// full scan of the model.
-void DetectDominanceRelations(const PresolveContext& context,
-                              VarDomination* var_domination,
-                              DualBoundStrengthening* dual_bound_strengthening);
+// Detects the variable dominance relations within the given model. Note that
+// to avoid doing too much work, we might miss some relations.
+void ScanModelForDominanceDetection(PresolveContext& context,
+                                    VarDomination* var_domination);
 
 // Once detected, exploit the dominance relations that appear in the same
 // constraint. This does a full scan of the model.
@@ -290,6 +290,11 @@ void DetectDominanceRelations(const PresolveContext& context,
 // Return false if the problem is infeasible.
 bool ExploitDominanceRelations(const VarDomination& var_domination,
                                PresolveContext* context);
+
+// Scan the model so that dual_bound_strengthening.Strenghten() works.
+void ScanModelForDualBoundStrengthening(
+    const PresolveContext& context,
+    DualBoundStrengthening* dual_bound_strengthening);
 
 }  // namespace sat
 }  // namespace operations_research

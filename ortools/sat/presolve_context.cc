@@ -361,8 +361,8 @@ bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
 bool PresolveContext::VariableWithCostIsUnique(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return var_to_constraints_[var].contains(kObjectiveConstraint) &&
-         var_to_constraints_[var].size() == 2;
+  return var_to_constraints_[var].size() == 2 &&
+         var_to_constraints_[var].contains(kObjectiveConstraint);
 }
 
 // Tricky: Same remark as for VariableIsUniqueAndRemovable().
@@ -1537,6 +1537,9 @@ int PresolveContext::GetOrCreateAffineValueEncoding(
 void PresolveContext::ReadObjectiveFromProto() {
   const CpObjectiveProto& obj = working_model->objective();
 
+  // We do some small canonicalization here
+  objective_proto_is_up_to_date_ = false;
+
   objective_offset_ = obj.offset();
   objective_scaling_factor_ = obj.scaling_factor();
   if (objective_scaling_factor_ == 0.0) {
@@ -1621,8 +1624,7 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
   const AffineRelation::Relation r = GetAffineRelation(var);
   if (r.representative == var) return true;
 
-  objective_map_.erase(var);
-  EraseFromVarToConstraint(var, kObjectiveConstraint);
+  RemoveVariableFromObjective(var);
 
   // Do the substitution.
   AddToObjectiveOffset(coeff * r.offset);
@@ -1642,6 +1644,8 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
 }
 
 bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
+  objective_proto_is_up_to_date_ = false;
+
   // We replace each entry by its affine representative.
   // Note that the non-deterministic loop is fine, but because we iterate
   // one the map while modifying it, it is safer to do a copy rather than to
@@ -1754,12 +1758,14 @@ bool PresolveContext::RecomputeSingletonObjectiveDomain() {
   }
 
   // Recompute a correct and non-constraining objective domain.
+  objective_proto_is_up_to_date_ = false;
   objective_domain_ = DomainOf(var).ContinuousMultiplicationBy(coeff);
   objective_domain_is_constraining_ = false;
   return true;
 }
 
 void PresolveContext::RemoveVariableFromObjective(int ref) {
+  objective_proto_is_up_to_date_ = false;
   const int var = PositiveRef(ref);
   objective_map_.erase(var);
   EraseFromVarToConstraint(var, kObjectiveConstraint);
@@ -1767,6 +1773,7 @@ void PresolveContext::RemoveVariableFromObjective(int ref) {
 
 void PresolveContext::AddToObjective(int var, int64_t value) {
   CHECK(RefIsPositive(var));
+  objective_proto_is_up_to_date_ = false;
   int64_t& map_ref = objective_map_[var];
   map_ref += value;
   if (map_ref == 0) {
@@ -1777,6 +1784,7 @@ void PresolveContext::AddToObjective(int var, int64_t value) {
 }
 
 void PresolveContext::AddLiteralToObjective(int ref, int64_t value) {
+  objective_proto_is_up_to_date_ = false;
   const int var = PositiveRef(ref);
   int64_t& map_ref = objective_map_[var];
   if (RefIsPositive(ref)) {
@@ -1793,6 +1801,7 @@ void PresolveContext::AddLiteralToObjective(int ref, int64_t value) {
 }
 
 bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
+  objective_proto_is_up_to_date_ = false;
   const int64_t temp = CapAdd(objective_integer_before_offset_, delta);
   if (temp == std::numeric_limits<int64_t>::min()) return false;
   if (temp == std::numeric_limits<int64_t>::max()) return false;
@@ -1807,6 +1816,7 @@ bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
 bool PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64_t coeff_in_equality,
     const ConstraintProto& equality) {
+  objective_proto_is_up_to_date_ = false;
   CHECK(equality.enforcement_literal().empty());
   CHECK(RefIsPositive(var_in_equality));
 
@@ -1930,6 +1940,7 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
   }
 
   int64_t offset = shift;
+  objective_proto_is_up_to_date_ = false;
   for (const int ref : exactly_one) {
     const int var = PositiveRef(ref);
 
@@ -1974,12 +1985,19 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
 }
 
 void PresolveContext::WriteObjectiveToProto() const {
+  if (objective_proto_is_up_to_date_) return;
+  objective_proto_is_up_to_date_ = true;
+
   // We need to sort the entries to be deterministic.
-  std::vector<std::pair<int, int64_t>> entries;
+  // Note that --cpu_profile shows it is slightly faster to only compare key.
+  tmp_entries_.clear();
+  tmp_entries_.reserve(objective_map_.size());
   for (const auto& entry : objective_map_) {
-    entries.push_back(entry);
+    tmp_entries_.push_back(entry);
   }
-  std::sort(entries.begin(), entries.end());
+  std::sort(tmp_entries_.begin(), tmp_entries_.end(),
+            [](const std::pair<int, int64_t>& a,
+               const std::pair<int, int64_t>& b) { return a.first < b.first; });
 
   CpObjectiveProto* mutable_obj = working_model->mutable_objective();
   mutable_obj->set_offset(objective_offset_);
@@ -1994,7 +2012,7 @@ void PresolveContext::WriteObjectiveToProto() const {
   FillDomainInProto(objective_domain_, mutable_obj);
   mutable_obj->clear_vars();
   mutable_obj->clear_coeffs();
-  for (const auto& entry : entries) {
+  for (const auto& entry : tmp_entries_) {
     mutable_obj->add_vars(entry.first);
     mutable_obj->add_coeffs(entry.second);
   }

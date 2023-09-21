@@ -105,7 +105,9 @@ SharedResponseManager::SharedResponseManager(Model* model)
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
       solutions_(parameters_.solution_pool_size(), "feasible solutions"),
-      logger_(model->GetOrCreate<SolverLogger>()) {}
+      logger_(model->GetOrCreate<SolverLogger>()) {
+  bounds_logging_id_ = logger_->GetNewThrottledId();
+}
 
 namespace {
 
@@ -163,20 +165,25 @@ void SharedResponseManager::LogMessage(const std::string& prefix,
                                       wall_timer_.Get(), message));
 }
 
-void SharedResponseManager::LogPeriodicMessage(const std::string& prefix,
-                                               const std::string& message,
-                                               double frequency_seconds,
-                                               absl::Time* last_logging_time) {
-  if (frequency_seconds < 0.0 || last_logging_time == nullptr) return;
-  const absl::Time now = absl::Now();
-  if (now - *last_logging_time < absl::Seconds(frequency_seconds)) {
-    return;
-  }
-
+void SharedResponseManager::LogMessageWithThrottling(
+    const std::string& prefix, const std::string& message) {
   absl::MutexLock mutex_lock(&mutex_);
-  *last_logging_time = now;
-  SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
-                                      wall_timer_.Get(), message));
+
+  int id;
+  auto it = throttling_ids_.find(prefix);
+  if (it == throttling_ids_.end()) {
+    id = throttling_ids_[prefix] = logger_->GetNewThrottledId();
+  } else {
+    id = it->second;
+  }
+  logger_->ThrottledLog(id, absl::StrFormat("#%-5s %6.2fs %s", prefix,
+                                            wall_timer_.Get(), message));
+}
+
+bool SharedResponseManager::LoggingIsEnabled() const {
+  absl::MutexLock mutex_lock(&mutex_);
+
+  return logger_->LoggingIsEnabled();
 }
 
 void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
@@ -328,8 +335,9 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
       std::swap(new_lb, new_ub);
     }
     RegisterObjectiveBoundImprovement(update_info);
-    SOLVER_LOG(logger_, ProgressMessage("Bound", wall_timer_.Get(), best,
-                                        new_lb, new_ub, update_info));
+    logger_->ThrottledLog(bounds_logging_id_,
+                          ProgressMessage("Bound", wall_timer_.Get(), best,
+                                          new_lb, new_ub, update_info));
   }
   if (change) TestGapLimitsIfNeeded();
 }
@@ -383,6 +391,7 @@ void SharedResponseManager::Synchronize() {
   if (solutions_.NumSolutions() > 0) {
     first_solution_solvers_should_stop_ = true;
   }
+  logger_->FlushPendingThrottledLogs();
 }
 
 IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {

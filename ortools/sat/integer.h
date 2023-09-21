@@ -499,8 +499,12 @@ class IntegerEncoder {
   //
   // The FullDomainEncoding() just check VariableIsFullyEncoded() and returns
   // the same result.
-  std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
-  std::vector<ValueLiteralPair> PartialDomainEncoding(
+  //
+  // WARNING: The reference returned is only valid until the next call to one
+  // of these functions.
+  const std::vector<ValueLiteralPair>& FullDomainEncoding(
+      IntegerVariable var) const;
+  const std::vector<ValueLiteralPair>& PartialDomainEncoding(
       IntegerVariable var) const;
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
@@ -715,6 +719,9 @@ class IntegerEncoder {
   // Temporary memory used by FullyEncodeVariable().
   std::vector<IntegerValue> tmp_values_;
   std::vector<ValueLiteralPair> tmp_encoding_;
+
+  // Temporary memory for the result of PartialDomainEncoding().
+  mutable std::vector<ValueLiteralPair> partial_encoding_;
 };
 
 // This class maintains a set of integer variables with their current bounds.
@@ -881,6 +888,10 @@ class IntegerTrail : public SatPropagator {
   // Returns the current lower bound assuming the literal is true.
   IntegerValue ConditionalLowerBound(Literal l, IntegerVariable i) const;
   IntegerValue ConditionalLowerBound(Literal l, AffineExpression expr) const;
+
+  // Returns the current upper bound assuming the literal is true.
+  IntegerValue ConditionalUpperBound(Literal l, IntegerVariable i) const;
+  IntegerValue ConditionalUpperBound(Literal l, AffineExpression expr) const;
 
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
@@ -1616,6 +1627,17 @@ inline IntegerValue IntegerTrail::ConditionalLowerBound(
     Literal l, AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return ConditionalLowerBound(l, expr.var) * expr.coeff + expr.constant;
+}
+
+inline IntegerValue IntegerTrail::ConditionalUpperBound(
+    Literal l, IntegerVariable i) const {
+  return -ConditionalLowerBound(l, NegationOf(i));
+}
+
+inline IntegerValue IntegerTrail::ConditionalUpperBound(
+    Literal l, AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return ConditionalUpperBound(l, expr.var) * expr.coeff + expr.constant;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(

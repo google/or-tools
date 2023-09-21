@@ -256,7 +256,9 @@ std::function<void(Model*)> Cumulative(
     // Propagator responsible for applying the Timetable Edge finding filtering
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
-    if (parameters.use_timetable_edge_finding_in_cumulative()) {
+    if (parameters.use_timetable_edge_finding_in_cumulative() &&
+        helper->NumTasks() <=
+            parameters.max_num_intervals_for_timetable_edge_finding()) {
       TimeTableEdgeFinding* time_table_edge_finding =
           new TimeTableEdgeFinding(capacity, helper, demands_helper, model);
       time_table_edge_finding->RegisterWith(watcher);

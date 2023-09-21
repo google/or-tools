@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 260
+// NEXT TAG: 261
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -380,12 +380,6 @@ message SatParameters {
   // log_to_stdout, log_to_response, ...) will do anything.
   optional bool log_search_progress = 41 [default = false];
 
-  // Indicates how much logging should wait before logging periodic search
-  // information from specialized workers (lb_tree_search, probing).
-  // A value < 0 will disable periodic logs.
-  optional double log_frequency_in_seconds = 212 [default = -1];
-  optional double model_reduction_log_frequency_in_seconds = 218 [default = 5];
-
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
   // number of search workers is > 1. Note that in all case we display a bit
@@ -668,8 +662,11 @@ message SatParameters {
   // otherwise.
   optional bool use_optimization_hints = 35 [default = true];
 
-  // Whether we use a simple heuristic to try to minimize an UNSAT core.
-  optional bool minimize_core = 50 [default = true];
+  // If positive, we spend some effort on each core:
+  // - At level 1, we use a simple heuristic to try to minimize an UNSAT core.
+  // - At level 2, we use propagation to minimize the core but also identify
+  //   literal in at most one relationship in this core.
+  optional int32 core_minimization_level = 50 [default = 2];
 
   // Whether we try to find more independent cores for a given set of
   // assumptions in the core based max-SAT algorithms.
@@ -765,6 +762,11 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_timetable_edge_finding_in_cumulative = 79 [default = false];
+
+  // Max number of intervals for the timetable_edge_finding algorithm to
+  // propagate. A value of 0 disables the constraint.
+  optional int32 max_num_intervals_for_timetable_edge_finding = 260
+      [default = 100];
 
   // If true, detect and create constraint for integer variable that are "after"
   // a set of intervals in the same cumulative constraint.

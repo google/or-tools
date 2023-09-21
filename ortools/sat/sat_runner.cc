@@ -63,7 +63,7 @@ void TryToRemoveSuffix(absl::string_view suffix, std::string* str) {
   if (file::Extension(*str) == suffix) *str = file::Stem(*str);
 }
 
-std::string ExtractName(const std::string& full_filename) {
+std::string ExtractName(absl::string_view full_filename) {
   std::string filename = std::string(file::Basename(full_filename));
   // The order is important as '.pb.txt.gz' is a common suffix.
   TryToRemoveSuffix("gz", &filename);

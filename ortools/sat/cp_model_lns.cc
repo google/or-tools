@@ -82,7 +82,6 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   InitializeHelperData();
   RecomputeHelperData();
   Synchronize();
-  last_logging_time_ = absl::Now();
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
@@ -361,13 +360,11 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // TODO(user): This is not ideal, as if two reductions appears in a row and
   // nothing else is done for a while, we will never see the "latest" size
   // in the log until it is reduced again.
-  shared_response_->LogPeriodicMessage(
+  shared_response_->LogMessageWithThrottling(
       "Model",
       absl::StrCat("var:", active_variables_.size(), "/", num_variables,
                    " constraints:", simplied_model_proto_.constraints().size(),
-                   "/", model_proto_.constraints().size(), compo_message),
-      parameters_.model_reduction_log_frequency_in_seconds(),
-      &last_logging_time_);
+                   "/", model_proto_.constraints().size(), compo_message));
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {

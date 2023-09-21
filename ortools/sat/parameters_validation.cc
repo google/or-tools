@@ -72,8 +72,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(strategy_change_increase_ratio);
   TEST_IS_FINITE(absolute_gap_limit);
   TEST_IS_FINITE(relative_gap_limit);
-  TEST_IS_FINITE(log_frequency_in_seconds);
-  TEST_IS_FINITE(model_reduction_log_frequency_in_seconds);
   TEST_IS_FINITE(probing_deterministic_time_limit);
   TEST_IS_FINITE(presolve_probing_deterministic_time_limit);
   TEST_IS_FINITE(propagation_loop_detection_factor);

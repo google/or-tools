@@ -374,7 +374,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
         ResetAndSolveIntegerProblem(assumptions, model);
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
-    if (sat_solver->parameters().minimize_core()) {
+    if (sat_solver->parameters().core_minimization_level() > 0) {
       MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
     if (core.size() == 1) {
@@ -822,10 +822,13 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // We have a new core.
     std::vector<Literal> core = sat_solver_->GetLastIncompatibleDecisions();
-    if (parameters_->minimize_core()) {
+    if (parameters_->core_minimization_level() > 0) {
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
+    }
+    if (parameters_->core_minimization_level() > 1) {
       MinimizeCoreWithSearch(time_limit_, sat_solver_, &core);
     }
+    sat_solver_->ResetToLevelZero();
     FilterAssignedLiteral(sat_solver_->Assignment(), &core);
     if (core.empty()) return SatSolver::INFEASIBLE;
 

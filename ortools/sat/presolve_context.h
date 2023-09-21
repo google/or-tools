@@ -647,9 +647,10 @@ class PresolveContext {
   // the objective in this format in order to have more efficient substitution
   // on large problems (also because the objective is often dense). At the end
   // we re-convert it to its proto form.
+  mutable bool objective_proto_is_up_to_date_ = false;
   absl::flat_hash_map<int, int64_t> objective_map_;
   int64_t objective_overflow_detection_;
-  std::vector<std::pair<int, int64_t>> tmp_entries_;
+  mutable std::vector<std::pair<int, int64_t>> tmp_entries_;
   bool objective_domain_is_constraining_ = false;
   Domain objective_domain_;
   double objective_offset_;

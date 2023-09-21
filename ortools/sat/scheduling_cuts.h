@@ -14,10 +14,8 @@
 #ifndef OR_TOOLS_SAT_SCHEDULING_CUTS_H_
 #define OR_TOOLS_SAT_SCHEDULING_CUTS_H_
 
-#include <functional>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "ortools/sat/cuts.h"
@@ -74,32 +72,6 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
     SchedulingConstraintHelper* helper, SchedulingDemandHelper* demands_helper,
     const AffineExpression& capacity, Model* model);
 
-// Completion time cuts for the no_overlap_2d constraint. It actually generates
-// the completion time cumulative cuts in both axis.
-CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    Model* model);
-
-// Energetic cuts for the no_overlap_2d constraint.
-//
-// For a given set of rectangles, we compute the area of each rectangle
-// and make sure their sum is less than the area of the bounding interval.
-//
-// If an interval is optional, it contributes
-//    min_size_x * min_size_y * presence_literal
-// amount of total area.
-//
-// If an interval is performed, we use the linear area formulation (if
-// possible), or the McCormick relaxation of the size_x * size_y.
-//
-// The maximum area is the area of the bounding rectangle of each intervals
-// at level 0.
-CutGenerator CreateNoOverlap2dEnergyCutGenerator(
-    SchedulingConstraintHelper* x_helper, SchedulingConstraintHelper* y_helper,
-    SchedulingDemandHelper* x_demands_helper,
-    SchedulingDemandHelper* y_demands_helper,
-    const std::vector<std::vector<LiteralValueValue>>& energies, Model* model);
-
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit
 // in that span.
@@ -136,9 +108,8 @@ struct BaseEvent {
   IntegerValue x_end_min;
   IntegerValue x_end_max;
   IntegerValue x_size_min;
-  // Useful for no_overlap_2d or cumulative.
-  IntegerValue y_min = IntegerValue(0);
-  IntegerValue y_max = IntegerValue(0);
+
+  // Cache of the bounds on the y direction.
   IntegerValue y_size_min;
 
   // The energy min of this event.
@@ -153,7 +124,6 @@ struct BaseEvent {
 //   For a no_overlap constraint, y is always of size 1 between 0 and 1.
 //   For a cumulative constraint, y is the demand that must be between 0 and
 //       capacity_max.
-//   For a no_overlap_2d constraint, y the other dimension of the rect.
 struct CtEvent : BaseEvent {
   CtEvent(int t, SchedulingConstraintHelper* x_helper);
 

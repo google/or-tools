@@ -659,15 +659,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
   evaluator_->RecomputeViolatedList(/*linear_only=*/true);
 
   if (VLOG_IS_ON(1)) {
-    if (num_batches_ < 10) {
-      // The first few batches are more informative to understand how the
-      // heuristic behaves.
-      shared_response_->LogMessage(name(), OneLineStats());
-    } else {
-      shared_response_->LogPeriodicMessage(name(), OneLineStats(),
-                                           /*frequency_seconds=*/1.0,
-                                           &last_logging_time_);
-    }
+    shared_response_->LogMessageWithThrottling(name(), OneLineStats());
   }
 
   // TODO(user): It should be possible to support compound moves with the

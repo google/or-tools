@@ -855,7 +855,8 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
     // constraints, but when the later is called, more encoding might have taken
     // place.
     for (int i = 0; i < 2; ++i) {
-      for (const auto value_literal : encoder->PartialDomainEncoding(var1)) {
+      const auto copy = encoder->PartialDomainEncoding(var1);
+      for (const auto value_literal : copy) {
         const IntegerValue value1 = value_literal.value;
         const IntegerValue intermediate = rhs - value1 * coeff1;
         if (intermediate % coeff2 != 0) {
@@ -1049,7 +1050,8 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
     term1_value_to_literal[coeff1 * value_literal.value] =
         value_literal.literal;
   }
-  for (const auto value_literal : encoder->FullDomainEncoding(var2)) {
+  const auto copy = encoder->FullDomainEncoding(var2);
+  for (const auto value_literal : copy) {
     const IntegerValue target = rhs - value_literal.value * coeff2;
     if (!term1_value_to_literal.contains(target)) {
       m->Add(EnforcedClause(enforcement_literal,
@@ -1093,7 +1095,8 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
     term1_value_to_literal[coeff1 * value_literal.value] =
         value_literal.literal;
   }
-  for (const auto value_literal : encoder->FullDomainEncoding(var2)) {
+  const auto copy = encoder->FullDomainEncoding(var2);
+  for (const auto value_literal : copy) {
     const IntegerValue target_value = rhs - value_literal.value * coeff2;
     const auto& it = term1_value_to_literal.find(target_value);
     if (it != term1_value_to_literal.end()) {

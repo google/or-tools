@@ -116,12 +116,14 @@ class LinearConstraintPropagator : public PropagatorInterface {
         : assignment(model->GetOrCreate<Trail>()->Assignment()),
           integer_trail(model->GetOrCreate<IntegerTrail>()),
           time_limit(model->GetOrCreate<TimeLimit>()),
+          rev_int_repository(model->GetOrCreate<RevIntRepository>()),
           rev_integer_value_repository(
               model->GetOrCreate<RevIntegerValueRepository>()) {}
 
     const VariablesAssignment& assignment;
     IntegerTrail* integer_trail;
     TimeLimit* time_limit;
+    RevIntRepository* rev_int_repository;
     RevIntegerValueRepository* rev_integer_value_repository;
 
     // Parallel vectors.

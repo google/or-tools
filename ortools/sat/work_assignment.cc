@@ -220,7 +220,7 @@ int SharedTreeManager::SplitsToGeneratePerWorker() const {
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   absl::MutexLock mutex_lock(&mu_);
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
-  if (!IsValid(path) || nodes.back().first->closed) {
+  if (!IsValid(path)) {
     path.Clear();
     return false;
   }
@@ -239,6 +239,10 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
     prev_level = level;
   }
   ProcessNodeChanges();
+  if (nodes.back().first->closed) {
+    path.Clear();
+    return false;
+  }
   // Restart after processing updates - we might learn a new objective bound.
   if (++num_syncs_since_restart_ / num_workers_ > kSyncsPerWorkerPerRestart &&
       (num_restarts_ < kNumInitialRestarts || nodes_.size() >= max_nodes_)) {
@@ -246,6 +250,8 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
     path.Clear();
     return false;
   }
+  // Sync lower bounds and implications from the shared tree to `path`.
+  AssignLeaf(path, nodes.back().first);
   return true;
 }
 
@@ -364,57 +370,54 @@ SharedTreeManager::Node* SharedTreeManager::MakeSubtree(Node* parent,
 }
 
 void SharedTreeManager::ProcessNodeChanges() {
-  while (!to_close_.empty() || !to_update_.empty()) {
-    while (!to_close_.empty()) {
-      Node* node = to_close_.back();
-      CHECK_NE(node, nullptr);
-      to_close_.pop_back();
-      if (node->closed) continue;
+  while (!to_close_.empty()) {
+    Node* node = to_close_.back();
+    CHECK_NE(node, nullptr);
+    to_close_.pop_back();
+    // Iterate over open parents while each sibling is closed.
+    while (node != nullptr && !node->closed) {
       node->closed = true;
+      node->objective_lb = kMaxIntegerValue;
       // If we are closing a leaf, try to maintain the same number of leaves;
       num_splits_wanted_ += (node->children[0] == nullptr);
       for (Node* child : node->children) {
         if (child == nullptr || child->closed) continue;
         to_close_.push_back(child);
       }
-      if (node->parent != nullptr) {
-        to_update_.push_back(node->parent);
-        GetSibling(node)->implied = true;
-      } else {
-        shared_response_manager_->NotifyThatImprovingProblemIsInfeasible(
-            ShortStatus());
-      }
-    }
-    if (to_update_.empty()) break;
-    Node* node = to_update_.back();
-    to_update_.pop_back();
-    while (node != nullptr && !node->closed && node->children[0] != nullptr) {
-      bool has_open_child = false;
-      IntegerValue child_bound = kMaxIntegerValue;
-      for (const Node* child : node->children) {
-        if (child->closed) continue;
-        has_open_child = true;
-        child_bound = std::min(child->objective_lb, child_bound);
-      }
-      if (!has_open_child) {
-        to_close_.push_back(node);
-      } else if (child_bound > node->objective_lb) {
-        node->objective_lb = child_bound;
-        if (node->parent == nullptr) {
-          IntegerValue root_lb =
-              shared_response_manager_->GetInnerObjectiveLowerBound();
-          if (node->objective_lb > root_lb) {
-            shared_response_manager_->UpdateInnerObjectiveBounds(
-                ShortStatus(), node->objective_lb, kMaxIntegerValue);
-          } else {
-            node->objective_lb = root_lb;
-          }
-        }
-      } else {
-        break;
+      Node* sibling = GetSibling(node);
+      if (sibling != nullptr) {
+        sibling->implied = true;
+        if (!sibling->closed) break;
       }
       node = node->parent;
     }
+    DCHECK(node == nullptr || node->closed);
+    if (node == nullptr) {
+      shared_response_manager_->NotifyThatImprovingProblemIsInfeasible(
+          ShortStatus());
+    } else {
+      to_update_.push_back(node->parent);
+    }
+  }
+  bool root_updated = false;
+  while (!to_update_.empty()) {
+    Node* node = to_update_.back();
+    to_update_.pop_back();
+    // Iterate over parents while the lower bound can be improved.
+    while (node != nullptr) {
+      DCHECK_NE(node->children[0], nullptr);
+      DCHECK_NE(node->children[1], nullptr);
+      IntegerValue child_bound = std::min(node->children[0]->objective_lb,
+                                          node->children[1]->objective_lb);
+      if (child_bound <= node->objective_lb) break;
+      node->objective_lb = child_bound;
+      node = node->parent;
+    }
+    if (node == nullptr) root_updated = true;
+  }
+  if (root_updated) {
+    shared_response_manager_->UpdateInnerObjectiveBounds(
+        ShortStatus(), nodes_[0].objective_lb, kMaxIntegerValue);
   }
 }
 
@@ -661,11 +664,15 @@ void SharedTreeWorker::SyncWithSharedTree() {
   manager_->SyncTree(assigned_tree_);
   // If we have no assignment, try to get one.
   // We also want to ensure unassigned nodes have their lower bounds bumped
-  // periodically, so workers need to occasionally replace open trees.
+  // periodically, so workers need to occasionally replace open trees, but only
+  // at most once per restart.
   // TODO(user): Ideally we should use some metric to replace a
   // subtree when the worker is doing badly.
-  if (assigned_tree_.MaxLevel() == 0 || absl::Bernoulli(*random_, 1e-2)) {
+  if (assigned_tree_.MaxLevel() == 0 ||
+      (tree_assignment_restart_ < num_restarts_ &&
+       absl::Bernoulli(*random_, 1e-2))) {
     manager_->ReplaceTree(assigned_tree_);
+    tree_assignment_restart_ = num_restarts_;
   }
   VLOG(1) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
@@ -693,9 +700,12 @@ SatSolver::Status SharedTreeWorker::Search(
       return sat_solver_->UnsatStatus();
     }
     if (heuristics_->restart_policies[heuristics_->policy_index]()) {
-      heuristics_->policy_index = (heuristics_->policy_index + 1) %
-                                  heuristics_->decision_policies.size();
+      ++num_restarts_;
+      heuristics_->policy_index =
+          num_restarts_ % heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
+    }
+    if (trail_->CurrentDecisionLevel() == 0) {
       SyncWithSharedTree();
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();

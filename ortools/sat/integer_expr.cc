@@ -221,19 +221,13 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // unassigned enforcement literal.
   if (num_unassigned_enforcement_literal > 1) return true;
 
-  // Save the current sum of fixed variables.
-  if (is_registered_) {
-    CHECK(!use_int128);
-    shared_->rev_integer_value_repository->SaveState(&rev_lb_fixed_vars_);
-  } else {
-    rev_num_fixed_vars_ = 0;
-    rev_lb_fixed_vars_ = 0;
-  }
+  int num_fixed_vars = rev_num_fixed_vars_;
+  IntegerValue lb_fixed_vars = rev_lb_fixed_vars_;
 
   // Compute the new lower bound and update the reversible structures.
   absl::int128 lb_128 = 0;
   IntegerValue lb_unfixed_vars = IntegerValue(0);
-  for (int i = rev_num_fixed_vars_; i < size_; ++i) {
+  for (int i = num_fixed_vars; i < size_; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue lb = shared_->integer_trail->LowerBound(var);
@@ -248,15 +242,24 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
       lb_unfixed_vars += lb * coeff;
     } else {
       // Update the set of fixed variables.
-      std::swap(vars_[i], vars_[rev_num_fixed_vars_]);
-      std::swap(coeffs_[i], coeffs_[rev_num_fixed_vars_]);
-      std::swap(max_variations_[i], max_variations_[rev_num_fixed_vars_]);
-      rev_num_fixed_vars_++;
-      rev_lb_fixed_vars_ += lb * coeff;
+      std::swap(vars_[i], vars_[num_fixed_vars]);
+      std::swap(coeffs_[i], coeffs_[num_fixed_vars]);
+      std::swap(max_variations_[i], max_variations_[num_fixed_vars]);
+      num_fixed_vars++;
+      lb_fixed_vars += lb * coeff;
     }
   }
   shared_->time_limit->AdvanceDeterministicTime(
-      static_cast<double>(size_ - rev_num_fixed_vars_) * 5e-9);
+      static_cast<double>(size_ - num_fixed_vars) * 5e-9);
+
+  // Save the current sum of fixed variables.
+  if (is_registered_ && num_fixed_vars != rev_num_fixed_vars_) {
+    CHECK(!use_int128);
+    shared_->rev_integer_value_repository->SaveState(&rev_lb_fixed_vars_);
+    shared_->rev_int_repository->SaveState(&rev_num_fixed_vars_);
+    rev_num_fixed_vars_ = num_fixed_vars;
+    rev_lb_fixed_vars_ = lb_fixed_vars;
+  }
 
   // If use_int128 is true, the slack or propagation slack can be larger than
   // this. To detect overflow with capped arithmetic, it is important the slack
@@ -274,7 +277,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
       slack = static_cast<int64_t>(std::max(-max_slack, slack128));
     }
   } else {
-    slack = upper_bound_ - (rev_lb_fixed_vars_ + lb_unfixed_vars);
+    slack = upper_bound_ - (lb_fixed_vars + lb_unfixed_vars);
   }
   if (slack < 0) {
     FillIntegerReason();
@@ -299,7 +302,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  for (int i = rev_num_fixed_vars_; i < size_; ++i) {
+  for (int i = num_fixed_vars; i < size_; ++i) {
     if (!use_int128 && max_variations_[i] <= slack) continue;
 
     // TODO(user): If the new ub fall into an hole of the variable, we can
@@ -449,7 +452,6 @@ void LinearConstraintPropagator<use_int128>::RegisterWith(
     // propagate a "conflict" as soon as only one is unassigned?
     watcher->WatchLiteral(negated_enforcement.Negated(), id);
   }
-  watcher->RegisterReversibleInt(id, &rev_num_fixed_vars_);
 }
 
 // Explicit declaration.

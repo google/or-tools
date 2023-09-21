@@ -342,7 +342,6 @@ class ContinuousProber {
   absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
   absl::flat_hash_set<LiteralIndex> probed_literals_;
   int iteration_ = 1;
-  absl::Time last_logging_time_;
   int current_int_var_ = 0;
   int current_bool_var_ = 0;
 };

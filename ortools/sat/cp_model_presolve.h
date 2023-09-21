@@ -91,6 +91,8 @@ class CpModelPresolver {
   CpSolverStatus InfeasibleStatus();
 
   // Runs the inner loop of the presolver.
+  bool ProcessChangedVariables(std::vector<bool>* in_queue,
+                               std::deque<int>* queue);
   void PresolveToFixPoint();
 
   // Runs the probing.
@@ -311,6 +313,18 @@ class CpModelPresolver {
   ConstraintProto temp_ct_;
 
   // Use by TryToReduceCoefficientsOfLinearConstraint().
+  struct RdEntry {
+    int64_t magnitude;
+    int64_t max_variation;
+    int index;
+  };
+  std::vector<RdEntry> rd_entries_;
+  std::vector<int> rd_vars_;
+  std::vector<int64_t> rd_coeffs_;
+  std::vector<int64_t> rd_magnitudes_;
+  std::vector<int64_t> rd_lbs_;
+  std::vector<int64_t> rd_ubs_;
+  std::vector<int64_t> rd_divisors_;
   MaxBoundedSubsetSum lb_feasible_;
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;

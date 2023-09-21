@@ -572,6 +572,7 @@ bool SatSolver::RestoreSolverToAssumptionLevel() {
 
 bool SatSolver::FinishPropagation() {
   if (model_is_unsat_) return false;
+  int num_loop = 0;
   while (true) {
     const int old_decision_level = current_decision_level_;
     if (!PropagateAndStopAfterOneConflictResolution()) {
@@ -580,11 +581,19 @@ bool SatSolver::FinishPropagation() {
         CHECK(!assumptions_.empty());
         return false;
       }
+
+      if (++num_loop % 16 == 0 && time_limit_->LimitReached()) {
+        // TODO(user): Exiting like this might cause issue since the propagation
+        // is not "finished" but some code might assume it is. However since we
+        // already might repropagate in the LP constraint, most of the code
+        // should support "not finished propagation".
+        return true;
+      }
       continue;
     }
     break;
   }
-  CHECK(PropagationIsDone());
+  DCHECK(PropagationIsDone());
   return true;
 }
 

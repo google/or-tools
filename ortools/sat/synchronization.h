@@ -347,11 +347,11 @@ class SharedResponseManager {
   // Display improvement stats.
   void DisplayImprovementStatistics();
 
+  // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(const std::string& prefix, const std::string& message);
-  void LogPeriodicMessage(const std::string& prefix, const std::string& message,
-                          double frequency_seconds,
-                          absl::Time* last_logging_time);
-  bool LoggingIsEnabled() const { return logger_->LoggingIsEnabled(); }
+  void LogMessageWithThrottling(const std::string& prefix,
+                                const std::string& message);
+  bool LoggingIsEnabled() const;
 
   void AppendResponseToBeMerged(const CpSolverResponse& response);
 
@@ -446,7 +446,10 @@ class SharedResponseManager {
   absl::btree_map<std::string, int> dual_improvements_count_
       ABSL_GUARDED_BY(mutex_);
 
-  SolverLogger* logger_;
+  SolverLogger* logger_ ABSL_GUARDED_BY(mutex_);
+  absl::flat_hash_map<std::string, int> throttling_ids_ ABSL_GUARDED_BY(mutex_);
+
+  int bounds_logging_id_;
   std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
 
   std::atomic<bool> first_solution_solvers_should_stop_ = false;

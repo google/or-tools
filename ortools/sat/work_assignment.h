@@ -264,8 +264,12 @@ class SharedTreeWorker {
   IntegerSearchHelper* helper_;
   SearchHeuristics* heuristics_;
 
+  int64_t num_restarts_ = 0;
+
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
+  // How many restarts had happened when the current tree was assigned?
+  int64_t tree_assignment_restart_ = -1;
 
   int splits_wanted_ = 1;
 

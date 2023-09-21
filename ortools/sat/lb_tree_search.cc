@@ -82,8 +82,6 @@ LbTreeSearch::LbTreeSearch(Model* model)
   search_heuristic_ =
       SequentialSearch({SatSolverHeuristic(model),
                         model->GetOrCreate<SearchHeuristics>()->fixed_search});
-
-  last_logging_time_ = absl::Now();
 }
 
 void LbTreeSearch::UpdateParentObjective(int level) {
@@ -492,9 +490,10 @@ SatSolver::Status LbTreeSearch::Search(
         if (lb > current_objective_lb_) break;
       }
 
-      shared_response_->LogPeriodicMessage(
-          "TreeS", SmallProgressString(),
-          parameters_.log_frequency_in_seconds(), &last_logging_time_);
+      if (VLOG_IS_ON(1)) {
+        shared_response_->LogMessageWithThrottling("TreeS",
+                                                   SmallProgressString());
+      }
 
       if (n < nodes_.size()) {
         current_branch_.push_back(n);

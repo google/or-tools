@@ -193,13 +193,14 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
 namespace {
 
+// Note that if a domain is not fixed, we just take its Min() value.
 int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
                                  const std::vector<Domain>& domains) {
   int64_t value = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
     const int ref = expr.vars(i);
     const int64_t increment =
-        domains[PositiveRef(expr.vars(i))].FixedValue() * expr.coeffs(i);
+        domains[PositiveRef(expr.vars(i))].Min() * expr.coeffs(i);
     value += RefIsPositive(ref) ? increment : -increment;
   }
   return value;
@@ -209,10 +210,12 @@ int64_t EvaluateLinearExpression(const LinearExpressionProto& expr,
 
 // Compute the max of each expression, and assign it to the target expr (which
 // must be of the form +ref or -ref); We only support post-solving the case
-// where all expression are fixed and correct.
+// where whatever the value of all expression, there will be a valid target.
 void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64_t max_value = std::numeric_limits<int64_t>::min();
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
+    // In most case all expression are fixed, except in the corner case where
+    // one of the expression refer to the target itself !
     max_value = std::max(max_value, EvaluateLinearExpression(expr, *domains));
   }
   const int target_ref = GetSingleRefFromExpression(ct.lin_max().target());

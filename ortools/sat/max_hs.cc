@@ -115,7 +115,7 @@ SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
         ResetAndSolveIntegerProblem(assumptions, model_);
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver_->GetLastIncompatibleDecisions();
-    if (sat_solver_->parameters().minimize_core()) {
+    if (sat_solver_->parameters().core_minimization_level() > 0) {
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
     }
     CHECK(!core.empty());

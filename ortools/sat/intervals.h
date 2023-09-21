@@ -983,6 +983,15 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
   };
 }
 
+// Cuts helpers.
+void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
+                                     Model* model,
+                                     std::vector<IntegerVariable>* vars);
+
+void AppendVariablesFromCapacityAndDemands(
+    const AffineExpression& capacity, SchedulingDemandHelper* demands_helper,
+    Model* model, std::vector<IntegerVariable>* vars);
+
 }  // namespace sat
 }  // namespace operations_research
 

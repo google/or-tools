@@ -2617,7 +2617,8 @@ bool BuildMaxAffineUpConstraint(
   // -delta_y * var + delta_x * target <= delta_x * y_at_min - delta_y * x_min
   //
   // Checks the rhs for overflows.
-  if (ProdOverflow(delta_x, y_at_min) || ProdOverflow(delta_y, x_min)) {
+  if (ProdOverflow(delta_x, y_at_min) || ProdOverflow(delta_x, y_at_max) ||
+      ProdOverflow(delta_y, x_min) || ProdOverflow(delta_y, x_max)) {
     return false;
   }
 

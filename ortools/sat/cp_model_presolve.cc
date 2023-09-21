@@ -2756,24 +2756,19 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
 
   // Only consider "simple" constraints.
   const LinearConstraintProto& lin = ct->linear();
+  if (lin.domain().size() != 2) return;
   const Domain rhs = ReadDomainFromProto(lin);
-  if (rhs.NumIntervals() != 1) return;
 
   // Precompute a bunch of quantities and "canonicalize" the constraint.
   int64_t lb_sum = 0;
   int64_t ub_sum = 0;
   int64_t max_variation = 0;
-  struct Entry {
-    int64_t magnitude;
-    int64_t max_variation;
-    int index;
-  };
-  std::vector<Entry> entries;
-  std::vector<int> vars;
-  std::vector<int64_t> coeffs;
-  std::vector<int64_t> magnitudes;
-  std::vector<int64_t> lbs;
-  std::vector<int64_t> ubs;
+
+  rd_entries_.clear();
+  rd_magnitudes_.clear();
+  rd_lbs_.clear();
+  rd_ubs_.clear();
+
   int64_t max_magnitude = 0;
   const int num_terms = lin.vars().size();
   for (int i = 0; i < num_terms; ++i) {
@@ -2797,13 +2792,11 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     // Abort if fixed term, that might mess up code below.
     if (lb == ub) return;
 
-    vars.push_back(lin.vars(i));
-    lbs.push_back(lb);
-    ubs.push_back(ub);
-    coeffs.push_back(coeff);
-    magnitudes.push_back(magnitude);
-    entries.push_back({magnitude, magnitude * (ub - lb), i});
-    max_variation += entries.back().max_variation;
+    rd_lbs_.push_back(lb);
+    rd_ubs_.push_back(ub);
+    rd_magnitudes_.push_back(magnitude);
+    rd_entries_.push_back({magnitude, magnitude * (ub - lb), i});
+    max_variation += rd_entries_.back().max_variation;
   }
 
   // Mark trivially false constraint as such. This should have been already
@@ -2841,13 +2834,14 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   // only to the sum of the not yet processed terms.
   uint64_t gcd = 0;
   int64_t max_error = max_variation;
-  std::stable_sort(
-      entries.begin(), entries.end(),
-      [](const Entry& a, const Entry& b) { return a.magnitude > b.magnitude; });
-  std::vector<int64_t> divisors;
+  std::stable_sort(rd_entries_.begin(), rd_entries_.end(),
+                   [](const RdEntry& a, const RdEntry& b) {
+                     return a.magnitude > b.magnitude;
+                   });
   int64_t range = 0;
-  for (int i = 0; i < entries.size(); ++i) {
-    const Entry& e = entries[i];
+  rd_divisors_.clear();
+  for (int i = 0; i < rd_entries_.size(); ++i) {
+    const RdEntry& e = rd_entries_[i];
     gcd = MathUtil::GCD64(gcd, e.magnitude);
     max_error -= e.max_variation;
 
@@ -2856,7 +2850,8 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     // TODO(user): I am not sure there is no possible simplification across two
     // term with the same coeff, but it should be rare if it ever happens.
     range += e.max_variation / e.magnitude;
-    if (i + 1 < entries.size() && e.magnitude == entries[i + 1].magnitude) {
+    if (i + 1 < rd_entries_.size() &&
+        e.magnitude == rd_entries_[i + 1].magnitude) {
       continue;
     }
     const int64_t saved_range = range;
@@ -2867,7 +2862,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
            max_error <= PositiveRemainder(rhs_ub, IntegerValue(e.magnitude))) &&
           (!use_lb ||
            max_error <= PositiveRemainder(rhs_lb, IntegerValue(e.magnitude)))) {
-        divisors.push_back(e.magnitude);
+        rd_divisors_.push_back(e.magnitude);
       }
     }
 
@@ -2910,19 +2905,21 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
     if (simplify_lb && simplify_ub) {
       // We have a simplification since the second part can be ignored.
       context_->UpdateRuleStats("linear: remove irrelevant part");
-      LinearConstraintProto* mutable_linear = ct->mutable_linear();
-      mutable_linear->clear_vars();
-      mutable_linear->clear_coeffs();
       int64_t shift_lb = 0;
       int64_t shift_ub = 0;
+      rd_vars_.clear();
+      rd_coeffs_.clear();
       for (int j = 0; j <= i; ++j) {
-        const int index = entries[j].index;
-        const int64_t m = magnitudes[index];
-        shift_lb += lbs[index] * m;
-        shift_ub += ubs[index] * m;
-        mutable_linear->add_vars(vars[index]);
-        mutable_linear->add_coeffs(coeffs[index]);
+        const int index = rd_entries_[j].index;
+        const int64_t m = rd_magnitudes_[index];
+        shift_lb += rd_lbs_[index] * m;
+        shift_ub += rd_ubs_[index] * m;
+        rd_vars_.push_back(lin.vars(index));
+        rd_coeffs_.push_back(lin.coeffs(index));
       }
+      LinearConstraintProto* mut_lin = ct->mutable_linear();
+      mut_lin->mutable_vars()->Assign(rd_vars_.begin(), rd_vars_.end());
+      mut_lin->mutable_coeffs()->Assign(rd_coeffs_.begin(), rd_coeffs_.end());
 
       // The constraint become:
       //   sum ci (X - lb) <= rhs_ub
@@ -2937,7 +2934,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
         context_->UpdateConstraintVariableUsage(c);
         return;
       }
-      FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mutable_linear);
+      FillDomainInProto(Domain(new_rhs_lb, new_rhs_ub), mut_lin);
       DivideLinearByGcd(ct);
       context_->UpdateConstraintVariableUsage(c);
       return;
@@ -2971,43 +2968,47 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   }
 
   // Limit the number of "divisor" we try for approximate gcd.
-  if (divisors.size() > 3) divisors.resize(3);
-  for (const int64_t divisor : divisors) {
+  if (rd_divisors_.size() > 3) rd_divisors_.resize(3);
+  for (const int64_t divisor : rd_divisors_) {
     // Try the <= side first.
     int64_t new_ub;
     if (!LinearInequalityCanBeReducedWithClosestMultiple(
-            divisor, magnitudes, lbs, ubs, rhs.Max(), &new_ub)) {
+            divisor, rd_magnitudes_, rd_lbs_, rd_ubs_, rhs.Max(), &new_ub)) {
       continue;
     }
 
     // The other side.
     int64_t minus_new_lb;
-    for (int i = 0; i < lbs.size(); ++i) {
-      std::swap(lbs[i], ubs[i]);
-      lbs[i] = -lbs[i];
-      ubs[i] = -ubs[i];
+    for (int i = 0; i < rd_lbs_.size(); ++i) {
+      std::swap(rd_lbs_[i], rd_ubs_[i]);
+      rd_lbs_[i] = -rd_lbs_[i];
+      rd_ubs_[i] = -rd_ubs_[i];
     }
     if (!LinearInequalityCanBeReducedWithClosestMultiple(
-            divisor, magnitudes, lbs, ubs, -rhs.Min(), &minus_new_lb)) {
-      for (int i = 0; i < lbs.size(); ++i) {
-        std::swap(lbs[i], ubs[i]);
-        lbs[i] = -lbs[i];
-        ubs[i] = -ubs[i];
+            divisor, rd_magnitudes_, rd_lbs_, rd_ubs_, -rhs.Min(),
+            &minus_new_lb)) {
+      for (int i = 0; i < rd_lbs_.size(); ++i) {
+        std::swap(rd_lbs_[i], rd_ubs_[i]);
+        rd_lbs_[i] = -rd_lbs_[i];
+        rd_ubs_[i] = -rd_ubs_[i];
       }
       continue;
     }
 
     // Rewrite the constraint !
     context_->UpdateRuleStats("linear: simplify using approximate gcd");
+    int new_size = 0;
     LinearConstraintProto* mutable_linear = ct->mutable_linear();
-    mutable_linear->clear_vars();
-    mutable_linear->clear_coeffs();
-    for (int i = 0; i < coeffs.size(); ++i) {
-      const int64_t new_coeff = ClosestMultiple(coeffs[i], divisor) / divisor;
+    for (int i = 0; i < lin.coeffs().size(); ++i) {
+      const int64_t new_coeff =
+          ClosestMultiple(lin.coeffs(i), divisor) / divisor;
       if (new_coeff == 0) continue;
-      mutable_linear->add_vars(vars[i]);
-      mutable_linear->add_coeffs(new_coeff);
+      mutable_linear->set_vars(new_size, lin.vars(i));
+      mutable_linear->set_coeffs(new_size, new_coeff);
+      ++new_size;
     }
+    mutable_linear->mutable_vars()->Truncate(new_size);
+    mutable_linear->mutable_coeffs()->Truncate(new_size);
     const Domain new_rhs = Domain(-minus_new_lb, new_ub);
     if (new_rhs.IsEmpty()) {
       (void)MarkConstraintAsFalse(ct);
@@ -3318,22 +3319,36 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (context_->ModelIsUnsat()) return false;
 
-  // Compute the implied rhs bounds from the variable ones.
+  // For fast mode.
+  int64_t min_activity;
+  int64_t max_activity;
+
+  // For slow mode.
+  const int num_vars = ct->linear().vars_size();
   auto& term_domains = context_->tmp_term_domains;
   auto& left_domains = context_->tmp_left_domains;
-  const int num_vars = ct->linear().vars_size();
-  term_domains.resize(num_vars + 1);
-  left_domains.resize(num_vars + 1);
-  left_domains[0] = Domain(0);
-  for (int i = 0; i < num_vars; ++i) {
-    const int var = ct->linear().vars(i);
-    const int64_t coeff = ct->linear().coeffs(i);
-    DCHECK(RefIsPositive(var));
-    term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
-    left_domains[i + 1] =
-        left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
+  const bool slow_mode = num_vars < 10;
+
+  // Compute the implied rhs bounds from the variable ones.
+  if (slow_mode) {
+    term_domains.resize(num_vars + 1);
+    left_domains.resize(num_vars + 1);
+    left_domains[0] = Domain(0);
+    term_domains[num_vars] = Domain(0);
+    for (int i = 0; i < num_vars; ++i) {
+      const int var = ct->linear().vars(i);
+      const int64_t coeff = ct->linear().coeffs(i);
+      DCHECK(RefIsPositive(var));
+      term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
+      left_domains[i + 1] =
+          left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
+    }
+  } else {
+    std::tie(min_activity, max_activity) =
+        context_->ComputeMinMaxActivity(ct->linear());
   }
-  const Domain& implied_rhs = left_domains[num_vars];
+  const Domain& implied_rhs =
+      slow_mode ? left_domains[num_vars] : Domain(min_activity, max_activity);
 
   // Abort if trivial.
   const Domain old_rhs = ReadDomainFromProto(ct->linear());
@@ -3361,15 +3376,23 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
   Domain negated_rhs = rhs.Negation();
   Domain right_domain(0);
   Domain new_domain;
-  Domain implied_term_domain;
-  term_domains[num_vars] = Domain(0);
+  Domain activity_minus_term;
   for (int i = num_vars - 1; i >= 0; --i) {
     const int var = ct->linear().vars(i);
     const int64_t var_coeff = ct->linear().coeffs(i);
-    right_domain =
-        right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
-    implied_term_domain = left_domains[i].AdditionWith(right_domain);
-    new_domain = implied_term_domain.AdditionWith(negated_rhs)
+
+    if (slow_mode) {
+      right_domain =
+          right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
+      activity_minus_term = left_domains[i].AdditionWith(right_domain);
+    } else {
+      int64_t min_term = var_coeff * context_->MinOf(var);
+      int64_t max_term = var_coeff * context_->MaxOf(var);
+      if (var_coeff < 0) std::swap(min_term, max_term);
+      activity_minus_term =
+          Domain(min_activity - min_term, max_activity - max_term);
+    }
+    new_domain = activity_minus_term.AdditionWith(negated_rhs)
                      .InverseMultiplicationBy(-var_coeff);
 
     if (ct->enforcement_literal().empty()) {
@@ -3412,12 +3435,12 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
       const bool same_sign = (var_coeff > 0) == (obj_coeff > 0);
       bool fixed = false;
       if (same_sign && RhsCanBeFixedToMin(var_coeff, context_->DomainOf(var),
-                                          implied_term_domain, rhs)) {
+                                          activity_minus_term, rhs)) {
         rhs = Domain(rhs.Min());
         fixed = true;
       }
       if (!same_sign && RhsCanBeFixedToMax(var_coeff, context_->DomainOf(var),
-                                           implied_term_domain, rhs)) {
+                                           activity_minus_term, rhs)) {
         rhs = Domain(rhs.Max());
         fixed = true;
       }
@@ -3806,12 +3829,17 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
   for (int i = 0; i < num_vars; ++i) {
     const int ref = arg.vars(i);
     const int64_t coeff = arg.coeffs(i);
-    const int64_t term_a = coeff * context_->MinOf(ref);
-    const int64_t term_b = coeff * context_->MaxOf(ref);
-    max_coeff_magnitude = std::max(max_coeff_magnitude, std::abs(coeff));
-    min_coeff_magnitude = std::min(min_coeff_magnitude, std::abs(coeff));
-    min_sum += std::min(term_a, term_b);
-    max_sum += std::max(term_a, term_b);
+    if (coeff > 0) {
+      max_coeff_magnitude = std::max(max_coeff_magnitude, coeff);
+      min_coeff_magnitude = std::min(min_coeff_magnitude, coeff);
+      min_sum += coeff * context_->MinOf(ref);
+      max_sum += coeff * context_->MaxOf(ref);
+    } else {
+      max_coeff_magnitude = std::max(max_coeff_magnitude, -coeff);
+      min_coeff_magnitude = std::min(min_coeff_magnitude, -coeff);
+      min_sum += coeff * context_->MaxOf(ref);
+      max_sum += coeff * context_->MinOf(ref);
+    }
   }
   if (max_coeff_magnitude == 1) return;
 
@@ -8483,6 +8511,9 @@ void CpModelPresolver::DetectDifferentVariables() {
   //
   // TODO(user): Start with the existing all diff and expand them rather than
   // not running this if there are all_diff present.
+  //
+  // TODO(user): Only add them at the end of the presolve! it hurt our presolve
+  // (like probing is slower) and only serve for linear relaxation.
   if (context_->params().infer_all_diffs() && !has_all_diff &&
       different_vars.size() > 2) {
     WallTimer local_time;
@@ -9402,7 +9433,11 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
                     -1, context_->working_model->constraints(c2), to_modify)) {
               continue;
             }
-            CHECK_EQ(to_modify->linear().vars().size(), 2);
+
+            // Affine will be of size 2, but we might also have the same
+            // variable with different coeff in both constraint, in which case
+            // the linear will be of size 1.
+            DCHECK_LE(to_modify->linear().vars().size(), 2);
 
             ++num_affine_relations;
             context_->UpdateRuleStats(
@@ -9410,7 +9445,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
 
             // We should stop processing c1 since it should be empty afterward.
             DivideLinearByGcd(to_modify);
-            PresolveLinearOfSizeTwo(to_modify);
+            PresolveSmallLinear(to_modify);
             context_->UpdateConstraintVariableUsage(c1);
             skip = true;
             break;
@@ -10189,9 +10224,52 @@ bool CpModelPresolver::PresolveAffineRelationIfAny(int var) {
   return true;
 }
 
+// Re-add to the queue the constraints that touch a variable that changed.
+bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
+                                               std::deque<int>* queue) {
+  // TODO(user): Avoid reprocessing the constraints that changed the domain?
+  if (context_->ModelIsUnsat()) return false;
+  if (time_limit_->LimitReached()) return false;
+  in_queue->resize(context_->working_model->constraints_size(), false);
+  const auto& vector_that_can_grow_during_iter =
+      context_->modified_domains.PositionsSetAtLeastOnce();
+  for (int i = 0; i < vector_that_can_grow_during_iter.size(); ++i) {
+    const int v = vector_that_can_grow_during_iter[i];
+    if (context_->VariableIsNotUsedAnymore(v)) continue;
+    if (!PresolveAffineRelationIfAny(v)) return false;
+    if (context_->VariableIsNotUsedAnymore(v)) continue;
+
+    TryToSimplifyDomain(v);
+
+    // TODO(user): Integrate these with TryToSimplifyDomain().
+    if (context_->ModelIsUnsat()) return false;
+    context_->UpdateNewConstraintsVariableUsage();
+
+    if (!context_->CanonicalizeOneObjectiveVariable(v)) return false;
+
+    in_queue->resize(context_->working_model->constraints_size(), false);
+    for (const int c : context_->VarToConstraints(v)) {
+      if (c >= 0 && !(*in_queue)[c]) {
+        (*in_queue)[c] = true;
+        queue->push_back(c);
+      }
+    }
+  }
+  context_->modified_domains.SparseClearAll();
+
+  // Make sure the order is deterministic! because var_to_constraints[]
+  // order changes from one run to the next.
+  std::sort(queue->begin(), queue->end());
+  return !queue->empty();
+}
+
 void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
   PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+
+  // We do at most 2 tests per PresolveToFixPoint() call since this can be slow.
+  int num_dominance_tests = 0;
+  int num_dual_strengthening = 0;
 
   // Limit on number of operations.
   const int64_t max_num_operations =
@@ -10203,8 +10281,6 @@ void CpModelPresolver::PresolveToFixPoint() {
   // appearing anywhere else) to not call the presolve more than once for this
   // reason.
   absl::flat_hash_set<std::pair<int, int>> var_constraint_pair_already_called;
-
-  TimeLimit* time_limit = time_limit_;
 
   // The queue of "active" constraints, initialized to the non-empty ones.
   std::vector<bool> in_queue(context_->working_model->constraints_size(),
@@ -10235,13 +10311,16 @@ void CpModelPresolver::PresolveToFixPoint() {
   // We put a hard limit on the number of loop to prevent some corner case with
   // propagation loops. Note that the limit is quite high so it shouldn't really
   // be reached in most situation.
+  int num_loops = 0;
   constexpr int kMaxNumLoops = 1000;
-  for (int i = 0;
-       i < kMaxNumLoops && !queue.empty() && !context_->ModelIsUnsat(); ++i) {
-    if (time_limit->LimitReached()) break;
+  for (; num_loops < kMaxNumLoops && !queue.empty(); ++num_loops) {
+    if (time_limit_->LimitReached()) break;
+    if (context_->ModelIsUnsat()) break;
     if (context_->num_presolve_operations > max_num_operations) break;
+
+    // Empty the queue of single constraint presolve.
     while (!queue.empty() && !context_->ModelIsUnsat()) {
-      if (time_limit->LimitReached()) break;
+      if (time_limit_->LimitReached()) break;
       if (context_->num_presolve_operations > max_num_operations) break;
       const int c = queue.front();
       in_queue[c] = false;
@@ -10267,8 +10346,8 @@ void CpModelPresolver::PresolveToFixPoint() {
         }
       }
 
-      // TODO(user): Is seems safer to simply remove the changed Boolean.
-      // We loose a bit of performance, but the code is simpler.
+      // TODO(user): Is seems safer to remove the changed Boolean and maybe
+      // just compare the number of applied "rules" before/after.
       if (changed) {
         context_->UpdateConstraintVariableUsage(c);
       }
@@ -10320,80 +10399,51 @@ void CpModelPresolver::PresolveToFixPoint() {
     }
     context_->var_with_reduced_small_degree.SparseClearAll();
 
-    for (int i = 0; i < 2; ++i) {
-      // Re-add to the queue the constraints that touch a variable that changed.
-      //
-      // TODO(user): Avoid reprocessing the constraints that changed the domain?
-      if (context_->ModelIsUnsat()) return;
-      if (time_limit->LimitReached()) break;
-      in_queue.resize(context_->working_model->constraints_size(), false);
-      const auto& vector_that_can_grow_during_iter =
-          context_->modified_domains.PositionsSetAtLeastOnce();
-      for (int i = 0; i < vector_that_can_grow_during_iter.size(); ++i) {
-        const int v = vector_that_can_grow_during_iter[i];
-        if (context_->VariableIsNotUsedAnymore(v)) continue;
-        if (!PresolveAffineRelationIfAny(v)) return;
-        if (context_->VariableIsNotUsedAnymore(v)) continue;
+    if (ProcessChangedVariables(&in_queue, &queue)) continue;
 
-        TryToSimplifyDomain(v);
-
-        // TODO(user): Integrate these with TryToSimplifyDomain().
-        if (context_->ModelIsUnsat()) return;
-        context_->UpdateNewConstraintsVariableUsage();
-
-        if (!context_->CanonicalizeOneObjectiveVariable(v)) return;
-
-        in_queue.resize(context_->working_model->constraints_size(), false);
-        for (const int c : context_->VarToConstraints(v)) {
-          if (c >= 0 && !in_queue[c]) {
-            in_queue[c] = true;
-            queue.push_back(c);
-          }
-        }
-      }
-      context_->modified_domains.SparseClearAll();
-
-      // If we reach the end of the loop, do more costly presolve.
-      if (!queue.empty() || i == 1) break;
-
-      // Deal with integer variable only appearing in an encoding.
-      for (int v = 0; v < context_->working_model->variables().size(); ++v) {
-        ProcessVariableOnlyUsedInEncoding(v);
-      }
-
-      // Detect & exploit dominance between variables, or variables that can
-      // move freely in one direction. Or variables that are just blocked by one
-      // constraint in one direction.
-      //
-      // TODO(user): We can support assumptions but we need to not cut them out
-      // of the feasible region.
-      //
-      // TODO(user): We might run this a bit too often. Fix.
-      if (!context_->keep_all_feasible_solutions &&
-          context_->working_model->assumptions().empty()) {
-        VarDomination var_dom;
-        DualBoundStrengthening dual_bound_strengthening;
-        DetectDominanceRelations(*context_, &var_dom,
-                                 &dual_bound_strengthening);
-        if (!dual_bound_strengthening.Strengthen(context_)) return;
-        if (dual_bound_strengthening.NumDeletedConstraints() > 0) {
-          // Loop again.
-          // TODO(user): Optimize the code to reach a fix point faster?
-          i = -1;
-          continue;
-        }
-
-        // TODO(user): The Strengthen() function above might make some
-        // inequality tight. Currently, because we only do that for implication,
-        // this will not change who dominate who, but in general we should
-        // process the new constraint direction before calling this.
-        if (!ExploitDominanceRelations(var_dom, context_)) return;
-      }
+    // Deal with integer variable only appearing in an encoding.
+    for (int v = 0; v < context_->working_model->variables().size(); ++v) {
+      ProcessVariableOnlyUsedInEncoding(v);
     }
+    if (ProcessChangedVariables(&in_queue, &queue)) continue;
 
-    // Make sure the order is deterministic! because var_to_constraints[]
-    // order changes from one run to the next.
-    std::sort(queue.begin(), queue.end());
+    // Perform dual reasoning.
+    //
+    // TODO(user): We can support assumptions but we need to not cut them out
+    // of the feasible region.
+    if (context_->keep_all_feasible_solutions) break;
+    if (!context_->working_model->assumptions().empty()) break;
+
+    // Starts by the "faster" algo that exploit variables that can move freely
+    // in one direction. Or variables that are just blocked by one constraint in
+    // one direction.
+    for (int i = 0; i < 10; ++i) {
+      if (context_->ModelIsUnsat()) return;
+      ++num_dual_strengthening;
+      DualBoundStrengthening dual_bound_strengthening;
+      ScanModelForDualBoundStrengthening(*context_, &dual_bound_strengthening);
+      if (!dual_bound_strengthening.Strengthen(context_)) return;
+      if (ProcessChangedVariables(&in_queue, &queue)) break;
+
+      // It is possible we deleted some constraint, but the queue is empty.
+      // In this case we redo a pass of dual bound strenghtening as we might
+      // perform more reduction.
+      //
+      // TODO(user): maybe we could reach fix point directly?
+      if (dual_bound_strengthening.NumDeletedConstraints() == 0) break;
+    }
+    if (!queue.empty()) continue;
+
+    // Detect & exploit dominance between variables.
+    // TODO(user): This can be slow, remove from fix-pint loop?
+    if (num_dominance_tests++ < 2) {
+      if (context_->ModelIsUnsat()) return;
+      PresolveTimer timer("DetectDominanceRelations", logger_, time_limit_);
+      VarDomination var_dom;
+      ScanModelForDominanceDetection(*context_, &var_dom);
+      if (!ExploitDominanceRelations(var_dom, context_)) return;
+      if (ProcessChangedVariables(&in_queue, &queue)) continue;
+    }
   }
 
   if (context_->ModelIsUnsat()) return;
@@ -10449,6 +10499,8 @@ void CpModelPresolver::PresolveToFixPoint() {
     }
   }
 
+  timer.AddCounter("num_loops", num_loops);
+  timer.AddCounter("num_dual_strengthening", num_dual_strengthening);
   context_->deductions.MarkProcessingAsDoneForNow();
 }
 

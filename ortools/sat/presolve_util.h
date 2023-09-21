@@ -58,7 +58,9 @@ class PresolveTimer {
   bool WorkLimitIsReached() const { return work_ >= 1.0; }
 
   // Extra stats=value to display at the end.
+  // We filter value of zero to have less clutter.
   void AddCounter(std::string name, int64_t count) {
+    if (count == 0) return;
     counters_.emplace_back(std::move(name), count);
   }
 

@@ -35,6 +35,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -49,14 +50,15 @@ PresolveTimer::~PresolveTimer() {
 
   std::string counter_string;
   for (const auto& [counter_name, count] : counters_) {
-    absl::StrAppend(&counter_string, " #", counter_name, "=", count);
+    absl::StrAppend(&counter_string, " #", counter_name, "=",
+                    FormatCounter(count));
   }
 
   // We use absl::Seconds() to get a nicer display.
   SOLVER_LOG(logger_, absl::StrFormat("  %.2es", timer_.Get()),
              absl::StrFormat("  %.2ed", work_),
              (WorkLimitIsReached() ? " *" : "  "),
-             absl::StrCat("[", name_, "] "), counter_string, " ",
+             absl::StrCat("[", name_, "]"), counter_string, " ",
              absl::StrJoin(extra_infos_, " "));
 }
 

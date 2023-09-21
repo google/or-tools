@@ -1007,5 +1007,56 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
   }
 }
 
+void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
+                                     Model* model,
+                                     std::vector<IntegerVariable>* vars) {
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (int t = 0; t < helper->NumTasks(); ++t) {
+    if (helper->Starts()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Starts()[t].var);
+    }
+    if (helper->Sizes()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Sizes()[t].var);
+    }
+    if (helper->Ends()[t].var != kNoIntegerVariable) {
+      vars->push_back(helper->Ends()[t].var);
+    }
+    if (helper->IsOptional(t) && !helper->IsAbsent(t) &&
+        !helper->IsPresent(t)) {
+      const Literal l = helper->PresenceLiteral(t);
+      IntegerVariable view = kNoIntegerVariable;
+      if (!encoder->LiteralOrNegationHasView(l, &view)) {
+        view = model->Add(NewIntegerVariableFromLiteral(l));
+      }
+      vars->push_back(view);
+    }
+  }
+}
+
+void AppendVariablesFromCapacityAndDemands(
+    const AffineExpression& capacity, SchedulingDemandHelper* demands_helper,
+    Model* model, std::vector<IntegerVariable>* vars) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (const AffineExpression& demand_expr : demands_helper->Demands()) {
+    if (!integer_trail->IsFixed(demand_expr)) {
+      vars->push_back(demand_expr.var);
+    }
+  }
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const auto& product : demands_helper->DecomposedEnergies()) {
+    for (const auto& lit_val_val : product) {
+      IntegerVariable view = kNoIntegerVariable;
+      if (!encoder->LiteralOrNegationHasView(lit_val_val.literal, &view)) {
+        view = model->Add(NewIntegerVariableFromLiteral(lit_val_val.literal));
+      }
+      vars->push_back(view);
+    }
+  }
+
+  if (!integer_trail->IsFixed(capacity)) {
+    vars->push_back(capacity.var);
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

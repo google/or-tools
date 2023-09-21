@@ -141,44 +141,49 @@ bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
   return is_fully_encoded_[index];
 }
 
-std::vector<ValueLiteralPair> IntegerEncoder::FullDomainEncoding(
+const std::vector<ValueLiteralPair>& IntegerEncoder::FullDomainEncoding(
     IntegerVariable var) const {
   CHECK(VariableIsFullyEncoded(var));
   return PartialDomainEncoding(var);
 }
 
-std::vector<ValueLiteralPair> IntegerEncoder::PartialDomainEncoding(
+const std::vector<ValueLiteralPair>& IntegerEncoder::PartialDomainEncoding(
     IntegerVariable var) const {
   const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
-  if (index >= equality_by_var_.size()) return {};
+  if (index >= equality_by_var_.size()) {
+    partial_encoding_.clear();
+    return partial_encoding_;
+  }
 
   int new_size = 0;
-  std::vector<ValueLiteralPair> result;
-  result.assign(equality_by_var_[index].begin(), equality_by_var_[index].end());
-  for (int i = 0; i < result.size(); ++i) {
-    const ValueLiteralPair pair = result[i];
+  partial_encoding_.assign(equality_by_var_[index].begin(),
+                           equality_by_var_[index].end());
+  for (int i = 0; i < partial_encoding_.size(); ++i) {
+    const ValueLiteralPair pair = partial_encoding_[i];
     if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
     if (sat_solver_->Assignment().LiteralIsTrue(pair.literal)) {
-      result.clear();
-      result.push_back(pair);
+      partial_encoding_.clear();
+      partial_encoding_.push_back(pair);
       new_size = 1;
       break;
     }
-    result[new_size++] = pair;
+    partial_encoding_[new_size++] = pair;
   }
-  result.resize(new_size);
-  std::sort(result.begin(), result.end(), ValueLiteralPair::CompareByValue());
+  partial_encoding_.resize(new_size);
+  std::sort(partial_encoding_.begin(), partial_encoding_.end(),
+            ValueLiteralPair::CompareByValue());
 
   if (trail_->CurrentDecisionLevel() == 0) {
     // We can cleanup the current encoding in this case.
-    equality_by_var_[index].assign(result.begin(), result.end());
+    equality_by_var_[index].assign(partial_encoding_.begin(),
+                                   partial_encoding_.end());
   }
 
   if (!VariableIsPositive(var)) {
-    std::reverse(result.begin(), result.end());
-    for (ValueLiteralPair& ref : result) ref.value = -ref.value;
+    std::reverse(partial_encoding_.begin(), partial_encoding_.end());
+    for (ValueLiteralPair& ref : partial_encoding_) ref.value = -ref.value;
   }
-  return result;
+  return partial_encoding_;
 }
 
 // Note that by not inserting the literal in "order" we can in the worst case

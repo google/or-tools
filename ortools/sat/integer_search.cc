@@ -26,8 +26,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -403,12 +401,17 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
       // Information to select best.
       IntegerValue size_min = kMaxIntegerValue;
-      IntegerValue time = kMaxIntegerValue;
+      IntegerValue start_min = kMaxIntegerValue;
+      IntegerValue start_max = kMaxIntegerValue;
       double noise = 0.5;
 
+      // We want to pack interval to the left. If two have the same start_min,
+      // we want to choose the one that will likely leave an easier problem for
+      // the other tasks.
       bool operator<(const ToSchedule& other) const {
-        return std::tie(time, size_min, noise) <
-               std::tie(other.time, other.size_min, other.noise);
+        return std::tie(start_min, start_max, size_min, noise) <
+               std::tie(other.start_min, other.start_max, other.size_min,
+                        other.noise);
       }
     };
     std::vector<ToSchedule> top_decisions;
@@ -421,14 +424,19 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       if (repo->IsAbsent(i)) continue;
       if (!repo->IsPresent(i) || !integer_trail->IsFixed(repo->Start(i)) ||
           !integer_trail->IsFixed(repo->End(i))) {
-        IntegerValue time = integer_trail->LowerBound(repo->Start(i));
+        IntegerValue start_min = integer_trail->LowerBound(repo->Start(i));
+        IntegerValue start_max = integer_trail->UpperBound(repo->Start(i));
         if (repo->IsOptional(i)) {
           // For task whose presence is still unknown, our propagators should
           // have propagated the minimum time as if it was present. So this
           // should reflect the earliest time at which this interval can be
           // scheduled.
-          time = std::max(time, integer_trail->ConditionalLowerBound(
-                                    repo->PresenceLiteral(i), repo->Start(i)));
+          start_min = std::max(start_min,
+                               integer_trail->ConditionalLowerBound(
+                                   repo->PresenceLiteral(i), repo->Start(i)));
+          start_max = std::min(start_max,
+                               integer_trail->ConditionalUpperBound(
+                                   repo->PresenceLiteral(i), repo->Start(i)));
         }
 
         // For variable size, we compute the min size once the start is fixed
@@ -437,12 +445,12 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         // need to be scheduled.
         const IntegerValue size_min =
             std::max(integer_trail->LowerBound(repo->Size(i)),
-                     integer_trail->LowerBound(repo->End(i)) - time);
+                     integer_trail->LowerBound(repo->End(i)) - start_min);
         const ToSchedule& worst = top_decisions.back();
         const ToSchedule candidate(
             {repo->IsOptional(i) ? repo->PresenceLiteral(i).Index()
                                  : kNoLiteralIndex,
-             repo->Start(i), repo->End(i), time, size_min,
+             repo->Start(i), repo->End(i), start_min, start_max, size_min,
              absl::Uniform(*random, 0.0, 1.0)});
         if (top_decisions.size() < randomization_size || candidate < worst) {
           if (top_decisions.size() == randomization_size) {
@@ -461,13 +469,14 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
             : top_decisions[absl::Uniform(
                   *random, 0, static_cast<int>(top_decisions.size()))];
     if (top_decisions.size() > 1) {
-      VLOG(2) << "Choose among " << top_decisions.size() << " " << best.time
-              << " " << best.size_min << "[t=" << top_decisions.front().time
+      VLOG(2) << "Choose among " << top_decisions.size() << " "
+              << best.start_min << " " << best.size_min
+              << "[t=" << top_decisions.front().start_min
               << ", s=" << top_decisions.front().size_min
-              << ", t=" << top_decisions.back().time
+              << ", t=" << top_decisions.back().start_min
               << ", s=" << top_decisions.back().size_min << "]";
     }
-    if (best.time == kMaxIntegerValue) return BooleanOrIntegerLiteral();
+    if (best.start_min == kMaxIntegerValue) return BooleanOrIntegerLiteral();
 
     // Use the next_decision_override to fix in turn all the variables from
     // the selected interval.
@@ -516,9 +525,9 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
                       ? absl::StrCat(" presence=",
                                      Literal(best.presence).DebugString())
                       : "")
-              << (best.time < start
-                      ? absl::StrCat(" start_at_selection=", best.time.value())
-                      : "");
+              << (best.start_min < start ? absl::StrCat(" start_at_selection=",
+                                                        best.start_min.value())
+                                         : "");
       return BooleanOrIntegerLiteral();
     };
 
@@ -1238,7 +1247,6 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
           << " integer variables"
           << ", deterministic time limit = "
           << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
-  last_logging_time_ = absl::Now();
 }
 
 // Continuous probing procedure.
@@ -1427,15 +1435,17 @@ void ContinuousProber::LogStatistics() {
       shared_bounds_manager_ == nullptr) {
     return;
   }
-  shared_response_manager_->LogPeriodicMessage(
-      "Probe",
-      absl::StrCat("#iterations:", iteration_, " #literals fixed/probed:",
-                   prober_->num_new_literals_fixed(), "/", num_literals_probed_,
-                   " #bounds shaved/tried:", num_bounds_shaved_, "/",
-                   num_bounds_tried_, " #new_integer_bounds:",
-                   shared_bounds_manager_->NumBoundsExported("probing"),
-                   ", #new_binary_clauses:", prober_->num_new_binary_clauses()),
-      parameters_.log_frequency_in_seconds(), &last_logging_time_);
+  if (VLOG_IS_ON(1)) {
+    shared_response_manager_->LogMessageWithThrottling(
+        "Probe",
+        absl::StrCat(
+            "#iterations:", iteration_,
+            " #literals fixed/probed:", prober_->num_new_literals_fixed(), "/",
+            num_literals_probed_, " #bounds shaved/tried:", num_bounds_shaved_,
+            "/", num_bounds_tried_, " #new_integer_bounds:",
+            shared_bounds_manager_->NumBoundsExported("probing"),
+            ", #new_binary_clauses:", prober_->num_new_binary_clauses()));
+  }
 }
 
 }  // namespace sat
