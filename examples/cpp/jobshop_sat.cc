@@ -12,12 +12,16 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_join.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
@@ -26,8 +30,11 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/scheduling/jobshop_scheduling_parser.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
