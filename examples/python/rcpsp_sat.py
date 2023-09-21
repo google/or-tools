@@ -39,7 +39,7 @@ _OUTPUT_PROTO = flags.DEFINE_string(
 _PARAMS = flags.DEFINE_string("params", "", "Sat solver parameters.")
 _USE_INTERVAL_MAKESPAN = flags.DEFINE_bool(
     "use_interval_makespan",
-    False,
+    True,
     "Whether we encode the makespan using an interval or not.",
 )
 _HORIZON = flags.DEFINE_integer("horizon", -1, "Force horizon.")
@@ -51,7 +51,7 @@ _ADD_REDUNDANT_ENERGETIC_CONSTRAINTS = flags.DEFINE_bool(
 )
 _DELAY_TIME_LIMIT = flags.DEFINE_float(
     "delay_time_limit",
-    0.0,
+    20.0,
     "Time limit when computing min delay between tasks."
     + " A non-positive time limit disable min delays computation.",
 )
