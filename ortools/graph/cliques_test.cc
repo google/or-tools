@@ -157,12 +157,13 @@ void RunBronKerboschAlgorithmUntilCompletion(
 TEST(BronKerbosch, CompleteGraph) {
   constexpr int kNumNodes[] = {1, 5, 50, 500, 5000};
   for (const int num_nodes : kNumNodes) {
-    ResultCallback2<bool, int, int>* graph = NewPermanentCallback(FullGraph);
+    auto graph = FullGraph;
     CliqueReporter<int> reporter;
     auto callback =
         absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
     operations_research::FindCliques(
-        graph, num_nodes, ::util::functional::ToPermanentCallback(callback));
+        ::util::functional::ToPermanentCallback(graph), num_nodes,
+        ::util::functional::ToPermanentCallback(callback));
     const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
     EXPECT_EQ(1, all_cliques.size());
     EXPECT_EQ(num_nodes, all_cliques[0].size());
@@ -236,12 +237,13 @@ TEST(BronKerboschAlgorithmTest, CompleteGraphWithInt64) {
 }
 
 TEST(BronKerbosch, EmptyGraph) {
-  ResultCallback2<bool, int, int>* graph = NewPermanentCallback(EmptyGraph);
+  auto graph = EmptyGraph;
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
   operations_research::FindCliques(
-      graph, 10, ::util::functional::ToPermanentCallback(callback));
+      ::util::functional::ToPermanentCallback(graph), 10,
+      ::util::functional::ToPermanentCallback(callback));
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(10, all_cliques.size());
   for (int i = 0; i < 10; ++i) {
@@ -328,12 +330,13 @@ TEST(BronKerboschAlgorithmTest, EmptyGraphStopAfterEveryClique) {
 }
 
 TEST(BronKerbosch, MatchingGraph) {
-  ResultCallback2<bool, int, int>* graph = NewPermanentCallback(MatchingGraph);
+  auto graph = MatchingGraph;
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
   operations_research::FindCliques(
-      graph, 10, ::util::functional::ToPermanentCallback(callback));
+      ::util::functional::ToPermanentCallback(graph), 10,
+      ::util::functional::ToPermanentCallback(callback));
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {
@@ -397,35 +400,38 @@ TEST(BronKerboschAlgorithmTest, ModuloGraph) {
 }
 
 TEST(BronKerbosch, CompleteGraphCover) {
-  ResultCallback2<bool, int, int>* graph = NewPermanentCallback(FullGraph);
+  auto graph = FullGraph;
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
   operations_research::CoverArcsByCliques(
-      graph, 10, ::util::functional::ToPermanentCallback(callback));
+      ::util::functional::ToPermanentCallback(graph), 10,
+      ::util::functional::ToPermanentCallback(callback));
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(1, all_cliques.size());
   EXPECT_EQ(10, all_cliques[0].size());
 }
 
 TEST(BronKerbosch, EmptyGraphCover) {
-  ResultCallback2<bool, int, int>* graph = NewPermanentCallback(EmptyGraph);
+  auto graph = EmptyGraph;
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
   operations_research::CoverArcsByCliques(
-      graph, 10, ::util::functional::ToPermanentCallback(callback));
+      ::util::functional::ToPermanentCallback(graph), 10,
+      ::util::functional::ToPermanentCallback(callback));
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(0, all_cliques.size());
 }
 
 TEST(BronKerbosch, MatchingGraphCover) {
-  ResultCallback2<bool, int, int>* graph = NewPermanentCallback(MatchingGraph);
+  auto graph = MatchingGraph;
   CliqueReporter<int> reporter;
   auto callback =
       absl::bind_front(&CliqueReporter<int>::AppendClique, &reporter);
   operations_research::CoverArcsByCliques(
-      graph, 10, ::util::functional::ToPermanentCallback(callback));
+      ::util::functional::ToPermanentCallback(graph), 10,
+      ::util::functional::ToPermanentCallback(callback));
   const std::vector<std::vector<int>>& all_cliques = reporter.all_cliques();
   EXPECT_EQ(5, all_cliques.size());
   for (int i = 0; i < 5; ++i) {

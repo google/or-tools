@@ -33,6 +33,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/glop/parameters.pb.h"
@@ -75,7 +76,7 @@ class LinearProgram {
   void Clear();
 
   // Name setter and getter.
-  void SetName(const std::string& name) { name_ = name; }
+  void SetName(absl::string_view name) { name_ = name; }
   const std::string& name() const { return name_; }
 
   // Creates a new variable and returns its index.

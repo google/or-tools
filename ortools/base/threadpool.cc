@@ -13,6 +13,9 @@
 
 #include "ortools/base/threadpool.h"
 
+#include <functional>
+#include <mutex>
+
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 

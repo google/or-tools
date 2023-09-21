@@ -51,7 +51,7 @@ class DataWrapper<LinearProgram> {
     data_->Clear();
   }
 
-  void SetName(absl::string_view name) { data_->SetName(std::string(name)); }
+  void SetName(absl::string_view name) { data_->SetName(name); }
 
   void SetObjectiveDirection(bool maximize) {
     data_->SetMaximizationProblem(maximize);
