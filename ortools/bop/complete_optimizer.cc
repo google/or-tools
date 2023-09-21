@@ -187,9 +187,10 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     const sat::Coefficient min_weight =
         sat::ComputeCoreMinWeight(encoder_.nodes(), core);
     std::string info_str;
-    encoder_.ProcessCore(core, min_weight,
-                         /*gap=*/std::numeric_limits<sat::Coefficient>::max(),
-                         &info_str);
+    encoder_.ProcessCore(
+        core, min_weight,
+        /*gap=*/std::numeric_limits<sat::Coefficient::ValueType>::max(),
+        &info_str);
     assumptions_already_added_ = false;
   }
   return BopOptimizerBase::CONTINUE;
