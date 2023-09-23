@@ -31,6 +31,7 @@
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -211,7 +212,7 @@ class ActivityBoundHelper {
   bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
                            absl::flat_hash_set<int>* literals_at_true);
 
-  // partition the list of literals into disjoint at most ones. The returned
+  // Partition the list of literals into disjoint at most ones. The returned
   // spans are only valid until another function from this class is used.
   std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
       absl::Span<const int> literals);
@@ -253,10 +254,7 @@ class ActivityBoundHelper {
   std::vector<int64_t> second_max_by_partition_;
 
   // Used by PartitionLiteralsIntoAmo().
-  std::vector<int> part_starts_;
-  std::vector<int> part_ends_;
-  std::vector<int> part_sizes_;
-  std::vector<int> reordered_literals_;
+  CompactVectorVector<int, int> part_to_literals_;
 
   absl::flat_hash_set<int> triggered_amo_;
 };

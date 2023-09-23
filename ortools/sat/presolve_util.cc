@@ -452,28 +452,9 @@ ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
   }
 
   // We have the partition, lets construct the spans now.
-  part_starts_.assign(num_parts, 0);
-  part_sizes_.assign(num_parts, 0);
-  part_ends_.assign(num_parts, 0);
-  for (int i = 0; i < num_literals; ++i) {
-    DCHECK_GE(partition_[i], 0);
-    DCHECK_LT(partition_[i], num_parts);
-    part_sizes_[partition_[i]]++;
-  }
-  for (int p = 1; p < num_parts; ++p) {
-    part_starts_[p] = part_ends_[p] = part_sizes_[p - 1] + part_starts_[p - 1];
-  }
-  reordered_literals_.resize(num_literals);
-  for (int i = 0; i < num_literals; ++i) {
-    const int p = partition_[i];
-    reordered_literals_[part_ends_[p]++] = literals[i];
-  }
-  std::vector<absl::Span<const int>> result;
-  for (int p = 0; p < num_parts; ++p) {
-    result.push_back(
-        absl::MakeSpan(&reordered_literals_[part_starts_[p]], part_sizes_[p]));
-  }
-  return result;
+  part_to_literals_.ResetFromFlatMapping(partition_, literals);
+  DCHECK_EQ(part_to_literals_.size(), num_parts);
+  return part_to_literals_.AsVectorOfSpan();
 }
 
 bool ActivityBoundHelper::IsAmo(absl::Span<const int> literals) {

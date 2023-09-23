@@ -43,6 +43,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/routing_cuts.h"
 #include "ortools/sat/sat_base.h"
@@ -204,10 +205,17 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
       }
     }
 
-    relaxation->linear_constraints.push_back(at_least_one.Build());
-    relaxation->linear_constraints.push_back(encoding_ct.Build());
-    relaxation->at_most_ones.push_back(at_most_one_ct);
-    ++*num_tight;
+    // It is possible that the linear1 encoding respect our overflow
+    // precondition but not the Var = sum bool * value one. In this case, we
+    // just don't encode it this way. Hopefully, most normal model will not run
+    // into this.
+    const LinearConstraint lc = encoding_ct.Build();
+    if (!PossibleOverflow(*integer_trail, lc)) {
+      relaxation->linear_constraints.push_back(at_least_one.Build());
+      relaxation->linear_constraints.push_back(std::move(lc));
+      relaxation->at_most_ones.push_back(at_most_one_ct);
+      ++*num_tight;
+    }
     return;
   }
 
@@ -221,13 +229,18 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
       CHECK(encoding_ct.AddLiteralTerm(value_literal.literal,
                                        rhs - value_literal.value));
     }
-    relaxation->at_most_ones.push_back(at_most_one_ct);
-    relaxation->linear_constraints.push_back(encoding_ct.Build());
-    ++*num_tight;
+
+    const LinearConstraint lc = encoding_ct.Build();
+    if (!PossibleOverflow(*integer_trail, lc)) {
+      relaxation->at_most_ones.push_back(at_most_one_ct);
+      relaxation->linear_constraints.push_back(std::move(lc));
+      ++*num_tight;
+    }
     return;
   }
 
   // min + sum l_i * (value_i - min) <= var.
+  // Note that this might overflow in corner cases, so we need to prevent that.
   const IntegerValue d_min = min_not_encoded;
   LinearConstraintBuilder lower_bound_ct(&model, d_min, kMaxIntegerValue);
   lower_bound_ct.AddTerm(var, IntegerValue(1));
@@ -235,8 +248,14 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(lower_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_min - value_literal.value));
   }
+  const LinearConstraint built_lb_ct = lower_bound_ct.Build();
+  if (!PossibleOverflow(*integer_trail, built_lb_ct)) {
+    relaxation->linear_constraints.push_back(std::move(built_lb_ct));
+    ++*num_loose;
+  }
 
   // var <= max + sum l_i * (value_i - max).
+  // Note that this might overflow in corner cases, so we need to prevent that.
   const IntegerValue d_max = max_not_encoded;
   LinearConstraintBuilder upper_bound_ct(&model, kMinIntegerValue, d_max);
   upper_bound_ct.AddTerm(var, IntegerValue(1));
@@ -244,12 +263,14 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(upper_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_max - value_literal.value));
   }
+  const LinearConstraint built_ub_ct = upper_bound_ct.Build();
+  if (!PossibleOverflow(*integer_trail, built_ub_ct)) {
+    relaxation->linear_constraints.push_back(std::move(built_ub_ct));
+    ++*num_loose;
+  }
 
   // Note that empty/trivial constraints will be filtered later.
   relaxation->at_most_ones.push_back(at_most_one_ct);
-  relaxation->linear_constraints.push_back(lower_bound_ct.Build());
-  relaxation->linear_constraints.push_back(upper_bound_ct.Build());
-  ++*num_loose;
 }
 
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
@@ -266,9 +287,8 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
   // And also add the implications between used literals.
   {
     IntegerValue prev_used_bound = integer_trail->LowerBound(var);
-    LinearConstraintBuilder lb_constraint(&model, prev_used_bound,
-                                          kMaxIntegerValue);
-    lb_constraint.AddTerm(var, IntegerValue(1));
+    LinearConstraintBuilder builder(&model, prev_used_bound, kMaxIntegerValue);
+    builder.AddTerm(var, IntegerValue(1));
     LiteralIndex prev_literal_index = kNoLiteralIndex;
     for (const auto entry : greater_than_encoding) {
       if (entry.value <= prev_used_bound) continue;
@@ -277,7 +297,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
       const IntegerValue diff = prev_used_bound - entry.value;
 
       // Skip the entry if the literal doesn't have a view.
-      if (!lb_constraint.AddLiteralTerm(entry.literal, diff)) continue;
+      if (!builder.AddLiteralTerm(entry.literal, diff)) continue;
       if (prev_literal_index != kNoLiteralIndex) {
         // Add var <= prev_var, which is the same as var + not(prev_var) <= 1
         relaxation->at_most_ones.push_back(
@@ -286,26 +306,29 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
       prev_used_bound = entry.value;
       prev_literal_index = literal_index;
     }
-    relaxation->linear_constraints.push_back(lb_constraint.Build());
+
+    // Note that by construction, this shouldn't be able to overflow.
+    relaxation->linear_constraints.push_back(builder.Build());
   }
 
   // Do the same for the var <= side by using NegationOfVar().
   // Note that we do not need to add the implications between literals again.
   {
     IntegerValue prev_used_bound = integer_trail->LowerBound(NegationOf(var));
-    LinearConstraintBuilder lb_constraint(&model, prev_used_bound,
-                                          kMaxIntegerValue);
-    lb_constraint.AddTerm(var, IntegerValue(-1));
+    LinearConstraintBuilder builder(&model, prev_used_bound, kMaxIntegerValue);
+    builder.AddTerm(var, IntegerValue(-1));
     for (const auto entry :
          encoder->PartialGreaterThanEncoding(NegationOf(var))) {
       if (entry.value <= prev_used_bound) continue;
       const IntegerValue diff = prev_used_bound - entry.value;
 
       // Skip the entry if the literal doesn't have a view.
-      if (!lb_constraint.AddLiteralTerm(entry.literal, diff)) continue;
+      if (!builder.AddLiteralTerm(entry.literal, diff)) continue;
       prev_used_bound = entry.value;
     }
-    relaxation->linear_constraints.push_back(lb_constraint.Build());
+
+    // Note that by construction, this shouldn't be able to overflow.
+    relaxation->linear_constraints.push_back(builder.Build());
   }
 }
 
@@ -1210,6 +1233,7 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
   CHECK_EQ(model->GetOrCreate<SatSolver>()->CurrentDecisionLevel(), 0);
   DCHECK_GT(linearization_level, 0);
 
+  const int old_index = relaxation->linear_constraints.size();
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr: {
       if (linearization_level > 1) {
@@ -1308,6 +1332,18 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
       break;
     }
     default: {
+    }
+  }
+
+  if (DEBUG_MODE) {
+    const auto& integer_trail = *model->GetOrCreate<IntegerTrail>();
+    for (int i = old_index; i < relaxation->linear_constraints.size(); ++i) {
+      const bool issue =
+          PossibleOverflow(integer_trail, relaxation->linear_constraints[i]);
+      if (issue) {
+        LOG(INFO) << "Possible overflow in linearization of: "
+                  << ct.ShortDebugString();
+      }
     }
   }
 }
@@ -1657,10 +1693,10 @@ void AddLinMaxCutGenerator(const ConstraintProto& ct, Model* m,
 // it is harder to detect that if all literal are false then none of the implied
 // value can be taken.
 void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* element_encodings = m->GetOrCreate<ElementEncodings>();
 
   int num_exactly_one_elements = 0;
-
   for (const IntegerVariable var :
        element_encodings->GetElementEncodedVariables()) {
     for (const auto& [index, literal_value_list] :
@@ -1670,19 +1706,22 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
         min_value = std::min(min_value, literal_value.value);
       }
 
-      LinearConstraintBuilder linear_encoding(m, -min_value, -min_value);
-      linear_encoding.AddTerm(var, IntegerValue(-1));
+      LinearConstraintBuilder builder(m, -min_value, -min_value);
+      builder.AddTerm(var, IntegerValue(-1));
       for (const auto& [value, literal] : literal_value_list) {
         const IntegerValue delta_min = value - min_value;
         if (delta_min != 0) {
           // If the term has no view, we abort.
-          if (!linear_encoding.AddLiteralTerm(literal, delta_min)) {
+          if (!builder.AddLiteralTerm(literal, delta_min)) {
             return;
           }
         }
       }
       ++num_exactly_one_elements;
-      relaxation->linear_constraints.push_back(linear_encoding.Build());
+      const LinearConstraint lc = builder.Build();
+      if (!PossibleOverflow(*integer_trail, lc)) {
+        relaxation->linear_constraints.push_back(std::move(lc));
+      }
     }
   }
 
@@ -1728,7 +1767,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
         var, *m, &relaxation, &num_tight_equality_encoding_relaxations,
         &num_loose_equality_encoding_relaxations);
 
-    // The we try to linearize the inequality encoding. Note that on some
+    // Then we try to linearize the inequality encoding. Note that on some
     // problem like pizza27i.mps.gz, adding both equality and inequality
     // encoding is a must.
     //

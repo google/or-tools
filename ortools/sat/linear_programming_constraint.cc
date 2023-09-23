@@ -276,10 +276,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   }
 }
 
-void LinearProgrammingConstraint::AddLinearConstraint(
-    const LinearConstraint& ct) {
+void LinearProgrammingConstraint::AddLinearConstraint(LinearConstraint ct) {
   DCHECK(!lp_constraint_is_registered_);
-  constraint_manager_.Add(ct);
+  constraint_manager_.Add(std::move(ct));
 }
 
 glop::ColIndex LinearProgrammingConstraint::GetMirrorVariable(

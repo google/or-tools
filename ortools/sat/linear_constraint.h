@@ -259,6 +259,15 @@ double ComputeActivity(
     const LinearConstraint& constraint,
     const absl::StrongVector<IntegerVariable, double>& values);
 
+// Tests for possible overflow in the given linear constraint used for the
+// linear relaxation. This is a bit relaxed compared to what we require for
+// generic linear constraint that are used in our CP propagators.
+//
+// If this check pass, our constraint should be safe to use in our simplication
+// code, our cut computation, etc...
+bool PossibleOverflow(const IntegerTrail& integer_trail,
+                      const LinearConstraint& constraint);
+
 // Returns sqrt(sum square(coeff)).
 double ComputeL2Norm(const LinearConstraint& constraint);
 

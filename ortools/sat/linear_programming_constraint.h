@@ -146,7 +146,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
                               absl::Span<const IntegerVariable> vars);
 
   // Add a new linear constraint to this LP.
-  void AddLinearConstraint(const LinearConstraint& ct);
+  void AddLinearConstraint(LinearConstraint ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.

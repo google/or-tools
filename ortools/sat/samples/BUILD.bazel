@@ -63,6 +63,8 @@ code_sample_py(name = "overlapping_intervals_sample_sat")
 
 code_sample_cc_py(name = "rabbits_and_pheasants_sat")
 
+code_sample_py(name = "ranking_circuit_sample_sat")
+
 code_sample_cc_py(name = "ranking_sample_sat")
 
 code_sample_cc_py(name = "reified_sample_sat")

@@ -41,11 +41,6 @@
 namespace operations_research {
 namespace sat {
 
-// Tests for possible overflow in the simplification of the given linear
-// constraint.
-bool PossibleOverflow(const IntegerTrail& integer_trail,
-                      const LinearConstraint& constraint);
-
 // Stores for each IntegerVariable its temporary LP solution.
 //
 // This is shared between all LinearProgrammingConstraint because in the corner

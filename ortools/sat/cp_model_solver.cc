@@ -126,6 +126,11 @@ ABSL_FLAG(bool, cp_model_dump_models, false,
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
           "mapping_model}.pb.txt.");
 
+ABSL_FLAG(bool, cp_model_export_model, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() will dump the model "
+          "proto of the original model format to "
+          "'FLAGS_cp_model_dump_prefix'{name}.pb.txt.");
+
 ABSL_FLAG(bool, cp_model_dump_text_proto, true,
           "DEBUG ONLY, dump models in text proto instead of binary proto.");
 
@@ -1000,19 +1005,17 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::vector<LinearProgrammingConstraint*> lp_constraints(num_components,
                                                            nullptr);
-  std::vector<std::vector<LinearConstraint>> component_to_constraints(
-      num_components);
   for (int i = 0; i < num_lp_constraints; i++) {
     const int c = index_to_component[get_constraint_index(i)];
     if (component_sizes[c] <= 1) continue;
-    component_to_constraints[c].push_back(relaxation.linear_constraints[i]);
     if (lp_constraints[c] == nullptr) {
       lp_constraints[c] =
           new LinearProgrammingConstraint(m, component_to_var[c]);
       m->TakeOwnership(lp_constraints[c]);
     }
     // Load the constraint.
-    lp_constraints[c]->AddLinearConstraint(relaxation.linear_constraints[i]);
+    lp_constraints[c]->AddLinearConstraint(
+        std::move(relaxation.linear_constraints[i]));
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -3977,6 +3980,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     DumpModelProto(model_proto, "model");
+  }
+  if (absl::GetFlag(FLAGS_cp_model_export_model)) {
+    DumpModelProto(model_proto,
+                   model_proto.name().empty() ? "model" : model_proto.name());
   }
 #endif  // __PORTABLE_PLATFORM__
 
