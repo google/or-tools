@@ -22,6 +22,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
@@ -94,7 +95,7 @@ struct Domain {
   bool IntersectWithSingleton(int64_t value);
   bool IntersectWithDomain(const Domain& domain);
   bool IntersectWithInterval(int64_t interval_min, int64_t interval_max);
-  bool IntersectWithListOfIntegers(const std::vector<int64_t>& integers);
+  bool IntersectWithListOfIntegers(absl::Span<const int64_t> integers);
   bool IntersectWithFloatDomain(const Domain& domain);
 
   // Returns true iff the value did belong to the domain, and was removed.

@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/flatzinc/checker.h"
@@ -73,8 +74,8 @@ struct CpModelProtoWithMapping {
   // Create and return the indices of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
   // This method will cache intervals with the key <start, size>.
-  std::vector<int> CreateIntervals(const std::vector<int>& starts,
-                                   const std::vector<VarOrValue>& sizes);
+  std::vector<int> CreateIntervals(absl::Span<const int> starts,
+                                   absl::Span<const VarOrValue> sizes);
 
   // Create and return the indices of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
@@ -84,7 +85,7 @@ struct CpModelProtoWithMapping {
   // stating that the interval will be performed if and only if the size is
   // greater than 0.
   std::vector<int> CreateNonZeroOrOptionalIntervals(
-      const std::vector<int>& starts, const std::vector<VarOrValue>& sizes);
+      absl::Span<const int> starts, absl::Span<const VarOrValue> sizes);
 
   // Create and return the index of the optional IntervalConstraint
   // corresponding to the flatzinc "interval" specified by a start var, the
@@ -104,7 +105,7 @@ struct CpModelProtoWithMapping {
   // Helpers to fill a ConstraintProto.
   void FillAMinusBInDomain(const std::vector<int64_t>& domain,
                            const fz::Constraint& fz_ct, ConstraintProto* ct);
-  void FillLinearConstraintWithGivenDomain(const std::vector<int64_t>& domain,
+  void FillLinearConstraintWithGivenDomain(absl::Span<const int64_t> domain,
                                            const fz::Constraint& fz_ct,
                                            ConstraintProto* ct);
   void FillConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
@@ -114,7 +115,7 @@ struct CpModelProtoWithMapping {
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
   void TranslateSearchAnnotations(
-      const std::vector<fz::Annotation>& search_annotations,
+      absl::Span<const fz::Annotation> search_annotations,
       SolverLogger* logger);
 
   // The output proto.
@@ -293,7 +294,7 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(int start_var,
 }
 
 std::vector<int> CpModelProtoWithMapping::CreateIntervals(
-    const std::vector<int>& starts, const std::vector<VarOrValue>& sizes) {
+    absl::Span<const int> starts, absl::Span<const VarOrValue> sizes) {
   std::vector<int> intervals;
   for (int i = 0; i < starts.size(); ++i) {
     intervals.push_back(
@@ -303,7 +304,7 @@ std::vector<int> CpModelProtoWithMapping::CreateIntervals(
 }
 
 std::vector<int> CpModelProtoWithMapping::CreateNonZeroOrOptionalIntervals(
-    const std::vector<int>& starts, const std::vector<VarOrValue>& sizes) {
+    absl::Span<const int> starts, absl::Span<const VarOrValue> sizes) {
   std::vector<int> intervals;
   for (int i = 0; i < starts.size(); ++i) {
     const int opt_var = NonZeroLiteralFrom(sizes[i]);
@@ -394,7 +395,7 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
 }
 
 void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
-    const std::vector<int64_t>& domain, const fz::Constraint& fz_ct,
+    absl::Span<const int64_t> domain, const fz::Constraint& fz_ct,
     ConstraintProto* ct) {
   auto* arg = ct->mutable_linear();
   for (const int64_t domain_bound : domain) arg->add_domain(domain_bound);
@@ -1097,8 +1098,7 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 }
 
 void CpModelProtoWithMapping::TranslateSearchAnnotations(
-    const std::vector<fz::Annotation>& search_annotations,
-    SolverLogger* logger) {
+    absl::Span<const fz::Annotation> search_annotations, SolverLogger* logger) {
   std::vector<fz::Annotation> flat_annotations;
   for (const fz::Annotation& annotation : search_annotations) {
     fz::FlattenAnnotations(annotation, &flat_annotations);

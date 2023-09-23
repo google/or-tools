@@ -28,6 +28,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
@@ -85,7 +86,7 @@ std::unique_ptr<Graph> RemapGraph(const Graph& graph,
 // be done in O(num new nodes + num new arcs) but with a higher constant.
 template <class Graph>
 std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
-                                          const std::vector<int>& nodes);
+                                          absl::Span<const int> nodes);
 
 // This can be used to view a directed graph (that supports reverse arcs)
 // from graph.h as un undirected graph: operator[](node) returns a
@@ -141,7 +142,7 @@ std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
 // Returns true iff the given vector is a subset of [0..n-1], i.e.
 // all elements i are such that 0 <= i < n and no two elements are equal.
 // "n" must be >= 0 or the result is undefined.
-bool IsSubsetOf0N(const std::vector<int>& v, int n);
+bool IsSubsetOf0N(absl::Span<const int> v, int n);
 
 // Returns true iff the given vector is a permutation of [0..size()-1].
 inline bool IsValidPermutation(const std::vector<int>& v) {
@@ -295,7 +296,7 @@ std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
 
 template <class Graph>
 std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
-                                          const std::vector<int>& nodes) {
+                                          absl::Span<const int> nodes) {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   DCHECK(IsSubsetOf0N(nodes, old_graph.num_nodes())) << "Invalid subset";
