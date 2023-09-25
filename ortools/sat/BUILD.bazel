@@ -413,7 +413,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-	":util",
+        ":util",
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
