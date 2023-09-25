@@ -16,6 +16,7 @@
 #include <limits.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <deque>
@@ -36,6 +37,7 @@
 #include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -405,8 +407,9 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       num_visit_types_(0),
       paths_metadata_(index_manager),
       manager_(index_manager),
-      finalizer_variables_(
-          std::make_unique<FinalizerVariables>(solver_.get())) {
+      finalizer_variables_(std::make_unique<FinalizerVariables>(solver_.get())),
+      interrupt_cp_sat_(false),
+      interrupt_cp_(false) {
   // Initialize vehicle costs to the zero evaluator.
   vehicle_to_transit_cost_.assign(
       vehicles_, RegisterTransitCallback(
@@ -2415,6 +2418,7 @@ void RoutingModel::CloseModelWithParameters(
 
 void RoutingModel::AddSearchMonitor(SearchMonitor* const monitor) {
   monitors_.push_back(monitor);
+  secondary_ls_monitors_.push_back(monitor);
 }
 
 namespace {
@@ -2492,10 +2496,8 @@ void MakeAllUnperformedInAssignment(const RoutingModel* model,
 }
 }  //  namespace
 
-bool RoutingModel::AppendAssignmentIfFeasible(
-    const Assignment& assignment,
-    std::vector<std::unique_ptr<Assignment>>* assignments,
-    bool call_at_solution_monitors) {
+bool RoutingModel::CheckIfAssignmentIsFeasible(const Assignment& assignment,
+                                               bool call_at_solution_monitors) {
   tmp_assignment_->CopyIntersection(&assignment);
   std::vector<SearchMonitor*> monitors = call_at_solution_monitors
                                              ? at_solution_monitors_
@@ -2503,7 +2505,14 @@ bool RoutingModel::AppendAssignmentIfFeasible(
   monitors.push_back(collect_one_assignment_);
   monitors.push_back(GetOrCreateLimit());
   solver_->Solve(restore_tmp_assignment_, monitors);
-  if (collect_one_assignment_->solution_count() == 1) {
+  return collect_one_assignment_->solution_count() == 1;
+}
+
+bool RoutingModel::AppendAssignmentIfFeasible(
+    const Assignment& assignment,
+    std::vector<std::unique_ptr<Assignment>>* assignments,
+    bool call_at_solution_monitors) {
+  if (CheckIfAssignmentIsFeasible(assignment, call_at_solution_monitors)) {
     assignments->push_back(std::make_unique<Assignment>(solver_.get()));
     assignments->back()->Copy(collect_one_assignment_->solution(0));
     return true;
@@ -2535,6 +2544,13 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
                                             solutions);
 }
 
+namespace {
+bool PerformSecondaryLS(const RoutingSearchParameters& parameters) {
+  return GetTimeLimit(parameters) != absl::InfiniteDuration() &&
+         parameters.secondary_ls_time_limit_ratio() > 0;
+}
+}  // namespace
+
 const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     const std::vector<const Assignment*>& assignments,
     const RoutingSearchParameters& parameters,
@@ -2553,22 +2569,30 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     return nullptr;
   }
 
-  const auto update_time_limits = [this, start_time_ms, &parameters]() {
+  const auto update_time_limits = [this, start_time_ms,
+                                   &parameters](bool secondary_ls = false) {
+    if (secondary_ls && !PerformSecondaryLS(parameters)) return false;
     const absl::Duration elapsed_time =
         absl::Milliseconds(solver_->wall_time() - start_time_ms);
     const absl::Duration time_left = GetTimeLimit(parameters) - elapsed_time;
-    if (time_left >= absl::ZeroDuration()) {
-      limit_->UpdateLimits(time_left, std::numeric_limits<int64_t>::max(),
-                           std::numeric_limits<int64_t>::max(),
-                           parameters.solution_limit());
-      ls_limit_->UpdateLimits(time_left, std::numeric_limits<int64_t>::max(),
-                              std::numeric_limits<int64_t>::max(), 1);
-      // TODO(user): Come up with a better formula. Ideally this should be
-      // calibrated in the first solution strategies.
-      time_buffer_ = std::min(absl::Seconds(1), time_left * 0.05);
-      return true;
-    }
-    return false;
+
+    if (time_left < absl::ZeroDuration()) return false;
+
+    const absl::Duration secondary_solve_buffer =
+        secondary_ls || !PerformSecondaryLS(parameters)
+            ? absl::ZeroDuration()
+            : parameters.secondary_ls_time_limit_ratio() * time_left;
+    const absl::Duration time_limit = time_left - secondary_solve_buffer;
+    limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                         std::numeric_limits<int64_t>::max(),
+                         parameters.solution_limit());
+    DCHECK_NE(ls_limit_, nullptr);
+    ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                            std::numeric_limits<int64_t>::max(), 1);
+    // TODO(user): Come up with a better formula. Ideally this should be
+    // calibrated in the first solution strategies.
+    time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
+    return true;
   };
   if (!update_time_limits()) {
     status_ = ROUTING_FAIL_TIMEOUT;
@@ -2599,6 +2623,14 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
   local_optimum_reached_ = false;
   objective_lower_bound_ = kint64min;
   if (parameters.use_cp() == BOOL_TRUE) {
+    const auto run_secondary_ls = [this, &update_time_limits]() {
+      if (collect_assignments_->has_solution() &&
+          update_time_limits(/*secondary_ls=*/true)) {
+        assignment_->CopyIntersection(
+            collect_assignments_->last_solution_or_null());
+        solver_->Solve(secondary_ls_db_, secondary_ls_monitors_);
+      }
+    };
     if (first_solution_assignments.empty()) {
       bool solution_found = false;
       Assignment matching(solver_.get());
@@ -2624,12 +2656,14 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
         local_optimum_reached_ = false;
         if (update_time_limits()) {
           solver_->Solve(solve_db_, monitors_);
+          run_secondary_ls();
         }
       }
     } else {
       for (const Assignment* assignment : first_solution_assignments) {
         assignment_->CopyIntersection(assignment);
         solver_->Solve(improve_db_, monitors_);
+        run_secondary_ls();
         if (collect_assignments_->solution_count() >= 1 ||
             !update_time_limits()) {
           break;
@@ -2638,56 +2672,87 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     }
   }
 
+  const SolutionCollector* const solution_collector =
+      collect_secondary_ls_assignments_->has_solution()
+          ? collect_secondary_ls_assignments_
+          : collect_assignments_;
+
   if (parameters.use_cp_sat() == BOOL_TRUE ||
       parameters.use_generalized_cp_sat() == BOOL_TRUE ||
       (parameters.fallback_to_cp_sat_size_threshold() >= Size() &&
-       collect_assignments_->solution_count() == 0 && solution_pool.empty())) {
+       !solution_collector->has_solution() && solution_pool.empty())) {
     VLOG(1) << "Solving with CP-SAT";
-    const int solution_count = collect_assignments_->solution_count();
-    Assignment* const cp_solution =
-        solution_count >= 1 ? collect_assignments_->solution(solution_count - 1)
-                            : nullptr;
+    Assignment* const cp_solution = solution_collector->last_solution_or_null();
     Assignment sat_solution(solver_.get());
-    if (SolveModelWithSat(*this, parameters, cp_solution, &sat_solution) &&
-        AppendAssignmentIfFeasible(sat_solution, &solution_pool) &&
-        parameters.log_search()) {
-      LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
-                  start_time_ms);
+    if (SolveModelWithSat(this, parameters, cp_solution, &sat_solution) &&
+        AppendAssignmentIfFeasible(sat_solution, &solution_pool)) {
+      if (parameters.log_search()) {
+        LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
+                    start_time_ms);
+      }
       local_optimum_reached_ = true;
+      if (sat_solution.HasObjective()) {
+        objective_lower_bound_ =
+            std::max(objective_lower_bound_, sat_solution.ObjectiveValue());
+      }
     }
   }
   VLOG(1) << "Objective lower bound: " << objective_lower_bound_;
   const absl::Duration elapsed_time =
       absl::Milliseconds(solver_->wall_time() - start_time_ms);
-  const int solution_count = collect_assignments_->solution_count();
-  if (solution_count >= 1 || !solution_pool.empty()) {
+
+  if (solution_collector->has_solution() || !solution_pool.empty()) {
     status_ = local_optimum_reached_
                   ? ROUTING_SUCCESS
                   : ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED;
     if (solutions != nullptr) {
-      int64_t min_objective_value = kint64max;
-      for (int i = 0; i < solution_count; ++i) {
-        solutions->push_back(
-            solver_->MakeAssignment(collect_assignments_->solution(i)));
-        min_objective_value =
-            std::min(min_objective_value, solutions->back()->ObjectiveValue());
+      std::vector<Assignment*> temp_solutions;
+      for (int i = 0; i < solution_collector->solution_count(); ++i) {
+        temp_solutions.push_back(
+            solver_->MakeAssignment(solution_collector->solution(i)));
       }
       for (const auto& solution : solution_pool) {
-        if (solutions->empty() ||
-            solution->ObjectiveValue() < solutions->back()->ObjectiveValue()) {
-          solutions->push_back(solver_->MakeAssignment(solution.get()));
+        if (temp_solutions.empty() ||
+            solution->ObjectiveValue() <
+                temp_solutions.back()->ObjectiveValue()) {
+          temp_solutions.push_back(solver_->MakeAssignment(solution.get()));
         }
-        min_objective_value =
-            std::min(min_objective_value, solutions->back()->ObjectiveValue());
       }
+      // By construction, the last assignment in 'temp_solutions' necessarily
+      // has the best objective value.
+      DCHECK(!temp_solutions.empty());
+      const int64_t min_objective_value =
+          temp_solutions.back()->ObjectiveValue();
+
+      if (temp_solutions.size() < parameters.number_of_solutions_to_collect() &&
+          solution_collector != collect_assignments_ &&
+          collect_assignments_->has_solution()) {
+        // Since the secondary LS is run starting from the primary LS's last
+        // assignment, and that it will be the first solution collected in the
+        // secondary search, we already have it in the results.
+        DCHECK_EQ(*collect_assignments_->last_solution_or_null(),
+                  *temp_solutions[0]);
+        // Add the remaining solutions from the original assignment collector.
+        const size_t num_solutions = collect_assignments_->solution_count();
+        const int num_solutions_to_add = std::min(
+            parameters.number_of_solutions_to_collect() - solutions->size(),
+            num_solutions - 1);
+        for (int i = num_solutions_to_add; i > 0; --i) {
+          solutions->push_back(solver_->MakeAssignment(
+              collect_assignments_->solution(num_solutions - 1 - i)));
+          DCHECK_GE(solutions->back()->ObjectiveValue(), min_objective_value);
+        }
+      }
+      // Keep 'solutions' sorted from worst to best solution by appending
+      // temp_solutions in the end.
+      solutions->insert(solutions->end(), temp_solutions.begin(),
+                        temp_solutions.end());
       if (min_objective_value <= objective_lower_bound_) {
-        status_ = ROUTING_SUCCESS;
+        status_ = ROUTING_OPTIMAL;
       }
       return solutions->back();
     }
-    Assignment* best_assignment =
-        solution_count >= 1 ? collect_assignments_->solution(solution_count - 1)
-                            : nullptr;
+    Assignment* best_assignment = solution_collector->last_solution_or_null();
     for (const auto& solution : solution_pool) {
       if (best_assignment == nullptr ||
           solution->ObjectiveValue() < best_assignment->ObjectiveValue()) {
@@ -2695,7 +2760,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
       }
     }
     if (best_assignment->ObjectiveValue() <= objective_lower_bound_) {
-      status_ = ROUTING_SUCCESS;
+      status_ = ROUTING_OPTIMAL;
     }
     return solver_->MakeAssignment(best_assignment);
   } else {
@@ -4040,9 +4105,10 @@ void RoutingModel::CreateNeighborhoodOperators(
           arc_cost_for_path_start));
 }
 
-#define CP_ROUTING_PUSH_OPERATOR(operator_type, operator_method, operators) \
-  if (search_parameters.local_search_operators().use_##operator_method() == \
-      BOOL_TRUE) {                                                          \
+#define CP_ROUTING_PUSH_OPERATOR(operator_type, operator_method)            \
+  if (operators_to_consider.contains(operator_type) &&                      \
+      search_parameters.local_search_operators().use_##operator_method() == \
+          BOOL_TRUE) {                                                      \
     operators.push_back(local_search_operators_[operator_type]);            \
   }
 
@@ -4062,22 +4128,23 @@ LocalSearchOperator* RoutingModel::ConcatenateOperators(
 }
 
 LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
-    const RoutingSearchParameters& search_parameters) const {
+    const RoutingSearchParameters& search_parameters,
+    const absl::flat_hash_set<RoutingLocalSearchOperator>&
+        operators_to_consider) const {
   std::vector<LocalSearchOperator*> operator_groups;
   std::vector<LocalSearchOperator*> operators = extra_operators_;
   if (!pickup_delivery_pairs_.empty()) {
-    CP_ROUTING_PUSH_OPERATOR(RELOCATE_PAIR, relocate_pair, operators);
+    CP_ROUTING_PUSH_OPERATOR(RELOCATE_PAIR, relocate_pair);
     // Only add the light version of relocate pair if the normal version has not
     // already been added as it covers a subset of its neighborhood.
     if (search_parameters.local_search_operators().use_relocate_pair() ==
         BOOL_FALSE) {
-      CP_ROUTING_PUSH_OPERATOR(LIGHT_RELOCATE_PAIR, light_relocate_pair,
-                               operators);
+      CP_ROUTING_PUSH_OPERATOR(LIGHT_RELOCATE_PAIR, light_relocate_pair);
     }
-    CP_ROUTING_PUSH_OPERATOR(EXCHANGE_PAIR, exchange_pair, operators);
-    CP_ROUTING_PUSH_OPERATOR(NODE_PAIR_SWAP, node_pair_swap_active, operators);
-    CP_ROUTING_PUSH_OPERATOR(RELOCATE_SUBTRIP, relocate_subtrip, operators);
-    CP_ROUTING_PUSH_OPERATOR(EXCHANGE_SUBTRIP, exchange_subtrip, operators);
+    CP_ROUTING_PUSH_OPERATOR(EXCHANGE_PAIR, exchange_pair);
+    CP_ROUTING_PUSH_OPERATOR(NODE_PAIR_SWAP, node_pair_swap_active);
+    CP_ROUTING_PUSH_OPERATOR(RELOCATE_SUBTRIP, relocate_subtrip);
+    CP_ROUTING_PUSH_OPERATOR(EXCHANGE_SUBTRIP, exchange_subtrip);
   }
   if (vehicles_ > 1) {
     if (GetNumOfSingletonNodes() > 0) {
@@ -4085,10 +4152,10 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
       // work is for intra-route moves, already covered by OrOpt.
       // We are not disabling Exchange and Cross because there are no
       // intra-route equivalents.
-      CP_ROUTING_PUSH_OPERATOR(RELOCATE, relocate, operators);
+      CP_ROUTING_PUSH_OPERATOR(RELOCATE, relocate);
     }
-    CP_ROUTING_PUSH_OPERATOR(EXCHANGE, exchange, operators);
-    CP_ROUTING_PUSH_OPERATOR(CROSS, cross, operators);
+    CP_ROUTING_PUSH_OPERATOR(EXCHANGE, exchange);
+    CP_ROUTING_PUSH_OPERATOR(CROSS, cross);
   }
   if (!pickup_delivery_pairs_.empty() ||
       search_parameters.local_search_operators().use_relocate_neighbors() ==
@@ -4102,30 +4169,27 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
           LocalSearchMetaheuristic::GENERIC_TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
-    CP_ROUTING_PUSH_OPERATOR(LIN_KERNIGHAN, lin_kernighan, operators);
+    CP_ROUTING_PUSH_OPERATOR(LIN_KERNIGHAN, lin_kernighan);
   }
-  CP_ROUTING_PUSH_OPERATOR(TWO_OPT, two_opt, operators);
-  CP_ROUTING_PUSH_OPERATOR(OR_OPT, or_opt, operators);
-  CP_ROUTING_PUSH_OPERATOR(RELOCATE_EXPENSIVE_CHAIN, relocate_expensive_chain,
-                           operators);
+  CP_ROUTING_PUSH_OPERATOR(TWO_OPT, two_opt);
+  CP_ROUTING_PUSH_OPERATOR(OR_OPT, or_opt);
+  CP_ROUTING_PUSH_OPERATOR(RELOCATE_EXPENSIVE_CHAIN, relocate_expensive_chain);
   if (!disjunctions_.empty()) {
-    CP_ROUTING_PUSH_OPERATOR(MAKE_INACTIVE, make_inactive, operators);
-    CP_ROUTING_PUSH_OPERATOR(MAKE_CHAIN_INACTIVE, make_chain_inactive,
-                             operators);
-    CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE, make_active, operators);
+    CP_ROUTING_PUSH_OPERATOR(MAKE_INACTIVE, make_inactive);
+    CP_ROUTING_PUSH_OPERATOR(MAKE_CHAIN_INACTIVE, make_chain_inactive);
+    CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE, make_active);
 
     // The relocate_and_make_active parameter activates all neighborhoods
     // relocating a node together with making another active.
-    CP_ROUTING_PUSH_OPERATOR(RELOCATE_AND_MAKE_ACTIVE, relocate_and_make_active,
-                             operators);
-    CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE_AND_RELOCATE, relocate_and_make_active,
-                             operators);
+    CP_ROUTING_PUSH_OPERATOR(RELOCATE_AND_MAKE_ACTIVE,
+                             relocate_and_make_active);
+    CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE_AND_RELOCATE,
+                             relocate_and_make_active);
 
-    CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active, operators);
-    CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active,
-                             operators);
+    CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active);
+    CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active);
     CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
-                             shortest_path_swap_active, operators);
+                             shortest_path_swap_active);
   }
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
@@ -4133,27 +4197,24 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   operators.clear();
   if (vehicles() > 1) {
     // NOTE: The following heuristic path LNS with a single vehicle are
-    // equivalent to using the heuristic as first solution strategy, so we only
-    // add these moves if we have at least 2 vehicles in the model.
+    // equivalent to using the heuristic as first solution strategy, so we
+    // only add these moves if we have at least 2 vehicles in the model.
     CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_PATH_LNS,
-                             global_cheapest_insertion_path_lns, operators);
+                             global_cheapest_insertion_path_lns);
     CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_PATH_LNS,
-                             local_cheapest_insertion_path_lns, operators);
+                             local_cheapest_insertion_path_lns);
     CP_ROUTING_PUSH_OPERATOR(
         RELOCATE_PATH_GLOBAL_CHEAPEST_INSERTION_INSERT_UNPERFORMED,
-        relocate_path_global_cheapest_insertion_insert_unperformed, operators);
+        relocate_path_global_cheapest_insertion_insert_unperformed);
   }
   CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
-                           global_cheapest_insertion_expensive_chain_lns,
-                           operators);
+                           global_cheapest_insertion_expensive_chain_lns);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
-                           local_cheapest_insertion_expensive_chain_lns,
-                           operators);
+                           local_cheapest_insertion_expensive_chain_lns);
   CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
-                           global_cheapest_insertion_close_nodes_lns,
-                           operators);
+                           global_cheapest_insertion_close_nodes_lns);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
-                           local_cheapest_insertion_close_nodes_lns, operators);
+                           local_cheapest_insertion_close_nodes_lns);
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   // Third local search loop: Expensive LNS operators.
@@ -4163,19 +4224,19 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
           LocalSearchMetaheuristic::GENERIC_TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
-    CP_ROUTING_PUSH_OPERATOR(TSP_OPT, tsp_opt, operators);
+    CP_ROUTING_PUSH_OPERATOR(TSP_OPT, tsp_opt);
   }
   if (local_search_metaheuristic != LocalSearchMetaheuristic::TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::GENERIC_TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
-    CP_ROUTING_PUSH_OPERATOR(TSP_LNS, tsp_lns, operators);
+    CP_ROUTING_PUSH_OPERATOR(TSP_LNS, tsp_lns);
   }
-  CP_ROUTING_PUSH_OPERATOR(FULL_PATH_LNS, full_path_lns, operators);
-  CP_ROUTING_PUSH_OPERATOR(PATH_LNS, path_lns, operators);
+  CP_ROUTING_PUSH_OPERATOR(FULL_PATH_LNS, full_path_lns);
+  CP_ROUTING_PUSH_OPERATOR(PATH_LNS, path_lns);
   if (!disjunctions_.empty()) {
-    CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns, operators);
+    CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns);
   }
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
@@ -5087,10 +5148,25 @@ RoutingModel::CreateIntVarFilteredDecisionBuilder(const Args&... args) {
 }
 
 LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
-    const RoutingSearchParameters& search_parameters) {
+    const RoutingSearchParameters& search_parameters, bool secondary_ls) {
   SearchLimit* lns_limit = GetOrCreateLargeNeighborhoodSearchLimit();
+  absl::flat_hash_set<RoutingLocalSearchOperator> operators_to_consider;
+  if (secondary_ls) {
+    operators_to_consider = {TWO_OPT,
+                             OR_OPT,
+                             LIN_KERNIGHAN,
+                             MAKE_INACTIVE,
+                             MAKE_CHAIN_INACTIVE,
+                             SHORTEST_PATH_SWAP_ACTIVE};
+  } else {
+    // Consider all operators for the primary LS phase.
+    for (int op = 0; op < LOCAL_SEARCH_OPERATOR_COUNTER; ++op) {
+      operators_to_consider.insert(RoutingLocalSearchOperator(op));
+    }
+  }
   return solver_->MakeLocalSearchPhaseParameters(
-      CostVar(), GetNeighborhoodOperators(search_parameters),
+      CostVar(),
+      GetNeighborhoodOperators(search_parameters, operators_to_consider),
       solver_->MakeSolveOnce(
           CreateSolutionFinalizer(search_parameters, lns_limit), lns_limit),
       GetOrCreateLocalSearchLimit(),
@@ -5099,13 +5175,13 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
           {/*filter_objective=*/true, /*filter_with_cp_solver=*/false}));
 }
 
-DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(
+DecisionBuilder* RoutingModel::CreatePrimaryLocalSearchDecisionBuilder(
     const RoutingSearchParameters& search_parameters) {
   const int size = Size();
   DecisionBuilder* first_solution =
       GetFirstSolutionDecisionBuilder(search_parameters);
   LocalSearchPhaseParameters* const parameters =
-      CreateLocalSearchParameters(search_parameters);
+      CreateLocalSearchParameters(search_parameters, /*secondary_ls=*/false);
   SearchLimit* first_solution_lns_limit =
       GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   DecisionBuilder* const first_solution_sub_decision_builder =
@@ -5116,19 +5192,18 @@ DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(
     return solver_->MakeLocalSearchPhase(nexts_, first_solution,
                                          first_solution_sub_decision_builder,
                                          parameters);
-  } else {
-    const int all_size = size + size + vehicles_;
-    std::vector<IntVar*> all_vars(all_size);
-    for (int i = 0; i < size; ++i) {
-      all_vars[i] = nexts_[i];
-    }
-    for (int i = size; i < all_size; ++i) {
-      all_vars[i] = vehicle_vars_[i - size];
-    }
-    return solver_->MakeLocalSearchPhase(all_vars, first_solution,
-                                         first_solution_sub_decision_builder,
-                                         parameters);
   }
+  const int all_size = size + size + vehicles_;
+  std::vector<IntVar*> all_vars(all_size);
+  for (int i = 0; i < size; ++i) {
+    all_vars[i] = nexts_[i];
+  }
+  for (int i = size; i < all_size; ++i) {
+    all_vars[i] = vehicle_vars_[i - size];
+  }
+  return solver_->MakeLocalSearchPhase(all_vars, first_solution,
+                                       first_solution_sub_decision_builder,
+                                       parameters);
 }
 
 void RoutingModel::SetupDecisionBuilders(
@@ -5142,17 +5217,25 @@ void RoutingModel::SetupDecisionBuilders(
             CreateSolutionFinalizer(search_parameters, first_lns_limit),
             first_lns_limit));
   } else {
-    solve_db_ = CreateLocalSearchDecisionBuilder(search_parameters);
+    solve_db_ = CreatePrimaryLocalSearchDecisionBuilder(search_parameters);
   }
   CHECK(preassignment_ != nullptr);
   DecisionBuilder* restore_preassignment =
       solver_->MakeRestoreAssignment(preassignment_);
   solve_db_ = solver_->Compose(restore_preassignment, solve_db_);
+
   improve_db_ =
       solver_->Compose(restore_preassignment,
                        solver_->MakeLocalSearchPhase(
                            GetOrCreateAssignment(),
-                           CreateLocalSearchParameters(search_parameters)));
+                           CreateLocalSearchParameters(
+                               search_parameters, /*secondary_ls=*/false)));
+
+  secondary_ls_db_ = solver_->MakeLocalSearchPhase(
+      GetOrCreateAssignment(),
+      CreateLocalSearchParameters(search_parameters, /*secondary_ls=*/true));
+  secondary_ls_db_ = solver_->Compose(restore_preassignment, secondary_ls_db_);
+
   restore_assignment_ = solver_->Compose(
       solver_->MakeRestoreAssignment(GetOrCreateAssignment()),
       CreateSolutionFinalizer(search_parameters,
@@ -5226,6 +5309,7 @@ void RoutingModel::SetupMetaheuristics(
                  << " specified without sane timeout: solve may run forever.";
   }
   monitors_.push_back(optimize);
+  secondary_ls_monitors_.push_back(optimize);
 }
 
 void RoutingModel::SetTabuVarsCallback(GetTabuVarsCallback tabu_var_callback) {
@@ -5252,9 +5336,13 @@ void RoutingModel::SetupAssignmentCollector(
   collect_assignments_ = solver_->MakeNBestValueSolutionCollector(
       full_assignment, search_parameters.number_of_solutions_to_collect(),
       false);
+  collect_secondary_ls_assignments_ = solver_->MakeNBestValueSolutionCollector(
+      full_assignment, search_parameters.number_of_solutions_to_collect(),
+      false);
   collect_one_assignment_ =
       solver_->MakeFirstSolutionCollector(full_assignment);
   monitors_.push_back(collect_assignments_);
+  secondary_ls_monitors_.push_back(collect_secondary_ls_assignments_);
 }
 
 void RoutingModel::SetupTrace(
@@ -5275,20 +5363,24 @@ void RoutingModel::SetupTrace(
     }
     search_log_parameters.display_on_new_solutions_only = false;
     monitors_.push_back(solver_->MakeSearchLog(search_log_parameters));
+    secondary_ls_monitors_.push_back(
+        solver_->MakeSearchLog(search_log_parameters));
   }
 }
 
 void RoutingModel::SetupImprovementLimit(
     const RoutingSearchParameters& search_parameters) {
-  if (search_parameters.has_improvement_limit_parameters()) {
-    monitors_.push_back(solver_->MakeImprovementLimit(
-        cost_, /*maximize=*/false, search_parameters.log_cost_scaling_factor(),
-        search_parameters.log_cost_offset(),
-        search_parameters.improvement_limit_parameters()
-            .improvement_rate_coefficient(),
-        search_parameters.improvement_limit_parameters()
-            .improvement_rate_solutions_distance()));
-  }
+  if (!search_parameters.has_improvement_limit_parameters()) return;
+
+  SearchMonitor* const improvement_limit = solver_->MakeImprovementLimit(
+      cost_, /*maximize=*/false, search_parameters.log_cost_scaling_factor(),
+      search_parameters.log_cost_offset(),
+      search_parameters.improvement_limit_parameters()
+          .improvement_rate_coefficient(),
+      search_parameters.improvement_limit_parameters()
+          .improvement_rate_solutions_distance());
+  monitors_.push_back(improvement_limit);
+  secondary_ls_monitors_.push_back(improvement_limit);
 }
 
 namespace {
@@ -5342,6 +5434,11 @@ void RoutingModel::SetupSearchMonitors(
             std::max(objective_lower_bound_, CostVar()->Min());
       },
       [this]() { local_optimum_reached_ = true; }));
+  monitors_.push_back(
+      solver_->MakeCustomLimit([this]() -> bool { return interrupt_cp_; }));
+
+  secondary_ls_monitors_ = monitors_;
+
   SetupImprovementLimit(search_parameters);
   SetupMetaheuristics(search_parameters);
   SetupAssignmentCollector(search_parameters);

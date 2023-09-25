@@ -125,6 +125,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_use_generalized_cp_sat(BOOL_FALSE);
   p.mutable_sat_parameters()->set_linearization_level(2);
   p.mutable_sat_parameters()->set_num_search_workers(1);
+  p.set_report_intermediate_cp_sat_solutions(false);
   p.set_fallback_to_cp_sat_size_threshold(20);
   p.set_continuous_scheduling_solver(RoutingSearchParameters::SCHEDULING_GLOP);
   p.set_mixed_integer_scheduling_solver(
@@ -135,6 +136,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   // No global time_limit by default.
   p.set_solution_limit(kint64max);
   p.mutable_lns_time_limit()->set_nanos(100000000);  // 0.1s.
+  p.set_secondary_ls_time_limit_ratio(0);
   p.set_use_full_propagation(false);
   p.set_log_search(false);
   p.set_log_cost_scaling_factor(1.0);
@@ -313,6 +315,11 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   if (!IsValidNonNegativeDuration(search_parameters.lns_time_limit())) {
     errors.emplace_back("Invalid lns_time_limit: " +
                         search_parameters.lns_time_limit().ShortDebugString());
+  }
+  if (const double ratio = search_parameters.secondary_ls_time_limit_ratio();
+      std::isnan(ratio) || ratio < 0 || ratio >= 1) {
+    errors.emplace_back(
+        StrCat("Invalid secondary_ls_time_limit_ratio: ", ratio));
   }
   if (!FirstSolutionStrategy::Value_IsValid(
           search_parameters.first_solution_strategy())) {

@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <set>
 #include <string>
 #include <tuple>
@@ -34,8 +35,8 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/macros.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
@@ -330,36 +331,61 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     }
   };
   struct StartEndValue {
-    int64_t num_allowed_vehicles;
     int64_t distance;
     int vehicle;
 
     bool operator<(const StartEndValue& other) const {
-      return std::tie(num_allowed_vehicles, distance, vehicle) <
-             std::tie(other.num_allowed_vehicles, other.distance,
-                      other.vehicle);
+      return std::tie(distance, vehicle) <
+             std::tie(other.distance, other.vehicle);
     }
   };
-  typedef std::pair<StartEndValue, /*seed_node*/ int> Seed;
+  struct Seed {
+    uint64_t num_allowed_vehicles;
+    int64_t neg_penalty;
+    StartEndValue start_end_value;
+    int node;
+
+    bool operator>(const Seed& other) const {
+      return std::tie(num_allowed_vehicles, neg_penalty, start_end_value,
+                      node) > std::tie(other.num_allowed_vehicles,
+                                       other.neg_penalty, other.start_end_value,
+                                       other.node);
+    }
+  };
+  // clang-format off
+  struct SeedQueue {
+    explicit SeedQueue(bool prioritize_farthest_nodes) :
+      prioritize_farthest_nodes(prioritize_farthest_nodes) {}
+
+    /// By default, the priority is given (hierarchically) to nodes with lower
+    /// number of allowed vehicles, higher penalty and lower start/end distance.
+    std::priority_queue<Seed, std::vector<Seed>, std::greater<Seed> >
+        priority_queue;
+    /// When 'prioritize_farthest_nodes' is true, the start/end distance is
+    /// inverted so higher priority is given to farther nodes.
+    const bool prioritize_farthest_nodes;
+  };
 
   /// Computes and returns the distance of each uninserted node to every vehicle
-  /// in "vehicles" as a std::vector<std::vector<StartEndValue>>,
+  /// in 'vehicles' as a std::vector<std::vector<StartEndValue>>,
   /// start_end_distances_per_node.
   /// For each node, start_end_distances_per_node[node] is sorted in decreasing
   /// order.
-  // clang-format off
   std::vector<std::vector<StartEndValue> >
       ComputeStartEndDistanceForVehicles(const std::vector<int>& vehicles);
 
-  /// Initializes the priority_queue by inserting the best entry corresponding
+  /// Initializes sq->priority_queue by inserting the best entry corresponding
   /// to each node, i.e. the last element of start_end_distances_per_node[node],
   /// which is supposed to be sorted in decreasing order.
-  /// Queue is a priority queue containing Seeds.
-  template <class Queue>
-  void InitializePriorityQueue(
+  void InitializeSeedQueue(
       std::vector<std::vector<StartEndValue> >* start_end_distances_per_node,
-      Queue* priority_queue);
+      SeedQueue* sq);
   // clang-format on
+
+  /// Adds a Seed corresponding to the given 'node' to sq.priority_queue, based
+  /// on the last entry in its 'start_end_distances' (from which it's deleted).
+  void AddSeedToQueue(int node, std::vector<StartEndValue>* start_end_distances,
+                      SeedQueue* sq);
 
   /// Inserts 'node' just after 'predecessor', and just before 'successor' on
   /// the route of 'vehicle', resulting in the following subsequence:
@@ -625,10 +651,9 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// used to insert a new entry for that node if necessary (next best vehicle).
   /// If a seed node is successfully inserted, updates is_vehicle_used and
   /// returns the vehice of the corresponding route. Returns -1 otherwise.
-  template <class Queue>
   int InsertSeedNode(
       std::vector<std::vector<StartEndValue>>* start_end_distances_per_node,
-      Queue* priority_queue, std::vector<bool>* is_vehicle_used);
+      SeedQueue* sq, std::vector<bool>* is_vehicle_used);
   // clang-format on
 
   /// Initializes the priority queue and the pair entries for the given pair
@@ -932,7 +957,7 @@ class InsertionSequenceContainer {
 
   // Adds an insertion sequence to the container.
   void AddInsertionSequence(int vehicle,
-                            const std::vector<Insertion>& insertion_sequence) {
+                            absl::Span<const Insertion> insertion_sequence) {
     insertion_bounds_.push_back(
         {.begin = insertions_.size(),
          .end = insertions_.size() + insertion_sequence.size(),
@@ -1382,6 +1407,11 @@ class SweepArranger {
  public:
   explicit SweepArranger(
       const std::vector<std::pair<int64_t, int64_t>>& points);
+
+  // This type is neither copyable nor movable.
+  SweepArranger(const SweepArranger&) = delete;
+  SweepArranger& operator=(const SweepArranger&) = delete;
+
   virtual ~SweepArranger() {}
   void ArrangeIndices(std::vector<int64_t>* indices);
   void SetSectors(int sectors) { sectors_ = sectors; }
@@ -1389,8 +1419,6 @@ class SweepArranger {
  private:
   std::vector<int> coordinates_;
   int sectors_;
-
-  DISALLOW_COPY_AND_ASSIGN(SweepArranger);
 };
 #endif  // SWIG
 

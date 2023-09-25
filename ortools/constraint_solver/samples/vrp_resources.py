@@ -188,7 +188,7 @@ def main():
     # [END depot_load_time]
 
     # [START depot_capacity]
-    depot_usage = [1 for i in range(len(intervals))]
+    depot_usage = [1 for _ in range(len(intervals))]
     solver.Add(
         solver.Cumulative(intervals, depot_usage, data["depot_capacity"], "depot")
     )

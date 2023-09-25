@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -112,6 +113,40 @@ struct Arc {
 
 using ArcVarMap = std::map<Arc, int>;  // needs to be stable when iterating
 
+void AddSoftCumulBounds(const RoutingDimension* dimension, int index, int cumul,
+                        int64_t cumul_min, int64_t cumul_max,
+                        CpModelProto* cp_model) {
+  {
+    const int64_t soft_ub_coef =
+        dimension->GetCumulVarSoftUpperBoundCoefficient(index);
+    if (soft_ub_coef != 0) {
+      const int64_t soft_ub = dimension->GetCumulVarSoftUpperBound(index);
+      const int soft_ub_var =
+          AddVariable(cp_model, 0, CapSub(cumul_max, soft_ub));
+      // soft_ub_var >= cumul - soft_ub
+      AddLinearConstraint(cp_model, std::numeric_limits<int64_t>::min(),
+                          soft_ub, {{cumul, 1}, {soft_ub_var, -1}});
+      cp_model->mutable_objective()->add_vars(soft_ub_var);
+      cp_model->mutable_objective()->add_coeffs(soft_ub_coef);
+    }
+  }
+  {
+    const int64_t soft_lb_coef =
+        dimension->GetCumulVarSoftLowerBoundCoefficient(index);
+    if (soft_lb_coef != 0) {
+      const int64_t soft_lb = dimension->GetCumulVarSoftLowerBound(index);
+      const int soft_lb_var =
+          AddVariable(cp_model, 0, CapSub(soft_lb, cumul_min));
+      // soft_lb_var >= soft_lb - cumul
+      AddLinearConstraint(cp_model, soft_lb,
+                          std::numeric_limits<int64_t>::max(),
+                          {{cumul, 1}, {soft_lb_var, 1}});
+      cp_model->mutable_objective()->add_vars(soft_lb_var);
+      cp_model->mutable_objective()->add_coeffs(soft_lb_coef);
+    }
+  }
+}
+
 // Adds all dimensions to a CpModelProto. Only adds path cumul constraints and
 // cumul bounds.
 void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
@@ -136,6 +171,8 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
                    std::min(dimension->cumuls()[i]->Max(),
                             CapSub(max_end, transit(i, model.End(0)))));
       cumuls[i] = AddVariable(cp_model, cumul_min, cumul_max);
+      AddSoftCumulBounds(dimension, i, cumuls[i], cumul_min, cumul_max,
+                         cp_model);
     }
     for (const auto arc_var : arc_vars) {
       const int tail = arc_var.first.tail;
@@ -368,13 +405,42 @@ ArcVarMap PopulateModelFromRoutingModel(const RoutingModel& model,
   return PopulateMultiRouteModelFromRoutingModel(model, cp_model);
 }
 
+void ConvertObjectiveToSolution(const CpSolverResponse& response,
+                                const CpObjectiveProto& objective,
+                                const RoutingModel& model,
+                                Assignment* solution) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
+    // If the solution was proven optimal by CP-SAT, add the objective value to
+    // the solution; it will be a proper lower bound of the routing objective.
+    // Recomputing the objective value to avoid rounding errors due to scaling.
+    // Note: We could use inner_objective_lower_bound if we were sure
+    // absolute_gap_limit was 0 (which is not guaranteed).
+    int64_t cost_value = 0;
+    for (int i = 0; i < objective.coeffs_size(); ++i) {
+      cost_value = CapAdd(
+          cost_value,
+          CapProd(objective.coeffs(i), response.solution(objective.vars(i))));
+    }
+    solution->AddObjective(model.CostVar());
+    solution->SetObjectiveValue(cost_value);
+  } else if (response.status() == CpSolverStatus::FEASIBLE) {
+    // If the solution is feasible only, add the lower bound of the objective to
+    // the solution; it will be a proper lower bound of the routing objective.
+    solution->AddObjective(model.CostVar());
+    solution->SetObjectiveValue(response.inner_objective_lower_bound());
+  }
+}
+
 // Converts a CpSolverResponse to an Assignment containing next variables.
 bool ConvertToSolution(const CpSolverResponse& response,
+                       const CpObjectiveProto& objective,
                        const RoutingModel& model, const ArcVarMap& arc_vars,
                        Assignment* solution) {
+  solution->Clear();
   if (response.status() != CpSolverStatus::OPTIMAL &&
-      response.status() != CpSolverStatus::FEASIBLE)
+      response.status() != CpSolverStatus::FEASIBLE) {
     return false;
+  }
   const int depot = GetDepotFromModel(model);
   int vehicle = 0;
   for (const auto& arc_var : arc_vars) {
@@ -393,11 +459,14 @@ bool ConvertToSolution(const CpSolverResponse& response,
   // Close open routes.
   for (int v = 0; v < model.vehicles(); ++v) {
     int current = model.Start(v);
-    while (solution->Contains(model.NextVar(current))) {
+    while (!model.IsEnd(current) &&
+           solution->Contains(model.NextVar(current))) {
       current = solution->Value(model.NextVar(current));
     }
+    if (model.IsEnd(current)) continue;
     solution->Add(model.NextVar(current))->SetValue(model.End(v));
   }
+  ConvertObjectiveToSolution(response, objective, model, solution);
   return true;
 }
 
@@ -423,6 +492,8 @@ void AddGeneralizedDimensions(
             std::min(cumul_max, dimension->vehicle_capacities()[vehicle]);
       }
       cumuls[cp_node] = AddVariable(cp_model, cumul_min, cumul_max);
+      AddSoftCumulBounds(dimension, node, cumuls[cp_node], cumul_min, cumul_max,
+                         cp_model);
     }
 
     // Constrain cumuls with vehicle capacities.
@@ -945,9 +1016,11 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
 
 // Converts a CpSolverResponse to an Assignment containing next variables.
 bool ConvertGeneralizedResponseToSolution(const CpSolverResponse& response,
+                                          const CpObjectiveProto& objective,
                                           const RoutingModel& model,
                                           const ArcVarMap& arc_vars,
                                           Assignment* solution) {
+  solution->Clear();
   if (response.status() != CpSolverStatus::OPTIMAL &&
       response.status() != CpSolverStatus::FEASIBLE) {
     return false;
@@ -959,6 +1032,7 @@ bool ConvertGeneralizedResponseToSolution(const CpSolverResponse& response,
     if (head == depot || tail == depot) continue;
     solution->Add(model.NextVar(tail - 1))->SetValue(head - 1);
   }
+  ConvertObjectiveToSolution(response, objective, model, solution);
   return true;
 }
 
@@ -1015,6 +1089,7 @@ void AddSolutionAsHintToModel(const Assignment* solution,
 // Returns the response of the search.
 CpSolverResponse SolveRoutingModel(
     const CpModelProto& cp_model, absl::Duration remaining_time,
+    std::atomic<bool>* interrupt_solve,
     const RoutingSearchParameters& search_parameters,
     const std::function<void(const CpSolverResponse& response)>& observer) {
   // Copying to set remaining time.
@@ -1029,6 +1104,8 @@ CpSolverResponse SolveRoutingModel(
   }
   Model model;
   model.Add(NewSatParameters(sat_parameters));
+  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+      interrupt_solve);
   if (observer != nullptr) {
     model.Add(NewFeasibleSolutionObserver(observer));
   }
@@ -1056,7 +1133,7 @@ bool IsFeasibleArcVarMap(const ArcVarMap& arc_vars, int max_node_index) {
 
 // Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
 // was found.
-bool SolveModelWithSat(const RoutingModel& model,
+bool SolveModelWithSat(RoutingModel* model,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution) {
@@ -1064,26 +1141,51 @@ bool SolveModelWithSat(const RoutingModel& model,
   cp_model.mutable_objective()->set_scaling_factor(
       search_parameters.log_cost_scaling_factor());
   cp_model.mutable_objective()->set_offset(search_parameters.log_cost_offset());
+  const sat::CpObjectiveProto& objective = cp_model.objective();
+  const std::function<void(const sat::CpSolverResponse& response)>
+      null_observer;
   if (search_parameters.use_generalized_cp_sat() == BOOL_TRUE) {
     const sat::ArcVarMap arc_vars =
-        sat::PopulateGeneralizedRouteModelFromRoutingModel(model, &cp_model);
-    const int max_node_index = model.Nexts().size() + model.vehicles();
+        sat::PopulateGeneralizedRouteModelFromRoutingModel(*model, &cp_model);
+    const int max_node_index = model->Nexts().size() + model->vehicles();
     if (!sat::IsFeasibleArcVarMap(arc_vars, max_node_index)) return false;
-    sat::AddSolutionAsHintToGeneralizedModel(initial_solution, model, arc_vars,
+    sat::AddSolutionAsHintToGeneralizedModel(initial_solution, *model, arc_vars,
                                              &cp_model);
+    const std::function<void(const sat::CpSolverResponse& response)> observer =
+        search_parameters.report_intermediate_cp_sat_solutions() ?
+        [model, &objective, &arc_vars, solution]
+        (const sat::CpSolverResponse& response) {
+          // TODO(user): Check that performance is acceptable.
+          sat::ConvertGeneralizedResponseToSolution(
+              response, objective, *model, arc_vars, solution);
+          model->CheckIfAssignmentIsFeasible(
+              *solution,
+              /*call_at_solution_monitors=*/true);
+        } : null_observer;
     return sat::ConvertGeneralizedResponseToSolution(
-        sat::SolveRoutingModel(cp_model, model.RemainingTime(),
-                               search_parameters, nullptr),
-        model, arc_vars, solution);
+        sat::SolveRoutingModel(cp_model, model->RemainingTime(),
+                               model->GetMutableCPSatInterrupt(),
+                               search_parameters, observer),
+        objective, *model, arc_vars, solution);
   }
-  if (!sat::RoutingModelCanBeSolvedBySat(model)) return false;
+  if (!sat::RoutingModelCanBeSolvedBySat(*model)) return false;
   const sat::ArcVarMap arc_vars =
-      sat::PopulateModelFromRoutingModel(model, &cp_model);
-  sat::AddSolutionAsHintToModel(initial_solution, model, arc_vars, &cp_model);
+      sat::PopulateModelFromRoutingModel(*model, &cp_model);
+  sat::AddSolutionAsHintToModel(initial_solution, *model, arc_vars, &cp_model);
+  const std::function<void(const sat::CpSolverResponse& response)> observer =
+      search_parameters.report_intermediate_cp_sat_solutions() ?
+      [model, &objective, &arc_vars, solution]
+      (const sat::CpSolverResponse& response) {
+        // TODO(user): Check that performance is acceptable.
+        sat::ConvertToSolution(response, objective, *model, arc_vars, solution);
+        model->CheckIfAssignmentIsFeasible(*solution,
+                                           /*call_at_solution_monitors=*/true);
+      } : null_observer;
   return sat::ConvertToSolution(
-      sat::SolveRoutingModel(cp_model, model.RemainingTime(), search_parameters,
-                             nullptr),
-      model, arc_vars, solution);
+      sat::SolveRoutingModel(cp_model, model->RemainingTime(),
+                             model->GetMutableCPSatInterrupt(),
+                             search_parameters, observer),
+      objective, *model, arc_vars, solution);
 }
 
 }  // namespace operations_research

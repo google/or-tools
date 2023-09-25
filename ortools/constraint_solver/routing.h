@@ -158,6 +158,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -176,7 +177,6 @@
 #include "absl/time/time.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -269,7 +269,9 @@ class RoutingModel {
     /// Model, model parameters or flags are not valid.
     ROUTING_INVALID,
     /// Problem proven to be infeasible.
-    ROUTING_INFEASIBLE
+    ROUTING_INFEASIBLE,
+    /// Problem has been solved to optimality.
+    ROUTING_OPTIMAL
   };
 
   /// Types of precedence policy applied to pickup and delivery pairs.
@@ -538,6 +540,11 @@ class RoutingModel {
   explicit RoutingModel(const RoutingIndexManager& index_manager);
   RoutingModel(const RoutingIndexManager& index_manager,
                const RoutingModelParameters& parameters);
+
+  // This type is neither copyable nor movable.
+  RoutingModel(const RoutingModel&) = delete;
+  RoutingModel& operator=(const RoutingModel&) = delete;
+
   ~RoutingModel();
 
   /// Represents the sign of values returned by a transit evaluator.
@@ -1240,6 +1247,9 @@ class RoutingModel {
   /// these cases).
   // TODO(user): Add support for non-homogeneous costs and disjunctions.
   int64_t ComputeLowerBound();
+  /// Returns the current lower bound found by internal solvers during the
+  /// search.
+  int64_t objective_lower_bound() const { return objective_lower_bound_; }
   /// Returns the current status of the routing model.
   Status status() const { return status_; }
   /// Returns the value of the internal enable_deep_serialization_ parameter.
@@ -1652,6 +1662,9 @@ class RoutingModel {
   std::vector<std::vector<std::pair<int64_t, int64_t>>> GetCumulBounds(
       const Assignment& solution_assignment, const RoutingDimension& dimension);
 #endif
+  /// Checks if an assignment is feasible.
+  bool CheckIfAssignmentIsFeasible(const Assignment& assignment,
+                                   bool call_at_solution_monitors);
   /// Returns the underlying constraint solver. Can be used to add extra
   /// constraints and/or modify search algorithms.
   Solver* solver() const { return solver_.get(); }
@@ -1671,6 +1684,16 @@ class RoutingModel {
 
   /// Returns the time buffer to safely return a solution.
   absl::Duration TimeBuffer() const { return time_buffer_; }
+
+  /// Returns the atomic<bool> to stop the CP-SAT solver.
+  std::atomic<bool>* GetMutableCPSatInterrupt() { return &interrupt_cp_sat_; }
+  /// Returns the atomic<bool> to stop the CP solver.
+  std::atomic<bool>* GetMutableCPInterrupt() { return &interrupt_cp_; }
+  /// Cancels the current search.
+  void CancelSearch() {
+    interrupt_cp_sat_ = true;
+    interrupt_cp_ = true;
+  }
 
   /// Sizes and indices
   /// Returns the number of nodes in the model.
@@ -1976,9 +1999,7 @@ class RoutingModel {
   Assignment* CompactAssignmentInternal(const Assignment& assignment,
                                         bool check_compact_assignment) const;
   /// Checks that the current search parameters are valid for the current
-  /// model's specific settings. This assumes that FindErrorInSearchParameters()
-  /// from
-  /// ./routing_flags.h caught no error.
+  /// model's specific settings.
   std::string FindErrorInSearchParametersForModel(
       const RoutingSearchParameters& search_parameters) const;
   /// Sets up search objects, such as decision builders and monitors.
@@ -2095,7 +2116,9 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters,
       const std::vector<LocalSearchOperator*>& operators) const;
   LocalSearchOperator* GetNeighborhoodOperators(
-      const RoutingSearchParameters& search_parameters) const;
+      const RoutingSearchParameters& search_parameters,
+      const absl::flat_hash_set<RoutingLocalSearchOperator>&
+          operators_to_consider) const;
 
   struct FilterOptions {
     bool filter_objective;
@@ -2129,8 +2152,8 @@ class RoutingModel {
       const Args&... args);
 #endif
   LocalSearchPhaseParameters* CreateLocalSearchParameters(
-      const RoutingSearchParameters& search_parameters);
-  DecisionBuilder* CreateLocalSearchDecisionBuilder(
+      const RoutingSearchParameters& search_parameters, bool secondary_ls);
+  DecisionBuilder* CreatePrimaryLocalSearchDecisionBuilder(
       const RoutingSearchParameters& search_parameters);
   void SetupDecisionBuilders(const RoutingSearchParameters& search_parameters);
   void SetupMetaheuristics(const RoutingSearchParameters& search_parameters);
@@ -2347,15 +2370,18 @@ class RoutingModel {
       FirstSolutionStrategy::UNSET;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> secondary_ls_monitors_;
   std::vector<SearchMonitor*> at_solution_monitors_;
   bool local_optimum_reached_ = false;
   // Best lower bound found during the search.
   int64_t objective_lower_bound_ = kint64min;
   SolutionCollector* collect_assignments_ = nullptr;
+  SolutionCollector* collect_secondary_ls_assignments_ = nullptr;
   SolutionCollector* collect_one_assignment_ = nullptr;
   SolutionCollector* optimized_dimensions_assignment_collector_ = nullptr;
   DecisionBuilder* solve_db_ = nullptr;
   DecisionBuilder* improve_db_ = nullptr;
+  DecisionBuilder* secondary_ls_db_ = nullptr;
   DecisionBuilder* restore_assignment_ = nullptr;
   DecisionBuilder* restore_tmp_assignment_ = nullptr;
   Assignment* assignment_ = nullptr;
@@ -2397,6 +2423,9 @@ class RoutingModel {
   RegularLimit* first_solution_lns_limit_ = nullptr;
   absl::Duration time_buffer_;
 
+  std::atomic<bool> interrupt_cp_sat_;
+  std::atomic<bool> interrupt_cp_;
+
   typedef std::pair<int64_t, int64_t> CacheKey;
   typedef absl::flat_hash_map<CacheKey, int64_t> TransitCallbackCache;
   typedef absl::flat_hash_map<CacheKey, StateDependentTransit>
@@ -2424,8 +2453,6 @@ class RoutingModel {
   friend class RoutingDimension;
   friend class RoutingModelInspector;
   friend class ResourceGroup::Resource;
-
-  DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
 
 /// Routing model visitor.
@@ -2859,6 +2886,10 @@ class SimpleBoundCosts {
 /// to have this information here.
 class RoutingDimension {
  public:
+  // This type is neither copyable nor movable.
+  RoutingDimension(const RoutingDimension&) = delete;
+  RoutingDimension& operator=(const RoutingDimension&) = delete;
+
   ~RoutingDimension();
   /// Returns the model on which the dimension was created.
   RoutingModel* model() const { return model_; }
@@ -3377,15 +3408,13 @@ class RoutingDimension {
       vehicle_quadratic_cost_soft_span_upper_bound_;
   friend class RoutingModel;
   friend class RoutingModelInspector;
-
-  DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };
 
 /// Attempts to solve the model using the cp-sat solver. As of 5/2019, will
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
-bool SolveModelWithSat(const RoutingModel& model,
+bool SolveModelWithSat(RoutingModel* model,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution);

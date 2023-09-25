@@ -104,8 +104,10 @@ struct FailureProtect {
 // ============= Type conversions ==============
 
 // See ./constraint_solver_helpers.i
+PY_CONVERT_HELPER_PTR(Constraint);
 PY_CONVERT_HELPER_PTR(Decision);
 PY_CONVERT_HELPER_PTR(DecisionBuilder);
+PY_CONVERT_HELPER_PTR(Demon);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 PY_CONVERT_HELPER_PTR(IntervalVar);
 PY_CONVERT_HELPER_PTR(SequenceVar);
@@ -114,11 +116,17 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchFilterManager);
 PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
 
+%{
+
+%}
+
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 PY_CONVERT(IntVar);
 PY_CONVERT(IntExpr);
+PY_CONVERT(Constraint);
 PY_CONVERT(Decision);
 PY_CONVERT(DecisionBuilder);
+PY_CONVERT(Demon);
 PY_CONVERT(SearchMonitor);
 PY_CONVERT(IntervalVar);
 PY_CONVERT(SequenceVar);
@@ -603,6 +611,25 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   }
 }
 
+%extend operations_research::IntVarLocalSearchFilter {
+  int64_t IndexFromVar(IntVar* const var) const {
+    int64_t index = -1;
+    $self->FindIndex(var, &index);
+    return index;
+  }
+}
+
+// Extend IntVar to provide natural iteration over its domains.
+%extend operations_research::IntVar {
+  %pythoncode {
+  def DomainIterator(self):
+    return iter(self.DomainIteratorAux(False))
+
+  def HoleIterator(self):
+    return iter(self.HoleIteratorAux(False))
+  }  // %pythoncode
+}
+
 // Extend IntVarIterator to make it iterable in python.
 %extend operations_research::IntVarIterator {
   %pythoncode {
@@ -621,25 +648,6 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   def __next__(self):
     return self.next()
   }  // %pythoncode
-}
-
-// Extend IntVar to provide natural iteration over its domains.
-%extend operations_research::IntVar {
-  %pythoncode {
-  def DomainIterator(self):
-    return iter(self.DomainIteratorAux(False))
-
-  def HoleIterator(self):
-    return iter(self.HoleIteratorAux(False))
-  }  // %pythoncode
-}
-
-%extend operations_research::IntVarLocalSearchFilter {
-  int64_t IndexFromVar(IntVar* const var) const {
-    int64_t index = -1;
-    $self->FindIndex(var, &index);
-    return index;
-  }
 }
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
@@ -1285,8 +1293,8 @@ namespace operations_research {
 // the client needs to construct it. In these cases, we don't bother
 // setting the 'director' feature on individual methods, since it is done
 // automatically when setting it on the class.
-%unignore Constraint;
 %feature("director") Constraint;
+%unignore Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
 %unignore Constraint::Post;
@@ -2090,10 +2098,6 @@ namespace operations_research {
 
 %pythoncode {
 class PyDecision(Decision):
-
-  def __init__(self):
-    Decision.__init__(self)
-
   def ApplyWrapper(self, solver):
     try:
        self.Apply(solver)
@@ -2117,10 +2121,6 @@ class PyDecision(Decision):
 
 
 class PyDecisionBuilder(DecisionBuilder):
-
-  def __init__(self):
-    DecisionBuilder.__init__(self)
-
   def NextWrapper(self, solver):
     try:
       return self.Next(solver)
@@ -2135,7 +2135,6 @@ class PyDecisionBuilder(DecisionBuilder):
 
 
 class PyDemon(Demon):
-
   def RunWrapper(self, solver):
     try:
       self.Run(solver)
@@ -2150,9 +2149,8 @@ class PyDemon(Demon):
 
 
 class PyConstraintDemon(PyDemon):
-
   def __init__(self, ct, method, delayed, *args):
-    PyDemon.__init__(self)
+    super().__init__()
     self.__constraint = ct
     self.__method = method
     self.__delayed = delayed
@@ -2169,9 +2167,8 @@ class PyConstraintDemon(PyDemon):
 
 
 class PyConstraint(Constraint):
-
   def __init__(self, solver):
-    Constraint.__init__(self, solver)
+    super().__init__(solver)
     self.__demons = []
 
   def Demon(self, method, *args):

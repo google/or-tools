@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -42,7 +43,7 @@ namespace {
 // Compute set of disjunctions involved in a pickup and delivery pair.
 template <typename Disjunctions>
 void AddDisjunctionsFromNodes(const RoutingModel& model,
-                              const std::vector<int64_t>& nodes,
+                              absl::Span<const int64_t> nodes,
                               Disjunctions* disjunctions) {
   for (int64_t node : nodes) {
     for (const auto disjunction : model.GetDisjunctionIndices(node)) {

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
@@ -137,7 +138,7 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 void ConcatenateRouteCumulAndBreakVarAndValues(
     const RoutingDimension& dimension, int vehicle,
     const std::vector<int64_t>& cumul_values,
-    const std::vector<int64_t>& break_values, std::vector<IntVar*>* variables,
+    absl::Span<const int64_t> break_values, std::vector<IntVar*>* variables,
     std::vector<int64_t>* values) {
   *values = cumul_values;
   variables->clear();

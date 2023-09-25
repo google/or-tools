@@ -42,7 +42,6 @@ To begin, skim:
 The vehicle routing library lets one model and solve generic vehicle routing
 problems ranging from the Traveling Salesman Problem to more complex problems
 such as the Capacitated Vehicle Routing Problem with Time Windows.
-* [routing_flags.h](../constraint_solver/routing_flags.h)
 
 ### Parameters
 

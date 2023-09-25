@@ -33,14 +33,15 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
-#include "ortools/base/dump_vars.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/lp_utils.h"
@@ -1651,6 +1652,21 @@ bool DimensionCumulOptimizerCore::SetRouteTravelConstraints(
   return true;
 }
 
+namespace {
+bool RouteIsValid(const RoutingModel& model, int vehicle,
+                  const std::function<int64_t(int64_t)>& next_accessor) {
+  absl::flat_hash_set<int64_t> visited;
+  int node = model.Start(vehicle);
+  visited.insert(node);
+  while (!model.IsEnd(node)) {
+    node = next_accessor(node);
+    if (visited.contains(node)) return false;
+    visited.insert(node);
+  }
+  return visited.size() >= 2;
+}
+}  // namespace
+
 bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
@@ -1661,6 +1677,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   // Extract the vehicle's path from next_accessor.
   std::vector<int64_t> path;
   {
+    DCHECK(RouteIsValid(*model, vehicle, next_accessor));
     int node = model->Start(vehicle);
     path.push_back(node);
     while (!model->IsEnd(node)) {

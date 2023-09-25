@@ -37,6 +37,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/strong_vector.h"
@@ -437,6 +438,10 @@ void BasePathFilter::SynchronizeFullAssignment() {
     }
     node_path_starts_[next] = start;
   }
+  for (const int touched : delta_touched_) {
+    new_nexts_[touched] = kUnassigned;
+  }
+  delta_touched_.clear();
   OnBeforeSynchronizePaths();
   UpdateAllRanks();
   OnAfterSynchronizePaths();
@@ -477,6 +482,10 @@ void BasePathFilter::OnSynchronize(const Assignment* delta) {
       }
     }
   }
+  for (const int touched : delta_touched_) {
+    new_nexts_[touched] = kUnassigned;
+  }
+  delta_touched_.clear();
   OnBeforeSynchronizePaths();
   for (const int64_t touched_start : touched_paths_.PositionsSetAtLeastOnce()) {
     int64_t node = touched_start;
@@ -1136,7 +1145,7 @@ class PathCumulFilter : public BasePathFilter {
   // the LP, for a perfect filtering.
   bool PickupToDeliveryLimitsRespected(
       const PathTransits& path_transits, int path,
-      const std::vector<int64_t>& min_path_cumuls) const;
+      absl::Span<const int64_t> min_path_cumuls) const;
 
   // Computes the maximum cumul value of nodes along the path using
   // [current|delta]_path_transits_, and stores the min/max cumul
@@ -1146,8 +1155,9 @@ class PathCumulFilter : public BasePathFilter {
   // "delta" or "current" members. When true, the nodes for which the min/max
   // cumul has changed from the current value are marked in
   // delta_nodes_with_precedences_and_changed_cumul_.
-  void StoreMinMaxCumulOfNodesOnPath(
-      int path, const std::vector<int64_t>& min_path_cumuls, bool is_delta);
+  void StoreMinMaxCumulOfNodesOnPath(int path,
+                                     absl::Span<const int64_t> min_path_cumuls,
+                                     bool is_delta);
 
   // Compute the max start cumul value for a given path and a given minimal end
   // cumul value.
@@ -1914,7 +1924,7 @@ void PathCumulFilter::InitializeSupportedPathCumul(
 
 bool PathCumulFilter::PickupToDeliveryLimitsRespected(
     const PathTransits& path_transits, int path,
-    const std::vector<int64_t>& min_path_cumuls) const {
+    absl::Span<const int64_t> min_path_cumuls) const {
   if (!dimension_.HasPickupToDeliveryLimits()) {
     return true;
   }
@@ -1976,7 +1986,7 @@ bool PathCumulFilter::PickupToDeliveryLimitsRespected(
 }
 
 void PathCumulFilter::StoreMinMaxCumulOfNodesOnPath(
-    int path, const std::vector<int64_t>& min_path_cumuls, bool is_delta) {
+    int path, absl::Span<const int64_t> min_path_cumuls, bool is_delta) {
   const PathTransits& path_transits =
       is_delta ? delta_path_transits_ : current_path_transits_;
 

@@ -74,9 +74,9 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <ostream>
 #include <random>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -86,11 +86,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
@@ -128,6 +129,7 @@ class IntVarAssignment;
 class IntVarLocalSearchFilter;
 class IntervalVar;
 class IntervalVarAssignment;
+class LocalSearch;
 class LocalSearchFilter;
 class LocalSearchFilterManager;
 class LocalSearchMonitor;
@@ -794,6 +796,13 @@ class Solver {
   /// Solver API
   explicit Solver(const std::string& name);
   Solver(const std::string& name, const ConstraintSolverParameters& parameters);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  Solver(const Solver&) = delete;
+  Solver& operator=(const Solver&) = delete;
+#endif
+
   ~Solver();
 
   /// Stored Parameters.
@@ -1740,8 +1749,8 @@ class Solver {
   Constraint* MakePathPrecedenceConstraint(
       std::vector<IntVar*> nexts,
       const std::vector<std::pair<int, int>>& precedences,
-      const std::vector<int>& lifo_path_starts,
-      const std::vector<int>& fifo_path_starts);
+      absl::Span<const int> lifo_path_starts,
+      absl::Span<const int> fifo_path_starts);
   /// Same as MakePathPrecedenceConstraint but will force i to be before j if
   /// the sum of transits on the path from i to j is strictly positive.
   Constraint* MakePathTransitPrecedenceConstraint(
@@ -1845,10 +1854,10 @@ class Solver {
       const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size);
   Constraint* MakeNonOverlappingBoxesConstraint(
       const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-      const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size);
+      absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size);
   Constraint* MakeNonOverlappingBoxesConstraint(
       const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-      const std::vector<int>& x_size, const std::vector<int>& y_size);
+      absl::Span<const int> x_size, absl::Span<const int> y_size);
 
   /// This constraint states that all the boxes must not overlap.
   /// The coordinates of box i are:
@@ -1863,10 +1872,10 @@ class Solver {
       const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size);
   Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
       const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-      const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size);
+      absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size);
   Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
       const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-      const std::vector<int>& x_size, const std::vector<int>& y_size);
+      absl::Span<const int> x_size, absl::Span<const int> y_size);
 
   /// This constraint packs all variables onto 'number_of_bins'
   /// variables.  For any given variable, a value of 'number_of_bins'
@@ -1914,20 +1923,20 @@ class Solver {
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      const std::vector<int64_t>& durations, const std::string& name,
+      absl::Span<const int64_t> durations, const std::string& name,
       std::vector<IntervalVar*>* array);
   /// This method fills the vector with interval variables built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      const std::vector<int>& durations, const std::string& name,
+      absl::Span<const int> durations, const std::string& name,
       std::vector<IntervalVar*>* array);
 
   /// This method fills the vector with interval variables built with
   /// the corresponding start and performed variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      const std::vector<int64_t>& durations,
+      absl::Span<const int64_t> durations,
       const std::vector<IntVar*>& performed_variables, const std::string& name,
       std::vector<IntervalVar*>* array);
 
@@ -1935,7 +1944,7 @@ class Solver {
   /// the corresponding start and performed variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      const std::vector<int>& durations,
+      absl::Span<const int> durations,
       const std::vector<IntVar*>& performed_variables, const std::string& name,
       std::vector<IntervalVar*>* array);
 
@@ -3078,6 +3087,7 @@ class Solver {
   friend class SearchMonitor;
   friend class SearchLimit;
   friend class RoutingModel;
+  friend class LocalSearch;
   friend class LocalSearchProfiler;
 
 #if !defined(SWIG)
@@ -3263,8 +3273,6 @@ class Solver {
   std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
-
-  DISALLOW_COPY_AND_ASSIGN(Solver);
 };
 
 std::ostream& operator<<(std::ostream& out, const Solver* const s);  /// NOLINT
@@ -3283,11 +3291,14 @@ inline int64_t One() { return 1; }
 class BaseObject {
  public:
   BaseObject() {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  BaseObject(const BaseObject&) = delete;
+  BaseObject& operator=(const BaseObject&) = delete;
+#endif
   virtual ~BaseObject() {}
   virtual std::string DebugString() const { return "BaseObject"; }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(BaseObject);
 };
 
 std::ostream& operator<<(std::ostream& out, const BaseObject* o);  /// NOLINT
@@ -3298,6 +3309,12 @@ std::ostream& operator<<(std::ostream& out, const BaseObject* o);  /// NOLINT
 class PropagationBaseObject : public BaseObject {
  public:
   explicit PropagationBaseObject(Solver* const s) : solver_(s) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  PropagationBaseObject(const PropagationBaseObject&) = delete;
+  PropagationBaseObject& operator=(const PropagationBaseObject&) = delete;
+#endif
   ~PropagationBaseObject() override{};
 
   std::string DebugString() const override {
@@ -3351,7 +3368,6 @@ class PropagationBaseObject : public BaseObject {
 
  private:
   Solver* const solver_;
-  DISALLOW_COPY_AND_ASSIGN(PropagationBaseObject);
 };
 
 /// A Decision represents a choice point in the search tree. The two main
@@ -3359,6 +3375,12 @@ class PropagationBaseObject : public BaseObject {
 class Decision : public BaseObject {
  public:
   Decision() {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  Decision(const Decision&) = delete;
+  Decision& operator=(const Decision&) = delete;
+#endif
   ~Decision() override {}
 
   /// Apply will be called first when the decision is executed.
@@ -3370,9 +3392,6 @@ class Decision : public BaseObject {
   std::string DebugString() const override { return "Decision"; }
   /// Accepts the given visitor.
   virtual void Accept(DecisionVisitor* visitor) const;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(Decision);
 };
 
 /// A DecisionVisitor is used to inspect a decision.
@@ -3380,6 +3399,12 @@ class Decision : public BaseObject {
 class DecisionVisitor : public BaseObject {
  public:
   DecisionVisitor() {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  DecisionVisitor(const DecisionVisitor&) = delete;
+  DecisionVisitor& operator=(const DecisionVisitor&) = delete;
+#endif
   ~DecisionVisitor() override {}
   virtual void VisitSetVariableValue(IntVar* var, int64_t value);
   virtual void VisitSplitVariableDomain(IntVar* var, int64_t value,
@@ -3389,9 +3414,6 @@ class DecisionVisitor : public BaseObject {
   virtual void VisitRankFirstInterval(SequenceVar* sequence, int index);
   virtual void VisitRankLastInterval(SequenceVar* sequence, int index);
   virtual void VisitUnknownDecision();
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(DecisionVisitor);
 };
 
 /// A DecisionBuilder is responsible for creating the search tree. The
@@ -3399,6 +3421,12 @@ class DecisionVisitor : public BaseObject {
 class DecisionBuilder : public BaseObject {
  public:
   DecisionBuilder() {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  DecisionBuilder(const DecisionBuilder&) = delete;
+  DecisionBuilder& operator=(const DecisionBuilder&) = delete;
+#endif
   ~DecisionBuilder() override {}
   /// This is the main method of the decision builder class. It must
   /// return a decision (an instance of the class Decision). If it
@@ -3420,7 +3448,6 @@ class DecisionBuilder : public BaseObject {
 
  private:
   std::string name_;
-  DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
 };
 
 #if !defined(SWIG)
@@ -3458,6 +3485,12 @@ class Demon : public BaseObject {
   /// This indicates the priority of a demon. Immediate demons are treated
   /// separately and corresponds to variables.
   Demon() : stamp_(uint64_t{0}) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  Demon(const Demon&) = delete;
+  Demon& operator=(const Demon&) = delete;
+#endif
   ~Demon() override {}
 
   /// This is the main callback of the demon.
@@ -3482,7 +3515,6 @@ class Demon : public BaseObject {
   void set_stamp(int64_t stamp) { stamp_ = stamp; }
   uint64_t stamp() const { return stamp_; }
   uint64_t stamp_;
-  DISALLOW_COPY_AND_ASSIGN(Demon);
 };
 
 /// Model visitor.
@@ -3739,6 +3771,12 @@ class ModelVisitor : public BaseObject {
 class Constraint : public PropagationBaseObject {
  public:
   explicit Constraint(Solver* const solver) : PropagationBaseObject(solver) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  Constraint(const Constraint&) = delete;
+  Constraint& operator=(const Constraint&) = delete;
+#endif
   ~Constraint() override {}
 
   /// This method is called when the constraint is processed by the
@@ -3764,9 +3802,6 @@ class Constraint : public PropagationBaseObject {
   /// (false = constraint is violated, true = constraint is satisfied). It
   /// returns nullptr if the constraint does not support this API.
   virtual IntVar* Var();
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(Constraint);
 };
 
 /// Cast constraints are special channeling constraints designed
@@ -3792,6 +3827,12 @@ class SearchMonitor : public BaseObject {
   static constexpr int kNoProgress = -1;
 
   explicit SearchMonitor(Solver* const s) : solver_(s) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  SearchMonitor(const SearchMonitor&) = delete;
+  SearchMonitor& operator=(const SearchMonitor&) = delete;
+#endif
   ~SearchMonitor() override {}
   /// Beginning of the search.
   virtual void EnterSearch();
@@ -3882,7 +3923,6 @@ class SearchMonitor : public BaseObject {
 
  private:
   Solver* const solver_;
-  DISALLOW_COPY_AND_ASSIGN(SearchMonitor);
 };
 
 /// This class adds reversibility to a POD type.
@@ -3995,6 +4035,12 @@ class NumericalRevArray : public RevArray<T> {
 class IntExpr : public PropagationBaseObject {
  public:
   explicit IntExpr(Solver* const s) : PropagationBaseObject(s) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  IntExpr(const IntExpr&) = delete;
+  IntExpr& operator=(const IntExpr&) = delete;
+#endif
   ~IntExpr() override {}
 
   virtual int64_t Min() const = 0;
@@ -4048,9 +4094,6 @@ class IntExpr : public PropagationBaseObject {
 
   /// Accepts the given visitor.
   virtual void Accept(ModelVisitor* visitor) const;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(IntExpr);
 };
 
 /// The class Iterator has two direct subclasses. HoleIterators
@@ -4124,25 +4167,25 @@ class InitAndGetValues {
     }
 
     int64_t operator*() const {
-      DCHECK(it_->Ok());
-      return it_->Value();
+      DCHECK(it->Ok());
+      return it->Value();
     }
     Iterator& operator++() {
-      DCHECK(it_->Ok());
-      it_->Next();
+      DCHECK(it->Ok());
+      it->Next();
       return *this;
     }
     bool operator!=(const Iterator& other) const {
-      DCHECK(other.it_ == it_);
-      DCHECK(other.is_end_);
-      return it_->Ok();
+      DCHECK(other.it == it);
+      DCHECK(other.is_end);
+      return it->Ok();
     }
 
    private:
-    Iterator(IntVarIterator* it, bool is_end) : it_(it), is_end_(is_end) {}
+    Iterator(IntVarIterator* it, bool is_end) : it(it), is_end(is_end) {}
 
-    IntVarIterator* const it_;
-    const bool is_end_;
+    IntVarIterator* const it;
+    const bool is_end;
   };
 
  private:
@@ -4158,6 +4201,13 @@ class IntVar : public IntExpr {
  public:
   explicit IntVar(Solver* s);
   IntVar(Solver* s, const std::string& name);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  IntVar(const IntVar&) = delete;
+  IntVar& operator=(const IntVar&) = delete;
+#endif
+
   ~IntVar() override{};
 
   bool IsVar() const override { return true; }
@@ -4252,7 +4302,6 @@ class IntVar : public IntExpr {
 
  private:
   const int index_;
-  DISALLOW_COPY_AND_ASSIGN(IntVar);
 };
 
 /// This class is the root class of all solution collectors.
@@ -4262,6 +4311,13 @@ class SolutionCollector : public SearchMonitor {
  public:
   SolutionCollector(Solver* solver, const Assignment* assignment);
   explicit SolutionCollector(Solver* solver);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  SolutionCollector(const SolutionCollector&) = delete;
+  SolutionCollector& operator=(const SolutionCollector&) = delete;
+#endif
+
   ~SolutionCollector() override;
   void Install() override;
   std::string DebugString() const override { return "SolutionCollector"; }
@@ -4282,8 +4338,14 @@ class SolutionCollector : public SearchMonitor {
   /// Returns how many solutions were stored during the search.
   int solution_count() const;
 
+  /// Returns whether any solutions were stored during the search.
+  bool has_solution() const;
+
   /// Returns the nth solution.
   Assignment* solution(int n) const;
+
+  /// Returns the last solution if there are any, nullptr otherwise.
+  Assignment* last_solution_or_null() const;
 
   /// Returns the wall time in ms for the nth solution.
   int64_t wall_time(int n) const;
@@ -4354,9 +4416,6 @@ class SolutionCollector : public SearchMonitor {
 #if !defined(SWIG)
   std::vector<std::unique_ptr<Assignment>> solution_pool_;
 #endif  // SWIG
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(SolutionCollector);
 };
 
 // Base objective monitor class. All metaheuristics derive from this.
@@ -4382,6 +4441,7 @@ class ObjectiveMonitor : public SearchMonitor {
   int Size() const { return objective_vars_.size(); }
   void EnterSearch() override;
   bool AtSolution() override;
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void Accept(ModelVisitor* visitor) const override;
 
  protected:
@@ -4461,7 +4521,6 @@ class OptimizeVar : public ObjectiveMonitor {
   IntVar* var() const { return Size() == 0 ? nullptr : ObjectiveVar(0); }
 
   /// Internal methods.
-  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void BeginNextDecision(DecisionBuilder* db) override;
   void RefuteDecision(Decision* d) override;
   bool AtSolution() override;
@@ -4476,6 +4535,12 @@ class OptimizeVar : public ObjectiveMonitor {
 class SearchLimit : public SearchMonitor {
  public:
   explicit SearchLimit(Solver* const s) : SearchMonitor(s), crossed_(false) {}
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  SearchLimit(const SearchLimit&) = delete;
+  SearchLimit& operator=(const SearchLimit&) = delete;
+#endif
   ~SearchLimit() override;
 
   /// Returns true if the limit has been crossed.
@@ -4514,7 +4579,6 @@ class SearchLimit : public SearchMonitor {
   void TopPeriodicCheck();
 
   bool crossed_;
-  DISALLOW_COPY_AND_ASSIGN(SearchLimit);
 };
 
 /// Usual limit based on wall_time, number of explored branches and
@@ -4651,6 +4715,12 @@ class IntervalVar : public PropagationBaseObject {
       : PropagationBaseObject(solver) {
     set_name(name);
   }
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  IntervalVar(const IntervalVar&) = delete;
+  IntervalVar& operator=(const IntervalVar&) = delete;
+#endif
   ~IntervalVar() override {}
 
   /// These methods query, set, and watch the start position of the
@@ -4784,9 +4854,6 @@ class IntervalVar : public PropagationBaseObject {
 
   /// Accepts the given visitor.
   virtual void Accept(ModelVisitor* visitor) const = 0;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(IntervalVar);
 };
 
 /// A sequence variable is a variable whose domain is a set of possible
@@ -5293,6 +5360,13 @@ class Assignment : public PropagationBaseObject {
 
   explicit Assignment(Solver* solver);
   explicit Assignment(const Assignment* copy);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  Assignment(const Assignment&) = delete;
+  Assignment& operator=(const Assignment&) = delete;
+#endif
+
   ~Assignment() override;
 
   void Clear();
@@ -5534,7 +5608,6 @@ class Assignment : public PropagationBaseObject {
   IntervalContainer interval_var_container_;
   SequenceContainer sequence_var_container_;
   std::vector<IntVarElement> objective_elements_;
-  DISALLOW_COPY_AND_ASSIGN(Assignment);
 };
 
 std::ostream& operator<<(std::ostream& out,
@@ -5659,6 +5732,13 @@ class DisjunctiveConstraint : public Constraint {
  public:
   DisjunctiveConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
                         const std::string& name);
+
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  DisjunctiveConstraint(const DisjunctiveConstraint&) = delete;
+  DisjunctiveConstraint& operator=(const DisjunctiveConstraint&) = delete;
+#endif
+
   ~DisjunctiveConstraint() override;
 
   /// Creates a sequence variable from the constraint.
@@ -5685,9 +5765,6 @@ class DisjunctiveConstraint : public Constraint {
  protected:
   const std::vector<IntervalVar*> intervals_;
   Solver::IndexEvaluator2 transition_time_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
 };
 
 /// This class is used to manage a pool of solutions. It can transform

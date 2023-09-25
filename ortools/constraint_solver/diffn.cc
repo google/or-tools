@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
@@ -304,7 +305,7 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size) {
+    absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
@@ -316,7 +317,7 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int>& x_size, const std::vector<int>& y_size) {
+    absl::Span<const int> x_size, absl::Span<const int> y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
@@ -334,7 +335,7 @@ Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64_t>& x_size, const std::vector<int64_t>& y_size) {
+    absl::Span<const int64_t> x_size, absl::Span<const int64_t> y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
@@ -346,7 +347,7 @@ Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
 
 Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int>& x_size, const std::vector<int>& y_size) {
+    absl::Span<const int> x_size, absl::Span<const int> y_size) {
   std::vector<IntVar*> dx(x_size.size());
   std::vector<IntVar*> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {

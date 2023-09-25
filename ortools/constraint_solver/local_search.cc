@@ -36,7 +36,6 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -1737,6 +1736,11 @@ class NearestNeighbors {
  public:
   NearestNeighbors(Solver::IndexEvaluator3 evaluator,
                    const PathOperator& path_operator, int size);
+
+  // This type is neither copyable nor movable.
+  NearestNeighbors(const NearestNeighbors&) = delete;
+  NearestNeighbors& operator=(const NearestNeighbors&) = delete;
+
   virtual ~NearestNeighbors() {}
   void Initialize();
   const std::vector<int>& Neighbors(int index) const;
@@ -1751,8 +1755,6 @@ class NearestNeighbors {
   const PathOperator& path_operator_;
   const int size_;
   bool initialized_;
-
-  DISALLOW_COPY_AND_ASSIGN(NearestNeighbors);
 };
 
 NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3 evaluator,
@@ -4898,6 +4900,7 @@ void NestedSolveDecision::Apply(Solver* const solver) {
 }
 
 void NestedSolveDecision::Refute(Solver* const solver) {}
+}  // namespace
 
 // ----- Local search decision builder -----
 
@@ -5114,7 +5117,8 @@ Decision* LocalSearch::Next(Solver* const solver) {
       // accept up-hill moves (due to metaheuristics). In this case we need to
       // reset neighborhood optimal routes.
       ls_operator_->Reset();
-      if (!LocalOptimumReached(solver->ActiveSearch())) {
+      if (!LocalOptimumReached(solver->ActiveSearch()) ||
+          solver->IsUncheckedSolutionLimitReached()) {
         nested_decision_index_ = -1;  // Stop the search
       }
       solver->Fail();
@@ -5195,7 +5199,6 @@ class DefaultSolutionPool : public SolutionPool {
  private:
   std::unique_ptr<Assignment> reference_assignment_;
 };
-}  // namespace
 
 SolutionPool* Solver::MakeDefaultSolutionPool() {
   return RevAlloc(new DefaultSolutionPool());

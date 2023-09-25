@@ -48,10 +48,12 @@ def create_data_model():
     ]
     # [START initial_routes]
     data["initial_routes"] = [
-        [8, 16, 14, 13, 12, 11],
-        [3, 4, 9, 10],
-        [15, 1],
-        [7, 5, 2, 6],
+        # fmt: off
+      [8, 16, 14, 13, 12, 11],
+      [3, 4, 9, 10],
+      [15, 1],
+      [7, 5, 2, 6],
+        # fmt: on
     ]
     # [END initial_routes]
     data["num_vehicles"] = 4
@@ -81,7 +83,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print(f"Maximum of the route distances: {max_route_distance}m")
-
 # [END solution_printer]
 
 
@@ -139,12 +140,15 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    )
     search_parameters.time_limit.FromSeconds(5)
-    # When an initial solution is given for search, the model will be closed with the default
-    # search parameters unless it is explicitly closed with the custom search parameters.
+    # When an initial solution is given for search, the model will be closed with
+    # the default search parameters unless it is explicitly closed with the custom
+    # search parameters.
     routing.CloseModelWithParameters(search_parameters)
     # [END parameters]
 

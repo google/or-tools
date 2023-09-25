@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -1421,7 +1422,7 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint* SetIsEqual(const std::vector<int64_t>& values,
+  Constraint* SetIsEqual(absl::Span<const int64_t> values,
                          const std::vector<IntVar*>& vars) {
     if (value_watcher_ == nullptr) {
       solver()->SaveAndSetValue(reinterpret_cast<void**>(&value_watcher_),
@@ -1497,7 +1498,7 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint* SetIsGreaterOrEqual(const std::vector<int64_t>& values,
+  Constraint* SetIsGreaterOrEqual(absl::Span<const int64_t> values,
                                   const std::vector<IntVar*>& vars) {
     if (bound_watcher_ == nullptr) {
       if (CapSub(Max(), Min()) <= 256) {
@@ -1627,7 +1628,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  SimpleBitSet(Solver* const s, const std::vector<int64_t>& sorted_values,
+  SimpleBitSet(Solver* const s, absl::Span<const int64_t> sorted_values,
                int64_t vmin, int64_t vmax)
       : BitSet(s),
         bits_(nullptr),
@@ -1822,7 +1823,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     bits_ = OneRange64(0, size_.Value() - 1);
   }
 
-  SmallBitSet(Solver* const s, const std::vector<int64_t>& sorted_values,
+  SmallBitSet(Solver* const s, absl::Span<const int64_t> sorted_values,
               int64_t vmin, int64_t vmax)
       : BitSet(s),
         bits_(uint64_t{0}),
@@ -6205,6 +6206,10 @@ class ExprWithEscapeValue : public BaseIntExpr {
         expression_(e),
         unperformed_value_(unperformed_value) {}
 
+  // This type is neither copyable nor movable.
+  ExprWithEscapeValue(const ExprWithEscapeValue&) = delete;
+  ExprWithEscapeValue& operator=(const ExprWithEscapeValue&) = delete;
+
   ~ExprWithEscapeValue() override {}
 
   int64_t Min() const override {
@@ -6301,7 +6306,6 @@ class ExprWithEscapeValue : public BaseIntExpr {
   IntVar* const condition_;
   IntExpr* const expression_;
   const int64_t unperformed_value_;
-  DISALLOW_COPY_AND_ASSIGN(ExprWithEscapeValue);
 };
 
 // ----- This is a specialized case when the variable exact type is known -----

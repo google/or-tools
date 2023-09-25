@@ -529,7 +529,7 @@ public final class RoutingSolverTest {
 
     assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     assertEquals(2 * (10 + 1), solution.objectiveValue());
   }
@@ -589,7 +589,7 @@ public final class RoutingSolverTest {
 
     assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(vehicle + 4, solution.max(dimension.cumulVar(model.start(vehicle))));
@@ -616,7 +616,7 @@ public final class RoutingSolverTest {
 
     assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(
@@ -647,7 +647,7 @@ public final class RoutingSolverTest {
 
     assertEquals(RoutingModel.ROUTING_NOT_SOLVED, model.status());
     final Assignment solution = model.solve(null);
-    assertEquals(RoutingModel.ROUTING_SUCCESS, model.status());
+    assertEquals(RoutingModel.ROUTING_OPTIMAL, model.status());
     assertNotNull(solution);
     for (int vehicle = 0; vehicle < 3; ++vehicle) {
       assertEquals(4, solution.max(dimension.cumulVar(model.start(vehicle))));

@@ -44,21 +44,6 @@ cc_proto_library(
 )
 
 proto_library(
-    name = "search_stats_proto",
-    srcs = ["search_stats.proto"],
-)
-
-cc_proto_library(
-    name = "search_stats_cc_proto",
-    deps = [":search_stats_proto"],
-)
-
-# java_proto_library(
-#     name = "search_stats_java_proto",
-#     deps = [":search_stats_proto"],
-# )
-
-proto_library(
     name = "search_limit_proto",
     srcs = ["search_limit.proto"],
 )
@@ -82,6 +67,21 @@ cc_proto_library(
     name = "demon_profiler_cc_proto",
     deps = [":demon_profiler_proto"],
 )
+
+proto_library(
+    name = "search_stats_proto",
+    srcs = ["search_stats.proto"],
+)
+
+cc_proto_library(
+    name = "search_stats_cc_proto",
+    deps = [":search_stats_proto"],
+)
+
+# java_proto_library(
+#     name = "search_stats_java_proto",
+#     deps = [":search_stats_proto"],
+# )
 
 proto_library(
     name = "solver_parameters_proto",
@@ -161,8 +161,8 @@ cc_library(
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
-        ":search_stats_cc_proto",
         ":search_limit_cc_proto",
+        ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
         ":routing_parameters_cc_proto",
         "//ortools/base",
@@ -175,6 +175,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
         #        "//zlib:zlibonly",
         "//ortools/base:bitmap",
         "//ortools/base:intops",
@@ -402,6 +403,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )
