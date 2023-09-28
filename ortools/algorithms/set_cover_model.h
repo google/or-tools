@@ -131,7 +131,7 @@ class SetCoverModel {
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
   // columns.size() - 1
-  void UpdateAllSubsetsList(SubsetIndex new_size);
+  void UpdateAllSubsetsList();
 
   // Number of elements.
   ElementIndex num_elements_;

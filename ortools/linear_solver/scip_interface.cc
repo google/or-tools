@@ -1122,13 +1122,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
 
 ScipConstraintHandlerForMPCallback::ScipConstraintHandlerForMPCallback(
     MPCallback* mp_callback)
-    : ScipConstraintHandler<EmptyStruct>(
-          // MOE(begin-strip):
-          {/*name=*/"mp_solver_constraint_handler",
-           /*description=*/
-           "A single constraint handler for all MPSolver models."}
-          // MOE(end-strip-and-replace): ScipConstraintHandlerDescription()
-          ),
+    : ScipConstraintHandler<EmptyStruct>(ScipConstraintHandlerDescription()),
       mp_callback_(mp_callback) {}
 
 std::vector<CallbackRangeConstraint>

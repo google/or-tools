@@ -405,6 +405,7 @@ inline std::vector<absl::Span<const T>> SimpleDynamicPartition::GetParts(
   starts.clear();
   return result;
 }
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_

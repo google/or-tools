@@ -39,7 +39,6 @@
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
-// MOE:end_strip
 
 namespace operations_research {
 namespace bop {

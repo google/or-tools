@@ -21,11 +21,12 @@
 
 namespace operations_research {
 
-void SetCoverModel::UpdateAllSubsetsList(SubsetIndex new_size) {
-  const SubsetIndex num_subsets = columns_.size();
-  CHECK_EQ(num_subsets, new_size);
+void SetCoverModel::UpdateAllSubsetsList() {
+  const SubsetIndex new_size = columns_.size();
+  const SubsetIndex old_size(all_subsets_.size());
+  DCHECK_LE(old_size, new_size);
   all_subsets_.resize(new_size.value());
-  for (SubsetIndex subset(num_subsets); subset < new_size; ++subset) {
+  for (SubsetIndex subset(old_size); subset < new_size; ++subset) {
     all_subsets_[subset.value()] = subset;
   }
 }
@@ -59,7 +60,7 @@ void SetCoverModel::SetSubsetCost(int subset, Cost cost) {
   columns_.resize(new_size, SparseColumn());
   subset_costs_.resize(new_size, 0.0);
   subset_costs_[subset_index] = cost;
-  UpdateAllSubsetsList(new_size);
+  UpdateAllSubsetsList();
   row_view_is_valid_ = false;  // Probably overkill, but better safe than sorry.
 }
 
@@ -68,7 +69,7 @@ void SetCoverModel::AddElementToSubset(int element, int subset) {
   const SubsetIndex new_size = std::max(columns_.size(), subset_index + 1);
   subset_costs_.resize(new_size, 0.0);
   columns_.resize(new_size, SparseColumn());
-  UpdateAllSubsetsList(new_size);
+  UpdateAllSubsetsList();
   const ElementIndex new_element(element);
   columns_[subset_index].push_back(new_element);
   num_elements_ = std::max(num_elements_, new_element + 1);
@@ -138,7 +139,7 @@ bool SetCoverModel::ComputeFeasibility() const {
   VLOG(1) << "Max possible coverage = "
           << *std::max_element(coverage.begin(), coverage.end());
   for (SubsetIndex subset(0); subset < columns_.size(); ++subset) {
-    CHECK_EQ(all_subsets_[subset.value()], subset);
+    CHECK_EQ(all_subsets_[subset.value()], subset) << "subset = " << subset;
   }
   return true;
 }

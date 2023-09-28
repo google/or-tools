@@ -217,7 +217,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
-  if (!params.enumerate_all_solutions()) {
+  if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
     const glop::ProblemStatus status =
         ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
     switch (status) {
