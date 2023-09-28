@@ -5,32 +5,7 @@
 
 https://developers.google.com/optimization/
 
-<!--ts-->
-* [Solving a CP-SAT model](#solving-a-cp-sat-model)
-   * [Changing the parameters of the solver](#changing-the-parameters-of-the-solver)
-      * [Specifying the time limit in Python](#specifying-the-time-limit-in-python)
-      * [Specifying the time limit in C++](#specifying-the-time-limit-in-c)
-      * [Specifying the time limit in Java](#specifying-the-time-limit-in-java)
-      * [Specifying the time limit in C#.](#specifying-the-time-limit-in-c-1)
-   * [Printing intermediate solutions](#printing-intermediate-solutions)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Searching for all solutions in a satisfiability model](#searching-for-all-solutions-in-a-satisfiability-model)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
-   * [Stopping search early](#stopping-search-early)
-      * [Python code](#python-code-2)
-      * [C++ code](#c-code-4)
-      * [Java code](#java-code-2)
-      * [C# code](#c-code-5)
 
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Changing the parameters of the solver
 

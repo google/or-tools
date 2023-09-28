@@ -5,21 +5,7 @@
 
 https://developers.google.com/optimization/
 
-<!--ts-->
-* [Model manipulation](#model-manipulation)
-   * [Introduction](#introduction)
-   * [Solution hinting](#solution-hinting)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Model copy](#model-copy)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
 
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Introduction
 

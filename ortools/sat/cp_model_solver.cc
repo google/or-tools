@@ -3333,10 +3333,9 @@ class LnsSolver : public SubSolver {
   }
 
   void Synchronize() override {
-    generator_->Synchronize();
-    const double diff = generator_->deterministic_time() - deterministic_time();
-    AddTaskDeterministicDuration(diff);
-    shared_->time_limit->AdvanceDeterministicTime(diff);
+    const double dtime = generator_->Synchronize();
+    AddTaskDeterministicDuration(dtime);
+    shared_->time_limit->AdvanceDeterministicTime(dtime);
   }
 
   std::vector<std::string> TableLineStats() const override {
@@ -4153,8 +4152,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
     if (is_pure_sat) {
       for (const ConstraintProto& ct : model_proto.constraints()) {
-        if (ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolOr &&
-            ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolAnd) {
+        if (ct.constraint_case() != ConstraintProto::kBoolOr &&
+            ct.constraint_case() != ConstraintProto::kBoolAnd) {
+          is_pure_sat = false;
+          break;
+        }
+        if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
+            ct.enforcement_literal().size() > 1) {
           is_pure_sat = false;
           break;
         }

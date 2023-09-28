@@ -135,23 +135,25 @@ class TaskSet {
 class DisjunctiveOverloadChecker : public PropagatorInterface {
  public:
   explicit DisjunctiveOverloadChecker(SchedulingConstraintHelper* helper)
-      : helper_(helper) {
-    // Resize this once and for all.
-    task_to_event_.resize(helper_->NumTasks());
-  }
+      : helper_(helper),
+        window_(new TaskTime[helper->NumTasks()]),
+        task_to_event_(new int[helper->NumTasks()]) {}
+
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue global_window_end);
+  bool PropagateSubwindow(int relevat_size, IntegerValue global_window_end);
 
   SchedulingConstraintHelper* helper_;
 
-  std::vector<TaskTime> window_;
+  // Size assigned at construction, stay fixed afterwards.
+  std::unique_ptr<TaskTime[]> window_;
+  std::unique_ptr<int[]> task_to_event_;
+
   std::vector<TaskTime> task_by_increasing_end_max_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
-  std::vector<int> task_to_event_;
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {

@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
@@ -508,8 +509,9 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
 }
 
 bool DisjunctiveOverloadChecker::Propagate() {
-  if (!helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true))
+  if (!helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true)) {
     return false;
+  }
 
   // Split problem into independent part.
   //
@@ -522,20 +524,21 @@ bool DisjunctiveOverloadChecker::Propagate() {
   // all task in the window, [start_min, end_min] is inside the window, and the
   // end min of any set of task to the left is <= window_start, and the
   // start_min of any task to the right is >= end_min.
-  window_.clear();
   IntegerValue window_end = kMinIntegerValue;
   IntegerValue relevant_end;
+  int window_size = 0;
   int relevant_size = 0;
   for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
     const int task = task_time.task_index;
     if (helper_->IsAbsent(task)) continue;
 
+    // Extend window.
     const IntegerValue start_min = task_time.time;
     if (start_min < window_end) {
-      window_.push_back(task_time);
+      window_[window_size++] = task_time;
       window_end += helper_->SizeMin(task);
       if (window_end > helper_->EndMax(task)) {
-        relevant_size = window_.size();
+        relevant_size = window_size;
         relevant_end = window_end;
       }
       continue;
@@ -544,21 +547,19 @@ bool DisjunctiveOverloadChecker::Propagate() {
     // Process current window.
     // We don't need to process the end of the window (after relevant_size)
     // because these interval can be greedily assembled in a feasible solution.
-    window_.resize(relevant_size);
-    if (relevant_size > 0 && !PropagateSubwindow(relevant_end)) {
+    if (relevant_size > 0 && !PropagateSubwindow(relevant_size, relevant_end)) {
       return false;
     }
 
     // Start of the next window.
-    window_.clear();
-    window_.push_back(task_time);
+    window_size = 0;
+    window_[window_size++] = task_time;
     window_end = start_min + helper_->SizeMin(task);
     relevant_size = 0;
   }
 
   // Process last window.
-  window_.resize(relevant_size);
-  if (relevant_size > 0 && !PropagateSubwindow(relevant_end)) {
+  if (relevant_size > 0 && !PropagateSubwindow(relevant_size, relevant_end)) {
     return false;
   }
 
@@ -573,24 +574,28 @@ bool DisjunctiveOverloadChecker::Propagate() {
 // overload after every insertion, but we could use an upper bound of the
 // theta envelope to save us from checking the actual value.
 bool DisjunctiveOverloadChecker::PropagateSubwindow(
-    IntegerValue global_window_end) {
+    int relevant_size, IntegerValue global_window_end) {
   // Set up theta tree and task_by_increasing_end_max_.
-  const int window_size = window_.size();
-  theta_tree_.Reset(window_size);
+  int num_events = 0;
   task_by_increasing_end_max_.clear();
-  for (int i = 0; i < window_size; ++i) {
+  for (int i = 0; i < relevant_size; ++i) {
     // No point adding a task if its end_max is too large.
-    const int task = window_[i].task_index;
+    const TaskTime& task_time = window_[i];
+    const int task = task_time.task_index;
     const IntegerValue end_max = helper_->EndMax(task);
     if (end_max < global_window_end) {
-      task_to_event_[task] = i;
+      window_[num_events] = task_time;
+      task_to_event_[task] = num_events;
       task_by_increasing_end_max_.push_back({task, end_max});
+      ++num_events;
     }
   }
+  theta_tree_.Reset(num_events);
 
   // Introduce events by increasing end_max, check for overloads.
-  std::sort(task_by_increasing_end_max_.begin(),
-            task_by_increasing_end_max_.end());
+  // If end_max is the same, we want to add high start-min first.
+  absl::c_reverse(task_by_increasing_end_max_);
+  absl::c_stable_sort(task_by_increasing_end_max_);
   for (const auto task_time : task_by_increasing_end_max_) {
     const int current_task = task_time.task_index;
 
@@ -624,7 +629,7 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
       const IntegerValue window_start = window_[critical_event].time;
       const IntegerValue window_end =
           theta_tree_.GetEnvelopeOf(critical_event) - 1;
-      for (int event = critical_event; event < window_size; event++) {
+      for (int event = critical_event; event < num_events; event++) {
         const IntegerValue energy_min = theta_tree_.EnergyMin(event);
         if (energy_min > 0) {
           const int task = window_[event].task_index;
@@ -657,7 +662,7 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
         const IntegerValue window_start = window_[critical_event].time;
         const IntegerValue window_end =
             current_end + optional_size_min - available_energy - 1;
-        for (int event = critical_event; event < window_size; event++) {
+        for (int event = critical_event; event < num_events; event++) {
           const IntegerValue energy_min = theta_tree_.EnergyMin(event);
           if (energy_min > 0) {
             const int task = window_[event].task_index;

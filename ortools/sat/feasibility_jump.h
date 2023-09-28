@@ -114,8 +114,7 @@ class FeasibilityJumpSolver : public SubSolver {
   bool DoSomeGeneralIterations();
 
   // Returns true if an improving move was found.
-  bool ScanRelevantVariables(absl::Span<const double> weights,
-                             int* improving_var, int64_t* improving_value,
+  bool ScanRelevantVariables(int* improving_var, int64_t* improving_value,
                              double* improving_score, bool* time_limit_crossed);
 
   // Increases the weight of the currently infeasible constraints.
@@ -139,6 +138,20 @@ class FeasibilityJumpSolver : public SubSolver {
   // compound_weights[c] = weights_[c] if c is violated, and epsilon *
   // weights_[c] otherwise.
   void ResetChangedCompoundWeights();
+
+  // Returns true if we should accept a single variable move.
+  bool ShouldAcceptUnitMove(int var, int64_t delta, double score);
+
+  // Returns true if we should push this change to move_.
+  // `novelty` is the total discount applied to the score due to using
+  // `cumulative_weights_`, should always be positive (modulo floating-point
+  // errors).
+  bool ShouldExtendCompoundMove(int var, int64_t delta, double score,
+                                double novelty);
+
+  // Validates each element in num_violated_constraints_per_var_ against
+  // evaluator_->ViolatedConstraints.
+  bool SlowCheckNumViolatedConstraints() const;
 
   const LinearModel* linear_model_;
   SatParameters params_;
@@ -199,12 +212,16 @@ class FeasibilityJumpSolver : public SubSolver {
 
   std::vector<int64_t> tmp_breakpoints_;
 
-  // Each time we reset the weight, we might randomly change this to update
-  // them with decay or not.
+  // Each time we reset the weights, randomly change this to update them with
+  // decay or not.
   bool use_decay_ = true;
 
-  // Each batch, randomly decide if we will use compound moves or not.
+  // Each time we reset the weights, randomly decide if we will use compound
+  // moves or not.
   bool use_compound_moves_ = false;
+  // We randomize the beam width each batch, choosing either 1 or 2, biased
+  // towards 1.
+  int compound_move_beam_search_width_ = 1;
 
   // Statistics
   int64_t num_batches_ = 0;
@@ -269,6 +286,20 @@ class CompoundMoveBuilder {
     return stack_.empty() ? 0.0 : stack_.back().cumulative_objective_delta;
   }
 
+  // Returns the minimum score of any child of the current node in the stack,
+  // with a maximum of 0.
+  // NB: We assume all improving moves will immediately be committed, so this
+  // always returns 0 when the stack is empty.
+  double BestChildScore() const {
+    return stack_.empty() ? 0.0 : stack_.back().best_child_score;
+  }
+
+  // Returns the number of times a child has been pushed to the current node.
+  // NB: Always returns 0 when the stack is empty.
+  int NumChildrenExplored() const {
+    return stack_.empty() ? 0 : stack_.back().num_children;
+  }
+
   // Returns true if this move reduces weighted violation, or improves the
   // objective without increasing violation.
   bool IsImproving() const;
@@ -286,6 +317,12 @@ class CompoundMoveBuilder {
     // to avoid numerical issues causing negative scores after backtracking.
     double cumulative_score;
     double cumulative_objective_delta;
+
+    // Used to avoid infinite loops, this tracks the best score of any immediate
+    // children (and not deeper descendants) to avoid re-exploring the same
+    // prefix.
+    double best_child_score = 0.0;
+    int num_children = 0;
   };
   LsEvaluator* evaluator_;
   std::vector<bool> var_on_stack_;

@@ -5,22 +5,7 @@
 
 https://developers.google.com/optimization/
 
-<!--ts-->
-* [Channeling constraints](#channeling-constraints)
-   * [If-Then-Else expressions](#if-then-else-expressions)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [A bin-packing problem](#a-bin-packing-problem)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
 
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 A *channeling constraint* links variables inside a model. They're used when you
 want to express a complicated relationship between variables, such as "if this

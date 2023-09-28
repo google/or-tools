@@ -5,43 +5,7 @@
 
 https://developers.google.com/optimization/
 
-<!--ts-->
-* [Scheduling recipes for the CP-SAT solver.](#scheduling-recipes-for-the-cp-sat-solver)
-   * [Introduction](#introduction)
-   * [Interval variables](#interval-variables)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Optional intervals](#optional-intervals)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
-   * [NoOverlap constraint](#nooverlap-constraint)
-      * [Python code](#python-code-2)
-      * [C++ code](#c-code-4)
-      * [Java code](#java-code-2)
-      * [C# code](#c-code-5)
-   * [Cumulative constraint](#cumulative-constraint)
-   * [Alternative resources for one interval](#alternative-resources-for-one-interval)
-   * [Ranking tasks in a disjunctive resource](#ranking-tasks-in-a-disjunctive-resource)
-      * [Python code](#python-code-3)
-      * [C++ code](#c-code-6)
-      * [Java code](#java-code-3)
-      * [C# code](#c-code-7)
-   * [Intervals spanning over breaks in the calendar](#intervals-spanning-over-breaks-in-the-calendar)
-      * [Python code](#python-code-4)
-   * [Detecting if two intervals overlap.](#detecting-if-two-intervals-overlap)
-      * [Python code](#python-code-5)
-   * [Transitions in a disjunctive resource](#transitions-in-a-disjunctive-resource)
-   * [Precedences between intervals](#precedences-between-intervals)
-   * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
-   * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Introduction
 
@@ -877,9 +841,9 @@ void RankingSampleSat() {
   const int kHorizon = 100;
   const int kNumTasks = 4;
 
-  auto add_task_ranking = [&cp_model](const std::vector<IntVar>& starts,
-                                      const std::vector<BoolVar>& presences,
-                                      const std::vector<IntVar>& ranks) {
+  auto add_task_ranking = [&cp_model](absl::Span<const IntVar> starts,
+                                      absl::Span<const BoolVar> presences,
+                                      absl::Span<const IntVar> ranks) {
     const int num_tasks = starts.size();
 
     // Creates precedence variables between pairs of intervals.
@@ -1354,24 +1318,33 @@ need to take into account the case where no task is performed.
 #!/usr/bin/env python3
 """Code sample to demonstrates how to rank intervals using a circuit."""
 
+from typing import List, Sequence
+
+
 from ortools.sat.python import cp_model
 
 
-def rank_tasks_with_circuit(model, starts, durations, presences, ranks):
-    """This method uses a circuit constraints to rank tasks.
+def rank_tasks_with_circuit(
+    model: cp_model.CpModel,
+    starts: Sequence[cp_model.IntVar],
+    durations: Sequence[int],
+    presences: Sequence[cp_model.IntVar],
+    ranks: Sequence[cp_model.IntVar],
+):
+    """This method uses a circuit constraint to rank tasks.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
     a strictly positive duration, and they appear in the same NoOverlap
     constraint.
 
     To implement this ranking, we will create a dense graph with num_tasks + 1
-    node.
-    The extra node (with id 0) will be used to decide which tasks is first with
+    nodes.
+    The extra node (with id 0) will be used to decide which task is first with
     its only outgoing arc, and whhich task is last with its only incoming arc.
     Each task i will be associated with id i + 1, and an arc between i + 1 and j +
     1 indicates that j is the immediate successor of i.
 
-    The circuit constraint will insure there is at most 1 hamiltonian path of
+    The circuit constraint ensures there is at most 1 hamiltonian path of
     length > 1. If no such path exists, then no tasks are active.
 
     The multiple enforced linear constraints are meant to ensure the compatibility
@@ -1388,7 +1361,7 @@ def rank_tasks_with_circuit(model, starts, durations, presences, ranks):
     num_tasks = len(starts)
     all_tasks = range(num_tasks)
 
-    arcs = []
+    arcs: List[cp_model.ArcT] = []
     for i in all_tasks:
         # if node i is first.
         start_lit = model.NewBoolVar(f"start_{i}")
@@ -1414,8 +1387,8 @@ def rank_tasks_with_circuit(model, starts, durations, presences, ranks):
 
                 # To perform the transitive reduction from precedences to successors,
                 # we need to tie the starts of the tasks with 'literal'.
-                # In a pure problem, the following inequation could be an equality.
-                # In is not true in general.
+                # In a pure problem, the following inequality could be an equality.
+                # It is not true in general.
                 #
                 # Note that we could use this literal to penalize the transition, add an
                 # extra delay to the precedence.

@@ -273,7 +273,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
     // Note(user): Some code path in single-thread assumes that the problem
     // can only be solved when they have proven infeasibility and do not check
     // the ProblemIsSolved() method. So we force a stop here.
-    shared_time_limit_->Stop();
+    if (always_synchronize_) shared_time_limit_->Stop();
   }
   if (gap / std::max(1.0, std::abs(user_best)) < relative_gap_limit_) {
     SOLVER_LOG(logger_, "Relative gap limit of ", relative_gap_limit_,
@@ -281,7 +281,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
     UpdateBestStatus(CpSolverStatus::OPTIMAL);
 
     // Same as above.
-    shared_time_limit_->Stop();
+    if (always_synchronize_) shared_time_limit_->Stop();
   }
 }
 

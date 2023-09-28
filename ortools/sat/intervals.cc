@@ -259,13 +259,13 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
   cached_size_min_[t] = dmin;
 
   // Note that we use the cached value here for EndMin()/StartMax().
-  const IntegerValue new_shifted_start_min = EndMin(t) - dmin;
+  const IntegerValue new_shifted_start_min = emin - dmin;
   if (new_shifted_start_min != cached_shifted_start_min_[t]) {
     recompute_energy_profile_ = true;
     recompute_shifted_start_min_ = true;
     cached_shifted_start_min_[t] = new_shifted_start_min;
   }
-  const IntegerValue new_negated_shifted_end_max = -(StartMax(t) + dmin);
+  const IntegerValue new_negated_shifted_end_max = -(smax + dmin);
   if (new_negated_shifted_end_max != cached_negated_shifted_end_max_[t]) {
     recompute_negated_shifted_end_max_ = true;
     cached_negated_shifted_end_max_[t] = new_negated_shifted_end_max;

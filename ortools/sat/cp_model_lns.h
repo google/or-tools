@@ -28,13 +28,14 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
 
 namespace operations_research {
@@ -202,6 +203,19 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     if (type >= type_to_constraints_.size()) return {};
     return absl::MakeSpan(type_to_constraints_[type]);
   }
+
+  // Checks if an interval is active w.r.t. the initial_solution.
+  // An interval is inactive if and only if it is either unperformed in the
+  // solution or constant in the model.
+  bool IntervalIsActive(int index,
+                        const CpSolverResponse& initial_solution) const
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+
+  // Filters a vector of intervals against the initial_solution, and returns
+  // only the active intervals.
+  void FilterInactiveIntervals(absl::Span<const int> unfiltered_intervals,
+                               const CpSolverResponse& initial_solution,
+                               std::vector<int>* filtered_intervals) const;
 
   // Returns the list of indices of active interval constraints according
   // to the initial_solution and the parameter lns_focus_on_performed_intervals.
@@ -411,8 +425,9 @@ class NeighborhoodGenerator {
   }
 
   // Process all the recently added solve data and update this generator
-  // score and difficulty.
-  void Synchronize();
+  // score and difficulty. This returns the sum of the deterministic time of
+  // each SolveData.
+  double Synchronize();
 
   // Returns a short description of the generator.
   std::string name() const { return name_; }
@@ -455,12 +470,6 @@ class NeighborhoodGenerator {
     return deterministic_limit_;
   }
 
-  // The sum of the deterministic time spent in this generator.
-  double deterministic_time() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
-    return deterministic_time_;
-  }
-
  protected:
   const std::string name_;
   const NeighborhoodGeneratorHelper& helper_;
@@ -481,7 +490,6 @@ class NeighborhoodGenerator {
   int64_t num_improving_calls_ = 0;
   int64_t num_consecutive_non_improving_calls_ = 0;
   int64_t next_time_limit_bump_ = 50;
-  double deterministic_time_ = 0.0;
   double current_average_ = 0.0;
 };
 
@@ -605,6 +613,7 @@ class LocalBranchingLpBasedNeighborhoodGenerator
 // intervals.
 Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     absl::Span<const int> intervals_to_relax,
+    absl::Span<const int> variables_to_fix,
     const CpSolverResponse& initial_solution, absl::BitGenRef random,
     const NeighborhoodGeneratorHelper& helper);
 
