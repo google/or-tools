@@ -86,7 +86,7 @@ install_doc = ('First, you must install '
                '[ortools](https://pypi.org/project/ortools/) package in this '
                'colab.')
 nbook['cells'].append(v4.new_markdown_cell(source=install_doc, id='doc'))
-install_cmd = '!pip install ortools'
+install_cmd = '%pip install ortools'
 nbook['cells'].append(v4.new_code_cell(source=install_cmd, id='install'))
 
 print('Adding code cell...')
