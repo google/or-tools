@@ -204,18 +204,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return absl::MakeSpan(type_to_constraints_[type]);
   }
 
-  // Checks if an interval is active w.r.t. the initial_solution.
-  // An interval is inactive if and only if it is either unperformed in the
-  // solution or constant in the model.
-  bool IntervalIsActive(int index,
-                        const CpSolverResponse& initial_solution) const
-      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
-
   // Filters a vector of intervals against the initial_solution, and returns
   // only the active intervals.
-  void FilterInactiveIntervals(absl::Span<const int> unfiltered_intervals,
-                               const CpSolverResponse& initial_solution,
-                               std::vector<int>* filtered_intervals) const;
+  std::vector<int> KeepActiveIntervals(
+      absl::Span<const int> unfiltered_intervals,
+      const CpSolverResponse& initial_solution) const;
 
   // Returns the list of indices of active interval constraints according
   // to the initial_solution and the parameter lns_focus_on_performed_intervals.
@@ -289,6 +282,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns true if the domain on the objective is constraining and we might
   // get a lower objective value at optimum without it.
   bool ObjectiveDomainIsConstraining() const
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+
+  // Checks if an interval is active w.r.t. the initial_solution.
+  // An interval is inactive if and only if it is either unperformed in the
+  // solution or constant in the model.
+  bool IntervalIsActive(int index,
+                        const CpSolverResponse& initial_solution) const
       ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
   const SatParameters& parameters_;

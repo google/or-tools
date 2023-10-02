@@ -20,6 +20,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
@@ -36,9 +37,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int64_t>& durations,
-           const std::vector<int64_t>& due_dates,
-           const std::vector<int64_t>& weights) {
+void Solve(absl::Span<const int64_t> durations,
+           absl::Span<const int64_t> due_dates,
+           absl::Span<const int64_t> weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -163,7 +164,8 @@ void Solve(const std::vector<int64_t>& durations,
   Model model;
   model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   model.GetOrCreate<SatParameters>()->set_log_search_progress(true);
-  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
+  model.Add(NewFeasibleSolutionObserver([&, due_dates, durations,
+                                         weights](const CpSolverResponse& r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=

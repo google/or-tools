@@ -159,8 +159,12 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {
  public:
   DisjunctiveDetectablePrecedences(bool time_direction,
+                                   PrecedenceRelations* relations,
+                                   PrecedencesPropagator* precedences,
                                    SchedulingConstraintHelper* helper)
       : time_direction_(time_direction),
+        precedence_relations_(relations),
+        precedences_(precedences),
         helper_(helper),
         task_set_(helper->NumTasks()) {}
   bool Propagate() final;
@@ -176,6 +180,8 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   std::vector<int> to_propagate_;
 
   const bool time_direction_;
+  PrecedenceRelations* precedence_relations_;
+  PrecedencesPropagator* precedences_;
   SchedulingConstraintHelper* helper_;
   TaskSet task_set_;
 };

@@ -567,11 +567,7 @@ message SatParameters {
   optional int32 num_workers = 206 [default = 0];
   optional int32 num_search_workers = 100 [default = 0];
 
-  // If there is an objective and we are not in interleave mode, we will reserve
-  // at least this number of worker for LNS thread.
-  //
-  // TODO(user): Also define like for subsolvers the list of "active" type of
-  // neighborhood used.
+  // Obsolete parameter. No-op.
   optional int32 min_num_lns_workers = 211 [default = 2];
 
   // In multi-thread, the solver can be mainly seen as a portfolio of solvers
@@ -582,7 +578,6 @@ message SatParameters {
   // left empty) that looks like:
   // - default_lp           (linearization_level:1)
   // - fixed                (only if fixed search specified or scheduling)
-  // - less_encoding        (only if no objective)
   // - no_lp                (linearization_level:0)
   // - max_lp               (linearization_level:2)
   // - pseudo_costs         (only if objective, change search heuristic)
@@ -617,6 +612,9 @@ message SatParameters {
   // specified field will "overwrite" the ones of the base parameter. It is also
   // possible to overwrite the default names above.
   repeated SatParameters subsolver_params = 210;
+
+  // TODO(user): Also define like for subsolvers the list of "active"
+  // type of neighborhood used.
 
   // Experimental. If this is true, then we interleave all our major search
   // strategy and distribute the work amongst num_workers.
@@ -1278,7 +1276,7 @@ message SatParameters {
 
   // Experimental code: specify if the objective pushes all tasks toward the
   // start of the schedule.
-  optional bool push_all_tasks_toward_start = 262 [default = true];
+  optional bool push_all_tasks_toward_start = 262 [default = false];
 
   // If true, we automatically detect variables whose constraint are always
   // enforced by the same literal and we mark them as optional. This allows

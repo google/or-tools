@@ -418,23 +418,22 @@ bool NeighborhoodGeneratorHelper::IntervalIsActive(
   return false;
 }
 
-void NeighborhoodGeneratorHelper::FilterInactiveIntervals(
+std::vector<int> NeighborhoodGeneratorHelper::KeepActiveIntervals(
     absl::Span<const int> unfiltered_intervals,
-    const CpSolverResponse& initial_solution,
-    std::vector<int>* filtered_intervals) const {
-  filtered_intervals->clear();
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> filtered_intervals;
+  filtered_intervals.reserve(unfiltered_intervals.size());
   absl::ReaderMutexLock lock(&domain_mutex_);
   for (const int i : unfiltered_intervals) {
-    if (IntervalIsActive(i, initial_solution)) filtered_intervals->push_back(i);
+    if (IntervalIsActive(i, initial_solution)) filtered_intervals.push_back(i);
   }
+  return filtered_intervals;
 }
 
 std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
     const CpSolverResponse& initial_solution) const {
-  std::vector<int> result;
-  FilterInactiveIntervals(TypeToConstraints(ConstraintProto::kInterval),
-                          initial_solution, &result);
-  return result;
+  return KeepActiveIntervals(TypeToConstraints(ConstraintProto::kInterval),
+                             initial_solution);
 }
 
 std::vector<std::pair<int, int>>
@@ -2024,6 +2023,19 @@ Neighborhood RandomPrecedenceSchedulingNeighborhoodGenerator::Generate(
       precedences, initial_solution, helper_);
 }
 
+namespace {
+void AppendVarsFromAllIntervalIndices(absl::Span<const int> indices,
+                                      absl::Span<const int> all_intervals,
+                                      const CpModelProto& model_proto,
+                                      std::vector<int>* variables) {
+  for (const int index : indices) {
+    const std::vector<int> vars =
+        UsedVariables(model_proto.constraints(all_intervals[index]));
+    variables->insert(variables->end(), vars.begin(), vars.end());
+  }
+}
+}  // namespace
+
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
@@ -2038,21 +2050,17 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
   std::vector<int> intervals_to_relax;
   intervals_to_relax.reserve(partition.selected_indices.size());
   std::vector<int> variables_to_fix;
-  for (const int index : partition.selected_indices) {
-    intervals_to_relax.push_back(active_intervals[index]);
-  }
+  intervals_to_relax.insert(intervals_to_relax.end(),
+                            partition.selected_indices.begin(),
+                            partition.selected_indices.end());
 
   if (helper_.Parameters().push_all_tasks_toward_start()) {
-    for (const int index : partition.indices_before_selected) {
-      const int interval = active_intervals[index];
-      // Remove the interval so that we do not use it for precedences.
-      intervals_to_relax.push_back(interval);
-
-      // Fix all variables.
-      const std::vector<int> vars =
-          UsedVariables(helper_.ModelProto().constraints(interval));
-      variables_to_fix.insert(variables_to_fix.end(), vars.begin(), vars.end());
-    }
+    intervals_to_relax.insert(intervals_to_relax.end(),
+                              partition.indices_before_selected.begin(),
+                              partition.indices_before_selected.end());
+    AppendVarsFromAllIntervalIndices(partition.indices_before_selected,
+                                     active_intervals, helper_.ModelProto(),
+                                     &variables_to_fix);
   }
 
   gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
@@ -2068,25 +2076,21 @@ Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
   std::vector<int> variables_to_fix;
   std::vector<int> active_intervals;
   for (const std::vector<int>& intervals : intervals_in_constraints_) {
-    helper_.FilterInactiveIntervals(intervals, initial_solution,
-                                    &active_intervals);
+    active_intervals = helper_.KeepActiveIntervals(intervals, initial_solution);
     const TimePartition partition = PartitionIndicesAroundRandomTimeWindow(
         active_intervals, helper_.ModelProto(), initial_solution, difficulty,
         random);
-    for (const int index : partition.selected_indices) {
-      intervals_to_relax.push_back(intervals[index]);
-    }
+    intervals_to_relax.insert(intervals_to_relax.end(),
+                              partition.selected_indices.begin(),
+                              partition.selected_indices.end());
 
     if (helper_.Parameters().push_all_tasks_toward_start()) {
-      for (const int index : partition.indices_before_selected) {
-        const int interval = intervals[index];
-        // Remove the interval so that we do not use it for precedences.
-        intervals_to_relax.push_back(interval);
-        const std::vector<int> vars =
-            UsedVariables(helper_.ModelProto().constraints(interval));
-        variables_to_fix.insert(variables_to_fix.end(), vars.begin(),
-                                vars.end());
-      }
+      intervals_to_relax.insert(intervals_to_relax.end(),
+                                partition.indices_before_selected.begin(),
+                                partition.indices_before_selected.end());
+      AppendVarsFromAllIntervalIndices(partition.indices_before_selected,
+                                       active_intervals, helper_.ModelProto(),
+                                       &variables_to_fix);
     }
   }
 

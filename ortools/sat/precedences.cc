@@ -71,7 +71,7 @@ void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
 }
 
 void PrecedenceRelations::Build() {
-  CHECK(!is_built_);
+  if (is_built_) return;
 
   is_built_ = true;
   std::vector<int> permutation;
@@ -103,6 +103,49 @@ void PrecedenceRelations::Build() {
     }
   }
   is_dag_ = !graph_has_cycle;
+
+  // Lets build full precedences if we don't have too many of them.
+  // TODO(user): Also do that if we don't have a DAG?
+  if (!is_dag_) return;
+
+  int work = 0;
+  const int kWorkLimit = 1e6;
+  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> before(
+      graph_.num_nodes());
+  const auto add = [&before, this](IntegerVariable a, IntegerVariable b,
+                                   IntegerValue offset) {
+    const auto [it, inserted] = all_relations_.insert({{a, b}, offset});
+    if (inserted) {
+      before[b].push_back(a);
+    } else {
+      it->second = std::max(it->second, offset);
+    }
+  };
+
+  // TODO(user): We probably do not need to do both var and its negation.
+  for (const IntegerVariable tail_var : topological_order_) {
+    if (++work > kWorkLimit) break;
+    for (const int arc : graph_.OutgoingArcs(tail_var.value())) {
+      CHECK_EQ(tail_var.value(), graph_.Tail(arc));
+      const IntegerVariable head_var = IntegerVariable(graph_.Head(arc));
+      const IntegerValue arc_offset = arc_offset_[arc];
+
+      if (++work > kWorkLimit) break;
+      add(tail_var, head_var, arc_offset);
+      add(NegationOf(head_var), NegationOf(tail_var), -arc_offset);
+
+      for (const IntegerVariable before_var : before[tail_var]) {
+        if (++work > kWorkLimit) break;
+        const IntegerValue offset =
+            all_relations_.at({before_var, tail_var}) + arc_offset;
+        add(before_var, head_var, offset);
+        add(NegationOf(head_var), NegationOf(before_var), -offset);
+      }
+    }
+  }
+
+  VLOG(2) << "Full precedences. Work=" << work
+          << " Relations=" << all_relations_.size();
 }
 
 void PrecedenceRelations::ComputeFullPrecedences(
@@ -587,6 +630,29 @@ void PrecedencesPropagator::AddArc(
     }
     arc_counts_.push_back(presence_literals.size());
   }
+}
+
+bool PrecedencesPropagator::AddPrecedenceWithOffsetIfNew(IntegerVariable i1,
+                                                         IntegerVariable i2,
+                                                         IntegerValue offset) {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (i1 < impacted_arcs_.size() && i2 < impacted_arcs_.size()) {
+    for (const ArcIndex index : impacted_arcs_[i1]) {
+      const ArcInfo& arc = arcs_[index];
+      if (arc.head_var == i2) {
+        const IntegerValue current = ArcOffset(arc);
+        if (offset <= current) {
+          return false;
+        } else {
+          // TODO(user): Modify arc in place!
+        }
+        break;
+      }
+    }
+  }
+
+  AddPrecedenceWithOffset(i1, i2, offset);
+  return true;
 }
 
 // TODO(user): On jobshop problems with a lot of tasks per machine (500), this

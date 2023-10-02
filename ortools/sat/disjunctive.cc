@@ -19,6 +19,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
@@ -102,7 +103,9 @@ std::function<void(Model*)> Disjunctive(
       }
       for (const bool time_direction : {true, false}) {
         DisjunctiveDetectablePrecedences* detectable_precedences =
-            new DisjunctiveDetectablePrecedences(time_direction, helper);
+            new DisjunctiveDetectablePrecedences(
+                time_direction, model->GetOrCreate<PrecedenceRelations>(),
+                model->GetOrCreate<PrecedencesPropagator>(), helper);
         const int id = detectable_precedences->RegisterWith(watcher);
         watcher->SetPropagatorPriority(id, 2);
         model->TakeOwnership(detectable_precedences);
@@ -867,25 +870,71 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
         // We need:
         // - StartMax(ct) < EndMin(t) for the detectable precedence.
         // - StartMin(ct) >= window_start for the value of task_set_end_min.
+        const AffineExpression after = helper_->Starts()[t];
         const IntegerValue end_min_if_present =
             helper_->ShiftedStartMin(t) + helper_->SizeMin(t);
         const IntegerValue window_start =
             sorted_tasks[critical_index].start_min;
+        IntegerValue min_slack = kMaxIntegerValue;
+        bool all_statically_before = true;
         for (int i = critical_index; i < sorted_tasks.size(); ++i) {
           const int ct = sorted_tasks[i].task;
           DCHECK_NE(ct, t);
           helper_->AddPresenceReason(ct);
           helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min,
                                         window_start);
-          helper_->AddStartMaxReason(ct, end_min_if_present - 1);
+
+          // We only need the reason for being before if we don't already have
+          // a static precedence between the tasks.
+          const AffineExpression before = helper_->Ends()[ct];
+          const IntegerValue needed = before.constant - after.constant;
+          const IntegerValue known =
+              precedence_relations_->GetOffset(before.var, after.var);
+          if (known < needed || before.coeff != 1 || after.coeff != 1) {
+            all_statically_before = false;
+            helper_->AddStartMaxReason(ct, end_min_if_present - 1);
+          } else {
+            min_slack = std::min(min_slack, known - needed);
+          }
         }
 
-        // Add the reason for t (we only need the end-min).
-        helper_->AddEndMinReason(t, end_min_if_present);
+        // We only need the end-min of t if not all the task are already known
+        // to be before.
+        IntegerValue new_start_min = task_set_end_min;
+        if (all_statically_before) {
+          // We can actually push further !
+          new_start_min += min_slack;
+        } else {
+          helper_->AddEndMinReason(t, end_min_if_present);
+        }
+
+        // If we detect precedences at level zero, lets add them to the
+        // precedence propagator. The hope is that this leads to faster
+        // propagation with better reason if they ever trigger.
+        if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
+          if (after.coeff == 1 && after.var != kNoIntegerVariable) {
+            for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+              const AffineExpression before =
+                  helper_->Ends()[sorted_tasks[i].task];
+              if (before.coeff == 1 && before.var != kNoIntegerVariable) {
+                const IntegerValue offset = before.constant - after.constant;
+                precedence_relations_->UpdateOffset(before.var, after.var,
+                                                    offset);
+                if (precedences_->AddPrecedenceWithOffsetIfNew(
+                        before.var, after.var, offset)) {
+                  VLOG(2) << t << " after #"
+                          << sorted_tasks.size() - critical_index << " "
+                          << before.DebugString() << " " << after.DebugString()
+                          << " " << offset;
+                }
+              }
+            }
+          }
+        }
 
         // This augment the start-min of t. Note that t is not in task set
         // yet, so we will use this updated start if we ever add it there.
-        if (!helper_->IncreaseStartMin(t, task_set_end_min)) {
+        if (!helper_->IncreaseStartMin(t, new_start_min)) {
           return false;
         }
 

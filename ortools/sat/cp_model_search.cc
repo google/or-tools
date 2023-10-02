@@ -573,7 +573,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   {
     SatParameters new_params = base_params;
-    new_params.set_linearization_level(2);
     new_params.set_use_objective_shaving_search(true);
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
@@ -581,7 +580,14 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       AddDualSchedulingHeuristics(new_params);
     }
+
     strategies["objective_shaving_search"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["objective_shaving_search_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    strategies["objective_shaving_search_max_lp"] = new_params;
   }
 
   {
@@ -696,44 +702,27 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back(name);
   }
 
-  const int num_workers_to_generate =
-      base_params.num_workers() - base_params.shared_tree_num_workers();
   // We use the default if empty.
   if (base_params.subsolvers().empty()) {
+    // Note that the order is important as the list can be truncated.
     names.push_back("default_lp");
     names.push_back("fixed");
     names.push_back("core");
-    names.push_back("less_encoding");
-
     names.push_back("no_lp");
     names.push_back("max_lp");
-
-    names.push_back("reduced_costs");
-    names.push_back("pseudo_costs");
-
     names.push_back("quick_restart");
+    names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
+    names.push_back("pseudo_costs");
     names.push_back("lb_tree_search");
     names.push_back("probing");
+    names.push_back("objective_lb_search");
+    names.push_back("objective_shaving_search_no_lp");
+    names.push_back("objective_shaving_search_max_lp");
+    names.push_back("probing_max_lp");
+    names.push_back("objective_lb_search_no_lp");
+    names.push_back("objective_lb_search_max_lp");
 
-    // Do not add objective_lb_search if core is active and num_workers <= 16.
-    if (cp_model.has_objective() &&
-        (cp_model.objective().vars().size() == 1 ||  // core is not active
-         num_workers_to_generate >= 18)) {
-      names.push_back("objective_lb_search");
-    }
-    if (num_workers_to_generate >= 20) {
-      names.push_back("objective_lb_search_no_lp");
-    }
-    if (num_workers_to_generate >= 22) {
-      names.push_back("objective_shaving_search");
-    }
-    if (num_workers_to_generate >= 24) {
-      names.push_back("probing_max_lp");
-    }
-    if (num_workers_to_generate >= 28) {
-      names.push_back("objective_lb_search_max_lp");
-    }
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
@@ -824,34 +813,40 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     result.push_back(params);
   }
 
+  // In interleaved mode, we run all of them
+  // TODO(user): Actually make sure the gap num_workers <-> num_heuristics is
+  // contained.
+  if (base_params.interleave_search()) return result;
+
+  const int num_non_shared_workers = std::max(
+      0, base_params.num_workers() - base_params.shared_tree_num_workers());
+
   if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
+    const auto heuristic_num_workers = [](int num_workers) {
+      DCHECK_GE(num_workers, 0);
+      if (num_workers == 1) return 1;
+      if (num_workers <= 4) return num_workers - 1;
+      if (num_workers <= 8) return num_workers - 2;
+      if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
+      return num_workers - (num_workers / 2 - 3);
+    };
+    const int target = std::min<int>(
+        heuristic_num_workers(num_non_shared_workers), result.size());
+
     // If there is an objective, the extra workers will use LNS.
     // Make sure we have at least min_num_lns_workers() of them.
-    const int target =
-        std::max(base_params.shared_tree_num_workers() > 0 ? 0 : 1,
-                 num_workers_to_generate - base_params.min_num_lns_workers());
-    if (!base_params.interleave_search() && result.size() > target) {
-      result.resize(target);
-    }
-  } else {
+    if (result.size() > target) result.resize(target);
+  } else {  // No objective.
     // If strategies that do not require a full worker are present, leave a
     // few workers for them.
     const bool need_extra_workers =
-        !base_params.interleave_search() &&
         (base_params.use_rins_lns() || base_params.use_feasibility_pump());
-    int target = num_workers_to_generate;
-    if (need_extra_workers && target > 4) {
-      if (target <= 8) {
-        target -= 1;
-      } else if (target == 9) {
-        target -= 2;
-      } else {
-        target -= 3;
-      }
-    }
-    if (!base_params.interleave_search() && result.size() > target) {
-      result.resize(target);
-    }
+    // Currently, we have 8 SAT search heuristics. So
+    const int num_extra_workers =
+        num_non_shared_workers <= 4 ? 0 : 1 + need_extra_workers;
+    const int target = std::min<int>(num_non_shared_workers - num_extra_workers,
+                                     result.size());
+    if (result.size() > target) result.resize(target);
   }
   return result;
 }

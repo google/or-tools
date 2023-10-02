@@ -28,6 +28,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -88,7 +89,11 @@ void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
     if (best == -1) break;
     num_generated_tasks[best]++;
+
+    WallTimer timer;
+    timer.Start();
     subsolvers[best]->GenerateTask(task_id++)();
+    subsolvers[best]->AddTaskDuration(timer.Get());
   }
 }
 

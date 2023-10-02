@@ -126,11 +126,6 @@ ABSL_FLAG(bool, cp_model_dump_models, false,
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
           "mapping_model}.pb.txt.");
 
-ABSL_FLAG(bool, cp_model_export_model, false,
-          "DEBUG ONLY. When set to true, SolveCpModel() will dump the model "
-          "proto of the original model format to "
-          "'FLAGS_cp_model_dump_prefix'{name}.pb.txt.");
-
 ABSL_FLAG(bool, cp_model_dump_text_proto, true,
           "DEBUG ONLY, dump models in text proto instead of binary proto.");
 
@@ -1537,6 +1532,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
       model->GetOrCreate<BinaryImplicationGraph>());
+  model->GetOrCreate<PrecedenceRelations>()->Build();
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
@@ -3051,18 +3047,6 @@ class LnsSolver : public SubSolver {
 
       if (!neighborhood.is_generated) return;
 
-      const int64_t num_calls = std::max(int64_t{1}, generator_->num_calls());
-      const double fully_solved_proportion =
-          static_cast<double>(generator_->num_fully_solved_calls()) /
-          static_cast<double>(num_calls);
-      std::string source_info =
-          neighborhood.source_info.empty() ? name() : neighborhood.source_info;
-      const std::string lns_info =
-          absl::StrFormat("%s(d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d)",
-                          source_info, data.difficulty, task_id,
-                          data.deterministic_limit, fully_solved_proportion,
-                          generator_->num_consecutive_non_improving_calls());
-
       SatParameters local_params(parameters_);
       local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
@@ -3072,8 +3056,35 @@ class LnsSolver : public SubSolver {
       local_params.set_symmetry_level(0);
       local_params.set_find_big_linear_overlap(false);
       local_params.set_solution_pool_size(1);  // Keep the best solution found.
-      local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
-      local_params.set_search_random_variable_pool_size(5);
+
+      // TODO(user): Tune these.
+      // TODO(user): This could be a good candidate for bandits.
+      const int64_t stall = generator_->num_consecutive_non_improving_calls();
+      const int search_index = stall < 10 ? 0 : task_id % 2;
+      absl::string_view search_info;
+      switch (search_index) {
+        case 0:
+          local_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+          local_params.set_linearization_level(0);
+          search_info = "auto_l0";
+          break;
+        default:
+          local_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+          local_params.set_search_random_variable_pool_size(5);
+          search_info = "folio_rnd";
+          break;
+      }
+
+      std::string source_info =
+          neighborhood.source_info.empty() ? name() : neighborhood.source_info;
+      const int64_t num_calls = std::max(int64_t{1}, generator_->num_calls());
+      const double fully_solved_proportion =
+          static_cast<double>(generator_->num_fully_solved_calls()) /
+          static_cast<double>(num_calls);
+      const std::string lns_info = absl::StrFormat(
+          "%s(d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
+          data.difficulty, task_id, data.deterministic_limit,
+          fully_solved_proportion, stall, search_info);
 
       Model local_model(lns_info);
       *(local_model.GetOrCreate<SatParameters>()) = local_params;
@@ -3432,7 +3443,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   int num_full_problem_solvers = 0;
   if (testing) {
     // Register something to find a first solution. Note that this is mainly
-    // used for experimentation, and using no LP ususally result in a faster
+    // used for experimentation, and using no_lp usually result in a faster
     // first solution.
     //
     // TODO(user): merge code with standard solver. Just make sure that all
@@ -3531,7 +3542,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   if (!model_proto.has_objective() || model_proto.objective().vars().empty() ||
       !params.interleave_search() || params.test_feasibility_jump()) {
     const int max_num_incomplete_solvers_running_before_the_first_solution =
-        params.num_workers() <= 8 ? 1 : (params.num_workers() <= 16 ? 2 : 3);
+        params.num_workers() <= 16 ? 1 : 2;
     const int num_reserved_incomplete_solvers =
         params.test_feasibility_jump()
             ? 0
@@ -3979,10 +3990,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     DumpModelProto(model_proto, "model");
-  }
-  if (absl::GetFlag(FLAGS_cp_model_export_model)) {
-    DumpModelProto(model_proto,
-                   model_proto.name().empty() ? "model" : model_proto.name());
   }
 #endif  // __PORTABLE_PLATFORM__
 

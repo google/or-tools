@@ -530,24 +530,32 @@ def SolveRcpsp(
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if not _USE_INTERVAL_MAKESPAN.value:
-        solver.parameters.exploit_all_precedences = True
-        solver.parameters.use_hard_precedences_in_cumulative = True
+
+    # Parse user specified parameters.
     if params:
         text_format.Parse(params, solver.parameters)
+
+    # Favor objective_shaving_search over objective_lb_search.
     if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:
         solver.parameters.ignore_subsolvers.append("objective_lb_search")
         solver.parameters.extra_subsolvers.append("objective_shaving_search")
+
+    # Experimental: Specify the fact that the objective is a makespan
+    solver.parameters.push_all_tasks_toward_start = True
+
+    # Enable logging in the main solve.
+
     if in_main_solve:
         solver.parameters.log_search_progress = True
+    #
     status = solver.Solve(model)
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         assignment = rcpsp_pb2.RcpspAssignment()
         for t, _ in enumerate(problem.tasks):
             if t in task_starts:
                 assignment.start_of_task.append(solver.Value(task_starts[t]))
-                for r in range(len(task_to_presence_literals[t])):
-                    if solver.BooleanValue(task_to_presence_literals[t][r]):
+                for r, recipe_literal in enumerate(task_to_presence_literals[t]):
+                    if solver.BooleanValue(recipe_literal):
                         assignment.selected_recipe_of_task.append(r)
                         break
             else:  # t is not an active task.

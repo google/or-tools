@@ -433,6 +433,8 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // not handle this correctly.
   bool InPropagationLoop() const { return integer_trail_->InPropagationLoop(); }
 
+  int CurrentDecisionLevel() const { return trail_->CurrentDecisionLevel(); }
+
  private:
   // Generic reason for a <= upper_bound, given that a = b + c in case the
   // current upper bound of a is not good enough.
