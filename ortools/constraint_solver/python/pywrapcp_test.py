@@ -477,9 +477,7 @@ class PyWrapCPTest(unittest.TestCase):
     def test_limit(self):
         solver = pywrapcp.Solver("test limit")
         # limit_proto = solver.DefaultSearchLimitParameters()
-        limit_proto = search_limit_pb2.RegularLimitParameters()
-        limit_proto.time = 10000
-        limit_proto.branches = 10
+        limit_proto = search_limit_pb2.RegularLimitParameters(time=10000, branches=10)
         print("limit proto: {}".format(limit_proto))
         limit = solver.Limit(limit_proto)
         print("limit: {}".format(limit))
@@ -498,6 +496,8 @@ class PyWrapCPTest(unittest.TestCase):
     def test_size_1_var(self):
         solver = pywrapcp.Solver("test_size_1_var")
         x = solver.IntVar([0], "x")
+        self.assertTrue(x.Contains(0))
+        self.assertFalse(x.Contains(1))
 
     def test_cumulative_api(self):
         solver = pywrapcp.Solver("Problem")
@@ -592,9 +592,9 @@ class CustomConstraint(pywrapcp.PyConstraint):
 
 
 class InitialPropagateDemon(pywrapcp.PyDemon):
-    def __init__(self, ct):
+    def __init__(self, constraint):
         super().__init__()
-        self._ct = ct
+        self._ct = constraint
 
     def Run(self, solver):
         self._ct.InitialPropagate()
@@ -665,8 +665,8 @@ class ConstraintTest(unittest.TestCase):
         print("test_member")
         solver = pywrapcp.Solver("test member")
         x = solver.IntVar(1, 10, "x")
-        ct = x.Member([1, 2, 3, 5])
-        print(ct)
+        constraint = x.Member([1, 2, 3, 5])
+        print(constraint)
 
     def test_sparse_var(self):
         print("test_sparse_var")
@@ -706,13 +706,6 @@ class ConstraintTest(unittest.TestCase):
         db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
         monitor = CustomSearchMonitor(solver, x)
         solver.Solve(db, monitor)
-
-    def test_demon(self):
-        print("test_demon")
-        solver = pywrapcp.Solver("test_demon")
-        x = solver.IntVar(1, 10, "x")
-        demon = CustomDemon(x)
-        demon.Run(solver)
 
     def test_constraint(self):
         print("test_constraint")
@@ -766,8 +759,13 @@ class ConstraintTest(unittest.TestCase):
 
 
 class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
+    def __init__(self):
+        super().__init__()
+        self._counter = 0
+
     def Next(self, solver):
-        print("In Next")
+        print("In Next", file=sys.stderr)
+        self._counter += 1
         return None
 
     def DebugString(self):
@@ -776,17 +774,18 @@ class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 class CustomDecision(pywrapcp.PyDecision):
     def __init__(self):
+        print("In CustomDecision ctor", file=sys.stderr)
         super().__init__()
         self._val = 1
-        print("Set value to", self._val)
+        print("Set value to", self._val, file=sys.stderr)
 
     def Apply(self, solver):
-        print("In Apply")
-        print("Expect value", self._val)
+        print("In CustomDecision.Apply()", file=sys.stderr)
+        print("Expect value", self._val, file=sys.stderr)
         solver.Fail()
 
     def Refute(self, solver):
-        print("In Refute")
+        print("In CustomDecision.Refute()", file=sys.stderr)
 
     def DebugString(self):
         return "CustomDecision"
@@ -796,8 +795,11 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
     def __init__(self):
         super().__init__()
         self.__done = False
+        self._counter = 0
 
     def Next(self, solver):
+        print("In CustomDecisionBuilderCustomDecision.Next()", file=sys.stderr)
+        self._counter += 1
         if not self.__done:
             self.__done = True
             self.__decision = CustomDecision()
@@ -814,26 +816,30 @@ class DecisionTest(unittest.TestCase):
         db = CustomDecisionBuilder()
         print(str(db))
         solver.Solve(db)
+        self.assertEqual(db._counter, 1)
 
     def test_custom_decision(self):
         solver = pywrapcp.Solver("test_custom_decision")
         db = CustomDecisionBuilderCustomDecision()
         print(str(db))
         solver.Solve(db)
+        self.assertEqual(db._counter, 2)
 
 
 class LocalSearchTest(unittest.TestCase):
     class OneVarLNS(pywrapcp.BaseLns):
         """One Var LNS."""
 
-        def __init__(self, vars):
-            super().__init__(vars)
+        def __init__(self, int_vars):
+            super().__init__(int_vars)
             self.__index = 0
 
         def InitFragments(self):
+            print("OneVarLNS.InitFragments()...", file=sys.stderr)
             self.__index = 0
 
         def NextFragment(self):
+            print("OneVarLNS.NextFragment()...", file=sys.stderr)
             if self.__index < self.Size():
                 self.AppendToFragment(self.__index)
                 self.__index += 1
@@ -850,6 +856,7 @@ class LocalSearchTest(unittest.TestCase):
             self.__up = False
 
         def OneNeighbor(self):
+            print("MoveOneVar.OneNeighbor()...", file=sys.stderr)
             current_value = self.OldValue(self.__index)
             if self.__up:
                 self.SetValue(self.__index, current_value + 1)
@@ -860,6 +867,7 @@ class LocalSearchTest(unittest.TestCase):
             return True
 
         def OnStart(self):
+            print("MoveOneVar.OnStart()...", file=sys.stderr)
             pass
 
         def IsIncremental(self):
@@ -868,8 +876,8 @@ class LocalSearchTest(unittest.TestCase):
     class SumFilter(pywrapcp.IntVarLocalSearchFilter):
         """Filter to speed up LS computation."""
 
-        def __init__(self, vars):
-            pywrapcp.IntVarLocalSearchFilter.__init__(self, vars)
+        def __init__(self, int_vars):
+            pywrapcp.IntVarLocalSearchFilter.__init__(self, int_vars)
             self.__sum = 0
 
         def OnSynchronize(self, delta):
@@ -905,48 +913,48 @@ class LocalSearchTest(unittest.TestCase):
         solver = pywrapcp.Solver("Solve")
         int_vars = [solver.IntVar(0, 4) for _ in range(4)]
         sum_var = solver.Sum(int_vars).Var()
-        obj = solver.Minimize(sum_var, 1)
-        db = solver.Phase(
+        objective = solver.Minimize(sum_var, 1)
+        inner_db = solver.Phase(
             int_vars, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE
         )
-        ls = None
         if local_search_type == 0:  # LNS
-            print("Large Neighborhood Search")
+            print("Large Neighborhood Search", file=sys.stderr)
             one_var_lns = self.OneVarLNS(int_vars)
-            ls_params = solver.LocalSearchPhaseParameters(sum_var, one_var_lns, db)
-            ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+            ls_params = solver.LocalSearchPhaseParameters(
+                sum_var, one_var_lns, inner_db
+            )
+            ls = solver.LocalSearchPhase(int_vars, inner_db, ls_params)
         elif local_search_type == 1:  # LS
-            print("Local Search")
+            print("Local Search", file=sys.stderr)
             move_one_var = self.MoveOneVar(int_vars)
-            ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db)
-            ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+            ls_params = solver.LocalSearchPhaseParameters(
+                sum_var, move_one_var, inner_db
+            )
+            ls = solver.LocalSearchPhase(int_vars, inner_db, ls_params)
         else:
-            print("Local Search with Filter")
+            print("Local Search with Filter", file=sys.stderr)
             move_one_var = self.MoveOneVar(int_vars)
             sum_filter = self.SumFilter(int_vars)
             filter_manager = pywrapcp.LocalSearchFilterManager([sum_filter])
             ls_params = solver.LocalSearchPhaseParameters(
-                sum_var, move_one_var, db, None, filter_manager
+                sum_var, move_one_var, inner_db, None, filter_manager
             )
-            ls = solver.LocalSearchPhase(int_vars, db, ls_params)
+            ls = solver.LocalSearchPhase(int_vars, inner_db, ls_params)
 
         collector = solver.LastSolutionCollector()
         collector.Add(int_vars)
         collector.AddObjective(sum_var)
-        log = solver.SearchLog(1000, obj)
-        solver.Solve(ls, [collector, obj, log])
-        print("Objective value = %d" % collector.ObjectiveValue(0))
+        log = solver.SearchLog(1000, objective)
+        solver.Solve(ls, [collector, objective, log])
+        print("Objective value = %d" % collector.ObjectiveValue(0), file=sys.stderr)
 
     def test_large_neighborhood_search(self):
-        pass
         self.solve(0)
 
     def test_local_search(self):
-        pass
         self.solve(1)
 
     def test_local_search_with_filter(self):
-        pass
         self.solve(2)
 
 
@@ -960,6 +968,40 @@ class MyDecisionBuilder(pywrapcp.PyDecisionBuilder):
         if not self.__var.Bound():
             decision = solver.AssignVariableValue(self.__var, self.__value)
             return decision
+
+
+class MyLns(pywrapcp.BaseLns):
+    def __init__(self, int_vars):
+        super().__init__(int_vars)
+        self.__current = 0
+
+    def InitFragments(self):
+        self.__current = 0
+
+    def NextFragment(self, fragment, values):
+        while self.__current < len(values):
+            if values[self.__current] == 1:
+                fragment.append(self.__current)
+                self.__current += 1
+                return True
+            else:
+                self.__current += 1
+
+
+class MyLnsNoValues(pywrapcp.BaseLns):
+    def __init__(self, int_vars):
+        super().__init__(int_vars)
+        self.__current = 0
+        self.__size = len(int_vars)
+
+    def InitFragments(self):
+        self.__current = 0
+
+    def NextFragment(self, fragment):
+        while self.__current < self.__size:
+            fragment.append(self.__current)
+            self.__current += 1
+            return True
 
 
 class MyDecisionBuilderWithRev(pywrapcp.PyDecisionBuilder):
@@ -1029,6 +1071,46 @@ class PyWrapCPSearchTest(unittest.TestCase):
             self.assertTrue(lns.NextNeighbor(delta, delta))
             self.assertLess(0, delta.Size())
             self.assertGreater(self.LNS_VARIABLES + 1, delta.Size())
+
+    def testCallbackLns(self):
+        solver = pywrapcp.Solver("testCallbackLNS")
+        x = [solver.BoolVar("x_%d" % i) for i in range(self.NUMBER_OF_VARIABLES)]
+        lns = MyLns(x)
+        solution = solver.Assignment()
+        solution.Add(x)
+        for v in x:
+            solution.SetValue(v, 1)
+        obj_var = solver.Sum(x)
+        objective = solver.Minimize(obj_var, 1)
+        collector = solver.LastSolutionCollector(solution)
+        inner_db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+
+        ls_params = solver.LocalSearchPhaseParameters(obj_var.Var(), lns, inner_db)
+        ls = solver.LocalSearchPhase(x, inner_db, ls_params)
+        log = solver.SearchLog(1000, objective)
+        solver.Solve(ls, [collector, objective, log])
+        for v in x:
+            self.assertEqual(0, collector.Solution(0).Value(v))
+
+    def testCallbackLnsNoValues(self):
+        solver = pywrapcp.Solver("testCallbackLnsNoValues")
+        x = [solver.BoolVar("x_%d" % i) for i in range(self.NUMBER_OF_VARIABLES)]
+        lns = MyLnsNoValues(x)
+        solution = solver.Assignment()
+        solution.Add(x)
+        for v in x:
+            solution.SetValue(v, 1)
+        obj_var = solver.Sum(x)
+        objective = solver.Minimize(obj_var, 1)
+        collector = solver.LastSolutionCollector(solution)
+        inner_db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+
+        ls_params = solver.LocalSearchPhaseParameters(obj_var.Var(), lns, inner_db)
+        db = solver.LocalSearchPhase(x, inner_db, ls_params)
+        log = solver.SearchLog(1000, objective)
+        solver.Solve(db, [collector, objective, log])
+        for v in x:
+            self.assertEqual(0, collector.Solution(0).Value(v))
 
     def testConcatenateOperators(self):
         solver = pywrapcp.Solver("testConcatenateOperators")
@@ -1253,7 +1335,7 @@ class IntVarLocalSearchOperatorTest(unittest.TestCase):
         solver = pywrapcp.Solver("Solve")
         int_vars = [solver.IntVar(0, 4) for _ in range(4)]
         ivlso = pywrapcp.IntVarLocalSearchOperator(int_vars)
-        self.assertTrue(ivlso != None)
+        self.assertIsNotNone(ivlso)
 
     def test_api(self):
         # print(f"{dir(pywrapcp.IntVarLocalSearchOperator)}")
