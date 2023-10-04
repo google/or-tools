@@ -272,26 +272,6 @@ cc_library(
 )
 
 cc_library(
-    name = "routing_flags",
-    srcs = [
-        "routing_flags.cc",
-    ],
-    hdrs = ["routing_flags.h"],
-    deps = [
-        ":cp",
-        ":routing_enums_cc_proto",
-        ":routing_parameters",
-        ":routing_parameters_cc_proto",
-        "//ortools/base",
-        "//ortools/base:map_util",
-        "//ortools/base:protoutil",
-        "//ortools/util:optional_boolean_cc_proto",
-        "@com_google_absl//absl/time",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
     name = "routing_types",
     hdrs = ["routing_types.h"],
     deps = [

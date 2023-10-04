@@ -17,7 +17,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
     ],
 )
@@ -28,7 +27,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
     ],
 )
@@ -40,7 +38,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
         "@com_google_absl//absl/strings",
     ],
@@ -52,7 +49,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
     ],
 )
@@ -63,7 +59,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
         "@com_google_absl//absl/strings",
     ],
@@ -75,7 +70,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/routing:cvrptw_lib",
     ],
 )

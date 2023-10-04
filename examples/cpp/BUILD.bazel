@@ -601,7 +601,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/util:random_engine",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
@@ -614,7 +613,6 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/util:random_engine",
     ],
 )
@@ -626,7 +624,6 @@ cc_binary(
         ":cvrptw_lib",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
     ],
 )
 
@@ -637,7 +634,6 @@ cc_binary(
         ":cvrptw_lib",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
     ],
 )
 
@@ -649,7 +645,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
-        "//ortools/constraint_solver:routing_flags",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -661,7 +656,6 @@ cc_binary(
         ":cvrptw_lib",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
     ],
 )
 
@@ -672,7 +666,6 @@ cc_binary(
         ":cvrptw_lib",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -684,7 +677,6 @@ cc_binary(
         ":cvrptw_lib",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
     ],
 )
 
@@ -696,7 +688,6 @@ cc_binary(
         "//ortools/base:file",
         "//ortools/base:mathutil",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",

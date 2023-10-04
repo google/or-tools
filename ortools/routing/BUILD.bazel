@@ -291,7 +291,6 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_flags",
         "//ortools/util:random_engine",
     ],
 )

@@ -22,7 +22,6 @@ def code_sample_cc(name):
             "//ortools/constraint_solver:cp",
             "//ortools/constraint_solver:routing",
             "//ortools/constraint_solver:routing_enums_cc_proto",
-            "//ortools/constraint_solver:routing_flags",
         ],
     )
 
@@ -36,6 +35,5 @@ def code_sample_cc(name):
             "//ortools/constraint_solver:cp",
             "//ortools/constraint_solver:routing",
             "//ortools/constraint_solver:routing_enums_cc_proto",
-            "//ortools/constraint_solver:routing_flags",
         ],
     )
