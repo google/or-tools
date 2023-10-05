@@ -272,7 +272,7 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-for %%v in (8 9 10 11) do (
+for %%v in (8 9 10 11 12) do (
   title Build Python 3.%%v
   :: Check Python
   which.exe C:\python3%%v-64\python.exe || exit 1
@@ -312,7 +312,7 @@ del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
 del /s /f /q temp_java
 rmdir /s /q temp_java
-for %%v in (8 9 10 11) do (
+for %%v in (8 9 10 11 12) do (
   del /s /f /q temp_python3%%v
   rmdir /s /q temp_python3%%v
 )
