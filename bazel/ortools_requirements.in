@@ -1,7 +1,7 @@
 # OR-Tools code dependencies
 absl-py==1.4.0
 numpy==1.25.2
-protobuf==4.24.0
+protobuf==4.24.4
 scipy==1.11.1
 
 # OR-Tools build dependencies
