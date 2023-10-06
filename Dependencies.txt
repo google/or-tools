@@ -7,4 +7,5 @@ Osi=0.108.7
 CoinUtils=2.11.6
 Eigen=3.4.0
 Re2=2023-08-01
+HiGHS=v1.6.0
 Scip=v803
