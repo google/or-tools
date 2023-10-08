@@ -58,6 +58,8 @@ class IntervalsRepository {
   explicit IntervalsRepository(Model* model)
       : model_(model),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        sat_solver_(model->GetOrCreate<SatSolver>()),
+        implications_(model->GetOrCreate<BinaryImplicationGraph>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
 
   // This type is neither copyable nor movable.
@@ -78,8 +80,8 @@ class IntervalsRepository {
                                   LiteralIndex is_present);
   IntervalVariable CreateInterval(AffineExpression start, AffineExpression end,
                                   AffineExpression size,
-                                  LiteralIndex is_present,
-                                  bool add_linear_relation);
+                                  LiteralIndex is_present = kNoLiteralIndex,
+                                  bool add_linear_relation = false);
 
   // Returns whether or not a interval is optional and the associated literal.
   bool IsOptional(IntervalVariable i) const {
@@ -152,8 +154,13 @@ class IntervalsRepository {
 
   // Returns a SchedulingConstraintHelper corresponding to the given variables.
   // Note that the order of interval in the helper will be the same.
+  //
+  // It is possible to indicate that this correspond to a disjunctive constraint
+  // by setting the Boolean to true. This is used by our scheduling heuristic
+  // based on precedences.
   SchedulingConstraintHelper* GetOrCreateHelper(
-      const std::vector<IntervalVariable>& variables);
+      const std::vector<IntervalVariable>& variables,
+      bool register_as_disjunctive_helper = false);
 
   // Returns a SchedulingDemandHelper corresponding to the given helper and
   // demands. Note that the order of interval in the helper and the order of
@@ -165,10 +172,32 @@ class IntervalsRepository {
   // Calls InitDecomposedEnergies on all SchedulingDemandHelper created.
   void InitAllDecomposedEnergies();
 
+  // Assuming a and b cannot overlap if they are present, this create a new
+  // literal such that:
+  // - literal & presences => a is before b.
+  // - not(literal) & presences => b is before a.
+  // - not present => literal @ true for disallowing multiple solutions.
+  //
+  // If such literal already exists this returns it.
+  void CreateDisjunctivePrecedenceLiteral(IntervalVariable a,
+                                          IntervalVariable b);
+
+  // Returns the precedence literal from GetOrCreateDisjunctivePrecedence() if
+  // it exists or kNoLiteralIndex otherwise.
+  LiteralIndex GetPrecedenceLiteral(IntervalVariable a,
+                                    IntervalVariable b) const;
+
+  const std::vector<SchedulingConstraintHelper*>& AllDisjunctiveHelpers()
+      const {
+    return disjunctive_helpers_;
+  }
+
  private:
   // External classes needed.
   Model* model_;
   const VariablesAssignment& assignment_;
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
@@ -189,6 +218,13 @@ class IntervalsRepository {
       std::pair<SchedulingConstraintHelper*, std::vector<AffineExpression>>,
       SchedulingDemandHelper*>
       demand_helper_repository_;
+
+  // Disjunctive precedences.
+  absl::flat_hash_map<std::pair<IntervalVariable, IntervalVariable>, Literal>
+      disjunctive_precedences_;
+
+  // Disjunctive helpers_.
+  std::vector<SchedulingConstraintHelper*> disjunctive_helpers_;
 };
 
 // An helper struct to sort task by time. This is used by the
@@ -304,6 +340,14 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
+  // Return a value so that End(a) + dist <= Start(b).
+  // Returns kMinInterValue if we don't have any such relation.
+  IntegerValue GetCurrentMinDistanceBetweenTasks(
+      int a, int b, bool add_reason_if_after = false);
+
+  // Add a new level zero precedence between two tasks.
+  void AddLevelZeroPrecedence(int a, int b);
+
   // Return the minimum overlap of interval i with the time window [start..end].
   //
   // Note: this is different from the mandatory part of an interval.
@@ -390,6 +434,9 @@ class SchedulingConstraintHelper : public PropagatorInterface,
                                                             IntegerLiteral lit);
 
   // Returns the underlying affine expressions.
+  const std::vector<IntervalVariable>& IntervalVariables() const {
+    return interval_variables_;
+  }
   const std::vector<AffineExpression>& Starts() const { return starts_; }
   const std::vector<AffineExpression>& Ends() const { return ends_; }
   const std::vector<AffineExpression>& Sizes() const { return sizes_; }
@@ -458,6 +505,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  PrecedenceRelations* precedence_relations_;
   PrecedencesPropagator* precedences_;
 
   // The current direction of time, true for forward, false for backward.
@@ -465,6 +513,7 @@ class SchedulingConstraintHelper : public PropagatorInterface,
 
   // All the underlying variables of the tasks.
   // The vectors are indexed by the task index t.
+  std::vector<IntervalVariable> interval_variables_;
   std::vector<AffineExpression> starts_;
   std::vector<AffineExpression> ends_;
   std::vector<AffineExpression> sizes_;

@@ -755,8 +755,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("bool_core num_cores:%d [%s] assumptions:%u "
-                          "depth:%d fixed_bools:%d/%d",
+          absl::StrFormat("bool_core (num_cores=%d [%s] a=%u d=%d fixed=%d/%d)",
                           iter, previous_core_info, encoder.nodes().size(),
                           max_depth, num_fixed, num_bools),
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
@@ -993,8 +992,8 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   if (overall_lb_increase > 0) {
     // Report new bounds right away with extra information.
     model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-        absl::StrFormat("am1_presolve num_literals:%d num_am1:%d "
-                        "increase:%lld work_done:%lld",
+        absl::StrFormat("am1_presolve (num_literals=%d num_am1=%d "
+                        "increase=%lld work_done=%lld)",
                         (int)candidates.size(), num_at_most_ones,
                         overall_lb_increase.value(), implications_->WorkDone()),
         IntegerValue(offset->value()),

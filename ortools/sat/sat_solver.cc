@@ -158,6 +158,12 @@ bool SatSolver::SetModelUnsat() {
 
 bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
   if (model_is_unsat_) return false;
+
+  // Let filter clauses if we are at level zero
+  if (trail_->CurrentDecisionLevel() == 0) {
+    return AddProblemClause(literals, /*is_safe=*/false);
+  }
+
   const int index = trail_->Index();
   if (literals.empty()) return SetModelUnsat();
   if (literals.size() == 1) return AddUnitClause(literals[0]);
@@ -165,8 +171,7 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
     // TODO(user): We generate in some corner cases clauses with
     // literals[0].Variable() == literals[1].Variable(). Avoid doing that and
     // adding such binary clauses to the graph?
-    if (!binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
-                                                                literals[1])) {
+    if (!binary_implication_graph_->AddBinaryClause(literals[0], literals[1])) {
       CHECK_EQ(CurrentDecisionLevel(), 0);
       return SetModelUnsat();
     }
@@ -204,15 +209,18 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
 bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
                                  bool is_safe) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
 
   // Filter already assigned literals.
-  literals_scratchpad_.clear();
-  for (const Literal l : literals) {
-    if (trail_->Assignment().LiteralIsTrue(l)) return true;
-    if (trail_->Assignment().LiteralIsFalse(l)) continue;
-    literals_scratchpad_.push_back(l);
+  if (CurrentDecisionLevel() == 0) {
+    literals_scratchpad_.clear();
+    for (const Literal l : literals) {
+      if (trail_->Assignment().LiteralIsTrue(l)) return true;
+      if (trail_->Assignment().LiteralIsFalse(l)) continue;
+      literals_scratchpad_.push_back(l);
+    }
+  } else {
+    literals_scratchpad_.assign(literals.begin(), literals.end());
   }
 
   if (!is_safe) {
@@ -238,8 +246,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
 
 bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
-  if (DEBUG_MODE) {
-    CHECK_EQ(CurrentDecisionLevel(), 0);
+  if (DEBUG_MODE && CurrentDecisionLevel() == 0) {
     for (const Literal l : literals) {
       CHECK(!trail_->Assignment().LiteralIsAssigned(l));
     }
@@ -420,8 +427,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (shared_binary_clauses_callback_ != nullptr) {
       shared_binary_clauses_callback_(literals[0], literals[1]);
     }
-    CHECK(binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
-                                                                 literals[1]));
+    CHECK(binary_implication_graph_->AddBinaryClause(literals[0], literals[1]));
     return /*lbd=*/2;
   }
 
@@ -502,7 +508,10 @@ void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
     shared_binary_clauses_callback_(a, b);
   }
 
-  binary_implication_graph_->AddBinaryClause(a, b);
+  if (!binary_implication_graph_->AddBinaryClause(a, b)) {
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    SetModelUnsat();
+  }
 }
 
 bool SatSolver::ClauseIsValidUnderDebugAssignment(

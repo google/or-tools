@@ -39,6 +39,8 @@ code_sample_cc_py(name = "cp_is_fun_sat")
 
 code_sample_cc_py(name = "cp_sat_example")
 
+code_sample_py(name = "cumulative_variable_profile_sample_sat")
+
 code_sample_cc_py(name = "earliness_tardiness_cost_sample_sat")
 
 code_sample_cc_py(name = "interval_sample_sat")

@@ -706,7 +706,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
   if (level > integer_search_levels_.size()) {
     integer_search_levels_.push_back(integer_trail_.size());
     reason_decision_levels_.push_back(literals_reason_starts_.size());
-    CHECK_EQ(trail->CurrentDecisionLevel(), integer_search_levels_.size());
+    CHECK_EQ(level, integer_search_levels_.size());
   }
 
   // This is required because when loading a model it is possible that we add

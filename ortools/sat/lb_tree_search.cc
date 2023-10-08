@@ -196,9 +196,9 @@ void LbTreeSearch::MarkSubtreeAsDeleted(NodeIndex root) {
 
 std::string LbTreeSearch::SmallProgressString() const {
   return absl::StrCat(
-      "#nodes:", num_nodes_in_tree_, "/", nodes_.size(),
-      " #rc:", num_rc_detected_, " #decisions:", num_decisions_taken_,
-      " #@root:", num_back_to_root_node_, " #restarts:", num_full_restarts_);
+      "nodes=", num_nodes_in_tree_, "/", nodes_.size(),
+      " rc=", num_rc_detected_, " decisions=", num_decisions_taken_,
+      " @root=", num_back_to_root_node_, " restarts=", num_full_restarts_);
 }
 
 SatSolver::Status LbTreeSearch::Search(
@@ -296,8 +296,8 @@ SatSolver::Status LbTreeSearch::Search(
       const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
       if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search ", SmallProgressString()), bound,
-            integer_trail_->LevelZeroUpperBound(objective_var_));
+            absl::StrCat("lb_tree_search (", SmallProgressString(), ") "),
+            bound, integer_trail_->LevelZeroUpperBound(objective_var_));
         current_objective_lb_ = bound;
         if (VLOG_IS_ON(3)) DebugDisplayTree(current_branch_[0]);
       }
@@ -329,7 +329,8 @@ SatSolver::Status LbTreeSearch::Search(
     if (num_decisions_taken_ >= num_decisions_taken_at_last_restart_ +
                                     kNumDecisionsBeforeInitialRestarts &&
         num_full_restarts_ < kMaxNumInitialRestarts) {
-      VLOG(2) << "lb_tree_search initial_restart " << SmallProgressString();
+      VLOG(2) << "lb_tree_search (initial_restart " << SmallProgressString()
+              << ")";
       if (!FullRestart()) return sat_solver_->UnsatStatus();
     }
 
@@ -491,8 +492,8 @@ SatSolver::Status LbTreeSearch::Search(
       }
 
       if (VLOG_IS_ON(1)) {
-        shared_response_->LogMessageWithThrottling("TreeS",
-                                                   SmallProgressString());
+        shared_response_->LogMessageWithThrottling(
+            "TreeS", absl::StrCat(" (", SmallProgressString(), ")"));
       }
 
       if (n < nodes_.size()) {

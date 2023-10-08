@@ -655,6 +655,155 @@ A cumulative constraint takes a list of intervals, and a list of demands, and a
 capacity. It enforces that at any time point, the sum of demands of tasks active
 at that time point is less than a given capacity.
 
+Modeling a varying profile can be done using fixed (interval, demand) to occupy
+the capacity between the actual profile and it max capacity.
+
+### Python code
+
+```python
+#!/usr/bin/env python3
+"""Solve a simple scheduling problem with a variable work load."""
+import io
+
+import pandas as pd
+
+from ortools.sat.python import cp_model
+
+
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Creates the two dataframes that describes the model."""
+
+    capacity_str: str = """
+  start_hour  capacity
+     0            0
+     2            0
+     4            1
+     6            3
+     8            6
+    10           12
+    12            8
+    14           12
+    16           10
+    18            4
+    20            2
+    22            0
+  """
+
+    tasks_str: str = """
+  name  duration load  priority
+   t1      60      3      2
+   t2     180      2      1
+   t3     240      5      3
+   t4      90      4      2
+   t5     120      3      1
+   t6     300      3      3
+   t7     120      1      2
+   t8     100      5      2
+   t9     110      2      1
+   t10    300      5      3
+   t11     90      4      2
+   t12    120      3      1
+   t13    250      3      3
+   t14    120      1      2
+   t15     40      5      3
+   t16     70      4      2
+   t17     90      8      1
+   t18     40      3      3
+   t19    120      5      2
+   t20     60      3      2
+   t21    180      2      1
+   t22    240      5      3
+   t23     90      4      2
+   t24    120      3      1
+   t25    300      3      3
+   t26    120      1      2
+   t27    100      5      2
+   t28    110      2      1
+   t29    300      5      3
+   t30     90      4      2
+  """
+
+    capacity_df = pd.read_table(io.StringIO(capacity_str), sep=r"\s+")
+    tasks_df = pd.read_table(io.StringIO(tasks_str), index_col=0, sep=r"\s+")
+    return capacity_df, tasks_df
+
+
+def main():
+    """Create the model and solves it."""
+    capacity_df, tasks_df = create_data_model()
+
+    # Create the model.
+    model = cp_model.CpModel()
+
+    # Get the max capacity from the capacity dataframe.
+    max_capacity = capacity_df.capacity.max()
+    print(f"Max capacity = {max_capacity}")
+    print(f"#tasks = {len(tasks_df)}")
+
+    minutes_per_period: int = 120
+    horizon: int = 24 * 60
+
+    # Variables
+    starts = model.NewIntVarSeries(
+        name="starts", lower_bounds=0, upper_bounds=horizon, index=tasks_df.index
+    )
+    performed = model.NewBoolVarSeries(name="performed", index=tasks_df.index)
+
+    intervals = model.NewOptionalFixedSizeIntervalVarSeries(
+        name="intervals",
+        index=tasks_df.index,
+        starts=starts,
+        sizes=tasks_df.duration,
+        performed_literals=performed,
+    )
+
+    # Set up the profile. We use fixed (intervals, demands) to fill in the space
+    # between the actual load profile and the max capacity.
+    time_period_intervals = model.NewFixedSizeIntervalVarSeries(
+        name="time_period_intervals",
+        index=capacity_df.index,
+        starts=capacity_df.start_hour * minutes_per_period,
+        sizes=minutes_per_period,
+    )
+    time_period_heights = max_capacity - capacity_df.capacity
+
+    # Cumulative constraint.
+    model.AddCumulative(
+        intervals.to_list() + time_period_intervals.to_list(),
+        tasks_df.load.to_list() + time_period_heights.to_list(),
+        max_capacity,
+    )
+
+    # Objective: maximize the value of performed intervals.
+    # 1 is the max priority.
+    max_priority = max(tasks_df.priority)
+    model.Maximize(sum(performed * (max_priority + 1 - tasks_df.priority)))
+
+    # Create the solver and solve the model.
+    solver = cp_model.CpSolver()
+    solver.parameters.log_search_progress = True
+    solver.parameters.num_workers = 8
+    solver.parameters.max_time_in_seconds = 30.0
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        start_values = solver.Values(starts)
+        performed_values = solver.BooleanValues(performed)
+        for task in tasks_df.index:
+            if performed_values[task]:
+                print(f"task {task} starts at {start_values[task]}")
+            else:
+                print(f"task {task} is not performed")
+    elif status == cp_model.INFEASIBLE:
+        print("The problem is infeasible")
+    else:
+        print("Something is wrong, check the status and the log of the solve")
+
+
+if __name__ == "__main__":
+    main()
+```
+
 ## Alternative resources for one interval
 
 ## Ranking tasks in a disjunctive resource

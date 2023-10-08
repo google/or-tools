@@ -226,6 +226,12 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model);
 std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     Model* model);
 
+// Compared to SchedulingSearchHeuristic() this one take decision on precedences
+// between tasks. Lazily creating a precedence Boolean for the task in
+// disjunction.
+std::function<BooleanOrIntegerLiteral()> SchedulingPrecedenceSearchHeuristic(
+    Model* model);
+
 // Returns true if the number of variables in the linearized part represent
 // a large enough proportion of all the problem variables.
 bool LinearizedPartIsLarge(Model* model);

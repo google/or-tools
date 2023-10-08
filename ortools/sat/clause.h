@@ -488,17 +488,18 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).
-  void AddBinaryClause(Literal a, Literal b);
-  void AddImplication(Literal a, Literal b) {
+  //
+  // Preconditions:
+  // - If we are at root node, then none of the literal should be assigned.
+  //   This is Checked and is there to track inefficiency as we do not need a
+  //   clause in this case.
+  // - If we are at a positive decision level, we will propagate something if
+  //   we can. However, if both literal are false, we will just return false
+  //   and do nothing. In all other case, we will return true.
+  bool AddBinaryClause(Literal a, Literal b);
+  bool AddImplication(Literal a, Literal b) {
     return AddBinaryClause(a.Negated(), b);
   }
-
-  // Same as AddBinaryClause() but enqueues a possible unit propagation. Note
-  // that if the binary clause propagates, it must do so at the last level, this
-  // is DCHECKed.
-  //
-  // Return false and do nothing if both a and b are currently false.
-  bool AddBinaryClauseDuringSearch(Literal a, Literal b);
 
   // An at most one constraint of size n is a compact way to encode n * (n - 1)
   // implications. This must only be called at level zero.

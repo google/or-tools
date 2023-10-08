@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple assignment problem."""
+"""Solve a simple assignment problem with CP-SAT."""
 # [START program]
 # [START import]
 import io

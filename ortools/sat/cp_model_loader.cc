@@ -1535,16 +1535,7 @@ void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  auto* params = m->GetOrCreate<SatParameters>();
-  const int num_intervals = ct.no_overlap().intervals_size();
-  if (num_intervals <=
-          params->max_size_to_create_precedence_literals_in_disjunctive() &&
-      params->use_strong_propagation_in_disjunctive()) {
-    AddDisjunctiveWithBooleanPrecedences(
-        mapping->Intervals(ct.no_overlap().intervals()), m);
-  } else {
-    m->Add(Disjunctive(mapping->Intervals(ct.no_overlap().intervals())));
-  }
+  AddDisjunctive(mapping->Intervals(ct.no_overlap().intervals()), m);
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {

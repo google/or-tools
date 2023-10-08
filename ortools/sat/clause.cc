@@ -504,11 +504,16 @@ void BinaryImplicationGraph::Resize(int num_variables) {
 }
 
 // TODO(user): Not all of the solver knows about representative literal, do
-// use them here and in AddBinaryClauseDuringSearch() to maintains invariant?
-// Explore this when we start cleaning our clauses using equivalence during
-// search. We can easily do it for every conflict we learn instead of here.
-void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
+// use them here to maintains invariant? Explore this when we start cleaning our
+// clauses using equivalence during search. We can easily do it for every
+// conflict we learn instead of here.
+bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
+
+  // Tricky: If this is the first clause, the propagator will be added and
+  // assumed to be in a "propagated" state. This makes sure this is the case.
+  if (IsEmpty()) propagation_trail_index_ = trail_->Index();
+
   if (drat_proof_handler_ != nullptr) {
     // TODO(user): Like this we will duplicate all binary clause from the
     // problem. However this leads to a simpler API (since we don't need to
@@ -516,38 +521,34 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
     // proof for testing anyway.
     drat_proof_handler_->AddClause({a, b});
   }
+
   estimated_sizes_[a.NegatedIndex()]++;
   estimated_sizes_[b.NegatedIndex()]++;
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
   is_dag_ = false;
   num_implications_ += 2;
-}
-
-bool BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b) {
-  SCOPED_TIME_STAT(&stats_);
-
-  // Tricky: If this is the first clause, the propagator will be added and
-  // assumed to be in a "propagated" state. This makes sure this is the case.
-  if (IsEmpty()) propagation_trail_index_ = trail_->Index();
-
-  AddBinaryClause(a, b);
 
   const auto& assignment = trail_->Assignment();
-  if (assignment.LiteralIsFalse(a)) {
-    if (assignment.LiteralIsAssigned(b)) {
-      if (assignment.LiteralIsFalse(b)) return false;
-    } else {
-      reasons_[trail_->Index()] = a;
-      trail_->Enqueue(b, propagator_id_);
-    }
-  } else if (assignment.LiteralIsFalse(b)) {
-    if (!assignment.LiteralIsAssigned(a)) {
-      reasons_[trail_->Index()] = b;
-      trail_->Enqueue(a, propagator_id_);
+  if (trail_->CurrentDecisionLevel() == 0) {
+    CHECK(!assignment.LiteralIsAssigned(a));
+    CHECK(!assignment.LiteralIsAssigned(b));
+  } else {
+    if (assignment.LiteralIsFalse(a)) {
+      if (assignment.LiteralIsAssigned(b)) {
+        if (assignment.LiteralIsFalse(b)) return false;
+      } else {
+        reasons_[trail_->Index()] = a;
+        trail_->Enqueue(b, propagator_id_);
+      }
+    } else if (assignment.LiteralIsFalse(b)) {
+      if (!assignment.LiteralIsAssigned(a)) {
+        reasons_[trail_->Index()] = b;
+        trail_->Enqueue(a, propagator_id_);
+      }
     }
   }
-  is_dag_ = false;
+
   return true;
 }
 

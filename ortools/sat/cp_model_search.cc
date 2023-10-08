@@ -342,7 +342,17 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
 std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model) {
   if (ModelHasSchedulingConstraints(cp_model_proto)) {
-    return SchedulingSearchHeuristic(model);
+    if (model->GetOrCreate<SatParameters>()
+            ->use_dynamic_precedence_in_disjunctive()) {
+      // We combine the two, because the precedence only work for disjunctive,
+      // and not if we only have cumulative constraints.
+      return SequentialSearch({SchedulingPrecedenceSearchHeuristic(model),
+                               SchedulingSearchHeuristic(model)});
+    } else {
+      // Precedence based model seems better, but the other one lead to faster
+      // solution.
+      return SchedulingSearchHeuristic(model);
+    }
   }
   return PseudoCost(model);
 }
@@ -616,6 +626,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["auto"] = new_params;
 
     new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+    new_params.set_use_dynamic_precedence_in_disjunctive(false);
     strategies["fixed"] = new_params;
   }
 

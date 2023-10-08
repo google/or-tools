@@ -81,11 +81,120 @@ IntervalVariable IntervalsRepository::CreateInterval(AffineExpression start,
   return i;
 }
 
+void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
+    IntervalVariable a, IntervalVariable b) {
+  const auto it = disjunctive_precedences_.find({a, b});
+  if (it != disjunctive_precedences_.end()) return;
+
+  std::vector<Literal> enforcement_literals;
+  if (IsOptional(a)) enforcement_literals.push_back(PresenceLiteral(a));
+  if (IsOptional(b)) enforcement_literals.push_back(PresenceLiteral(b));
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    int new_size = 0;
+    for (const Literal l : enforcement_literals) {
+      // We can ignore always absent interval, and skip the literal of the
+      // interval that are now always present.
+      if (assignment_.LiteralIsTrue(l)) continue;
+      if (assignment_.LiteralIsFalse(l)) return;
+      enforcement_literals[new_size++] = l;
+    }
+    enforcement_literals.resize(new_size);
+  }
+
+  const AffineExpression start_a = Start(a);
+  const AffineExpression end_a = End(a);
+  const AffineExpression start_b = Start(b);
+  const AffineExpression end_b = End(b);
+
+  // task_a is always before task_b ?
+  if (integer_trail_->UpperBound(start_a) < integer_trail_->LowerBound(end_b)) {
+    AddConditionalAffinePrecedence(enforcement_literals, end_a, start_b,
+                                   model_);
+    return;
+  }
+
+  // task_b is always before task_a ?
+  if (integer_trail_->UpperBound(start_b) < integer_trail_->LowerBound(end_a)) {
+    AddConditionalAffinePrecedence(enforcement_literals, end_b, start_a,
+                                   model_);
+    return;
+  }
+
+  // Create a new literal.
+  const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
+  const Literal a_before_b = Literal(boolean_var, true);
+  disjunctive_precedences_.insert({{a, b}, a_before_b});
+  disjunctive_precedences_.insert({{b, a}, a_before_b.Negated()});
+
+  enforcement_literals.push_back(a_before_b);
+  AddConditionalAffinePrecedence(enforcement_literals, end_a, start_b, model_);
+  enforcement_literals.pop_back();
+
+  enforcement_literals.push_back(a_before_b.Negated());
+  AddConditionalAffinePrecedence(enforcement_literals, end_b, start_a, model_);
+  enforcement_literals.pop_back();
+
+  // Force the value of boolean_var in case the precedence is not active. This
+  // avoids duplicate solutions when enumerating all possible solutions.
+  for (const Literal l : enforcement_literals) {
+    implications_->AddBinaryClause(l, a_before_b);
+  }
+}
+
+LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
+    IntervalVariable a, IntervalVariable b) const {
+  const auto it = disjunctive_precedences_.find({a, b});
+  if (it != disjunctive_precedences_.end()) return it->second.Index();
+  return kNoLiteralIndex;
+}
+
+// TODO(user): Ideally we should sort the vector of variables, but right now
+// we cannot since we often use this with a parallel vector of demands. So this
+// "sorting" should happen in the presolver so we can share as much as possible.
+SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
+    const std::vector<IntervalVariable>& variables,
+    bool register_as_disjunctive_helper) {
+  const auto it = helper_repository_.find(variables);
+  if (it != helper_repository_.end()) return it->second;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(variables, model_);
+  helper_repository_[variables] = helper;
+  model_->TakeOwnership(helper);
+  if (register_as_disjunctive_helper) {
+    disjunctive_helpers_.push_back(helper);
+  }
+  return helper;
+}
+
+SchedulingDemandHelper* IntervalsRepository::GetOrCreateDemandHelper(
+    SchedulingConstraintHelper* helper,
+    const std::vector<AffineExpression>& demands) {
+  const std::pair<SchedulingConstraintHelper*, std::vector<AffineExpression>>
+      key = {helper, demands};
+  const auto it = demand_helper_repository_.find(key);
+  if (it != demand_helper_repository_.end()) return it->second;
+
+  SchedulingDemandHelper* demand_helper =
+      new SchedulingDemandHelper(demands, helper, model_);
+  model_->TakeOwnership(demand_helper);
+  demand_helper_repository_[key] = demand_helper;
+  return demand_helper;
+}
+
+void IntervalsRepository::InitAllDecomposedEnergies() {
+  for (const auto& it : demand_helper_repository_) {
+    it.second->InitDecomposedEnergies();
+  }
+}
+
 SchedulingConstraintHelper::SchedulingConstraintHelper(
     const std::vector<IntervalVariable>& tasks, Model* model)
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()) {
+      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
+      interval_variables_(tasks) {
   starts_.clear();
   ends_.clear();
   minus_ends_.clear();
@@ -114,46 +223,11 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   }
 }
 
-// TODO(user): Ideally we should sort the vector of variables, but right now
-// we cannot since we often use this with a parallel vector of demands. So this
-// "sorting" should happen in the presolver so we can share as much as possible.
-SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
-    const std::vector<IntervalVariable>& variables) {
-  const auto it = helper_repository_.find(variables);
-  if (it != helper_repository_.end()) return it->second;
-
-  SchedulingConstraintHelper* helper =
-      new SchedulingConstraintHelper(variables, model_);
-  helper_repository_[variables] = helper;
-  model_->TakeOwnership(helper);
-  return helper;
-}
-
-SchedulingDemandHelper* IntervalsRepository::GetOrCreateDemandHelper(
-    SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands) {
-  const std::pair<SchedulingConstraintHelper*, std::vector<AffineExpression>>
-      key = {helper, demands};
-  const auto it = demand_helper_repository_.find(key);
-  if (it != demand_helper_repository_.end()) return it->second;
-
-  SchedulingDemandHelper* demand_helper =
-      new SchedulingDemandHelper(demands, helper, model_);
-  model_->TakeOwnership(demand_helper);
-  demand_helper_repository_[key] = demand_helper;
-  return demand_helper;
-}
-
-void IntervalsRepository::InitAllDecomposedEnergies() {
-  for (const auto& it : demand_helper_repository_) {
-    it.second->InitDecomposedEnergies();
-  }
-}
-
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
                                                        Model* model)
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       precedences_(model->GetOrCreate<PrecedencesPropagator>()) {
   starts_.resize(num_tasks);
   CHECK_EQ(NumTasks(), num_tasks);
@@ -278,6 +352,7 @@ bool SchedulingConstraintHelper::ResetFromSubset(
   current_time_direction_ = other.current_time_direction_;
 
   const int num_tasks = tasks.size();
+  interval_variables_.resize(num_tasks);
   starts_.resize(num_tasks);
   ends_.resize(num_tasks);
   minus_ends_.resize(num_tasks);
@@ -286,6 +361,7 @@ bool SchedulingConstraintHelper::ResetFromSubset(
   reason_for_presence_.resize(num_tasks);
   for (int i = 0; i < num_tasks; ++i) {
     const int t = tasks[i];
+    interval_variables_[i] = other.interval_variables_[t];
     starts_[i] = other.starts_[t];
     ends_[i] = other.ends_[t];
     minus_ends_[i] = other.minus_ends_[t];
@@ -368,6 +444,51 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   }
   recompute_all_cache_ = false;
   return true;
+}
+
+// TODO(user): be more precise when we know a and b are in disjunction.
+// we really just need start_b > start_a, or even >= if duration is non-zero.
+IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
+    int a, int b, bool add_reason_if_after) {
+  const AffineExpression before = ends_[a];
+  const AffineExpression after = starts_[b];
+  if (before.var == kNoIntegerVariable) return kMinIntegerValue;
+  if (after.var == kNoIntegerVariable) return kMinIntegerValue;
+
+  const IntegerValue needed = before.constant - after.constant;
+  const IntegerValue static_known =
+      precedence_relations_->GetOffset(before.var, after.var);
+
+  const std::pair<Literal, IntegerValue> dynamic_known =
+      precedences_->GetConditionalOffset(before.var, after.var);
+
+  const IntegerValue best = std::max(static_known, dynamic_known.second);
+  if (best == kMinIntegerValue) return kMinIntegerValue;
+
+  if (add_reason_if_after && dynamic_known.second > static_known &&
+      dynamic_known.second >= needed) {
+    literal_reason_.push_back(dynamic_known.first.Negated());
+  }
+  return best - needed;
+}
+
+void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (!IsPresent(a)) return;
+  if (!IsPresent(b)) return;
+  const AffineExpression before = ends_[a];
+  const AffineExpression after = starts_[b];
+  if (after.coeff != 1) return;
+  if (before.coeff != 1) return;
+  if (after.var == kNoIntegerVariable) return;
+  if (before.var == kNoIntegerVariable) return;
+  const IntegerValue offset = before.constant - after.constant;
+  precedence_relations_->UpdateOffset(before.var, after.var, offset);
+  if (precedences_->AddPrecedenceWithOffsetIfNew(before.var, after.var,
+                                                 offset)) {
+    VLOG(2) << "new relation " << TaskDebugString(a)
+            << " <= " << TaskDebugString(b);
+  }
 }
 
 const std::vector<TaskTime>&

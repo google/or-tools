@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <deque>
 #include <utility>
 #include <vector>
 

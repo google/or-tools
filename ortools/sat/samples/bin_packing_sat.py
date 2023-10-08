@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple bin packing problem using a MIP solver."""
+"""Solve a simple bin packing problem using CP-SAT."""
 # [START program]
 # [START import]
 import io
@@ -25,7 +25,7 @@ from ortools.sat.python import cp_model
 
 # [START program_part1]
 # [START data_model]
-def create_data_model():
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create the data for the example."""
 
     items_str = """

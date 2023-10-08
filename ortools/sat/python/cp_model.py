@@ -1204,8 +1204,8 @@ class CpModel:
                 f" upper_bound={upper_bounds} for variable set={name}"
             )
 
-        lower_bounds = _ConvertToSeriesAndValidateIndex(lower_bounds, index)
-        upper_bounds = _ConvertToSeriesAndValidateIndex(upper_bounds, index)
+        lower_bounds = _ConvertToIntegralSeriesAndValidateIndex(lower_bounds, index)
+        upper_bounds = _ConvertToIntegralSeriesAndValidateIndex(upper_bounds, index)
         return pd.Series(
             index=index,
             data=[
@@ -2010,6 +2010,58 @@ class CpModel:
             raise TypeError("cp_model.NewIntervalVar: end must be affine or constant.")
         return IntervalVar(self.__model, start_expr, size_expr, end_expr, None, name)
 
+    def NewIntervalVarSeries(
+        self,
+        name: str,
+        index: pd.Index,
+        starts: Union[LinearExprT, pd.Series],
+        sizes: Union[LinearExprT, pd.Series],
+        ends: Union[LinearExprT, pd.Series],
+    ) -> pd.Series:
+        """Creates a series of interval variables with the given name.
+
+        Args:
+          name (str): Required. The name of the variable set.
+          index (pd.Index): Required. The index to use for the variable set.
+          starts (Union[LinearExprT, pd.Series]): The start of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          sizes (Union[LinearExprT, pd.Series]): The size of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          ends (Union[LinearExprT, pd.Series]): The ends of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+
+        Returns:
+          pd.Series: The interval variable set indexed by its corresponding
+          dimensions.
+
+        Raises:
+          TypeError: if the `index` is invalid (e.g. a `DataFrame`).
+          ValueError: if the `name` is not a valid identifier or already exists.
+          ValueError: if the all the indexes do not match.
+        """
+        if not isinstance(index, pd.Index):
+            raise TypeError("Non-index object is used as index")
+        if not name.isidentifier():
+            raise ValueError("name={} is not a valid identifier".format(name))
+
+        starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
+        sizes = _ConvertToLinearExprSeriesAndValidateIndex(sizes, index)
+        ends = _ConvertToLinearExprSeriesAndValidateIndex(ends, index)
+        interval_array = []
+        for i in index:
+            interval_array.append(
+                self.NewIntervalVar(
+                    start=starts[i],
+                    size=sizes[i],
+                    end=ends[i],
+                    name=f"{name}[{i}]",
+                )
+            )
+        return pd.Series(index=index, data=interval_array)
+
     def NewFixedSizeIntervalVar(
         self, start: LinearExprT, size: IntegralT, name: str
     ) -> IntervalVar:
@@ -2036,6 +2088,52 @@ class CpModel:
                 "cp_model.NewIntervalVar: start must be affine or constant."
             )
         return IntervalVar(self.__model, start_expr, size_expr, end_expr, None, name)
+
+    def NewFixedSizeIntervalVarSeries(
+        self,
+        name: str,
+        index: pd.Index,
+        starts: Union[LinearExprT, pd.Series],
+        sizes: Union[IntegralT, pd.Series],
+    ) -> pd.Series:
+        """Creates a series of interval variables with the given name.
+
+        Args:
+          name (str): Required. The name of the variable set.
+          index (pd.Index): Required. The index to use for the variable set.
+          starts (Union[LinearExprT, pd.Series]): The start of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          sizes (Union[IntegralT, pd.Series]): The fixed size of each interval in
+            the set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+
+        Returns:
+          pd.Series: The interval variable set indexed by its corresponding
+          dimensions.
+
+        Raises:
+          TypeError: if the `index` is invalid (e.g. a `DataFrame`).
+          ValueError: if the `name` is not a valid identifier or already exists.
+          ValueError: if the all the indexes do not match.
+        """
+        if not isinstance(index, pd.Index):
+            raise TypeError("Non-index object is used as index")
+        if not name.isidentifier():
+            raise ValueError("name={} is not a valid identifier".format(name))
+
+        starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
+        sizes = _ConvertToIntegralSeriesAndValidateIndex(sizes, index)
+        interval_array = []
+        for i in index:
+            interval_array.append(
+                self.NewFixedSizeIntervalVar(
+                    start=starts[i],
+                    size=sizes[i],
+                    name=f"{name}[{i}]",
+                )
+            )
+        return pd.Series(index=index, data=interval_array)
 
     def NewOptionalIntervalVar(
         self,
@@ -2088,6 +2186,64 @@ class CpModel:
             self.__model, start_expr, size_expr, end_expr, is_present_index, name
         )
 
+    def NewOptionalIntervalVarSeries(
+        self,
+        name: str,
+        index: pd.Index,
+        starts: Union[LinearExprT, pd.Series],
+        sizes: Union[LinearExprT, pd.Series],
+        ends: Union[LinearExprT, pd.Series],
+        performed_literals: Union[LiteralT, pd.Series],
+    ) -> pd.Series:
+        """Creates a series of interval variables with the given name.
+
+        Args:
+          name (str): Required. The name of the variable set.
+          index (pd.Index): Required. The index to use for the variable set.
+          starts (Union[LinearExprT, pd.Series]): The start of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          sizes (Union[LinearExprT, pd.Series]): The size of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          ends (Union[LinearExprT, pd.Series]): The ends of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+
+        Returns:
+          pd.Series: The interval variable set indexed by its corresponding
+          dimensions.
+
+        Raises:
+          TypeError: if the `index` is invalid (e.g. a `DataFrame`).
+          ValueError: if the `name` is not a valid identifier or already exists.
+          ValueError: if the all the indexes do not match.
+        """
+        if not isinstance(index, pd.Index):
+            raise TypeError("Non-index object is used as index")
+        if not name.isidentifier():
+            raise ValueError("name={} is not a valid identifier".format(name))
+
+        starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
+        sizes = _ConvertToLinearExprSeriesAndValidateIndex(sizes, index)
+        ends = _ConvertToLinearExprSeriesAndValidateIndex(ends, index)
+        performed_literals = _ConvertToLiteralSeriesAndValidateIndex(
+            performed_literals, index
+        )
+
+        interval_array = []
+        for i in index:
+            interval_array.append(
+                self.NewOptionalIntervalVar(
+                    start=starts[i],
+                    size=sizes[i],
+                    end=ends[i],
+                    is_present=performed_literals[i],
+                    name=f"{name}[{i}]",
+                )
+            )
+        return pd.Series(index=index, data=interval_array)
+
     def NewOptionalFixedSizeIntervalVar(
         self, start: LinearExprT, size: IntegralT, is_present: LiteralT, name: str
     ) -> IntervalVar:
@@ -2119,6 +2275,60 @@ class CpModel:
         return IntervalVar(
             self.__model, start_expr, size_expr, end_expr, is_present_index, name
         )
+
+    def NewOptionalFixedSizeIntervalVarSeries(
+        self,
+        name: str,
+        index: pd.Index,
+        starts: Union[LinearExprT, pd.Series],
+        sizes: Union[IntegralT, pd.Series],
+        performed_literals: Union[LiteralT, pd.Series],
+    ) -> pd.Series:
+        """Creates a series of interval variables with the given name.
+
+        Args:
+          name (str): Required. The name of the variable set.
+          index (pd.Index): Required. The index to use for the variable set.
+          starts (Union[LinearExprT, pd.Series]): The start of each interval in the
+            set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          sizes (Union[IntegralT, pd.Series]): The fixed size of each interval in
+            the set. If a `pd.Series` is passed in, it will be based on the
+            corresponding values of the pd.Series.
+          performed_literals (Union[LiteralT, pd.Series]): The performed literal of
+            each interval in the set. If a `pd.Series` is passed in, it will be
+            based on the corresponding values of the pd.Series.
+
+        Returns:
+          pd.Series: The interval variable set indexed by its corresponding
+          dimensions.
+
+        Raises:
+          TypeError: if the `index` is invalid (e.g. a `DataFrame`).
+          ValueError: if the `name` is not a valid identifier or already exists.
+          ValueError: if the all the indexes do not match.
+        """
+        if not isinstance(index, pd.Index):
+            raise TypeError("Non-index object is used as index")
+        if not name.isidentifier():
+            raise ValueError("name={} is not a valid identifier".format(name))
+
+        starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
+        sizes = _ConvertToIntegralSeriesAndValidateIndex(sizes, index)
+        performed_literals = _ConvertToLiteralSeriesAndValidateIndex(
+            performed_literals, index
+        )
+        interval_array = []
+        for i in index:
+            interval_array.append(
+                self.NewOptionalFixedSizeIntervalVar(
+                    start=starts[i],
+                    size=sizes[i],
+                    is_present=performed_literals[i],
+                    name=f"{name}[{i}]",
+                )
+            )
+        return pd.Series(index=index, data=interval_array)
 
     def AddNoOverlap(self, interval_vars: Iterable[IntervalVar]) -> Constraint:
         """Adds NoOverlap(interval_vars).
@@ -2975,8 +3185,64 @@ def _AttributeSeries(
     )
 
 
-def _ConvertToSeriesAndValidateIndex(
+def _ConvertToIntegralSeriesAndValidateIndex(
     value_or_series: Union[IntegralT, pd.Series], index: pd.Index
+) -> pd.Series:
+    """Returns a pd.Series of the given index with the corresponding values.
+
+    Args:
+      value_or_series: the values to be converted (if applicable).
+      index: the index of the resulting pd.Series.
+
+    Returns:
+      pd.Series: The set of values with the given index.
+
+    Raises:
+      TypeError: If the type of `value_or_series` is not recognized.
+      ValueError: If the index does not match.
+    """
+    if cmh.is_integral(value_or_series):
+        result = pd.Series(data=value_or_series, index=index)
+    elif isinstance(value_or_series, pd.Series):
+        if value_or_series.index.equals(index):
+            result = value_or_series
+        else:
+            raise ValueError("index does not match")
+    else:
+        raise TypeError("invalid type={}".format(type(value_or_series)))
+    return result
+
+
+def _ConvertToLinearExprSeriesAndValidateIndex(
+    value_or_series: Union[LinearExprT, pd.Series], index: pd.Index
+) -> pd.Series:
+    """Returns a pd.Series of the given index with the corresponding values.
+
+    Args:
+      value_or_series: the values to be converted (if applicable).
+      index: the index of the resulting pd.Series.
+
+    Returns:
+      pd.Series: The set of values with the given index.
+
+    Raises:
+      TypeError: If the type of `value_or_series` is not recognized.
+      ValueError: If the index does not match.
+    """
+    if cmh.is_integral(value_or_series):
+        result = pd.Series(data=value_or_series, index=index)
+    elif isinstance(value_or_series, pd.Series):
+        if value_or_series.index.equals(index):
+            result = value_or_series
+        else:
+            raise ValueError("index does not match")
+    else:
+        raise TypeError("invalid type={}".format(type(value_or_series)))
+    return result
+
+
+def _ConvertToLiteralSeriesAndValidateIndex(
+    value_or_series: Union[LiteralT, pd.Series], index: pd.Index
 ) -> pd.Series:
     """Returns a pd.Series of the given index with the corresponding values.
 

@@ -143,7 +143,7 @@ std::function<void(Model*)> Cumulative(
       //
       // TODO(user): A better place for stuff like this could be in the
       // presolver so that it is easier to disable and play with alternatives.
-      if (in_disjunction.size() > 1) model->Add(Disjunctive(in_disjunction));
+      if (in_disjunction.size() > 1) AddDisjunctive(in_disjunction, model);
       if (in_disjunction.size() == vars.size()) return;
     }
 

@@ -243,6 +243,20 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // so that we can use it all the time.
   int AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
+  // If known, return an offset such that we have a + offset <= b.
+  // Note that this only cover the case where this was conditionned by a single
+  // literal.
+  //
+  // TODO(user): Support list of literals, it isn't that much harder.
+  std::pair<Literal, IntegerValue> GetConditionalOffset(IntegerVariable a,
+                                                        IntegerVariable b) {
+    const auto it = conditional_relations_.find({a, b});
+    if (it == conditional_relations_.end()) {
+      return {Literal(), kMinIntegerValue};
+    }
+    return it->second;
+  }
+
  private:
   DEFINE_STRONG_INDEX_TYPE(ArcIndex);
   DEFINE_STRONG_INDEX_TYPE(OptionalArcIndex);
@@ -326,6 +340,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // This is only meant to be used in a DCHECK() and is not optimized.
   bool NoPropagationLeft(const Trail& trail) const;
 
+  // Update conditional_relations_.
+  void AddToConditionalRelations(const ArcInfo& arc);
+  void RemoveFromConditionalRelations(const ArcInfo& arc);
+
   // External class needed to get the IntegerVariable lower bounds and Enqueue
   // new ones.
   Trail* trail_;
@@ -398,6 +416,14 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
   // Temp vector used by the tree traversal in DisassembleSubtree().
   std::vector<int> tmp_vector_;
+
+  // When a literal => X + offset <= Y become true, we add it here if X and Y
+  // do not already have a conditial relation. We also remove it on untrail.
+  // This is especially useful when we create all the literal between pair of
+  // interval for a disjunctive constraint.
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
+                      std::pair<Literal, IntegerValue>>
+      conditional_relations_;
 
   // Stats.
   int64_t num_cycles_ = 0;

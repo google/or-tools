@@ -126,6 +126,11 @@ ABSL_FLAG(bool, cp_model_dump_models, false,
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
           "mapping_model}.pb.txt.");
 
+ABSL_FLAG(
+    bool, cp_model_export_model, false,
+    "DEBUG ONLY. When set to true, SolveCpModel() will dump its input model "
+    "protos in text format to 'FLAGS_cp_model_dump_prefix'{name}.pb.txt.");
+
 ABSL_FLAG(bool, cp_model_dump_text_proto, true,
           "DEBUG ONLY, dump models in text proto instead of binary proto.");
 
@@ -194,7 +199,7 @@ std::string Summarize(absl::string_view input) {
 }
 
 template <class M>
-void DumpModelProto(const M& proto, const std::string& name) {
+void DumpModelProto(const M& proto, absl::string_view name) {
   std::string filename;
   if (absl::GetFlag(FLAGS_cp_model_dump_text_proto)) {
     filename = absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name,
@@ -1736,7 +1741,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // Report the initial objective variable bounds.
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     shared_response_manager->UpdateInnerObjectiveBounds(
-        absl::StrCat(model->Name(), " initial_propagation"),
+        absl::StrCat(model->Name(), " (initial_propagation)"),
         integer_trail->LowerBound(objective_var),
         integer_trail->UpperBound(objective_var));
 
@@ -1857,6 +1862,13 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       shared_response_manager->NewSolution(solution, model->Name(), model);
     }
   };
+
+  // Make sure we are not at a postive level.
+  if (!model->GetOrCreate<SatSolver>()->ResetToLevelZero()) {
+    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+        model->Name());
+    return;
+  }
 
   // Reconfigure search heuristic if it was changed.
   ConfigureSearchHeuristics(model);
@@ -2788,8 +2800,8 @@ class ObjectiveShavingSolver : public SubSolver {
 
  private:
   std::string Info() {
-    return absl::StrCat(name(), " #vars=", local_proto_.variables().size(),
-                        " #csts=", local_proto_.constraints().size());
+    return absl::StrCat(name(), " (vars=", local_proto_.variables().size(),
+                        " csts=", local_proto_.constraints().size(), ")");
   }
 
   bool ResetModel() {
@@ -3082,7 +3094,7 @@ class LnsSolver : public SubSolver {
           static_cast<double>(generator_->num_fully_solved_calls()) /
           static_cast<double>(num_calls);
       const std::string lns_info = absl::StrFormat(
-          "%s(d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
+          "%s (d=%0.2f s=%i t=%0.2f p=%0.2f stall=%d h=%s)", source_info,
           data.difficulty, task_id, data.deterministic_limit,
           fully_solved_proportion, stall, search_info);
 
@@ -3990,6 +4002,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     DumpModelProto(model_proto, "model");
+  }
+  if (absl::GetFlag(FLAGS_cp_model_export_model)) {
+    if (model_proto.name().empty()) {
+      DumpModelProto(model_proto, "unnamed_model");
+    } else {
+      DumpModelProto(model_proto, model_proto.name());
+    }
   }
 #endif  // __PORTABLE_PLATFORM__
 

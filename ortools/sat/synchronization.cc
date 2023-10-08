@@ -642,8 +642,8 @@ void SharedResponseManager::NewSolution(
     if (model != nullptr) {
       const int64_t num_bool = model->Get<Trail>()->NumVariables();
       const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
-      absl::StrAppend(&solution_message, " fixed_bools:", num_fixed, "/",
-                      num_bool);
+      absl::StrAppend(&solution_message, " (fixed_bools=", num_fixed, "/",
+                      num_bool, ")");
     }
 
     if (objective_or_null_ != nullptr) {

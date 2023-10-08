@@ -278,6 +278,7 @@ bool PrecedencesPropagator::Propagate() {
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (--arc_counts_[arc_index] == 0) {
         const ArcInfo& arc = arcs_[arc_index];
+        AddToConditionalRelations(arc);
         impacted_arcs_[arc.tail_var].push_back(arc_index);
       }
     }
@@ -335,6 +336,36 @@ bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
   return true;
 }
 
+// TODO(user): Add as fixed precedence if we fix at level zero.
+void PrecedencesPropagator::AddToConditionalRelations(const ArcInfo& arc) {
+  if (arc.presence_literals.size() != 1) return;
+
+  // We currently do not handle variable size in the reasons.
+  // TODO(user): we could easily take a level zero ArcOffset() instead, or
+  // add this to the reason though.
+  if (arc.offset_var != kNoIntegerVariable) return;
+  const std::pair<IntegerVariable, IntegerVariable> key = {arc.tail_var,
+                                                           arc.head_var};
+  const IntegerValue offset = ArcOffset(arc);
+
+  // We only insert if it is not already present!
+  conditional_relations_.insert({key, {arc.presence_literals[0], offset}});
+}
+
+void PrecedencesPropagator::RemoveFromConditionalRelations(const ArcInfo& arc) {
+  if (arc.presence_literals.size() != 1) return;
+  if (arc.offset_var != kNoIntegerVariable) return;
+  const std::pair<IntegerVariable, IntegerVariable> key = {arc.tail_var,
+                                                           arc.head_var};
+  const auto it = conditional_relations_.find(key);
+  if (it == conditional_relations_.end()) return;
+  if (it->second.first != arc.presence_literals[0]) return;
+
+  // It is okay if we erase a wrong one on untrail, what is important is not to
+  // forget to erase one we added.
+  conditional_relations_.erase(it);
+}
+
 void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
   if (propagation_trail_index_ > trail_index) {
     // This means that we already propagated all there is to propagate
@@ -349,6 +380,7 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (arc_counts_[arc_index]++ == 0) {
         const ArcInfo& arc = arcs_[arc_index];
+        RemoveFromConditionalRelations(arc);
         impacted_arcs_[arc.tail_var].pop_back();
       }
     }
@@ -493,7 +525,6 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
 void PrecedencesPropagator::AddArc(
     IntegerVariable tail, IntegerVariable head, IntegerValue offset,
     IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
-  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
   if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
@@ -518,16 +549,19 @@ void PrecedencesPropagator::AddArc(
           integer_trail_->IsIgnoredLiteral(offset_var).Negated());
     }
     gtl::STLSortAndRemoveDuplicates(&enforcement_literals);
-    int new_size = 0;
-    for (const Literal l : enforcement_literals) {
-      if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
-        continue;  // At true, ignore this literal.
-      } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
-        return;  // At false, ignore completely this arc.
+
+    if (trail_->CurrentDecisionLevel() == 0) {
+      int new_size = 0;
+      for (const Literal l : enforcement_literals) {
+        if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
+          continue;  // At true, ignore this literal.
+        } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
+          return;  // At false, ignore completely this arc.
+        }
+        enforcement_literals[new_size++] = l;
       }
-      enforcement_literals[new_size++] = l;
+      enforcement_literals.resize(new_size);
     }
-    enforcement_literals.resize(new_size);
   }
 
   if (head == tail) {
@@ -543,8 +577,8 @@ void PrecedencesPropagator::AddArc(
   // Remove the offset_var if it is fixed.
   // TODO(user): We should also handle the case where tail or head is fixed.
   if (offset_var != kNoIntegerVariable) {
-    const IntegerValue lb = integer_trail_->LowerBound(offset_var);
-    if (lb == integer_trail_->UpperBound(offset_var)) {
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(offset_var);
+    if (lb == integer_trail_->LevelZeroUpperBound(offset_var)) {
       offset += lb;
       offset_var = kNoIntegerVariable;
     }
@@ -628,7 +662,18 @@ void PrecedencesPropagator::AddArc(
         literal_to_new_impacted_arcs_[l.Index()].push_back(arc_index);
       }
     }
-    arc_counts_.push_back(presence_literals.size());
+
+    if (trail_->CurrentDecisionLevel() == 0) {
+      arc_counts_.push_back(presence_literals.size());
+    } else {
+      arc_counts_.push_back(0);
+      for (const Literal l : presence_literals) {
+        if (!trail_->Assignment().LiteralIsTrue(l)) {
+          ++arc_counts_.back();
+        }
+      }
+      CHECK(presence_literals.empty() || arc_counts_.back() > 0);
+    }
   }
 }
 
