@@ -649,7 +649,7 @@ public class NoOverlapSampleSat
 }
 ```
 
-## Cumulative constraint
+## Cumulative constraint with varying capacity profile.
 
 A cumulative constraint takes a list of intervals, and a list of demands, and a
 capacity. It enforces that at any time point, the sum of demands of tasks active
