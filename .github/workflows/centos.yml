@@ -85,8 +85,7 @@ jobs:
         run: |
           cd ${{ env.XPRESS_INSTALL_DIR }}
           echo "XPRESSDIR=$PWD" >> $GITHUB_ENV
-          echo "XPRESS=$PWD/bin" >> $GITHUB_ENV
-          echo "XPRESS_LIB=$PWD/lib" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$PWD/bin/xpauth.xpr" >> $GITHUB_ENV
 
       - name: Download Sirius
         if : ${{ matrix.sirius == 'ON' }}

@@ -234,12 +234,12 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
     }
 
     if (xpress_library.LibraryIsLoaded()) {
-      xpress_load_status =  LoadXpressFunctions(&xpress_library);
+      xpress_load_status = LoadXpressFunctions(&xpress_library);
     } else {
-      xpress_load_status = absl::NotFoundError(absl::StrCat(
-          "Could not find the Xpress shared library. Looked in: [",
-          absl::StrJoin(canonical_paths, "', '"),
-          "]. Please check environment variable XPRESSDIR"));
+      xpress_load_status = absl::NotFoundError(
+          absl::StrCat("Could not find the Xpress shared library. Looked in: [",
+                       absl::StrJoin(canonical_paths, "', '"),
+                       "]. Please check environment variable XPRESSDIR"));
     }
   });
   xpresspath.clear();
@@ -247,38 +247,25 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
   return xpress_load_status;
 }
 
+void log_message_about_XPRSinit_argument();
+void log_full_license_error(int code, const std::string& xpress_lib_dir);
 /** init XPRESS environment */
 bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
-  std::string xpresspath;
-  absl::Status status = LoadXpressDynamicLibrary(xpresspath);
+  std::string xpress_lib_dir;
+  absl::Status status = LoadXpressDynamicLibrary(xpress_lib_dir);
   if (!status.ok()) {
     LOG(WARNING) << status << "\n";
     return false;
   }
 
-  const char* xpress_from_env = getenv("XPRESS");
-  if (xpress_from_env == nullptr) {
-    if (verbose) {
-      LOG(WARNING)
-          << "XpressInterface Error : Environment variable XPRESS undefined.\n";
-    }
-    if (xpresspath.empty()) {
-      return false;
-    }
-  } else {
-    xpresspath = xpress_from_env;
-  }
-
   int code;
-
   // if not an OEM key
   if (xpress_oem_license_key == 0) {
     if (verbose) {
-      LOG(WARNING) << "XpressInterface : Initialising xpress-MP with parameter "
-                   << xpresspath << "\n";
+      log_message_about_XPRSinit_argument();
     }
 
-    code = XPRSinit(xpresspath.c_str());
+    code = XPRSinit(nullptr);
 
     if (!code) {
       // XPRSbanner informs about Xpress version, options and error messages
@@ -292,14 +279,7 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
       }
       return true;
     } else {
-      LOG(ERROR) << "XpressInterface: Xpress found at " << xpresspath << "\n";
-      char errmsg[256];
-      XPRSgetlicerrmsg(errmsg, 256);
-
-      LOG(ERROR) << "XpressInterface : License error : " << errmsg
-                 << " (XPRSinit returned code " << code << "). Please check"
-                 << " environment variable XPRESS.\n";
-
+      log_full_license_error(code, xpress_lib_dir);
       return false;
     }
   } else {
@@ -349,6 +329,22 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
       return false;
     }
   }
+}
+void log_full_license_error(int code, const std::string& xpress_lib_dir) {
+  LOG(ERROR) << "XpressInterface: Xpress found at " << xpress_lib_dir
+             << "\n";
+  char errmsg[256];
+  XPRSgetlicerrmsg(errmsg, 256);
+
+  LOG(ERROR) << "XpressInterface : License error : " << errmsg
+      << " (XPRSinit returned code " << code << "). \n";
+  LOG(ERROR)
+      << "|_Your Xpress installation should have set the env var XPAUTH_PATH"
+         " to the full path of your licence file\n";
+}
+void log_message_about_XPRSinit_argument() {
+  LOG(WARNING)
+      << "XpressInterface : Initialising xpress-MP with default parameters";
 }
 
 bool XpressIsCorrectlyInstalled() {

@@ -20,8 +20,7 @@ jobs:
     env:
       SIRIUS_RELEASE_TAG: ${{ matrix.sirius-release-tag }}
       XPRESSDIR: ${{ github.workspace }}/xpressmp
-      XPRESS: ${{ github.workspace }}/xpressmp/bin
-      XPRS_LIB_PATH: ${{ github.workspace }}/xpressmp/lib
+      XPAUTH_PATH: ${{ github.workspace }}/xpressmp/bin/xpauth.xpr
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
       SIRIUS: ${{ github.workspace }}/sirius_install/bin
     strategy:
@@ -201,7 +200,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         shell: bash
         run: |
-          echo "${{ env.XPRESS }}" >> $GITHUB_PATH
+          echo "${{ env.XPAUTH_PATH }}" >> $GITHUB_PATH
           echo "${{ env.SIRIUS }}" >> $GITHUB_PATH
 
       - name: Configure OR-Tools
@@ -223,7 +222,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
-          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/:${{ env.XPRS_LIB_PATH }}/"
+          LD_PATH="${{ env.SIRIUS_INSTALL_PATH }}/lib/"
           echo "LD_LIBRARY_PATH=$LD_PATH" >> $GITHUB_ENV
 
       - name: Build & run CMake example project linux
