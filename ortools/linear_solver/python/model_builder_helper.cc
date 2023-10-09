@@ -416,13 +416,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("enable_output", &ModelSolverHelper::EnableOutput, arg("output"))
       .def("has_solution", &ModelSolverHelper::has_solution)
       .def("has_response", &ModelSolverHelper::has_response)
-      .def("status",
-           [](const ModelSolverHelper& solver) {
-             // TODO(user):
-             //    - Return the true enum when pybind11_protobuf is working.
-             //    - Return the response proto
-             return static_cast<int>(solver.status());
-           })
+      .def("response", &ModelSolverHelper::response)
+      .def("status", &ModelSolverHelper::status)
       .def("status_string", &ModelSolverHelper::status_string)
       .def("wall_time", &ModelSolverHelper::wall_time)
       .def("user_time", &ModelSolverHelper::user_time)
