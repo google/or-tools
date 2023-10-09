@@ -127,7 +127,7 @@ for idx, (c_block, s, e) in enumerate(
     print(f'Removing import {c_block.module}.{c_block.names[0].name}...')
   # rewrite absl flag import
   elif (isinstance(c_block, ast.ImportFrom) and c_block.module == 'absl'
-        and c_block.names[0].name  =='flags'):
+        and c_block.names[0].name == 'flags'):
     print(f'Rewrite import {c_block.module}.{c_block.names[0].name}...')
     full_text += 'from ortools.sat.colab import flags\n'
   # Unwrap __main__ function
@@ -156,7 +156,7 @@ for idx, (c_block, s, e) in enumerate(
     print('Appending block...')
     filtered_lines = lines[s:e]
     for i, line in enumerate(filtered_lines):
-        filtered_lines[i] = line.replace('DEFINE_', 'define_')
+      filtered_lines[i] = line.replace('DEFINE_', 'define_')
     filtered_lines = list(
         filter(lambda l: not re.search(r'# \[START .*\]$', l), filtered_lines))
     filtered_lines = list(

@@ -383,8 +383,8 @@ class SparseVector {
   EntryIndex capacity_;
 
   // Pointers to the first elements of the index and coefficient arrays.
-  Index* index_;
-  Fractional* coefficient_;
+  Index* index_ = nullptr;
+  Fractional* coefficient_ = nullptr;
 
   // This is here to speed up the CheckNoDuplicates() methods and is mutable
   // so we can perform checks on const argument.

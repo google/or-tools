@@ -907,6 +907,13 @@ class RoutingModel {
   const std::vector<std::pair<int, int> >&
       GetDeliveryIndexPairs(int64_t node_index) const;
   // clang-format on
+  /// Returns whether the node is a pickup (resp. delivery).
+  bool IsPickup(int64_t node_index) const {
+    return !GetPickupIndexPairs(node_index).empty();
+  }
+  bool IsDelivery(int64_t node_index) const {
+    return !GetDeliveryIndexPairs(node_index).empty();
+  }
 
   /// Sets the Pickup and delivery policy of all vehicles. It is equivalent to
   /// calling SetPickupAndDeliveryPolicyOfVehicle on all vehicles.

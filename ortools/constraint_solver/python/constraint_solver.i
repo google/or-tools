@@ -116,10 +116,6 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchFilterManager);
 PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
 
-%{
-
-%}
-
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 PY_CONVERT(IntVar);
 PY_CONVERT(IntExpr);
@@ -2198,6 +2194,4 @@ class PyConstraint(Constraint):
 
   def DebugString(self):
     return "PyConstraint"
-
-
 }  // %pythoncode

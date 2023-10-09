@@ -40,6 +40,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_utils.h"
 
 namespace operations_research {
@@ -343,13 +344,16 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     uint64_t num_allowed_vehicles;
     int64_t neg_penalty;
     StartEndValue start_end_value;
-    int node;
+    /// Indicates whether this Seed corresponds to a pair or a single node.
+    /// If false, the 'index' is the pair_index, otherwise it's the node index.
+    bool is_node_index = true;
+    int index;
 
     bool operator>(const Seed& other) const {
       return std::tie(num_allowed_vehicles, neg_penalty, start_end_value,
-                      node) > std::tie(other.num_allowed_vehicles,
-                                       other.neg_penalty, other.start_end_value,
-                                       other.node);
+                      is_node_index, index) >
+             std::tie(other.num_allowed_vehicles, other.neg_penalty,
+                      other.start_end_value, other.is_node_index, other.index);
     }
   };
   // clang-format off
@@ -382,10 +386,14 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
       SeedQueue* sq);
   // clang-format on
 
+  /// Creates and returns a Seed corresponding to the given node/pair_index.
+  Seed CreateSeed(int index, bool is_pair_index, StartEndValue start_end_value);
+
   /// Adds a Seed corresponding to the given 'node' to sq.priority_queue, based
   /// on the last entry in its 'start_end_distances' (from which it's deleted).
-  void AddSeedToQueue(int node, std::vector<StartEndValue>* start_end_distances,
-                      SeedQueue* sq);
+  void AddSeedNodeToQueue(int node,
+                          std::vector<StartEndValue>* start_end_distances,
+                          SeedQueue* sq);
 
   /// Inserts 'node' just after 'predecessor', and just before 'successor' on
   /// the route of 'vehicle', resulting in the following subsequence:
@@ -1072,6 +1080,10 @@ class LocalCheapestInsertionFilteredHeuristic
   void Initialize() override;
 
  private:
+  /// Computes the order of insertion of the node/pairs in the model based on
+  /// the "Seed" values (number of allowed vehicles, penalty, distance from
+  /// vehicle start/ends), and stores them in insertion_order_.
+  void ComputeInsertionOrder();
   /// Computes the possible insertion positions of 'node' and sorts them
   /// according to the current cost evaluator.
   /// 'node' is a variable index corresponding to a node.
@@ -1107,8 +1119,7 @@ class LocalCheapestInsertionFilteredHeuristic
   // Sets all nodes of pair alternatives as visited.
   void SetIndexPairVisited(const RoutingModel::IndexPair& index_pair);
 
-  bool update_start_end_distances_per_node_;
-  std::vector<std::vector<StartEndValue>> start_end_distances_per_node_;
+  std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
