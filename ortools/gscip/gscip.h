@@ -26,7 +26,9 @@
 //     but < inf result in an error. Changing the underlying SCIP's infinity is
 //     not supported.
 //   * absl::Status and absl::StatusOr are used to propagate SCIP errors (and on
-//     a best effort basis, also filter out bad input to gSCIP functions).
+//     a best effort basis, also filter out bad input to gSCIP functions). In
+//     constraint handlers, we also use absl::Status and absl::StatusOr for
+//     error propagation and not SCIP_RETCODE.
 //
 // A note on error propagation and reliability:
 //   Many methods on SCIP return an error code. Errors can be triggered by
@@ -55,11 +57,13 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
@@ -123,7 +127,8 @@ enum class GScipHintResult;
 
 // A thin wrapper around the SCIP solver that provides C++ bindings that are
 // idiomatic for Google. Unless callbacks are used, the SCIP stage is always
-// PROBLEM.
+// PROBLEM. If any GScip function returns an absl::Status error, then the GScip
+// object should be considered to be in an error state.
 class GScip {
  public:
   // Create a new GScip (the constructor is private). The default objective
@@ -140,6 +145,7 @@ class GScip {
   // The returned StatusOr will contain an error only if an:
   //   * An underlying function from SCIP fails.
   //   * There is an I/O error with managing SCIP output.
+  //   * A user-defined callback function fails.
   // The above cases are not mutually exclusive. If the problem is infeasible,
   // this will be reflected in the value of GScipResult::gscip_output::status.
   absl::StatusOr<GScipResult> Solve(
@@ -362,6 +368,19 @@ class GScip {
   absl::StatusOr<std::string> DefaultStringParamValue(
       const std::string& parameter_name);
 
+  // Returns true if GScip is in an error state. Currently only checks if a
+  // callback has failed, but in the future it may check for other failures.
+  bool InErrorState();
+
+  // Internal use. Used by constraint handlers to propagate user-returned Status
+  // errors to GSCIP. Interrupts a solve and passes an error status that
+  // GScip::Solve() must return after SCIP finishes interrupting the solve. Does
+  // not do anything if previously called with a (non-OK) status (i.e. the first
+  // status error is returned by SCIP).
+  //
+  // CHECK fails if status is OK.
+  void InterruptSolveFromCallback(absl::Status error_status);
+
  private:
   explicit GScip(SCIP* scip);
   // Releases SCIP memory.
@@ -386,6 +405,8 @@ class GScip {
   SCIP* scip_;
   absl::flat_hash_set<SCIP_VAR*> variables_;
   absl::flat_hash_set<SCIP_CONS*> constraints_;
+  absl::Mutex callback_status_mutex_;
+  absl::Status callback_status_ ABSL_GUARDED_BY(callback_status_mutex_);
 };
 
 // Advanced features below

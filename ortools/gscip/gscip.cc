@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
@@ -26,12 +25,14 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
@@ -43,14 +44,27 @@
 #include "ortools/util/status_macros.h"
 #include "scip/cons_linear.h"
 #include "scip/cons_quadratic.h"
+#include "scip/def.h"
 #include "scip/scip.h"
+#include "scip/scip_cons.h"
 #include "scip/scip_general.h"
+#include "scip/scip_message.h"
+#include "scip/scip_numerics.h"
 #include "scip/scip_param.h"
 #include "scip/scip_prob.h"
+#include "scip/scip_sol.h"
+#include "scip/scip_solve.h"
 #include "scip/scip_solvingstats.h"
+#include "scip/scip_var.h"
 #include "scip/scipdefplugins.h"
+#include "lpi/lpi.h"
 #include "scip/type_cons.h"
+#include "scip/type_paramset.h"
+#include "scip/type_retcode.h"
 #include "scip/type_scip.h"
+#include "scip/type_set.h"
+#include "scip/type_sol.h"
+#include "scip/type_stat.h"
 #include "scip/type_var.h"
 
 namespace operations_research {
@@ -302,6 +316,18 @@ bool GScip::InterruptSolve() {
     return true;
   }
   return SCIPinterruptSolve(scip_) == SCIP_OKAY;
+}
+
+void GScip::InterruptSolveFromCallback(absl::Status error_status) {
+  CHECK(!error_status.ok());
+  {
+    const absl::MutexLock lock(&callback_status_mutex_);
+    if (!callback_status_.ok()) {
+      return;
+    }
+    callback_status_ = std::move(error_status);
+  }
+  InterruptSolve();
 }
 
 absl::Status GScip::CleanUp() {
@@ -832,6 +858,11 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
 absl::StatusOr<GScipResult> GScip::Solve(
     const GScipParameters& params, absl::string_view legacy_params,
     const GScipMessageHandler message_handler) {
+  if (InErrorState()) {
+    return absl::InvalidArgumentError(
+        "GScip is in an error state due to a previous GScip::Solve()");
+  }
+
   // A four step process:
   //  1. Apply parameters.
   //  2. Solve the problem.
@@ -918,6 +949,22 @@ absl::StatusOr<GScipResult> GScip::Solve(
           " closing file: ", params.detailed_solving_stats_filename(),
           " when writing solve stats."));
     }
+  }
+  absl::Status callback_status;
+  {
+    const absl::MutexLock callback_status_lock(&callback_status_mutex_);
+    callback_status = util::StatusBuilder(callback_status_)
+                      << "error in a callback that interrupted the solve";
+  }
+  if (!callback_status.ok()) {
+    const absl::Status status = FreeTransform();
+    if (status.ok()) {
+      return callback_status;
+    }
+    LOG(ERROR) << "GScip::FreeTransform() failed after interrupting "
+                  "the solve due to an error in a callback: "
+               << callback_status;
+    return status;
   }
   // Step 3: Extract solution information.
   // Some outputs are available unconditionally, and some are only ready if at
@@ -1068,6 +1115,11 @@ absl::Status GScip::CheckScipFinite(double d) {
            << kScipInf << ")";
   }
   return absl::OkStatus();
+}
+
+bool GScip::InErrorState() {
+  const absl::MutexLock lock(&callback_status_mutex_);
+  return !callback_status_.ok();
 }
 
 #undef RETURN_ERROR_UNLESS
