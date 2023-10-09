@@ -129,6 +129,34 @@ cc_binary(
 )
 
 cc_binary(
+    name = "linear_regression",
+    srcs = ["linear_regression.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:gurobi_solver",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+    ],
+)
+
+cc_binary(
+    name = "mathopt_info",
+    srcs = ["mathopt_info.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:gurobi_solver",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_binary(
     name = "tsp",
     srcs = ["tsp.cc"],
     deps = [
@@ -141,20 +169,6 @@ cc_binary(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_binary(
-    name = "linear_regression",
-    srcs = ["linear_regression.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:status_macros",
-        "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solvers:gurobi_solver",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/status",
     ],
 )
 

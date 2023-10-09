@@ -13,15 +13,12 @@
 
 // Check MathOpt available solvers.
 #include <iostream>
+#include <string>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/parameters.pb.h"
-#include "ortools/math_opt/core/solver_interface.h"
-//#include "ortools/math_opt/cpp/enums.h"
 
 namespace {
 
@@ -38,13 +35,14 @@ struct SolverTypeProtoFormatter {
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);
 
-  std::cout <<
-    absl::StrCat(
-        "MathOpt is configured to support the following solvers: ",
-        absl::StrJoin(
-          operations_research::math_opt::AllSolversRegistry::Instance()->RegisteredSolvers(),
-          ", ",
-          SolverTypeProtoFormatter())) << std::endl;
+  std::cout
+      << absl::StrCat(
+             "MathOpt is configured to support the following solvers: ",
+             absl::StrJoin(
+                 operations_research::math_opt::AllSolversRegistry::Instance()
+                     ->RegisteredSolvers(),
+                 ", ", SolverTypeProtoFormatter()))
+      << std::endl;
 
   return 0;
 }

@@ -14,15 +14,14 @@
 #include "ortools/math_opt/validators/infeasible_subsystem_validator.h"
 
 #include <cstdint>
-#include <string>
 
 #include "absl/status/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/validators/bounds_and_status_validator.h"
 #include "ortools/math_opt/validators/ids_validator.h"
-#include "ortools/math_opt/validators/solve_stats_validator.h"
 
 namespace operations_research::math_opt {
 

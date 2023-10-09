@@ -26,4 +26,4 @@ target_sources(${NAME} PUBLIC
   $<TARGET_OBJECTS:${NAME}_sos>
   $<TARGET_OBJECTS:${NAME}_util>
 )
-install(TARGETS ${PROJECT_NAME}_math_opt_constraints EXPORT ${PROJECT_NAME}Targets)
+install(TARGETS ${NAME} EXPORT ${PROJECT_NAME}Targets)

@@ -164,44 +164,81 @@ ABSL_DEPRECATED(
 TerminationProto TerminateForReason(TerminationReasonProto reason,
                                     absl::string_view detail = {});
 
+// Returns trivial bounds.
+//
+// Trivial bounds are:
+// * for a maximization:
+//   - primal_bound: -inf
+//   - dual_bound  : +inf
+// * for a minimization:
+//   - primal_bound: +inf
+//   - dual_bound  : -inf
 ObjectiveBoundsProto MakeTrivialBounds(bool is_maximize);
 
-// Sets problem statuses to undetermined and sets trivial bounds independently
-// of the selected reason.
+// Returns a TerminationProto with the provided reason and details along with
+// trivial bounds and FEASIBILITY_STATUS_UNDETERMINED statuses.
 TerminationProto TerminateForReason(bool is_maximize,
                                     TerminationReasonProto reason,
                                     absl::string_view detail = {});
 
+// Returns a TERMINATION_REASON_OPTIMAL termination with the provided objective
+// bounds and FEASIBILITY_STATUS_FEASIBLE primal and dual statuses.
+//
 // finite_primal_objective must be finite for a valid TerminationProto to be
 // returned.
+//
 // TODO(b/290359402): additionally require dual_objective to be finite.
 TerminationProto OptimalTerminationProto(double finite_primal_objective,
                                          double dual_objective,
                                          absl::string_view detail = {});
 
+// Returns a TERMINATION_REASON_INFEASIBLE termination with
+// FEASIBILITY_STATUS_INFEASIBLE primal status and the provided dual status.
+//
+// It sets a trivial primal bound and a trivial dual bound based on the provided
+// dual status.
+//
 // The convention for infeasible MIPs is that dual_feasibility_status is
 // feasible (There always exist a dual feasible convex relaxation of an
 // infeasible MIP).
-// dual_feasibility_status must not be unspecified for a valid TerminationProto
-// to be returned.
+//
+// dual_feasibility_status must not be FEASIBILITY_STATUS_UNSPECIFIED for a
+// valid TerminationProto to be returned.
 TerminationProto InfeasibleTerminationProto(
     bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
     absl::string_view detail = {});
 
+// Returns a TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED termination with
+// FEASIBILITY_STATUS_UNDETERMINED primal status and the provided dual status
+// along with trivial bounds.
+//
+// primal_or_dual_infeasible is set if dual_feasibility_status is
+// FEASIBILITY_STATUS_UNDETERMINED.
+//
 // dual_feasibility_status must be infeasible or undetermined for a valid
 // TerminationProto to be returned.
 TerminationProto InfeasibleOrUnboundedTerminationProto(
     bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
     absl::string_view detail = {});
 
+// Returns a TERMINATION_REASON_UNBOUNDED termination with a
+// FEASIBILITY_STATUS_FEASIBLE primal status and FEASIBILITY_STATUS_INFEASIBLE
+// dual one along with corresponding trivial bounds.
 TerminationProto UnboundedTerminationProto(bool is_maximize,
                                            absl::string_view detail = {});
 
-// Assumes dual solution exists if optional_dual_objective is set even if
+// Returns a TERMINATION_REASON_NO_SOLUTION_FOUND termination with
+// FEASIBILITY_STATUS_UNDETERMINED primal status.
+//
+// Assumes dual solution exists iff optional_dual_objective is set even if
 // infinite (some solvers return feasible dual solutions without an objective
 // value). optional_dual_objective should not be set when limit is LIMIT_CUTOFF
 // for a valid TerminationProto to be returned (use
 // LimitCutoffTerminationProto() below instead).
+//
+// It sets a trivial primal bound. The dual bound is either set to the
+// optional_dual_objective if set, else to a trivial value.
+//
 // TODO(b/290359402): Consider improving to require a finite dual bound when
 // dual feasible solutions are returned.
 TerminationProto NoSolutionFoundTerminationProto(
@@ -209,12 +246,22 @@ TerminationProto NoSolutionFoundTerminationProto(
     std::optional<double> optional_dual_objective = std::nullopt,
     absl::string_view detail = {});
 
+// Returns a TERMINATION_REASON_FEASIBLE termination with a
+// FEASIBILITY_STATUS_FEASIBLE primal status. The dual status depends on
+// optional_dual_objective.
+//
 // finite_primal_objective should be finite and limit should not be LIMIT_CUTOFF
 // for a valid TerminationProto to be returned (use
 // LimitCutoffTerminationProto() below instead).
-// Assumes dual solution exists if optional_dual_objective is set even if
+//
+// Assumes dual solution exists iff optional_dual_objective is set even if
 // infinite (some solvers return feasible dual solutions without an objective
-// value)
+// value). If set the dual status is set to FEASIBILITY_STATUS_FEASIBLE, else it
+// is FEASIBILITY_STATUS_UNDETERMINED.
+//
+// It sets the primal bound based on the primal objective. The dual bound is
+// either set to the optional_dual_objective if set, else to a trivial value.
+//
 // TODO(b/290359402): Consider improving to require a finite dual bound when
 // dual feasible solutions are returned.
 TerminationProto FeasibleTerminationProto(
@@ -222,26 +269,31 @@ TerminationProto FeasibleTerminationProto(
     std::optional<double> optional_dual_objective = std::nullopt,
     absl::string_view detail = {});
 
-// Assumes primal solution exists if optional_finite_primal_objective is set.
-// If set, optional_finite_primal_objective should be finite if set for a valid
-// TerminationProto to be returned.
-// Assumes dual solution exists if optional_dual_objective is set even if
-// infinite (some solvers return feasible dual solutions without an objective
-// value)
-// TODO(b/290359402): Consider improving to require a finite dual bound when
-// dual feasible solutions are returned.
+// Either calls FeasibleTerminationProto() or NoSolutionFoundTerminationProto()
+// based on optional_finite_primal_objective having a value.
+//
+// That is it assumes a primal feasible solution exists iff
+// optional_finite_primal_objective has a value.
 TerminationProto LimitTerminationProto(
     bool is_maximize, LimitProto limit,
     std::optional<double> optional_finite_primal_objective,
     std::optional<double> optional_dual_objective = std::nullopt,
     absl::string_view detail = {});
 
-// Assumes primal solution exists if primal_objective is finite.
-// Assumes dual solution exists if claim_dual_feasible_solution_exists is true
-// even if dual_objective is infinite (some solvers return feasible dual
-// solutions without an objective value). If dual_objective is finite then
-// claim_dual_feasible_solution_exists must be true for a valid termination to
-// be returned.
+// Returns either a TERMINATION_REASON_FEASIBLE or
+// TERMINATION_REASON_NO_SOLUTION_FOUND termination depending on
+// primal_objective being finite or not. That is it assumes there is a primal
+// feasible solution iff primal_objective is finite.
+//
+// If claim_dual_feasible_solution_exists is true, the dual_status is set as
+// FEASIBILITY_STATUS_FEASIBLE, else FEASIBILITY_STATUS_UNDETERMINED.
+//
+// This function assumes dual solution exists if
+// claim_dual_feasible_solution_exists is true even if dual_objective is
+// infinite (some solvers return feasible dual solutions without an objective
+// value). If dual_objective is finite then claim_dual_feasible_solution_exists
+// must be true for a valid termination to be returned.
+//
 // TODO(b/290359402): Consider improving to require a finite dual bound when
 // dual feasible solutions are returned.
 TerminationProto LimitTerminationProto(LimitProto limit,
@@ -250,6 +302,7 @@ TerminationProto LimitTerminationProto(LimitProto limit,
                                        bool claim_dual_feasible_solution_exists,
                                        absl::string_view detail = {});
 
+// Calls NoSolutionFoundTerminationProto() with LIMIT_CUTOFF LIMIT.
 TerminationProto CutoffTerminationProto(bool is_maximize,
                                         absl::string_view detail = {});
 

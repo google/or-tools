@@ -23,4 +23,4 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::math_opt_proto)
-#install(TARGETS ${PROJECT_NAME}_math_opt_constraints_indicator EXPORT ${PROJECT_NAME}Targets)
+#install(TARGETS ${NAME} EXPORT ${PROJECT_NAME}Targets)

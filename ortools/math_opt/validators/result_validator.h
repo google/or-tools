@@ -15,6 +15,7 @@
 #define OR_TOOLS_MATH_OPT_VALIDATORS_RESULT_VALIDATOR_H_
 
 #include "absl/status/status.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -22,12 +23,10 @@
 namespace operations_research {
 namespace math_opt {
 
-// Checks that:
-//  * termination.reason is not UNSPECIFIED,
-//  * termination.limit is set (not UNSPECIFIED) iff termination.reason is
-//    either FEASIBLE or NO_SOLUTION_FOUND,
-//  * termination.limit is not CUTOFF when termination.reason is FEASIBLE.
-absl::Status ValidateTermination(const TerminationProto& termination);
+absl::Status ValidateSolutions(
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const ModelSolveParametersProto& parameters,
+    const ModelSummary& model_summary);
 
 // Validates the input result.
 absl::Status ValidateResult(const SolveResultProto& result,
@@ -37,9 +36,11 @@ absl::Status ValidateResult(const SolveResultProto& result,
 // Returns absl::Ok only if a primal feasible solution is available.
 absl::Status CheckHasPrimalSolution(const SolveResultProto& result);
 absl::Status CheckPrimalSolutionAndStatusConsistency(
-    const SolveResultProto& result);
+    const TerminationProto& termination,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions);
 absl::Status CheckDualSolutionAndStatusConsistency(
-    const SolveResultProto& result);
+    const TerminationProto& termination,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions);
 
 }  // namespace math_opt
 }  // namespace operations_research

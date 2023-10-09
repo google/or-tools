@@ -49,6 +49,13 @@ struct ModelSubset {
 
     bool empty() const { return !lower && !upper; }
 
+    friend bool operator==(const Bounds& lhs, const Bounds& rhs) {
+      return lhs.lower == rhs.lower && lhs.upper == rhs.upper;
+    }
+    friend bool operator!=(const Bounds& lhs, const Bounds& rhs) {
+      return !(lhs == rhs);
+    }
+
     bool lower = false;
     bool upper = false;
   };

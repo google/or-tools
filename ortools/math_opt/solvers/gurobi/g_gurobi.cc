@@ -133,6 +133,14 @@ class ScopedCallback {
   UserCallbackData user_cb_data_;
 };
 
+// Returns true if both keys are equal.
+bool AreISVKeyEqual(const GurobiIsvKey& key,
+                    const GurobiInitializerProto::ISVKey& proto_key) {
+  return key.name == proto_key.name() &&
+         key.application_name == proto_key.application_name() &&
+         key.expiration == proto_key.expiration() && key.key == proto_key.key();
+}
+
 }  // namespace
 
 void GurobiFreeEnv::operator()(GRBenv* const env) const {
