@@ -1444,6 +1444,64 @@ class CpModelTest(absltest.TestCase):
         solution = solver.BooleanValues(x)
         self.assertTrue((solution.values == [False, True, False]).all())
 
+    def testFixedSizeIntervalVarSeries(self):
+        print("testFixedSizeIntervalVarSeries")
+        df = pd.DataFrame([2, 4, 6], columns=["size"])
+        model = cp_model.CpModel()
+        starts = model.NewIntVarSeries(
+            name="starts", index=df.index, lower_bounds=0, upper_bounds=5
+        )
+        presences = model.NewBoolVarSeries(name="rresences", index=df.index)
+        fixed_size_intervals = model.NewFixedSizeIntervalVarSeries(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=df.size,
+        )
+        opt_fixed_size_intervals = model.NewOptionalFixedSizeIntervalVarSeries(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=df.size,
+            are_present=presences,
+        )
+        model.AddNoOverlap(
+            fixed_size_intervals.to_list() + opt_fixed_size_intervals.to_list()
+        )
+        self.assertLen(model.Proto().constraints, 7)
+
+    def testIntervalVarSeries(self):
+        print("testIntervalVarSeries")
+        df = pd.DataFrame([2, 4, 6], columns=["size"])
+        model = cp_model.CpModel()
+        starts = model.NewIntVarSeries(
+            name="starts", index=df.index, lower_bounds=0, upper_bounds=5
+        )
+        sizes = model.NewIntVarSeries(
+            name="sizes", index=df.index, lower_bounds=2, upper_bounds=4
+        )
+        ends = model.NewIntVarSeries(
+            name="ends", index=df.index, lower_bounds=0, upper_bounds=10
+        )
+        presences = model.NewBoolVarSeries(name="rresences", index=df.index)
+        intervals = model.NewIntervalVarSeries(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=sizes,
+            ends=ends,
+        )
+        opt_intervals = model.NewOptionalIntervalVarSeries(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=sizes,
+            ends=ends,
+            are_present=presences,
+        )
+        model.AddNoOverlap(intervals.to_list() + opt_intervals.to_list())
+        self.assertLen(model.Proto().constraints, 13)
+
 
 if __name__ == "__main__":
     absltest.main()

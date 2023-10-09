@@ -2146,10 +2146,11 @@ class CpModel:
         """Creates an optional interval var from start, size, end, and is_present.
 
         An optional interval variable is a constraint, that is itself used in other
-        constraints like NoOverlap. This constraint is protected by an is_present
+        constraints like NoOverlap. This constraint is protected by a presence
         literal that indicates if it is active or not.
 
-        Internally, it ensures that `is_present` implies `start + size == end`.
+        Internally, it ensures that `is_present` implies `start + size ==
+        end`.
 
         Args:
           start: The start of the interval. It can be an integer value, or an
@@ -2193,7 +2194,7 @@ class CpModel:
         starts: Union[LinearExprT, pd.Series],
         sizes: Union[LinearExprT, pd.Series],
         ends: Union[LinearExprT, pd.Series],
-        performed_literals: Union[LiteralT, pd.Series],
+        are_present: Union[LiteralT, pd.Series],
     ) -> pd.Series:
         """Creates a series of interval variables with the given name.
 
@@ -2209,6 +2210,9 @@ class CpModel:
           ends (Union[LinearExprT, pd.Series]): The ends of each interval in the
             set. If a `pd.Series` is passed in, it will be based on the
             corresponding values of the pd.Series.
+          are_present (Union[LiteralT, pd.Series]): The performed literal of each
+            interval in the set. If a `pd.Series` is passed in, it will be based on
+            the corresponding values of the pd.Series.
 
         Returns:
           pd.Series: The interval variable set indexed by its corresponding
@@ -2227,9 +2231,7 @@ class CpModel:
         starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
         sizes = _ConvertToLinearExprSeriesAndValidateIndex(sizes, index)
         ends = _ConvertToLinearExprSeriesAndValidateIndex(ends, index)
-        performed_literals = _ConvertToLiteralSeriesAndValidateIndex(
-            performed_literals, index
-        )
+        are_present = _ConvertToLiteralSeriesAndValidateIndex(are_present, index)
 
         interval_array = []
         for i in index:
@@ -2238,14 +2240,18 @@ class CpModel:
                     start=starts[i],
                     size=sizes[i],
                     end=ends[i],
-                    is_present=performed_literals[i],
+                    is_present=are_present[i],
                     name=f"{name}[{i}]",
                 )
             )
         return pd.Series(index=index, data=interval_array)
 
     def NewOptionalFixedSizeIntervalVar(
-        self, start: LinearExprT, size: IntegralT, is_present: LiteralT, name: str
+        self,
+        start: LinearExprT,
+        size: IntegralT,
+        is_present: LiteralT,
+        name: str,
     ) -> IntervalVar:
         """Creates an interval variable from start, and a fixed size.
 
@@ -2273,7 +2279,12 @@ class CpModel:
             )
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
         return IntervalVar(
-            self.__model, start_expr, size_expr, end_expr, is_present_index, name
+            self.__model,
+            start_expr,
+            size_expr,
+            end_expr,
+            is_present_index,
+            name,
         )
 
     def NewOptionalFixedSizeIntervalVarSeries(
@@ -2282,7 +2293,7 @@ class CpModel:
         index: pd.Index,
         starts: Union[LinearExprT, pd.Series],
         sizes: Union[IntegralT, pd.Series],
-        performed_literals: Union[LiteralT, pd.Series],
+        are_present: Union[LiteralT, pd.Series],
     ) -> pd.Series:
         """Creates a series of interval variables with the given name.
 
@@ -2295,9 +2306,9 @@ class CpModel:
           sizes (Union[IntegralT, pd.Series]): The fixed size of each interval in
             the set. If a `pd.Series` is passed in, it will be based on the
             corresponding values of the pd.Series.
-          performed_literals (Union[LiteralT, pd.Series]): The performed literal of
-            each interval in the set. If a `pd.Series` is passed in, it will be
-            based on the corresponding values of the pd.Series.
+          are_present (Union[LiteralT, pd.Series]): The performed literal of each
+            interval in the set. If a `pd.Series` is passed in, it will be based on
+            the corresponding values of the pd.Series.
 
         Returns:
           pd.Series: The interval variable set indexed by its corresponding
@@ -2315,16 +2326,14 @@ class CpModel:
 
         starts = _ConvertToLinearExprSeriesAndValidateIndex(starts, index)
         sizes = _ConvertToIntegralSeriesAndValidateIndex(sizes, index)
-        performed_literals = _ConvertToLiteralSeriesAndValidateIndex(
-            performed_literals, index
-        )
+        are_present = _ConvertToLiteralSeriesAndValidateIndex(are_present, index)
         interval_array = []
         for i in index:
             interval_array.append(
                 self.NewOptionalFixedSizeIntervalVar(
                     start=starts[i],
                     size=sizes[i],
-                    is_present=performed_literals[i],
+                    is_present=are_present[i],
                     name=f"{name}[{i}]",
                 )
             )

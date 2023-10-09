@@ -1,11 +1,8 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
-
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Scheduling recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
-
-
 
 ## Introduction
 
@@ -754,7 +751,7 @@ def main():
         index=tasks_df.index,
         starts=starts,
         sizes=tasks_df.duration,
-        performed_literals=performed,
+        are_present=performed,
     )
 
     # Set up the profile. We use fixed (intervals, demands) to fill in the space
@@ -795,7 +792,7 @@ def main():
             else:
                 print(f"task {task} is not performed")
     elif status == cp_model.INFEASIBLE:
-        print("The problem is infeasible")
+        print("No solution found")
     else:
         print("Something is wrong, check the status and the log of the solve")
 
@@ -808,7 +805,7 @@ if __name__ == "__main__":
 
 ## Ranking tasks in a disjunctive resource
 
-To rank intervals in a NoOverlap constraint, we will count the number of
+To rank intervals in a no_overlap constraint, we will count the number of
 performed intervals that precede each interval.
 
 This is slightly complicated if some interval variables are optional. To
@@ -1455,8 +1452,8 @@ public class RankingSampleSat
 
 ## Ranking tasks in a disjunctive resource with a circuit constraint.
 
-To rank intervals in a NoOverlap constraint, we will use a circuit constraint to
-perform the transitive reduction from precedences to successors.
+To rank intervals in a no_overlap constraint, we will use a circuit constraint
+to perform the transitive reduction from precedences to successors.
 
 This is slightly complicated if some interval variables are optional, and we
 need to take into account the case where no task is performed.
@@ -1728,10 +1725,10 @@ SchedulingWithCalendarSampleSat()
 
 ## Detecting if two intervals overlap.
 
-We want a Boolean variable to be true iff two intervals overlap. To enforce
-this, we will create 3 Boolean variables, link two of them to the relative
-positions of the two intervals, and define the third one using the other two
-Boolean variables.
+We want a Boolean variable to be true if and only if two intervals overlap. To
+enforce this, we will create 3 Boolean variables, link two of them to the
+relative positions of the two intervals, and define the third one using the
+other two Boolean variables.
 
 There are two ways of linking the three Boolean variables. The first version
 uses one clause and two implications. Propagation will be faster using this
@@ -1855,5 +1852,3 @@ OverlappingIntervals()
 ## Precedences between intervals
 
 ## Convex hull of a set of intervals
-
-## Reservoir constraint

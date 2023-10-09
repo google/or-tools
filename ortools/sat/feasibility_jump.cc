@@ -13,6 +13,8 @@
 
 #include "ortools/sat/feasibility_jump.h"
 
+#include <stdlib.h>
+
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -25,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
@@ -52,20 +55,53 @@ namespace operations_research::sat {
 namespace {
 // How much do we discount moves we might fix later.
 constexpr double kCompoundDiscount = 1. / 1024;
-
-std::pair<int64_t, double> FindBestValue(Domain domain, int64_t current_value,
-                                         absl::FunctionRef<double(int64_t)> f) {
-  std::pair<int64_t, double> result = std::make_pair(current_value, 0.0);
-  domain = domain.IntersectionWith(
-      Domain(current_value, current_value).Complement());
-  for (int i = 0; i < domain.NumIntervals(); ++i) {
-    const auto& [min, max] = domain[i];
-    const auto& [val, score] = RangeConvexMinimum(result, min, max + 1, f);
-    if (score < result.second) result = std::make_pair(val, score);
-  }
-  return result;
-}
 }  // namespace
+
+JumpTable::JumpTable(
+    absl::AnyInvocable<std::pair<int64_t, double>(int)> compute_jump)
+    : compute_jump_(std::move(compute_jump)) {}
+
+void JumpTable::RecomputeAll(int num_variables) {
+  deltas_.resize(num_variables);
+  scores_.resize(num_variables);
+  needs_recomputation_.assign(num_variables, true);
+}
+
+void JumpTable::SetJump(int var, int64_t delta, double score) {
+  deltas_[var] = delta;
+  scores_[var] = score;
+  needs_recomputation_[var] = false;
+}
+
+void JumpTable::Recompute(int var) { needs_recomputation_[var] = true; }
+
+bool JumpTable::PossiblyGood(int var) const {
+  return needs_recomputation_[var] || scores_[var] < 0;
+}
+
+bool JumpTable::JumpIsUpToDate(int var) {
+  const auto& [delta, score] = compute_jump_(var);
+  if (delta != deltas_[var]) {
+    LOG(ERROR) << "Incorrect delta for var " << var << ": " << deltas_[var]
+               << " (should be " << delta << ")";
+  }
+  bool score_ok = true;
+  if (abs(score - scores_[var]) / std::max(abs(score), 1.0) > 1e-2) {
+    score_ok = false;
+    LOG(ERROR) << "Incorrect score for var " << var << ": " << scores_[var]
+               << " (should be " << score << ") "
+               << " delta = " << delta;
+  }
+  return delta == deltas_[var] && score_ok;
+}
+
+std::pair<int64_t, double> JumpTable::GetJump(int var) {
+  if (needs_recomputation_[var]) {
+    needs_recomputation_[var] = false;
+    std::tie(deltas_[var], scores_[var]) = compute_jump_(var);
+  }
+  return std::make_pair(deltas_[var], scores_[var]);
+}
 
 FeasibilityJumpSolver::~FeasibilityJumpSolver() {
   if (!VLOG_IS_ON(1)) return;
@@ -101,8 +137,16 @@ void FeasibilityJumpSolver::Initialize() {
         ReadDomainFromProto(linear_model_->model_proto().variables(v));
     var_has_two_values_[v] = var_domains_[v].HasTwoValues();
   }
+  vars_to_scan_.reserve(num_variables);
+  in_vars_to_scan_.assign(num_variables, false);
   move_ =
       std::make_unique<CompoundMoveBuilder>(evaluator_.get(), num_variables);
+  var_occurs_in_non_linear_constraint_.resize(num_variables);
+  for (int c = 0; c < evaluator_->NumNonLinearConstraints(); ++c) {
+    for (int v : evaluator_->GeneralConstraintToVars(c)) {
+      var_occurs_in_non_linear_constraint_[v] = true;
+    }
+  }
 }
 
 namespace {
@@ -272,7 +316,7 @@ std::string FeasibilityJumpSolver::OneLineStats() const {
   const std::string non_solution_str =
       num_infeasible_cts == 0
           ? ""
-          : absl::StrCat(" #good_lin_moves:", FormatCounter(good_jumps_.size()),
+          : absl::StrCat(" #good_moves:", FormatCounter(vars_to_scan_.size()),
                          " #inf_cts:",
                          FormatCounter(evaluator_->NumInfeasibleConstraints()));
 
@@ -409,6 +453,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       if (params_.violation_ls_use_compound_moves()) {
         use_compound_moves_ = absl::Bernoulli(random_, 0.25);
         if (use_compound_moves_) {
+          compound_move_max_discrepancy_ = 0;
           compound_weight_changed_.clear();
           in_compound_weight_changed_.assign(weights_.size(), false);
           compound_weights_.assign(weights_.size(), kCompoundDiscount);
@@ -450,124 +495,140 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   };
 }
 
-bool FeasibilityJumpSolver::IsGood(int var) const {
-  if (jump_scores_[var] < 0.0) return true;
-  if (jump_scores_[var] > 0.0) return false;
-  return evaluator_->ObjectiveDelta(var, jump_deltas_[var]) < 0;
+double FeasibilityJumpSolver::ComputeScore(
+    absl::Span<const double> scan_weights, int var, int64_t delta,
+    bool linear_only) const {
+  constexpr double kEpsilon = 1.0 / std::numeric_limits<int64_t>::max();
+  double score = evaluator_->LinearEvaluator().WeightedViolationDelta(
+      scan_weights, var, delta);
+  if (!linear_only) {
+    score +=
+        evaluator_->WeightedNonLinearViolationDelta(scan_weights, var, delta);
+  }
+  score += kEpsilon * evaluator_->ObjectiveDelta(var, delta);
+  return score;
 }
 
-void FeasibilityJumpSolver::RecomputeJump(int var) {
+std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
   const std::vector<int64_t>& solution = evaluator_->current_solution();
-  ++num_linear_evals_;
-  jump_need_recomputation_[var] = false;
   if (var_domains_[var].IsFixed()) {
-    jump_deltas_[var] = 0;
-    jump_scores_[var] = 0.0;
-    return;
+    return std::make_pair(0l, 0.0);
   }
+
+  ++num_linear_evals_;
   const LinearIncrementalEvaluator& linear_evaluator =
       evaluator_->LinearEvaluator();
 
   if (var_has_two_values_[var]) {
     const int64_t min_value = var_domains_[var].Min();
     const int64_t max_value = var_domains_[var].Max();
-    jump_deltas_[var] = solution[var] == min_value ? max_value - min_value
-                                                   : min_value - max_value;
-    jump_scores_[var] = linear_evaluator.WeightedViolationDelta(
-        weights_, var, jump_deltas_[var]);
-  } else {
-    // In practice, after a few iterations, the chance of finding an improving
-    // move is slim, and we can test that fairly easily with at most two
-    // queries!
-    //
-    // Tricky/Annoying: if the value is not in the domain, we returns it.
-    const int64_t p1 = var_domains_[var].ValueAtOrBefore(solution[var] - 1);
-    const int64_t p2 = var_domains_[var].ValueAtOrAfter(solution[var] + 1);
+    const int64_t delta = solution[var] == min_value ? max_value - min_value
+                                                     : min_value - max_value;
+    return std::make_pair(delta,
+                          ComputeScore(var, delta, /*linear_only=*/true));
+  }
 
-    std::pair<int64_t, double> best_jump;
-    const double v1 = var_domains_[var].Contains(p1)
-                          ? linear_evaluator.WeightedViolationDelta(
-                                weights_, var, p1 - solution[var])
-                          : std::numeric_limits<double>::infinity();
-    if (v1 < 0.0) {
-      // Point p1 is improving. Look for best before it.
-      // Note that we can exclude all point after solution[var] since it is
-      // worse and we assume convexity.
+  // In practice, after a few iterations, the chance of finding an improving
+  // move is slim, and we can test that fairly easily with at most two
+  // queries!
+  //
+  // Tricky/Annoying: if the value is not in the domain, we returns it.
+  const int64_t p1 = var_domains_[var].ValueAtOrBefore(solution[var] - 1);
+  const int64_t p2 = var_domains_[var].ValueAtOrAfter(solution[var] + 1);
+
+  std::pair<int64_t, double> best_jump;
+  const double v1 =
+      var_domains_[var].Contains(p1)
+          ? ComputeScore(var, p1 - solution[var], /*linear_only=*/true)
+          : std::numeric_limits<double>::infinity();
+  if (v1 < 0.0) {
+    // Point p1 is improving. Look for best before it.
+    // Note that we can exclude all point after solution[var] since it is
+    // worse and we assume convexity.
+    const Domain dom = var_domains_[var].IntersectionWith(
+        Domain(std::numeric_limits<int64_t>::min(), p1 - 1));
+    if (dom.IsEmpty()) {
+      best_jump = {p1, v1};
+    } else {
+      tmp_breakpoints_ =
+          linear_evaluator.SlopeBreakpoints(var, solution[var], dom);
+      best_jump = ConvexMinimum<int64_t, double>(
+          /*is_to_the_right=*/true, {p1, v1}, tmp_breakpoints_,
+          [this, var, &solution](int64_t jump_value) {
+            return ComputeScore(var, jump_value - solution[var],
+                                /*linear_only=*/true);
+          });
+    }
+  } else {
+    const double v2 =
+        var_domains_[var].Contains(p2)
+            ? ComputeScore(var, p2 - solution[var], /*linear_only=*/true)
+            : std::numeric_limits<double>::infinity();
+    if (v2 < 0.0) {
+      // Point p2 is improving. Look for best after it.
+      // Similarly, we exclude the other points by convexity.
       const Domain dom = var_domains_[var].IntersectionWith(
-          Domain(std::numeric_limits<int64_t>::min(), p1 - 1));
+          Domain(p2 + 1, std::numeric_limits<int64_t>::max()));
       if (dom.IsEmpty()) {
-        best_jump = {p1, v1};
+        best_jump = {p2, v2};
       } else {
         tmp_breakpoints_ =
             linear_evaluator.SlopeBreakpoints(var, solution[var], dom);
         best_jump = ConvexMinimum<int64_t, double>(
-            /*is_to_the_right=*/true, {p1, v1}, tmp_breakpoints_,
-            [var, this, &linear_evaluator, &solution](int64_t jump_value) {
-              return linear_evaluator.WeightedViolationDelta(
-                  weights_, var, jump_value - solution[var]);
+            /*is_to_the_right=*/false, {p2, v2}, tmp_breakpoints_,
+            [this, var, &solution](int64_t jump_value) {
+              return ComputeScore(var, jump_value - solution[var],
+                                  /*linear_only=*/true);
             });
       }
     } else {
-      const double v2 = var_domains_[var].Contains(p2)
-                            ? linear_evaluator.WeightedViolationDelta(
-                                  weights_, var, p2 - solution[var])
-                            : std::numeric_limits<double>::infinity();
-      if (v2 < 0.0) {
-        // Point p2 is improving. Look for best after it.
-        // Similarly, we exclude the other points by convexity.
-        const Domain dom = var_domains_[var].IntersectionWith(
-            Domain(p2 + 1, std::numeric_limits<int64_t>::max()));
-        if (dom.IsEmpty()) {
-          best_jump = {p2, v2};
-        } else {
-          tmp_breakpoints_ =
-              linear_evaluator.SlopeBreakpoints(var, solution[var], dom);
-          best_jump = ConvexMinimum<int64_t, double>(
-              /*is_to_the_right=*/false, {p2, v2}, tmp_breakpoints_,
-              [var, this, &linear_evaluator, &solution](int64_t jump_value) {
-                return linear_evaluator.WeightedViolationDelta(
-                    weights_, var, jump_value - solution[var]);
-              });
-        }
+      // We have no improving point, result is either p1 or p2. This is the
+      // most common scenario, and require no breakpoint computation!
+      // Choose the direction which increases violation the least,
+      // disambiguating by best objective.
+      if (v1 < v2) {
+        best_jump = {p1, v1};
       } else {
-        // We have no improving point, result is either p1 or p2. This is the
-        // most common scenario, and require no breakpoint computation!
-        // Choose the direction which increases violation the least,
-        // disambiguating by best objective.
-        if (v1 < v2 || (v1 == v2 && evaluator_->ObjectiveDelta(
-                                        var, p1 - solution[var]) < 0)) {
-          best_jump = {p1, v1};
-        } else {
-          best_jump = {p2, v2};
-        }
+        best_jump = {p2, v2};
       }
     }
-
-    DCHECK_NE(best_jump.first, solution[var]);
-    jump_deltas_[var] = best_jump.first - solution[var];
-    jump_scores_[var] = best_jump.second;
   }
+  DCHECK_NE(best_jump.first, solution[var]);
+  return std::make_pair(best_jump.first - solution[var], best_jump.second);
 }
 
-void FeasibilityJumpSolver::RecomputeAllJumps() {
-  const int num_variables = static_cast<int>(var_domains_.size());
-  jump_deltas_.resize(num_variables);
-  jump_scores_.resize(num_variables);
-  jump_need_recomputation_.assign(num_variables, true);
-
-  in_good_jumps_.assign(num_variables, false);
-  good_jumps_.clear();
-
-  for (int var = 0; var < num_variables; ++var) {
-    RecomputeJump(var);
-    if (IsGood(var)) {
-      in_good_jumps_[var] = true;
-      good_jumps_.push_back(var);
-    }
+std::pair<int64_t, double> FeasibilityJumpSolver::ComputeGeneralJump(int var) {
+  if (!var_occurs_in_non_linear_constraint_[var]) {
+    return ComputeLinearJump(var);
   }
+  Domain domain = var_domains_[var];
+  if (domain.IsFixed()) return std::make_pair(0, 0.0);
+
+  ++num_general_evals_;
+  const int64_t current_value = evaluator_->current_solution()[var];
+  domain = domain.IntersectionWith(
+      Domain(current_value, current_value).Complement());
+  std::pair<int64_t, double> result = RangeConvexMinimum<int64_t, double>(
+      domain[0].start - current_value, domain[0].end - current_value + 1,
+      [&](int64_t delta) -> double {
+        return ComputeScore(var, delta, /*linear_only=*/false);
+      });
+  for (int i = 1; i < domain.NumIntervals(); ++i) {
+    const int64_t min_delta = domain[i].start - current_value;
+    const int64_t max_delta = domain[i].end - current_value;
+    const auto& [delta, score] = RangeConvexMinimum<int64_t, double>(
+        result, min_delta, max_delta + 1, [&](int64_t delta) -> double {
+          return ComputeScore(var, delta, /*linear_only=*/false);
+        });
+    if (score < result.second) result = std::make_pair(delta, score);
+  }
+  DCHECK(domain.Contains(current_value + result.first))
+      << current_value << "+" << result.first << "  not in domain "
+      << domain.ToString();
+  return result;
 }
 
-void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
+void FeasibilityJumpSolver::UpdateViolatedConstraintWeights(JumpTable& jumps) {
   ++num_weight_updates_;
 
   // Because we update the weight incrementally, it is better to not have a
@@ -576,6 +637,7 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   // DCHECK(JumpIsUpToDate(var)) will fail more often.
   const double kMaxWeight = 1e10;
   const double kBumpFactor = 1.0 / params_.feasibility_jump_decay();
+  const int num_variables = var_domains_.size();
   if (use_decay_) {
     bump_value_ *= kBumpFactor;
   }
@@ -597,7 +659,7 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
       weights_[c] *= factor;
       if (use_compound_moves_) compound_weights_[c] *= factor;
     }
-    RecomputeAllJumps();
+    jumps.RecomputeAll(num_variables);
     return;
   }
 
@@ -610,10 +672,18 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   LinearIncrementalEvaluator* linear_evaluator =
       evaluator_->MutableLinearEvaluator();
   linear_evaluator->ClearAffectedVariables();
-  for_weight_update_.resize(jump_scores_.size());
+  for_weight_update_.resize(num_variables);
   for (const int c : evaluator_->ViolatedConstraints()) {
-    linear_evaluator->UpdateScoreOnWeightUpdate(
-        c, jump_deltas_, absl::MakeSpan(for_weight_update_));
+    // TODO(user): We can probably handle compound moves too.
+    if (c < evaluator_->NumLinearConstraints() && !use_compound_moves_) {
+      linear_evaluator->UpdateScoreOnWeightUpdate(
+          c, jumps.Deltas(), absl::MakeSpan(for_weight_update_));
+    } else {
+      for (const int v : evaluator_->ConstraintToVars(c)) {
+        jumps.Recompute(v);
+        AddVarToScan(jumps, v);
+      }
+    }
   }
 
   // Recompute the affected jumps.
@@ -621,64 +691,31 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights() {
   for (const int var : linear_evaluator->VariablesAffectedByLastUpdate()) {
     // Apply the delta.
     //
-    // TODO(user): We could compute the minimal bump that lead to a good move.
-    // That might change depending on the jump value though, so we can only
-    // do that easily for Boolean I think.
-    jump_scores_[var] += bump_value_ * for_weight_update_[var];
-
-    // We don't need to recompute score of binary variable, it should
-    // already be correct.
-    if (!jump_need_recomputation_[var] && var_has_two_values_[var]) {
-      DCHECK(JumpIsUpToDate(var));
-      if (IsGood(var) && !in_good_jumps_[var]) {
-        in_good_jumps_[var] = true;
-        good_jumps_.push_back(var);
-      }
-      continue;
+    // TODO(user): We could compute the minimal bump that would lead to a
+    // good move. That might change depending on the jump value though, so
+    // we can only do that easily for Booleans.
+    // TODO(user): We can probably handle compound moves too.
+    if (!var_has_two_values_[var] || use_compound_moves_) {
+      jumps.Recompute(var);
+    } else {
+      // We may know the correct score for binary vars.
+      jumps.MutableScores()[var] += bump_value_ * for_weight_update_[var];
     }
-
-    // This jump might be good, so we need to add it to the queue so it can be
-    // evaluated when choosing the next jump.
-    jump_need_recomputation_[var] = true;
-    if (!in_good_jumps_[var]) {
-      in_good_jumps_[var] = true;
-      good_jumps_.push_back(var);
-    }
+    AddVarToScan(jumps, var);
   }
 }
 
-// Important: This is for debugging, but unfortunately it currently change the
-// deterministic time and so the overall algo behavior.
-bool FeasibilityJumpSolver::JumpIsUpToDate(int var) {
-  // With decay, we have a wide magnitude of weight, so the incremental update
-  // of the floating point score can be widely off. Here we just check that
-  // without decay (integer weight) the update should be reasonably precise.
-  if (use_decay_) return true;
-
-  const int64_t old_jump_delta = jump_deltas_[var];
-  const double old_score = jump_scores_[var];
-  RecomputeJump(var);
-  CHECK_EQ(jump_deltas_[var], old_jump_delta);  // No change
-  const double relative =
-      std::max({std::abs(jump_scores_[var]), std::abs(old_score), 1.0});
-  const bool result = std::abs(jump_scores_[var] - old_score) / relative < 1e-2;
-
-  // To keep the same behavior as in -c opt, we restore the old value.
-  jump_scores_[var] = old_score;
-  return result;
-}
-
 bool FeasibilityJumpSolver::DoSomeLinearIterations() {
-  RecomputeAllJumps();
-  evaluator_->RecomputeViolatedList(/*linear_only=*/true);
-
   if (VLOG_IS_ON(1)) {
     shared_response_->LogMessageWithThrottling(name(), OneLineStats());
   }
 
-  // TODO(user): It should be possible to support compound moves with the
-  // specialized linear code, but lets keep it simpler for now.
+  // TODO(user): It should be possible to support compound moves with
+  // the specialized linear code, but lets keep it simpler for now.
   if (use_compound_moves_) return true;
+
+  evaluator_->RecomputeViolatedList(/*linear_only=*/true);
+  RecomputeVarsToScan(linear_jumps_);
 
   // Do a batch of a given number of loop here.
   // Outer loop: when no more greedy moves, update the weight.
@@ -687,90 +724,41 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
   for (int loop = 0; loop < kBatchSize; ++loop) {
     // Inner loop: greedy descent.
     for (; loop < kBatchSize; ++loop) {
-      // Test the shared limit not too often.
-      //
-      // TODO(user): depending on the size of the problem that might be too
-      // little, use deterministic time instead.
-      if (loop % 100 == 0) {
-        if (shared_time_limit_->LimitReached()) {
-          return false;
-        }
-      }
-
       // Take the best jump score amongst some random candidates.
       // It is okay if we pick twice the same, we don't really care.
-      int best_var = -1;
-      int best_index = -1;
-      int64_t best_delta = 0;
-      double best_score = 0.0;
-      int64_t best_obj_delta = 0;
-      int num_improving_jump_tested = 0;
-      while (!good_jumps_.empty() && num_improving_jump_tested < 5) {
-        const int index = absl::Uniform<int>(
-            random_, 0, static_cast<int>(good_jumps_.size()));
-        const int var = good_jumps_[index];
-
-        // We lazily update the jump value.
-        if (jump_need_recomputation_[var]) {
-          RecomputeJump(var);
-        } else {
-          DCHECK(JumpIsUpToDate(var));
-        }
-
-        if (!IsGood(var)) {
-          // Lazily remove.
-          in_good_jumps_[var] = false;
-          good_jumps_[index] = good_jumps_.back();
-          good_jumps_.pop_back();
-          if (best_index == good_jumps_.size()) best_index = index;
-          continue;
-        }
-
-        ++num_improving_jump_tested;
-        const int64_t obj_delta =
-            evaluator_->ObjectiveDelta(var, jump_deltas_[var]);
-        if (std::make_pair(jump_scores_[var], obj_delta) <
-            std::make_pair(best_score, best_obj_delta)) {
-          best_var = var;
-          best_index = index;
-          best_delta = jump_deltas_[var];
-          best_score = jump_scores_[var];
-          best_obj_delta = obj_delta;
-        }
+      int best_var;
+      int64_t best_value;
+      double best_score;
+      if (!ScanRelevantVariables(/*num_to_scan=*/5, linear_jumps_, &best_var,
+                                 &best_value, &best_score)) {
+        break;
       }
-
-      if (good_jumps_.empty()) break;
-      DCHECK_NE(best_var, -1);
-      DCHECK_NE(best_index, -1);
+      const int64_t current_value = solution[best_var];
 
       // Perform the move.
       ++num_linear_moves_;
-      const int64_t best_value = solution[best_var] + best_delta;
       evaluator_->UpdateLinearScores(best_var, best_value, weights_,
-                                     jump_deltas_,
-                                     absl::MakeSpan(jump_scores_));
+                                     linear_jumps_.Deltas(),
+                                     linear_jumps_.MutableScores());
       evaluator_->UpdateVariableValue(best_var, best_value);
 
-      // We already know the score of undoing the move we just did, and we know
-      // this move is bad, so we can remove it from good_jumps_ right away.
-      jump_deltas_[best_var] = -jump_deltas_[best_var];
-      jump_scores_[best_var] = -best_score;
       if (var_has_two_values_[best_var]) {
-        CHECK_EQ(good_jumps_[best_index], best_var);
-        in_good_jumps_[best_var] = false;
-        good_jumps_[best_index] = good_jumps_.back();
-        good_jumps_.pop_back();
+        // We already know the score of undoing the move we just did, and that
+        // this is optimal.
+        linear_jumps_.SetJump(best_var, current_value - best_value,
+                              -best_score);
       } else {
-        jump_need_recomputation_[best_var] = true;
+        linear_jumps_.Recompute(best_var);
       }
-      MarkJumpsThatNeedsToBeRecomputed(best_var);
+      MarkJumpsThatNeedToBeRecomputed(best_var, linear_jumps_);
     }
+    if (time_limit_crossed_) return false;
 
     // We will update the weight unless the queue is non-empty.
-    if (good_jumps_.empty()) {
+    if (vars_to_scan_.empty()) {
       // Note that we only count linear constraint as violated here.
       if (evaluator_->ViolatedConstraints().empty()) return true;
-      UpdateViolatedConstraintWeights();
+      UpdateViolatedConstraintWeights(linear_jumps_);
     }
   }
   return false;
@@ -789,29 +777,22 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 // TODO(user): For non-Boolean, we could easily detect if a non-improving
 // score cannot become improving. We don't need to add such variable to
 // the queue.
-void FeasibilityJumpSolver::MarkJumpsThatNeedsToBeRecomputed(int changed_var) {
+void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var,
+                                                            JumpTable& jumps) {
   for (const int var : evaluator_->VariablesAffectedByLastLinearUpdate()) {
-    if (var == changed_var) continue;
-    if (jump_need_recomputation_[var]) {
-      DCHECK(in_good_jumps_[var]);
-      continue;
+    // TODO(user): We can probably handle compound moves too.
+    if (var != changed_var &&
+        (!var_has_two_values_[var] || use_compound_moves_)) {
+      jumps.Recompute(var);
     }
-
-    // We don't need to recompute score of binary variable, it should
-    // already be correct.
-    if (var_has_two_values_[var]) {
-      DCHECK(JumpIsUpToDate(var)) << var << " " << jump_scores_[var];
-      if (IsGood(var) && !in_good_jumps_[var]) {
-        in_good_jumps_[var] = true;
-        good_jumps_.push_back(var);
-      }
-      continue;
-    }
-
-    jump_need_recomputation_[var] = true;
-    if (!in_good_jumps_[var]) {
-      in_good_jumps_[var] = true;
-      good_jumps_.push_back(var);
+    AddVarToScan(jumps, var);
+  }
+  for (const auto& [c, violation_delta] :
+       evaluator_->last_update_violation_changes()) {
+    if (c < evaluator_->NumLinearConstraints()) continue;
+    for (const int var : evaluator_->ConstraintToVars(c)) {
+      if (var != changed_var) jumps.Recompute(var);
+      AddVarToScan(jumps, var);
     }
   }
 }
@@ -821,105 +802,93 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
     return true;
   }
   const std::vector<int64_t>& solution = evaluator_->current_solution();
-
   // Non-linear constraints are not evaluated in the linear phase.
   evaluator_->UpdateAllNonLinearViolations();
   evaluator_->RecomputeViolatedList(/*linear_only=*/false);
-  RecomputeVarsToScan();
-  if (use_compound_moves_) {
-    compound_move_beam_search_width_ = absl::Bernoulli(random_, 0.75) ? 1 : 2;
-  }
+  RecomputeVarsToScan(general_jumps_);
   auto effort = [&]() {
-    return num_general_evals_ + num_weight_updates_ + num_general_moves_;
+    return num_general_evals_ + num_linear_evals_ + num_weight_updates_ +
+           num_general_moves_;
   };
-  const int64_t effort_limit = effort() + 100000;
+  const int64_t effort_limit = effort() + 20000;
   while (effort() < effort_limit) {
     int var;
     int64_t value;
     double score;
-    bool time_limit_crossed = false;
-    DCHECK(!move_->IsImproving());
-    const bool found_move =
-        ScanRelevantVariables(&var, &value, &score, &time_limit_crossed);
+    const bool found_move = ScanRelevantVariables(
+        /*num_to_scan=*/3, general_jumps_, &var, &value, &score);
     const bool backtrack =
         !found_move && move_->Backtrack(&var, &value, &score);
     if (found_move || backtrack) {
-      const int64_t prev_value = solution[var];
       // Perform the move.
-      num_general_moves_++;
-
+      ++num_general_moves_;
+      CHECK_NE(var, -1) << var << " " << found_move << " " << backtrack;
+      const int64_t prev_value = solution[var];
+      DCHECK_NE(prev_value, value);
       // Update the linear part.
-      evaluator_->UpdateLinearScores(var, value, weights_, jump_deltas_,
-                                     absl::MakeSpan(jump_scores_));
-      jump_scores_[var] = -score;
-      jump_deltas_[var] = -jump_deltas_[var];
-
-      // This score might include non-linear weights, so may be wrong.
-      // We don't actually use it, but if we make things more incremental
-      // across batches we may want this in future and it stops
-      // UpdateViolatedConstraintWeights() from DCHECKing.
-      jump_need_recomputation_[var] = MustRecomputeJumpOnGeneralUpdate(var);
-
+      evaluator_->UpdateLinearScores(var, value, weights_,
+                                     general_jumps_.Deltas(),
+                                     general_jumps_.MutableScores());
       // Update the non-linear part. Note it also commits the move.
       evaluator_->UpdateNonLinearViolations(var, value);
       evaluator_->UpdateVariableValue(var, value);
-      for (const auto& [c, violation_delta] :
-           evaluator_->last_update_violation_changes()) {
-        if (violation_delta == 0) continue;
-        for (const int var : evaluator_->ConstraintToVars(c)) {
-          if (violation_delta == evaluator_->Violation(c)) {
-            num_violated_constraints_per_var_[var] += 1;
-          } else if (violation_delta < 0 && !evaluator_->IsViolated(c)) {
-            num_violated_constraints_per_var_[var] -= 1;
-          }
-          if (use_compound_moves_ && !in_compound_weight_changed_[c]) {
+      // TODO(user): Handle compound moves?
+      if (use_compound_moves_ && !backtrack) {
+        // `!backtrack` is just an optimisation - we can never break any new
+        // constraints on backtrack, so we can never change any
+        // compound_weight_.
+        for (const auto& [c, violation_delta] :
+             evaluator_->last_update_violation_changes()) {
+          if (violation_delta == 0) continue;
+          if (violation_delta > 0 && compound_weights_[c] != weights_[c]) {
             compound_weights_[c] = weights_[c];
-            compound_weight_changed_.push_back(c);
+            if (!in_compound_weight_changed_[c]) {
+              in_compound_weight_changed_[c] = true;
+              compound_weight_changed_.push_back(c);
+            }
+            for (const int v : evaluator_->ConstraintToVars(c)) {
+              general_jumps_.Recompute(v);
+              // Vars will be added in MarkJumpsThatNeedToBeRecomputed.
+            }
+          } else if (violation_delta < 0 && !in_compound_weight_changed_[c] &&
+                     !evaluator_->IsViolated(c)) {
+            DCHECK_EQ(compound_weights_[c], weights_[c]);
             in_compound_weight_changed_[c] = true;
+            compound_weight_changed_.push_back(c);
           }
         }
       }
-
-      // We call AddVarToScan() after num_violated_constraints_per_var_ has
-      // been computed.
-      for (const int v : evaluator_->VariablesAffectedByLastLinearUpdate()) {
-        jump_need_recomputation_[v] = MustRecomputeJumpOnGeneralUpdate(v);
-        AddVarToScan(v);
+      if (!use_decay_) {
+        DCHECK_EQ(-score, ComputeScore(var, prev_value - value, false));
       }
-      for (const int general_c : evaluator_->VarToGeneralConstraints(var)) {
-        for (const int v : evaluator_->GeneralConstraintToVars(general_c)) {
-          AddVarToScan(v);
-        }
+      if (var_has_two_values_[var]) {
+        // We already know the score of the only possible move (undoing what we
+        // just did).
+        general_jumps_.SetJump(var, prev_value - value, -score);
+      } else {
+        general_jumps_.Recompute(var);
       }
-      DCHECK(SlowCheckNumViolatedConstraints());
-
+      MarkJumpsThatNeedToBeRecomputed(var, general_jumps_);
       if (use_compound_moves_ && !backtrack) {
         // Make sure we can undo the move.
         move_->Push(var, prev_value, score);
-        if (move_->IsImproving()) {
-          if (move_->Size() > 1) {
-            num_compound_moves_ += move_->Size();
-          }
+        if (move_->Score() < 0) {
+          num_compound_moves_ += move_->Size();
           move_->Clear();
-          ResetChangedCompoundWeights();
+          compound_move_max_discrepancy_ = 0;
         }
       }
       continue;
-    } else if (time_limit_crossed) {
+    } else if (time_limit_crossed_) {
       return false;
     }
     DCHECK_EQ(move_->Size(), 0);
     if (evaluator_->ViolatedConstraints().empty()) return true;
-    UpdateViolatedConstraintWeights();
-
-    DCHECK(SlowCheckNumViolatedConstraints());
-    // Constraints with increased weight may lead to new negative score moves.
-    for (const int c : evaluator_->ViolatedConstraints()) {
-      for (const int v : evaluator_->ConstraintToVars(c)) {
-        AddVarToScan(v);
-      }
+    if (use_compound_moves_) ResetChangedCompoundWeights();
+    if (!use_compound_moves_ || ++compound_move_max_discrepancy_ > 2) {
+      compound_move_max_discrepancy_ = 0;
+      UpdateViolatedConstraintWeights(general_jumps_);
     }
-    ResetChangedCompoundWeights();
   }
   return false;
 }
@@ -929,136 +898,135 @@ void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
   DCHECK_EQ(move_->Size(), 0);
   for (const int c : compound_weight_changed_) {
     in_compound_weight_changed_[c] = false;
-    compound_weights_[c] = weights_[c];
-    if (!evaluator_->IsViolated(c)) {
-      compound_weights_[c] *= kCompoundDiscount;
-      for (const int var : evaluator_->ConstraintToVars(c)) {
-        AddVarToScan(var);
-      }
+    double expected_weight =
+        (evaluator_->IsViolated(c) ? 1.0 : kCompoundDiscount) * weights_[c];
+    if (compound_weights_[c] == expected_weight) continue;
+    compound_weights_[c] = expected_weight;
+    for (const int var : evaluator_->ConstraintToVars(c)) {
+      general_jumps_.Recompute(var);
+      AddVarToScan(general_jumps_, var);
     }
   }
   compound_weight_changed_.clear();
 }
 
-bool FeasibilityJumpSolver::ShouldAcceptUnitMove(int var, int64_t delta,
-                                                 double score) {
-  if (score < 0) return true;
-  return score == 0 && evaluator_->ObjectiveDelta(var, delta) < 0;
-}
-
-bool FeasibilityJumpSolver::ShouldExtendCompoundMove(int var, int64_t delta,
-                                                     double score,
+bool FeasibilityJumpSolver::ShouldExtendCompoundMove(double score,
                                                      double novelty) {
   if (move_->Score() + score - std::max(novelty, 0.0) < 0) {
-    return true;
-  }
-  if (move_->Score() + score == 0 &&
-      move_->ObjectiveDelta() + evaluator_->ObjectiveDelta(var, delta) < 0) {
     return true;
   }
   return score < move_->BestChildScore();
 }
 
-bool FeasibilityJumpSolver::ScanRelevantVariables(int* improving_var,
-                                                  int64_t* improving_value,
-                                                  double* improving_score,
-                                                  bool* time_limit_crossed) {
-  if (move_->NumChildrenExplored() >= compound_move_beam_search_width_) {
+bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
+                                                  JumpTable& jumps,
+                                                  int* best_var,
+                                                  int64_t* best_value,
+                                                  double* best_score) {
+  if (move_->Discrepancy() > compound_move_max_discrepancy_) {
     return false;
   }
-  DCHECK_GE(move_->Score(), 0);
-  absl::Span<const int64_t> solution = evaluator_->current_solution();
-  absl::Span<const double> scan_weights =
-      use_compound_moves_ ? compound_weights_ : weights_;
-  while (!vars_to_scan_.empty()) {
-    const int idx = absl::Uniform<int>(random_, 0, vars_to_scan_.size());
-    const int var = vars_to_scan_[idx];
-    vars_to_scan_[idx] = vars_to_scan_.back();
-    vars_to_scan_.pop_back();
-    in_vars_to_scan_[var] = false;
-    // Skip evaluating `var` if it cannot have an improving move.
-    if (!ShouldScan(var)) continue;
+  double best_scan_score = 0.0;
+  int num_good = 0;
+  int best_index = -1;
+  *best_var = -1;
+  *best_score = 0.0;
 
-    int64_t new_value;
-    double scan_score;
-    const int64_t current_value = solution[var];
-    if (!use_compound_moves_ &&
-        evaluator_->VariableOnlyInLinearConstraintWithConvexViolationChange(
-            var)) {
-      // We lazily update the jump value.
-      if (jump_need_recomputation_[var]) {
-        // We don't use good_jumps_ and in_good_jumps_ here, so we don't update
-        // them.
-        RecomputeJump(var);
-      } else {
-        DCHECK(JumpIsUpToDate(var));
-      }
-      new_value = current_value + jump_deltas_[var];
-      scan_score = jump_scores_[var];
-    } else {
-      std::tie(new_value, scan_score) = FindBestValue(
-          var_domains_[var], current_value, [&](int64_t value) -> double {
-            // Check the time limit periodically.
-            if (++num_general_evals_ % 1000 == 0 &&
-                shared_time_limit_ != nullptr &&
-                shared_time_limit_->LimitReached()) {
-              *time_limit_crossed = true;
-            }
-            if (*time_limit_crossed) return 0.0;
-            return evaluator_->WeightedViolationDelta(scan_weights, var,
-                                                      value - current_value);
-          });
+  auto remove_var_to_scan_at_index = [&](int index) {
+    in_vars_to_scan_[vars_to_scan_[index]] = false;
+    vars_to_scan_[index] = vars_to_scan_.back();
+    vars_to_scan_.pop_back();
+    if (best_index == vars_to_scan_.size()) {
+      best_index = index;
     }
-    if (*time_limit_crossed) return false;
-    const int64_t delta = new_value - current_value;
-    if (delta == 0) continue;
-    const double score = use_compound_moves_
-                             ? evaluator_->WeightedViolationDelta(
-                                   weights_, var, new_value - current_value)
-                             : scan_score;
+  };
+  while (!vars_to_scan_.empty() && num_good < num_to_scan) {
+    const int index = absl::Uniform<int>(random_, 0, vars_to_scan_.size());
+    const int var = vars_to_scan_[index];
+    DCHECK_GE(var, 0);
+    DCHECK(in_vars_to_scan_[var]);
+
+    if (!ShouldScan(jumps, var)) {
+      remove_var_to_scan_at_index(index);
+      continue;
+    }
+    const auto [delta, scan_score] = jumps.GetJump(var);
+    if ((num_general_evals_ + num_linear_evals_) % 100 == 0 &&
+        shared_time_limit_ != nullptr && shared_time_limit_->LimitReached()) {
+      time_limit_crossed_ = true;
+      return false;
+    }
+    if (time_limit_crossed_) return false;
+    const int64_t current_value = evaluator_->current_solution()[var];
+    DCHECK(var_domains_[var].Contains(current_value + delta));
+    DCHECK(!var_domains_[var].IsFixed());
+    // Note that this will likely fail if you use decaying weights as they
+    // will have large magnitudes and the incremental update will be
+    // imprecise.
+    DCHECK(use_decay_ || jumps.JumpIsUpToDate(var))
+        << var << " " << var_domains_[var].ToString();
+    if (scan_score >= 0) {
+      remove_var_to_scan_at_index(index);
+      continue;
+    }
+    double score = scan_score;
     if (use_compound_moves_) {
-      if (!ShouldExtendCompoundMove(var, delta, score, score - scan_score)) {
+      // We only use compound moves in general iterations.
+      score = ComputeScore(weights_, var, delta, /*linear_only=*/false);
+      if (!ShouldExtendCompoundMove(score, score - scan_score)) {
+        remove_var_to_scan_at_index(index);
         continue;
       }
-    } else {
-      if (!ShouldAcceptUnitMove(var, delta, score)) continue;
     }
-    *improving_var = var;
-    *improving_value = new_value;
-    *improving_score = score;
+
+    ++num_good;
+    if (scan_score < best_scan_score) {
+      CHECK_NE(delta, 0) << score;
+      *best_var = var;
+      *best_value = current_value + delta;
+      *best_score = score;
+      best_scan_score = scan_score;
+      best_index = index;
+    }
+  }
+  if (best_index != -1) {
+    DCHECK_GT(num_good, 0);
+    DCHECK_GE(*best_var, 0);
+    DCHECK_EQ(*best_var, vars_to_scan_[best_index]);
+    remove_var_to_scan_at_index(best_index);
     return true;
   }
   return false;
 }
 
-bool FeasibilityJumpSolver::MustRecomputeJumpOnGeneralUpdate(int var) const {
-  return !evaluator_->VariableOnlyInLinearConstraintWithConvexViolationChange(
-             var) ||
-         !var_has_two_values_[var];
-}
-
-void FeasibilityJumpSolver::AddVarToScan(int var) {
-  if (in_vars_to_scan_[var] || !ShouldScan(var)) return;
+void FeasibilityJumpSolver::AddVarToScan(const JumpTable& jumps, int var) {
+  DCHECK_GE(var, 0);
+  if (in_vars_to_scan_[var] || !ShouldScan(jumps, var)) return;
   vars_to_scan_.push_back(var);
   in_vars_to_scan_[var] = true;
 }
 
-bool FeasibilityJumpSolver::ShouldScan(int var) const {
-  if (move_->OnStack(var) || var_domains_[var].IsFixed()) return false;
-  if (num_violated_constraints_per_var_[var] > 0) return true;
+bool FeasibilityJumpSolver::ShouldScan(const JumpTable& jumps, int var) const {
+  DCHECK_GE(var, 0);
+  if (var_domains_[var].IsFixed()) return false;
+  if (!jumps.PossiblyGood(var)) return false;
+  if (move_->OnStack(var)) return false;
+  if (evaluator_->NumViolatedConstraintsForVar(var) > 0) return true;
   const int64_t value = evaluator_->current_solution()[var];
   // Return true iff var is has a better objective value in its domain.
-  return evaluator_->ObjectiveDelta(var, var_domains_[var].Max() - value) < 0 ||
-         evaluator_->ObjectiveDelta(var, var_domains_[var].Min() - value) < 0;
+  return evaluator_->ObjectiveDelta(var, var_domains_[var].Min() - value) < 0 ||
+         evaluator_->ObjectiveDelta(var, var_domains_[var].Max() - value) < 0;
 }
 
-void FeasibilityJumpSolver::RecomputeVarsToScan() {
-  num_violated_constraints_per_var_.assign(var_domains_.size(), 0);
-  in_vars_to_scan_.assign(evaluator_->current_solution().size(), false);
+void FeasibilityJumpSolver::RecomputeVarsToScan(JumpTable& jumps) {
+  const int num_variables = var_domains_.size();
+  jumps.RecomputeAll(num_variables);
+  in_vars_to_scan_.assign(num_variables, false);
+  vars_to_scan_.clear();
+  DCHECK(SlowCheckNumViolatedConstraints());
   for (const int c : evaluator_->ViolatedConstraints()) {
     for (const int v : evaluator_->ConstraintToVars(c)) {
-      num_violated_constraints_per_var_[v] += 1;
-      AddVarToScan(v);
+      AddVarToScan(jumps, v);
     }
   }
 }
@@ -1072,13 +1040,9 @@ bool FeasibilityJumpSolver::SlowCheckNumViolatedConstraints() const {
     }
   }
   for (int v = 0; v < result.size(); ++v) {
-    CHECK_EQ(result[v], num_violated_constraints_per_var_[v]);
+    CHECK_EQ(result[v], evaluator_->NumViolatedConstraintsForVar(v));
   }
   return true;
-}
-
-bool CompoundMoveBuilder::IsImproving() const {
-  return Score() < 0 || (Score() == 0 && ObjectiveDelta() < 0);
 }
 
 void CompoundMoveBuilder::Clear() {
@@ -1101,25 +1065,26 @@ bool CompoundMoveBuilder::Backtrack(int* var, int64_t* value, double* score) {
   var_on_stack_[*var] = false;
   stack_.pop_back();
   DCHECK_NE(*value, evaluator_->current_solution()[*var]);
+  if (!stack_.empty()) {
+    ++stack_.back().discrepancy;
+  }
   return true;
 }
 
 void CompoundMoveBuilder::Push(int var, int64_t prev_value, double score) {
   DCHECK_NE(prev_value, evaluator_->current_solution()[var]);
-  const double obj_delta = evaluator_->ObjectiveDelta(
-      var, evaluator_->current_solution()[var] - prev_value);
   DCHECK(!var_on_stack_[var]);
   if (!stack_.empty()) {
     stack_.back().best_child_score =
         std::min(stack_.back().best_child_score, score);
-    ++stack_.back().num_children;
   }
   var_on_stack_[var] = true;
-  stack_.push_back(
-      {.var = var,
-       .prev_value = prev_value,
-       .score = -score,
-       .cumulative_score = Score() + score,
-       .cumulative_objective_delta = ObjectiveDelta() + obj_delta});
+  stack_.push_back({
+      .var = var,
+      .prev_value = prev_value,
+      .score = -score,
+      .cumulative_score = Score() + score,
+      .discrepancy = Discrepancy(),
+  });
 }
 }  // namespace operations_research::sat

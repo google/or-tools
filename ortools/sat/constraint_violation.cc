@@ -1284,11 +1284,13 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 LsEvaluator::LsEvaluator(const CpModelProto& cp_model) : cp_model_(cp_model) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
+  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
 
   std::vector<bool> ignored_constraints(cp_model_.constraints_size(), false);
   std::vector<ConstraintProto> additional_constraints;
   CompileConstraintsAndObjective(ignored_constraints, additional_constraints);
   BuildVarConstraintGraph();
+  pos_in_violated_constraints_.assign(NumEvaluatorConstraints(), -1);
 }
 
 LsEvaluator::LsEvaluator(
@@ -1297,8 +1299,10 @@ LsEvaluator::LsEvaluator(
     : cp_model_(cp_model) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
+  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
   CompileConstraintsAndObjective(ignored_constraints, additional_constraints);
   BuildVarConstraintGraph();
+  pos_in_violated_constraints_.assign(NumEvaluatorConstraints(), -1);
 }
 
 void LsEvaluator::BuildVarConstraintGraph() {
@@ -1497,7 +1501,11 @@ void LsEvaluator::CompileConstraintsAndObjective(
 
 bool LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
   if (!cp_model_.has_objective()) return false;
-  return linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub);
+  if (linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub)) {
+    UpdateViolatedList(0);
+    return true;
+  }
+  return false;
 }
 
 void LsEvaluator::OverwriteCurrentSolution(absl::Span<const int64_t> solution) {
@@ -1667,27 +1675,6 @@ double LsEvaluator::WeightedViolationDelta(absl::Span<const double> weights,
   return linear_evaluator_.WeightedViolationDelta(weights, var, delta) +
          WeightedNonLinearViolationDelta(weights, var, delta);
 }
-// TODO(user): Speed-up:
-//    - Use a row oriented representation of the model (could reuse the Apply
-//       methods on proto).
-//    - Maintain the list of violated constraints ?
-std::vector<int> LsEvaluator::VariablesInViolatedConstraints() const {
-  std::vector<int> variables;
-  for (int var = 0; var < cp_model_.variables_size(); ++var) {
-    if (linear_evaluator_.AppearsInViolatedConstraints(var)) {
-      variables.push_back(var);
-    } else {
-      for (const int ct_index : var_to_constraints_[var]) {
-        if (constraints_[ct_index]->violation() > 0) {
-          variables.push_back(var);
-          break;
-        }
-      }
-    }
-  }
-
-  return variables;
-}
 
 bool LsEvaluator::VariableOnlyInLinearConstraintWithConvexViolationChange(
     int var) const {
@@ -1695,6 +1682,7 @@ bool LsEvaluator::VariableOnlyInLinearConstraintWithConvexViolationChange(
 }
 
 void LsEvaluator::RecomputeViolatedList(bool linear_only) {
+  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
   violated_constraints_.clear();
   pos_in_violated_constraints_.assign(NumEvaluatorConstraints(), -1);
 
@@ -1713,6 +1701,9 @@ void LsEvaluator::UpdateViolatedList(const int c) {
     if (pos != -1) return;
     pos_in_violated_constraints_[c] = violated_constraints_.size();
     violated_constraints_.push_back(c);
+    for (const int v : ConstraintToVars(c)) {
+      num_violated_constraint_per_var_[v] += 1;
+    }
     return;
   }
 
@@ -1723,6 +1714,9 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   violated_constraints_[pos] = last;
   pos_in_violated_constraints_[c] = -1;
   violated_constraints_.pop_back();
+  for (const int v : ConstraintToVars(c)) {
+    num_violated_constraint_per_var_[v] -= 1;
+  }
 }
 
 }  // namespace sat

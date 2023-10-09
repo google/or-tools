@@ -20,9 +20,11 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "absl/time/time.h"
+#include "absl/functional/any_invocable.h"
+#include "absl/functional/bind_front.h"
 #include "absl/types/span.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/linear_model.h"
@@ -35,6 +37,55 @@
 namespace operations_research::sat {
 
 class CompoundMoveBuilder;
+
+// This class lazily caches the results of `compute_jump(var)` which returns a
+// <delta, score> pair.
+// Variables' scores can be manually modified using MutableScores (if the
+// optimal jump is known not to change), or marked for recomputation on the next
+// call to GetJump(var) by calling Recompute.
+class JumpTable {
+ public:
+  explicit JumpTable(
+      absl::AnyInvocable<std::pair<int64_t, double>(int)> compute_jump);
+  void RecomputeAll(int num_variables);
+
+  // Gets the current jump delta and score, recomputing if necessary.
+  std::pair<int64_t, double> GetJump(int var);
+  // If the new optimum value and score is known, users can update it directly.
+  // e.g. after weight rescaling, or after changing a binary variable.
+  void SetJump(int var, int64_t delta, double score);
+  // Recompute the jump for `var` when `GetJump(var)` is next called.
+  void Recompute(int var);
+  // Returns true if the jump score for `var` might be negative.
+  bool PossiblyGood(int var) const;
+
+  // Advanced usage, allows users to read possibly stale deltas for incremental
+  // score updates.
+  absl::Span<const int64_t> Deltas() const {
+    return absl::MakeConstSpan(deltas_);
+  }
+  absl::Span<const double> Scores() const {
+    return absl::MakeConstSpan(scores_);
+  }
+
+  absl::Span<double> MutableScores() { return absl::MakeSpan(scores_); }
+
+  // Note if you have very high weights (e.g. when using decay), the tolerances
+  // in this function are likely too tight.
+  bool JumpIsUpToDate(int var);  // For debugging and testing.
+
+ private:
+  absl::AnyInvocable<std::pair<int64_t, double>(int)> compute_jump_;
+
+  // For each variable, we store:
+  // - A jump delta which represents a change in variable value:
+  //   new_value = old + delta, which is non-zero except for fixed variables.
+  // - The associated weighted feasibility violation change if we take this
+  //   jump.
+  std::vector<int64_t> deltas_;
+  std::vector<double> scores_;
+  std::vector<bool> needs_recomputation_;
+};
 
 // Implements and heuristic similar to the one described in the paper:
 // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
@@ -62,7 +113,11 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_response_(shared_response),
         shared_bounds_(shared_bounds),
         shared_stats_(shared_stats),
-        random_(params_) {}
+        random_(params_),
+        linear_jumps_(
+            absl::bind_front(&FeasibilityJumpSolver::ComputeLinearJump, this)),
+        general_jumps_(absl::bind_front(
+            &FeasibilityJumpSolver::ComputeGeneralJump, this)) {}
 
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~FeasibilityJumpSolver() override;
@@ -103,51 +158,60 @@ class FeasibilityJumpSolver : public SubSolver {
   void PerturbateCurrentSolution();
   std::string OneLineStats() const;
 
-  // Linear only.
-  bool JumpIsUpToDate(int var);  // Debug.
-  void RecomputeJump(int var);
-  void RecomputeAllJumps();
-  void MarkJumpsThatNeedsToBeRecomputed(int changed_var);
+  // Returns the weighted violation delta plus epsilon * the objective delta.
+  double ComputeScore(absl::Span<const double> scan_weights, int var,
+                      int64_t delta, bool linear_only) const;
+
+  // As above, but uses appropriate scan weights based on the current value of
+  // `use_compound_moves_`.
+  double ComputeScore(int var, int64_t delta, bool linear_only) const {
+    return ComputeScore(use_compound_moves_ ? compound_weights_ : weights_, var,
+                        delta, linear_only);
+  }
+  // Computes the optimal value for variable v, considering only the violation
+  // of linear constraints.
+  std::pair<int64_t, double> ComputeLinearJump(int var);
+
+  // Computes the optimal value for variable v, considering all constraints
+  // (assuming violation functions are convex).
+  std::pair<int64_t, double> ComputeGeneralJump(int var);
+
+  // Marks all variables whose jump value may have changed due to the last
+  // update, except for `changed var`.
+  void MarkJumpsThatNeedToBeRecomputed(int changed_var, JumpTable& jumps);
 
   // Moves.
   bool DoSomeLinearIterations();
   bool DoSomeGeneralIterations();
 
   // Returns true if an improving move was found.
-  bool ScanRelevantVariables(int* improving_var, int64_t* improving_value,
-                             double* improving_score, bool* time_limit_crossed);
+  bool ScanRelevantVariables(int num_to_scan, JumpTable& jumps, int* var,
+                             int64_t* value, double* score);
 
   // Increases the weight of the currently infeasible constraints.
-  void UpdateViolatedConstraintWeights();
+  // Ensures jumps remains consistent.
+  void UpdateViolatedConstraintWeights(JumpTable& jumps);
 
-  // Returns true if changing this variable to its jump value reduces weighted
-  // violation, or has no impact on weighted violation but reduces the
-  // objective.
-  bool IsGood(int var) const;
+  void UpdateNumViolatedConstraintsPerVar();
 
-  void RecomputeVarsToScan();
+  void RecomputeVarsToScan(JumpTable&);
   // Returns true if it is possible that `var` may have value that reduces
   // weighted violation or improve the objective.
   // Note that this is independent of the actual weights used.
-  bool ShouldScan(int var) const;
-  void AddVarToScan(int var);
-  bool MustRecomputeJumpOnGeneralUpdate(int var) const;
+  bool ShouldScan(const JumpTable& jumps, int var) const;
+  void AddVarToScan(const JumpTable&, int var);
 
-  // Resets the weights used to find compound moves. Only modifies weights that
-  // have changed, but the invariant below holds for all constraints:
+  // Resets the weights used to find compound moves.
+  // Ensures the following invariant holds afterwards:
   // compound_weights[c] = weights_[c] if c is violated, and epsilon *
   // weights_[c] otherwise.
   void ResetChangedCompoundWeights();
-
-  // Returns true if we should accept a single variable move.
-  bool ShouldAcceptUnitMove(int var, int64_t delta, double score);
 
   // Returns true if we should push this change to move_.
   // `novelty` is the total discount applied to the score due to using
   // `cumulative_weights_`, should always be positive (modulo floating-point
   // errors).
-  bool ShouldExtendCompoundMove(int var, int64_t delta, double score,
-                                double novelty);
+  bool ShouldExtendCompoundMove(double score, double novelty);
 
   // Validates each element in num_violated_constraints_per_var_ against
   // evaluator_->ViolatedConstraints.
@@ -168,19 +232,15 @@ class FeasibilityJumpSolver : public SubSolver {
   bool is_initialized_ = false;
   std::atomic<bool> model_is_supported_ = true;
   std::atomic<bool> task_generated_ = false;
+  bool time_limit_crossed_ = false;
 
   std::unique_ptr<LsEvaluator> evaluator_;
   std::vector<Domain> var_domains_;
   std::vector<bool> var_has_two_values_;
+  std::vector<bool> var_occurs_in_non_linear_constraint_;
 
-  // For each variable, we store:
-  // - A jump delta which represent a change in variable value:
-  //   new_value = old + delta, which is non-zero except for fixed variable.
-  // - The associated weighted feasibility violation change if we take this
-  //   jump.
-  std::vector<bool> jump_need_recomputation_;
-  std::vector<int64_t> jump_deltas_;
-  std::vector<double> jump_scores_;
+  JumpTable linear_jumps_;
+  JumpTable general_jumps_;
   std::vector<double> for_weight_update_;
 
   // The score of a solution is just the sum of infeasibility of each
@@ -199,11 +259,9 @@ class FeasibilityJumpSolver : public SubSolver {
   // weight like for SAT activities.
   double bump_value_ = 1.0;
 
-  // Sparse list of jumps with a potential delta < 0.0.
-  // If jump_need_recomputation_[var] is true, we lazily recompute the exact
-  // delta as we randomly pick variables from here.
-  std::vector<bool> in_good_jumps_;
-  std::vector<int> good_jumps_;
+  // A list of variables that might be relevant to check for improving jumps.
+  std::vector<bool> in_vars_to_scan_;
+  std::vector<int> vars_to_scan_;
 
   // We restart each time our local deterministic time crosses this.
   double dtime_restart_threshold_ = 0.0;
@@ -219,9 +277,14 @@ class FeasibilityJumpSolver : public SubSolver {
   // Each time we reset the weights, randomly decide if we will use compound
   // moves or not.
   bool use_compound_moves_ = false;
-  // We randomize the beam width each batch, choosing either 1 or 2, biased
-  // towards 1.
-  int compound_move_beam_search_width_ = 1;
+
+  // Limit the discrepancy in compound move search (i.e. limit the number of
+  // backtracks to any ancestor of the current leaf). This is set to 0 whenever
+  // a new incumbent is found or weights are updated, and increased at fixed
+  // point.
+  // Weights are only increased if no moves are found with discrepancy 2.
+  // Empirically we have seen very few moves applied with discrepancy > 2.
+  int compound_move_max_discrepancy_ = 0;
 
   // Statistics
   int64_t num_batches_ = 0;
@@ -235,14 +298,9 @@ class FeasibilityJumpSolver : public SubSolver {
   int64_t num_solutions_imported_ = 0;
   int64_t num_weight_updates_ = 0;
 
-  // A list of variables that might be relevant to check in general iterations.
-  std::vector<bool> in_vars_to_scan_;
-  std::vector<int> vars_to_scan_;
   std::unique_ptr<CompoundMoveBuilder> move_;
 
   // Counts the number of violated constraints each var is in.
-  // Only maintained in general iterations as jump_score_ is used for filtering
-  // moves in linear iterations.
   std::vector<int> num_violated_constraints_per_var_;
 
   // Info on the last solution loaded.
@@ -281,28 +339,14 @@ class CompoundMoveBuilder {
     return stack_.empty() ? 0.0 : stack_.back().cumulative_score;
   }
 
-  // Returns the sum of objective deltas from the root.
-  double ObjectiveDelta() const {
-    return stack_.empty() ? 0.0 : stack_.back().cumulative_objective_delta;
-  }
-
-  // Returns the minimum score of any child of the current node in the stack,
-  // with a maximum of 0.
-  // NB: We assume all improving moves will immediately be committed, so this
-  // always returns 0 when the stack is empty.
   double BestChildScore() const {
     return stack_.empty() ? 0.0 : stack_.back().best_child_score;
   }
 
-  // Returns the number of times a child has been pushed to the current node.
-  // NB: Always returns 0 when the stack is empty.
-  int NumChildrenExplored() const {
-    return stack_.empty() ? 0 : stack_.back().num_children;
+  // Returns the number of backtracks to any ancestor of the current leaf.
+  int Discrepancy() const {
+    return stack_.empty() ? 0 : stack_.back().discrepancy;
   }
-
-  // Returns true if this move reduces weighted violation, or improves the
-  // objective without increasing violation.
-  bool IsImproving() const;
 
   // Returns the number of backtracking moves that have been applied.
   int NumBacktracks() const { return num_backtracks_; }
@@ -316,13 +360,12 @@ class CompoundMoveBuilder {
     // Instead of tracking this on the compound move, we store the partial sums
     // to avoid numerical issues causing negative scores after backtracking.
     double cumulative_score;
-    double cumulative_objective_delta;
 
     // Used to avoid infinite loops, this tracks the best score of any immediate
     // children (and not deeper descendants) to avoid re-exploring the same
     // prefix.
     double best_child_score = 0.0;
-    int num_children = 0;
+    int discrepancy = 0;
   };
   LsEvaluator* evaluator_;
   std::vector<bool> var_on_stack_;

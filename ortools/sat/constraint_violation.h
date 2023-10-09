@@ -359,19 +359,19 @@ class LsEvaluator {
     return &linear_evaluator_;
   }
 
-  // Returns the set of variables appearing in a violated constraint.
-  std::vector<int> VariablesInViolatedConstraints() const;
-
   // List of the currently violated constraints.
   // - It is initialized by RecomputeViolatedList()
   // - And incrementally maintained by UpdateVariableValue()
   //
-  // The order depends on the algorithm used and shouldn't be
+  // The order depends on the algorithm used and shouldn't be relied on.
   void RecomputeViolatedList(bool linear_only);
   const std::vector<int>& ViolatedConstraints() const {
     return violated_constraints_;
   }
-
+  // Returns the number of constraints in ViolatedConstraints containing `var`.
+  int NumViolatedConstraintsForVar(int var) const {
+    return num_violated_constraint_per_var_[var];
+  }
   // Indicates if the computed jump value is always the best choice.
   bool VariableOnlyInLinearConstraintWithConvexViolationChange(int var) const;
 
@@ -435,6 +435,7 @@ class LsEvaluator {
   // - violated_constraints_[pos_in_violated_constraints_[c]] = c
   std::vector<int> pos_in_violated_constraints_;
   std::vector<int> violated_constraints_;
+  std::vector<int> num_violated_constraint_per_var_;
 
   // Constraint index and violation delta for the last update.
   std::vector<std::pair<int, int64_t>> last_update_violation_changes_;

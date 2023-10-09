@@ -117,7 +117,7 @@ def main():
         index=tasks_df.index,
         starts=starts,
         sizes=tasks_df.duration,
-        performed_literals=performed,
+        are_present=performed,
     )
     # [END variables]
 
@@ -166,7 +166,7 @@ def main():
             else:
                 print(f"task {task} is not performed")
     elif status == cp_model.INFEASIBLE:
-        print("The problem is infeasible")
+        print("No solution found")
     else:
         print("Something is wrong, check the status and the log of the solve")
     # [END print_solution]

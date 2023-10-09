@@ -400,7 +400,7 @@ class SharedResponseManager {
   CpSolverStatus synchronized_best_status_ ABSL_GUARDED_BY(mutex_) =
       CpSolverStatus::UNKNOWN;
   std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
-  SharedSolutionRepository<int64_t> solutions_ ABSL_GUARDED_BY(mutex_);
+  SharedSolutionRepository<int64_t> solutions_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) =
