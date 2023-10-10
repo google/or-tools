@@ -15,7 +15,7 @@ jobs:
     env:
       DISTRO: ${{ matrix.distro }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build env image
       run: make --directory=bazel ${DISTRO}_env
     - name: Build devel image

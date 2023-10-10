@@ -7,7 +7,7 @@ jobs:
   linux_cpp:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Check cmake
       run: cmake --version
     - name: Configure
@@ -23,7 +23,7 @@ jobs:
   linux_dotnet:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig
@@ -55,7 +55,7 @@ jobs:
   linux_java:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig
@@ -78,7 +78,7 @@ jobs:
   linux_python:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig

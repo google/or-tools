@@ -20,7 +20,7 @@ jobs:
       TEST_TARGET: ${{ matrix.build[3] }}
       INSTALL_TARGET: ${{ matrix.build[4] }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Swig install
       run: brew install swig
     - name: Check swig
