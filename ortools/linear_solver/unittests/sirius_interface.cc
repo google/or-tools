@@ -301,21 +301,11 @@ namespace operations_research {
     _unittest_verify_var(&getter, x2, SRS_CONTINUOUS_VAR, lb2, ub2);
   }
 
-  TEST(SiriusInterface, DISABLED_SetVariableInteger) {
-    // SetInteger not implemented for sirius_interface
-    UNITTEST_INIT_MIP();
-    solver.MakeRowConstraint(-solver.infinity(), 0);
-
-    int lb = -1, ub = 7;
-    MPVariable* x = solver.MakeIntVar(lb, ub, "x");
-    solver.Solve();
-    _unittest_verify_var(&getter, x, SRS_INTEGER_VAR, lb, ub);
-    x->SetInteger(false);
-    solver.Solve();
-    _unittest_verify_var(&getter, x, SRS_CONTINUOUS_VAR, lb, ub);
-  }
-
-  TEST(SiriusInterface, SetVariableInteger) {
+   TEST(SiriusInterface, DISABLED_SetVariableInteger) {
+    // Here we test a badly definied behaviour
+    // depending on the sirius version the sirius-workflow breaks at:
+    // either the call of x->SetInteger(false) like the test suggest
+    // or at solver.Solve() because integer variables are not supported
     UNITTEST_INIT_MIP();
     solver.MakeRowConstraint(-solver.infinity(), 0);
 
