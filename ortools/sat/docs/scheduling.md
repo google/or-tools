@@ -14,8 +14,8 @@ exclusivity between tasks, and temporal relations between tasks.
 ## Interval variables
 
 Intervals are constraints containing three constant of affine expressions
-(start, size, and end). Creating an interval constraint will enforce that start
-+ size == end.
+(start, size, and end). Creating an interval constraint will enforce that
+`start + size == end`.
 
 The more general API uses three expressions to define the interval. If the size
 is fixed, a simpler API uses the start expression and the fixed size.
