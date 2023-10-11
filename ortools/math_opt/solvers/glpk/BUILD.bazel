@@ -36,3 +36,9 @@ cc_library(
     hdrs = ["glpk_sparse_vector.h"],
     deps = ["//ortools/base"],
 )
+
+cc_library(
+    name = "gap",
+    srcs = ["gap.cc"],
+    hdrs = ["gap.h"],
+)

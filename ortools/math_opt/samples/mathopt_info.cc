@@ -15,8 +15,6 @@
 #include <iostream>
 #include <string>
 
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -35,14 +33,12 @@ struct SolverTypeProtoFormatter {
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);
 
-  std::cout
-      << absl::StrCat(
-             "MathOpt is configured to support the following solvers: ",
-             absl::StrJoin(
-                 operations_research::math_opt::AllSolversRegistry::Instance()
-                     ->RegisteredSolvers(),
-                 ", ", SolverTypeProtoFormatter()))
-      << std::endl;
+  std::cout << "MathOpt is configured to support the following solvers:\n";
+  for (const operations_research::math_opt::SolverTypeProto& solver_type_proto :
+       operations_research::math_opt::AllSolversRegistry::Instance()
+           ->RegisteredSolvers()) {
+    std::cout << " - " << EnumFromProto(solver_type_proto) << std::endl;
+  }
 
   return 0;
 }
