@@ -35,7 +35,7 @@ git_repository(
 
 git_repository(
     name = "rules_cc",
-    tag = "0.0.8",
+    tag = "0.0.9",
     remote = "https://github.com/bazelbuild/rules_cc.git",
 )
 
@@ -62,7 +62,7 @@ git_repository(
 git_repository(
     name = "contrib_rules_jvm",
     tag = "v0.9.0",
-    #tag = "v0.18.0",
+    #tag = "v0.19.0",
     remote = "https://github.com/bazel-contrib/rules_jvm.git",
 )
 
@@ -224,7 +224,7 @@ git_repository(
 new_git_repository(
     name = "pybind11",
     build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.10.3",
+    tag = "v2.11.1",
     remote = "https://github.com/pybind/pybind11.git",
 )
 
