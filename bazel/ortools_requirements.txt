@@ -33,7 +33,7 @@ platformdirs==3.10.0
     # via
     #   black
     #   virtualenv
-protobuf==4.24.0
+protobuf==4.24.4
     # via
     #   -r bazel/ortools_requirements.in
     #   mypy-protobuf
