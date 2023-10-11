@@ -682,12 +682,13 @@ absl::StatusOr<TerminationProto> SimplexTerminationOnSuccess(
   // Returns a status error indicating that glp_get_dual_stat() returned an
   // unexpected value.
   const auto unexpected_dual_stat = [&]() {
-    return util::InternalErrorBuilder()
-           << "glp_simplex() returned 0 but glp_get_dual_stat() returned the "
-              "unexpected value "
-           << SolutionStatusString(dual_status)
-           << " while glp_get_prim_stat() returned "
-           << SolutionStatusString(prim_status);
+    return absl::InternalError(
+        absl::StrCat(
+           "glp_simplex() returned 0 but glp_get_dual_stat() returned the "
+           "unexpected value ",
+           SolutionStatusString(dual_status),
+           " while glp_get_prim_stat() returned ",
+           SolutionStatusString(prim_status)));
   };
 
   switch (prim_status) {
