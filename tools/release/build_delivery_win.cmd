@@ -262,7 +262,7 @@ echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
 
-REM PYTHON 3.8, 3.9, 3.10, 3.11
+REM PYTHON 3.8, 3.9, 3.10, 3.11, 3.12
 :BUILD_PYTHON
 title Build Python
 set HASH=
