@@ -410,25 +410,9 @@ message PrimalDualHybridGradientParams {
   // primal weight, since that is based on the norm of the bounds.
   optional double infinite_constraint_bound_threshold = 22 [default = inf];
 
-  // See https://developers.google.com/optimization/lp/pdlp_math for notation.
-  // handle_some_primal_gradients_on_finite_bounds_as_residuals controls for
-  // which primal variables i the term (l^v_i)^T[r_i]_+ − (u^v_i)^T[r_i]_− in
-  // the theoretical dual objective is included in PDLP's dual objective and
-  // which are excluded from the dual objective with r_i accounted separately as
-  // contributing to the dual residual. This parameter has no effect on the
-  // primal and dual solution found after t iterations; it only affects when
-  // termination occurs and reported statistics.
-  // When (l^v_i)^T[r_i]_+ − (u^v_i)^T[r_i]_− is infinite due to an infinite
-  // variable bound the term is always treated as a residual (to keep the dual
-  // objective finite) regardless of the value of
-  // handle_some_primal_gradients_on_finite_bounds_as_residuals.
-  // When handle_some_primal_gradients_on_finite_bounds_as_residuals is false no
-  // finite terms are accounted as residuals.
-  // When handle_some_primal_gradients_on_finite_bounds_as_residuals is true,
-  // finite terms with |x_i - b_i| > |x_i| (where x_i is the variable's value
-  // and b_i is l^v_i if r_i > 0 and u^v_i otherwise) are counted as residuals.
-  // Setting this to true can substantially reduce the duality gap at the
-  // expense of increasing the dual residual.
+  // See
+  // https://developers.google.com/optimization/lp/pdlp_math#treating_some_variable_bounds_as_infinite
+  // for a description of this flag.
   optional bool handle_some_primal_gradients_on_finite_bounds_as_residuals = 29
       [default = true];
 
