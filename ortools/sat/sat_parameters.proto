@@ -1121,8 +1121,9 @@ message SatParameters {
   // How long violation_ls should wait before perturbating a solution.
   optional int32 violation_ls_perturbation_period = 249 [default = 100];
 
-  // Search for ejection-chain-like moves in jump and violation_ls workers.
-  optional bool violation_ls_use_compound_moves = 259 [default = true];
+  // Probability of using compound move search each restart.
+  // TODO(user): Add reference to paper when published.
+  optional double violation_ls_compound_move_probability = 259 [default = 0.5];
 
   // Enables experimental workstealing-like shared tree search.
   // If non-zero, start this many complete worker threads to explore a shared

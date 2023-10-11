@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "ortools/base/macros.h"

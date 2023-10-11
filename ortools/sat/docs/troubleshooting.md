@@ -11,17 +11,16 @@ A good explanation of the log can be found in the
 
 ## Improving performance with multiple workers
 
-CP-SAT is built with parallelism in mind. While single worker is a good
-solution, the solver is tuned to reached its best performance with multiple
-workers.
+CP-SAT is built with parallelism in mind. While you can achieve a good solution
+with a single worker, you'll get the best results when using multiple workers.
 
-We distinguish multiple thresholds:
+There are several tiers of behavior:
 
--   **[8 workers]** This is the minimal setting for parallel search. It blends
-    workers with different linear relaxations (none, default, maximal), core
-    based search if applicable, a quick_restart subsolver, a feasibility_jump
-    first solution subsolver, and dedicated Large Neighborhood Search subsolvers
-    to find improving solutions.
+-   **[8 workers]** This is the minimum number of workers needed to trigger
+    parallel search. It blends workers with different linear relaxations (none,
+    default, maximal), core-based search if applicable, a quick_restart
+    subsolver, a feasibility_jump first solution subsolver, and dedicated Large
+    Neighborhood Search subsolvers to find improved solutions.
 -   **[16 workers]** Bumping to 16 workers adds a continuous probing subsolver,
     more first solution subsolvers (random search and feasibility_jump), two
     dual subsolvers dedicated to improving the lower bound of the objective
@@ -46,11 +45,11 @@ Solving a problem yields the following possible status (CpSolverStatus):
     solutions of a feasibility problem (if asked).
 -   **[INFEASIBLE]** The problem has been proven infeasible.
 -   **[OPTIMAL]** An optimal feasible solution has been found. More generally,
-    this status represent a success. So we also return OPTIMAL if we find a
+    this status represents a success. So we also return OPTIMAL if we find a
     solution for a pure feasibility problem or if a gap limit has been specified
     and we return a solution within this limit. In the case where we need to
     return all the feasible solution, this status will only be returned if
-    solve() enumerated all of them; If we stopped before, we will return
+    solve() enumerated all of them; If we stopped earlier, we will return
     FEASIBLE.
 
 ## Debugging infeasible models
@@ -58,21 +57,21 @@ Solving a problem yields the following possible status (CpSolverStatus):
 Oftentimes, solving a model yields an infeasibility status. While this can be a
 valid answer, it can happen because of either a data issue, or a model issue.
 
-Here a simple common sense processes to help diagnose the source of the
-infeasibility.
+Here are some ways to diagnose the source of the infeasibility.
 
--   reduce the model size if this is a parameter
--   remove all constraints while keeping the problem infeasible
--   play with the domain of the variables to enlarge them
+-   reduce the model size, if possible
+-   remove all constraints, which making sure that the resulting model is still
+    infeasible
+-   enlarge the domains of variables
 -   inject a known feasible solution and try to find where it breaks
--   add assumptions to check the soundness of your data (capacity is >= 0, no
-    crazy ranges of values, ...)
+-   check the soundness of your data (e.g., do you have negative capacities, or
+    unreasonable ranges?)
 
 ## Using assumptions to explain infeasibility
 
-CP-SAT implements a system of assumptions to find the root cause of an
-infeasible problem. To use it, one must instrument constraints with literals and
-add these literals to the set of assumptions.
+CP-SAT implements a mechanism of assumptions to find the root cause of an
+infeasible problem. To use it, one must add enforcement literals to constraints
+and add these literals to the set of assumptions.
 
 Note that this set is minimized but not guaranteed to be minimal. To find a
 minimal unsatisfiable set (MUS), you must minimize the (weighted) sum of these

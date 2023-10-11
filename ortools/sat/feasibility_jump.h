@@ -158,16 +158,18 @@ class FeasibilityJumpSolver : public SubSolver {
   void PerturbateCurrentSolution();
   std::string OneLineStats() const;
 
-  // Returns the weighted violation delta plus epsilon * the objective delta.
-  double ComputeScore(absl::Span<const double> scan_weights, int var,
-                      int64_t delta, bool linear_only) const;
-
-  // As above, but uses appropriate scan weights based on the current value of
-  // `use_compound_moves_`.
-  double ComputeScore(int var, int64_t delta, bool linear_only) const {
-    return ComputeScore(use_compound_moves_ ? compound_weights_ : weights_, var,
-                        delta, linear_only);
+  absl::Span<double> ScanWeights() {
+    return absl::MakeSpan(use_compound_moves_ ? compound_weights_ : weights_);
   }
+  absl::Span<const double> ScanWeights() const {
+    return absl::MakeConstSpan(use_compound_moves_ ? compound_weights_
+                                                   : weights_);
+  }
+
+  // Returns the weighted violation delta plus epsilon * the objective delta.
+  double ComputeScore(absl::Span<const double> weights, int var, int64_t delta,
+                      bool linear_only) const;
+
   // Computes the optimal value for variable v, considering only the violation
   // of linear constraints.
   std::pair<int64_t, double> ComputeLinearJump(int var);
@@ -195,6 +197,12 @@ class FeasibilityJumpSolver : public SubSolver {
   void UpdateNumViolatedConstraintsPerVar();
 
   void RecomputeVarsToScan(JumpTable&);
+
+  // Ensures that all currently violated constraints have compound_weight_[c] ==
+  // weight_[c]. Mostly only necessary for the first batch with new weights or a
+  // new imported solution or if the objective bounds get tightened.
+  void InitializeCompoundWeights();
+
   // Returns true if it is possible that `var` may have value that reduces
   // weighted violation or improve the objective.
   // Note that this is independent of the actual weights used.
@@ -350,6 +358,9 @@ class CompoundMoveBuilder {
 
   // Returns the number of backtracking moves that have been applied.
   int NumBacktracks() const { return num_backtracks_; }
+
+  // Returns true if all prev_values on the stack are in the appropriate domain.
+  bool StackValuesInDomains(absl::Span<const Domain> var_domains) const;
 
  private:
   struct UnitMove {

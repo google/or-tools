@@ -116,8 +116,10 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);
 
   // Violation ls.
+  TEST_NOT_NAN(violation_ls_compound_move_probability);
   TEST_IN_RANGE(num_violation_ls, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(violation_ls_perturbation_period, 1, 1'000'000'000);
+  TEST_IN_RANGE(violation_ls_compound_move_probability, 0.0, 1.0);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
