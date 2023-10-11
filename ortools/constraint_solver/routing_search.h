@@ -1029,8 +1029,8 @@ class InsertionSequenceGenerator {
   ///   path that conserve order are equivalent.
   void AppendPickupDeliveryMultitourInsertions(
       int pickup, int delivery, int vehicle, const std::vector<int>& path,
-      const std::vector<bool>& node_is_pickup,
-      const std::vector<bool>& node_is_delivery,
+      const std::vector<bool>& path_node_is_pickup,
+      const std::vector<bool>& path_node_is_delivery,
       InsertionSequenceContainer& insertions);
 
  private:
@@ -1110,22 +1110,16 @@ class LocalCheapestInsertionFilteredHeuristic
   // Tries to insert any alternative of the given pair,
   // at a position that preserves the multitour property,
   // ordered by the sum of pickup and delivery insertion.
-  void InsertBestPairMultitour(const RoutingModel::IndexPair& index_pair,
-                               const std::vector<bool>& node_is_pickup,
-                               const std::vector<bool>& node_is_delivery);
+  void InsertBestPairMultitour(const RoutingModel::IndexPair& index_pair);
   // Tries to insert a pair at the given location. Returns true iff inserted.
   bool InsertPair(int64_t pickup, int64_t insert_pickup_after, int64_t delivery,
                   int64_t insert_delivery_after, int vehicle);
-  // Sets all nodes of pair alternatives as visited.
-  void SetIndexPairVisited(const RoutingModel::IndexPair& index_pair);
 
   std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
 
-  // Marks whether a node has already been tried for insertion.
-  std::vector<bool> visited_;
   BinCapacities* const bin_capacities_;
 };
 

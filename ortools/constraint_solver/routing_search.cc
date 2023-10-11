@@ -2151,8 +2151,8 @@ void GlobalCheapestInsertionFilteredHeuristic::AddNodeEntry(
 
 void InsertionSequenceGenerator::AppendPickupDeliveryMultitourInsertions(
     int pickup, int delivery, int vehicle, const std::vector<int>& path,
-    const std::vector<bool>& node_is_pickup,
-    const std::vector<bool>& node_is_delivery,
+    const std::vector<bool>& path_node_is_pickup,
+    const std::vector<bool>& path_node_is_delivery,
     InsertionSequenceContainer& insertions) {
   const int num_nodes = path.size();
   DCHECK_GE(num_nodes, 2);
@@ -2164,9 +2164,9 @@ void InsertionSequenceGenerator::AppendPickupDeliveryMultitourInsertions(
     int prev_decrease = 0;
     int prev_increase = kNoPrevIncrease;
     for (int pos = 0; pos < num_nodes - 1; ++pos) {
-      if (node_is_delivery[path[pos]]) prev_decrease = pos;
+      if (path_node_is_delivery[pos]) prev_decrease = pos;
       prev_decrease_[pos] = prev_decrease;
-      if (node_is_pickup[path[pos]]) prev_increase = pos;
+      if (path_node_is_pickup[pos]) prev_increase = pos;
       prev_increase_[pos] = prev_increase;
     }
   }
@@ -2177,9 +2177,9 @@ void InsertionSequenceGenerator::AppendPickupDeliveryMultitourInsertions(
     int next_decrease = kNoNextDecrease;
     for (int pos = num_nodes - 2; pos >= 0; --pos) {
       next_decrease_[pos] = next_decrease;
-      if (node_is_delivery[path[pos]]) next_decrease = pos;
+      if (path_node_is_delivery[pos]) next_decrease = pos;
       next_increase_[pos] = next_increase;
-      if (node_is_pickup[path[pos]]) next_increase = pos;
+      if (path_node_is_pickup[pos]) next_increase = pos;
     }
   }
 
@@ -2451,20 +2451,25 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPair(
 }
 
 void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
-    const RoutingModel::IndexPair& index_pair,
-    const std::vector<bool>& node_is_pickup,
-    const std::vector<bool>& node_is_delivery) {
+    const RoutingModel::IndexPair& index_pair) {
   using InsertionSequence = InsertionSequenceContainer::InsertionSequence;
   using Insertion = InsertionSequenceContainer::Insertion;
-  std::vector<int> path;
 
+  std::vector<int> path;
+  std::vector<bool> path_node_is_pickup;
+  std::vector<bool> path_node_is_delivery;
   // Fills path with all nodes visited by vehicle, including start/end.
-  auto fill_path = [&path, this](int vehicle) {
+  auto fill_path = [&path, &path_node_is_pickup, &path_node_is_delivery,
+                    this](int vehicle) {
     path.clear();
+    path_node_is_pickup.clear();
+    path_node_is_delivery.clear();
     const int start = model()->Start(vehicle);
     const int end = model()->End(vehicle);
     for (int node = start; node != end; node = Value(node)) {
       path.push_back(node);
+      path_node_is_pickup.push_back(model()->IsPickup(node));
+      path_node_is_delivery.push_back(model()->IsDelivery(node));
     }
     path.push_back(end);
   };
@@ -2537,8 +2542,8 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
         }
         fill_path(vehicle);
         insertion_generator_.AppendPickupDeliveryMultitourInsertions(
-            pickup, delivery, vehicle, path, node_is_pickup, node_is_delivery,
-            insertion_container_);
+            pickup, delivery, vehicle, path, path_node_is_pickup,
+            path_node_is_delivery, insertion_container_);
       }
       if (StopSearch()) return;
       if (evaluator_ == nullptr) {
@@ -2578,54 +2583,36 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
   }
 }
 
-void LocalCheapestInsertionFilteredHeuristic::SetIndexPairVisited(
-    const RoutingModel::IndexPair& index_pair) {
+namespace {
+void SetFalseForAllAlternatives(const RoutingModel::IndexPair& index_pair,
+                                std::vector<bool>* data) {
   for (const int64_t pickup : index_pair.first) {
-    visited_[pickup] = true;
+    data->at(pickup) = false;
   }
   for (const int64_t delivery : index_pair.second) {
-    visited_[delivery] = true;
+    data->at(delivery) = false;
   }
 }
+}  // namespace
 
 bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
-  // Marking if we've tried inserting a node.
-  visited_.assign(model()->Size(), false);
+  const RoutingModel& model = *this->model();
 
-  // Multitour needs to know if a node is a pickup, delivery, or single.
-  // TODO(user): node_is_[pickup/delivery] is not actually required as we
-  // have access to this information through
-  // model()->IsPickup/Delivery(), so use this as callback wherever necessary
-  // instead of these 2 vectors.
-  const RoutingModel::IndexPairs& index_pairs =
-      model()->GetPickupAndDeliveryPairs();
-  std::vector<bool> node_is_pickup, node_is_delivery;
-  if (pair_insertion_strategy_ ==
-      RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR_MULTITOUR) {
-    const int num_nodes = model()->VehicleVars().size();
-    node_is_pickup.resize(num_nodes, false);
-    node_is_delivery.resize(num_nodes, false);
-    for (const auto& index_pair : index_pairs) {
-      for (const int pickup : index_pair.first) {
-        node_is_pickup[pickup] = true;
-      }
-      for (const int delivery : index_pair.second) {
-        node_is_delivery[delivery] = true;
-      }
-    }
-  }
   // Fill vehicle bins with nodes that are already inserted.
   if (bin_capacities_) {
     bin_capacities_->ClearItems();
-    for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
-      const int start = Value(model()->Start(vehicle));
-      for (int node = start; !model()->IsEnd(node); node = Value(node)) {
+    for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+      const int start = Value(model.Start(vehicle));
+      for (int node = start; !model.IsEnd(node); node = Value(node)) {
         bin_capacities_->AddItemToBin(node, vehicle);
       }
     }
   }
 
+  const RoutingModel::IndexPairs& index_pairs =
+      model.GetPickupAndDeliveryPairs();
   std::vector<bool> ignore_pair_index(index_pairs.size(), false);
+  std::vector<bool> insert_as_single_node(model.Size(), true);
   for (int pair_index = 0; pair_index < index_pairs.size(); ++pair_index) {
     bool pickup_contained = false;
     for (int64_t pickup : index_pairs[pair_index].first) {
@@ -2642,8 +2629,13 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
       }
     }
     ignore_pair_index[pair_index] = pickup_contained || delivery_contained;
-    if (pickup_contained && delivery_contained) {
-      SetIndexPairVisited(index_pairs[pair_index]);
+    if (pickup_contained == delivery_contained) {
+      // Either both pickup and delivery are already inserted for this pair, or
+      // neither are inserted and should be considered as pair.
+      // In both cases, the nodes in the pickup/delivery alternatives shouldn't
+      // be considered for insertion as single nodes.
+      SetFalseForAllAlternatives(index_pairs[pair_index],
+                                 &insert_as_single_node);
     }
   }
 
@@ -2662,7 +2654,7 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
           InsertBestPickupThenDelivery(index_pair);
           break;
         case RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR_MULTITOUR:
-          InsertBestPairMultitour(index_pair, node_is_pickup, node_is_delivery);
+          InsertBestPairMultitour(index_pair);
           break;
         default:
           LOG(ERROR) << "Unknown pair insertion strategy value.";
@@ -2671,10 +2663,8 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
       if (StopSearch()) {
         return MakeUnassignedNodesUnperformed() && Evaluate(true).has_value();
       }
-      SetIndexPairVisited(index_pair);
     } else {
-      if (Contains(index) || visited_[index] || model()->IsPickup(index) ||
-          model()->IsDelivery(index)) {
+      if (Contains(index) || !insert_as_single_node[index]) {
         continue;
       }
       for (const NodeInsertion& insertion :
