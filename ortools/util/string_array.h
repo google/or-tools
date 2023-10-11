@@ -51,7 +51,7 @@ std::string JoinDebugStringPtr(const std::vector<T>& v,
 
 // Join v[i]->name().
 template <class T>
-std::string JoinNamePtr(const std::vector<T>& v, const std::string& separator) {
+std::string JoinNamePtr(const std::vector<T>& v, absl::string_view separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->name());
 }
 
