@@ -83,6 +83,13 @@ class Literal {
       : index_(is_positive ? (variable.value() << 1)
                            : (variable.value() << 1) ^ 1) {}
 
+  // We want a literal to be implicitly converted to a LiteralIndex().
+  // Before this, we used to have many literal.Index() that didn't add anything.
+  //
+  // TODO(user): LiteralIndex might not even be needed, but because of the
+  // signed value business, it is still safer with it.
+  operator LiteralIndex() const { return Index(); }  // NOLINT
+
   BooleanVariable Variable() const { return BooleanVariable(index_ >> 1); }
   bool IsPositive() const { return !(index_ & 1); }
   bool IsNegative() const { return (index_ & 1); }
@@ -99,12 +106,10 @@ class Literal {
   std::string DebugString() const {
     return absl::StrFormat("%+d", SignedValue());
   }
+
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
-
-  bool operator<(const Literal& literal) const {
-    return Index() < literal.Index();
-  }
+  bool operator<(const Literal& other) const { return index_ < other.index_; }
 
  private:
   int index_;

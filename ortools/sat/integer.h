@@ -566,7 +566,7 @@ class IntegerEncoder {
     if (lit.Index() >= reverse_encoding_.size()) {
       return empty_integer_literal_vector_;
     }
-    return reverse_encoding_[lit.Index()];
+    return reverse_encoding_[lit];
   }
 
   // Returns the variable == value pairs that were associated with the given
@@ -575,7 +575,7 @@ class IntegerEncoder {
     if (lit.Index() >= reverse_equality_encoding_.size()) {
       return empty_integer_value_vector_;
     }
-    return reverse_equality_encoding_[lit.Index()];
+    return reverse_equality_encoding_[lit];
   }
 
   // Returns all the variables for which this literal is associated to either
@@ -598,7 +598,7 @@ class IntegerEncoder {
   // calling AssociateToIntegerEqualValue().
   IntegerVariable GetLiteralView(Literal lit) const {
     if (lit.Index() >= literal_view_.size()) return kNoIntegerVariable;
-    return literal_view_[lit.Index()];
+    return literal_view_[lit];
   }
 
   // If this is true, then a literal can be linearized with an affine expression
@@ -1729,7 +1729,7 @@ inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
   if (l.Index() >= literal_to_watcher_.size()) {
     literal_to_watcher_.resize(l.Index().value() + 1);
   }
-  literal_to_watcher_[l.Index()].push_back({id, watch_index});
+  literal_to_watcher_[l].push_back({id, watch_index});
 }
 
 inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,

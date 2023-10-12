@@ -363,7 +363,7 @@ public class OptionalIntervalSampleSat
 
 ## NoOverlap constraint
 
-A NoOverlap constraint simply states that all intervals are disjoint. It is
+A no_overlap constraint simply states that all intervals are disjoint. It is
 built with a list of interval variables. Fixed intervals are useful for
 excluding part of the timeline.
 

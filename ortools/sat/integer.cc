@@ -409,7 +409,7 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
   if (new_size > reverse_encoding_.size()) {
     reverse_encoding_.resize(new_size);
   }
-  reverse_encoding_[literal.Index()].push_back(canonical_pair.first);
+  reverse_encoding_[literal].push_back(canonical_pair.first);
   reverse_encoding_[literal.NegatedIndex()].push_back(canonical_pair.second);
 
   // Detect the case >= max or <= min and properly register them. Note that
@@ -440,17 +440,17 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   if (value == 1 && domain.Min() >= 0 && domain.Max() <= 1) {
     if (literal.Index() >= literal_view_.size()) {
       literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
-      literal_view_[literal.Index()] = var;
-    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
-      literal_view_[literal.Index()] = var;
+      literal_view_[literal] = var;
+    } else if (literal_view_[literal] == kNoIntegerVariable) {
+      literal_view_[literal] = var;
     }
   }
   if (value == -1 && domain.Min() >= -1 && domain.Max() <= 0) {
     if (literal.Index() >= literal_view_.size()) {
       literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
-      literal_view_[literal.Index()] = NegationOf(var);
-    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
-      literal_view_[literal.Index()] = NegationOf(var);
+      literal_view_[literal] = NegationOf(var);
+    } else if (literal_view_[literal] == kNoIntegerVariable) {
+      literal_view_[literal] = NegationOf(var);
     }
   }
 
@@ -519,7 +519,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   if (new_size > reverse_equality_encoding_.size()) {
     reverse_equality_encoding_.resize(new_size);
   }
-  reverse_equality_encoding_[literal.Index()].push_back({var, value});
+  reverse_equality_encoding_[literal].push_back({var, value});
 }
 
 bool IntegerEncoder::IsFixedOrHasAssociatedLiteral(IntegerLiteral i_lit) const {
@@ -2118,7 +2118,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
     if (literal.Index() >= literal_to_watcher_.size()) continue;
-    for (const auto entry : literal_to_watcher_[literal.Index()]) {
+    for (const auto entry : literal_to_watcher_[literal]) {
       if (!in_queue_[entry.id]) {
         in_queue_[entry.id] = true;
         queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);

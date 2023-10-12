@@ -96,7 +96,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       if (decision.IsPositive()) {
         propagated_.Set(l.Index());
       } else {
-        if (propagated_[l.Index()]) {
+        if (propagated_[l]) {
           to_fix_at_true_.push_back(l);
         }
       }
@@ -476,16 +476,15 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       const int saved_queue_size = queue.size();
       for (const Literal l : list) {
         const Literal candidate = l.Negated();
-        if (processed[candidate.Index()]) continue;
-        if (position_in_order[candidate.Index()] == -1) continue;
+        if (processed[candidate]) continue;
+        if (position_in_order[candidate] == -1) continue;
         if (assignment.LiteralIsAssigned(candidate)) {
           if (assignment.LiteralIsFalse(candidate)) {
             to_fix.push_back(Literal(candidate.Negated()));
           }
           continue;
         }
-        queue.push_back(
-            {candidate.Index(), -position_in_order[candidate.Index()]});
+        queue.push_back({candidate.Index(), -position_in_order[candidate]});
       }
       std::sort(queue.begin() + saved_queue_size, queue.end());
 
@@ -500,7 +499,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
           continue;
         }
         const Literal candidate(index);
-        if (processed[candidate.Index()]) continue;
+        if (processed[candidate]) continue;
         if (assignment.LiteralIsAssigned(candidate)) {
           if (assignment.LiteralIsFalse(candidate)) {
             to_fix.push_back(Literal(candidate.Negated()));
@@ -526,7 +525,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       // Probe an unexplored node.
       for (; order_index < probing_order.size(); ++order_index) {
         const Literal candidate(probing_order[order_index]);
-        if (processed[candidate.Index()]) continue;
+        if (processed[candidate]) continue;
         if (assignment.LiteralIsAssigned(candidate)) continue;
         next_decision = candidate.Index();
         break;
@@ -548,7 +547,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       for (int i = 0; i < list.size(); ++i, ++j) {
         j %= list.size();
         const Literal candidate = Literal(list[j]).Negated();
-        if (processed[candidate.Index()]) continue;
+        if (processed[candidate]) continue;
         if (assignment.LiteralIsFalse(candidate)) {
           // candidate => previous => not(candidate), so we can fix it.
           to_fix.push_back(Literal(candidate.Negated()));

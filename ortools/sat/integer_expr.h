@@ -25,9 +25,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_propagation.h"
@@ -36,7 +33,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -314,7 +310,8 @@ class DivisionPropagator : public PropagatorInterface {
  private:
   // Propagates the fact that the signs of each domain, if fixed, are
   // compatible.
-  bool PropagateSigns();
+  bool PropagateSigns(AffineExpression num, AffineExpression denom,
+                      AffineExpression div);
 
   // If both num and div >= 0, we can propagate their upper bounds.
   bool PropagateUpperBounds(AffineExpression num, AffineExpression denom,
@@ -330,6 +327,7 @@ class DivisionPropagator : public PropagatorInterface {
   const AffineExpression num_;
   const AffineExpression denom_;
   const AffineExpression div_;
+  const AffineExpression negated_denom_;
   const AffineExpression negated_num_;
   const AffineExpression negated_div_;
   IntegerTrail* integer_trail_;

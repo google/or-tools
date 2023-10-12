@@ -922,7 +922,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     // For now we know the input only has positive weight, but it is easy to
     // adapt if needed.
     CHECK_GT(coeff, 0);
-    weights[lit.Index()] = coeff;
+    weights[lit] = coeff;
 
     candidates.push_back(lit.Negated());
     is_candidate[lit.NegatedIndex()] = true;
@@ -939,7 +939,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     if (implications_->WorkDone() > 1e8) continue;
 
     // We never put weight on both a literal and its negation.
-    CHECK_EQ(weights[root.Index()], 0);
+    CHECK_EQ(weights[root], 0);
 
     // Note that for this to be as exhaustive as possible, the probing needs
     // to have added binary clauses corresponding to lvl0 propagation.
@@ -965,10 +965,10 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     overall_lb_increase += lb_increase;
 
     for (const Literal lit : at_most_one) {
-      is_candidate[lit.Index()] = false;
+      is_candidate[lit] = false;
       const Coefficient new_weight = max_coeff - weights[lit.NegatedIndex()];
-      CHECK_EQ(weights[lit.Index()], 0);
-      weights[lit.Index()] = new_weight;
+      CHECK_EQ(weights[lit], 0);
+      weights[lit] = new_weight;
       weights[lit.NegatedIndex()] = 0;
       if (new_weight > 0) {
         // TODO(user): While we autorize this to be in future at most one, it
@@ -1004,13 +1004,13 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   literals->clear();
   coefficients->clear();
   for (const Literal root : candidates) {
-    if (weights[root.Index()] > 0) {
+    if (weights[root] > 0) {
       CHECK_EQ(weights[root.NegatedIndex()], 0);
       literals->push_back(root);
-      coefficients->push_back(weights[root.Index()]);
+      coefficients->push_back(weights[root]);
     }
     if (weights[root.NegatedIndex()] > 0) {
-      CHECK_EQ(weights[root.Index()], 0);
+      CHECK_EQ(weights[root], 0);
       literals->push_back(root.Negated());
       coefficients->push_back(weights[root.NegatedIndex()]);
     }
@@ -1193,7 +1193,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       //
       // TODO(user): We can probably be smarter about the cost of the
       // assumptions though.
-      literal_to_term_index[assumptions.back().Index()] = term_indices[i];
+      literal_to_term_index[assumptions.back()] = term_indices[i];
     }
 
     // Solve under the assumptions.

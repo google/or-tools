@@ -181,7 +181,7 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
   if (!equiv_mapping_.empty()) {
     for (int i = 0; i < clause_ref.size(); ++i) {
       const Literal old_literal = clause_ref[i];
-      clause_ref[i] = Literal(equiv_mapping_[clause_ref[i].Index()]);
+      clause_ref[i] = Literal(equiv_mapping_[clause_ref[i]]);
       if (old_literal != clause_ref[i]) changed = true;
     }
   }
@@ -219,8 +219,8 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
     literal_to_clause_sizes_.resize(required_size);
   }
   for (Literal e : clause_ref) {
-    literal_to_clauses_[e.Index()].push_back(ci);
-    literal_to_clause_sizes_[e.Index()]++;
+    literal_to_clauses_[e].push_back(ci);
+    literal_to_clause_sizes_[e]++;
   }
 }
 
@@ -243,8 +243,8 @@ void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
   in_clause_to_process_.push_back(true);
   clause_to_process_.push_back(ci);
   for (const Literal e : clauses_.back()) {
-    literal_to_clauses_[e.Index()].push_back(ci);
-    literal_to_clause_sizes_[e.Index()]++;
+    literal_to_clauses_[e].push_back(ci);
+    literal_to_clause_sizes_[e]++;
     UpdatePriorityQueue(e.Variable());
     UpdateBvaPriorityQueue(e.Index());
   }
@@ -258,8 +258,8 @@ SatPresolver::VariableMapping() const {
   absl::StrongVector<BooleanVariable, BooleanVariable> result;
   BooleanVariable new_var(0);
   for (BooleanVariable var(0); var < NumVariables(); ++var) {
-    if (literal_to_clause_sizes_[Literal(var, true).Index()] > 0 ||
-        literal_to_clause_sizes_[Literal(var, false).Index()] > 0) {
+    if (literal_to_clause_sizes_[Literal(var, true)] > 0 ||
+        literal_to_clause_sizes_[Literal(var, false)] > 0) {
       result.push_back(new_var);
       ++new_var;
     } else {
@@ -569,8 +569,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   // loop to also detect if there is any empty clause, in which case we will
   // trigger a "cleaning" below.
   bool need_cleaning = false;
-  num_inspected_signatures_ += literal_to_clauses_[lit.Index()].size();
-  for (const ClauseIndex ci : literal_to_clauses_[lit.Index()]) {
+  num_inspected_signatures_ += literal_to_clauses_[lit].size();
+  for (const ClauseIndex ci : literal_to_clauses_[lit]) {
     const uint64_t ci_signature = signatures_[ci];
 
     // This allows to check for empty clause without fetching the memory at
@@ -619,12 +619,12 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
 
   if (need_cleaning) {
     int new_index = 0;
-    auto& occurrence_list_ref = literal_to_clauses_[lit.Index()];
+    auto& occurrence_list_ref = literal_to_clauses_[lit];
     for (const ClauseIndex ci : occurrence_list_ref) {
       if (signatures_[ci] != 0) occurrence_list_ref[new_index++] = ci;
     }
     occurrence_list_ref.resize(new_index);
-    DCHECK_EQ(literal_to_clause_sizes_[lit.Index()], new_index);
+    DCHECK_EQ(literal_to_clause_sizes_[lit], new_index);
   }
 
   return true;
@@ -702,15 +702,15 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
 }
 
 void SatPresolver::RemoveAndRegisterForPostsolveAllClauseContaining(Literal x) {
-  for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
+  for (ClauseIndex i : literal_to_clauses_[x]) {
     if (!clauses_[i].empty()) RemoveAndRegisterForPostsolve(i, x);
   }
-  gtl::STLClearObject(&literal_to_clauses_[x.Index()]);
-  literal_to_clause_sizes_[x.Index()] = 0;
+  gtl::STLClearObject(&literal_to_clauses_[x]);
+  literal_to_clause_sizes_[x] = 0;
 }
 
 bool SatPresolver::CrossProduct(Literal x) {
-  const int s1 = literal_to_clause_sizes_[x.Index()];
+  const int s1 = literal_to_clause_sizes_[x];
   const int s2 = literal_to_clause_sizes_[x.NegatedIndex()];
 
   // Note that if s1 or s2 is equal to 0, this function will implicitly just
@@ -726,7 +726,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   // Compute the threshold under which we don't remove x.Variable().
   int threshold = 0;
   const int clause_weight = parameters_.presolve_bve_clause_weight();
-  for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
+  for (ClauseIndex i : literal_to_clauses_[x]) {
     if (!clauses_[i].empty()) {
       threshold += clause_weight + clauses_[i].size();
     }
@@ -742,7 +742,7 @@ bool SatPresolver::CrossProduct(Literal x) {
 
   // Test whether we should remove the x.Variable().
   int size = 0;
-  for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
+  for (ClauseIndex i : literal_to_clauses_[x]) {
     if (clauses_[i].empty()) continue;
     bool no_resolvant = true;
     for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
@@ -777,7 +777,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   // Note that the variable priority queue will only be updated during the
   // deletion.
   std::vector<Literal> temp;
-  for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
+  for (ClauseIndex i : literal_to_clauses_[x]) {
     if (clauses_[i].empty()) continue;
     for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
       if (clauses_[j].empty()) continue;
@@ -802,7 +802,7 @@ bool SatPresolver::CrossProduct(Literal x) {
 void SatPresolver::Remove(ClauseIndex ci) {
   signatures_[ci] = 0;
   for (Literal e : clauses_[ci]) {
-    literal_to_clause_sizes_[e.Index()]--;
+    literal_to_clause_sizes_[e]--;
     UpdatePriorityQueue(e.Variable());
     UpdateBvaPriorityQueue(Literal(e.Variable(), true).Index());
     UpdateBvaPriorityQueue(Literal(e.Variable(), false).Index());
@@ -822,9 +822,9 @@ Literal SatPresolver::FindLiteralWithShortestOccurrenceList(
     const std::vector<Literal>& clause) {
   DCHECK(!clause.empty());
   Literal result = clause.front();
-  int best_size = literal_to_clause_sizes_[result.Index()];
+  int best_size = literal_to_clause_sizes_[result];
   for (const Literal l : clause) {
-    const int size = literal_to_clause_sizes_[l.Index()];
+    const int size = literal_to_clause_sizes_[l];
     if (size < best_size) {
       result = l;
       best_size = size;
@@ -840,9 +840,9 @@ LiteralIndex SatPresolver::FindLiteralWithShortestOccurrenceListExcluding(
   int num_occurrences = std::numeric_limits<int>::max();
   for (const Literal l : clause) {
     if (l == to_exclude) continue;
-    if (literal_to_clause_sizes_[l.Index()] < num_occurrences) {
+    if (literal_to_clause_sizes_[l] < num_occurrences) {
       result = l.Index();
-      num_occurrences = literal_to_clause_sizes_[l.Index()];
+      num_occurrences = literal_to_clause_sizes_[l];
     }
   }
   return result;
@@ -851,8 +851,8 @@ LiteralIndex SatPresolver::FindLiteralWithShortestOccurrenceListExcluding(
 void SatPresolver::UpdatePriorityQueue(BooleanVariable var) {
   if (var_pq_elements_.empty()) return;  // not initialized.
   PQElement* element = &var_pq_elements_[var];
-  element->weight = literal_to_clause_sizes_[Literal(var, true).Index()] +
-                    literal_to_clause_sizes_[Literal(var, false).Index()];
+  element->weight = literal_to_clause_sizes_[Literal(var, true)] +
+                    literal_to_clause_sizes_[Literal(var, false)];
   if (var_pq_.Contains(element)) {
     var_pq_.NoteChangedPriority(element);
   } else {
@@ -866,8 +866,8 @@ void SatPresolver::InitializePriorityQueue() {
   for (BooleanVariable var(0); var < num_vars; ++var) {
     PQElement* element = &var_pq_elements_[var];
     element->variable = var;
-    element->weight = literal_to_clause_sizes_[Literal(var, true).Index()] +
-                      literal_to_clause_sizes_[Literal(var, false).Index()];
+    element->weight = literal_to_clause_sizes_[Literal(var, true)] +
+                      literal_to_clause_sizes_[Literal(var, false)];
     var_pq_.Add(element);
   }
 }
@@ -921,8 +921,8 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
   int num_simple_definition = 0;
   int num_vars = 0;
   for (BooleanVariable var(0); var < NumVariables(); ++var) {
-    const int s1 = literal_to_clause_sizes_[Literal(var, true).Index()];
-    const int s2 = literal_to_clause_sizes_[Literal(var, false).Index()];
+    const int s1 = literal_to_clause_sizes_[Literal(var, true)];
+    const int s2 = literal_to_clause_sizes_[Literal(var, false)];
     if (s1 == 0 && s2 == 0) continue;
 
     ++num_vars;

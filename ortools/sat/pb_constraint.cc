@@ -120,17 +120,17 @@ bool ApplyLiteralMapping(
   int index = 0;
   Coefficient shift_due_to_fixed_variables(0);
   for (const LiteralWithCoeff& entry : *cst) {
-    if (mapping[entry.literal.Index()] >= 0) {
-      (*cst)[index] = LiteralWithCoeff(Literal(mapping[entry.literal.Index()]),
-                                       entry.coefficient);
+    if (mapping[entry.literal] >= 0) {
+      (*cst)[index] =
+          LiteralWithCoeff(Literal(mapping[entry.literal]), entry.coefficient);
       ++index;
-    } else if (mapping[entry.literal.Index()] == kTrueLiteralIndex) {
+    } else if (mapping[entry.literal] == kTrueLiteralIndex) {
       if (!SafeAddInto(-entry.coefficient, &shift_due_to_fixed_variables)) {
         return false;
       }
     } else {
       // Nothing to do if the literal is false.
-      DCHECK_EQ(mapping[entry.literal.Index()], kFalseLiteralIndex);
+      DCHECK_EQ(mapping[entry.literal], kFalseLiteralIndex);
     }
   }
   cst->resize(index);
@@ -887,7 +887,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   constraints_.emplace_back(c.release());
   for (LiteralWithCoeff term : cst) {
     DCHECK_LT(term.literal.Index(), to_update_.size());
-    to_update_[term.literal.Index()].push_back(ConstraintIndexWithCoeff(
+    to_update_[term.literal].push_back(ConstraintIndexWithCoeff(
         trail->Assignment().VariableIsAssigned(term.literal.Variable()),
         cst_index, term.coefficient));
   }
@@ -917,8 +917,8 @@ bool PbConstraints::PropagateNext(Trail* trail) {
   // We need to update ALL threshold, otherwise the Untrail() will not be
   // synchronized.
   bool conflict = false;
-  num_threshold_updates_ += to_update_[true_literal.Index()].size();
-  for (ConstraintIndexWithCoeff& update : to_update_[true_literal.Index()]) {
+  num_threshold_updates_ += to_update_[true_literal].size();
+  for (ConstraintIndexWithCoeff& update : to_update_[true_literal]) {
     const Coefficient threshold =
         thresholds_[update.index] - update.coefficient;
     thresholds_[update.index] = threshold;
@@ -958,7 +958,7 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
     const Literal literal = trail[propagation_trail_index_];
-    for (ConstraintIndexWithCoeff& update : to_update_[literal.Index()]) {
+    for (ConstraintIndexWithCoeff& update : to_update_[literal]) {
       thresholds_[update.index] += update.coefficient;
 
       // Only the constraints which were inspected during Propagate() need

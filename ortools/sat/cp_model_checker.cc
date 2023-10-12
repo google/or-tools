@@ -366,13 +366,22 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(1)));
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().target()));
 
-  const LinearExpressionProto& divisor_proto = ct.int_div().exprs(1);
-  if (MinOfExpression(model, divisor_proto) <= 0 &&
-      MaxOfExpression(model, divisor_proto) >= 0) {
-    return absl::StrCat("The divisor cannot span across zero in constraint: ",
-                        ProtobufShortDebugString(ct));
+  const LinearExpressionProto& denom = ct.int_div().exprs(1);
+  const int64_t offset = denom.offset();
+  if (denom.vars().empty()) {
+    if (offset == 0) {
+      return absl::StrCat("Division by 0: ", ProtobufShortDebugString(ct));
+    }
+  } else {
+    const int64_t coeff = denom.coeffs(0);
+    CHECK_NE(coeff, 0);
+    const int64_t inverse_of_zero = -offset / coeff;
+    if (inverse_of_zero * coeff + offset == 0 &&
+        DomainOfRef(model, denom.vars(0)).Contains(inverse_of_zero)) {
+      return absl::StrCat("The domain of the divisor cannot contain 0: ",
+                          ProtobufShortDebugString(ct));
+    }
   }
-
   return "";
 }
 

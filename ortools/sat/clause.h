@@ -314,7 +314,7 @@ class LiteralWatchers : public SatPropagator {
   // This is exposed since some inprocessing code can heuristically exploit the
   // currently watched literal and blocking literal to do some simplification.
   const std::vector<Watcher>& WatcherListOnFalse(Literal false_literal) const {
-    return watchers_on_false_[false_literal.Index()];
+    return watchers_on_false_[false_literal];
   }
 
  private:
@@ -564,7 +564,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns the list of literal "directly" implied by l. Beware that this can
   // easily change behind your back if you modify the solver state.
   const absl::InlinedVector<Literal, 6>& Implications(Literal l) const {
-    return implications_[l.Index()];
+    return implications_[l];
   }
 
   // Returns the representative of the equivalence class of l (or l itself if it
@@ -572,8 +572,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // get any non-trival results.
   Literal RepresentativeOf(Literal l) const {
     if (l.Index() >= representative_of_.size()) return l;
-    if (representative_of_[l.Index()] == kNoLiteralIndex) return l;
-    return Literal(representative_of_[l.Index()]);
+    if (representative_of_[l] == kNoLiteralIndex) return l;
+    return Literal(representative_of_[l]);
   }
 
   // Prunes the implication graph by calling first DetectEquivalences() to
@@ -637,7 +637,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Note that the set (and thus number) of redundant literal can only grow over
   // time. This is because we always use the lowest index as representative of
   // an equivalent class, so a redundant literal will stay that way.
-  bool IsRedundant(Literal l) const { return is_redundant_[l.Index()]; }
+  bool IsRedundant(Literal l) const { return is_redundant_[l]; }
   int64_t num_redundant_literals() const {
     CHECK_EQ(num_redundant_literals_ % 2, 0);
     return num_redundant_literals_;
@@ -676,8 +676,7 @@ class BinaryImplicationGraph : public SatPropagator {
         // our implications_ database. Except if ComputeTransitiveReduction()
         // was aborted early, but in this case, if only one is present, the
         // other could be removed, so we shouldn't need to output it.
-        if (a < b &&
-            duplicate_detection.insert({a.Index(), b.Index()}).second) {
+        if (a < b && duplicate_detection.insert({a, b}).second) {
           out->AddBinaryClause(a, b);
         }
       }
@@ -711,7 +710,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // called, and we update it in some situation but we don't deal with fixed
   // variables, at_most ones and duplicates implications for now.
   int DirectImplicationsEstimatedSize(Literal literal) const {
-    return estimated_sizes_[literal.Index()];
+    return estimated_sizes_[literal];
   }
 
   // Variable elimination by replacing everything of the form a => var => b by a
@@ -725,7 +724,7 @@ class BinaryImplicationGraph : public SatPropagator {
   int64_t NumImplicationOnVariableRemoval(BooleanVariable var);
   void RemoveBooleanVariable(
       BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses);
-  bool IsRemoved(Literal l) const { return is_removed_[l.Index()]; }
+  bool IsRemoved(Literal l) const { return is_removed_[l]; }
 
   // TODO(user): consider at most ones.
   void CleanupAllRemovedVariables();
