@@ -877,7 +877,7 @@ class LocalSearchTest(unittest.TestCase):
         """Filter to speed up LS computation."""
 
         def __init__(self, int_vars):
-            super.__init__(int_vars)
+            super().__init__(int_vars)
             self.__sum = 0
 
         def OnSynchronize(self, delta):
