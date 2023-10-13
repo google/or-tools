@@ -43,6 +43,7 @@ set(ABSL_DEPS
   absl::flags_commandlineflag
   absl::flags_marshalling
   absl::flags_parse
+  absl::flags_reflection
   absl::flags_usage
   absl::log
   absl::log_flags
