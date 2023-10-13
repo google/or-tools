@@ -1,101 +1,71 @@
+# ref: https://github.com/actions/runner-images
 name: amd64 Linux CMake SCIP OFF
 
 on: [push, pull_request, workflow_dispatch]
 
+# Building using the github runner environement directly.
 jobs:
-  # Building using the github runner environement directly.
-  linux_cpp:
+  native:
+    strategy:
+      matrix:
+        cmake: [
+          {language: 'C++', args: '-DBUILD_CXX=ON'},
+          {language: '.Net', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'},
+          {language: 'Java', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON'},
+          {language: 'Python', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'},
+        ]
+      fail-fast: false
+    name: Linux • CMake • ${{ matrix.cmake.language }} • SCIP OFF
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Check cmake
-      run: cmake --version
-    - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
-        -DBUILD_CXX=ON -DUSE_SCIP=OFF
-    - name: Build
-      run: cmake --build build --config Release --target all -v
-    - name: Test
-      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config Release --target test -v
-    - name: Install
-      run: cmake --build build --config Release --target install -v -- DESTDIR=install
-
-  linux_dotnet:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+      # Install SWIG
     - name: Swig install
       run: sudo apt install -y swig
     - name: Check swig
       run: swig -version
       # Install .NET SDKs
-    - name: Setup .NET Core 3.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.x
     - name: Setup .NET 6.0
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
     - name: Check dotnet
       run: dotnet --info
-    - name: Check cmake
-      run: cmake --version
-    - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
-        -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
-        -DBUILD_DOTNET=ON -DUSE_SCIP=OFF
-    - name: Build
-      run: cmake --build build --config Release --target all -v
-    - name: Test
-      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config Release --target test -v
-    - name: Install
-      run: cmake --build build --config Release --target install -v -- DESTDIR=install
-
-  linux_java:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Swig install
-      run: sudo apt install -y swig
-    - name: Check swig
-      run: swig -version
+      # Install Java
     - name: Check java
       run: java -version
-    - name: Check cmake
-      run: cmake --version
-    - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
-        -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
-        -DBUILD_JAVA=ON -DUSE_SCIP=OFF
-    - name: Build
-      run: cmake --build build --config Release --target all -v
-    - name: Test
-      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config Release --target test -v
-    - name: Install
-      run: cmake --build build --config Release --target install -v -- DESTDIR=install
-
-  linux_python:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Swig install
-      run: sudo apt install -y swig
-    - name: Check swig
-      run: swig -version
+      # Install Python
     - name: Install python3 venv
       run: sudo apt-get install python3-venv
     - name: Update Path
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      # CMake
     - name: Check cmake
       run: cmake --version
     - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
-        -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
-        -DBUILD_PYTHON=ON -DUSE_SCIP=OFF
+      run: >
+        cmake -S. -Bbuild
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_DEPS=ON
+        -DUSE_SCIP=OFF
+        ${{ matrix.cmake.args }}
     - name: Build
-      run: cmake --build build --config Release --target all -v
+      run: >
+        cmake --build build
+        --config Release
+        --target all
+        -v -j
     - name: Test
-      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config Release --target test -v
+      run: >
+        CTEST_OUTPUT_ON_FAILURE=1
+        cmake --build build
+        --config Release
+        --target test
+        -v -j
     - name: Install
-      run: cmake --build build --config Release --target install -v -- DESTDIR=install
+      run: >
+        cmake --build build
+        --config Release
+        --target install
+        -v -j
+        -- DESTDIR=install
