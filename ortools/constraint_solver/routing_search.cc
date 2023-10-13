@@ -583,7 +583,8 @@ CheapestInsertionFilteredHeuristic::ComputeStartEndDistanceForVehicles(
     std::vector<StartEndValue>& start_end_distances =
         start_end_distances_per_node[node];
     start_end_distances.reserve(
-        std::min(model.VehicleVar(node)->Size(), vehicles.size()));
+        std::min(model.VehicleVar(node)->Size(),
+                 static_cast<uint64_t>(vehicles.size())));
 
     ProcessVehicleStartEndCosts(
         model, node,
