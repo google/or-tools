@@ -18,6 +18,7 @@ endif()
 if(BUILD_CXX_SAMPLES)
   file(GLOB CXX_SRCS "*.cc")
   list(FILTER CXX_SRCS EXCLUDE REGEX "area_socp.cc$")
+  list(FILTER CXX_SRCS EXCLUDE REGEX "branch_and_bound.*$")
 
   # conflict name
   list(FILTER CXX_SRCS EXCLUDE REGEX "basic_example.cc$")
