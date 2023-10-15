@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "Eigen/Core"
@@ -89,6 +90,10 @@ class ShardedQuadraticProgram {
     qp_.constraint_lower_bounds.swap(constraint_lower_bounds);
     qp_.constraint_upper_bounds.swap(constraint_upper_bounds);
   }
+
+  void SetConstraintBounds(int64_t constraint_index,
+                           std::optional<double> lower_bound,
+                           std::optional<double> upper_bound);
 
   // Swaps `objective` with the `objective_vector` in the quadratic program.
   // Swapping `objective_matrix` is not yet supported because it hasn't been
