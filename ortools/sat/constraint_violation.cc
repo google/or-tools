@@ -404,7 +404,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   }
 }
 
-// We just need to modifie the old/new transition that decrease the number of
+// We just need to modify the old/new transition that decrease the number of
 // enforcement literal at false.
 void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
     int c, double score_change, absl::Span<const int64_t> jump_deltas,
@@ -1092,6 +1092,35 @@ int64_t ComputeOverloadArea(
   return overload;
 }
 
+int64_t ComputeOverlap(const ConstraintProto& interval1,
+                       const ConstraintProto& interval2,
+                       absl::Span<const int64_t> solution) {
+  for (const int lit : interval1.enforcement_literal()) {
+    if (!LiteralValue(lit, solution)) return 0;
+  }
+  for (const int lit : interval2.enforcement_literal()) {
+    if (!LiteralValue(lit, solution)) return 0;
+  }
+
+  const int64_t start1 = ExprValue(interval1.interval().start(), solution);
+  const int64_t size1 = ExprValue(interval1.interval().size(), solution);
+  const int64_t end1 =
+      std::min(start1 + size1, ExprValue(interval1.interval().end(), solution));
+
+  const int64_t start2 = ExprValue(interval2.interval().start(), solution);
+  const int64_t size2 = ExprValue(interval2.interval().size(), solution);
+  const int64_t end2 =
+      std::min(start2 + size2, ExprValue(interval2.interval().end(), solution));
+
+  if (start1 >= end2 || start2 >= end1) return 0;  // Disjoint.
+
+  // We force a min cost of 1 to cover the case where a interval of size 0 is in
+  // the middle of another interval.
+  return std::max(std::min(std::min(end2 - start2, end1 - start1),
+                           std::min(end2 - start1, end1 - start2)),
+                  int64_t{1});
+}
+
 }  // namespace
 
 CompiledNoOverlapConstraint::CompiledNoOverlapConstraint(
@@ -1100,6 +1129,12 @@ CompiledNoOverlapConstraint::CompiledNoOverlapConstraint(
 
 int64_t CompiledNoOverlapConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
+  DCHECK_GE(ct_proto().no_overlap().intervals_size(), 2);
+  if (ct_proto().no_overlap().intervals_size() == 2) {
+    return ComputeOverlap(
+        cp_model_.constraints(ct_proto().no_overlap().intervals(0)),
+        cp_model_.constraints(ct_proto().no_overlap().intervals(1)), solution);
+  }
   return ComputeOverloadArea(ct_proto().no_overlap().intervals(), {}, cp_model_,
                              solution, 1, events_);
 }
@@ -1116,6 +1151,42 @@ int64_t CompiledCumulativeConstraint::ComputeViolation(
       ct_proto().cumulative().intervals(), ct_proto().cumulative().demands(),
       cp_model_, solution,
       ExprValue(ct_proto().cumulative().capacity(), solution), events_);
+}
+
+// ----- CompiledCumulativeConstraint -----
+
+CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
+    const ConstraintProto& ct_proto, const CpModelProto& cp_model)
+    : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
+
+int64_t CompiledNoOverlap2dConstraint::ComputeOverlapArea(
+    absl::Span<const int64_t> solution, int i, int j) const {
+  const int64_t x_overlap = ComputeOverlap(
+      cp_model_.constraints(ct_proto().no_overlap_2d().x_intervals(i)),
+      cp_model_.constraints(ct_proto().no_overlap_2d().x_intervals(j)),
+      solution);
+  if (x_overlap > 0) {
+    return x_overlap *
+           ComputeOverlap(
+               cp_model_.constraints(ct_proto().no_overlap_2d().y_intervals(i)),
+               cp_model_.constraints(ct_proto().no_overlap_2d().y_intervals(j)),
+               solution);
+  } else {
+    return 0;
+  }
+}
+
+int64_t CompiledNoOverlap2dConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  DCHECK_GE(ct_proto().no_overlap_2d().x_intervals_size(), 2);
+  const int size = ct_proto().no_overlap_2d().x_intervals_size();
+  int64_t violation = 0;
+  for (int i = 0; i + 1 < size; ++i) {
+    for (int j = i + 1; j < size; ++j) {
+      violation += ComputeOverlapArea(solution, i, j);
+    }
+  }
+  return violation;
 }
 
 // ----- CompiledCircuitConstraint -----
@@ -1281,7 +1352,9 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 
 // ----- LsEvaluator -----
 
-LsEvaluator::LsEvaluator(const CpModelProto& cp_model) : cp_model_(cp_model) {
+LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
+                         const SatParameters& params)
+    : cp_model_(cp_model), params_(params) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
@@ -1294,9 +1367,10 @@ LsEvaluator::LsEvaluator(const CpModelProto& cp_model) : cp_model_(cp_model) {
 }
 
 LsEvaluator::LsEvaluator(
-    const CpModelProto& cp_model, const std::vector<bool>& ignored_constraints,
+    const CpModelProto& cp_model, const SatParameters& params,
+    const std::vector<bool>& ignored_constraints,
     const std::vector<ConstraintProto>& additional_constraints)
-    : cp_model_(cp_model) {
+    : cp_model_(cp_model), params_(params) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
@@ -1441,14 +1515,90 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap: {
-      CompiledNoOverlapConstraint* no_overlap =
-          new CompiledNoOverlapConstraint(ct, cp_model_);
-      constraints_.emplace_back(no_overlap);
+      if (ct.no_overlap().intervals_size() <= 1) break;
+      if (ct.no_overlap().intervals_size() >
+          params_.feasibility_jump_max_expanded_constraint_size()) {
+        CompiledNoOverlapConstraint* no_overlap =
+            new CompiledNoOverlapConstraint(ct, cp_model_);
+        constraints_.emplace_back(no_overlap);
+      } else {
+        // We expand the no_overlap constraints into a quadratic number of
+        // disjunctions.
+        for (int i = 0; i + 1 < ct.no_overlap().intervals_size(); ++i) {
+          const IntervalConstraintProto& interval_i =
+              cp_model_.constraints(ct.no_overlap().intervals(i)).interval();
+          const int64_t min_start_i = ExprMin(interval_i.start(), cp_model_);
+          const int64_t max_end_i = ExprMax(interval_i.end(), cp_model_);
+          for (int j = i + 1; j < ct.no_overlap().intervals_size(); ++j) {
+            const IntervalConstraintProto& interval_j =
+                cp_model_.constraints(ct.no_overlap().intervals(j)).interval();
+            const int64_t min_start_j = ExprMin(interval_j.start(), cp_model_);
+            const int64_t max_end_j = ExprMax(interval_j.end(), cp_model_);
+            if (min_start_i >= max_end_j || min_start_j >= max_end_i) continue;
+            ConstraintProto* disj = expanded_constraints_.add_constraints();
+            disj->mutable_no_overlap()->add_intervals(
+                ct.no_overlap().intervals(i));
+            disj->mutable_no_overlap()->add_intervals(
+                ct.no_overlap().intervals(j));
+            CompiledNoOverlapConstraint* no_overlap =
+                new CompiledNoOverlapConstraint(*disj, cp_model_);
+            constraints_.emplace_back(no_overlap);
+          }
+        }
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       constraints_.emplace_back(
           new CompiledCumulativeConstraint(ct, cp_model_));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kNoOverlap2D: {
+      const auto& x_intervals = ct.no_overlap_2d().x_intervals();
+      const auto& y_intervals = ct.no_overlap_2d().y_intervals();
+      if (x_intervals.size() <= 1) break;
+      if (x_intervals.size() >
+          params_.feasibility_jump_max_expanded_constraint_size()) {
+        CompiledNoOverlap2dConstraint* no_overlap_2d =
+            new CompiledNoOverlap2dConstraint(ct, cp_model_);
+        constraints_.emplace_back(no_overlap_2d);
+        break;
+      }
+
+      for (int i = 0; i + 1 < x_intervals.size(); ++i) {
+        const IntervalConstraintProto& x_interval_i =
+            cp_model_.constraints(x_intervals[i]).interval();
+        const int64_t x_min_start_i = ExprMin(x_interval_i.start(), cp_model_);
+        const int64_t x_max_end_i = ExprMax(x_interval_i.end(), cp_model_);
+        const IntervalConstraintProto& y_interval_i =
+            cp_model_.constraints(y_intervals[i]).interval();
+        const int64_t y_min_start_i = ExprMin(y_interval_i.start(), cp_model_);
+        const int64_t y_max_end_i = ExprMax(y_interval_i.end(), cp_model_);
+        for (int j = i + 1; j < x_intervals.size(); ++j) {
+          const IntervalConstraintProto& x_interval_j =
+              cp_model_.constraints(x_intervals[j]).interval();
+          const int64_t x_min_start_j =
+              ExprMin(x_interval_j.start(), cp_model_);
+          const int64_t x_max_end_j = ExprMax(x_interval_j.end(), cp_model_);
+          const IntervalConstraintProto& y_interval_j =
+              cp_model_.constraints(y_intervals[j]).interval();
+          const int64_t y_min_start_j =
+              ExprMin(y_interval_j.start(), cp_model_);
+          const int64_t y_max_end_j = ExprMax(y_interval_j.end(), cp_model_);
+          if (x_min_start_i >= x_max_end_j || x_min_start_j >= x_max_end_i ||
+              y_min_start_i >= y_max_end_j || y_min_start_j >= y_max_end_i) {
+            continue;
+          }
+          ConstraintProto* diffn = expanded_constraints_.add_constraints();
+          diffn->mutable_no_overlap_2d()->add_x_intervals(x_intervals[i]);
+          diffn->mutable_no_overlap_2d()->add_x_intervals(x_intervals[j]);
+          diffn->mutable_no_overlap_2d()->add_y_intervals(y_intervals[i]);
+          diffn->mutable_no_overlap_2d()->add_y_intervals(y_intervals[j]);
+          CompiledNoOverlap2dConstraint* no_overlap_2d =
+              new CompiledNoOverlap2dConstraint(*diffn, cp_model_);
+          constraints_.emplace_back(no_overlap_2d);
+        }
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kCircuit:

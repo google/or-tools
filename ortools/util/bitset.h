@@ -630,15 +630,15 @@ class Bitset64 {
   // Cryptic function! This is just an optimized version of a given piece of
   // code and has probably little general use.
   static uint64_t ConditionalXorOfTwoBits(IndexType i, uint64_t use1,
-                                          const Bitset64<IndexType>& set1,
+                                          Bitset64<IndexType>::ConstView set1,
                                           uint64_t use2,
-                                          const Bitset64<IndexType>& set2) {
+                                          Bitset64<IndexType>::ConstView set2) {
     DCHECK(use1 == 0 || use1 == 1);
     DCHECK(use2 == 0 || use2 == 1);
     const int bucket = BitOffset64(Value(i));
     const int pos = BitPos64(Value(i));
-    return ((use1 << pos) & set1.data_[bucket]) ^
-           ((use2 << pos) & set2.data_[bucket]);
+    return ((use1 << pos) & set1.data()[bucket]) ^
+           ((use2 << pos) & set2.data()[bucket]);
   }
 
   // Returns a 0/1 string representing the bitset.

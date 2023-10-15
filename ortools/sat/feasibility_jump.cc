@@ -122,11 +122,13 @@ void FeasibilityJumpSolver::Initialize() {
   // For now we just disable or enable it.
   // But in the future we might have more variation.
   if (params_.feasibility_jump_linearization_level() == 0) {
-    evaluator_ = std::make_unique<LsEvaluator>(linear_model_->model_proto());
+    evaluator_ =
+        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_);
   } else {
-    evaluator_ = std::make_unique<LsEvaluator>(
-        linear_model_->model_proto(), linear_model_->ignored_constraints(),
-        linear_model_->additional_constraints());
+    evaluator_ =
+        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_,
+                                      linear_model_->ignored_constraints(),
+                                      linear_model_->additional_constraints());
   }
 
   const int num_variables = linear_model_->model_proto().variables().size();

@@ -30,6 +30,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -274,7 +275,7 @@ bool CutIsEfficient(
 //    fixed_capacity * (makespan - makespan_min)
 // as the available energy.
 void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
-    const std::string& cut_name,
+    absl::string_view cut_name,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<EnergyEvent> events, IntegerValue capacity,
     AffineExpression makespan, TimeLimit* time_limit, Model* model,
@@ -466,7 +467,7 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     }
 
     if (cut_generated) {
-      std::string full_name = cut_name;
+      std::string full_name(cut_name);
       if (add_opt_to_name) full_name.append("_optional");
       if (add_quadratic_to_name) full_name.append("_quadratic");
       if (add_lifted_to_name) full_name.append("_lifted");

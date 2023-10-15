@@ -1191,7 +1191,33 @@ DivisionPropagator::DivisionPropagator(AffineExpression num,
       negated_div_(div.Negated()),
       integer_trail_(integer_trail) {}
 
+// TODO(user): We can propagate more, especially in the case where denom
+// spans across 0.
+// TODO(user): We can propagate a bit more if min_div = 0:
+//     (min_num > -min_denom).
 bool DivisionPropagator::Propagate() {
+  // Direct propagation if num_ and denom_ are fixed.
+  if (integer_trail_->IsFixed(num_) && integer_trail_->IsFixed(denom_)) {
+    const IntegerValue num_value = integer_trail_->FixedValue(num_);
+    const IntegerValue denom_value = integer_trail_->FixedValue(denom_);
+    const IntegerValue div_value = num_value / denom_value;
+    if (!integer_trail_->SafeEnqueue(
+            div_.LowerOrEqual(div_value),
+            {num_.LowerOrEqual(num_value), num_.GreaterOrEqual(num_value),
+             denom_.LowerOrEqual(denom_value),
+             denom_.GreaterOrEqual(denom_value)})) {
+      return false;
+    }
+    if (!integer_trail_->SafeEnqueue(
+            div_.GreaterOrEqual(div_value),
+            {num_.LowerOrEqual(num_value), num_.GreaterOrEqual(num_value),
+             denom_.LowerOrEqual(denom_value),
+             denom_.GreaterOrEqual(denom_value)})) {
+      return false;
+    }
+    return true;
+  }
+
   if (integer_trail_->LowerBound(denom_) < 0 &&
       integer_trail_->UpperBound(denom_) > 0) {
     return true;
@@ -1226,8 +1252,8 @@ bool DivisionPropagator::Propagate() {
     return PropagatePositiveDomains(num, denom, div_);
   }
 
-  if (integer_trail_->UpperBound(num) <= 0 &&
-      integer_trail_->UpperBound(div_) <= 0) {
+  if (integer_trail_->LowerBound(negated_num) >= 0 &&
+      integer_trail_->LowerBound(negated_div_) >= 0) {
     return PropagatePositiveDomains(negated_num, denom, negated_div_);
   }
 
@@ -1293,8 +1319,7 @@ bool DivisionPropagator::PropagateUpperBounds(AffineExpression num,
   if (max_div > new_max_div) {
     if (!integer_trail_->SafeEnqueue(
             div.LowerOrEqual(new_max_div),
-            {integer_trail_->UpperBoundAsLiteral(num),
-             integer_trail_->LowerBoundAsLiteral(denom)})) {
+            {num.LowerOrEqual(max_num), denom.GreaterOrEqual(min_denom)})) {
       return false;
     }
   }
@@ -1307,9 +1332,8 @@ bool DivisionPropagator::PropagateUpperBounds(AffineExpression num,
   if (max_num > new_max_num) {
     if (!integer_trail_->SafeEnqueue(
             num.LowerOrEqual(new_max_num),
-            {integer_trail_->UpperBoundAsLiteral(denom),
-             denom.GreaterOrEqual(1),
-             integer_trail_->UpperBoundAsLiteral(div)})) {
+            {denom.LowerOrEqual(max_denom), denom.GreaterOrEqual(1),
+             div.LowerOrEqual(max_div)})) {
       return false;
     }
   }
@@ -1331,8 +1355,7 @@ bool DivisionPropagator::PropagatePositiveDomains(AffineExpression num,
   if (min_div < new_min_div) {
     if (!integer_trail_->SafeEnqueue(
             div.GreaterOrEqual(new_min_div),
-            {integer_trail_->LowerBoundAsLiteral(num),
-             integer_trail_->UpperBoundAsLiteral(denom),
+            {num.GreaterOrEqual(min_num), denom.LowerOrEqual(max_denom),
              denom.GreaterOrEqual(1)})) {
       return false;
     }
@@ -1345,8 +1368,7 @@ bool DivisionPropagator::PropagatePositiveDomains(AffineExpression num,
   if (min_num < new_min_num) {
     if (!integer_trail_->SafeEnqueue(
             num.GreaterOrEqual(new_min_num),
-            {integer_trail_->LowerBoundAsLiteral(denom),
-             integer_trail_->LowerBoundAsLiteral(div)})) {
+            {denom.GreaterOrEqual(min_denom), div.GreaterOrEqual(min_div)})) {
       return false;
     }
   }
@@ -1360,22 +1382,21 @@ bool DivisionPropagator::PropagatePositiveDomains(AffineExpression num,
     if (max_denom > new_max_denom) {
       if (!integer_trail_->SafeEnqueue(
               denom.LowerOrEqual(new_max_denom),
-              {integer_trail_->UpperBoundAsLiteral(num), num.GreaterOrEqual(0),
-               integer_trail_->LowerBoundAsLiteral(div),
-               denom.GreaterOrEqual(1)})) {
+              {num.LowerOrEqual(max_num), num.GreaterOrEqual(0),
+               div.GreaterOrEqual(min_div), denom.GreaterOrEqual(1)})) {
         return false;
       }
     }
   }
 
-  // denom >= CeilRatio(num + 1, max_div+1)
-  //               >= CeilRatio(min_num + 1, max_div +).
+  // denom >= CeilRatio(num + 1, max_div + 1)
+  //               >= CeilRatio(min_num + 1, max_div + 1).
   const IntegerValue new_min_denom = CeilRatio(min_num + 1, max_div + 1);
   if (min_denom < new_min_denom) {
-    if (!integer_trail_->SafeEnqueue(denom.GreaterOrEqual(new_min_denom),
-                                     {integer_trail_->LowerBoundAsLiteral(num),
-                                      integer_trail_->UpperBoundAsLiteral(div),
-                                      div.GreaterOrEqual(0)})) {
+    if (!integer_trail_->SafeEnqueue(
+            denom.GreaterOrEqual(new_min_denom),
+            {num.GreaterOrEqual(min_num), div.LowerOrEqual(max_div),
+             div.GreaterOrEqual(0), denom.GreaterOrEqual(1)})) {
       return false;
     }
   }

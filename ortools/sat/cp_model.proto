@@ -356,8 +356,7 @@ message ConstraintProto {
     // then you should use instead of t = a / b, the int_prod constraint
     // a = b * t.
     //
-    // Note that this forces exprs[1] to never take the value 0.
-    // Important: currently we do not support exprs[1] spanning across 0.
+    // If 0 belongs to the domain of exprs[1], then the model is deemed invalid.
     LinearArgumentProto int_div = 7;
 
     // The int_mod constraint forces the target to equal exprs[0] % exprs[1].

@@ -14,16 +14,15 @@
 #ifndef OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
 #define OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -288,8 +287,8 @@ class CompiledConstraint {
 class LsEvaluator {
  public:
   // The cp_model must outlive this class.
-  explicit LsEvaluator(const CpModelProto& cp_model);
-  LsEvaluator(const CpModelProto& cp_model,
+  LsEvaluator(const CpModelProto& cp_model, const SatParameters& params);
+  LsEvaluator(const CpModelProto& cp_model, const SatParameters& params,
               const std::vector<bool>& ignored_constraints,
               const std::vector<ConstraintProto>& additional_constraints);
 
@@ -420,6 +419,8 @@ class LsEvaluator {
   void UpdateViolatedList(int c);
 
   const CpModelProto& cp_model_;
+  const SatParameters& params_;
+  CpModelProto expanded_constraints_;
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
   std::vector<std::vector<int>> var_to_constraints_;
@@ -528,6 +529,21 @@ class CompiledCumulativeConstraint : public CompiledConstraint {
  private:
   const CpModelProto& cp_model_;
   std::vector<std::pair<int64_t, int64_t>> events_;
+};
+
+// The violation of a no_overlap is the sum of overloads over time.
+class CompiledNoOverlap2dConstraint : public CompiledConstraint {
+ public:
+  explicit CompiledNoOverlap2dConstraint(const ConstraintProto& ct_proto,
+                                         const CpModelProto& cp_model);
+  ~CompiledNoOverlap2dConstraint() override = default;
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+
+ private:
+  int64_t ComputeOverlapArea(absl::Span<const int64_t> solution, int i,
+                             int j) const;
+  const CpModelProto& cp_model_;
 };
 
 }  // namespace sat

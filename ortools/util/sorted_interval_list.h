@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
+#include <cstdint>
 #include <iterator>
 #include <ostream>
 #include <set>

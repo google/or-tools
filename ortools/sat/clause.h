@@ -713,13 +713,13 @@ class BinaryImplicationGraph : public SatPropagator {
     return estimated_sizes_[literal];
   }
 
-  // Variable elimination by replacing everything of the form a => var => b by a
-  // => b. We ignore any a => a so the number of new implications is not always
-  // just the product of the two direct implication list of var and not(var).
-  // However, if a => var => a, then a and var are equivalent, so this case will
-  // be removed if one run DetectEquivalences() before this. Similarly, if a =>
-  // var => not(a) then a must be false and this is detected and dealt with by
-  // FindFailedLiteralAroundVar().
+  // Variable elimination by replacing everything of the form a => var => b by
+  // a => b. We ignore any a => a so the number of new implications is not
+  // always just the product of the two direct implication list of var and
+  // not(var). However, if a => var => a, then a and var are equivalent, so this
+  // case will be removed if one run DetectEquivalences() before this.
+  // Similarly, if a => var => not(a) then a must be false and this is detected
+  // and dealt with by FindFailedLiteralAroundVar().
   bool FindFailedLiteralAroundVar(BooleanVariable var, bool* is_unsat);
   int64_t NumImplicationOnVariableRemoval(BooleanVariable var);
   void RemoveBooleanVariable(
@@ -773,6 +773,9 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // If the final AMO size is smaller than "expansion_size" we fully expand it.
   bool CleanUpAndAddAtMostOnes(int base_index, int expansion_size = 10);
+
+  // To be used in DCHECKs().
+  bool InvariantsAreOk();
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;
@@ -834,6 +837,11 @@ class BinaryImplicationGraph : public SatPropagator {
   // TransformIntoMaxCliques().
   int64_t work_done_in_mark_descendants_ = 0;
   std::vector<Literal> bfs_stack_;
+
+  // Used by ComputeTransitiveReduction() in case we abort early to maintain
+  // the invariant checked by InvariantsAreOk(). Some of our algo
+  // relies on this to be always true.
+  std::vector<std::pair<Literal, Literal>> tmp_removed_;
 
   // Filled by DetectEquivalences().
   bool is_dag_ = false;

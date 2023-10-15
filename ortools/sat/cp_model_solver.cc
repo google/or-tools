@@ -3516,11 +3516,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         params, helper, &shared));
   }
 
-  const bool feasibility_jump_possible =
-      !params.interleave_search() &&
-      helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
   const LinearModel* linear_model = global_model->Get<LinearModel>();
-  if (params.num_violation_ls() > 0 && feasibility_jump_possible &&
+  if (params.num_violation_ls() > 0 && !params.interleave_search() &&
       model_proto.has_objective()) {
     const int num_violation_ls = params.test_feasibility_jump()
                                      ? params.num_workers()
@@ -3568,10 +3565,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // schedule more than the available number of threads. They will just be
     // interleaved. We will get an higher diversity, but use more memory.
     const int num_feasibility_jump =
-        feasibility_jump_possible
-            ? (params.test_feasibility_jump() ? num_available
-                                              : (num_available + 1) / 2)
-            : 0;
+        params.interleave_search()
+            ? 0
+            : (params.test_feasibility_jump() ? num_available
+                                              : (num_available + 1) / 2);
     const int num_first_solution_subsolvers =
         num_available - num_feasibility_jump;
 
