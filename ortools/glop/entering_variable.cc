@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "ortools/base/timer.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/port/proto_utils.h"
 
@@ -40,14 +41,17 @@ Status EnteringVariable::DualChooseEnteringColumn(
     ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   const auto update_coefficients = update_row.GetCoefficients().const_view();
-  const auto reduced_costs = reduced_costs_->GetReducedCosts().const_view();
+  const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
-  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
-  const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
+  DenseBitRow::ConstView can_decrease =
+      variables_info_.GetCanDecreaseBitRow().const_view();
+  DenseBitRow::ConstView can_increase =
+      variables_info_.GetCanIncreaseBitRow().const_view();
+  DenseBitRow::ConstView is_boxed =
+      variables_info_.GetNonBasicBoxedVariables().const_view();
 
   // If everything has the best possible precision currently, we ignore
   // low coefficients. This make sure we will never choose a pivot too small. It
@@ -86,12 +90,12 @@ Status EnteringVariable::DualChooseEnteringColumn(
                                                     : -update_coefficients[col];
 
     ColWithRatio entry;
-    if (can_decrease.IsSet(col) && coeff > threshold) {
+    if (can_decrease[col] && coeff > threshold) {
       // In this case, at some point the reduced cost will be positive if not
       // already, and the column will be dual-infeasible.
       if (-reduced_costs[col] > harris_ratio * coeff) continue;
       entry = ColWithRatio(col, -reduced_costs[col], coeff);
-    } else if (can_increase.IsSet(col) && coeff < -threshold) {
+    } else if (can_increase[col] && coeff < -threshold) {
       // In this case, at some point the reduced cost will be negative if not
       // already, and the column will be dual-infeasible.
       if (reduced_costs[col] > harris_ratio * -coeff) continue;
@@ -243,7 +247,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     Fractional cost_variation, ColIndex* entering_col) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   const auto update_coefficients = update_row.GetCoefficients().const_view();
-  const auto reduced_costs = reduced_costs_->GetReducedCosts().const_view();
+  const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   // List of breakpoints where a variable change from feasibility to
@@ -261,8 +265,10 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   const Fractional minimum_delta =
       parameters_.degenerate_ministep_factor() * dual_feasibility_tolerance;
 
-  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow::ConstView can_decrease =
+      variables_info_.GetCanDecreaseBitRow().const_view();
+  const DenseBitRow::ConstView can_increase =
+      variables_info_.GetCanIncreaseBitRow().const_view();
   const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
   num_operations_ += 10 * update_row.GetNonZeroPositions().size();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
@@ -289,8 +295,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     // is close to zero, then the variable is counted as dual-feasible.
     if (std::abs(reduced_costs[col]) <= dual_feasibility_tolerance) {
       // Continue if the variation goes in the dual-feasible direction.
-      if (coeff > 0 && !can_decrease.IsSet(col)) continue;
-      if (coeff < 0 && !can_increase.IsSet(col)) continue;
+      if (coeff > 0 && !can_decrease[col]) continue;
+      if (coeff < 0 && !can_increase[col]) continue;
 
       // For an already dual-infeasible variable, we allow to push it until
       // the harris_tolerance. But if it is past that or close to it, we also
@@ -342,7 +348,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     // If the variable is free, then not only do we loose the infeasibility
     // improvment, we also render it worse if we keep going in the same
     // direction.
-    if (can_decrease.IsSet(top.col) && can_increase.IsSet(top.col) &&
+    if (can_decrease[top.col] && can_increase[top.col] &&
         std::abs(reduced_costs[top.col]) > threshold) {
       improvement -= top.coeff_magnitude;
     }

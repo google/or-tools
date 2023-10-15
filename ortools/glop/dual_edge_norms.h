@@ -75,7 +75,7 @@ class DualEdgeNorms {
   // Returns the dual edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or just
   // called Clear().
-  const DenseColumn& GetEdgeSquaredNorms();
+  DenseColumn::ConstView GetEdgeSquaredNorms();
 
   // Updates the norms if the columns of the basis where permuted.
   void UpdateDataOnBasisPermutation(const ColumnPermutation& col_perm);

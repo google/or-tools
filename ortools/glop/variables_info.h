@@ -170,9 +170,9 @@ class VariablesInfo {
   // TODO(user): Shall we re-add the bound when the variable is moved out of
   // the base? it is not needed, but might allow for more bound flips?
   void TransformToDualPhaseIProblem(Fractional dual_feasibility_tolerance,
-                                    const DenseRow& reduced_costs);
+                                    DenseRow::ConstView reduced_costs);
   void EndDualPhaseI(Fractional dual_feasibility_tolerance,
-                     const DenseRow& reduced_costs);
+                     DenseRow::ConstView reduced_costs);
 
  private:
   // Computes the initial/default variable status from its type. A constrained

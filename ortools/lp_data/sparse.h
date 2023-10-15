@@ -371,7 +371,7 @@ class CompactSparseMatrix {
   ColIndex AddDenseColumn(const DenseColumn& dense_column);
 
   // Same as AddDenseColumn(), but only adds the non-zero from the given start.
-  ColIndex AddDenseColumnPrefix(const DenseColumn& dense_column,
+  ColIndex AddDenseColumnPrefix(DenseColumn::ConstView dense_column,
                                 RowIndex start);
 
   // Same as AddDenseColumn(), but uses the given non_zeros pattern of input.
@@ -433,14 +433,18 @@ class CompactSparseMatrix {
   // dense_column. If multiplier is 0.0, this function does nothing. This
   // function is declared in the .h for efficiency.
   void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
-                                      DenseColumn* dense_column) const {
-    RETURN_IF_NULL(dense_column);
+                                      DenseColumn::View dense_column) const {
     if (multiplier == 0.0) return;
     const auto entry_rows = rows_.view();
     const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      (*dense_column)[entry_rows[i]] += multiplier * entry_coeffs[i];
+      dense_column[entry_rows[i]] += multiplier * entry_coeffs[i];
     }
+  }
+  void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
+                                      DenseColumn* dense_column) const {
+    return ColumnAddMultipleToDenseColumn(col, multiplier,
+                                          dense_column->view());
   }
 
   // Same as ColumnAddMultipleToDenseColumn() but also adds the new non-zeros to

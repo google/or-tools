@@ -80,7 +80,7 @@ class PrimalEdgeNorms {
 
   // Depending on the SetPricingRule(), this returns one of the "norms" vector
   // below. Note that all norms are squared.
-  const DenseRow& GetSquaredNorms();
+  DenseRow::ConstView GetSquaredNorms();
 
   // Returns the primal edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or if

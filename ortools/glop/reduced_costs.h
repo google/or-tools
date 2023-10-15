@@ -167,12 +167,12 @@ class ReducedCosts {
   // for non-basic columns, this is the classic reduced cost. If it is false,
   // then this is defined only for the columns in
   // variables_info_.GetIsRelevantBitRow().
-  const DenseRow& GetReducedCosts();
+  DenseRow::ConstView GetReducedCosts();
 
   // Same as GetReducedCosts() but trigger a recomputation if not already done
   // to have access to the reduced costs on all positions, not just the relevant
   // one.
-  const DenseRow& GetFullReducedCosts();
+  DenseRow::ConstView GetFullReducedCosts();
 
   // Returns the dual values associated to the current basis.
   const DenseColumn& GetDualValues();

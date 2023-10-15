@@ -573,11 +573,11 @@ void TriangularMatrix::Reset(RowIndex num_rows, ColIndex col_capacity) {
 }
 
 ColIndex CompactSparseMatrix::AddDenseColumn(const DenseColumn& dense_column) {
-  return AddDenseColumnPrefix(dense_column, RowIndex(0));
+  return AddDenseColumnPrefix(dense_column.const_view(), RowIndex(0));
 }
 
 ColIndex CompactSparseMatrix::AddDenseColumnPrefix(
-    const DenseColumn& dense_column, RowIndex start) {
+    DenseColumn::ConstView dense_column, RowIndex start) {
   const RowIndex num_rows(dense_column.size());
   for (RowIndex row(start); row < num_rows; ++row) {
     if (dense_column[row] != 0.0) {

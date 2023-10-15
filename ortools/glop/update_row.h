@@ -82,7 +82,7 @@ class UpdateRow {
   // GetNonZeroPositions() instead. It should be fast to compute and iteration
   // later should be quicker.
   const DenseRow& GetCoefficients() const;
-  const ColIndexVector& GetNonZeroPositions() const;
+  absl::Span<const ColIndex> GetNonZeroPositions() const;
   Fractional GetCoefficient(ColIndex col) const { return coefficient_[col]; }
 
   // Computes the update row including all position and fill output with it.
@@ -137,6 +137,7 @@ class UpdateRow {
 
   // Holds the current update row data.
   // Note that non_zero_position_set_ is not always up to date.
+  int num_non_zeros_ = 0;
   ColIndexVector non_zero_position_list_;
   DenseBitRow non_zero_position_set_;
   DenseRow coefficient_;

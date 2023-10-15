@@ -526,7 +526,7 @@ class RevisedSimplex {
   // This must be called each time the dual_pricing_vector_ is changed at
   // position row.
   template <bool use_dense_update = false>
-  void OnDualPriceChange(const DenseColumn& squared_norms, RowIndex row,
+  void OnDualPriceChange(DenseColumn::ConstView squared_norms, RowIndex row,
                          VariableType type, Fractional threshold);
 
   // Updates the prices used by DualChooseLeavingVariableRow() when the reduced

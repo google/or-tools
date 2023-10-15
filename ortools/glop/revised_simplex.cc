@@ -1697,23 +1697,24 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK_COL_BOUNDS(col);
   basis_factorization_.RightSolveForProblemColumn(col, &direction_);
-  direction_infinity_norm_ = 0.0;
+  Fractional norm = 0.0;
   if (direction_.non_zeros.empty()) {
     // We still compute the direction non-zeros because our code relies on it.
-    for (RowIndex row(0); row < num_rows_; ++row) {
-      const Fractional value = direction_[row];
+    const RowIndex num_rows = num_rows_;
+    const DenseColumn::ConstView direction = direction_.values.const_view();
+    for (RowIndex row(0); row < num_rows; ++row) {
+      const Fractional value = direction[row];
       if (value != 0.0) {
         direction_.non_zeros.push_back(row);
-        direction_infinity_norm_ =
-            std::max(direction_infinity_norm_, std::abs(value));
+        norm = std::max(norm, std::abs(value));
       }
     }
   } else {
     for (const auto e : direction_) {
-      direction_infinity_norm_ =
-          std::max(direction_infinity_norm_, std::abs(e.coefficient()));
+      norm = std::max(norm, std::abs(e.coefficient()));
     }
   }
+  direction_infinity_norm_ = norm;
   IF_STATS_ENABLED(ratio_test_stats_.direction_density.Add(
       num_rows_ == 0 ? 0.0
                      : static_cast<double>(direction_.non_zeros.size()) /
@@ -2198,7 +2199,7 @@ bool IsDualPhaseILeavingCandidate(Fractional cost, VariableType type,
 
 // Important: The norm should be updated before this is called.
 template <bool use_dense_update>
-void RevisedSimplex::OnDualPriceChange(const DenseColumn& squared_norm,
+void RevisedSimplex::OnDualPriceChange(DenseColumn::ConstView squared_norm,
                                        RowIndex row, VariableType type,
                                        Fractional threshold) {
   const Fractional price = dual_pricing_vector_[row];
@@ -2236,7 +2237,8 @@ void RevisedSimplex::DualPhaseIUpdatePrice(RowIndex leaving_row,
 
   // Note that because the norm are also updated only on the position of the
   // direction, scaled_dual_pricing_vector_ will be up to date.
-  const DenseColumn& squared_norms = dual_edge_norms_.GetEdgeSquaredNorms();
+  const DenseColumn::ConstView squared_norms =
+      dual_edge_norms_.GetEdgeSquaredNorms();
 
   // Convert the dual_pricing_vector_ from the old basis into the new one (which
   // is the same as multiplying it by an Eta matrix corresponding to the
@@ -2272,20 +2274,23 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
     const Cols& cols) {
   SCOPED_TIME_STAT(&function_stats_);
   bool something_to_do = false;
-  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
-  const DenseRow& reduced_costs = reduced_costs_.GetReducedCosts();
+  const DenseBitRow::ConstView can_decrease =
+      variables_info_.GetCanDecreaseBitRow().const_view();
+  const DenseBitRow::ConstView can_increase =
+      variables_info_.GetCanIncreaseBitRow().const_view();
+  const DenseRow::ConstView reduced_costs = reduced_costs_.GetReducedCosts();
   const Fractional tolerance = reduced_costs_.GetDualFeasibilityTolerance();
-  for (ColIndex col : cols) {
+  auto improvement_direction = dual_infeasibility_improvement_direction_.view();
+  for (const ColIndex col : cols) {
     const Fractional reduced_cost = reduced_costs[col];
     const Fractional sign =
-        (can_increase.IsSet(col) && reduced_cost < -tolerance)  ? 1.0
-        : (can_decrease.IsSet(col) && reduced_cost > tolerance) ? -1.0
-                                                                : 0.0;
-    if (sign != dual_infeasibility_improvement_direction_[col]) {
+        (can_increase[col] && reduced_cost < -tolerance)  ? 1.0
+        : (can_decrease[col] && reduced_cost > tolerance) ? -1.0
+                                                          : 0.0;
+    if (sign != improvement_direction[col]) {
       if (sign == 0.0) {
         --num_dual_infeasible_positions_;
-      } else if (dual_infeasibility_improvement_direction_[col] == 0.0) {
+      } else if (improvement_direction[col] == 0.0) {
         ++num_dual_infeasible_positions_;
       }
       if (!something_to_do) {
@@ -2299,15 +2304,16 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
       num_update_price_operations_ +=
           10 * compact_matrix_.column(col).num_entries().value();
       compact_matrix_.ColumnAddMultipleToSparseScatteredColumn(
-          col, sign - dual_infeasibility_improvement_direction_[col],
+          col, sign - improvement_direction[col],
           &initially_all_zero_scratchpad_);
-      dual_infeasibility_improvement_direction_[col] = sign;
+      improvement_direction[col] = sign;
     }
   }
   if (something_to_do) {
     initially_all_zero_scratchpad_.ClearNonZerosIfTooDense();
     initially_all_zero_scratchpad_.ClearSparseMask();
-    const DenseColumn& squared_norms = dual_edge_norms_.GetEdgeSquaredNorms();
+    const DenseColumn::ConstView squared_norms =
+        dual_edge_norms_.GetEdgeSquaredNorms();
 
     const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
     const Fractional threshold = parameters_.ratio_test_zero_threshold();
@@ -2405,7 +2411,7 @@ void RevisedSimplex::MakeBoxedVariableDualFeasible(
   const Fractional threshold = reduced_costs_.GetDualFeasibilityTolerance();
 
   const DenseRow& variable_values = variable_values_.GetDenseRow();
-  const DenseRow& reduced_costs = reduced_costs_.GetReducedCosts();
+  const DenseRow::ConstView reduced_costs = reduced_costs_.GetReducedCosts();
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   const VariableStatusRow& variable_status = variables_info_.GetStatusRow();
@@ -2601,7 +2607,7 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
   // Get all non-basic variables with a reduced costs close to zero.
   // Note that because we only choose entering candidate with a cost of zero,
   // this set will not change (modulo epsilons).
-  const DenseRow& rc = reduced_costs_.GetReducedCosts();
+  const DenseRow::ConstView rc = reduced_costs_.GetReducedCosts();
   std::vector<ColIndex> candidates;
   for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
     if (!variables_info_.GetIsRelevantBitRow()[col]) continue;
@@ -3213,7 +3219,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       // test.
       if (feasibility_phase) {
         const Fractional price = dual_pricing_vector_[leaving_row];
-        const DenseColumn& squared_norms =
+        const DenseColumn::ConstView squared_norms =
             dual_edge_norms_.GetEdgeSquaredNorms();
         dual_prices_.AddOrUpdate(leaving_row,
                                  Square(price) / squared_norms[leaving_row]);
@@ -3821,7 +3827,7 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
     DisplayInfoOnVariables();
 
     std::string output = "z = " + StringifyWithFlags(ComputeObjectiveValue());
-    const DenseRow& reduced_costs = reduced_costs_.GetReducedCosts();
+    const DenseRow::ConstView reduced_costs = reduced_costs_.GetReducedCosts();
     for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
       absl::StrAppend(&output, StringifyMonomialWithFlags(reduced_costs[col],
                                                           variable_name_[col]));

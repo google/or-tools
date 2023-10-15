@@ -147,13 +147,12 @@ class VariableValues {
   // It is important that the infeasibility is always computed in the same
   // way. So the code should always use these functions that returns a positive
   // value when the variable is out of bounds.
-  Fractional GetUpperBoundInfeasibility(ColIndex col) const {
-    return variable_values_[col] -
-           variables_info_.GetVariableUpperBounds()[col];
-  }
-  Fractional GetLowerBoundInfeasibility(ColIndex col) const {
-    return variables_info_.GetVariableLowerBounds()[col] -
-           variable_values_[col];
+  Fractional GetColInfeasibility(ColIndex col,
+                                 DenseRow::ConstView variable_values,
+                                 DenseRow::ConstView lower_bounds,
+                                 DenseRow::ConstView upper_bounds) const {
+    return std::max(variable_values[col] - upper_bounds[col],
+                    lower_bounds[col] - variable_values[col]);
   }
 
   // Input problem data.
@@ -187,12 +186,17 @@ bool VariableValues::UpdatePrimalPhaseICosts(const Rows& rows,
   SCOPED_TIME_STAT(&stats_);
   bool changed = false;
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
+  const DenseRow::ConstView variable_values = variable_values_.const_view();
+  const DenseRow::ConstView lower_bounds =
+      variables_info_.GetVariableLowerBounds().const_view();
+  const DenseRow::ConstView upper_bounds =
+      variables_info_.GetVariableUpperBounds().const_view();
   for (const RowIndex row : rows) {
     const ColIndex col = basis_[row];
     Fractional new_cost = 0.0;
-    if (GetUpperBoundInfeasibility(col) > tolerance) {
+    if (variable_values[col] - upper_bounds[col] > tolerance) {
       new_cost = 1.0;
-    } else if (GetLowerBoundInfeasibility(col) > tolerance) {
+    } else if (lower_bounds[col] - variable_values[col] > tolerance) {
       new_cost = -1.0;
     }
     if (new_cost != (*objective)[col]) {

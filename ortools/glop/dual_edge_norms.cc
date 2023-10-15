@@ -34,9 +34,9 @@ void DualEdgeNorms::ResizeOnNewRows(RowIndex new_size) {
   edge_squared_norms_.resize(new_size, 1.0);
 }
 
-const DenseColumn& DualEdgeNorms::GetEdgeSquaredNorms() {
+DenseColumn::ConstView DualEdgeNorms::GetEdgeSquaredNorms() {
   if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
-  return edge_squared_norms_;
+  return edge_squared_norms_.const_view();
 }
 
 void DualEdgeNorms::UpdateDataOnBasisPermutation(
