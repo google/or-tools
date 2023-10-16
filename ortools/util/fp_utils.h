@@ -170,7 +170,6 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
-// TODO(user): investigate moving this to ortools/base/ or some other place.
 #define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
   EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
       expected, obtained, epsilon, epsilon))                              \
