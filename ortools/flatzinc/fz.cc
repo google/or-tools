@@ -15,6 +15,8 @@
 // of the functionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
+#include <cstdlib>
+#include <cstring>
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
@@ -27,8 +29,11 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/initialize.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
@@ -56,8 +61,7 @@ ABSL_FLAG(std::string, fz_model_name, "stdin",
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
-ABSL_FLAG(bool, use_flatzinc_format, true,
-          "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, ortools_mode, true, "Display solutions in the flatzinc format");
 
 namespace operations_research {
 namespace fz {
@@ -71,12 +75,14 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   char seed_param[] = "--fz_seed";
   char time_param[] = "--time_limit";
   bool use_time_param = false;
+  bool set_free_search = false;
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;
     }
     if (strcmp((*argv)[i], "-f") == 0) {
       (*argv)[i] = free_param;
+      set_free_search = true;
     }
     if (strcmp((*argv)[i], "-p") == 0) {
       (*argv)[i] = threads_param;
@@ -110,6 +116,12 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   if (use_time_param) {
     absl::SetFlag(&FLAGS_time_limit, absl::GetFlag(FLAGS_time_limit) / 1000.0);
   }
+
+  // Define the default number of workers to 1 if -f was used.
+  if (set_free_search && absl::GetFlag(FLAGS_threads) == 0) {
+    absl::SetFlag(&FLAGS_threads, 1);
+  }
+
   return residual_flags;
 }
 
@@ -160,7 +172,7 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
     return;
   }
   const absl::string_view flatzinc_prefix =
-      absl::GetFlag(FLAGS_use_flatzinc_format) ? "%% " : "";
+      absl::GetFlag(FLAGS_ortools_mode) ? "%% " : "";
   const std::vector<absl::string_view> lines =
       absl::StrSplit(multi_line_input, '\n');
   for (const absl::string_view& line : lines) {
@@ -192,24 +204,33 @@ int main(int argc, char** argv) {
   }
 
   operations_research::SolverLogger logger;
-  logger.EnableLogging(absl::GetFlag(FLAGS_fz_logging));
-  logger.SetLogToStdOut(false);
-  logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
-  operations_research::fz::Model model =
+  if (absl::GetFlag(FLAGS_ortools_mode)) {
+    logger.EnableLogging(true);
+    logger.SetLogToStdOut(false);
+    logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
+  } else {
+    logger.EnableLogging(true);
+    logger.SetLogToStdOut(true);
+  }
+
+  const operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
           input, !absl::GetFlag(FLAGS_read_from_stdin), &logger);
+
   operations_research::fz::FlatzincSatParameters parameters;
   parameters.display_all_solutions = absl::GetFlag(FLAGS_all_solutions);
   parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
-  parameters.log_search_progress = absl::GetFlag(FLAGS_fz_logging);
+  parameters.log_search_progress =
+      absl::GetFlag(FLAGS_fz_logging) || !absl::GetFlag(FLAGS_ortools_mode);
   parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
   parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
   parameters.number_of_threads = absl::GetFlag(FLAGS_threads);
   parameters.max_time_in_seconds = absl::GetFlag(FLAGS_time_limit);
+  parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
 
   operations_research::SolverLogger solution_logger;
   solution_logger.SetLogToStdOut(true);
-  solution_logger.EnableLogging(absl::GetFlag(FLAGS_use_flatzinc_format));
+  solution_logger.EnableLogging(parameters.ortools_mode);
 
   operations_research::sat::SolveFzWithCpModelProto(model, parameters,
                                                     absl::GetFlag(FLAGS_params),

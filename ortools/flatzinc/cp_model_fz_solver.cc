@@ -23,11 +23,14 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/logging.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -36,6 +39,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 50,
           "Default max value for unbounded integer variables.");
@@ -1362,9 +1366,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Specifies single thread specific search modes.
-  if (num_workers == 1) {
-    if (p.use_free_search) {
-      m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+  if (num_workers == 1 && !p.use_free_search) {  // Fixed search.
+    m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+    m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
+  } else if (num_workers == 1 && p.use_free_search) {  // Free search.
+    m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    if (!p.display_all_solutions && p.ortools_mode) {
       m.parameters.set_interleave_search(true);
       if (fz_model.objective() != nullptr) {
         m.parameters.add_subsolvers("default_lp");
@@ -1381,15 +1388,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         m.parameters.add_subsolvers("max_lp");
         m.parameters.add_subsolvers("quick_restart");
       }
-    } else {
-      m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
-      m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
     }
-  } else if (num_workers > 1 && num_workers < 8) {
+  } else if (num_workers > 1 && num_workers < 8 && p.ortools_mode) {
     SOLVER_LOG(logger, "Bumping number of workers from ", num_workers, " to 8");
     num_workers = 8;
   }
-  m.parameters.set_num_search_workers(num_workers);
+  m.parameters.set_num_workers(num_workers);
 
   // Time limit.
   if (p.max_time_in_seconds > 0) {
@@ -1427,7 +1431,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
   }
   // Setup logging.
-  sat_model.GetOrCreate<SatParameters>()->set_log_to_stdout(false);
   sat_model.Register<SolverLogger>(logger);
 
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
@@ -1444,7 +1447,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Output the solution in the flatzinc official format.
-  if (solution_logger->LoggingIsEnabled()) {
+  if (p.ortools_mode) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.display_all_solutions) {  // Already printed otherwise.
