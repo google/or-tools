@@ -1,31 +1,48 @@
+# ref: https://github.com/actions/runner-images
 name: amd64 Windows CMake C++
 
 on: [push, pull_request, workflow_dispatch]
 
+# Building using the github runner environement directly.
 jobs:
-  # Building using the github runner environement directly.
-  cmake:
-    # ref: https://github.com/actions/runner-images
+  native:
     strategy:
       matrix:
-        runner: [
-          windows-2022,
-          #windows-2019,
+        cmake: [
+          {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
         ]
-      fail-fast: false # Don't cancel all jobs if one fails.
-    runs-on: ${{ matrix.runner }}
-    #runs-on: windows-latest
+      fail-fast: false
+    name: Windows • ${{ matrix.cmake.generator }} • C++
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Check cmake
-      run: |
-        cmake --version
-        cmake -G || true
-    - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
-    - name: Build
-      run: cmake --build build --config Release --target ALL_BUILD -v -- /verbosity:d
-    - name: Test
-      run: cmake --build build --config Release --target RUN_TESTS -v -- /verbosity:d
-    - name: Install
-      run: cmake --build build --config Release --target INSTALL -v -- /verbosity:d
+      - uses: actions/checkout@v4
+      - name: Check cmake
+        run: |
+          cmake --version
+          cmake -G || true
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "${{ matrix.cmake.generator }}"
+          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -DBUILD_DEPS=ON
+          -DCMAKE_INSTALL_PREFIX=install
+      - name: Build
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.build_target }}
+          -v -j
+      - name: Test
+        run: >
+          CTEST_OUTPUT_ON_FAILURE=1
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.test_target }}
+          -v -j
+      - name: Install
+        run: >
+          cmake --build build
+          --config ${{ matrix.cmake.config }}
+          --target ${{ matrix.cmake.install_target }}
+          -v -j
