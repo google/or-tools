@@ -1,5 +1,5 @@
 name: "setup ubuntu environement"
-description: "setup dotnet python and compile sirius"
+description: "setup dotnet python"
 inputs:
   os:
     description: 'operating system'
@@ -22,7 +22,7 @@ runs:
         choco install zip wget --no-progress
     - name: Setup .NET 6.0
       if: ${{ inputs.dotnet == 'ON' }}
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
     - name: Set up Python

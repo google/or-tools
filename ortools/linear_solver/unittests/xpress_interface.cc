@@ -195,6 +195,72 @@ namespace operations_research {
     }
   }
 
+  void buildLargeMip(MPSolver &solver, int numVars, int maxTime) {
+    // Build a random but big and complicated MIP with numVars integer variables
+    // And every variable has a coupling constraint with all previous ones
+    srand(123);
+    MPObjective* obj = solver.MutableObjective();
+    obj->SetMaximization();
+    for (int i = 0 ; i < numVars; ++i) {
+      MPVariable* x = solver.MakeIntVar(-rand() % 200, rand() % 200, "x_" + std::to_string(i));
+      obj->SetCoefficient(x, rand() % 200 - 100);
+      if (i == 0) {
+        continue;
+      }
+      int rand1 = -rand() % 2000;
+      int rand2 = rand() % 2000;
+      MPConstraint* c = solver.MakeRowConstraint(std::min(rand1, rand2),
+                                                 std::max(rand1, rand2));
+      c->SetCoefficient(x, rand() % 200 - 100);
+      for (int j = 0; j < i; ++j) {
+        c->SetCoefficient(solver.variable(j), rand() % 200 - 100);
+      }
+    }
+    solver.SetSolverSpecificParametersAsString("PRESOLVE 0 MAXTIME " + std::to_string(maxTime));
+    solver.EnableOutput();
+  }
+
+  class MyMPCallback : public MPCallback {
+   private:
+    MPSolver* mpSolver_;
+    int nSolutions_;
+    std::vector<double> last_variable_values_;
+    bool should_throw_;
+   public:
+    MyMPCallback(MPSolver* mpSolver, bool should_throw = false)
+        : MPCallback(false, false),
+          mpSolver_(mpSolver),
+          nSolutions_(0),
+          should_throw_(should_throw){};
+
+    ~MyMPCallback() override{};
+
+    void RunCallback(MPCallbackContext* callback_context) override {
+      if (should_throw_) {
+        throw std::runtime_error("This is a mocked exception in MyMPCallback");
+      }
+      XpressMPCallbackContext* context_ = static_cast<XpressMPCallbackContext*>(callback_context);
+      ++nSolutions_;
+      EXPECT_TRUE(context_->CanQueryVariableValues());
+      EXPECT_EQ(context_->Event(), MPCallbackEvent::kMipSolution);
+      last_variable_values_.resize(mpSolver_->NumVariables(), 0.0);
+      for (int i = 0 ; i < mpSolver_->NumVariables(); i++) {
+        last_variable_values_[i] = context_->VariableValue(mpSolver_->variable(i));
+      }
+    };
+
+    int getNSolutions() const { return nSolutions_; }
+    double getLastVariableValue(int index) const { return last_variable_values_[index]; }
+  };
+
+  MyMPCallback* buildLargeMipWithCallback(MPSolver &solver, int numVars, int maxTime) {
+    buildLargeMip(solver, numVars, maxTime);
+    MPCallback* mpCallback = new MyMPCallback(&solver);
+    solver.SetCallback(nullptr); // just to test that this does not cause failure
+    solver.SetCallback(mpCallback);
+    return static_cast<MyMPCallback*>(mpCallback);
+  }
+
   TEST(XpressInterface, isMIP) {
     UNITTEST_INIT_MIP();
     EXPECT_EQ(solver.IsMIP(), true);
@@ -1136,39 +1202,92 @@ ENDATA
   }
 
   TEST(XpressInterface, SetHint) {
-    // Once a solution is added to XPRESS, it is actually impossible to get it
-    // back using the API
-    // This test is a simple one that adds a hint and makes sure everything is OK
-    // (it is a copy of the previous one but with integer variables)
-    // The logs should contain line "User solution (USER_HINT) stored."
     UNITTEST_INIT_MIP();
 
-    double inf = solver.infinity();
-    MPVariable* x = solver.MakeIntVar(0, inf, "x");
-    MPVariable* y = solver.MakeIntVar(0, inf, "y");
-    MPObjective* obj = solver.MutableObjective();
-    obj->SetCoefficient(x, 1);
-    obj->SetCoefficient(y, 2);
-    obj->SetMaximization();
-    MPConstraint* c1 = solver.MakeRowConstraint(-inf, 1);
-    c1->SetCoefficient(x, -1);
-    c1->SetCoefficient(y, 1);
-    MPConstraint* c2 = solver.MakeRowConstraint(-inf, 12);
-    c2->SetCoefficient(x, 3);
-    c2->SetCoefficient(y, 2);
-    MPConstraint* c3 = solver.MakeRowConstraint(-inf, 12);
-    c3->SetCoefficient(x, 2);
-    c3->SetCoefficient(y, 3);
+    // Once a solution is added to XPRESS, it is actually impossible to get it
+    // back using the API
+    // In this test we send the (near) optimal solution as a hint (with obj=56774).
+    // Usually XPRESS finds it in ~3000 seconds but in this case it should be able
+    // to retain it in juste a few seconds using the hint.
+    // Note that the logs should mention "User solution (USER_HINT) stored."
+    buildLargeMipWithCallback(solver, 60, 2);
 
-    std::vector<std::pair<const MPVariable*, double>> hint{{{x, 1.}, {y, 1.}}};
+    std::vector<double> hintValues{
+        -2,  -3,  -19, 8,    -1,  -1, 7,   9,   -20, -17,  7,    -7,
+        9,   -27, 13,  14,   -6,  -3, -25, -9,  15,  13,   -10,  16,
+        -34, 51,  39,  4,    -54, 19, -76, 1,   -17, -18,  -46,  -10,
+        0,   -36, 9,   -29,  -6,  4,  -16, -45, -12, -45,  -25,  -70,
+        -43, -63, 54,  -148, 79,  -2, 64,  92,  61,  -121, -174, -85};
+    std::vector<std::pair<const MPVariable*, double>> hint;
+    for (int i = 0; i < solver.NumVariables(); ++i) {
+      hint.push_back(
+          std::make_pair(solver.LookupVariableOrNull("x_" + std::to_string(i)),
+                         hintValues[i]));
+    }
     solver.SetHint(hint);
-
-    solver.EnableOutput();
     solver.Solve();
 
-    EXPECT_NEAR(obj->Value(), 6.0, 1e-8);
-    EXPECT_NEAR(x->solution_value(), 2.0, 1e-8);
-    EXPECT_NEAR(y->solution_value(), 2.0, 1e-8);
+    // Test that we have at least the near optimal objective function value
+    EXPECT_GE(solver.Objective().Value(), 56774.0);
+  }
+
+  TEST(XpressInterface, SetCallBack) {
+    UNITTEST_INIT_MIP();
+
+    auto myMpCallback = buildLargeMipWithCallback(solver, 30, 30);
+    solver.Solve();
+
+    int nSolutions = myMpCallback->getNSolutions();
+
+    // This is a tough MIP, in 30 seconds XPRESS should have found at least 5
+    // solutions (tested with XPRESS v9.0, may change in later versions)
+    EXPECT_GT(nSolutions, 5);
+    // Test variable values for the last solution found
+    for (int i = 0; i < solver.NumVariables(); ++i) {
+      EXPECT_DOUBLE_EQ(myMpCallback->getLastVariableValue(i),
+                       solver.LookupVariableOrNull("x_" + std::to_string(i))
+                           ->solution_value());
+    }
+  }
+
+  TEST(XpressInterface, SetAndUnsetCallBack) {
+    // Test that when we unset a callback it is not called
+    UNITTEST_INIT_MIP();
+    auto myMpCallback = buildLargeMipWithCallback(solver, 100, 5);
+    solver.SetCallback(nullptr);
+    solver.Solve();
+    EXPECT_EQ(myMpCallback->getNSolutions(), 0);
+  }
+
+  TEST(XpressInterface, SetAndResetCallBack) {
+    // Test that when we set a new callback then it is called, and old one is not called
+    UNITTEST_INIT_MIP();
+    auto oldMpCallback = buildLargeMipWithCallback(solver, 100, 5);
+    auto newMpCallback = new MyMPCallback(&solver);
+    solver.SetCallback((MPCallback*) newMpCallback);
+    solver.Solve();
+    EXPECT_EQ(oldMpCallback->getNSolutions(), 0);
+    EXPECT_GT(newMpCallback->getNSolutions(), 1);
+  }
+
+  TEST(XpressInterface, CallbackThrowsException) {
+    // Test that when the callback throws an exception, it is caught and re-thrown
+    UNITTEST_INIT_MIP();
+    auto oldMpCallback = buildLargeMipWithCallback(solver, 30, 30);
+    auto newMpCallback = new MyMPCallback(&solver, true);
+    solver.SetCallback((MPCallback*) newMpCallback);
+    EXPECT_THROW(
+        {
+          try {
+            solver.Solve();
+          } catch (const std::runtime_error& e) {
+            // this tests that it has the correct message
+            EXPECT_STREQ("This is a mocked exception in MyMPCallback",
+                         e.what());
+            throw;
+          }
+        },
+        std::runtime_error);
   }
 
 }  // namespace operations_research

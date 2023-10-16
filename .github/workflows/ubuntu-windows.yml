@@ -240,7 +240,7 @@ jobs:
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release -Dsirius_solver_DIR="${{ env.SIRIUS_INSTALL_PATH }}/cmake"
-          cmake --build build --config Release
+          cmake --build build --config Release -j4
           build\Release\linear_programming.exe
 
       - name: Prepare OR-Tools install

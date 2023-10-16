@@ -56,6 +56,9 @@ class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
 
+// cross-language polymorphism should be enabled to support MPCallback feature
+%module(directors="1") operations_research;
+
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -260,6 +263,12 @@ PY_CONVERT(MPConstraint);
 
 PY_CONVERT_HELPER_PTR(MPVariable);
 PY_CONVERT(MPVariable);
+
+PY_CONVERT_HELPER_PTR(MPCallback);
+PY_CONVERT(MPCallback);
+
+PY_CONVERT_HELPER_PTR(MPCallbackContext);
+PY_CONVERT(MPCallbackContext);
 
 %ignoreall
 
@@ -482,6 +491,39 @@ PY_CONVERT(MPVariable);
 // Expose the model validator.
 %rename (FindErrorInModelProto) operations_research::FindErrorInMPModelProto;
 
+// Expose the MPCallback & MPCallbackContext APIs
+// Enable cross-language polymorphism for MPCallback virtual class
+%feature("director") operations_research::MPCallback;
+%unignore operations_research::MPCallback;
+%unignore operations_research::MPCallbackContext;
+%unignore operations_research::MPCallback::MPCallback;
+%unignore operations_research::MPCallback::~MPCallback;
+%unignore operations_research::MPCallback::RunCallback;
+%unignore operations_research::MPCallback::might_add_cuts;
+%unignore operations_research::MPCallback::might_add_lazy_constraints;
+%unignore operations_research::MPCallbackContext::MPCallbackContext;
+%unignore operations_research::MPCallbackContext::~MPCallbackContext;
+%unignore operations_research::MPCallbackEvent;
+%rename (UNKNOWN) operations_research::MPCallbackEvent::kUnknown;
+%rename (POLLING) operations_research::MPCallbackEvent::kPolling;
+%rename (PRESOLVE) operations_research::MPCallbackEvent::kPresolve;
+%rename (SIMPLEX) operations_research::MPCallbackEvent::kSimplex;
+%rename (MIP) operations_research::MPCallbackEvent::kMip;
+%rename (MIP_SOLUTION) operations_research::MPCallbackEvent::kMipSolution;
+%rename (MIP_NODE) operations_research::MPCallbackEvent::kMipNode;
+%rename (BARRIER) operations_research::MPCallbackEvent::kBarrier;
+%rename (MESSAGE) operations_research::MPCallbackEvent::kMessage;
+%rename (MULTI_OBJ) operations_research::MPCallbackContext::MPCallbackEvent::kMultiObj;
+%unignore operations_research::MPCallbackContext::Event;
+%unignore operations_research::MPCallbackContext::CanQueryVariableValues;
+%unignore operations_research::MPCallbackContext::VariableValue;
+%unignore operations_research::MPCallbackContext::AddCut;
+%unignore operations_research::MPCallbackContext::AddLazyConstraint;
+%unignore operations_research::MPCallbackContext::SuggestSolution;
+%unignore operations_research::MPCallbackContext::NumExploredNodes;
+%unignore operations_research::MPSolver::SetCallback;
+
+%include "ortools/linear_solver/linear_solver_callback.h"
 %include "ortools/linear_solver/linear_solver.h"
 %include "ortools/linear_solver/model_exporter.h"
 %include "ortools/linear_solver/model_exporter_swig_helper.h"
