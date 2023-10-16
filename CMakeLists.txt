@@ -362,6 +362,9 @@ if(BUILD_PYTHON)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11_protobuf: ${BUILD_pybind11_protobuf}")
 
+  option(GENERATE_PYTHON_STUB "Generate Python stub file (.pyi)" ON)
+  message(STATUS "Python: Generate stub file: ${GENERATE_PYTHON_STUB}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" OFF "NOT BUILD_DOC" ON)
   message(STATUS "Python: Build doc: ${BUILD_PYTHON_DOC}")
 
