@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -680,7 +681,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
     if (ct.constraint_case() != ConstraintProto::kExactlyOne) continue;
 
     // Project the implied values onto each integer variable.
-    absl::flat_hash_map<IntegerVariable, std::vector<ValueLiteralPair>>
+    absl::btree_map<IntegerVariable, std::vector<ValueLiteralPair>>
         var_to_value_literal_list;
     for (const int l : ct.exactly_one().literals()) {
       const Literal literal = mapping->Literal(l);
@@ -690,7 +691,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
       }
     }
 
-    // VLOG info.
+    // Used for logging only.
     std::vector<IntegerVariable> encoded_variables;
     std::string encoded_variables_str;
 
