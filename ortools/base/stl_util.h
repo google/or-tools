@@ -418,7 +418,7 @@ class TemplatedElementDeleter : public BaseDeleter {
   STLContainer* container_ptr_;
 };
 
-// ElementDeleter is an RAII (go/raii) object that deletes the elements in the
+// ElementDeleter is an RAII object that deletes the elements in the
 // given container when it goes out of scope. This is similar to
 // std::unique_ptr<> except that a container's elements will be deleted rather
 // than the container itself.
@@ -464,7 +464,7 @@ class TemplatedValueDeleter : public BaseDeleter {
   STLContainer* container_ptr_;
 };
 
-// ValueDeleter is an RAII (go/raii) object that deletes the 'second' member in
+// ValueDeleter is an RAII object that deletes the 'second' member in
 // the given container of std::pair<>s when it goes out of scope.
 //
 // Example:
@@ -488,7 +488,7 @@ class ValueDeleter {
   BaseDeleter* deleter_;
 };
 
-// RAII (go/raii) object that deletes elements in the given container when it
+// RAII object that deletes elements in the given container when it
 // goes out of scope. Like ElementDeleter (above) except that this class is
 // templated and doesn't have a virtual destructor.
 //
@@ -503,7 +503,7 @@ class STLElementDeleter {
   STLContainer* container_ptr_;
 };
 
-// RAII (go/raii) object that deletes the values in the given container of
+// RAII object that deletes the values in the given container of
 // std::pair<>s when it goes out of scope. Like ValueDeleter (above) except that
 // this class is templated and doesn't have a virtual destructor.
 //

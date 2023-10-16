@@ -50,10 +50,10 @@ using google::protobuf::Message;
 using google::protobuf::Message;
 #endif
 
-// Proto-lite disables some features of protos (see
-// go/abp-libraries/proto2-lite) and messages inherit from MessageLite directly
-// instead of inheriting from Message (which is itself a specialization of
-// MessageLite).
+// Proto-lite disables some features of protos and messages inherit from
+// MessageLite directly instead of inheriting from Message (which is itself a
+// specialization of MessageLite).
+// See https://protobuf.dev/reference/cpp/cpp-generated/#message for details.
 constexpr bool kProtoLiteSatParameters =
     !std::is_base_of<Message, sat::SatParameters>::value;
 

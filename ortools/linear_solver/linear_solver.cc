@@ -1899,14 +1899,12 @@ int64_t MPSolver::global_num_constraints_ = 0;
 
 // static
 int64_t MPSolver::global_num_variables() {
-  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
   absl::MutexLock lock(&global_count_mutex_);
   return global_num_variables_;
 }
 
 // static
 int64_t MPSolver::global_num_constraints() {
-  // Why not ReaderMutexLock? See go/totw/197#when-are-shared-locks-useful.
   absl::MutexLock lock(&global_count_mutex_);
   return global_num_constraints_;
 }

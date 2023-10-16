@@ -142,6 +142,39 @@ TEST(RecursivelyRefinePartitionByAdjacencyTest, FlowerOfCycles) {
                                                }));
 }
 
+TEST(ComputeGraphFingerprintTest, EmptyGraph) {
+  Graph empty_graph;
+  empty_graph.Build();
+  EXPECT_NE(ComputeGraphFingerprint(empty_graph, 10), absl::uint128{0});
+}
+
+TEST(GraphSymmetryFinderTest, EmptyGraph) {
+  for (bool is_undirected : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(is_undirected));
+    Graph empty_graph;
+    empty_graph.Build();
+    GraphSymmetryFinder symmetry_finder(empty_graph, is_undirected);
+
+    EXPECT_TRUE(symmetry_finder.IsGraphAutomorphism(DynamicPermutation(0)));
+
+    std::vector<int> node_equivalence_classes_io;
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    std::vector<int> factorized_automorphism_group_size;
+    ASSERT_OK(symmetry_finder.FindSymmetries(
+        &node_equivalence_classes_io, &generators,
+        &factorized_automorphism_group_size));
+    EXPECT_THAT(node_equivalence_classes_io, IsEmpty());
+    EXPECT_THAT(generators, IsEmpty());
+    EXPECT_THAT(factorized_automorphism_group_size, IsEmpty());
+  }
+}
+
+TEST(GraphSymmetryFinderTest, EmptyGraphAndDoNothing) {
+  Graph empty_graph;
+  empty_graph.Build();
+  GraphSymmetryFinder symmetry_finder(empty_graph, /*is_undirected=*/true);
+}
+
 class IsGraphAutomorphismTest : public testing::Test {
  protected:
   void ExpectIsGraphAutomorphism(

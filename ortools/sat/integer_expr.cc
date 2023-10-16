@@ -1196,28 +1196,6 @@ DivisionPropagator::DivisionPropagator(AffineExpression num,
 // TODO(user): We can propagate a bit more if min_div = 0:
 //     (min_num > -min_denom).
 bool DivisionPropagator::Propagate() {
-  // Direct propagation if num_ and denom_ are fixed.
-  if (integer_trail_->IsFixed(num_) && integer_trail_->IsFixed(denom_)) {
-    const IntegerValue num_value = integer_trail_->FixedValue(num_);
-    const IntegerValue denom_value = integer_trail_->FixedValue(denom_);
-    const IntegerValue div_value = num_value / denom_value;
-    if (!integer_trail_->SafeEnqueue(
-            div_.LowerOrEqual(div_value),
-            {num_.LowerOrEqual(num_value), num_.GreaterOrEqual(num_value),
-             denom_.LowerOrEqual(denom_value),
-             denom_.GreaterOrEqual(denom_value)})) {
-      return false;
-    }
-    if (!integer_trail_->SafeEnqueue(
-            div_.GreaterOrEqual(div_value),
-            {num_.LowerOrEqual(num_value), num_.GreaterOrEqual(num_value),
-             denom_.LowerOrEqual(denom_value),
-             denom_.GreaterOrEqual(denom_value)})) {
-      return false;
-    }
-    return true;
-  }
-
   if (integer_trail_->LowerBound(denom_) < 0 &&
       integer_trail_->UpperBound(denom_) > 0) {
     return true;

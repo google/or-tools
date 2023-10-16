@@ -238,7 +238,7 @@ bool ExpressionIsFixed(const CpModelProto& model,
 
 int64_t ExpressionFixedValue(const CpModelProto& model,
                              const LinearExpressionProto& expr) {
-  CHECK(ExpressionIsFixed(model, expr));
+  DCHECK(ExpressionIsFixed(model, expr));
   return MinOfExpression(model, expr);
 }
 
@@ -420,8 +420,7 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateTableConstraint(const CpModelProto& /*model*/,
-                                    const ConstraintProto& ct) {
+std::string ValidateTableConstraint(const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
   if (arg.vars().empty()) return "";
   if (arg.values().size() % arg.vars().size() != 0) {
@@ -433,8 +432,7 @@ std::string ValidateTableConstraint(const CpModelProto& /*model*/,
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const CpModelProto& /*model*/,
-                                        const ConstraintProto& ct) {
+std::string ValidateAutomatonConstraint(const ConstraintProto& ct) {
   const int num_transistions = ct.automaton().transition_tail().size();
   if (num_transistions != ct.automaton().transition_head().size() ||
       num_transistions != ct.automaton().transition_label().size()) {
@@ -469,8 +467,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& /*model*/,
 }
 
 template <typename GraphProto>
-std::string ValidateGraphInput(bool is_route, const CpModelProto& /*model*/,
-                               const GraphProto& graph) {
+std::string ValidateGraphInput(bool is_route, const GraphProto& graph) {
   const int size = graph.tails().size();
   if (graph.heads().size() != size || graph.literals().size() != size) {
     return absl::StrCat("Wrong field sizes in graph: ",
@@ -519,7 +516,7 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
         "All nodes in a route constraint must have incident arcs");
   }
 
-  return ValidateGraphInput(/*is_route=*/true, model, ct.routes());
+  return ValidateGraphInput(/*is_route=*/true, ct.routes());
 }
 
 std::string ValidateDomainIsPositive(const CpModelProto& model, int ref,
@@ -988,14 +985,14 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateElementConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
+        RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
-        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
+        RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         RETURN_IF_NOT_EMPTY(
-            ValidateGraphInput(/*is_route=*/false, model, ct.circuit()));
+            ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));

@@ -586,8 +586,7 @@ class MPSolver {
       const MPModelRequest::SolverType solver) {
     // Interruption requires that MPSolver::InterruptSolve is supported for the
     // underlying solver. Interrupting requests using SCIP is also not supported
-    // as of 2021/08/23, since InterruptSolve is not go/thread-safe
-    // for SCIP (see e.g. cl/350545631 for details).
+    // as of 2021/08/23, since InterruptSolve is not thread safe for SCIP.
     return solver == MPModelRequest::GLOP_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_LINEAR_PROGRAMMING ||
            solver == MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING ||
@@ -828,8 +827,6 @@ class MPSolver {
   //
   // As of 2019-10-22, only SCIP and Gurobi support Callbacks.
   // SCIP does not support suggesting a heuristic solution in the callback.
-  //
-  // See go/mpsolver-callbacks for additional documentation.
   void SetCallback(MPCallback* mp_callback);
   bool SupportsCallbacks() const;
 

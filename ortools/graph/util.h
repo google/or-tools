@@ -392,7 +392,7 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
   // We need a multi-map since a given (tail,head) may appear several times.
   // NOTE(user): It's free, in terms of space, to use InlinedVector<int, 4>
-  // rather than std::vector<int>. See go/inlined-vector-size.
+  // rather than std::vector<int>.
   absl::flat_hash_map<std::pair</*tail*/ int, /*head*/ int>,
                       absl::InlinedVector<int, 4>>
       arc_map;
