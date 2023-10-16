@@ -9,6 +9,17 @@ To enable it, just set the parameter `log_search_progress` to true.
 A good explanation of the log can be found in the
 [cpsat-primer](https://github.com/d-krupke/cpsat-primer/blob/main/understanding_the_log.md).
 
+## Exporting the model
+
+As seen in the [model section](model.md), the model is stored as a protocol
+buffer object. This protocol buffer can be exported using the command
+`model.ExportToFile(filename)` and `model.exportToFile(filename)` in java.
+
+if filename ends with `.txt` or `.textproto`, the model will be written using
+the protocol buffer text format. Otherwise, the binary format will be used.
+
+Note that the binary format is not human readable, but takes less space.
+
 ## Improving performance with multiple workers
 
 CP-SAT is built with parallelism in mind. While you can achieve a good solution

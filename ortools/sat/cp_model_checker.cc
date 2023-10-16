@@ -223,12 +223,23 @@ int64_t MaxOfExpression(const CpModelProto& model,
   return sum_max;
 }
 
-int64_t IntervalSizeMin(const CpModelProto& model, int interval_index) {
-  DCHECK_EQ(ConstraintProto::ConstraintCase::kInterval,
-            model.constraints(interval_index).constraint_case());
-  const IntervalConstraintProto& proto =
-      model.constraints(interval_index).interval();
-  return MinOfExpression(model, proto.size());
+bool ExpressionIsFixed(const CpModelProto& model,
+                       const LinearExpressionProto& expr) {
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    if (expr.coeffs(i) == 0) continue;
+    const IntegerVariableProto& var_proto = model.variables(expr.vars(i));
+    if (var_proto.domain_size() != 2 ||
+        var_proto.domain(0) != var_proto.domain(1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int64_t ExpressionFixedValue(const CpModelProto& model,
+                             const LinearExpressionProto& expr) {
+  CHECK(ExpressionIsFixed(model, expr));
+  return MinOfExpression(model, expr);
 }
 
 int64_t IntervalSizeMax(const CpModelProto& model, int interval_index) {
@@ -368,8 +379,8 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
 
   const LinearExpressionProto& denom = ct.int_div().exprs(1);
   const int64_t offset = denom.offset();
-  if (denom.vars().empty()) {
-    if (offset == 0) {
+  if (ExpressionIsFixed(model, denom)) {
+    if (ExpressionFixedValue(model, denom) == 0) {
       return absl::StrCat("Division by 0: ", ProtobufShortDebugString(ct));
     }
   } else {
@@ -409,7 +420,7 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateTableConstraint(const CpModelProto& model,
+std::string ValidateTableConstraint(const CpModelProto& /*model*/,
                                     const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
   if (arg.vars().empty()) return "";
@@ -422,7 +433,7 @@ std::string ValidateTableConstraint(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateAutomatonConstraint(const CpModelProto& model,
+std::string ValidateAutomatonConstraint(const CpModelProto& /*model*/,
                                         const ConstraintProto& ct) {
   const int num_transistions = ct.automaton().transition_tail().size();
   if (num_transistions != ct.automaton().transition_head().size() ||
@@ -458,7 +469,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
 }
 
 template <typename GraphProto>
-std::string ValidateGraphInput(bool is_route, const CpModelProto& model,
+std::string ValidateGraphInput(bool is_route, const CpModelProto& /*model*/,
                                const GraphProto& graph) {
   const int size = graph.tails().size();
   if (graph.heads().size() != size || graph.literals().size() != size) {
