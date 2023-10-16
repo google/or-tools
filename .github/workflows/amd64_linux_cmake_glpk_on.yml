@@ -24,18 +24,18 @@ jobs:
           cmake --build build
           --config Release
           --target all
-          -v -j
+          -v -j2
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
           --config Release
           --target test
-          -v -j
+          -v
       - name: Install
         run: >
           cmake --build build
           --config Release
           --target install
-          -v -j
+          -v
           -- DESTDIR=install

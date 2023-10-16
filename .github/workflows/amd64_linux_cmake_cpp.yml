@@ -36,17 +36,17 @@ jobs:
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target all
-          -v -j
+          -v -j2
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target test
-          -v -j
+          -v
       - name: Install
         run: >
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target install
-          -v -j
+          -v

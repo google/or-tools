@@ -43,16 +43,16 @@ jobs:
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.build_target }}
-          -v -j
+          -v -j2
       - name: Test
         run: >
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.test_target }}
-          -v -j
+          -v
       - name: Install
         run: >
           cmake --build build
           --config ${{ matrix.cmake.config }}
           --target ${{ matrix.cmake.install_target }}
-          -v -j
+          -v
