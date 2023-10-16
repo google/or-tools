@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See go/mpsolver-callbacks for documentation on how to use this file.
-
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 
@@ -137,7 +135,6 @@ class MPCallbackContext {
 // Extend this class with model specific logic, and register through
 // MPSolver::SetCallback, passing a pointer to this object.
 //
-// See go/mpsolver-callbacks for additional documentation.
 class MPCallback {
  public:
   // If you intend to call call MPCallbackContext::AddCut(), you must set
