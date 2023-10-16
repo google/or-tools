@@ -78,8 +78,7 @@ absl::Status Main() {
 
   if (!result.has_dual_feasible_solution()) {
     // MathOpt does not require solvers to return a dual solution on optimal,
-    // but most LP solvers always will, see go/mathopt-solver-contracts for
-    // details.
+    // but most LP solvers always will.
     return util::InternalErrorBuilder()
            << "no dual solution was returned on optimal";
   }
@@ -93,8 +92,7 @@ absl::Status Main() {
 
   if (!result.has_basis()) {
     // MathOpt does not require solvers to return a basis on optimal, but most
-    // Simplex LP solvers (like Glop) always will, see
-    // go/mathopt-solver-contracts for details.
+    // Simplex LP solvers (like Glop) always will.
     return util::InternalErrorBuilder() << "no basis was returned on optimal";
   }
 

@@ -62,8 +62,8 @@ absl::Status CheckFinitePrimalBound(const ObjectiveBoundsProto& bounds);
 // Status-Bounds consistency validators.
 ////////////////////////////////////////////////////////////////////////////////
 
-// Checks both bound-status compatibility rules described in
-// go/mathopt-termination-and-statuses#bound-status-rules. That is
+// Checks both bound-status compatibility rules.
+// That is:
 //    * If primal bound:
 //        * is primal-unbounded (primal_bound = +infinity for max and
 //          primal_bound = -infinity for min), then

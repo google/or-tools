@@ -42,9 +42,6 @@ enum SolutionStatusProto {
 // A primal solution is assignment values to x. It is feasible if it satisfies
 // A * x >= b and x >= 0 from above. In the message PrimalSolutionProto below,
 // variable_values is x and objective_value is c * x.
-//
-// For the general case of a MathOpt optimization model, see
-// go/mathopt-solutions for details.
 message PrimalSolutionProto {
   // Requirements:
   //  * variable_values.ids are elements of VariablesProto.ids.
@@ -80,9 +77,6 @@ message PrimalSolutionProto {
 // value. A primal ray also proves the dual optimization problem infeasible.
 //
 // In the message PrimalRay below, variable_values is x.
-//
-// For the general case of a MathOpt optimization model, see
-// go/mathopt-solutions for details.
 message PrimalRayProto {
   // Requirements:
   //  * variable_values.ids are elements of VariablesProto.ids.
@@ -104,9 +98,6 @@ message PrimalRayProto {
 //
 // In the message below, y is dual_values, r is reduced_costs, and
 // b * y is objective value.
-//
-// For the general case, see go/mathopt-solutions and go/mathopt-dual (and
-// note that the dual objective depends on r in the general case).
 message DualSolutionProto {
   // Requirements:
   //  * dual_values.ids are elements of LinearConstraints.ids.
@@ -143,9 +134,6 @@ message DualSolutionProto {
 // unbounded). The dual ray also proves the primal problem is infeasible.
 //
 // In the message DualRay below, y is dual_values and r is reduced_costs.
-//
-// For the general case, see go/mathopt-solutions and go/mathopt-dual (and
-// note that the dual objective depends on r in the general case).
 message DualRayProto {
   // Requirements:
   //  * dual_values.ids are elements of LinearConstraints.ids.
@@ -213,9 +201,6 @@ message SparseBasisStatusVector {
 // has all variables with status AT_LOWER fixed to their lower bounds (all
 // zero). The resulting solution is called a basic feasible solution if it also
 // satisfies x >= 0.
-//
-// See go/mathopt-basis for treatment of the general case and an explanation of
-// how a dual solution is determined for a basis.
 message BasisProto {
   // Constraint basis status.
   //
@@ -235,8 +220,7 @@ message BasisProto {
   //
   // For single-sided LPs it should be equal to the feasibility status of the
   // associated dual solution. For two-sided LPs it may be different in some
-  // edge cases (e.g. incomplete solves with primal simplex). For more details
-  // see go/mathopt-basis-advanced#dualfeasibility.
+  // edge cases (e.g. incomplete solves with primal simplex).
   //
   // If you are providing a starting basis via
   // ModelSolveParametersProto.initial_basis, this value is ignored. It is only

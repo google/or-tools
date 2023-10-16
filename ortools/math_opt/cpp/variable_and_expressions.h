@@ -2053,7 +2053,8 @@ QuadraticTermKey::QuadraticTermKey(const ModelStorage* storage,
                                    const QuadraticProductId id)
     : storage_(storage), variable_ids_(id) {
   if (variable_ids_.first > variable_ids_.second) {
-    using std::swap;  // go/using-std-swap
+    // See https://en.cppreference.com/w/cpp/named_req/Swappable for details.
+    using std::swap;
     swap(variable_ids_.first, variable_ids_.second);
   }
 }

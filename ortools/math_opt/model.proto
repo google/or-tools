@@ -229,7 +229,7 @@ message IndicatorConstraintProto {
   string name = 5;
 }
 
-// An optimization problem. For full details, see go/mathopt-model.
+// An optimization problem.
 //
 // MathOpt supports:
 //   - Continuous and integer decision variables with optional finite bounds.

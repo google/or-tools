@@ -17,16 +17,15 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
+import "ortools/glop/parameters.proto";
+import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solvers/glpk.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
+import "ortools/sat/sat_parameters.proto";
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
-
-import "ortools/glop/parameters.proto";
-import "ortools/gscip/gscip.proto";
-import "ortools/sat/sat_parameters.proto";
 
 // The solvers supported by MathOpt.
 enum SolverTypeProto {
@@ -41,8 +40,7 @@ enum SolverTypeProto {
   // Gurobi solver (third party).
   //
   // Supports LP, MIP, and nonconvex integer quadratic problems. Generally the
-  // fastest option, but has special licensing, see go/gurobi-google for
-  // details.
+  // fastest option, but has special licensing.
   SOLVER_TYPE_GUROBI = 2;
 
   // Google's Glop solver.

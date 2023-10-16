@@ -646,8 +646,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
   } else if (status == glop::ProblemStatus::PRIMAL_FEASIBLE) {
     // Solve reached phase II of primal simplex and current basis is not
     // optimal. Hence basis is primal feasible, but cannot be dual feasible.
-    // Dual solution could still be feasible as noted in
-    // go/mathopt-basis-advanced#dualfeasibility
+    // Dual solution could still be feasible.
     primal_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
     dual_solution->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
     basis->set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
@@ -655,8 +654,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
     // Solve reached phase II of dual simplex and current basis is not optimal.
     // Hence basis is dual feasible, but cannot be primal feasible. In addition,
     // glop applies dual feasibility correction in dual simplex so feasibility
-    // of the dual solution matches dual feasibility of the basis (i.e the issue
-    // described in go/mathopt-basis-advanced#dualfeasibility cannot happen).
+    // of the dual solution matches dual feasibility of the basis.
     // TODO(b/195295177): confirm with fdid
     primal_solution->set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
     dual_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
@@ -666,9 +664,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
     if (lp_solver_.GetParameters().use_dual_simplex()) {
       // Phase I did not finish so basis is not dual feasible. In addition,
       // glop applies dual feasibility correction so feasibility of the dual
-      // solution matches dual feasibility of the basis (i.e the issue described
-      // in go/mathopt-basis-advanced#dualfeasibility cannot happen).
-      // TODO(b/195295177): confirm with fdid
+      // solution matches dual feasibility of the basis.
       primal_solution->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
       dual_solution->set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
       basis->set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
@@ -683,8 +679,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
   // Fill in objective values
   primal_solution->set_objective_value(lp_solver_.GetObjectiveValue());
   if (basis->basic_dual_feasibility() == SOLUTION_STATUS_FEASIBLE) {
-    // Primal and dual objectives are the same for a dual feasible basis
-    // see go/mathopt-basis-advanced#cs-obj-dual-feasible-dual-feasible-basis
+    // Primal and dual objectives are the same for a dual feasible basis.
     dual_solution->set_objective_value(primal_solution->objective_value());
   }
 

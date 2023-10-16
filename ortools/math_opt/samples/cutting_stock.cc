@@ -196,8 +196,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
         << " at iteration " << pricing_round;
     if (!solve_result.has_dual_feasible_solution()) {
       // MathOpt does not require solvers to return a dual solution on optimal,
-      // but most LP solvers always will, see go/mathopt-solver-contracts for
-      // details.
+      // but most LP solvers always will.
       return util::InternalErrorBuilder()
              << "no dual solution was returned with optimal solution at "
                 "iteration "

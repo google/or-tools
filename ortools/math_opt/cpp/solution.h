@@ -57,8 +57,7 @@ MATH_OPT_DEFINE_ENUM(SolutionStatus, SOLUTION_STATUS_UNSPECIFIED);
 // A * x >= b and x >= 0 from above. In the class PrimalSolution,
 // variable_values is x and objective_value is c * x.
 //
-// For the general case of a MathOpt optimization model, see
-// go/mathopt-solutions for details.
+// For the general case of a MathOpt optimization model.
 struct PrimalSolution {
   // Returns the PrimalSolution equivalent of primal_solution_proto.
   //
@@ -104,8 +103,7 @@ struct PrimalSolution {
 //
 // In the class PrimalRay, variable_values is this x.
 //
-// For the general case of a MathOpt optimization model, see
-// go/mathopt-solutions for details.
+// For the general case of a MathOpt optimization model.
 struct PrimalRay {
   // Returns the PrimalRay equivalent of primal_ray_proto.
   //
@@ -131,9 +129,6 @@ struct PrimalRay {
 // constraints from (Dual) above.
 //
 // Below, y is dual_values, r is reduced_costs, and b * y is objective value.
-//
-// For the general case, see go/mathopt-solutions and go/mathopt-dual (and
-// note that the dual objective depends on r in the general case).
 struct DualSolution {
   // Returns the DualSolution equivalent of dual_solution_proto.
   //
@@ -171,9 +166,6 @@ struct DualSolution {
 // unbounded). The dual ray also proves the primal problem is infeasible.
 //
 // In the class DualRay, y is dual_values and r is reduced_costs.
-//
-// For the general case, see go/mathopt-solutions and go/mathopt-dual (and
-// note that the dual objective depends on r in the general case).
 struct DualRay {
   // Returns the DualRay equivalent of dual_ray_proto.
   //
@@ -213,9 +205,6 @@ struct DualRay {
 // has all variables with status AT_LOWER fixed to their lower bounds (all
 // zero). The resulting solution is called a basic feasible solution if it
 // also satisfies x >= 0.
-//
-// See go/mathopt-basis for treatment of the general case and an explanation
-// of how a dual solution is determined for a basis.
 struct Basis {
   // Returns the equivalent Basis object for basis_proto.
   //
@@ -245,8 +234,7 @@ struct Basis {
   //
   // For single-sided LPs it should be equal to the feasibility status of the
   // associated dual solution. For two-sided LPs it may be different in some
-  // edge cases (e.g. incomplete solves with primal simplex). For more details
-  // see go/mathopt-basis-advanced#dualfeasibility.
+  // edge cases (e.g. incomplete solves with primal simplex).
   //
   // If you are providing a starting basis via
   // `ModelSolveParameters.initial_basis`, this value is ignored. It is only

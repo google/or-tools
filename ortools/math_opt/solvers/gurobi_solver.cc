@@ -817,8 +817,6 @@ absl::StatusOr<BasisProto> GurobiSolver::GetGurobiBasis() {
   return basis;
 }
 
-// See go/mathopt-dev-transformations#gurobi-inf for details of this
-// transformation, comments inside the function refer to the notation there.
 absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
     const SparseVectorFilterProto& linear_constraints_filter,
     const SparseVectorFilterProto& variables_filter, const bool is_maximize) {
@@ -1221,8 +1219,8 @@ GurobiSolver::GetConvexPrimalSolutionIfAvailable(
       gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_X, num_gurobi_variables_));
 
   PrimalSolutionProto primal_solution;
-  // As noted in go/gurobi-objval-bug the objective value may be missing for
-  // primal feasible solutions for unbounded problems.
+  // The objective value may be missing for primal feasible solutions for
+  // unbounded problems.
   // TODO(b/195295177): for GRB_ITERATION_LIMIT an objective value of 0.0 is
   // returned which breaks LpIncompleteSolveTest.PrimalSimplexAlgorithm. Explore
   // more and make simple example to file a bug.
@@ -1298,9 +1296,8 @@ absl::StatusOr<double> GurobiSolver::GetPrimalSolutionQuality() const {
 absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
     const bool has_primal_feasible_solution) {
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
-  // We need has_primal_feasible_solution because, as noted in
-  // go/gurobi-objval-bug, GRB_DBL_ATTR_OBJVAL may be available and finite for
-  // primal infeasible solutions.
+  // We need has_primal_feasible_solution because GRB_DBL_ATTR_OBJVAL may be
+  // available and finite for primal infeasible solutions.
   if (has_primal_feasible_solution &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJVAL)) {
     // TODO(b/290359402): Discuss if this should be removed. Unlike the dual
@@ -1400,8 +1397,7 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   }
 
   // Note that we can ignore the reduced costs of the slack variables for
-  // ranged constraints because of
-  // go/mathopt-dev-transformations#slack-var-range-constraint
+  // ranged constraints.
   DualSolutionProto dual_solution;
   bool dual_feasible_solution_exists = false;
   ASSIGN_OR_RETURN(
@@ -1427,9 +1423,6 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
     dual_solution.set_objective_value(obj_val);
   }
-  // TODO(b/290359402): explore using GRB_DBL_ATTR_OBJBOUND to set the dual
-  // objective. As described in go/gurobi-objval-bug, this could provide the
-  // dual objective in some cases.
 
   dual_solution.set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
   if (grb_termination == GRB_OPTIMAL) {
@@ -1444,18 +1437,13 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   //   * the quality measures seem to evaluate if the basis is dual feasible
   //     so for primal simplex we would not improve over checking
   //     GRB_OPTIMAL.
-  //   * for phase I dual simplex we cannot rely on the quality measures
-  //     because of go/gurobi-solution-quality-bug.
+  //   * for phase I dual simplex we cannot rely on the quality measures.
   // We could also use finiteness of GRB_DBL_ATTR_OBJBOUND to deduce dual
-  // feasibility as described in go/gurobi-objval-bug.
+  // feasibility.
 
-  // Note: as shown in go/gurobi-objval-bug, GRB_DBL_ATTR_OBJBOUND can
-  // sometimes provide the objective value of a sub-optimal dual feasible
-  // solution. Here we only use it to possibly update
-  // dual_feasible_solution_exists (Otherwise
-  // StatusTest.PrimalInfeasibleAndDualFeasible for pure dual simplex would
-  // fail because go/gurobi-solution-quality-bug prevents us from certifying
-  // feasibility of the dual solution found in this case).
+  // Note: GRB_DBL_ATTR_OBJBOUND can sometimes provide the objective value of a
+  // sub-optimal dual feasible solution.
+  // Here we only use it to possibly update dual_feasible_solution_exists.
   ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
   if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
     dual_feasible_solution_exists = true;

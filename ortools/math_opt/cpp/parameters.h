@@ -48,8 +48,7 @@ enum class SolverType {
   // Gurobi solver (third party).
   //
   // Supports LP, MIP, and nonconvex integer quadratic problems. Generally the
-  // fastest option, but has special licensing, see go/gurobi-google for
-  // details.
+  // fastest option, but has special licensing.
   kGurobi = SOLVER_TYPE_GUROBI,
 
   // Google's Glop solver.

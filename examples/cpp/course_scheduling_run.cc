@@ -13,8 +13,7 @@
 
 // This file implements the main function for the Course Scheduling solver. It
 // reads the problem specification from an input file specified via command-line
-// flags, and prints the time slots for each course. See go/or-course-scheduling
-// for more information.
+// flags, and prints the time slots for each course.
 //
 // Example usage:
 // ./course_scheduling_run --input_file=testdata/my_input_proto.textproto

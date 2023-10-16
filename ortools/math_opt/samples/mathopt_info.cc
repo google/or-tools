@@ -13,22 +13,10 @@
 
 // Check MathOpt available solvers.
 #include <iostream>
-#include <string>
 
 #include "ortools/base/init_google.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-
-namespace {
-
-struct SolverTypeProtoFormatter {
-  void operator()(
-      std::string* const out,
-      const operations_research::math_opt::SolverTypeProto solver_type) {
-    out->append(EnumToString(EnumFromProto(solver_type).value()));
-  }
-};
-
-}  // namespace
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, /*remove_flags=*/true);

@@ -489,7 +489,7 @@ absl::StatusOr<std::pair<double, Cut>> SecondStageSolver::Solve(
 // + sum(y_f*zz_f : f in F, y_f < 0)
 // + sum(y_l*d : l in L, y_l > 0) > 0.
 //
-// Then we get the feasibility cut (go/math_opt-advanced-dual-use#benders)
+// Then we get the feasibility cut.
 //
 // sum(fcut_f*z_f) + fcut_const <= 0,
 //
@@ -505,8 +505,7 @@ absl::StatusOr<Cut> SecondStageSolver::FeasibilityCut(
 
   if (!second_stage_result.has_dual_ray()) {
     // MathOpt does not require solvers to return a dual ray on infeasible,
-    // but most LP solvers always will, see go/mathopt-solver-contracts for
-    // details.
+    // but most LP solvers always will.
     return util::InternalErrorBuilder()
            << "no dual ray available for feasibility cut";
   }
@@ -540,7 +539,7 @@ absl::StatusOr<Cut> SecondStageSolver::FeasibilityCut(
 // + sum(y_f*zz_f : f in F, y_f < 0)
 // + sum*(y_l*d : l in L, y_l > 0) > 0.
 //
-// Then we get the optimality cut (go/math_opt-advanced-dual-use#benders)
+// Then we get the optimality cut.
 //
 // sum(ocut_f*z_f) + ocut_const <= w,
 //
@@ -556,8 +555,7 @@ absl::StatusOr<Cut> SecondStageSolver::OptimalityCut(
 
   if (!second_stage_result.has_dual_feasible_solution()) {
     // MathOpt does not require solvers to return a dual solution on optimal,
-    // but most LP solvers always will, see go/mathopt-solver-contracts for
-    // details.
+    // but most LP solvers always will.
     return util::InternalErrorBuilder()
            << "no dual solution available for optimality cut";
   }

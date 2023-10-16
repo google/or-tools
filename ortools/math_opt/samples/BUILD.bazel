@@ -147,6 +147,7 @@ cc_binary(
     srcs = ["mathopt_info.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
