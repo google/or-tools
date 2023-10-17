@@ -279,8 +279,8 @@ option(USE_CPLEX "Use the CPLEX solver" OFF)
 message(STATUS "CPLEX support: ${USE_CPLEX}")
 
 ## XPRESS
-option(USE_XPRESS "Use the XPRESS solver" OFF)
-message(STATUS "XPRESS support: ${USE_XPRESS}")
+# Since it is dynamicaly loaded upon use, OFF is currently not supported.
+CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
 
 # Language specific options
 if(BUILD_CXX)

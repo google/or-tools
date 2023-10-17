@@ -249,9 +249,6 @@ cc_library(
     }) + select({
         ":use_cplex": ["-DUSE_CPLEX"],
         "//conditions:default": [],
-    }) + select({
-        ":use_xpress": ["-DUSE_XPRESS"],
-        "//conditions:default": [],
     }),
     deps = [
         ":linear_solver_cc_proto",
