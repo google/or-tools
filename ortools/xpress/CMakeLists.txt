@@ -1,8 +1,6 @@
 file(GLOB _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_xpress)
 
-# Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
   CXX_STANDARD 17
@@ -22,4 +20,3 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
-#add_library(${PROJECT_NAME}::xpress ALIAS ${NAME})

@@ -162,7 +162,7 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   if (!notFound.empty()) {
     return absl::NotFoundError(absl::StrCat("Could not find the following functions (list may not be exhaustive). [",
                                             absl::StrJoin(notFound, "', '"),
-                                            "]. Please make sure that your XPRESS install is up-to-date (>= 8.13.0)."));
+                                            "]. Please make sure that your XPRESS install is up-to-date (>= 9.0.0)."));
   }
   return absl::OkStatus();
 }
