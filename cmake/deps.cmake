@@ -144,10 +144,6 @@ if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
 endif()
 
-if(USE_XPRESS)
-  find_package(XPRESS REQUIRED)
-endif()
-
 # Check language Dependencies
 if(BUILD_PYTHON)
   if(NOT BUILD_pybind11)

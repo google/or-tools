@@ -449,12 +449,10 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
 #endif
-#if defined(USE_XPRESS)
     case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
       return BuildXpressInterface(true, solver);
     case MPSolver::XPRESS_LINEAR_PROGRAMMING:
       return BuildXpressInterface(false, solver);
-#endif
     default:
       // TODO(user): Revert to the best *available* interface.
       LOG(FATAL) << "Linear solver not recognized.";
@@ -534,12 +532,10 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
-#ifdef USE_XPRESS
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
       problem_type == XPRESS_LINEAR_PROGRAMMING) {
     return true;
   }
-#endif
 
   return false;
 }

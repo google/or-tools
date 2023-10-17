@@ -13,8 +13,6 @@
 
 // Initial version of this code was provided by RTE
 
-#if defined(USE_XPRESS)
-
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
@@ -1600,4 +1598,3 @@ MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
 }
 
 }  // namespace operations_research
-#endif  // #if defined(USE_XPRESS)

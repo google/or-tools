@@ -44,7 +44,6 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
-  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
 #add_library(${PROJECT_NAMESPACE}::linear_solver ALIAS ${NAME})
 
