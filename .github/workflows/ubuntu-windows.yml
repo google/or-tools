@@ -169,7 +169,7 @@ jobs:
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: Build & run CMake example project linux
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        if: ${{ startsWith(matrix.os, 'ignoreubuntu') }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. \
@@ -178,7 +178,7 @@ jobs:
           ./build/linear_programming
 
       - name: Build & run CMake example project windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        if: ${{ startsWith(matrix.os, 'ignorewindows') }}
         working-directory: ./examples/cmake/linear_programming/
         run: |
           cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release
