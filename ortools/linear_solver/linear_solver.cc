@@ -392,10 +392,9 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 #if defined(USE_CPLEX)
 extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 #endif
-#if defined(USE_XPRESS)
 extern MPSolverInterface* BuildXpressInterface(bool mip,
                                                MPSolver* const solver);
-#endif
+
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -488,6 +487,7 @@ MPSolver::MPSolver(const std::string& name,
 MPSolver::~MPSolver() { Clear(); }
 
 extern bool GurobiIsCorrectlyInstalled();
+extern bool XpressIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
@@ -534,7 +534,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #endif
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
       problem_type == XPRESS_LINEAR_PROGRAMMING) {
-    return true;
+    return XpressIsCorrectlyInstalled();
   }
 
   return false;

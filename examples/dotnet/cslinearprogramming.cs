@@ -160,9 +160,11 @@ public class CsLinearProgramming
         RunLinearProgrammingExample("GLOP");
         RunLinearProgrammingExample("GLPK_LP");
         RunLinearProgrammingExample("CLP");
+        RunLinearProgrammingExample("xpress_lp");
 
         RunLinearProgrammingExampleNaturalApi("GLOP", true);
         RunLinearProgrammingExampleNaturalApi("GLPK_LP", false);
         RunLinearProgrammingExampleNaturalApi("CLP", false);
+        RunLinearProgrammingExampleNaturalApi("xpress_lp", false);
     }
 }
