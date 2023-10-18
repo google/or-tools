@@ -2089,7 +2089,7 @@ void XpressInterface::Write(const std::string& filename) {
 MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
   return new XpressInterface(solver, mip);
 }
-
+// TODO useless ?
 template <class Container>
 void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
   std::stringstream ss(str);
