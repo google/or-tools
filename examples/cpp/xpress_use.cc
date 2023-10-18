@@ -50,8 +50,7 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
     }
   }
   if (solver == nullptr) {
-       LOG(INFO) << "Xpress solver is not available";
-       return;
+       LOG(FATAL) << "Xpress solver is not available";
   }
   // Use the solver
   /*
@@ -61,9 +60,9 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
          0 <= x1 <= 5
          0 <= x2
    */
-  const double infinity = solver->infinity();
-  MPVariable* const x1 = solver->MakeIntVar(0, 5, "x1");
-  MPVariable* const x2 = solver->MakeNumVar(0.0, infinity, "x2");
+  const double infinity = MPSolver::infinity();
+  const MPVariable* x1 = solver->MakeIntVar(0, 5, "x1");
+  const MPVariable* x2 = solver->MakeNumVar(0.0, infinity, "x2");
 
   MPObjective* const objective = solver->MutableObjective();
   objective->SetCoefficient(x1, -100);
@@ -85,15 +84,16 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "Solver returned with non-optimal status.";
   } else {
-    LOG(INFO) << "Optimal solution found: obj=" << objective->Value();
+    LOG(WARNING) << "Optimal solution found: obj=" << objective->Value();
   }
 }
-
-
+#define ABSL_MIN_LOG_LEVEL INFO;
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   absl::SetFlag(&FLAGS_logtostderr, true);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
+  InitGoogle(argv[0], &argc, &argv, true);
+  std::cout << "start\n";
+  LOG(WARNING) << "start";
   for (bool solveAsMip: {true, false}) {
     for (bool useFactory: {true, false}) {
         useXpressSolver(solveAsMip, useFactory);
