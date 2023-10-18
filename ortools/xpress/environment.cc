@@ -197,7 +197,7 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
                << " You won't be able to use Xpress.";
 #endif
   } else {
-    LOG(WARNING) << "Environment variable XPRESSDIR undefined.\n";
+    LOG(WARNING) << "Environment variable XPRESSDIR undefined.";
   }
 
   // Search for canonical places.
