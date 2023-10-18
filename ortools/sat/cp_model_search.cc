@@ -362,7 +362,9 @@ ConstructIntegerCompletionSearchStrategy(
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   const auto& params = *model->GetOrCreate<SatParameters>();
-  if (!params.instantiate_all_variables()) return nullptr;
+  if (!params.instantiate_all_variables()) {
+    return []() { return BooleanOrIntegerLiteral(); };
+  }
 
   std::vector<IntegerVariable> decisions;
   for (const IntegerVariable var : variable_mapping) {

@@ -368,11 +368,10 @@ message ConstraintProto {
     // variables. By convention, because we can just remove term equal to one,
     // the empty product forces the target to be one.
     //
-    // Note that the solver checks for potential integer overflow. So it is
-    // recommended to limit the domain of the variables such that the product
-    // fits in [INT_MIN + 1..INT_MAX - 1].
-    //
-    // TODO(user): Support more than two terms in the product.
+    // Note that the solver checks for potential integer overflow. So the
+    // product of the maximum absolute value of all the terms (using the initial
+    // domain) should fit on an int64. Otherwise the model will be declared
+    // invalid.
     LinearArgumentProto int_prod = 11;
 
     // The lin_max constraint forces the target to equal the maximum of all

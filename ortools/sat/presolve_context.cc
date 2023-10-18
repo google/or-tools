@@ -2182,6 +2182,9 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
                 local_model);
   ExtractEncoding(model_proto, local_model);
   auto* sat_solver = local_model->GetOrCreate<SatSolver>();
+  if (sat_solver->ModelIsUnsat()) {
+    return context->NotifyThatModelIsUnsat("Initial loading for probing");
+  }
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <limits>
 #include <string>
 #include <utility>
@@ -271,6 +272,39 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("int_mod: expanded");
 }
 
+void ExpandNonBinaryIntProd(ConstraintProto* ct, PresolveContext* context) {
+  CHECK_GT(ct->int_prod().exprs_size(), 2);
+  std::deque<LinearExpressionProto> terms(
+      {ct->int_prod().exprs().begin(), ct->int_prod().exprs().end()});
+  while (terms.size() > 2) {
+    const LinearExpressionProto& left = terms[0];
+    const LinearExpressionProto& right = terms[1];
+    const Domain new_domain =
+        context->DomainSuperSetOf(left).ContinuousMultiplicationBy(
+            context->DomainSuperSetOf(right));
+    const int new_var = context->NewIntVar(new_domain);
+    LinearArgumentProto* const int_prod =
+        context->working_model->add_constraints()->mutable_int_prod();
+    *int_prod->add_exprs() = left;
+    *int_prod->add_exprs() = right;
+    int_prod->mutable_target()->add_vars(new_var);
+    int_prod->mutable_target()->add_coeffs(1);
+    terms.pop_front();
+    terms.pop_front();
+    terms.push_back(int_prod->target());
+  }
+
+  LinearArgumentProto* const final_int_prod =
+      context->working_model->add_constraints()->mutable_int_prod();
+  *final_int_prod->add_exprs() = terms[0];
+  *final_int_prod->add_exprs() = terms[1];
+  *final_int_prod->mutable_target() = ct->int_prod().target();
+
+  context->UpdateRuleStats(absl::StrCat(
+      "int_prod: expanded int_prod with arity ", ct->int_prod().exprs_size()));
+  ct->Clear();
+}
+
 // TODO(user): Move this into the presolve instead?
 void ExpandIntProdWithBoolean(int bool_ref,
                               const LinearExpressionProto& int_expr,
@@ -294,6 +328,10 @@ void ExpandIntProdWithBoolean(int bool_ref,
 
 void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
   const LinearArgumentProto& int_prod = ct->int_prod();
+  if (int_prod.exprs_size() > 2) {
+    ExpandNonBinaryIntProd(ct, context);
+    return;
+  }
   if (int_prod.exprs_size() != 2) return;
   const LinearExpressionProto& a = int_prod.exprs(0);
   const LinearExpressionProto& b = int_prod.exprs(1);

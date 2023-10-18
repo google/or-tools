@@ -1331,19 +1331,20 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations(), logger);
 
-  if (p.display_all_solutions && !m.proto.has_objective()) {
+  if (p.search_all_solutions && !m.proto.has_objective()) {
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
 
   m.parameters.set_log_search_progress(p.log_search_progress);
+  m.parameters.set_log_to_stdout(!p.ortools_mode);
 
   // Helps with challenge unit tests.
   m.parameters.set_max_domain_size_when_encoding_eq_neq_constraints(32);
 
   // Computes the number of workers.
   int num_workers = 1;
-  if (p.display_all_solutions && fz_model.objective() == nullptr) {
+  if (p.search_all_solutions && fz_model.objective() == nullptr) {
     if (p.number_of_threads > 1) {
       // We don't support enumerating all solution in parallel for a SAT
       // problem. But note that we do support it for an optimization problem
@@ -1371,7 +1372,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
   } else if (num_workers == 1 && p.use_free_search) {  // Free search.
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    if (!p.display_all_solutions && p.ortools_mode) {
+    if (!p.search_all_solutions && p.ortools_mode) {
       m.parameters.set_interleave_search(true);
       if (fz_model.objective() != nullptr) {
         m.parameters.add_subsolvers("default_lp");
@@ -1408,9 +1409,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       << sat_params;
   m.parameters.MergeFrom(flag_parameters);
 
-  // We only need an observer if 'p.all_solutions' is true.
+  // We only need an observer if 'p.display_all_solutions' or
+  // 'p.search_all_solutions' are true.
   std::function<void(const CpSolverResponse&)> solution_observer = nullptr;
-  if (p.display_all_solutions) {
+  if (p.display_all_solutions || p.search_all_solutions) {
     solution_observer = [&fz_model, &m, &p,
                          solution_logger](const CpSolverResponse& r) {
       const std::string solution_string =

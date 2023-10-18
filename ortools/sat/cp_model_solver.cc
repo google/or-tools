@@ -672,9 +672,6 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
 
 namespace {
 
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-
 // This should be called on the presolved model. It will read the file
 // specified by --cp_model_load_debug_solution and properly fill the
 // model->Get<DebugSolution>() proto vector.
@@ -1474,6 +1471,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
+  if (sat_solver->ModelIsUnsat()) return unsat();
 
   // Reserve space for the precedence relations.
   model->GetOrCreate<PrecedenceRelations>()->Resize(
@@ -1863,7 +1861,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
     }
   };
 
-  // Make sure we are not at a postive level.
+  // Make sure we are not at a positive level.
   if (!model->GetOrCreate<SatSolver>()->ResetToLevelZero()) {
     shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
         model->Name());
@@ -2311,7 +2309,8 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
         if (ct.enforcement_literal_size() == 0) {
           for (const int ref : ct.bool_and().literals()) {
             const Literal b = get_literal(ref);
-            solver->AddUnitClause(b);
+            // We should report infeasible below.
+            if (!solver->AddUnitClause(b)) continue;
           }
         } else {
           // a => b
@@ -2345,7 +2344,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     if (domain.Min() == domain.Max()) {
       const Literal ref_literal =
           domain.Min() == 0 ? get_literal(ref).Negated() : get_literal(ref);
-      solver->AddUnitClause(ref_literal);
+      if (!solver->AddUnitClause(ref_literal)) break;
     }
   }
 
@@ -3170,9 +3169,6 @@ class LnsSolver : public SubSolver {
         debug_copy = lns_fragment;
       }
 
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-
       if (absl::GetFlag(FLAGS_cp_model_dump_lns)) {
         // TODO(user): export the delta too if needed.
         const std::string lns_name =
@@ -3565,7 +3561,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // schedule more than the available number of threads. They will just be
     // interleaved. We will get an higher diversity, but use more memory.
     const int num_feasibility_jump =
-        params.interleave_search()
+        (params.interleave_search() || !params.use_feasibility_jump())
             ? 0
             : (params.test_feasibility_jump() ? num_available
                                               : (num_available + 1) / 2);
@@ -3993,9 +3989,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   user_timer->Start();
 
 #if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-
-#if !defined(__PORTABLE_PLATFORM__)
   // Dump initial model?
   if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
     DumpModelProto(model_proto, "model");
@@ -4007,9 +4000,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       DumpModelProto(model_proto, model_proto.name());
     }
   }
-#endif  // __PORTABLE_PLATFORM__
 
-#if !defined(__PORTABLE_PLATFORM__)
   // Override parameters?
   if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
     SatParameters params = *model->GetOrCreate<SatParameters>();

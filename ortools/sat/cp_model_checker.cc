@@ -266,6 +266,12 @@ std::string ValidateLinearExpression(const CpModelProto& model,
     return absl::StrCat("Possible overflow in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
+  for (const int ref : expr.vars()) {
+    if (!RefIsPositive(ref)) {
+      return absl::StrCat("Invalid negated reference in linear expression: ",
+                          ProtobufShortDebugString(expr));
+    }
+  }
   return "";
 }
 
@@ -332,26 +338,27 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
 
 std::string ValidateIntProdConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
-  if (ct.int_prod().exprs().size() != 2) {
-    return absl::StrCat("An int_prod constraint should have exactly 2 terms: ",
-                        ProtobufShortDebugString(ct));
-  }
   if (!ct.int_prod().has_target()) {
     return absl::StrCat("An int_prod constraint should have a target: ",
                         ProtobufShortDebugString(ct));
   }
 
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(0)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().exprs(1)));
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+  }
   RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().target()));
 
-  // Detect potential overflow if some of the variables span across 0.
-  const LinearExpressionProto& expr0 = ct.int_prod().exprs(0);
-  const LinearExpressionProto& expr1 = ct.int_prod().exprs(1);
-  const Domain product_domain =
-      Domain({MinOfExpression(model, expr0), MaxOfExpression(model, expr0)})
-          .ContinuousMultiplicationBy(Domain(
-              {MinOfExpression(model, expr1), MaxOfExpression(model, expr1)}));
+  // Detect potential overflow.
+  Domain product_domain(1);
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    product_domain = product_domain.ContinuousMultiplicationBy(
+        {MinOfExpression(model, expr), MaxOfExpression(model, expr)});
+  }
+  if (product_domain.Max() <= -std ::numeric_limits<int64_t>::max() ||
+      product_domain.Min() >= std::numeric_limits<int64_t>::max()) {
+    return absl::StrCat("integer overflow in constraint: ",
+                        ProtobufShortDebugString(ct));
+  }
   if ((product_domain.Max() == std::numeric_limits<int64_t>::max() &&
        product_domain.Min() < 0) ||
       (product_domain.Min() == std::numeric_limits<int64_t>::min() &&

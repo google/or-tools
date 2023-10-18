@@ -978,10 +978,10 @@ int64_t CompiledIntProdConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_prod().target(), solution);
-  DCHECK_EQ(ct_proto().int_prod().exprs_size(), 2);
-  const int64_t prod_value =
-      ExprValue(ct_proto().int_prod().exprs(0), solution) *
-      ExprValue(ct_proto().int_prod().exprs(1), solution);
+  int64_t prod_value = 1;
+  for (const LinearExpressionProto& expr : ct_proto().int_prod().exprs()) {
+    prod_value *= ExprValue(expr, solution);
+  }
   return std::abs(target_value - prod_value);
 }
 

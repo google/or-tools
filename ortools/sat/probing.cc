@@ -113,7 +113,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     // Fix variable and add new binary clauses.
     if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
     for (const Literal l : to_fix_at_true_) {
-      sat_solver_->AddUnitClause(l);
+      if (!sat_solver_->AddUnitClause(l)) return false;
     }
     to_fix_at_true_.clear();
     if (!sat_solver_->FinishPropagation()) return false;
@@ -516,7 +516,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       for (const Literal literal : to_fix) {
         if (!assignment.LiteralIsTrue(literal)) {
           ++num_explicit_fix;
-          sat_solver->AddUnitClause(literal);
+          if (!sat_solver->AddUnitClause(literal)) return false;
         }
       }
       to_fix.clear();
@@ -747,7 +747,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   if (!sat_solver->ResetToLevelZero()) return false;
   for (const Literal literal : to_fix) {
     ++num_explicit_fix;
-    sat_solver->AddUnitClause(literal);
+    if (!sat_solver->AddUnitClause(literal)) return false;
   }
   to_fix.clear();
   if (!sat_solver->FinishPropagation()) return false;

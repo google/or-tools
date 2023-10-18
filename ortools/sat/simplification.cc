@@ -1209,7 +1209,7 @@ void ProbeAndFindEquivalentLiteral(
         const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
                                      ? Literal(rep)
                                      : Literal(rep).Negated();
-        solver->AddUnitClause(true_lit);
+        if (!solver->AddUnitClause(true_lit)) return;
         if (drat_proof_handler != nullptr) {
           drat_proof_handler->AddClause({true_lit});
         }
@@ -1223,7 +1223,7 @@ void ProbeAndFindEquivalentLiteral(
           const Literal true_lit = assignment.LiteralIsTrue(Literal(rep))
                                        ? Literal(i)
                                        : Literal(i).Negated();
-          solver->AddUnitClause(true_lit);
+          if (!solver->AddUnitClause(true_lit)) return;
           if (drat_proof_handler != nullptr) {
             drat_proof_handler->AddClause({true_lit});
           }
@@ -1233,7 +1233,7 @@ void ProbeAndFindEquivalentLiteral(
           const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
                                        ? Literal(rep)
                                        : Literal(rep).Negated();
-          solver->AddUnitClause(true_lit);
+          if (!solver->AddUnitClause(true_lit)) return;
           if (drat_proof_handler != nullptr) {
             drat_proof_handler->AddClause({true_lit});
           }

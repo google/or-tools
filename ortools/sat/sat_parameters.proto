@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 265
+// NEXT TAG: 268
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1082,8 +1082,10 @@ message SatParameters {
   // Parameters for an heuristic similar to the one described in the paper:
   // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
   // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
-  //
-  // The test_feasibility_jump is used to only enable this for benchmarking.
+  optional bool use_feasibility_jump = 265 [default = true];
+
+  // Disable every other type of subsolver, setting this turns CP-SAT into a
+  // pure local-search solver.
   optional bool test_feasibility_jump = 240 [default = false];
 
   // On each restart, we randomly choose if we use decay (with this parameter)
@@ -1328,6 +1330,13 @@ message SatParameters {
   // helps on some problems, but not so much on others. It also cost of bit of
   // time to do such polish step.
   optional bool polish_lp_solution = 175 [default = false];
+
+  // The internal LP tolerance used by CP-SAT. These applies to the internal and
+  // scaled problem. If the domain of your variables are large it might be good
+  // to use lower tolerance. If your problem is binary with low coefficient, it
+  // might be good to use higher one to speed-up the lp solves.
+  optional double lp_primal_tolerance = 266 [default = 1e-7];
+  optional double lp_dual_tolerance = 267 [default = 1e-7];
 
   // Temporary flag util the feature is more mature. This convert intervals to
   // the newer proto format that support affine start/var/end instead of just
