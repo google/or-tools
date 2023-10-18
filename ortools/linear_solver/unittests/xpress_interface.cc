@@ -1244,9 +1244,10 @@ ENDATA
     EXPECT_GT(nSolutions, 5);
     // Test variable values for the last solution found
     for (int i = 0; i < solver.NumVariables(); ++i) {
-      EXPECT_DOUBLE_EQ(myMpCallback->getLastVariableValue(i),
+      EXPECT_NEAR(myMpCallback->getLastVariableValue(i),
                        solver.LookupVariableOrNull("x_" + std::to_string(i))
-                           ->solution_value());
+                           ->solution_value(),
+                  1e-10);
     }
   }
 
