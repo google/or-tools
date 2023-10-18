@@ -94,11 +94,10 @@ jobs:
           dnf clean all
           rm -rf /var/cache/dnf
       - name: Install python
-        if: ${{ matrix.python == 'ON' }}
         run: |
           export PATH=/root/.local/bin:$PATH
           dnf -y update
-          dnf -y install python3 python3-devel python3-pip
+          dnf -y install python39 python39-devel python39-pip
           dnf clean all
           echo "/root/.local/bin" >> $GITHUB_PATH
 
@@ -111,19 +110,13 @@ jobs:
         run: |
           git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git -b ${BRANCH_NAME} .
 
-      - name: Checkout Xpress linux
-        uses: actions/checkout@v2
-        with:
-          repository: rte-france/xpress-mp
-          path: ${{ env.XPRESS_INSTALL_DIR }}
-          ref: "9.0"
-          token: ${{ secrets.ACCESS_TOKEN }}
-
-      - name: set Xpress variables
+      - name: Set-up Xpress with pip
         run: |
-          cd ${{ env.XPRESS_INSTALL_DIR }}
-          echo "XPRESSDIR=$PWD" >> $GITHUB_ENV
-          echo "XPAUTH_PATH=$PWD/bin/xpauth.xpr" >> $GITHUB_ENV
+          python3 -m pip install xpress==9.0.0
+          XPRESS_DIR=/usr/local/lib64/python3.9/site-packages/xpress
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
+          ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
 
       - name: Configure OR-Tools
         run: |

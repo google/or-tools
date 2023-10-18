@@ -1,5 +1,5 @@
-name: "setup ubuntu environement"
-description: "setup dotnet python"
+name: "setup ubuntu environment"
+description: "setup dotnet python and compile sirius"
 inputs:
   os:
     description: 'operating system'

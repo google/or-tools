@@ -19,8 +19,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SIRIUS_RELEASE_TAG: ${{ matrix.sirius-release-tag }}
-      XPRESSDIR: ${{ github.workspace }}/xpressmp
-      XPAUTH_PATH: ${{ github.workspace }}/xpressmp/bin/xpauth.xpr
       SIRIUS_INSTALL_PATH : ${{ github.workspace }}/sirius_install
       SIRIUS: ${{ github.workspace }}/sirius_install/bin
     strategy:
@@ -169,22 +167,25 @@ jobs:
           unzip $zipfile
           mv "${{ matrix.os }}_sirius-solver-install" "${{ env.SIRIUS_INSTALL_PATH }}"
 
-      - name: Checkout Xpress linux
+      - name: Set-up Xpress with pip for Ubuntu
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        uses: actions/checkout@v2
-        with:
-          repository: rte-france/xpress-mp
-          path: ${{ env.XPRESSDIR }}
-          ref: "9.0"
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout Xpress windows
+        shell: bash
+        run: |
+          python -m pip install xpress==9.0.0
+          XPRESS_DIR=${{ env.pythonLocation }}/lib/python${{ matrix.python-version }}/site-packages/xpress
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
+          echo "Create symbolic link for XPRESS library file because it is missing in the Python installation"
+          ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
+
+      - name: Set-up Xpress with pip for Windows
         if: ${{ startsWith(matrix.os, 'windows') }}
-        uses: actions/checkout@v2
-        with:
-          repository: rte-france/xpress-mp-temp
-          path: ${{ env.XPRESSDIR }}
-          ref: "9.0"
-          token: ${{ secrets.ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          python -m pip install --no-cache-dir xpress==9.0.0
+          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
       - name: set cache variables
         id: cache
