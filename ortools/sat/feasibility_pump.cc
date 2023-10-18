@@ -189,7 +189,7 @@ bool FeasibilityPump::Solve() {
     if (integer_solution_is_feasible_) MaybePushToRepo();
   }
 
-  if (model_is_unsat_) return false;
+  if (sat_solver_->ModelIsUnsat()) return false;
 
   PrintStats();
   MaybePushToRepo();
@@ -567,7 +567,7 @@ bool FeasibilityPump::ActiveLockBasedRounding() {
 
 bool FeasibilityPump::PropagationRounding() {
   if (!lp_solution_is_set_) return false;
-  sat_solver_->ResetToLevelZero();
+  if (!sat_solver_->ResetToLevelZero()) return false;
 
   // Compute an order in which we will fix variables and do the propagation.
   std::vector<int> rounding_order;
@@ -623,7 +623,7 @@ bool FeasibilityPump::PropagationRounding() {
         (domain.Contains(ceil_value) && ub.value() >= ceil_value);
     if (domain.IsEmpty()) {
       integer_solution_[var_index] = rounded_value;
-      model_is_unsat_ = true;
+      sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
 
@@ -678,20 +678,12 @@ bool FeasibilityPump::PropagationRounding() {
           integer_encoder_->GetOrCreateLiteralAssociatedToEquality(var, value);
     }
 
-    if (!sat_solver_->FinishPropagation()) {
-      model_is_unsat_ = true;
-      return false;
-    }
+    if (!sat_solver_->FinishPropagation()) return false;
     sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
-
-    if (sat_solver_->ModelIsUnsat()) {
-      model_is_unsat_ = true;
-      return false;
-    }
+    if (sat_solver_->ModelIsUnsat()) return false;
   }
-  sat_solver_->ResetToLevelZero();
   integer_solution_is_set_ = true;
-  return true;
+  return sat_solver_->ResetToLevelZero();
 }
 
 void FeasibilityPump::FillIntegerSolutionStats() {

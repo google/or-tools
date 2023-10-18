@@ -364,12 +364,10 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
   const IntegerValue min(domain.Min());
   const IntegerValue max(domain.Max());
   if (i_lit.bound <= min) {
-    sat_solver_->AddUnitClause(literal);
-    return;
+    return (void)sat_solver_->AddUnitClause(literal);
   }
   if (i_lit.bound > max) {
-    sat_solver_->AddUnitClause(literal.Negated());
-    return;
+    return (void)sat_solver_->AddUnitClause(literal.Negated());
   }
 
   if (index >= encoding_by_var_.size()) {
@@ -470,8 +468,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 
   // Fix literal for value outside the domain.
   if (!domain.Contains(value.value())) {
-    sat_solver_->AddUnitClause(literal.Negated());
-    return;
+    return (void)sat_solver_->AddUnitClause(literal.Negated());
   }
 
   // Update equality_by_var. Note that due to the
@@ -485,8 +482,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 
   // Fix literal for constant domain.
   if (domain.IsFixed()) {
-    sat_solver_->AddUnitClause(literal);
-    return;
+    return (void)sat_solver_->AddUnitClause(literal);
   }
 
   const IntegerLiteral ge = IntegerLiteral::GreaterOrEqual(var, value);

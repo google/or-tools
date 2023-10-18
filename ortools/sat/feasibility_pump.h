@@ -236,8 +236,6 @@ class FeasibilityPump {
 
   // TODO(user): Tune default value. Expose as parameter.
   int max_fp_iterations_ = 20;
-
-  bool model_is_unsat_ = false;
 };
 
 }  // namespace sat

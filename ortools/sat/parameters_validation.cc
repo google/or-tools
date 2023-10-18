@@ -65,6 +65,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(glucose_max_decay);
   TEST_IS_FINITE(glucose_decay_increment);
   TEST_IS_FINITE(clause_activity_decay);
+  TEST_IS_FINITE(lp_dual_tolerance);
+  TEST_IS_FINITE(lp_primal_tolerance);
   TEST_IS_FINITE(max_clause_activity_value);
   TEST_IS_FINITE(restart_dl_average_ratio);
   TEST_IS_FINITE(restart_lbd_average_ratio);
@@ -78,11 +80,11 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(merge_no_overlap_work_limit);
   TEST_IS_FINITE(merge_at_most_one_work_limit);
   TEST_IS_FINITE(min_orthogonality_for_lp_constraints);
+  TEST_IS_FINITE(mip_var_scaling);
   TEST_IS_FINITE(cut_max_active_count_value);
   TEST_IS_FINITE(cut_active_count_decay);
   TEST_IS_FINITE(shaving_search_deterministic_time);
   TEST_IS_FINITE(mip_max_bound);
-  TEST_IS_FINITE(mip_var_scaling);
   TEST_IS_FINITE(mip_wanted_precision);
   TEST_IS_FINITE(mip_check_precision);
   TEST_IS_FINITE(mip_max_valid_magnitude);
@@ -123,6 +125,7 @@ std::string ValidateParameters(const SatParameters& params) {
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
+  TEST_POSITIVE(mip_var_scaling);
 
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);

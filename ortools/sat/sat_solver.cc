@@ -232,7 +232,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
     }
   }
 
-  AddProblemClauseInternal(literals_scratchpad_);
+  if (!AddProblemClauseInternal(literals_scratchpad_)) return false;
 
   // Tricky: The PropagationIsDone() condition shouldn't change anything for a
   // pure SAT problem, however in the CP-SAT context, calling Propagate() can
@@ -1226,7 +1226,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->size();
       trail_->EnqueueWithUnitReason(candidate[0]);
-      FinishPropagation();
+      return (void)FinishPropagation();
     }
     return;
   }
@@ -1241,8 +1241,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     // This is needed in the corner case where this was the first binary clause
     // of the problem so that PropagationIsDone() returns true on the newly
     // created BinaryImplicationGraph.
-    FinishPropagation();
-    return;
+    return (void)FinishPropagation();
   }
 
   counters_.minimization_num_removed_literals +=
@@ -1766,6 +1765,7 @@ bool SatSolver::PropagationIsDone() const {
 // part or the full integer part...
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK(!ModelIsUnsat());
 
   // Because we might potentially iterate often on this list below, we remove
   // empty propagators.
@@ -2692,8 +2692,7 @@ std::string SatStatusString(SatSolver::Status status) {
 
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   std::vector<Literal> result;
-
-  solver->ResetToLevelZero();
+  if (!solver->ResetToLevelZero()) return;
   for (const Literal lit : *core) {
     if (solver->Assignment().LiteralIsTrue(lit)) continue;
     result.push_back(lit);

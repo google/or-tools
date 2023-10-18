@@ -106,7 +106,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
-  const VariablesAssignment& assignment = trail->Assignment();
+  const auto assignment = AssignmentView(trail->Assignment());
 
   // Note(user): It sounds better to inspect the list in order, this is because
   // small clauses like binary or ternary clauses will often propagate and thus
@@ -715,7 +715,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
                                              Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
 
-  const VariablesAssignment& assignment = trail->Assignment();
+  const auto assignment = AssignmentView(trail->Assignment());
   DCHECK(assignment.LiteralIsTrue(true_literal));
 
   // Note(user): This update is not exactly correct because in case of conflict

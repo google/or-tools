@@ -166,7 +166,7 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
             << core->size();
   }
 
-  solver->ResetToLevelZero();
+  (void)solver->ResetToLevelZero();
   solver->mutable_logger()->EnableLogging(old_log_state);
 }
 
@@ -182,10 +182,15 @@ bool ProbeLiteral(Literal assumption, SatSolver* solver) {
   // TODO(user): Still use it if the problem is Boolean only.
   const auto status = solver->ResetAndSolveWithGivenAssumptions(
       {assumption}, /*max_number_of_conflicts=*/1'000);
-  solver->ResetToLevelZero();
+  if (!solver->ResetToLevelZero()) return false;
   if (status == SatSolver::ASSUMPTIONS_UNSAT) {
-    solver->AddUnitClause(assumption.Negated());
-    solver->Propagate();
+    if (!solver->AddUnitClause(assumption.Negated())) {
+      return false;
+    }
+    if (!solver->Propagate()) {
+      solver->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
 
   solver->mutable_logger()->EnableLogging(old_log_state);
@@ -827,7 +832,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (parameters_->core_minimization_level() > 1) {
       MinimizeCoreWithSearch(time_limit_, sat_solver_, &core);
     }
-    sat_solver_->ResetToLevelZero();
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     FilterAssignedLiteral(sat_solver_->Assignment(), &core);
     if (core.empty()) return SatSolver::INFEASIBLE;
 

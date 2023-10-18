@@ -232,10 +232,12 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   // Tweak the default parameters to make the solve incremental.
   simplex_params_.set_use_dual_simplex(true);
   simplex_params_.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
+  simplex_params_.set_primal_feasibility_tolerance(
+      parameters_.lp_primal_tolerance());
+  simplex_params_.set_dual_feasibility_tolerance(
+      parameters_.lp_dual_tolerance());
   if (parameters_.use_exact_lp_reason()) {
     simplex_params_.set_change_status_to_imprecise(false);
-    simplex_params_.set_primal_feasibility_tolerance(1e-7);
-    simplex_params_.set_dual_feasibility_tolerance(1e-7);
   }
   simplex_.SetParameters(simplex_params_);
   if (parameters_.use_branching_in_lp() ||

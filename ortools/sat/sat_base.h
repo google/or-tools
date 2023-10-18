@@ -198,6 +198,25 @@ class VariablesAssignment {
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
   // - If both are false, then the variable (and the literal) is unassigned.
   Bitset64<LiteralIndex> assignment_;
+
+  friend class AssignmentView;
+};
+
+// For "hot" loop, it is better not to reload the Bitset64 pointer on each
+// check.
+class AssignmentView {
+ public:
+  explicit AssignmentView(const VariablesAssignment& assignment)
+      : view_(assignment.assignment_.const_view()) {}
+
+  bool LiteralIsFalse(Literal literal) const {
+    return view_[literal.NegatedIndex()];
+  }
+
+  bool LiteralIsTrue(Literal literal) const { return view_[literal.Index()]; }
+
+ private:
+  Bitset64<LiteralIndex>::ConstView view_;
 };
 
 // Forward declaration.
