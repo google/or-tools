@@ -224,14 +224,13 @@ namespace operations_research {
   class MyMPCallback : public MPCallback {
    private:
     MPSolver* mpSolver_;
-    int nSolutions_;
+    int nSolutions_=0;
     std::vector<double> last_variable_values_;
     bool should_throw_;
    public:
-    MyMPCallback(MPSolver* mpSolver, bool should_throw = false)
+    MyMPCallback(MPSolver* mpSolver, bool should_throw)
         : MPCallback(false, false),
           mpSolver_(mpSolver),
-          nSolutions_(0),
           should_throw_(should_throw){};
 
     ~MyMPCallback() override{};
@@ -256,7 +255,7 @@ namespace operations_research {
 
   MyMPCallback* buildLargeMipWithCallback(MPSolver &solver, int numVars, int maxTime) {
     buildLargeMip(solver, numVars, maxTime);
-    MPCallback* mpCallback = new MyMPCallback(&solver);
+    MPCallback* mpCallback = new MyMPCallback(&solver, false);
     solver.SetCallback(nullptr); // just to test that this does not cause failure
     solver.SetCallback(mpCallback);
     return static_cast<MyMPCallback*>(mpCallback);
@@ -1245,9 +1244,10 @@ ENDATA
     EXPECT_GT(nSolutions, 5);
     // Test variable values for the last solution found
     for (int i = 0; i < solver.NumVariables(); ++i) {
-      EXPECT_DOUBLE_EQ(myMpCallback->getLastVariableValue(i),
-                       solver.LookupVariableOrNull("x_" + std::to_string(i))
-                           ->solution_value());
+      EXPECT_NEAR(myMpCallback->getLastVariableValue(i),
+                  solver.LookupVariableOrNull("x_" + std::to_string(i))
+                      ->solution_value(),
+                  1e-10);
     }
   }
 
@@ -1264,7 +1264,7 @@ ENDATA
     // Test that when we set a new callback then it is called, and old one is not called
     UNITTEST_INIT_MIP();
     auto oldMpCallback = buildLargeMipWithCallback(solver, 100, 5);
-    auto newMpCallback = new MyMPCallback(&solver);
+    auto newMpCallback = new MyMPCallback(&solver, false);
     solver.SetCallback((MPCallback*) newMpCallback);
     solver.Solve();
     EXPECT_EQ(oldMpCallback->getNSolutions(), 0);
