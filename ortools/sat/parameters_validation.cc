@@ -65,8 +65,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(glucose_max_decay);
   TEST_IS_FINITE(glucose_decay_increment);
   TEST_IS_FINITE(clause_activity_decay);
-  TEST_IS_FINITE(lp_dual_tolerance);
-  TEST_IS_FINITE(lp_primal_tolerance);
   TEST_IS_FINITE(max_clause_activity_value);
   TEST_IS_FINITE(restart_dl_average_ratio);
   TEST_IS_FINITE(restart_lbd_average_ratio);
@@ -126,6 +124,12 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
   TEST_POSITIVE(mip_var_scaling);
+
+  // Test LP tolerances.
+  TEST_IS_FINITE(lp_primal_tolerance);
+  TEST_IS_FINITE(lp_dual_tolerance);
+  TEST_NON_NEGATIVE(lp_primal_tolerance);
+  TEST_NON_NEGATIVE(lp_dual_tolerance);
 
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);

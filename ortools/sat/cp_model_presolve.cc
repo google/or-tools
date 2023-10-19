@@ -2149,7 +2149,7 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
 //
 // We also handle the special case of having two non-zero literals modulo 2.
 //
-// TODO(user): Use more complex algo to detect all the cases? By spliting the
+// TODO(user): Use more complex algo to detect all the cases? By splitting the
 // constraint in two, and computing the gcd of each halves, we can reduce the
 // problem to two problem of half size. So at least we can do it in O(n log n).
 bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
@@ -4669,10 +4669,9 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  if (HasEnforcementLiteral(*ct)) return false;
   if (ct->table().vars().empty()) {
     context_->UpdateRuleStats("table: empty constraint");
-    return RemoveConstraint(ct);
+    return MarkConstraintAsFalse(ct);
   }
 
   const int initial_num_vars = ct->table().vars_size();
@@ -4806,6 +4805,9 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
 
   // Nothing more to do for negated tables.
   if (ct->table().negated()) return changed;
+
+  // And for constraints with enforcement literals.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   // Filter the variable domains.
   for (int j = 0; j < num_vars; ++j) {
