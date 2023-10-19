@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -524,7 +525,7 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   {
-    // While this is not stricly needed since all value in the index will be
+    // While this is not strictly needed since all value in the index will be
     // covered, it allows to easily detect this fact in the presolve.
     auto* exactly_one =
         context->working_model->add_constraints()->mutable_exactly_one();
@@ -1043,8 +1044,9 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
     }
 
     // Note: if the clause is empty, then the model is infeasible.
-    BoolArgumentProto* bool_or =
-        context->working_model->add_constraints()->mutable_bool_or();
+    ConstraintProto* tuple_ct = context->working_model->add_constraints();
+    *tuple_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+    BoolArgumentProto* bool_or = tuple_ct->mutable_bool_or();
     for (const int lit : clause) {
       bool_or->add_literals(lit);
     }
@@ -1056,12 +1058,12 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 // Add the implications and clauses to link one variable (i.e. column) of a
 // table to the literals controlling if the tuples are possible or not.
 //
-// We list of each tuple the possible values the variable can take.
+// We list for each tuple the possible values the variable can take.
 // If the list is empty, then this encode "any value".
 void ProcessOneCompressedColumn(
     int variable, const std::vector<int>& tuple_literals,
     const std::vector<absl::InlinedVector<int64_t, 2>>& values,
-    PresolveContext* context) {
+    std::optional<int> table_is_active, PresolveContext* context) {
   DCHECK_EQ(tuple_literals.size(), values.size());
 
   // Collect pairs of value-literal.
@@ -1102,6 +1104,8 @@ void ProcessOneCompressedColumn(
       selected.push_back(pairs[i].second);
     }
 
+    // A value is supported if one tuple is still active, or a covering 'any'
+    // tuple is still active, or the table can still be inactive.
     BoolArgumentProto* no_support =
         context->working_model->add_constraints()->mutable_bool_or();
     for (const int lit : selected) {
@@ -1109,6 +1113,9 @@ void ProcessOneCompressedColumn(
     }
     for (const int lit : any_values_literals) {
       no_support->add_literals(lit);
+    }
+    if (table_is_active.has_value()) {
+      no_support->add_literals(NegatedRef(table_is_active.value()));
     }
 
     // And the "value" literal.
@@ -1354,9 +1361,10 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
   return true;
 }
 
-// Important: the table and variable domains must be presolved before this
+// Important: the table and variable domains must be pre-solved before this
 // is called. Some checks will fail otherwise.
-void CompressAndExpandPositiveTable(bool last_column_is_cost,
+void CompressAndExpandPositiveTable(ConstraintProto* ct,
+                                    bool last_column_is_cost,
                                     const std::vector<int>& vars,
                                     std::vector<std::vector<int64_t>>* tuples,
                                     PresolveContext* context) {
@@ -1425,7 +1433,7 @@ void CompressAndExpandPositiveTable(bool last_column_is_cost,
   std::sort(compressed_table.begin(), compressed_table.end());
 
   const int num_vars = vars.size();
-  if (compressed_table.size() == 1) {
+  if (compressed_table.size() == 1 && ct->enforcement_literal().empty()) {
     // Domains are propagated. We can remove the constraint.
     context->UpdateRuleStats("table: one tuple");
     if (last_column_is_cost) {
@@ -1461,13 +1469,33 @@ void CompressAndExpandPositiveTable(bool last_column_is_cost,
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
 
+  std::optional<int> table_is_active = std::nullopt;
+  // Process enforcement literals.
+  if (ct->enforcement_literal().size() == 1) {
+    table_is_active = ct->enforcement_literal(0);
+  } else if (ct->enforcement_literal().size() > 1) {
+    table_is_active = context->NewBoolVar();
+
+    // Adds table_is_active <=> and(enforcement_literals).
+    BoolArgumentProto* bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    bool_or->add_literals(table_is_active.value());
+    for (const int lit : ct->enforcement_literal()) {
+      context->AddImplication(table_is_active.value(), lit);
+      bool_or->add_literals(NegatedRef(lit));
+    }
+  }
+
   int64_t num_reused_variables = 0;
   std::vector<int> tuple_literals(compressed_table.size());
   for (int i = 0; i < compressed_table.size(); ++i) {
     bool create_new_var = true;
     for (int var_index = 0; var_index < num_vars; ++var_index) {
       if (has_any[var_index]) continue;
-      if (compressed_table[i][var_index].size() != 1) continue;
+      if (compressed_table[i][var_index].size() != 1 ||
+          !ct->enforcement_literal().empty()) {
+        continue;
+      }
       const int64_t v = compressed_table[i][var_index][0];
       if (var_index_to_value_count[var_index][v] != 1) continue;
 
@@ -1504,7 +1532,11 @@ void CompressAndExpandPositiveTable(bool last_column_is_cost,
       column.push_back(compressed_table[i][var_index]);
     }
     ProcessOneCompressedColumn(vars[var_index], tuple_literals, column,
-                               context);
+                               table_is_active, context);
+  }
+
+  if (table_is_active.has_value()) {
+    exactly_one->add_literals(NegatedRef(table_is_active.value()));
   }
 
   context->UpdateRuleStats("table: expanded positive constraint");
@@ -1556,32 +1588,45 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   tuples.resize(new_size);
 
   if (tuples.empty()) {
-    context->UpdateRuleStats("table: empty");
-    return (void)context->NotifyThatModelIsUnsat();
+    if (ct->enforcement_literal().empty()) {
+      context->UpdateRuleStats("table: empty");
+      return (void)context->NotifyThatModelIsUnsat();
+    } else {
+      context->UpdateRuleStats("table: enforced and empty");
+      BoolArgumentProto* bool_or =
+          context->working_model->add_constraints()->mutable_bool_or();
+      for (const int lit : ct->enforcement_literal()) {
+        bool_or->add_literals(NegatedRef(lit));
+      }
+      ct->Clear();
+      return;
+    }
   }
 
   // Update variable domains. It is redundant with presolve, but we could be
   // here with presolve = false.
   // Also counts the number of fixed variables.
-  int num_fixed_variables = 0;
-  for (int var_index = 0; var_index < num_vars; ++var_index) {
-    CHECK(context->IntersectDomainWith(
-        vars[var_index],
-        Domain::FromValues({values_per_var[var_index].begin(),
-                            values_per_var[var_index].end()})));
-    if (context->DomainOf(vars[var_index]).IsFixed()) {
-      num_fixed_variables++;
+  if (ct->enforcement_literal().empty()) {
+    int num_fixed_variables = 0;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      CHECK(context->IntersectDomainWith(
+          vars[var_index],
+          Domain::FromValues({values_per_var[var_index].begin(),
+                              values_per_var[var_index].end()})));
+      if (context->DomainOf(vars[var_index]).IsFixed()) {
+        num_fixed_variables++;
+      }
     }
-  }
 
-  if (num_fixed_variables == num_vars - 1) {
-    context->UpdateRuleStats("table: one variable not fixed");
-    ct->Clear();
-    return;
-  } else if (num_fixed_variables == num_vars) {
-    context->UpdateRuleStats("table: all variables fixed");
-    ct->Clear();
-    return;
+    if (num_fixed_variables == num_vars - 1) {
+      context->UpdateRuleStats("table: one variable not fixed");
+      ct->Clear();
+      return;
+    } else if (num_fixed_variables == num_vars) {
+      context->UpdateRuleStats("table: all variables fixed");
+      ct->Clear();
+      return;
+    }
   }
 
   // Tables with two variables do not need tuple literals.
@@ -1589,7 +1634,8 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): If there is an unique variable with cost, it is better to
   // detect it. But if the detection fail, we should still call
   // AddSizeTwoTable() unlike what happen here.
-  if (num_vars == 2 && !context->params().detect_table_with_cost()) {
+  if (num_vars == 2 && !context->params().detect_table_with_cost() &&
+      ct->enforcement_literal().empty()) {
     AddSizeTwoTable(vars, tuples, values_per_var, context);
     context->UpdateRuleStats(
         "table: expanded positive constraint with two variables");
@@ -1598,12 +1644,14 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   }
 
   bool last_column_is_cost = false;
-  if (context->params().detect_table_with_cost()) {
+  if (context->params().detect_table_with_cost() &&
+      ct->enforcement_literal().empty()) {
     last_column_is_cost =
         ReduceTableInPresenceOfUniqueVariableWithCosts(&vars, &tuples, context);
   }
 
-  CompressAndExpandPositiveTable(last_column_is_cost, vars, &tuples, context);
+  CompressAndExpandPositiveTable(ct, last_column_is_cost, vars, &tuples,
+                                 context);
   ct->Clear();
 }
 

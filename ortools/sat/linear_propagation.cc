@@ -1085,9 +1085,11 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
 
   // We try to keep the same order as before for the elements not in the
   // topological order.
-  propagation_queue_.SortByPos(
-      absl::MakeSpan(&tmp_to_reorder_[important_size],
-                     tmp_to_reorder_.size() - important_size));
+  if (important_size < tmp_to_reorder_.size()) {
+    propagation_queue_.SortByPos(
+        absl::MakeSpan(&tmp_to_reorder_[important_size],
+                       tmp_to_reorder_.size() - important_size));
+  }
 
   num_reordered_ += tmp_to_reorder_.size();
   propagation_queue_.Reorder(tmp_to_reorder_);

@@ -993,6 +993,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       case ConstraintProto::ConstraintCase::kTable:
         RETURN_IF_NOT_EMPTY(ValidateTableConstraint(ct));
+        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
         RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(ct));
