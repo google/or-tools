@@ -1063,7 +1063,7 @@ void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
 void ProcessOneCompressedColumn(
     int variable, const std::vector<int>& tuple_literals,
     const std::vector<absl::InlinedVector<int64_t, 2>>& values,
-    std::optional<int> table_is_active, PresolveContext* context) {
+    std::optional<int> table_is_active_literal, PresolveContext* context) {
   DCHECK_EQ(tuple_literals.size(), values.size());
 
   // Collect pairs of value-literal.
@@ -1114,8 +1114,8 @@ void ProcessOneCompressedColumn(
     for (const int lit : any_values_literals) {
       no_support->add_literals(lit);
     }
-    if (table_is_active.has_value()) {
-      no_support->add_literals(NegatedRef(table_is_active.value()));
+    if (table_is_active_literal.has_value()) {
+      no_support->add_literals(NegatedRef(table_is_active_literal.value()));
     }
 
     // And the "value" literal.
@@ -1324,7 +1324,7 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
   // TODO(user): Doing this before table compression can prevent good
   // compression. We should probably exploit this during compression to make
   // sure we compress as much as possible, and once compressed, do it again. Or
-  // do it in a more general IP settings when one iterals implies that a set of
+  // do it in a more general IP settings when one literal implies that a set of
   // literals with >0 cost are in EXO. We can transfer the min of their cost to
   // that Boolean.
   if (/*DISABLES CODE*/ (false)) {
@@ -1469,19 +1469,19 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   BoolArgumentProto* exactly_one =
       context->working_model->add_constraints()->mutable_exactly_one();
 
-  std::optional<int> table_is_active = std::nullopt;
+  std::optional<int> table_is_active_literal = std::nullopt;
   // Process enforcement literals.
   if (ct->enforcement_literal().size() == 1) {
-    table_is_active = ct->enforcement_literal(0);
+    table_is_active_literal = ct->enforcement_literal(0);
   } else if (ct->enforcement_literal().size() > 1) {
-    table_is_active = context->NewBoolVar();
+    table_is_active_literal = context->NewBoolVar();
 
     // Adds table_is_active <=> and(enforcement_literals).
     BoolArgumentProto* bool_or =
         context->working_model->add_constraints()->mutable_bool_or();
-    bool_or->add_literals(table_is_active.value());
+    bool_or->add_literals(table_is_active_literal.value());
     for (const int lit : ct->enforcement_literal()) {
-      context->AddImplication(table_is_active.value(), lit);
+      context->AddImplication(table_is_active_literal.value(), lit);
       bool_or->add_literals(NegatedRef(lit));
     }
   }
@@ -1532,11 +1532,11 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       column.push_back(compressed_table[i][var_index]);
     }
     ProcessOneCompressedColumn(vars[var_index], tuple_literals, column,
-                               table_is_active, context);
+                               table_is_active_literal, context);
   }
 
-  if (table_is_active.has_value()) {
-    exactly_one->add_literals(NegatedRef(table_is_active.value()));
+  if (table_is_active_literal.has_value()) {
+    exactly_one->add_literals(NegatedRef(table_is_active_literal.value()));
   }
 
   context->UpdateRuleStats("table: expanded positive constraint");

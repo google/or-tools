@@ -166,6 +166,8 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     blocking_counter.Wait();
 
     // Update times.
+    // TODO(user): we loose the distribution here, we should update on each
+    // run.
     for (int i = 0; i < to_run.size(); ++i) {
       subsolvers[indices[i]]->AddTaskDuration(timing[i]);
     }

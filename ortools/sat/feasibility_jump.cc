@@ -104,6 +104,11 @@ std::pair<int64_t, double> JumpTable::GetJump(int var) {
 }
 
 FeasibilityJumpSolver::~FeasibilityJumpSolver() {
+  stat_tables_->AddTimingStat(*this);
+  stat_tables_->AddLsStat(name(), num_batches_, num_restarts_,
+                          num_linear_moves_, num_general_moves_,
+                          num_compound_moves_, num_weight_updates_);
+
   if (!VLOG_IS_ON(1)) return;
   std::vector<std::pair<std::string, int64_t>> stats;
   stats.push_back({"fs_jump/num_general_moves_computed", num_general_evals_});
