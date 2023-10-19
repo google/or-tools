@@ -224,3 +224,24 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_test(
+    name = "find_graph_symmetries_test",
+    size = "medium",
+    srcs = ["find_graph_symmetries_test.cc"],
+    #copts = ["-Iexternal/gtest/include"],
+    deps = [
+        ":find_graph_symmetries",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:dump_vars",
+        "//ortools/base:map_util",
+        "//ortools/base:path",
+        "//ortools/graph:io",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
