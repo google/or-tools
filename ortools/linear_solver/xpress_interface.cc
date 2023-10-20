@@ -264,10 +264,8 @@ class XpressMPCallbackContext : public MPCallbackContext {
 // Wraps the MPCallback in order to catch and store exceptions
 class MPCallbackWrapper {
  public:
-  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback) {};
-  MPCallback* GetCallback() const {
-    return callback_;
-  }
+  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
+  MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
   // exceptions thrown in our call-back code  are not caught by XPRESS.
   // We have to catch them, interrupt XPRESS, and re-throw them after XPRESS is
@@ -290,6 +288,7 @@ class MPCallbackWrapper {
     caught_exceptions_.clear();
     exceptions_mutex_.unlock();
   };
+
  private:
   MPCallback* callback_;
   std::vector<std::exception_ptr> caught_exceptions_;
@@ -1248,7 +1247,8 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status) {
+MPSolver::BasisStatus XpressInterface::xformBasisStatus(
+    int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
       return MPSolver::AT_LOWER_BOUND;
@@ -1881,7 +1881,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a
     // positive sign, the solver will only stop when a solution has been found.
-    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_MAXTIME, -1 * solver_->time_limit_in_secs()));
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_MAXTIME,
+                                   -1 * solver_->time_limit_in_secs()));
   }
 
   // Load basis if present
@@ -1927,9 +1928,9 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
     delete mp_callback_wrapper;
   }
 
-  if ( ! (mMip ? (xpress_stat == XPRS_MIP_OPTIMAL) : (xpress_stat == XPRS_LP_OPTIMAL)))
-  {
-	XPRSpostsolve(mLp);
+  if (!(mMip ? (xpress_stat == XPRS_MIP_OPTIMAL)
+             : (xpress_stat == XPRS_LP_OPTIMAL))) {
+    XPRSpostsolve(mLp);
   }
 
   // Disable screen output right after solve
@@ -2206,7 +2207,7 @@ void XpressInterface::AddSolutionHintToOptimizer() {
   unique_ptr<int[]> col_ind(new int[len]);
   unique_ptr<double[]> val(new double[len]);
 
-  for (std::size_t i  = 0; i < len ; ++i) {
+  for (std::size_t i = 0; i < len; ++i) {
     col_ind[i] = solver_->solution_hint_[i].first->index();
     val[i] = solver_->solution_hint_[i].second;
   }
@@ -2225,8 +2226,7 @@ void XpressInterface::SetCallback(MPCallback* mp_callback) {
 // NOTE(user): This function must have this exact API, because we are passing
 // it to XPRESS as a callback.
 void XPRS_CC XpressIntSolCallbackImpl(XPRSprob cbprob, void* cbdata) {
-  auto callback_with_context =
-      static_cast<MPCallbackWrapper*>(cbdata);
+  auto callback_with_context = static_cast<MPCallbackWrapper*>(cbdata);
   if (callback_with_context == nullptr ||
       callback_with_context->GetCallback() == nullptr) {
     // nothing to do
