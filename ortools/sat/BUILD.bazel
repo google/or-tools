@@ -200,9 +200,9 @@ cc_library(
         ":integer",
         ":linear_model",
         ":sat_parameters_cc_proto",
+        ":stat_tables",
         ":subsolver",
         ":synchronization",
-	":stat_tables",
         ":util",
         "//ortools/algorithms:binary_search",
         "//ortools/util:sorted_interval_list",
@@ -315,7 +315,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":simplification",
-	":stat_tables",
+        ":stat_tables",
         ":subsolver",
         ":synchronization",
         ":work_assignment",
@@ -781,6 +781,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
+        "//ortools/base:cleanup",	
         "//ortools/base:hash",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:stl_util",
@@ -1407,7 +1408,6 @@ cc_library(
     ],
 )
 
-
 cc_library(
     name = "stat_tables",
     srcs = ["stat_tables.cc"],
@@ -1420,12 +1420,12 @@ cc_library(
         ":subsolver",
         ":synchronization",
         ":util",
+        "//ortools/lp_data:base",
+        "//ortools/util:logging",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
-        "//ortools/lp_data:base",
-        "//ortools/util:logging",
     ],
 )
 
