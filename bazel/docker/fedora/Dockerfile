@@ -19,6 +19,12 @@ https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-
 && chmod +x bazelisk-linux-amd64 \
 && mv bazelisk-linux-amd64 /usr/local/bin/bazel
 
+# Install Java
+RUN dnf -y update \
+&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf clean all
+ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
+
 # Install Python
 RUN dnf -y update \
 && dnf -y install python3 python3-devel python3-pip \
@@ -32,13 +38,11 @@ FROM devel AS build
 RUN bazel version
 RUN bazel build \
  -c opt \
- --action_env=BAZEL_CXXOPTS="-std=c++17" \
  --subcommands=true \
- ortools/... examples/...
+ //ortools/... //examples/...
 
 FROM build AS test
 RUN bazel test \
  -c opt \
- --action_env=BAZEL_CXXOPTS="-std=c++17" \
  --test_output=errors \
- ortools/... examples/...
+ //ortools/... //examples/...
