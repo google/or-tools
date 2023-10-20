@@ -1248,8 +1248,7 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressInterface::xformBasisStatus(
-    int xpress_basis_status) {
+MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
       return MPSolver::AT_LOWER_BOUND;
@@ -1360,7 +1359,8 @@ void XpressInterface::ExtractNewVariables() {
     std::vector<char> col_names;
 
     bool have_names = false;
-    for (int j = 0, var_idx = last_extracted; j < new_col_count; ++j, ++var_idx) {
+    for (int j = 0, var_idx = last_extracted; j < new_col_count;
+         ++j, ++var_idx) {
       MPVariable const* const var = solver_->variables_[var_idx];
       lb[j] = var->lb();
       ub[j] = var->ub();
@@ -1985,14 +1985,14 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
         }
       }
     } else {
-      for (auto & variable : solver_->variables_)
+      for (auto& variable : solver_->variables_)
         variable->set_solution_value(XPRS_NAN);
     }
 
     // MIP does not have duals
-    for (auto & variable : solver_->variables_)
+    for (auto& variable : solver_->variables_)
       variable->set_reduced_cost(XPRS_NAN);
-    for (auto & constraint : solver_->constraints_)
+    for (auto& constraint : solver_->constraints_)
       constraint->set_dual_value(XPRS_NAN);
   } else {
     // Continuous problem.
