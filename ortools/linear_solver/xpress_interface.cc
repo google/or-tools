@@ -192,7 +192,7 @@ int setobjoffset(const XPRSprob& mLp, double value) {
 }
 
 void addhint(const XPRSprob& mLp, int length, const double solval[],
-                const int colind[]) {
+             const int colind[]) {
   // The OR-Tools API does not allow setting a name for the solution
   // passing NULL to XPRESS will have it generate a unique ID for the solution
   if (int status = XPRSaddmipsol(mLp, length, solval, colind, NULL)) {
@@ -200,9 +200,7 @@ void addhint(const XPRSprob& mLp, int length, const double solval[],
   }
 }
 
-enum CUSTOM_INTERRUPT_REASON {
-  CALLBACK_EXCEPTION = 0
-};
+enum CUSTOM_INTERRUPT_REASON { CALLBACK_EXCEPTION = 0 };
 
 void interruptXPRESS(XPRSprob& xprsProb, CUSTOM_INTERRUPT_REASON reason) {
   // Reason values below 1000 are reserved by XPRESS
@@ -239,9 +237,15 @@ class XpressMPCallbackContext : public MPCallbackContext {
   MPCallbackEvent Event() override { return event_; };
   bool CanQueryVariableValues() override;
   double VariableValue(const MPVariable* variable) override;
-  void AddCut(const LinearRange& cutting_plane) override { LOG(WARNING) << "AddCut is not implemented yet in XPRESS interface"; };
-  void AddLazyConstraint(const LinearRange& lazy_constraint) override { LOG(WARNING) << "AddLazyConstraint is not implemented yet in XPRESS interface"; };
-  double SuggestSolution(const absl::flat_hash_map<const MPVariable*, double>& solution) override;
+  void AddCut(const LinearRange& cutting_plane) override {
+    LOG(WARNING) << "AddCut is not implemented yet in XPRESS interface";
+  };
+  void AddLazyConstraint(const LinearRange& lazy_constraint) override {
+    LOG(WARNING)
+        << "AddLazyConstraint is not implemented yet in XPRESS interface";
+  };
+  double SuggestSolution(
+      const absl::flat_hash_map<const MPVariable*, double>& solution) override;
   int64_t NumExploredNodes() override { return num_nodes_; };
 
   // Call this method to update the internal state of the callback context
@@ -252,7 +256,8 @@ class XpressMPCallbackContext : public MPCallbackContext {
  private:
   XPRSprob* xprsprob_;
   MPCallbackEvent event_;
-  std::vector<double> variable_values_; // same order as MPVariable* elements in MPSolver
+  std::vector<double>
+      variable_values_;  // same order as MPVariable* elements in MPSolver
   int num_nodes_;
 };
 
@@ -324,9 +329,8 @@ class XpressInterface : public MPSolverInterface {
 
   void AddRowConstraint(MPConstraint* ct) override;
   void AddVariable(MPVariable* var) override;
-  void SetCoefficient(MPConstraint* constraint,
-                      MPVariable const* variable, double new_value,
-                      double old_value) override;
+  void SetCoefficient(MPConstraint* constraint, MPVariable const* variable,
+                      double new_value, double old_value) override;
 
   // Clear a constraint from all its terms.
   void ClearConstraint(MPConstraint* constraint) override;
@@ -472,10 +476,10 @@ class XpressInterface : public MPSolverInterface {
   static void MakeRhs(double lb, double ub, double& rhs, char& sense,
                       double& range);
 
-  std::map<std::string, int> &mapStringControls_;
-  std::map<std::string, int> &mapDoubleControls_;
-  std::map<std::string, int> &mapIntegerControls_;
-  std::map<std::string, int> &mapInteger64Controls_;
+  std::map<std::string, int>& mapStringControls_;
+  std::map<std::string, int>& mapDoubleControls_;
+  std::map<std::string, int>& mapIntegerControls_;
+  std::map<std::string, int>& mapInteger64Controls_;
 
   bool SetSolverSpecificParametersAsString(
       const std::string& parameters) override;
@@ -850,7 +854,7 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
   int status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
-  int nReturn=XPRSaddcbmessage(mLp, optimizermsg, (void*) this, 0);
+  int nReturn = XPRSaddcbmessage(mLp, optimizermsg, (void*)this, 0);
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
   CHECK_STATUS(
       XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
