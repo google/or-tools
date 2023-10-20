@@ -1452,9 +1452,9 @@ void XpressInterface::ExtractNewVariables() {
             }
           }
           --cmatbeg;
-          CHECK_STATUS(XPRSaddcols(mLp, new_col_count, nonzeros, obj.get(), cmatbeg,
-                                   cmatind.get(), cmatval.get(), lb.get(),
-                                   ub.get()));
+          CHECK_STATUS(XPRSaddcols(mLp, new_col_count, nonzeros, obj.get(),
+                                   cmatbeg, cmatind.get(), cmatval.get(),
+                                   lb.get(), ub.get()));
           if (have_names) {
             CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(),
                                       0, new_col_count - 1));
@@ -1473,9 +1473,9 @@ void XpressInterface::ExtractNewVariables() {
         cmatind[0] = 0;
         cmatval[0] = 1.0;
 
-        CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(), cmatbeg.data(),
-                                 cmatind.get(), cmatval.get(), lb.get(),
-                                 ub.get()));
+        CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(),
+                                 cmatbeg.data(), cmatind.get(), cmatval.get(),
+                                 lb.get(), ub.get()));
         if (have_names) {
           CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(), 0,
                                     new_col_count - 1));
