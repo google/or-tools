@@ -117,7 +117,7 @@ inline std::string FormatName(absl::string_view name) {
 // Display tabular data by auto-computing cell width. Note that we right align
 // everything but the first row/col that is assumed to be the table name and is
 // left aligned.
-std::string FormatTable(const std::vector<std::vector<std::string>>& table,
+std::string FormatTable(std::vector<std::vector<std::string>>& table,
                         int spacing = 2);
 
 // Returns a in [0, m) such that a * x = 1 modulo m.

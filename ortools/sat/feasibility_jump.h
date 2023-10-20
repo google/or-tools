@@ -29,6 +29,7 @@
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -105,7 +106,8 @@ class FeasibilityJumpSolver : public SubSolver {
                         ModelSharedTimeLimit* shared_time_limit,
                         SharedResponseManager* shared_response,
                         SharedBoundsManager* shared_bounds,
-                        SharedStatistics* shared_stats)
+                        SharedStatistics* shared_stats,
+                        SharedStatTables* stat_tables)
       : SubSolver(name, type),
         linear_model_(linear_model),
         params_(params),
@@ -113,6 +115,7 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_response_(shared_response),
         shared_bounds_(shared_bounds),
         shared_stats_(shared_stats),
+        stat_tables_(stat_tables),
         random_(params_),
         linear_jumps_(
             absl::bind_front(&FeasibilityJumpSolver::ComputeLinearJump, this)),
@@ -231,6 +234,7 @@ class FeasibilityJumpSolver : public SubSolver {
   SharedResponseManager* shared_response_;
   SharedBoundsManager* shared_bounds_ = nullptr;
   SharedStatistics* shared_stats_;
+  SharedStatTables* stat_tables_;
   ModelRandomGenerator random_;
 
   // Synchronization Booleans.

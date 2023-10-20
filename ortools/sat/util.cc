@@ -74,8 +74,13 @@ inline std::string RightAlign(std::string s, int size = 16) {
 
 }  // namespace
 
-std::string FormatTable(const std::vector<std::vector<std::string>>& table,
+std::string FormatTable(std::vector<std::vector<std::string>>& table,
                         int spacing) {
+  if (table.size() > 1) {
+    // We order by name.
+    std::sort(table.begin() + 1, table.end());
+  }
+
   std::vector<int> widths;
   for (const std::vector<std::string>& line : table) {
     if (line.size() > widths.size()) widths.resize(line.size(), spacing);

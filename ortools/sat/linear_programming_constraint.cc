@@ -2529,34 +2529,6 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   }
 }
 
-std::string LinearProgrammingConstraint::Statistics() const {
-  std::string result = "LP statistics:\n";
-  absl::StrAppend(&result, "  final dimension: ", DimensionString(), "\n");
-  absl::StrAppend(&result, "  total number of simplex iterations: ",
-                  FormatCounter(total_num_simplex_iterations_), "\n");
-  absl::StrAppend(&result, "  total num cut propagation: ",
-                  FormatCounter(total_num_cut_propagations_), "\n");
-  absl::StrAppend(&result, "  total num eq cut propagation: ",
-                  FormatCounter(total_num_eq_propagations_), "\n");
-  absl::StrAppend(&result, "  total num cut overflow: ",
-                  FormatCounter(num_cut_overflows_), "\n");
-  absl::StrAppend(&result,
-                  "  total num bad cuts: ", FormatCounter(num_bad_cuts_), "\n");
-  absl::StrAppend(&result, "  total num adjust: ", FormatCounter(num_adjusts_),
-                  "\n");
-  absl::StrAppend(&result, "  total num scaling issues: ",
-                  FormatCounter(num_scaling_issues_), "\n");
-  absl::StrAppend(&result, "  num solves: \n");
-  for (int i = 0; i < num_solves_by_status_.size(); ++i) {
-    if (num_solves_by_status_[i] == 0) continue;
-    absl::StrAppend(&result, "    - #",
-                    glop::GetProblemStatusString(glop::ProblemStatus(i)), ": ",
-                    FormatCounter(num_solves_by_status_[i]), "\n");
-  }
-  absl::StrAppend(&result, constraint_manager_.Statistics());
-  return result;
-}
-
 std::function<IntegerLiteral()>
 LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary() {
   // Gather all 0-1 variables that appear in this LP.

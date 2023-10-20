@@ -32,7 +32,9 @@ jobs:
         with:
           python-version: ${{ matrix.python.version }}
       - name: Update Path
-        run: echo "$HOME/Library/Python/${{ matrix.python.version }}/bin" >> $GITHUB_PATH
+        run: |
+          echo "$HOME/Library/Python/${{ matrix.python.version }}/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Check cmake
         run: cmake --version
       - name: Configure

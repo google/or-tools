@@ -230,12 +230,29 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return average_degeneracy_.CurrentAverage();
   }
 
+  // Stats.
   int64_t total_num_simplex_iterations() const {
     return total_num_simplex_iterations_;
   }
+  int64_t total_num_cut_propagations() const {
+    return total_num_cut_propagations_;
+  }
+  int64_t total_num_eq_propagations() const {
+    return total_num_eq_propagations_;
+  }
+  int64_t num_solves() const { return num_solves_; }
+  int64_t num_adjusts() const { return num_adjusts_; }
+  int64_t num_cut_overflows() const { return num_cut_overflows_; }
+  int64_t num_bad_cuts() const { return num_bad_cuts_; }
+  int64_t num_scaling_issues() const { return num_scaling_issues_; }
 
-  // Returns some statistics about this LP.
-  std::string Statistics() const;
+  const std::vector<int64_t>& num_solves_by_status() const {
+    return num_solves_by_status_;
+  }
+
+  const LinearConstraintManager& constraint_manager() const {
+    return constraint_manager_;
+  }
 
   // Important: this is only temporarily valid.
   IntegerSumLE128* LatestOptimalConstraintOrNull() const {

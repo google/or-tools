@@ -50,7 +50,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -99,6 +98,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
+#include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -2468,6 +2468,9 @@ struct SharedClasses {
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
 
+  // For displaying summary at the end.
+  SharedStatTables stat_tables;
+
   bool SearchIsDone() {
     if (response->ProblemIsSolved()) {
       // This is for cases where the time limit is checked more often.
@@ -2485,7 +2488,8 @@ class FullProblemSolver : public SubSolver {
   FullProblemSolver(const std::string& name,
                     const SatParameters& local_parameters, bool split_in_chunks,
                     SharedClasses* shared, bool stop_at_first_solution = false)
-      : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
+      : SubSolver(stop_at_first_solution ? absl::StrCat("fs_", name) : name,
+                  stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
         stop_at_first_solution_(stop_at_first_solution),
@@ -2535,6 +2539,9 @@ class FullProblemSolver : public SubSolver {
     CpSolverResponse response;
     FillSolveStatsInResponse(local_model_.get(), &response);
     shared_->response->AppendResponseToBeMerged(response);
+    shared_->stat_tables.AddTimingStat(*this);
+    shared_->stat_tables.AddLpStat(name(), local_model_.get());
+    shared_->stat_tables.AddSearchStat(name(), local_model_.get());
   }
 
   bool IsDone() override {
@@ -2645,60 +2652,6 @@ class FullProblemSolver : public SubSolver {
     dtime_since_last_sync_ = 0.0;
   }
 
-  std::vector<std::string> TableLineStats() const override {
-    CpSolverResponse r;
-    FillSolveStatsInResponse(local_model_.get(), &r);
-    return {FormatName(name()),
-            FormatCounter(r.num_booleans()),
-            FormatCounter(r.num_conflicts()),
-            FormatCounter(r.num_branches()),
-            FormatCounter(r.num_restarts()),
-            FormatCounter(r.num_binary_propagations()),
-            FormatCounter(r.num_integer_propagations())};
-  }
-
-  std::string StatisticsString() const override {
-    // Padding.
-    const std::string p4(4, ' ');
-    const std::string p6(6, ' ');
-
-    std::string s;
-    CpSolverResponse r;
-    FillSolveStatsInResponse(local_model_.get(), &r);
-    absl::StrAppend(&s, p4, "Search statistics:\n");
-    absl::StrAppend(&s, p6, "booleans: ", FormatCounter(r.num_booleans()),
-                    "\n");
-    absl::StrAppend(&s, p6, "conflicts: ", FormatCounter(r.num_conflicts()),
-                    "\n");
-    absl::StrAppend(&s, p6, "branches: ", FormatCounter(r.num_branches()),
-                    "\n");
-    absl::StrAppend(&s, p6, "binary_propagations: ",
-                    FormatCounter(r.num_binary_propagations()), "\n");
-    absl::StrAppend(&s, p6, "integer_propagations: ",
-                    FormatCounter(r.num_integer_propagations()), "\n");
-    absl::StrAppend(&s, p6, "restarts: ", FormatCounter(r.num_restarts()),
-                    "\n");
-
-    const auto& lps =
-        *local_model_->GetOrCreate<LinearProgrammingConstraintCollection>();
-    int num_displayed = 0;
-    for (const auto* lp : lps) {
-      if (num_displayed++ > 6) {
-        absl::StrAppend(&s, p4, "Skipping other LPs...\n");
-        absl::StrAppend(&s, p6, "- ", lps.size(), " total independent LPs.\n");
-        break;
-      }
-
-      const std::string raw_statistics = lp->Statistics();
-      const std::vector<absl::string_view> lines =
-          absl::StrSplit(raw_statistics, '\n', absl::SkipEmpty());
-      for (const absl::string_view& line : lines) {
-        absl::StrAppend(&s, p4, line, "\n");
-      }
-    }
-    return s;
-  }
-
  private:
   SharedClasses* shared_;
   const bool split_in_chunks_;
@@ -2725,7 +2678,9 @@ class ObjectiveShavingSolver : public SubSolver {
         shared_(shared),
         local_proto_(*shared->model_proto) {}
 
-  ~ObjectiveShavingSolver() override = default;
+  ~ObjectiveShavingSolver() override {
+    shared_->stat_tables.AddTimingStat(*this);
+  }
 
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;
@@ -2918,6 +2873,10 @@ class FeasibilityPumpSolver : public SubSolver {
     }
   }
 
+  ~FeasibilityPumpSolver() override {
+    shared_->stat_tables.AddTimingStat(*this);
+  }
+
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;
     absl::MutexLock mutex_lock(&mutex_);
@@ -3000,6 +2959,11 @@ class LnsSolver : public SubSolver {
         helper_(helper),
         parameters_(parameters),
         shared_(shared) {}
+
+  ~LnsSolver() override {
+    shared_->stat_tables.AddTimingStat(*this);
+    shared_->stat_tables.AddLnsStat(name(), *generator_);
+  }
 
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;
@@ -3357,18 +3321,6 @@ class LnsSolver : public SubSolver {
     shared_->time_limit->AdvanceDeterministicTime(dtime);
   }
 
-  std::vector<std::string> TableLineStats() const override {
-    const double fully_solved_proportion =
-        static_cast<double>(generator_->num_fully_solved_calls()) /
-        static_cast<double>(std::max(int64_t{1}, generator_->num_calls()));
-    return {FormatName(name()),
-            absl::StrCat(generator_->num_improving_calls(), "/",
-                         generator_->num_calls()),
-            absl::StrFormat("%2.0f%%", 100 * fully_solved_proportion),
-            absl::StrFormat("%0.2f", generator_->difficulty()),
-            absl::StrFormat("%0.2f", generator_->deterministic_limit())};
-  }
-
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
@@ -3523,8 +3475,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
           "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
-          shared.time_limit, shared.response, shared.bounds.get(),
-          shared.stats));
+          shared.time_limit, shared.response, shared.bounds.get(), shared.stats,
+          &shared.stat_tables));
     }
   }
 
@@ -3610,8 +3562,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
       incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
           name, SubSolver::FIRST_SOLUTION, linear_model, local_params,
-          shared.time_limit, shared.response, shared.bounds.get(),
-          shared.stats));
+          shared.time_limit, shared.response, shared.bounds.get(), shared.stats,
+          &shared.stat_tables));
     }
     for (const SatParameters& local_params : GetFirstSolutionParams(
              params, model_proto, num_first_solution_subsolvers)) {
@@ -3840,65 +3792,23 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     NonDeterministicLoop(subsolvers, params.num_workers());
   }
 
+  // We need to delete the other subsolver in order to fill the stat tables.
+  // Note that first solution should already be deleted.
+  // We delete manually as windows release vectors in the opposite order.
+  for (int i = 0; i < subsolvers.size(); ++i) {
+    subsolvers[i].reset();
+  }
+
   // Log statistics.
-  // TODO(user): Store and display first solution solvers.
   if (logger->LoggingIsEnabled()) {
     logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
     SOLVER_LOG(logger, "");
 
-    if (params.log_subsolver_statistics()) {
-      SOLVER_LOG(logger, "Sub-solver detailed search statistics:");
-      for (const auto& subsolver : subsolvers) {
-        if (subsolver == nullptr) continue;
-        const std::string stats = subsolver->StatisticsString();
-        if (stats.empty()) continue;
-        SOLVER_LOG(logger,
-                   absl::StrCat("  '", subsolver->name(), "':\n", stats));
-      }
-      SOLVER_LOG(logger, "");
-    }
-
-    // Generic task timing table.
-    std::vector<std::vector<std::string>> table;
-    table.push_back({"Task timing",
-                     "n [     min,      max]      avg      dev     time",
-                     "n [     min,      max]      avg      dev    dtime"});
-    for (const auto& subsolver : subsolvers) {
-      if (subsolver == nullptr) continue;
-      table.push_back({FormatName(subsolver->name()), subsolver->TimingInfo(),
-                       subsolver->DeterministicTimingInfo()});
-    }
-    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
-
-    // Subsolver tables.
-    table.clear();
-    table.push_back({"Search stats", "Bools", "Conflicts", "Branches",
-                     "Restarts", "BoolPropag", "IntegerPropag"});
-    for (const auto& subsolver : subsolvers) {
-      if (subsolver == nullptr) continue;
-      if (subsolver->type() != SubSolver::FULL_PROBLEM) continue;
-      std::vector<std::string> stats = subsolver->TableLineStats();
-      if (stats.empty()) continue;
-      table.push_back(std::move(stats));
-    }
-    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
-
-    // TODO(user): Split feasibility_jump and pump.
-    table.clear();
-    table.push_back(
-        {"LNS stats", "Improv/Calls", "Closed", "Difficulty", "TimeLimit"});
-    for (const auto& subsolver : subsolvers) {
-      if (subsolver == nullptr) continue;
-      if (subsolver->type() != SubSolver::INCOMPLETE) continue;
-      std::vector<std::string> stats = subsolver->TableLineStats();
-      if (stats.empty()) continue;
-      table.push_back(std::move(stats));
-    }
-    if (table.size() > 1) SOLVER_LOG(logger, FormatTable(table));
+    shared.stat_tables.Display(logger);
 
     shared.response->DisplayImprovementStatistics();
 
-    table.clear();
+    std::vector<std::vector<std::string>> table;
     table.push_back(
         {"Solution repositories", "Added", "Queried", "Ignored", "Synchro"});
     table.push_back(shared.response->SolutionsRepository().TableLineStats());
@@ -3917,11 +3827,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     if (shared.clauses) {
       shared.clauses->LogStatistics(logger);
     }
-  }
-
-  // We delete manually as windows release vectors in the opposite order.
-  for (int i = 0; i < subsolvers.size(); ++i) {
-    subsolvers[i].reset();
   }
 }
 
@@ -4562,6 +4467,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // We use a local_model to share statistic report mechanism with the
     // parallel case. When this model will be destroyed, we will collect some
     // stats that are used to debug/improve internal algorithm.
+    //
+    // TODO(user): Reuse a Subsolver to get the same display as for the
+    // parallel case. Right now we don't have as much stats for single thread!
     Model local_model;
     local_model.Register<SolverLogger>(logger);
     local_model.Register<TimeLimit>(model->GetOrCreate<TimeLimit>());
@@ -4586,24 +4494,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     CpSolverResponse status_response;
     FillSolveStatsInResponse(&local_model, &status_response);
     shared_response_manager->AppendResponseToBeMerged(status_response);
-
-    // Sequential logging of LP statistics.
-    if (logger->LoggingIsEnabled()) {
-      const auto& lps =
-          *local_model.GetOrCreate<LinearProgrammingConstraintCollection>();
-      if (!lps.empty()) {
-        SOLVER_LOG(logger, "");
-        for (const auto* lp : lps) {
-          SOLVER_LOG(logger, lp->Statistics());
-        }
-      }
-    }
   }
 
-  // Extra logging if needed.
+  // Extra logging if needed. Note that these are mainly activated on
+  // --vmodule *some_file*=1 and are here for development.
   if (logger->LoggingIsEnabled()) {
     model->GetOrCreate<SharedStatistics>()->Log(logger);
   }
+
   return shared_response_manager->GetResponse();
 }
 

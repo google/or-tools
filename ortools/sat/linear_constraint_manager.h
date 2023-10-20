@@ -160,19 +160,27 @@ class LinearConstraintManager {
     return expanded_lp_solution_;
   }
 
-  int64_t num_cuts() const { return num_cuts_; }
+  // Stats.
+  int64_t num_constraints() const { return constraint_infos_.size(); }
+  int64_t num_constraint_updates() const { return num_constraint_updates_; }
+  int64_t num_simplifications() const { return num_simplifications_; }
+  int64_t num_merged_constraints() const { return num_merged_constraints_; }
   int64_t num_shortened_constraints() const {
     return num_shortened_constraints_;
   }
+  int64_t num_split_constraints() const { return num_split_constraints_; }
   int64_t num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
+  int64_t num_cuts() const { return num_cuts_; }
+  int64_t num_add_cut_calls() const { return num_add_cut_calls_; }
+
+  const absl::btree_map<std::string, int>& type_to_num_cuts() const {
+    return type_to_num_cuts_;
+  }
 
   // If a debug solution has been loaded, this checks if the given constaint cut
   // it or not. Returns true iff everything is fine and the cut does not violate
   // the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
-
-  // Returns statistics on the cut added.
-  std::string Statistics() const;
 
  private:
   // Heuristic that decide which constraints we should remove from the current

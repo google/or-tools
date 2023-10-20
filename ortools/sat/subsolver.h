@@ -96,10 +96,6 @@ class SubSolver {
   // Returns the type of the subsolver.
   SubsolverType type() const { return type_; }
 
-  // Returns search statistics.
-  virtual std::string StatisticsString() const { return std::string(); }
-  virtual std::vector<std::string> TableLineStats() const { return {}; }
-
   // Note that this is protected by the global execution mutex and so it is
   // called sequentially. Subclasses do not need to call this.
   void AddTaskDuration(double duration_in_seconds) {
