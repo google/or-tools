@@ -1176,6 +1176,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     need_to_be_updated_.clear();
   }
 
+  implication_graph_->RemoveFixedVariables();
   implication_graph_->CleanupAllRemovedVariables();
 
   // Remove all redundant clause containing a removed literal. This avoid to

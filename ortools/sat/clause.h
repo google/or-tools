@@ -725,8 +725,6 @@ class BinaryImplicationGraph : public SatPropagator {
   void RemoveBooleanVariable(
       BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses);
   bool IsRemoved(Literal l) const { return is_removed_[l]; }
-
-  // TODO(user): consider at most ones.
   void CleanupAllRemovedVariables();
 
   // ExpandAtMostOneWithWeight() will increase this, so a client can put a limit

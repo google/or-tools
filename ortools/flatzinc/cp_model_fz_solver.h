@@ -23,6 +23,7 @@ namespace operations_research {
 namespace fz {
 
 struct FlatzincSatParameters {
+  bool search_all_solutions = false;
   bool display_all_solutions = false;
   bool use_free_search = false;
   bool log_search_progress = false;

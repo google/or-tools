@@ -623,7 +623,7 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeGeneralJump(int var) {
     const int64_t min_delta = domain[i].start - current_value;
     const int64_t max_delta = domain[i].end - current_value;
     const auto& [delta, score] = RangeConvexMinimum<int64_t, double>(
-        result, min_delta, max_delta + 1, [&](int64_t delta) -> double {
+        min_delta, max_delta + 1, [&](int64_t delta) -> double {
           return ComputeScore(ScanWeights(), var, delta, /*linear_only=*/false);
         });
     if (score < result.second) result = std::make_pair(delta, score);

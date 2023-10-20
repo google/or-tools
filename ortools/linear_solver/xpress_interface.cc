@@ -1217,7 +1217,15 @@ void XpressInterface::ClearObjective() {
         ++j;
       }
     }
-    if (j > 0) CHECK_STATUS(XPRSchgobj(mLp, j, ind.get(), zero.get()));
+    if (j > 0) {
+      LOG(ERROR) << "calling XPRSchgobj ... with ncols=" << j << " >>>>>>";
+      LOG(ERROR) << "calling XPRSchgobj ... ind[0]=" << ind[0] << " >>>>>>";
+      LOG(ERROR) << "calling XPRSchgobj ... zero[0]=" << zero[0] << " >>>>>>";
+      LOG(ERROR) << "calling XPRSchgobj ... with coeffs.size()=" << coeffs.size() << " >>>>>>";
+      auto status = XPRSchgobj(mLp, j, ind.get(), zero.get());
+      LOG(ERROR) << "status of XPRSchgobj is " << status << " >>>>>>";
+      CHECK_STATUS(status);
+    }
     CHECK_STATUS(setobjoffset(mLp, 0.0));
   } else {
     InvalidateModelSynchronization();
@@ -2089,7 +2097,7 @@ void XpressInterface::Write(const std::string& filename) {
 MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
   return new XpressInterface(solver, mip);
 }
-
+// TODO useless ?
 template <class Container>
 void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
   std::stringstream ss(str);

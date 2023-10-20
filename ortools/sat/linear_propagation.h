@@ -190,7 +190,7 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // We try to pack the struct as much as possible. Using a maximum size of
   // 1 << 29 should be okay since we split long constraint anyway. Technically
   // we could use int16_t or even int8_t if we wanted, but we just need to make
-  // sure we do split ALL constraints, not just the one from the initial mode.
+  // sure we do split ALL constraints, not just the one from the initial model.
   //
   // TODO(user): We could also move some less often used fields out. like
   // initial size and enf_id that are only needed when we push something.

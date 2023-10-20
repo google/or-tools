@@ -103,7 +103,7 @@ class SatSolver {
   // solve a subproblem where some variables are fixed. Note that it is more
   // efficient to add such unit clause before all the others.
   // Returns false if the problem is detected to be UNSAT.
-  bool AddUnitClause(Literal true_literal);
+  ABSL_MUST_USE_RESULT bool AddUnitClause(Literal true_literal);
 
   // Same as AddProblemClause() below, but for small clauses.
   bool AddBinaryClause(Literal a, Literal b);
@@ -311,11 +311,11 @@ class SatSolver {
   // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
   // reached or the model was proven UNSAT. Returns IsModelUnsat().
-  bool FinishPropagation();
+  ABSL_MUST_USE_RESULT bool FinishPropagation();
 
   // Like Backtrack(0) but make sure the propagation is finished and return
   // false if unsat was detected. This also removes any assumptions level.
-  bool ResetToLevelZero();
+  ABSL_MUST_USE_RESULT bool ResetToLevelZero();
 
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
@@ -443,7 +443,7 @@ class SatSolver {
 
   // Performs propagation of the recently enqueued elements.
   // Mainly visible for testing.
-  bool Propagate();
+  ABSL_MUST_USE_RESULT bool Propagate();
 
   // This must be called at level zero. It will spend the given num decision and
   // use propagation to try to minimize some clauses from the database.

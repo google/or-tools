@@ -1105,7 +1105,7 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
     arg->add_domain(0);
     AddLinearExpressionToLinearConstraint(target_expr, 1, arg);
     AddLinearExpressionToLinearConstraint(expr, -1, arg);
-    if (!CanonicalizeLinear(new_ct)) return false;
+    CanonicalizeLinear(new_ct);
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
@@ -1119,7 +1119,7 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
     arg->add_domain(0);
     AddLinearExpressionToLinearConstraint(target_expr, 1, arg);
     AddLinearExpressionToLinearConstraint(expr, 1, arg);
-    if (!CanonicalizeLinear(new_ct)) return false;
+    CanonicalizeLinear(new_ct);
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
@@ -1418,7 +1418,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     literals.push_back(lit);
   }
 
-  // This is a bool constraint!
+  // This is a Boolean constraint!
   context_->UpdateRuleStats("int_prod: all Boolean.");
   {
     ConstraintProto* new_ct = context_->working_model->add_constraints();
@@ -2149,7 +2149,7 @@ bool CpModelPresolver::AddVarAffineRepresentativeFromLinearEquality(
 //
 // We also handle the special case of having two non-zero literals modulo 2.
 //
-// TODO(user): Use more complex algo to detect all the cases? By spliting the
+// TODO(user): Use more complex algo to detect all the cases? By splitting the
 // constraint in two, and computing the gcd of each halves, we can reduce the
 // problem to two problem of half size. So at least we can do it in O(n log n).
 bool CpModelPresolver::PresolveLinearEqualityWithModulo(ConstraintProto* ct) {
@@ -3599,13 +3599,16 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
       if (!SubstituteVariable(
               var, var_coeff, *ct,
               context_->working_model->mutable_constraints(c))) {
-        // The function do not modify the constraint.
-        // It is possible we already started performing substitution, but that
-        // is usually not the case, and still correct.
+        // The function above can fail because of overflow, but also if the
+        // constraint was not canonicalized yet and the variable is actually not
+        // there (we have var - var for instance).
         //
-        // This can happen if the constraint was not canonicalized and the
-        // variable is actually not there (we have var - var for instance).
-        CanonicalizeLinear(context_->working_model->mutable_constraints(c));
+        // TODO(user): we canonicalize it right away, but I am not sure it is
+        // really needed.
+        if (CanonicalizeLinear(
+                context_->working_model->mutable_constraints(c))) {
+          context_->UpdateConstraintVariableUsage(c);
+        }
         abort = true;
         break;
       }
@@ -4666,10 +4669,9 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
-  if (HasEnforcementLiteral(*ct)) return false;
   if (ct->table().vars().empty()) {
     context_->UpdateRuleStats("table: empty constraint");
-    return RemoveConstraint(ct);
+    return MarkConstraintAsFalse(ct);
   }
 
   const int initial_num_vars = ct->table().vars_size();
@@ -4803,6 +4805,9 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
 
   // Nothing more to do for negated tables.
   if (ct->table().negated()) return changed;
+
+  // And for constraints with enforcement literals.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   // Filter the variable domains.
   for (int j = 0; j < num_vars; ++j) {

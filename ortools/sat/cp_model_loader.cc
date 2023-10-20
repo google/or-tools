@@ -51,11 +51,13 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -863,7 +865,9 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
         if (intermediate % coeff2 != 0) {
           // Using this function deals properly with UNSAT.
           ++num_set_to_false;
-          sat_solver->AddUnitClause(value_literal.literal.Negated());
+          if (!sat_solver->AddUnitClause(value_literal.literal.Negated())) {
+            return;
+          }
           continue;
         }
         ++num_associations;
@@ -1203,7 +1207,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       }
       m->Add(ClauseConstraint(clause));
     } else {
-      VLOG(1) << "Trivially UNSAT constraint: " << ct.DebugString();
+      VLOG(1) << "Trivially UNSAT constraint: " << ct;
       m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
     }
     return;
@@ -1320,7 +1324,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
         encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
-      VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
+      VLOG(3) << "Load AC version of " << ct << ", var0 domain = "
               << integer_trail->InitialVariableDomain(vars[0])
               << ", var1 domain = "
               << integer_trail->InitialVariableDomain(vars[1]);
@@ -1336,8 +1340,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
         single_value != min_sum && single_value != max_sum &&
         encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
-      VLOG(3) << "Load NAC version of " << ct.DebugString()
-              << ", var0 domain = "
+      VLOG(3) << "Load NAC version of " << ct << ", var0 domain = "
               << integer_trail->InitialVariableDomain(vars[0])
               << ", var1 domain = "
               << integer_trail->InitialVariableDomain(vars[1])
@@ -1469,19 +1472,36 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const AffineExpression prod = mapping->Affine(ct.int_prod().target());
-  CHECK_EQ(ct.int_prod().exprs_size(), 2)
-      << "General int_prod not supported yet.";
-
-  const AffineExpression expr0 = mapping->Affine(ct.int_prod().exprs(0));
-  const AffineExpression expr1 = mapping->Affine(ct.int_prod().exprs(1));
-  if (VLOG_IS_ON(1)) {
-    LinearConstraintBuilder builder(m);
-    if (m->GetOrCreate<ProductDecomposer>()->TryToLinearize(expr0, expr1,
-                                                            &builder)) {
-      VLOG(1) << "Product " << ct.DebugString() << " can be linearized";
+  std::vector<AffineExpression> terms;
+  for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
+    terms.push_back(mapping->Affine(expr));
+  }
+  switch (terms.size()) {
+    case 0: {
+      auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+      auto* sat_solver = m->GetOrCreate<SatSolver>();
+      if (!integer_trail->Enqueue(prod.LowerOrEqual(1), {}) ||
+          !integer_trail->Enqueue(prod.GreaterOrEqual(1), {})) {
+        sat_solver->NotifyThatModelIsUnsat();
+      }
+      break;
+    }
+    case 1: {
+      LinearConstraintBuilder builder(m, /*lb=*/0, /*ub=*/0);
+      builder.AddTerm(prod, 1);
+      builder.AddTerm(terms[0], -1);
+      LoadLinearConstraint(builder.Build(), m);
+      break;
+    }
+    case 2: {
+      m->Add(ProductConstraint(terms[0], terms[1], prod));
+      break;
+    }
+    default: {
+      LOG(FATAL) << "Loading int_prod with arity > 2, should not be here.";
+      break;
     }
   }
-  m->Add(ProductConstraint(expr0, expr1, prod));
 }
 
 void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
@@ -1497,7 +1517,7 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
       LinearConstraintBuilder builder(m);
       if (m->GetOrCreate<ProductDecomposer>()->TryToLinearize(num, denom,
                                                               &builder)) {
-        VLOG(1) << "Division " << ct.DebugString() << " can be linearized";
+        VLOG(1) << "Division " << ct << " can be linearized";
       }
     }
     m->Add(DivisionConstraint(num, denom, div));

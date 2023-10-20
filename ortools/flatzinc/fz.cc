@@ -21,9 +21,7 @@
 #include <signal.h>
 #endif  // __GNUC__
 
-#include <csignal>
 #include <iostream>
-#include <limits>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -38,7 +36,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
@@ -46,7 +43,9 @@
 #include "ortools/util/logging.h"
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
-ABSL_FLAG(bool, all_solutions, false, "Search for all solutions.");
+ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
+ABSL_FLAG(bool, display_all_solutions, false,
+          "Display all improving solutions.");
 ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
@@ -67,7 +66,8 @@ namespace operations_research {
 namespace fz {
 
 std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
-  char all_param[] = "--all_solutions";
+  char all_param[] = "--search_all_solutions";
+  char print_solutions[] = "--display_all_solutions";
   char free_param[] = "--free_search";
   char threads_param[] = "--threads";
   char logging_param[] = "--fz_logging";
@@ -79,6 +79,9 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;
+    }
+    if (strcmp((*argv)[i], "-i") == 0) {
+      (*argv)[i] = print_solutions;
     }
     if (strcmp((*argv)[i], "-f") == 0) {
       (*argv)[i] = free_param;
@@ -206,7 +209,7 @@ int main(int argc, char** argv) {
   operations_research::SolverLogger logger;
   if (absl::GetFlag(FLAGS_ortools_mode)) {
     logger.EnableLogging(true);
-    logger.SetLogToStdOut(false);
+    // log_to_stdout is disabled later.
     logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
   } else {
     logger.EnableLogging(true);
@@ -218,7 +221,8 @@ int main(int argc, char** argv) {
           input, !absl::GetFlag(FLAGS_read_from_stdin), &logger);
 
   operations_research::fz::FlatzincSatParameters parameters;
-  parameters.display_all_solutions = absl::GetFlag(FLAGS_all_solutions);
+  parameters.display_all_solutions = absl::GetFlag(FLAGS_display_all_solutions);
+  parameters.search_all_solutions = absl::GetFlag(FLAGS_search_all_solutions);
   parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
   parameters.log_search_progress =
       absl::GetFlag(FLAGS_fz_logging) || !absl::GetFlag(FLAGS_ortools_mode);

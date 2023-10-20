@@ -625,7 +625,10 @@ class IntegerEncoder {
       const Literal literal_true =
           Literal(sat_solver_->NewBooleanVariable(), true);
       literal_index_true_ = literal_true.Index();
-      sat_solver_->AddUnitClause(literal_true);
+
+      // This might return false if we are already UNSAT.
+      // TODO(user): Make sure we abort right away on unsat!
+      (void)sat_solver_->AddUnitClause(literal_true);
     }
     return Literal(literal_index_true_);
   }

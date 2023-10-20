@@ -306,7 +306,7 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
     for (IntegerValue time = min_start; time < max_end; ++time) {
       std::vector<LiteralWithCoeff> literals_with_coeff;
       for (int t = 0; t < num_tasks; ++t) {
-        sat_solver->Propagate();
+        if (!sat_solver->Propagate()) return;
         const IntegerValue start_min = integer_trail->LowerBound(start_vars[t]);
         const IntegerValue end_max = integer_trail->UpperBound(end_vars[t]);
         if (end_max <= time || time < start_min || fixed_demands[t] == 0) {
