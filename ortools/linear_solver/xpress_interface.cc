@@ -1222,7 +1222,9 @@ void XpressInterface::ClearObjective() {
       LOG(ERROR) << "calling XPRSchgobj ... ind[0]=" << ind[0] << " >>>>>>";
       LOG(ERROR) << "calling XPRSchgobj ... zero[0]=" << zero[0] << " >>>>>>";
       LOG(ERROR) << "calling XPRSchgobj ... with coeffs.size()=" << coeffs.size() << " >>>>>>";
-      CHECK_STATUS(XPRSchgobj(mLp, j, ind.get(), zero.get()));
+      auto status = XPRSchgobj(mLp, j, ind.get(), zero.get());
+      LOG(ERROR) << "status of XPRSchgobj is " << status << " >>>>>>";
+      CHECK_STATUS(status);
     }
     CHECK_STATUS(setobjoffset(mLp, 0.0));
   } else {
