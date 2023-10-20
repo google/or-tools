@@ -1218,13 +1218,7 @@ void XpressInterface::ClearObjective() {
       }
     }
     if (j > 0) {
-      LOG(ERROR) << "calling XPRSchgobj ... with ncols=" << j << " >>>>>>";
-      LOG(ERROR) << "calling XPRSchgobj ... ind[0]=" << ind[0] << " >>>>>>";
-      LOG(ERROR) << "calling XPRSchgobj ... zero[0]=" << zero[0] << " >>>>>>";
-      LOG(ERROR) << "calling XPRSchgobj ... with coeffs.size()=" << coeffs.size() << " >>>>>>";
-      auto status = XPRSchgobj(mLp, j, ind.get(), zero.get());
-      LOG(ERROR) << "status of XPRSchgobj is " << status << " >>>>>>";
-      CHECK_STATUS(status);
+      CHECK_STATUS(XPRSchgobj(mLp, j, ind.get(), zero.get()));
     }
     CHECK_STATUS(setobjoffset(mLp, 0.0));
   } else {
