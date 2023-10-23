@@ -204,7 +204,7 @@ PRESTAGES := base swig
 define make-prestage-target =
 #$$(info PRESTAGE: $1)
 #$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
-targets_$1 = $(addsuffix _$1, $(DISTROS))
+targets_$1 := $(addsuffix _$1, $(DISTROS))
 .PHONY: all_$1 $$(targets_$1)
 all_$1: $$(targets_$1)
 $$(targets_$1): %_$1: docker/%/Dockerfile
@@ -212,7 +212,7 @@ $$(targets_$1): %_$1: docker/%/Dockerfile
 	${DOCKER_BUILD_CMD} --target=$1 --tag ${IMAGE}:$$*_$1 -f $$< ..
 
 #$$(info Create targets: save_all_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))) (debug).)
-save_targets_$1 = $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
+save_targets_$1 := $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: save_all_$1 $$(save_targets_$1)
 save_all_$1: $$(save_targets_$1)
 $$(save_targets_$1): save_%_$1: cache/%/docker_$1.tar
@@ -222,13 +222,13 @@ cache/%/docker_$1.tar: %_$1
 	docker save ${IMAGE}:$$*_$1 -o $$@
 
 #$$(info Create targets: $(addprefix sh_, $(addsuffix _$1, $(DISTROS))) (debug).)
-sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
+sh_targets_$1 := $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: $$(sh_targets_$1)
 $$(sh_targets_$1): sh_%_$1: %_$1
 	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$$*_$1 ${IMAGE}:$$*_$1
 
 #$$(info Create targets: clean_all_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
-clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
+clean_targets_$1 := $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_all_$1 $$(clean_targets_$1)
 clean_all_$1: $$(clean_targets_$1)
 $$(clean_targets_$1): clean_%_$1:
@@ -248,25 +248,32 @@ STAGES := env devel build test install_env install_devel install_build install_t
 define make-stage-target =
 #$$(info STAGE: $1)
 #$$(info Create targets: all_$1 $(addsuffix _$1, $(DISTROS)).)
-targets_$1 = $(addsuffix _$1, $(DISTROS))
+targets_$1 := $(addsuffix _$1, $(DISTROS))
 .PHONY: all_$1 $$(targets_$1)
 all_$1: $$(targets_$1)
 $$(targets_$1): %_$1: $(addprefix %_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addsuffix _$1, $(LANGUAGES)).)
-targets_$1 = $(addsuffix _$1, $(LANGUAGES))
+targets_$1 := $(addsuffix _$1, $(LANGUAGES))
 .PHONY: $$(targets_$1)
 $$(targets_$1): %_$1: $(addsuffix _$1, $(addsuffix _%, $(DISTROS)))
 
-#$$(info Create targets: $(addsuffix _cpp_$1, $(DISTROS)))
-cpp_targets_$1 = $(addsuffix _cpp_$1, $(DISTROS))
-#$$(info Create targets: $(addsuffix _dotnet_$1, $(DISTROS)))
-dotnet_targets_$1 = $(addsuffix _dotnet_$1, $(DISTROS))
-#$$(info Create targets: $(addsuffix _java_$1, $(DISTROS)))
-java_targets_$1 = $(addsuffix _java_$1, $(DISTROS))
-#$$(info Create targets: $(addsuffix _python_$1, $(DISTROS)))
-python_targets_$1 = $(addsuffix _python_$1, $(DISTROS))
-.PHONY: $$(cpp_targets_$1) $$(dotnet_targets_$1) $$(java_targets_$1) $$(python_targets_$1)
+#$$(info Create targets: all_cpp_$1 $(addsuffix _cpp_$1, $(DISTROS)))
+cpp_targets_$1 := $(addsuffix _cpp_$1, $(DISTROS))
+.PHONY: all_cpp_$1 $$(cpp_targets_$1)
+all_cpp_$1: $$(cpp_targets_$1)
+#$$(info Create targets: all_dotnet_$1 $(addsuffix _dotnet_$1, $(DISTROS)))
+dotnet_targets_$1 := $(addsuffix _dotnet_$1, $(DISTROS))
+.PHONY: all_dotnet_$1 $$(dotnet_targets_$1)
+all_dotnet_$1: $$(dotnet_targets_$1)
+#$$(info Create targets: all_java_$1 $(addsuffix _java_$1, $(DISTROS)))
+java_targets_$1 := $(addsuffix _java_$1, $(DISTROS))
+.PHONY: all_java_$1 $$(java_targets_$1)
+all_java_$1: $$(java_targets_$1)
+#$$(info Create targets: all_python_$1 $(addsuffix _python_$1, $(DISTROS)))
+python_targets_$1 := $(addsuffix _python_$1, $(DISTROS))
+.PHONY: all_python_$1 $$(python_targets_$1)
+all_python_$1: $$(python_targets_$1)
 
 $$(cpp_targets_$1): %_cpp_$1: docker/%/cpp.Dockerfile %_base
 	#@docker image rm -f ${IMAGE}:$$*_cpp_$1 2>/dev/null
@@ -283,24 +290,24 @@ $$(python_targets_$1): %_python_$1: docker/%/python.Dockerfile %_swig
 
 # Save $1 docker images (debug).
 #$$(info Create targets: save_all_$1 $(addprefix save_, $(addsuffix _$1, $(DISTROS))).)
-targets_$1 = $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
+targets_$1 := $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: save_all_$1 $$(targets_$1)
 save_all_$1: $$(targets_$1)
 $$(targets_$1): save_%_$1: $(addprefix save_%_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addprefix save_, $(addsuffix _$1, $(LANGUAGES))).)
-targets_$1 = $(addprefix save_, $(addsuffix _$1, $(LANGUAGES)))
+targets_$1 := $(addprefix save_, $(addsuffix _$1, $(LANGUAGES)))
 .PHONY: $$(targets_$1)
 $$(targets_$1): save_%_$1: $(addprefix save_, $(addsuffix _%_$1, $(DISTROS)))
 
 #$$(info Create targets: $(addprefix save_, $(addsuffix _cpp_$1, $(DISTROS))))
-cpp_targets_$1 = $(addprefix save_, $(addsuffix _cpp_$1, $(DISTROS)))
+cpp_targets_$1 := $(addprefix save_, $(addsuffix _cpp_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix save_, $(addsuffix _dotnet_$1, $(DISTROS))))
-dotnet_targets_$1 = $(addprefix save_, $(addsuffix _dotnet_$1, $(DISTROS)))
+dotnet_targets_$1 := $(addprefix save_, $(addsuffix _dotnet_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix save_, $(addsuffix _java_$1, $(DISTROS))))
-java_targets_$1 = $(addprefix save_, $(addsuffix _java_$1, $(DISTROS)))
+java_targets_$1 := $(addprefix save_, $(addsuffix _java_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix save_, $(addsuffix _python_$1, $(DISTROS))))
-python_targets_$1 = $(addprefix save_, $(addsuffix _python_$1, $(DISTROS)))
+python_targets_$1 := $(addprefix save_, $(addsuffix _python_$1, $(DISTROS)))
 .PHONY: $$(cpp_targets_$1) $$(dotnet_targets_$1) $$(java_targets_$1) $$(python_targets_$1)
 
 $$(cpp_targets_$1): save_%_cpp_$1: cache/%/docker_cpp_$1.tar
@@ -326,13 +333,13 @@ cache/%/docker_python_$1.tar: %_python_$1
 
 # Run a container using the <distro>_<lang>_$1 image (debug).
 #$$(info Create targets: $(addprefix sh_, $(addsuffix _cpp_$1, $(DISTROS))))
-cpp_targets_$1 = $(addprefix sh_, $(addsuffix _cpp_$1, $(DISTROS)))
+cpp_targets_$1 := $(addprefix sh_, $(addsuffix _cpp_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix sh_, $(addsuffix _dotnet_$1, $(DISTROS))))
-dotnet_targets_$1 = $(addprefix sh_, $(addsuffix _dotnet_$1, $(DISTROS)))
+dotnet_targets_$1 := $(addprefix sh_, $(addsuffix _dotnet_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix sh_, $(addsuffix _java_$1, $(DISTROS))))
-java_targets_$1 = $(addprefix sh_, $(addsuffix _java_$1, $(DISTROS)))
+java_targets_$1 := $(addprefix sh_, $(addsuffix _java_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix sh_, $(addsuffix _python_$1, $(DISTROS))))
-python_targets_$1 = $(addprefix sh_, $(addsuffix _python_$1, $(DISTROS)))
+python_targets_$1 := $(addprefix sh_, $(addsuffix _python_$1, $(DISTROS)))
 .PHONY: $$(cpp_targets_$1) $$(dotnet_targets_$1) $$(java_targets_$1) $$(python_targets_$1)
 
 $$(cpp_targets_$1): sh_%_cpp_$1: %_cpp_$1
@@ -346,24 +353,24 @@ $$(python_targets_$1): sh_%_python_$1: %_python_$1
 
 # Clean $1 docker images.
 #$$(info Create targets: clean_all_$1 $(addprefix clean_, $(addsuffix _$1, $(DISTROS))).)
-targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
-.PHONY: clean_all_$1 $(targets_$1)
+targets_$1 := $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
+.PHONY: clean_all_$1 $$(targets_$1)
 clean_all_$1: $$(targets_$1)
 $$(targets_$1): clean_%_$1: $(addprefix clean_%_, $(addsuffix _$1, $(LANGUAGES)))
 
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _$1, $(LANGUAGES))).)
-targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(LANGUAGES)))
+targets_$1 := $(addprefix clean_, $(addsuffix _$1, $(LANGUAGES)))
 .PHONY: $$(targets_$1)
 $$(targets_$1): clean_%_$1: $(addprefix clean_, $(addsuffix _%_$1, $(DISTROS)))
 
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _cpp_$1, $(DISTROS))))
-cpp_targets_$1 = $(addprefix clean_, $(addsuffix _cpp_$1, $(DISTROS)))
+cpp_targets_$1 := $(addprefix clean_, $(addsuffix _cpp_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _dotnet_$1, $(DISTROS))))
-dotnet_targets_$1 = $(addprefix clean_, $(addsuffix _dotnet_$1, $(DISTROS)))
+dotnet_targets_$1 := $(addprefix clean_, $(addsuffix _dotnet_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _java_$1, $(DISTROS))))
-java_targets_$1 = $(addprefix clean_, $(addsuffix _java_$1, $(DISTROS)))
+java_targets_$1 := $(addprefix clean_, $(addsuffix _java_$1, $(DISTROS)))
 #$$(info Create targets: $(addprefix clean_, $(addsuffix _python_$1, $(DISTROS))))
-python_targets_$1 = $(addprefix clean_, $(addsuffix _python_$1, $(DISTROS)))
+python_targets_$1 := $(addprefix clean_, $(addsuffix _python_$1, $(DISTROS)))
 .PHONY: $$(cpp_targets_$1) $$(dotnet_targets_$1) $$(java_targets_$1) $$(python_targets_$1)
 
 $$(cpp_targets_$1): clean_%_cpp_$1:
