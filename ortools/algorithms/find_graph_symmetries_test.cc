@@ -43,13 +43,11 @@
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/dump_vars.h"
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/path.h"
 #include "ortools/graph/io.h"
 #include "ortools/graph/util.h"
-#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace {

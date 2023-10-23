@@ -2622,6 +2622,22 @@ bool BuildMaxAffineUpConstraint(
     return false;
   }
 
+  // Checks target * delta_x for overflow.
+  int64_t abs_magnitude = std::abs(target.offset.value());
+  for (int i = 0; i < target.vars.size(); ++i) {
+    const IntegerVariable var = target.vars[i];
+    const IntegerValue var_min = integer_trail->LevelZeroLowerBound(var);
+    const IntegerValue var_max = integer_trail->LevelZeroUpperBound(var);
+    abs_magnitude = CapAdd(
+        CapProd(std::max(std::abs(var_min.value()), std::abs(var_max.value())),
+                std::abs(target.coeffs[i].value())),
+        abs_magnitude);
+  }
+  if (AtMinOrMaxInt64(abs_magnitude) ||
+      AtMinOrMaxInt64(CapProd(abs_magnitude, delta_x.value()))) {
+    return false;
+  }
+
   builder->ResetBounds(kMinIntegerValue, delta_x * y_at_min - delta_y * x_min);
   builder->AddLinearExpression(target, delta_x);
   builder->AddTerm(var, -delta_y);

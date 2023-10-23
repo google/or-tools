@@ -354,18 +354,22 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
     product_domain = product_domain.ContinuousMultiplicationBy(
         {MinOfExpression(model, expr), MaxOfExpression(model, expr)});
   }
+
   if (product_domain.Max() <= -std ::numeric_limits<int64_t>::max() ||
       product_domain.Min() >= std::numeric_limits<int64_t>::max()) {
     return absl::StrCat("integer overflow in constraint: ",
                         ProtobufShortDebugString(ct));
   }
-  if ((product_domain.Max() == std::numeric_limits<int64_t>::max() &&
-       product_domain.Min() < 0) ||
-      (product_domain.Min() == std::numeric_limits<int64_t>::min() &&
-       product_domain.Max() > 0)) {
+
+  // We need to expand the product when its arity is > 2. In that case, we must
+  // be strict with overflows.
+  if (ct.int_prod().exprs_size() > 2 &&
+      (product_domain.Max() >= std ::numeric_limits<int64_t>::max() ||
+       product_domain.Min() <= -std::numeric_limits<int64_t>::max())) {
     return absl::StrCat("Potential integer overflow in constraint: ",
                         ProtobufShortDebugString(ct));
   }
+
   return "";
 }
 

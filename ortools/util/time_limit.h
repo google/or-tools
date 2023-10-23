@@ -228,6 +228,19 @@ class TimeLimit {
   }
 
   /**
+   * Same as RegisterExternalBooleanAsLimit() but register a second Boolean.
+   * We have seen that in some situation two Booleans are required, but we
+   * haven't needed more than two yet.
+   *
+   * Note(user): It was also easier to just add a second one rather to refactor
+   * all clients to use a vector for instance.
+   */
+  void RegisterSecondaryExternalBooleanAsLimit(
+      std::atomic<bool>* external_boolean_as_limit) {
+    secondary_external_boolean_as_limit_ = external_boolean_as_limit;
+  }
+
+  /**
    * Returns the current external Boolean limit.
    */
   std::atomic<bool>* ExternalBooleanAsLimit() const {
@@ -240,6 +253,12 @@ class TimeLimit {
    */
   template <typename Parameters>
   void ResetLimitFromParameters(const Parameters& parameters);
+
+  /**
+   * Sets time limits equal to the min of the current one and the passed limit.
+   * If the passed limit contain an external Boolean, replace the current one
+   * with it. Not that this does not change the secondary Boolean.
+   */
   void MergeWithGlobalTimeLimit(TimeLimit* other);
 
   /**
@@ -276,7 +295,8 @@ class TimeLimit {
   double deterministic_limit_;
   double elapsed_deterministic_time_;
 
-  std::atomic<bool>* external_boolean_as_limit_;
+  std::atomic<bool>* external_boolean_as_limit_ = nullptr;
+  std::atomic<bool>* secondary_external_boolean_as_limit_ = nullptr;
 
 #ifndef NDEBUG
   // Contains the values of the deterministic time counters.
@@ -472,6 +492,10 @@ inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit* other) {
 inline bool TimeLimit::LimitReached() {
   if (external_boolean_as_limit_ != nullptr &&
       external_boolean_as_limit_->load()) {
+    return true;
+  }
+  if (secondary_external_boolean_as_limit_ != nullptr &&
+      secondary_external_boolean_as_limit_->load()) {
     return true;
   }
 

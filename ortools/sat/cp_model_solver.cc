@@ -2493,76 +2493,70 @@ class FullProblemSolver : public SubSolver {
         shared_(shared),
         split_in_chunks_(split_in_chunks),
         stop_at_first_solution_(stop_at_first_solution),
-        local_model_(std::make_unique<Model>(name)) {
+        local_model_(name) {
     // Setup the local model parameters and time limit.
-    *(local_model_->GetOrCreate<SatParameters>()) = local_parameters;
+    *(local_model_.GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(
-        local_model_->GetOrCreate<TimeLimit>());
+        local_model_.GetOrCreate<TimeLimit>());
 
     if (stop_at_first_solution) {
-      local_model_->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-          shared_->response->first_solution_solvers_should_stop());
+      local_model_.GetOrCreate<TimeLimit>()
+          ->RegisterSecondaryExternalBooleanAsLimit(
+              shared_->response->first_solution_solvers_should_stop());
     }
 
     if (shared->response != nullptr) {
-      local_model_->Register<SharedResponseManager>(shared->response);
+      local_model_.Register<SharedResponseManager>(shared->response);
     }
 
     if (shared->lp_solutions != nullptr) {
-      local_model_->Register<SharedLPSolutionRepository>(
+      local_model_.Register<SharedLPSolutionRepository>(
           shared->lp_solutions.get());
     }
 
     if (shared->incomplete_solutions != nullptr) {
-      local_model_->Register<SharedIncompleteSolutionManager>(
+      local_model_.Register<SharedIncompleteSolutionManager>(
           shared->incomplete_solutions.get());
     }
 
     if (shared->bounds != nullptr) {
-      local_model_->Register<SharedBoundsManager>(shared->bounds.get());
+      local_model_.Register<SharedBoundsManager>(shared->bounds.get());
     }
 
     if (shared->clauses != nullptr) {
-      local_model_->Register<SharedClausesManager>(shared->clauses.get());
+      local_model_.Register<SharedClausesManager>(shared->clauses.get());
     }
 
     if (local_parameters.use_shared_tree_search()) {
-      local_model_->Register<SharedTreeManager>(shared->shared_tree_manager);
+      local_model_.Register<SharedTreeManager>(shared->shared_tree_manager);
     }
 
     // TODO(user): For now we do not count LNS statistics. We could easily
     // by registering the SharedStatistics class with LNS local model.
-    local_model_->Register<SharedStatistics>(shared_->stats);
+    local_model_.Register<SharedStatistics>(shared_->stats);
   }
 
   ~FullProblemSolver() override {
     CpSolverResponse response;
-    FillSolveStatsInResponse(local_model_.get(), &response);
+    FillSolveStatsInResponse(&local_model_, &response);
     shared_->response->AppendResponseToBeMerged(response);
     shared_->stat_tables.AddTimingStat(*this);
-    shared_->stat_tables.AddLpStat(name(), local_model_.get());
-    shared_->stat_tables.AddSearchStat(name(), local_model_.get());
+    shared_->stat_tables.AddLpStat(name(), &local_model_);
+    shared_->stat_tables.AddSearchStat(name(), &local_model_);
   }
 
   bool IsDone() override {
-    {
-      absl::MutexLock mutex_lock(&mutex_);
-      if (!previous_task_is_completed_) return false;
-    }
-
-    if (stop_at_first_solution_ &&
-        *shared_->response->first_solution_solvers_should_stop()) {
-      return true;
-    }
-    return false;
+    return stop_at_first_solution_ &&
+           shared_->response->first_solution_solvers_should_stop()->load();
   }
 
   bool TaskIsAvailable() override {
+    if (IsDone()) return false;
+
     // Tricky: we don't want this in IsDone() otherwise the order of destruction
     // is unclear, and currently we always report the stats of the last
-    // destroyed full solver (i.e. the probing one !).
-    //
-    // TODO(user): This do not make much sense.
+    // destroyed full solver (i.e. the first created with is the one with the
+    // parameter provided by the user).
     if (shared_->SearchIsDone()) return false;
 
     absl::MutexLock mutex_lock(&mutex_);
@@ -2580,7 +2574,7 @@ class FullProblemSolver : public SubSolver {
     }
     return [this]() {
       if (solving_first_chunk_) {
-        LoadCpModel(*shared_->model_proto, local_model_.get());
+        LoadCpModel(*shared_->model_proto, &local_model_);
 
         // Level zero variable bounds sharing. It is important to register
         // that after the probing that takes place in LoadCpModel() otherwise
@@ -2588,9 +2582,9 @@ class FullProblemSolver : public SubSolver {
         // at the same time.
         if (shared_->bounds != nullptr) {
           RegisterVariableBoundsLevelZeroExport(
-              *shared_->model_proto, shared_->bounds.get(), local_model_.get());
+              *shared_->model_proto, shared_->bounds.get(), &local_model_);
           RegisterVariableBoundsLevelZeroImport(
-              *shared_->model_proto, shared_->bounds.get(), local_model_.get());
+              *shared_->model_proto, shared_->bounds.get(), &local_model_);
         }
 
         // Note that this is done after the loading, so we will never export
@@ -2598,17 +2592,17 @@ class FullProblemSolver : public SubSolver {
         // by the initial probing.
         if (shared_->clauses != nullptr) {
           const int id = shared_->clauses->RegisterNewId();
-          shared_->clauses->SetWorkerNameForId(id, local_model_->Name());
+          shared_->clauses->SetWorkerNameForId(id, local_model_.Name());
 
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
-                                         local_model_.get());
-          RegisterClausesExport(id, shared_->clauses.get(), local_model_.get());
+                                         &local_model_);
+          RegisterClausesExport(id, shared_->clauses.get(), &local_model_);
         }
 
-        if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
-          MinimizeL1DistanceWithHint(*shared_->model_proto, local_model_.get());
+        if (local_model_.GetOrCreate<SatParameters>()->repair_hint()) {
+          MinimizeL1DistanceWithHint(*shared_->model_proto, &local_model_);
         } else {
-          QuickSolveWithHint(*shared_->model_proto, local_model_.get());
+          QuickSolveWithHint(*shared_->model_proto, &local_model_);
         }
 
         // No need for mutex since we only run one task at the time.
@@ -2622,18 +2616,18 @@ class FullProblemSolver : public SubSolver {
         }
       }
 
-      auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
+      auto* time_limit = local_model_.GetOrCreate<TimeLimit>();
       if (split_in_chunks_) {
         // Configure time limit for chunk solving. Note that we do not want
         // to do that for the hint search for now.
-        auto* params = local_model_->GetOrCreate<SatParameters>();
+        auto* params = local_model_.GetOrCreate<SatParameters>();
         params->set_max_deterministic_time(1);
         time_limit->ResetLimitFromParameters(*params);
         shared_->time_limit->UpdateLocalLimit(time_limit);
       }
 
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
-      SolveLoadedCpModel(*shared_->model_proto, local_model_.get());
+      SolveLoadedCpModel(*shared_->model_proto, &local_model_);
 
       absl::MutexLock mutex_lock(&mutex_);
       previous_task_is_completed_ = true;
@@ -2656,7 +2650,7 @@ class FullProblemSolver : public SubSolver {
   SharedClasses* shared_;
   const bool split_in_chunks_;
   const bool stop_at_first_solution_;
-  std::unique_ptr<Model> local_model_;
+  Model local_model_;
 
   // The first chunk is special. It is the one in which we load the model and
   // try to follow the hint.
@@ -2693,7 +2687,7 @@ class ObjectiveShavingSolver : public SubSolver {
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     {
       absl::MutexLock mutex_lock(&mutex_);
-      stop_current_chunk_ = false;
+      stop_current_chunk_.store(false);
       task_in_flight_ = true;
       objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
     }
@@ -2745,10 +2739,10 @@ class ObjectiveShavingSolver : public SubSolver {
     // TODO(user): Also stop if we have enough newly fixed / improved root level
     // bounds so that we think it is worth represolving and restarting.
     if (shared_->SearchIsDone()) {
-      stop_current_chunk_ = true;
+      stop_current_chunk_.store(true);
     }
     if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
-      stop_current_chunk_ = true;
+      stop_current_chunk_.store(true);
     }
   }
 
@@ -2764,7 +2758,7 @@ class ObjectiveShavingSolver : public SubSolver {
 
     auto* time_limit = local_repo_->GetOrCreate<TimeLimit>();
     shared_->time_limit->UpdateLocalLimit(time_limit);
-    time_limit->RegisterExternalBooleanAsLimit(&stop_current_chunk_);
+    time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
 
     // We copy the model.
     local_proto_ = *shared_->model_proto;
@@ -2822,9 +2816,8 @@ class ObjectiveShavingSolver : public SubSolver {
   NeighborhoodGeneratorHelper* helper_;
   SharedClasses* shared_;
 
-  // TODO(user): Currently if the global solver stop, we will only set this
-  // to true in Synchronize() above which is usually called in multi-thread but
-  // not when this sub-solver is the only one.
+  // Allow to control the local time limit in addition to a potential user
+  // defined external Boolean.
   std::atomic<bool> stop_current_chunk_;
 
   // Local singleton repository and presolved local model.
@@ -3219,8 +3212,7 @@ class LnsSolver : public SubSolver {
             CHECK(WriteModelProtoToFile(debug_copy, name));
           }
           LOG(FATAL) << "Infeasible LNS solution! " << solution_info
-                     << " solved with params "
-                     << local_params.ShortDebugString();
+                     << " solved with params " << local_params;
         }
 
         // Special case if we solved a part of the full problem!
@@ -3387,9 +3379,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         }
         if (shared.clauses != nullptr) {
           shared.clauses->Synchronize();
-        }
-        if (shared.time_limit->LimitReached()) {
-          *(shared.response->first_solution_solvers_should_stop()) = true;
         }
       }));
 
@@ -3746,6 +3735,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                              shared.wall_timer->Get(), params.num_workers()));
     }
 
+    // TODO(user): We might not want to sort the subsolver by name to keep our
+    // ordered list by importance? not sure.
     auto display_subsolver_list = [logger](
                                       const std::vector<std::string>& names,
                                       const absl::string_view type_name) {
@@ -4489,6 +4480,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       QuickSolveWithHint(*new_cp_model_proto, &local_model);
     }
     SolveLoadedCpModel(*new_cp_model_proto, &local_model);
+
+    // Display table data.
+    if (logger->LoggingIsEnabled()) {
+      logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
+      SOLVER_LOG(logger, "");
+      SharedStatTables tables;
+      tables.AddLpStat("default", &local_model);
+      tables.AddSearchStat("default", &local_model);
+      tables.Display(logger);
+    }
 
     // Export statistics.
     CpSolverResponse status_response;

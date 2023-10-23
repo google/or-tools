@@ -795,7 +795,10 @@ message CpSolverResponse {
   int64 inner_objective_lower_bound = 29;
 
   // Some statistics about the solve.
-  // TODO(user): These are broken in multi-thread.
+  //
+  // Important: in multithread, this correspond the statistics of the first
+  // subsolver. Which is usually the one with the user defined parameters. Or
+  // the default-search if none are specified.
   int64 num_integers = 30;
   int64 num_booleans = 10;
   int64 num_conflicts = 11;

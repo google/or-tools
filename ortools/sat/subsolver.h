@@ -70,6 +70,8 @@ class SubSolver {
   // finished. This is the case for first solution subsolvers for instances.
   //
   // This is only called by the main thread in a sequential fashion.
+  // Important: This is only called when there is currently no task from that
+  // SubSolver in flight.
   virtual bool IsDone() { return false; }
 
   // Returns true iff GenerateTask() can be called.

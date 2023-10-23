@@ -31,6 +31,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
@@ -2164,6 +2165,17 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 
   UpdateCallingNeeds(trail);
 
+  // Increase the deterministic time depending on some basic fact about our
+  // propagation.
+  int64_t num_propagate_calls = 0;
+  const int64_t old_enqueue = integer_trail_->num_enqueues();
+  auto cleanup =
+      ::absl::MakeCleanup([&num_propagate_calls, old_enqueue, this]() {
+        const int64_t diff = integer_trail_->num_enqueues() - old_enqueue;
+        time_limit_->AdvanceDeterministicTime(1e-8 * num_propagate_calls +
+                                              1e-7 * diff);
+      });
+
   // Note that the priority may be set to -1 inside the loop in order to restart
   // at zero.
   int test_limit = 0;
@@ -2214,6 +2226,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       const int64_t old_boolean_timestamp = trail->Index();
 
       // TODO(user): Maybe just provide one function Propagate(watch_indices) ?
+      ++num_propagate_calls;
       std::vector<int>& watch_indices_ref = id_to_watch_indices_[id];
       const bool result =
           watch_indices_ref.empty()

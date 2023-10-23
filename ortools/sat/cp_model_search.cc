@@ -778,10 +778,17 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         params.search_branching() == SatParameters::FIXED_SEARCH) {
       continue;
     }
+
     // TODO(user): Enable probing_search in deterministic mode.
     // Currently it timeouts on small problems as the deterministic time limit
     // never hits the sharding limit.
     if (params.use_probing_search() && params.interleave_search()) continue;
+
+    // TODO(user): Enable shaving search in interleave mode.
+    // Currently it do not respect ^C, and has no per chunk time limit.
+    if (params.use_objective_shaving_search() && params.interleave_search()) {
+      continue;
+    }
 
     // In the corner case of empty variable, lets not schedule the probing as
     // it currently just loop forever instead of returning right away.

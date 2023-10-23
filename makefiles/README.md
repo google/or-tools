@@ -1,42 +1,4 @@
 # OR-Tools Makefile Build Instructions
-| OS       | C++   | Python   | Java   | .NET   |
-|:-------- | :---: | :------: | :----: | :----: |
-| Linux    | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
-| MacOS    | [![Status][macos_cpp_svg]][macos_cpp_link] | [![Status][macos_python_svg]][macos_python_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][macos_dotnet_svg]][macos_dotnet_link] |
-| Windows  | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
-
-[linux_cpp_svg]: ./../../../actions/workflows/amd64_linux_make_cpp.yml/badge.svg?branch=main
-[linux_cpp_link]: ./../../../actions/workflows/amd64_linux_make_cpp.yml
-[linux_python_svg]: ./../../../actions/workflows/amd64_linux_make_python.yml/badge.svg?branch=main
-[linux_python_link]: ./../../../actions/workflows/amd64_linux_make_python.yml
-[linux_java_svg]: ./../../../actions/workflows/amd64_linux_make_java.yml/badge.svg?branch=main
-[linux_java_link]: ./../../../actions/workflows/amd64_linux_make_java.yml
-[linux_dotnet_svg]: ./../../../actions/workflows/amd64_linux_make_dotnet.yml/badge.svg?branch=main
-[linux_dotnet_link]: ./../../../actions/workflows/amd64_linux_make_dotnet.yml
-
-[macos_cpp_svg]: ./../../../actions/workflows/amd64_macos_make_cpp.yml/badge.svg?branch=main
-[macos_cpp_link]: ./../../../actions/workflows/amd64_macos_make_cpp.yml
-[macos_python_svg]: ./../../../actions/workflows/amd64_macos_make_python.yml/badge.svg?branch=main
-[macos_python_link]: ./../../../actions/workflows/amd64_macos_make_python.yml
-[macos_java_svg]: ./../../../actions/workflows/amd64_macos_make_java.yml/badge.svg?branch=main
-[macos_java_link]: ./../../../actions/workflows/amd64_macos_make_java.yml
-[macos_dotnet_svg]: ./../../../actions/workflows/amd64_macos_make_dotnet.yml/badge.svg?branch=main
-[macos_dotnet_link]: ./../../../actions/workflows/amd64_macos_make_dotnet.yml
-
-[windows_cpp_svg]: ./../../../actions/workflows/amd64_windows_make_cpp.yml/badge.svg?branch=main
-[windows_cpp_link]: ./../../../actions/workflows/amd64_windows_make_cpp.yml
-[windows_python_svg]: ./../../../actions/workflows/amd64_windows_make_python.yml/badge.svg?branch=main
-[windows_python_link]: ./../../../actions/workflows/amd64_windows_make_python.yml
-[windows_java_svg]: ./../../../actions/workflows/amd64_windows_make_java.yml/badge.svg?branch=main
-[windows_java_link]: ./../../../actions/workflows/amd64_windows_make_java.yml
-[windows_dotnet_svg]: ./../../../actions/workflows/amd64_windows_make_dotnet.yml/badge.svg?branch=main
-[windows_dotnet_link]: ./../../../actions/workflows/amd64_windows_make_dotnet.yml
-
-Dockers [Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu]x[C++,
-Python, Java, .Net]: [![Status][docker_svg]][docker_link]
-
-[docker_svg]: ./../../../actions/workflows/amd64_docker_make.yml/badge.svg?branch=main
-[docker_link]: ./../../../actions/workflows/amd64_docker_make.yml
 
 ## Introduction
 <nav for="make"> |
@@ -44,6 +6,8 @@ Python, Java, .Net]: [![Status][docker_svg]][docker_link]
 <a href="#dependencies">Dependencies</a> |
 <a href="docs/ci.md">CI</a> |
 </nav>
+
+**warning: Makefile build is deprecated, please use CMake or Bazel based build.**
 
 OR-Tools comes with a GNU Make based build ([Makefile](../Makefile)) that can be
 used on a wide range of platforms.
