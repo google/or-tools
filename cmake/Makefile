@@ -118,6 +118,20 @@ help:
 	@echo -e "\te.g. 'make mips64_build'"
 	@echo -e "\te.g. 'make aarch64_test'"
 	@echo
+	@echo -e "\tBuild for web using emscripten."
+	@echo -e "\t${BOLD}web_<web_stage>${RESET}: build the emscripten <web_stage>."
+	@echo -e "\t${BOLD}save_web_<web_stage>${RESET}: Save the <web_stage> docker image."
+	@echo -e "\t${BOLD}sh_web_<web_stage>${RESET}: run a container using the <web_stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_web_<web_stage>${RESET}: Remove cache and docker image."
+	@echo -e "\t${BOLD}clean_web${RESET}: Remove ALL cache and docker image."
+	@echo
+	@echo -e "\tWith ${BOLD}<web_stage>${RESET}:"
+	@echo -e "\t\t${BOLD}env${RESET}"
+	@echo -e "\t\t${BOLD}devel${RESET}"
+	@echo -e "\t\t${BOLD}build${RESET}"
+	@echo -e "\t\t${BOLD}test${RESET}"
+	@echo -e "\te.g. 'make web_build'"
+	@echo
 	@echo -e "\tBuild using a vagrant machine."
 	@echo -e "\t${BOLD}<vm>_<vms_stage>${RESET}: build the vagrant <vm> virtual machine."
 	@echo -e "\t${BOLD}sh_<vm>_<lang>${RESET}: ssh to the vagrant machine specified (debug purpose)."
