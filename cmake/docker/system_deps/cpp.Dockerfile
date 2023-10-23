@@ -7,7 +7,7 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
- -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=OFF
+ -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

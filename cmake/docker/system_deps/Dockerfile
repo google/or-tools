@@ -7,8 +7,11 @@ ENV PATH=/usr/local/bin:$PATH
 RUN pacman -Syu --noconfirm git base-devel cmake
 
 # Get all dependencies from the package manager
-RUN pacman -Syu --noconfirm abseil-cpp protobuf re2 eigen \
- coin-or-cbc coin-or-clp glpk
+RUN pacman -Syu --noconfirm \
+ abseil-cpp protobuf re2 eigen \
+ coin-or-cbc coin-or-clp \
+ glpk \
+ scip
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD [ "/bin/bash" ]
