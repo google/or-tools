@@ -585,7 +585,7 @@ $(foreach stage,$(STAGES),$(eval $(call make-platform-stage-target,$1,$(stage)))
 
 # merge
 .PHONY: clean_$1
-clean_$1: $(addprefix clean_$1_all_, $(STAGES))
+clean_$1: $(addprefix clean_$1_, $(PRESTAGES)) $(addprefix clean_$1_, $(STAGES))
 	-rmdir $(addprefix cache/$1/, $(DISTROS))
 	-rmdir cache/$1
 endef
