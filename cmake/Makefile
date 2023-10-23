@@ -96,10 +96,10 @@ help:
 	@echo -e "\tDocker image unavailable: arm64_archlinux"
 	@echo
 	@echo -e "\tBuild using a toolchain."
-	@echo -e "\t${BOLD}<toolchain>_<toolchain_stage>${RESET}: build <stage> docker image for a specific toolchain target."
-	@echo -e "\t${BOLD}save_<toolchain>_<toolchain_stage>${RESET}: Save the <stage> docker image for a specific platform."
-	@echo -e "\t${BOLD}sh_<toolchain>_<toolchain_stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
-	@echo -e "\t${BOLD}clean_<toolchain>_<toolchain_stage>${RESET}: Remove cache and docker image."
+	@echo -e "\t${BOLD}toolchain_<toolchain>_<toolchain_stage>${RESET}: build <stage> docker image for a specific toolchain target."
+	@echo -e "\t${BOLD}save_toolchain_<toolchain>_<toolchain_stage>${RESET}: Save the <stage> docker image for a specific platform."
+	@echo -e "\t${BOLD}sh_toolchain_<toolchain>_<toolchain_stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
+	@echo -e "\t${BOLD}clean_toolchain_<toolchain>_<toolchain_stage>${RESET}: Remove cache and docker image."
 	@echo -e "\t${BOLD}clean_toolchains${RESET}: Remove ALL cache and docker image."
 	@echo
 	@echo -e "\tWith ${BOLD}<toolchain>${RESET}:"
@@ -115,8 +115,8 @@ help:
 	@echo -e "\t\t${BOLD}devel${RESET}"
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
-	@echo -e "\te.g. 'make mips64_build'"
-	@echo -e "\te.g. 'make aarch64_test'"
+	@echo -e "\te.g. 'make toolchain_mips64_build'"
+	@echo -e "\te.g. 'make toolchain_aarch64_test'"
 	@echo
 	@echo -e "\tBuild for web using emscripten."
 	@echo -e "\t${BOLD}web_<web_stage>${RESET}: build the emscripten <web_stage>."
@@ -607,41 +607,41 @@ TOOLCHAIN_STAGES := env devel build test
 
 define toolchain-stage-target =
 #$$(info STAGE: $1)
-#$$(info Create targets: toolchain_$1 $(addsuffix _$1, $(TOOLCHAIN_TARGETS)).)
-targets_toolchain_$1 = $(addsuffix _$1, $(TOOLCHAIN_TARGETS))
+#$$(info Create targets: toolchain_$1 $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
+targets_toolchain_$1 = $(addprefix toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: toolchain_$1 $$(targets_toolchain_$1)
 toolchain_$1: $$(targets_toolchain_$1)
-$$(targets_toolchain_$1): %_$1: docker/toolchain/Dockerfile
-	#@docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
+$$(targets_toolchain_$1): toolchain_%_$1: docker/toolchain/Dockerfile
+	#@docker image rm -f ${IMAGE}:toolchain_$$*_$1 2>/dev/null
 	${DOCKER_BUILD_CMD} \
- --tag ${IMAGE}:$$*_$1 \
+ --tag ${IMAGE}:toolchain_$$*_$1 \
  --build-arg TARGET=$$* \
  --target=$1 \
  -f $$< \
  ..
 
-#$$(info Create targets: save_toolchain_$1 $(addprefix save_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
-save_targets_toolchain_$1 = $(addprefix save_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+#$$(info Create targets: save_toolchain_$1 $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
+save_targets_toolchain_$1 = $(addprefix save_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: save_toolchain_$1 $$(save_targets_toolchain_$1)
 save_toolchain_$1: $$(save_targets_toolchain_$1)
-$$(save_targets_toolchain_$1): save_%_$1: cache/%/docker_$1.tar
+$$(save_targets_toolchain_$1): save_toolchain_%_$1: cache/%/docker_$1.tar
 cache/%/docker_$1.tar: %_$1
 	@rm -f $$@
 	mkdir -p cache/$$*
-	docker save ${IMAGE}:$$*_$1 -o $$@
+	docker save ${IMAGE}:toolchain_$$*_$1 -o $$@
 
-#$$(info Create targets: $(addprefix sh_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
-sh_targets_toolchain_$1 = $(addprefix sh_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+#$$(info Create targets: $(addprefix sh_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))) (debug).)
+sh_targets_toolchain_$1 = $(addprefix sh_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: $$(sh_targets_toolchain_$1)
-$$(sh_targets_toolchain_$1): sh_%_$1: %_$1
-	${DOCKER_RUN_CMD} -it --name ${IMAGE}_$$*_$1 ${IMAGE}:$$*_$1
+$$(sh_targets_toolchain_$1): sh_toolchain_%_$1: %_$1
+	${DOCKER_RUN_CMD} -it --name ${IMAGE}_toolchain_$$*_$1 ${IMAGE}:toolchain_$$*_$1
 
-#$$(info Create targets: clean_toolchain_$1 $(addprefix clean_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
-clean_targets_toolchain_$1 = $(addprefix clean_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
+#$$(info Create targets: clean_toolchain_$1 $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS))).)
+clean_targets_toolchain_$1 = $(addprefix clean_toolchain_, $(addsuffix _$1, $(TOOLCHAIN_TARGETS)))
 .PHONY: clean_toolchain_$1 $$(clean_targets_toolchain_$1)
 clean_toolchain_$1: $$(clean_targets_toolchain_$1)
-$$(clean_targets_toolchain_$1): clean_%_$1:
-	docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
+$$(clean_targets_toolchain_$1): clean_toolchain_%_$1:
+	docker image rm -f ${IMAGE}:toolchain_$$*_$1 2>/dev/null
 	rm -f cache/$$*/docker_$1.tar
 endef
 
