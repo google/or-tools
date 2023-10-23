@@ -145,12 +145,12 @@ jobs:
       - name: run tests not xpress
         run: |
           cd build
-          ctest -V -C Release --output-on-failure  -E "xpress"
+          ctest -C Release --output-on-failure  -E "xpress"
 
       - name: run tests xpress
         run: |
           cd build
-          ctest -V -C Release --output-on-failure  -R "xpress"
+          ctest -C Release --output-on-failure  -R "xpress"
 
       - name: Prepare OR-Tools install
         id: or-install
