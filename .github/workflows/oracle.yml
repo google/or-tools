@@ -123,15 +123,17 @@ jobs:
           source /opt/rh/gcc-toolset-11/enable
           cmake --version
           cmake -S . -B build \
-            -DBUILD_SAMPLES=OFF \
-            -DBUILD_EXAMPLES=OFF \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="build/install" \
             -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
-            -DBUILD_DEPS=ON \
             -DBUILD_PYTHON=${{ matrix.python }} \
             -DBUILD_JAVA=${{ matrix.java }} \
             -DBUILD_DOTNET=${{ matrix.dotnet }} \
+            -DBUILD_EXAMPLES=ON \
+            -DBUID_TESTING=ON \
+            -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
+            -DBUILD_DEPS=ON \
+            -DCMAKE_INSTALL_PREFIX="build/install" \
+            -DBUILD_SAMPLES=OFF \
             -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
@@ -139,6 +141,16 @@ jobs:
           export PATH=/root/.local/bin:$PATH
           source /opt/rh/gcc-toolset-11/enable
           cmake --build build --config Release --target all install -j4
+
+      - name: run tests not xpress
+        run: |
+          cd build
+          ctest -V -C Release --output-on-failure  -E "xpress"
+
+      - name: run tests xpress
+        run: |
+          cd build
+          ctest -V -C Release --output-on-failure  -R "xpress"
 
       - name: Prepare OR-Tools install
         id: or-install
@@ -149,27 +161,6 @@ jobs:
           zip -r $ARCHIVE_PATH ./install
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-
-      - name: Run xpress_interface unittests
-        run: |
-          cd build
-          ctest -V -C Release -R 'cxx_unittests_xpress_interface'
-      - name: Run specific cpp tests
-        run: |
-          cd build
-          ctest -V -C Release -R 'cxx_cpp_linear_programming'
-      - name: Run other cpp tests
-        run: |
-          cd build
-          ctest --output-on-failure -C Release -R cxx_cpp -E 'cxx_cpp_linear_programming'
-      - name: Run specific python tests
-        if: ${{ matrix.python == 'ON' }}
-        working-directory: ./build
-        run: ctest -V -C Release -R python_python_linear_programming
-      - name: Run specific java tests
-        if: ${{ matrix.java == 'ON' }}
-        working-directory: ./build
-        run: ctest -V -C Release -R java_java_LinearProgramming
 
       - name: Upload OR-Tools install artifact
         uses: actions/upload-artifact@v3
