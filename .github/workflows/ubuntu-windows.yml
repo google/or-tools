@@ -190,7 +190,7 @@ jobs:
       - name: run tests xpress
         working-directory: ./build/
         run: |
-          ctest -C Release --output-on-failure  -R "xpress"
+          ctest -V -C Release --output-on-failure  -R "xpress"
 
       - name: Prepare OR-Tools install
         if: ${{ matrix.publish-or == 'ON' }}
