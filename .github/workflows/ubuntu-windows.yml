@@ -28,7 +28,6 @@ jobs:
         python: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
-        build-examples: [OFF]
         # the matrix is a bit complicated because
         # we need static C++-libraries for both Windows and linux
         # Under windows we can only build ortools Python/Java/C# libraries using a STATIC build
@@ -157,33 +156,41 @@ jobs:
         shell: bash
         run: |
           cmake --version
-          cmake -S . -B build -DPython3_ROOT_DIR="${{ env.pythonLocation }}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=${{ matrix.build-examples }} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} ${{ steps.cache.outputs.CMAKE_CCACHE }} ${{ steps.cache.outputs.CMAKE_CXXCACHE }} -DBUILD_FLATZINC=OFF
+          cmake -S . -B build \
+            -DPython3_ROOT_DIR="${{ env.pythonLocation }}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
+            -DBUILD_PYTHON=${{ matrix.python }} \
+            -DBUILD_JAVA=${{ matrix.java }} \
+            -DBUILD_DOTNET=${{ matrix.dotnet }} \
+            -DBUILD_EXAMPLES=ON \
+            -DBUID_TESTING=ON \
+            -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
+            -DBUILD_DEPS=ON \
+            -DBUILD_SAMPLES=OFF \
+            -DCMAKE_INSTALL_PREFIX="build/install" \
+            ${{ steps.cache.outputs.CMAKE_CCACHE }} \
+            ${{ steps.cache.outputs.CMAKE_CXXCACHE }} \
+            -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
-        run: cmake --build build --config Release --target all install -j2
+        run: cmake --build build --config Release --target all install -j4
 
       - name: Build OR-Tools windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
-      - name: Build & run CMake example project linux
-        if: ${{ startsWith(matrix.os, 'ignoreubuntu') }}
-        working-directory: ./examples/cmake/linear_programming/
+      - name: run tests not xpress
+        working-directory: ./build/
         run: |
-          cmake -Bbuild -S. \
-                -DORTOOLS_INSTALL="${{ github.workspace }}/build/install"
-          cmake --build build
-          ./build/linear_programming
+          ctest -V -C Release --output-on-failure  -E "xpress"
 
-      - name: Build & run CMake example project windows
-        if: ${{ startsWith(matrix.os, 'ignorewindows') }}
-        working-directory: ./examples/cmake/linear_programming/
+      - name: run tests xpress
+        working-directory: ./build/
         run: |
-          cmake -Bbuild -S. -DORTOOLS_INSTALL="${{ github.workspace }}/build/install" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release
-          build\Release\linear_programming.exe
+          ctest -V -C Release --output-on-failure  -R "xpress"
 
       - name: Prepare OR-Tools install
         if: ${{ matrix.publish-or == 'ON' }}
@@ -212,40 +219,6 @@ jobs:
           asset_path: ${{ steps.or-install.outputs.archive_path }}
           asset_name: ${{ steps.or-install.outputs.archive_name }}
           asset_content_type: application/zip
-
-      - name: Run xpress_interface unittests
-        working-directory: ./build
-        run: ctest -V -C Release -R 'cxx_unittests_xpress_interface'
-      - name: Run specific cpp tests
-        working-directory: ./build
-        run: ctest -V -C Release -R cxx_cpp_linear_programming
-      - name: Run specific python tests
-        if: ${{ matrix.python == 'ON' }}
-        working-directory: ./build
-        run: ctest -V -C Release -R python_python_linear_programming
-      - name: Run specific java tests
-        if: ${{ matrix.java == 'ON' }}
-        working-directory: ./build
-        run: ctest -V -C Release -R java_java_LinearProgramming
-      - name: Run specific dotnet tests
-        if: ${{ matrix.dotnet == 'ON' }}
-        working-directory: ./build
-        run: ctest -V -C Release -R dotnet_dotnet_cslinearprogramming
-      - name: Run other cpp tests
-        working-directory: ./build
-        run: ctest --output-on-failure -C Release -R cxx_cpp -E cxx_cpp_linear_programming
-      - name: Run other python tests
-        if: ${{ matrix.python == 'ON' }}
-        working-directory: ./build
-        run: ctest --output-on-failure -C Release -R python_python -E python_python_linear_programming
-      - name: Run other java tests
-        if: ${{ matrix.java == 'ON' }}
-        working-directory: ./build
-        run: ctest --output-on-failure -C Release -R java_java -E java_java_LinearProgramming
-      - name: Run other dotnet tests
-        if: ${{ matrix.dotnet == 'ON' }}
-        working-directory: ./build
-        run: ctest --output-on-failure -C Release -R dotnet_dotnet -E dotnet_dotnet_cslinearprogramming
 
       - name: prepare OR-Tools wheel
         if: ${{ matrix.python == 'ON' }}
