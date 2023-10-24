@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # [START program]
-"""Integer programming examples that show how to use the APIs."""
+"""Integer programming examples that show how to clone a model."""
 # [START import]
 import math
 
@@ -35,7 +35,7 @@ def main():
 
     # [START constraints]
     # x + 7 * y <= 17.5.
-    c1 = model.add(x + 7 * y <= 17.5)
+    unused_c1 = model.add(x + 7 * y <= 17.5)
 
     # x <= 3.5.
     c2 = model.add(x <= 3.5)
@@ -56,13 +56,11 @@ def main():
 
     # Add new constraint.
     model_copy.add(x_copy >= 1)
-    print("Number of constraints in original model =", model.num_constraints)
-    print("Number of constraints in cloned model =", model_copy.num_constraints)
+    print(f"Number of constraints in original model ={model.num_constraints}")
+    print(f"Number of constraints in cloned model = {model_copy.num_constraints}")
 
     # Modify a constraint.
     c2_copy.add_term(z_copy, 2.0)
-
-    print(model_copy.export_to_lp_string())
 
     # [START solve]
     # Create the solver with the SCIP backend, and solve the model.
@@ -73,17 +71,17 @@ def main():
     # [START print_solution]
     if status == model_builder.SolveStatus.OPTIMAL:
         print("Solution:")
-        print("Objective value =", solver.objective_value)
-        print("x =", solver.value(x_copy))
-        print("y =", solver.value(y_copy))
-        print("z =", solver.value(z_copy))        
+        print(f"Objective value = {solver.objective_value}")
+        print(f"x = {solver.value(x_copy)}")
+        print(f"y = {solver.value(y_copy)}")
+        print(f"z = {solver.value(z_copy)}")
     else:
         print("The problem does not have an optimal solution.")
     # [END print_solution]
 
     # [START advanced]
     print("\nAdvanced usage:")
-    print("Problem solved in %f seconds" % solver.wall_time)
+    print(f"Problem solved in {solver.wall_time} seconds")
     # [END advanced]
 
 

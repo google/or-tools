@@ -169,7 +169,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
 
   py::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
       .def(py::init<>())
-      .def("overwrite_model", &ModelBuilderHelper::OverwriteModel, arg("other_helper"))
+      .def("overwrite_model", &ModelBuilderHelper::OverwriteModel,
+           arg("other_helper"))
       .def("export_to_mps_string", &ModelBuilderHelper::ExportToMpsString,
            arg("options") = MPModelExportOptions())
       .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,

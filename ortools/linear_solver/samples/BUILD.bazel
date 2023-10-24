@@ -44,7 +44,7 @@ code_sample_py(name = "assignment_mb")
 
 code_sample_py(name = "bin_packing_mb")
 
-code_sample_py(name = "copy_model_mb")
+code_sample_py(name = "clone_model_mb")
 
 code_sample_py(name = "simple_lp_program_mb")
 

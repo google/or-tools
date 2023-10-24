@@ -40,7 +40,8 @@
 
 namespace operations_research {
 
-void ModelBuilderHelper::OverwriteModel(const ModelBuilderHelper& other_helper) {
+void ModelBuilderHelper::OverwriteModel(
+    const ModelBuilderHelper& other_helper) {
   model_ = other_helper.model();
 }
 
