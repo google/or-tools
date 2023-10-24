@@ -40,6 +40,10 @@
 
 namespace operations_research {
 
+void ModelBuilderHelper::OverwriteModel(const ModelBuilderHelper& other_helper) {
+  model_ = other_helper.model();
+}
+
 std::string ModelBuilderHelper::ExportToMpsString(
     const MPModelExportOptions& options) {
   return operations_research::ExportModelAsMpsFormat(model_, options)

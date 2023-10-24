@@ -631,6 +631,12 @@ class ModelBuilder:
     def __init__(self):
         self.__helper: mbh.ModelBuilderHelper = mbh.ModelBuilderHelper()
 
+    def clone(self) -> "ModelBuilder":
+        """Returns a clone of the current model."""
+        clone = ModelBuilder()
+        clone.helper.overwrite_model(self.helper)
+        return clone
+
     @typing.overload
     def _get_linear_constraints(self, constraints: Optional[pd.Index]) -> pd.Index:
         ...

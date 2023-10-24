@@ -45,6 +45,7 @@ namespace operations_research {
 // absl::Status or absl::StatusOr.
 class ModelBuilderHelper {
  public:
+  void OverwriteModel(const ModelBuilderHelper& other_helper);
   std::string ExportToMpsString(const operations_research::MPModelExportOptions&
                                     options = MPModelExportOptions());
   std::string ExportToLpString(const operations_research::MPModelExportOptions&
