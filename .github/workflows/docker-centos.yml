@@ -1,0 +1,44 @@
+name: experimental CentOS-docker
+
+on:
+  workflow_dispatch:
+  
+
+env:
+  GITHUB_TOKEN: ${{ github.token }}
+  RELEASE_CREATED: ${{ github.event_name == 'release' && github.event.action == 'created' }}
+
+jobs:
+  cmake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build base image
+        run: make --directory=cmake centos_base
+      - name: Build env image
+        run: make --directory=cmake centos_python_env
+      - name: Build devel image
+        run: make --directory=cmake centos_python_devel
+      - name: Build project
+        run: make --directory=cmake centos_python_build
+      - name: Test project
+        run: make --directory=cmake centos_python_test
+
+      - name: prepare OR-Tools wheel
+        id: wheel
+        run: |
+          MY_DIR="ortools_python_centos_shared"
+          mkdir $MY_DIR
+          container_id=$(docker create ortools/cmake:centos_python_build)
+          docker cp $container_id:/home/project/build/python/dist/ .
+          cp dist/*.whl $MY_DIR
+          ARCHIVE_NAME="${MY_DIR}.zip"
+          ARCHIVE_PATH="$PWD/${ARCHIVE_NAME}"
+          zip -r ${ARCHIVE_PATH} ${MY_DIR}
+          echo "::set-output name=archive_name::$ARCHIVE_NAME"
+          echo "::set-output name=archive_path::$ARCHIVE_PATH"
+      - name: Upload OR-Tools wheel artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.wheel.outputs.archive_name }}
+          path: ${{ steps.wheel.outputs.archive_path }}

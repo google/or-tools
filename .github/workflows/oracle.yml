@@ -21,12 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     container: 'oraclelinux:8'
     env:
-      SIRIUS_RELEASE_TAG: antares-integration-v1.3
+      SIRIUS_RELEASE_TAG: antares-integration-v1.4
       XPRESS_INSTALL_DIR: xpressmp/
+      SIRIUS_INSTALL_DIR: sirius_install/
     strategy:
       fail-fast: false
       matrix:
-        sirius: [OFF]
+        sirius: [ON, OFF]
         shared: [ON, OFF]
         extras: [ON, OFF]
         exclude:
@@ -34,6 +35,8 @@ jobs:
             extras: ON
           - shared: ON
             extras: OFF
+          - shared: ON
+            sirius: ON
 
         include:
           - extras: OFF
@@ -41,7 +44,7 @@ jobs:
             java: OFF
             dotnet: OFF
           - extras: ON
-            python: OFF
+            python: ON
             java: ON
             dotnet: OFF
 
@@ -53,7 +56,7 @@ jobs:
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           SIRIUS=${{ matrix.sirius }}
           [ $SIRIUS == "ON" ] && WITH_SIRIUS="_sirius" || WITH_SIRIUS=""
-          OS="_oraclelinux8"
+          OS="_oraclelinux-8"
           APPENDIX="${OS}${WITH_SIRIUS}"
           echo "::set-output name=appendix::$APPENDIX"
           APPENDIX_WITH_SHARED="${OS}${WITH_SHARED}${WITH_SIRIUS}"
@@ -100,6 +103,8 @@ jobs:
           dnf -y install python39 python39-devel python39-pip
           dnf clean all
           echo "/root/.local/bin" >> $GITHUB_PATH
+          python3 -m pip install --upgrade pip
+          python3 -m pip install protobuf mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
@@ -118,12 +123,39 @@ jobs:
           echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
           ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
 
+      - name: Download Sirius
+        if: ${{ matrix.sirius == 'ON' }}
+        run: |
+          zipfile=oraclelinux-8_sirius-solver.zip
+          wget https://github.com/rte-france/sirius-solver/releases/download/${{ env.SIRIUS_RELEASE_TAG }}/$zipfile
+          unzip $zipfile
+          mv oraclelinux-8_sirius-solver-install ${{ env.SIRIUS_INSTALL_DIR }}
+
+      - name: set Sirius variables
+        if: ${{ matrix.sirius == 'ON' }}
+        run: |
+          cd ${{ env.SIRIUS_INSTALL_DIR }}
+          echo "SIRIUS=$PWD/lib" >> $GITHUB_ENV
+          echo "SIRIUS_CMAKE_DIR=$PWD/cmake" >> $GITHUB_ENV
+
       - name: Configure OR-Tools
         run: |
           export PATH=/root/.local/bin:$PATH
           source /opt/rh/gcc-toolset-11/enable
           cmake --version
-          cmake -S . -B build -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="build/install" -DBUILD_SHARED_LIBS=${{ matrix.shared }} -DBUILD_DEPS=ON -DBUILD_PYTHON=${{ matrix.python }} -DBUILD_JAVA=${{ matrix.java }} -DBUILD_DOTNET=${{ matrix.dotnet }} -DBUILD_FLATZINC=OFF
+          cmake -S . -B build \
+            -DBUILD_SAMPLES=OFF \
+            -DBUILD_EXAMPLES=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="build/install" \
+            -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
+            -DBUILD_DEPS=ON \
+            -DUSE_SIRIUS=${{ matrix.sirius }} \
+            -Dsirius_solver_DIR="${{ env.SIRIUS_CMAKE_DIR }}" \
+            -DBUILD_PYTHON=${{ matrix.python }} \
+            -DBUILD_JAVA=${{ matrix.java }} \
+            -DBUILD_DOTNET=${{ matrix.dotnet }} \
+            -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
         run: |
@@ -141,6 +173,11 @@ jobs:
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
+      - name: Run sirius_interface unittests
+        if: ${{ matrix.sirius == 'ON' }}
+        run: |
+          cd build
+          ctest -V -C Release -R 'cxx_unittests_sirius_interface'
       - name: Run xpress_interface unittests
         run: |
           cd build
@@ -172,7 +209,7 @@ jobs:
         if: ${{ matrix.python == 'ON' }}
         id: wheel
         run: |
-          MY_DIR="ortools_python-${{ steps.names.outputs.appendix }}"
+          MY_DIR="ortools_python${{ steps.names.outputs.appendix }}"
           mkdir $MY_DIR
           cp build/python/dist/*.whl $MY_DIR
           ARCHIVE_NAME="${MY_DIR}.zip"
@@ -182,7 +219,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
       - name: Upload OR-Tools wheel artifact
         if: ${{ matrix.python == 'ON' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
@@ -208,7 +245,7 @@ jobs:
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
       - name: Upload OR-Tools jar artifact
         if: ${{ matrix.java == 'ON' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}

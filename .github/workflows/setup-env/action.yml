@@ -26,7 +26,7 @@ runs:
       with:
         dotnet-version: 6.0.x
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ inputs.python-version }}
         architecture: x64
