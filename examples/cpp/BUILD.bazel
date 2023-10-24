@@ -26,10 +26,12 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
+        "//ortools/base:path",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )

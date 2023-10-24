@@ -16,15 +16,18 @@
 // too), and tries to fit all rectangles in the minimum numbers of bins (they
 // have the size of the main rectangle.)
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/path.h"
 #include "ortools/packing/binpacking_2d_parser.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 #include "ortools/sat/cp_model.h"
@@ -40,6 +43,8 @@ ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
 ABSL_FLAG(bool, symmetry_breaking, true, "Use symmetry breaking constraints");
+ABSL_FLAG(bool, use_global_cumulative, true,
+          "Use a globalcumulative relaxation");
 
 namespace operations_research {
 namespace sat {
@@ -60,6 +65,13 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   const int num_dimensions = box_dimensions.size();
   const int num_items = problem.items_size();
 
+  // Non overlapping.
+  if (num_dimensions == 1) {
+    LOG(FATAL) << "One dimension is not supported.";
+  } else if (num_dimensions != 2) {
+    LOG(FATAL) << num_dimensions << " dimensions not supported.";
+  }
+
   const int64_t area_of_one_bin = box_dimensions[0] * box_dimensions[1];
   int64_t sum_of_items_area = 0;
   for (const auto& item : problem.items()) {
@@ -79,6 +91,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   CpModelBuilder cp_model;
+  cp_model.SetName(absl::StrCat(
+      "binpacking_2d_", file::Stem(absl::GetFlag(FLAGS_input)), "_", instance));
 
   // We do not support multiple shapes per item.
   for (int item = 0; item < num_items; ++item) {
@@ -100,17 +114,46 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     cp_model.AddExactlyOne(item_to_bin[item]);
   }
 
+  // Detect incompatible pairs of items and add conflict at the bin level.
+  int num_incompatible_pairs = 0;
+  for (int i1 = 0; i1 + 1 < num_items; ++i1) {
+    for (int i2 = i1 + 1; i2 < num_items; ++i2) {
+      if ((problem.items(i1).shapes(0).dimensions(0) +
+               problem.items(i2).shapes(0).dimensions(0) >
+           box_dimensions[0]) &&
+          (problem.items(i1).shapes(0).dimensions(1) +
+               problem.items(i2).shapes(0).dimensions(1) >
+           box_dimensions[1])) {
+        num_incompatible_pairs++;
+        for (int b = 0; b < max_bins; ++b) {
+          cp_model.AddAtMostOne({item_to_bin[i1][b], item_to_bin[i2][b]});
+        }
+      }
+    }
+  }
+  if (num_incompatible_pairs > 0) {
+    LOG(INFO) << num_incompatible_pairs << " incompatible pairs of items";
+  }
+
   // Manages positions and sizes for each item.
   std::vector<std::vector<std::vector<IntervalVar>>>
       interval_by_item_bin_dimension(num_items);
+  std::vector<std::vector<IntVar>> starts_by_dimension(num_items);
   for (int item = 0; item < num_items; ++item) {
     interval_by_item_bin_dimension[item].resize(max_bins);
+    starts_by_dimension[item].resize(num_dimensions);
     for (int b = 0; b < max_bins; ++b) {
-      interval_by_item_bin_dimension[item][b].resize(2);
+      interval_by_item_bin_dimension[item][b].resize(num_dimensions);
       for (int dim = 0; dim < num_dimensions; ++dim) {
         const int64_t dimension = box_dimensions[dim];
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
-        const IntVar start = cp_model.NewIntVar({0, dimension - size});
+        IntVar start;
+        if (b == 0) {
+          start = cp_model.NewIntVar({0, dimension - size});
+          starts_by_dimension[item][dim] = start;
+        } else {
+          start = starts_by_dimension[item][dim];
+        }
         interval_by_item_bin_dimension[item][b][dim] =
             cp_model.NewOptionalFixedSizeIntervalVar(start, size,
                                                      item_to_bin[item][b]);
@@ -119,19 +162,32 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Non overlapping.
-  if (num_dimensions == 1) {
-    LOG(FATAL) << "One dimension is not supported.";
-  } else if (num_dimensions == 2) {
-    LOG(INFO) << "Box size: " << box_dimensions[0] << "*" << box_dimensions[1];
-    for (int b = 0; b < max_bins; ++b) {
-      NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
+  LOG(INFO) << "Box size: " << box_dimensions[0] << "*" << box_dimensions[1];
+  for (int b = 0; b < max_bins; ++b) {
+    NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
+    for (int item = 0; item < num_items; ++item) {
+      no_overlap_2d.AddRectangle(interval_by_item_bin_dimension[item][b][0],
+                                 interval_by_item_bin_dimension[item][b][1]);
+    }
+  }
+
+  // Objective variable.
+  const IntVar obj = cp_model.NewIntVar({trivial_lb, max_bins});
+
+  // Global cumulative.
+  if (absl::GetFlag(FLAGS_use_global_cumulative)) {
+    DCHECK_EQ(num_dimensions, 2);
+    for (int dim = 0; dim < num_dimensions; ++dim) {
+      const int other_size = box_dimensions[1 - dim];
+      CumulativeConstraint cumul = cp_model.AddCumulative(obj * other_size);
       for (int item = 0; item < num_items; ++item) {
-        no_overlap_2d.AddRectangle(interval_by_item_bin_dimension[item][b][0],
-                                   interval_by_item_bin_dimension[item][b][1]);
+        const int size = problem.items(item).shapes(0).dimensions(dim);
+        const int demand = problem.items(item).shapes(0).dimensions(1 - dim);
+        cumul.AddDemand(cp_model.NewFixedSizeIntervalVar(
+                            starts_by_dimension[item][dim], size),
+                        demand);
       }
     }
-  } else {
-    LOG(FATAL) << num_dimensions << " dimensions not supported.";
   }
 
   // Maintain one Boolean variable per bin that indicates if the bin is used
@@ -149,8 +205,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     cp_model.AddBoolOr(all_items_in_bin).OnlyEnforceIf(bin_is_used[b]);
   }
 
-  // Objective.
-  const IntVar obj = cp_model.NewIntVar({trivial_lb, max_bins});
+  // Objective definition.
   cp_model.Minimize(obj);
   for (int b = trivial_lb; b + 1 < max_bins; ++b) {
     cp_model.AddGreaterOrEqual(obj, b + 1).OnlyEnforceIf(bin_is_used[b]);
@@ -159,7 +214,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 
   if (absl::GetFlag(FLAGS_symmetry_breaking)) {
     // Symmetry breaking: item[i] is in bin <= i for the first max_bins items.
-    for (int i = 0; i + 1 < max_bins; ++i) {
+    for (int i = 0; i + 1 < std::min(num_items, max_bins); ++i) {
       for (int b = i + 1; b < max_bins; ++b) {
         cp_model.FixVariable(item_to_bin[i][b], false);
       }
