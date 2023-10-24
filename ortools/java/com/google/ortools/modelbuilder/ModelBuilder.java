@@ -43,9 +43,18 @@ public final class ModelBuilder {
     }
   }
 
+  /** Main constructor */
   public ModelBuilder() {
     helper = new ModelBuilderHelper();
     constantMap = new LinkedHashMap<>();
+  }
+
+  /** Returns a cloned model */
+  public ModelBuilder clone() {
+    ModelBuilder clonedModel = new ModelBuilder();
+    clonedModel.getHelper().overwriteModel(helper);
+    clonedModel.constantMap.putAll(constantMap);
+    return clonedModel;
   }
 
   // Integer variables.
@@ -55,7 +64,7 @@ public final class ModelBuilder {
     return new Variable(helper, lb, ub, isIntegral, name);
   }
 
-  /** Creates an continuous variable with domain [lb, ub]. */
+  /** Creates a continuous variable with domain [lb, ub]. */
   public Variable newNumVar(double lb, double ub, String name) {
     return new Variable(helper, lb, ub, false, name);
   }
@@ -155,6 +164,11 @@ public final class ModelBuilder {
   /** Returns the number of constraints in the model. */
   public int numConstraints() {
     return helper.numConstraints();
+  }
+
+  /** Rebuilds a linear constraint from its index. */
+  public LinearConstraint constraintFromIndex(int index) {
+    return new LinearConstraint(helper, index);
   }
 
   /** Minimize expression */
