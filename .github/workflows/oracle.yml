@@ -90,7 +90,6 @@ jobs:
           dnf clean all
           rm -rf /var/cache/dnf
       - name: Install python
-        if: ${{ matrix.python == 'ON' }}
         run: |
           export PATH=/root/.local/bin:$PATH
           dnf -y update
