@@ -46,6 +46,7 @@ cc_test(
     data = ["//ortools/packing/testdata:Class_01.2bp"],
     deps = [
         "//ortools/base",
+        "//ortools/base:path",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
