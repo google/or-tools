@@ -46,7 +46,8 @@ def main():
     model.maximize(x + 10 * y)
     # [END objective]
 
-    # Deep copy.
+    # [Start clone]
+    # Clone the model.
     print("Cloning the model.")
     model_copy = model.clone()
     x_copy = model_copy.var_from_index(x.index)
@@ -61,6 +62,7 @@ def main():
 
     # Modify a constraint.
     c2_copy.add_term(z_copy, 2.0)
+    # [END clone]
 
     # [START solve]
     # Create the solver with the SCIP backend, and solve the model.

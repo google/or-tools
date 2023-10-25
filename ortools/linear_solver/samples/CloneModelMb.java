@@ -55,22 +55,24 @@ public final class CloneModelMb {
     model.maximize(LinearExpr.newBuilder().add(x).addTerm(y, 10.0));
     // [END objective]
 
-    // Deep copy
+    // [Start clone]
+    // Clone the model.
     System.out.println("Cloning the model");
-    ModelBuilder modelCopy = model.clone();
+    ModelBuilder modelCopy = model.getClone();
     Variable xCopy = modelCopy.varFromIndex(x.getIndex());
     Variable yCopy = modelCopy.varFromIndex(y.getIndex());
     Variable zCopy = modelCopy.newBoolVar("z");
     LinearConstraint c2Copy = modelCopy.constraintFromIndex(c2.getIndex());
 
-    // Add new constraint.
-    LinearConstraint c3Copy = modelCopy.addGreaterOrEqual(xCopy, 1);
+    // Add a new constraint.
+    LinearConstraint unusedC3Copy = modelCopy.addGreaterOrEqual(xCopy, 1);
 
     // Modify a constraint.
     c2Copy.addTerm(zCopy, 2.0);
 
     System.out.println("Number of constraints in the original model = " + model.numConstraints());
     System.out.println("Number of constraints in the cloned model = " + modelCopy.numConstraints());
+    // [END clone]
 
     // [START solve]
     // Solve with the SCIP MIP solver.
