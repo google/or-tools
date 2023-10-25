@@ -33,6 +33,8 @@ def IntegerProgrammingExample():
     x = solver.IntVar(0.0, solver.infinity(), "x")
     y = solver.IntVar(0.0, solver.infinity(), "y")
     z = solver.IntVar(0.0, solver.infinity(), "z")
+
+    print("Number of variables =", solver.NumVariables())
     # [END variables]
 
     # [START constraints]
@@ -53,6 +55,8 @@ def IntegerProgrammingExample():
     constraint2.SetCoefficient(x, 5)
     constraint2.SetCoefficient(y, 2)
     constraint2.SetCoefficient(z, -6)
+
+    print("Number of constraints =", solver.NumConstraints())
     # [END constraints]
 
     # [START objective]
@@ -64,16 +68,29 @@ def IntegerProgrammingExample():
     objective.SetMaximization()
     # [END objective]
 
-    # Solve the problem and print the solution.
+    # Solve the problem.
+    # [START solve]
+    print(f"Solving with {solver.SolverVersion()}")
+    status = solver.Solve()
+    # [END solve]
+
+    # Print the solution.
     # [START print_solution]
-    solver.Solve()
-    # Print the objective value of the solution.
-    print("Maximum objective function value = %d" % solver.Objective().Value())
-    print()
-    # Print the value of each variable in the solution.
-    for variable in [x, y, z]:
-        print("%s = %d" % (variable.name(), variable.solution_value()))
+    if status == pywraplp.Solver.OPTIMAL:
+        print("Solution:")
+        print(f"Objective value = {solver.Objective().Value()}")
+        # Print the value of each variable in the solution.
+        for variable in [x, y, z]:
+            print(f"{variable.name()} = {variable.solution_value()}")
+    else:
+        print("The problem does not have an optimal solution.")
     # [END print_solution]
+
+    # [START advanced]
+    print("\nAdvanced usage:")
+    print(f"Problem solved in {solver.wall_time():d} milliseconds")
+    print(f"Problem solved in {solver.iterations():d} iterations")
+    # [END advanced]
 
 
 IntegerProgrammingExample()
