@@ -74,6 +74,7 @@ def main():
 
     # Solve
     # [START solve]
+    print(f"Solving with {solver.SolverVersion()}")
     status = solver.Solve()
     # [END solve]
 

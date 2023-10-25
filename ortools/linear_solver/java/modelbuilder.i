@@ -154,6 +154,7 @@ class GlobalRefGuard {
 %rename (importFromLpFile) operations_research::ModelBuilderHelper::ImportFromLpFile;
 %unignore operations_research::ModelBuilderHelper::exportToMpsString;
 %unignore operations_research::ModelBuilderHelper::exportToLpString;
+%rename (overwriteModel) operations_research::ModelBuilderHelper::OverwriteModel;
 
 %unignore operations_research::ModelSolverHelper;
 %unignore operations_research::ModelSolverHelper::ModelSolverHelper(const std::string&);

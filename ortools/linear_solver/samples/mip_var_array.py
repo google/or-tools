@@ -84,6 +84,7 @@ def main():
     # [END objective]
 
     # [START solve]
+    print(f"Solving with {solver.SolverVersion()}")
     status = solver.Solve()
     # [END solve]
 
@@ -93,9 +94,9 @@ def main():
         for j in range(data["num_vars"]):
             print(x[j].name(), " = ", x[j].solution_value())
         print()
-        print("Problem solved in %f milliseconds" % solver.wall_time())
-        print("Problem solved in %d iterations" % solver.iterations())
-        print("Problem solved in %d branch-and-bound nodes" % solver.nodes())
+        print(f"Problem solved in {solver.wall_time():d} milliseconds")
+        print(f"Problem solved in {solver.iterations():d} iterations")
+        print(f"Problem solved in {solver.nodes():d} branch-and-bound nodes")
     else:
         print("The problem does not have an optimal solution.")
     # [END print_solution]

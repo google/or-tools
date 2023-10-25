@@ -36,6 +36,8 @@ code_sample_cc(name = "stigler_diet")
 
 # Model Builder
 
+code_sample_java(name = "CloneModelMb")
+
 code_sample_java(name = "SimpleLpProgramMb")
 
 code_sample_java(name = "SimpleMipProgramMb")
@@ -43,6 +45,8 @@ code_sample_java(name = "SimpleMipProgramMb")
 code_sample_py(name = "assignment_mb")
 
 code_sample_py(name = "bin_packing_mb")
+
+code_sample_py(name = "clone_model_mb")
 
 code_sample_py(name = "simple_lp_program_mb")
 

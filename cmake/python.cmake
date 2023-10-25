@@ -308,6 +308,56 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
+# Generate Stub
+if(GENERATE_PYTHON_STUB)
+# Look for required python modules
+search_python_module(
+  NAME mypy
+  PACKAGE mypy
+  NO_VERSION)
+
+find_program(
+  stubgen_EXECUTABLE
+  NAMES stubgen stubgen.exe
+  REQUIRED
+)
+
+add_custom_command(
+  OUTPUT python/stub/timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove_directory stub
+  COMMAND ${CMAKE_COMMAND} -E make_directory stub
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub/timestamp
+  MAIN_DEPENDENCY
+    ortools/python/setup.py.in
+  DEPENDS
+    init_pybind11
+    knapsack_solver_pybind11
+    linear_sum_assignment_pybind11
+    max_flow_pybind11
+    min_cost_flow_pybind11
+    pywrapcp
+    pywraplp
+    model_builder_helper_pybind11
+    pdlp_pybind11
+    swig_helper_pybind11
+    rcpsp_pybind11
+    sorted_interval_list_pybind11
+  WORKING_DIRECTORY python
+  COMMAND_EXPAND_LISTS)
+endif()
+
 # Look for required python modules
 search_python_module(
   NAME setuptools
@@ -357,6 +407,7 @@ add_custom_command(
     swig_helper_pybind11
     rcpsp_pybind11
     sorted_interval_list_pybind11
+    $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub/timestamp>
   BYPRODUCTS
     python/${PYTHON_PROJECT}
     python/${PYTHON_PROJECT}.egg-info

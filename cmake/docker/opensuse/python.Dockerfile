@@ -4,7 +4,8 @@ RUN zypper refresh \
 && zypper install -y python311 python311-devel \
  python311-pip python311-wheel python311-virtualenv \
 && zypper clean -a
-RUN python3.11 -m pip install --break-system-packages absl-py mypy-protobuf
+RUN python3.11 -m pip install --break-system-packages \
+ absl-py mypy mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

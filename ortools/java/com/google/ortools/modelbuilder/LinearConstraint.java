@@ -20,6 +20,11 @@ public class LinearConstraint {
     this.index = helper.addLinearConstraint();
   }
 
+  LinearConstraint(ModelBuilderHelper helper, int index) {
+    this.helper = helper;
+    this.index = index;
+  }
+
   /** Returns the index of the constraint in the model. */
   public int getIndex() {
     return index;
