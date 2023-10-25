@@ -50,7 +50,7 @@ public final class ModelBuilder {
   }
 
   /** Returns a cloned model */
-  public ModelBuilder clone() {
+  public ModelBuilder getClone() {
     ModelBuilder clonedModel = new ModelBuilder();
     clonedModel.getHelper().overwriteModel(helper);
     clonedModel.constantMap.putAll(constantMap);
