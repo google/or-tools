@@ -688,7 +688,7 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
     const SchedulingConstraintHelper& helper, Model* model) {
   if (helper.NumTasks() == 0) return {};
 
-  const std::vector<AffineExpression>& ends = helper.Ends();
+  const absl::Span<const AffineExpression> ends = helper.Ends();
   std::vector<IntegerVariable> end_vars;
   for (const AffineExpression& end : ends) {
     // TODO(user): Deal with constant end.

@@ -167,7 +167,7 @@ class IntervalsRepository {
   // demands must be the compatible.
   SchedulingDemandHelper* GetOrCreateDemandHelper(
       SchedulingConstraintHelper* helper,
-      const std::vector<AffineExpression>& demands);
+      absl::Span<const AffineExpression> demands);
 
   // Calls InitDecomposedEnergies on all SchedulingDemandHelper created.
   void InitAllDecomposedEnergies();
@@ -362,11 +362,11 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   //
   // TODO(user): we could merge the first loop of IncrementalSort() with the
   // loop that fill TaskTime.time at each call.
-  const std::vector<TaskTime>& TaskByIncreasingStartMin();
-  const std::vector<TaskTime>& TaskByIncreasingEndMin();
-  const std::vector<TaskTime>& TaskByDecreasingStartMax();
-  const std::vector<TaskTime>& TaskByDecreasingEndMax();
-  const std::vector<TaskTime>& TaskByIncreasingShiftedStartMin();
+  absl::Span<const TaskTime> TaskByIncreasingStartMin();
+  absl::Span<const TaskTime> TaskByIncreasingEndMin();
+  absl::Span<const TaskTime> TaskByDecreasingStartMax();
+  absl::Span<const TaskTime> TaskByDecreasingEndMax();
+  absl::Span<const TaskTime> TaskByIncreasingShiftedStartMin();
 
   // Returns a sorted vector where each task appear twice, the first occurrence
   // is at size (end_min - size_min) and the second one at (end_min).
@@ -434,12 +434,13 @@ class SchedulingConstraintHelper : public PropagatorInterface,
                                                             IntegerLiteral lit);
 
   // Returns the underlying affine expressions.
-  const std::vector<IntervalVariable>& IntervalVariables() const {
+  absl::Span<const IntervalVariable> IntervalVariables() const {
     return interval_variables_;
   }
-  const std::vector<AffineExpression>& Starts() const { return starts_; }
-  const std::vector<AffineExpression>& Ends() const { return ends_; }
-  const std::vector<AffineExpression>& Sizes() const { return sizes_; }
+  absl::Span<const AffineExpression> Starts() const { return starts_; }
+  absl::Span<const AffineExpression> Ends() const { return ends_; }
+  absl::Span<const AffineExpression> Sizes() const { return sizes_; }
+
   Literal PresenceLiteral(int index) const {
     DCHECK(IsOptional(index));
     return Literal(reason_for_presence_[index]);
@@ -528,13 +529,19 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   int previous_level_ = 0;
 
   // The caches of all relevant interval values.
-  std::vector<IntegerValue> cached_size_min_;
-  std::vector<IntegerValue> cached_start_min_;
-  std::vector<IntegerValue> cached_end_min_;
-  std::vector<IntegerValue> cached_negated_start_max_;
-  std::vector<IntegerValue> cached_negated_end_max_;
-  std::vector<IntegerValue> cached_shifted_start_min_;
-  std::vector<IntegerValue> cached_negated_shifted_end_max_;
+  // These are initially of size capacity and never resized.
+  //
+  // TODO(user): Because of std::swap() in SetTimeDirection, we cannot mark
+  // most of them as "const" and as a result we loose some performance since
+  // the address need to be re-fetched on most access.
+  const int capacity_;
+  const std::unique_ptr<IntegerValue[]> cached_size_min_;
+  std::unique_ptr<IntegerValue[]> cached_start_min_;
+  std::unique_ptr<IntegerValue[]> cached_end_min_;
+  std::unique_ptr<IntegerValue[]> cached_negated_start_max_;
+  std::unique_ptr<IntegerValue[]> cached_negated_end_max_;
+  std::unique_ptr<IntegerValue[]> cached_shifted_start_min_;
+  std::unique_ptr<IntegerValue[]> cached_negated_shifted_end_max_;
 
   // Sorted vectors returned by the TasksBy*() functions.
   std::vector<TaskTime> task_by_increasing_start_min_;
@@ -581,7 +588,7 @@ class SchedulingDemandHelper {
  public:
   // Hack: this can be called with and empty demand vector as long as
   // OverrideEnergies() is called to define the energies.
-  SchedulingDemandHelper(std::vector<AffineExpression> demands,
+  SchedulingDemandHelper(absl::Span<const AffineExpression> demands,
                          SchedulingConstraintHelper* helper, Model* model);
 
   // When defined, the interval will consume this much demand during its whole

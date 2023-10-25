@@ -32,7 +32,6 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/timetable.h"
@@ -47,8 +46,7 @@ namespace {
 // TODO(user): Use the faster variable only version if all expressions reduce
 // to a single variable?
 void AddIsEqualToMinOf(IntegerVariable min_var,
-                       const std::vector<AffineExpression>& exprs,
-                       Model* model) {
+                       absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
   for (const AffineExpression& affine : exprs) {
     LinearExpression e;
@@ -66,8 +64,7 @@ void AddIsEqualToMinOf(IntegerVariable min_var,
 }
 
 void AddIsEqualToMaxOf(IntegerVariable max_var,
-                       const std::vector<AffineExpression>& exprs,
-                       Model* model) {
+                       absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
   for (const AffineExpression& affine : exprs) {
     LinearExpression e;
@@ -331,7 +328,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // Compute relevant boxes, the one with a mandatory part of y. Because we will
   // need to sort it this way, we consider them by increasing start max.
   indexed_boxes_.clear();
-  const std::vector<TaskTime>& temp = y->TaskByDecreasingStartMax();
+  const auto temp = y->TaskByDecreasingStartMax();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
     // Ignore absent boxes.
