@@ -781,7 +781,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
-        "//ortools/base:cleanup",	
+        "//ortools/base:cleanup",
         "//ortools/base:hash",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:stl_util",

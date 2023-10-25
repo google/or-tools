@@ -412,6 +412,7 @@ package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 
@@ -437,7 +438,7 @@ public final class CloneModelSampleSat {
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
-    var unusedStatus = solver.solve(model);
+    CpSolverStatus unusedStatus = solver.solve(model);
     System.out.printf("Optimal value of the original model: %f\n", solver.objectiveValue());
 
     CpModel copy = model.getClone();
