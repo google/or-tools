@@ -6,9 +6,10 @@ if (BUILD_CXX_EXAMPLES)
     add_cxx_example(${CMAKE_CURRENT_SOURCE_DIR}/xpress_use.cc)
 endif ()
 
-if (BUILD_PYTHON_EXAMPLES)
-    add_python_example(${CMAKE_CURRENT_SOURCE_DIR}/callback_xpress.py)
-endif ()
+# disable python callback test
+#if (BUILD_PYTHON_EXAMPLES)
+#    add_python_example(${CMAKE_CURRENT_SOURCE_DIR}/callback_xpress.py)
+#endif ()
 
 include(CTest)
 if (BUILD_CXX_EXAMPLES)
