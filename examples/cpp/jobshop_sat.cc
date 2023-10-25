@@ -748,7 +748,9 @@ void Solve(const JsspInputProblem& problem) {
   }
 
   // Tells the solver we have a makespan objective.
+  // Also take decision based on precedence, this usually work better.
   parameters.set_push_all_tasks_toward_start(true);
+  parameters.set_use_dynamic_precedence_in_disjunctive(true);
 
   const CpSolverResponse response =
       SolveWithParameters(cp_model.Build(), parameters);
