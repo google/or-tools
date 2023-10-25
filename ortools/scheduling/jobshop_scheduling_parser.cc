@@ -18,15 +18,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/wrappers.pb.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/util/filelineiter.h"
 
