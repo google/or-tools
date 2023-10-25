@@ -23,7 +23,7 @@
 namespace operations_research {
 namespace sat {
 
-void CopyModelSat() {
+void CloneModelSampleSat() {
   // [START model]
   CpModelBuilder cp_model;
   // [END model]
@@ -47,14 +47,15 @@ void CopyModelSat() {
   LOG(INFO) << "Optimal value of the original model: "
             << initial_response.objective_value();
 
-  CpModelBuilder copy;
-  copy.CopyFrom(cp_model.Proto());
+  // [START clone]
+  CpModelBuilder copy = cp_model.Clone();
 
   // Add new constraint: copy_of_x + copy_of_y == 1.
   IntVar copy_of_x = copy.GetIntVarFromProtoIndex(x.index());
   IntVar copy_of_y = copy.GetIntVarFromProtoIndex(y.index());
 
   copy.AddLessOrEqual(copy_of_x + copy_of_y, 1);
+  // [END clone]
 
   const CpSolverResponse modified_response = Solve(copy.Build());
   LOG(INFO) << "Optimal value of the modified model: "
@@ -65,7 +66,7 @@ void CopyModelSat() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::CopyModelSat();
+  operations_research::sat::CloneModelSampleSat();
 
   return EXIT_SUCCESS;
 }

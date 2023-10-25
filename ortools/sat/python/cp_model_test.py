@@ -1353,8 +1353,7 @@ class CpModelTest(absltest.TestCase):
         i = model.NewOptionalIntervalVar(x, 12, y, b, "i")
         lin = model.Add(x + y <= 10)
 
-        new_model = cp_model.CpModel()
-        new_model.CopyFrom(model)
+        new_model = model.Clone()
         copy_b = new_model.GetBoolVarFromProtoIndex(b.Index())
         copy_x = new_model.GetIntVarFromProtoIndex(x.Index())
         copy_y = new_model.GetIntVarFromProtoIndex(y.Index())

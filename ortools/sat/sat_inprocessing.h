@@ -108,6 +108,7 @@ class Inprocessing {
             model->GetOrCreate<BlockedClauseSimplifier>()),
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
+        logger_(model->GetOrCreate<SolverLogger>()),
         model_(model) {}
 
   // Does some simplifications until a fix point is reached or the given
@@ -140,6 +141,9 @@ class Inprocessing {
   // reductions that can be performed. Returns false if UNSAT.
   bool SubsumeAndStrenghtenRound(bool log_info);
 
+  // A bit hacky. Only needed during refactoring.
+  void ProvideLogger(SolverLogger* logger) { logger_ = logger; }
+
  private:
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
@@ -151,6 +155,7 @@ class Inprocessing {
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
+  SolverLogger* logger_;
 
   double total_dtime_ = 0.0;
 

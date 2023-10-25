@@ -105,6 +105,10 @@ class SatPostsolver {
     return result;
   }
 
+  // This will initially contains the Fixed variable.
+  // If PostsolveSolution() is called, it will contain the final solution.
+  const VariablesAssignment& assignment() { return assignment_; }
+
  private:
   Literal ApplyReverseMapping(Literal l);
   void Postsolve(VariablesAssignment* assignment) const;
@@ -429,7 +433,8 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
     DratProofHandler* drat_proof_handler,
-    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping);
+    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping,
+    SolverLogger* = nullptr);
 
 // Given a 'solver' with a problem already loaded, this will try to simplify the
 // problem (i.e. presolve it) before calling solver->Solve(). In the process,
