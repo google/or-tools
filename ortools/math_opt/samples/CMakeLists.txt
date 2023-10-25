@@ -19,6 +19,11 @@ if(BUILD_CXX_SAMPLES)
   file(GLOB CXX_SRCS "*.cc")
   list(FILTER CXX_SRCS EXCLUDE REGEX "area_socp.cc$")
   list(FILTER CXX_SRCS EXCLUDE REGEX "branch_and_bound.*$")
+  if(NOT USE_SCIP)
+    list(FILTER CXX_SRCS EXCLUDE REGEX "cocktail_hour.cc$")
+    list(FILTER CXX_SRCS EXCLUDE REGEX "lagrangian_relaxation.cc$")
+    list(FILTER CXX_SRCS EXCLUDE REGEX "time_indexed_scheduling.cc$")
+  endif()
 
   # conflict name
   list(FILTER CXX_SRCS EXCLUDE REGEX "basic_example.cc$")
