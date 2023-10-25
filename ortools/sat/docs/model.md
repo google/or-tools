@@ -311,8 +311,8 @@ illustrated in the following examples.
 from ortools.sat.python import cp_model
 
 
-def CopyModelSat():
-    """Showcases printing intermediate solutions found during search."""
+def CloneModelSampleSat():
+    """Showcases cloning a model."""
     # Creates the model.
     model = cp_model.CpModel()
 
@@ -334,21 +334,21 @@ def CopyModelSat():
     if status == cp_model.OPTIMAL:
         print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
 
-    # Copy the model.
-    copy = cp_model.CpModel()
-    copy.CopyFrom(model)
+    # Clone the model.
+    copy = model.Clone()
 
     copy_x = copy.GetIntVarFromProtoIndex(x.Index())
     copy_y = copy.GetIntVarFromProtoIndex(y.Index())
 
     copy.Add(copy_x + copy_y <= 1)
+
     status = solver.Solve(copy)
 
     if status == cp_model.OPTIMAL:
         print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
 
 
-CopyModelSat()
+CloneModelSampleSat()
 ```
 
 ### C++ code
@@ -365,7 +365,7 @@ CopyModelSat()
 namespace operations_research {
 namespace sat {
 
-void CopyModelSat() {
+void CloneModelSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -381,8 +381,7 @@ void CopyModelSat() {
   LOG(INFO) << "Optimal value of the original model: "
             << initial_response.objective_value();
 
-  CpModelBuilder copy;
-  copy.CopyFrom(cp_model.Proto());
+  CpModelBuilder copy = cp_model.Clone();
 
   // Add new constraint: copy_of_x + copy_of_y == 1.
   IntVar copy_of_x = copy.GetIntVarFromProtoIndex(x.index());
@@ -399,8 +398,61 @@ void CopyModelSat() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::CopyModelSat();
+  operations_research::sat::CloneModelSampleSat();
 
   return EXIT_SUCCESS;
+}
+```
+
+### Java code
+
+```java
+package com.google.ortools.sat.samples;
+
+import com.google.ortools.Loader;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
+
+
+/** Minimal CP-SAT example to showcase cloning a model. */
+public final class CloneModelSampleSat {
+  public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
+    // Create the model.
+    CpModel model = new CpModel();
+
+    // Create the variables.
+    int numVals = 3;
+
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
+
+    // Create the constraints.
+    model.addDifferent(x, y);
+
+    model.maximize(LinearExpr.newBuilder().add(x).addTerm(y, 2).addTerm(z, 3).build());
+
+    // Create a solver and solve the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus unusedStatus = solver.solve(model);
+    System.out.printf("Optimal value of the original model: %f\n", solver.objectiveValue());
+
+    CpModel copy = model.getClone();
+
+    // Add new constraint: copy_of_x + copy_of_y == 1.
+    IntVar copyOfX = copy.getIntVarFromProtoIndex(x.getIndex());
+    IntVar copyOfY = copy.getIntVarFromProtoIndex(y.getIndex());
+
+    copy.addLessOrEqual(LinearExpr.newBuilder().add(copyOfX).add(copyOfY).build(), 1);
+
+    unusedStatus = solver.solve(copy);
+    System.out.printf("Optimal value of the cloned model: %f\n", solver.objectiveValue());
+  }
+
+  private CloneModelSampleSat() {}
 }
 ```

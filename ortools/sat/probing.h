@@ -141,7 +141,8 @@ class Prober {
 // abort and leave the solver with the full solution assigned.
 //
 // Returns false iff the problem is UNSAT.
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model);
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
+                               SolverLogger* logger);
 
 // Options for the FailedLiteralProbing() code below.
 //

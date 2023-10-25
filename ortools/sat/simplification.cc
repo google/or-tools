@@ -1142,7 +1142,8 @@ class PropagationGraph {
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
     DratProofHandler* drat_proof_handler,
-    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping) {
+    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping,
+    SolverLogger* logger) {
   WallTimer timer;
   timer.Start();
 
@@ -1248,13 +1249,22 @@ void ProbeAndFindEquivalentLiteral(
     }
   }
 
-  const bool log_info =
-      solver->parameters().log_search_progress() || VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "Probing. fixed " << num_already_fixed_vars << " + "
-                         << solver->LiteralTrail().Index() -
-                                num_already_fixed_vars
-                         << " equiv " << num_equiv / 2 << " total "
-                         << solver->NumVariables() << " wtime: " << timer.Get();
+  if (logger != nullptr) {
+    SOLVER_LOG(logger, "[Pure SAT probing] fixed ", num_already_fixed_vars,
+               " + ", solver->LiteralTrail().Index() - num_already_fixed_vars,
+               " equiv ", num_equiv / 2, " total ", solver->NumVariables(),
+               " wtime: ", timer.Get());
+  } else {
+    const bool log_info =
+        solver->parameters().log_search_progress() || VLOG_IS_ON(1);
+    LOG_IF(INFO, log_info) << "Probing. fixed " << num_already_fixed_vars
+                           << " + "
+                           << solver->LiteralTrail().Index() -
+                                  num_already_fixed_vars
+                           << " equiv " << num_equiv / 2 << " total "
+                           << solver->NumVariables()
+                           << " wtime: " << timer.Get();
+  }
 }
 
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
@@ -1275,7 +1285,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
   {
     Model* model = (*solver)->model();
     const double dtime = std::min(1.0, time_limit->GetDeterministicTimeLeft());
-    if (!LookForTrivialSatSolution(dtime, model)) {
+    if (!LookForTrivialSatSolution(dtime, model, logger)) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::INFEASIBLE;
     }

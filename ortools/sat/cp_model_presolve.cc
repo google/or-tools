@@ -43,6 +43,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/graph/topologicalsorter.h"
@@ -63,6 +64,7 @@
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -5038,12 +5040,13 @@ void AddImplication(int lhs, int rhs, CpModelProto* proto,
 }
 
 template <typename ClauseContainer>
-void ExtractClauses(bool use_bool_and, const ClauseContainer& container,
-                    CpModelProto* proto) {
+void ExtractClauses(bool merge_into_bool_and,
+                    const std::vector<int>& index_mapping,
+                    const ClauseContainer& container, CpModelProto* proto) {
   // We regroup the "implication" into bool_and to have a more concise proto and
   // also for nicer information about the number of binary clauses.
   //
-  // Important: however, we do not do that for the model used during presolving
+  // Important: however, we do not do that for the model used during postsolving
   // since the order of the constraints might be important there depending on
   // how we perform the postsolve.
   absl::flat_hash_map<int, int> ref_to_bool_and;
@@ -5054,24 +5057,23 @@ void ExtractClauses(bool use_bool_and, const ClauseContainer& container,
     // bool_and.
     //
     // TODO(user): Be smarter in how we regroup clause of size 2?
-    if (use_bool_and && clause.size() == 2) {
-      const int a = clause[0].IsPositive()
-                        ? clause[0].Variable().value()
-                        : NegatedRef(clause[0].Variable().value());
-      const int b = clause[1].IsPositive()
-                        ? clause[1].Variable().value()
-                        : NegatedRef(clause[1].Variable().value());
-      AddImplication(NegatedRef(a), b, proto, &ref_to_bool_and);
+    if (merge_into_bool_and && clause.size() == 2) {
+      const int var_a = index_mapping[clause[0].Variable().value()];
+      const int var_b = index_mapping[clause[1].Variable().value()];
+      const int ref_a = clause[0].IsPositive() ? var_a : NegatedRef(var_a);
+      const int ref_b = clause[1].IsPositive() ? var_b : NegatedRef(var_b);
+      AddImplication(NegatedRef(ref_a), ref_b, proto, &ref_to_bool_and);
       continue;
     }
 
     // bool_or.
     ConstraintProto* ct = proto->add_constraints();
     for (const Literal l : clause) {
+      const int var = index_mapping[l.Variable().value()];
       if (l.IsPositive()) {
-        ct->mutable_bool_or()->add_literals(l.Variable().value());
+        ct->mutable_bool_or()->add_literals(var);
       } else {
-        ct->mutable_bool_or()->add_literals(NegatedRef(l.Variable().value()));
+        ct->mutable_bool_or()->add_literals(NegatedRef(var));
       }
     }
   }
@@ -6423,7 +6425,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
 // TODO(user): It is probably more efficient to keep all the bool_and in a
 // global place during all the presolve, and just output them at the end
 // rather than modifying more than once the proto.
-void CpModelPresolver::ExtractBoolAnd() {
+void CpModelPresolver::ConvertToBoolAnd() {
   absl::flat_hash_map<int, int> ref_to_bool_and;
   const int num_constraints = context_->working_model->constraints_size();
   std::vector<int> to_remove;
@@ -6691,7 +6693,7 @@ void CpModelPresolver::Probe() {
   probing_timer.reset();
 
   // Run clique merging using detected implications from probing.
-  {
+  if (context_->params().merge_at_most_one_work_limit() > 0.0) {
     PresolveTimer timer("MaxClique", logger_, time_limit_);
     std::vector<std::vector<Literal>> cliques;
 
@@ -6766,61 +6768,63 @@ void CpModelPresolver::Probe() {
   }
 }
 
-// TODO(user): What to do with the at_most_one/exactly_one constraints?
-// currently we do not take them into account here.
-void CpModelPresolver::PresolvePureSatPart() {
-  // TODO(user): Reenable some SAT presolve with
-  // keep_all_feasible_solutions set to true.
-  if (context_->ModelIsUnsat() || context_->keep_all_feasible_solutions) return;
+namespace {
 
-  const int num_variables = context_->working_model->variables_size();
-  SatPostsolver sat_postsolver(num_variables);
-  SatPresolver sat_presolver(&sat_postsolver, logger_);
-  sat_presolver.SetNumVariables(num_variables);
-  sat_presolver.SetTimeLimit(time_limit_);
-
-  SatParameters params = context_->params();
-
-  // The "full solver" postsolve does not support changing the value of a
-  // variable from the solution of the presolved problem, and we do need this
-  // for blocked clause. It should be possible to allow for this by adding extra
-  // variable to the mapping model at presolve and some linking constraints, but
-  // this is messy.
-  if (params.debug_postsolve_with_full_solver()) {
-    params.set_presolve_blocked_clause(false);
-  }
-
-  // TODO(user): BVA takes time and does not seems to help on the minizinc
-  // benchmarks. That said, it was useful on pure sat problems, so we may want
-  // to enable it. Note that it is related to our MergeClauses().
-  params.set_presolve_use_bva(false);
-  sat_presolver.SetParameters(params);
-
-  // Converts a cp_model literal ref to a sat::Literal used by SatPresolver.
-  absl::flat_hash_set<int> used_variables;
-  auto convert = [&used_variables](int ref) {
-    used_variables.insert(PositiveRef(ref));
-    if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
-    return Literal(BooleanVariable(NegatedRef(ref)), false);
-  };
-
-  // We need all Boolean constraints to be presolved before loading them below.
-  // Otherwise duplicate literals might result in a wrong outcome.
-  //
-  // TODO(user): Be a bit more efficient, and enforce this invariant before we
-  // reach this point?
-  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
-    const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.constraint_case() == ConstraintProto::kBoolOr ||
-        ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      if (PresolveOneConstraint(c)) {
-        context_->UpdateConstraintVariableUsage(c);
-      }
-      if (context_->ModelIsUnsat()) return;
+bool FixFromAssignment(const VariablesAssignment& assignment,
+                       const std::vector<int>& var_mapping,
+                       PresolveContext* context) {
+  const int num_vars = assignment.NumberOfVariables();
+  for (int i = 0; i < num_vars; ++i) {
+    const Literal lit(BooleanVariable(i), true);
+    const int ref = var_mapping[i];
+    if (assignment.LiteralIsTrue(lit)) {
+      if (!context->SetLiteralToTrue(ref)) return false;
+    } else if (assignment.LiteralIsFalse(lit)) {
+      if (!context->SetLiteralToFalse(ref)) return false;
     }
   }
+  return true;
+}
 
-  // Load all Clauses into the presolver and remove them from the current model.
+}  // namespace
+
+// TODO(user): What to do with the at_most_one/exactly_one constraints?
+// currently we do not take them into account here.
+bool CpModelPresolver::PresolvePureSatPart() {
+  // TODO(user): Reenable some SAT presolve with
+  // keep_all_feasible_solutions set to true.
+  if (context_->ModelIsUnsat() || context_->keep_all_feasible_solutions) {
+    return true;
+  }
+
+  // Compute a dense re-indexing for the Booleans of the problem.
+  int num_variables = 0;
+  int num_ignored_variables = 0;
+  const int total_num_vars = context_->working_model->variables().size();
+  std::vector<int> new_index(total_num_vars, -1);
+  std::vector<int> new_to_old_index;
+  for (int i = 0; i < total_num_vars; ++i) {
+    if (!context_->CanBeUsedAsLiteral(i)) {
+      ++num_ignored_variables;
+      continue;
+    }
+
+    // This is important to not assign variable in equivalence to random values.
+    if (context_->VarToConstraints(i).empty()) continue;
+
+    new_to_old_index.push_back(i);
+    new_index[i] = num_variables++;
+    DCHECK_EQ(num_variables, new_to_old_index.size());
+  }
+
+  // The conversion from proto index to remapped Literal.
+  auto convert = [&new_index](int ref) {
+    const int index = new_index[PositiveRef(ref)];
+    DCHECK_NE(index, -1);
+    return Literal(BooleanVariable(index), RefIsPositive(ref));
+  };
+
+  // Load the pure-SAT part in a fresh Model.
   //
   // TODO(user): The removing and adding back of the same clause when nothing
   // happens in the presolve "seems" bad. That said, complexity wise, it is
@@ -6831,8 +6835,29 @@ void CpModelPresolver::PresolvePureSatPart() {
   // when we are sure we don't load duplicates at_most_one/implications in the
   // solver. Ideally, the pure sat presolve could be improved to handle at most
   // one, and we could merge this with what the ProcessSetPPC() is doing.
+  Model local_model;
+  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  auto* sat_solver = local_model.GetOrCreate<SatSolver>();
+  sat_solver->SetNumVariables(num_variables);
+
+  // Fix variables if any. Because we might not have reached the presove "fixed
+  // point" above, some variable in the added clauses might be fixed. We need to
+  // indicate this to the SAT presolver.
+  for (const int var : new_to_old_index) {
+    if (context_->IsFixed(var)) {
+      if (context_->LiteralIsTrue(var)) {
+        if (!sat_solver->AddUnitClause({convert(var)})) return false;
+      } else {
+        if (!sat_solver->AddUnitClause({convert(NegatedRef(var))})) {
+          return false;
+        }
+      }
+    }
+  }
+
   std::vector<Literal> clause;
   int num_removed_constraints = 0;
+  int num_ignored_constraints = 0;
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
     const ConstraintProto& ct = context_->working_model->constraints(i);
 
@@ -6845,7 +6870,7 @@ void CpModelPresolver::PresolvePureSatPart() {
       for (const int ref : ct.enforcement_literal()) {
         clause.push_back(convert(ref).Negated());
       }
-      sat_presolver.AddClause(clause);
+      sat_solver->AddProblemClause(clause, /*is_safe=*/false);
 
       context_->working_model->mutable_constraints(i)->Clear();
       context_->UpdateConstraintVariableUsage(i);
@@ -6858,7 +6883,8 @@ void CpModelPresolver::PresolvePureSatPart() {
       const int left_size = ct.enforcement_literal().size();
       const int right_size = ct.bool_and().literals().size();
       if (left_size > 1 && right_size > 1 &&
-          (left_size + 1) * right_size > 1000) {
+          (left_size + 1) * right_size > 10'000) {
+        ++num_ignored_constraints;
         continue;
       }
 
@@ -6870,17 +6896,24 @@ void CpModelPresolver::PresolvePureSatPart() {
       clause.push_back(Literal(kNoLiteralIndex));  // will be replaced below.
       for (const int ref : ct.bool_and().literals()) {
         clause.back() = convert(ref);
-        sat_presolver.AddClause(clause);
+        sat_solver->AddProblemClause(clause, /*is_safe=*/false);
       }
 
       context_->working_model->mutable_constraints(i)->Clear();
       context_->UpdateConstraintVariableUsage(i);
       continue;
     }
+
+    if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
+      continue;
+    }
+
+    ++num_ignored_constraints;
   }
+  if (sat_solver->ModelIsUnsat()) return false;
 
   // Abort early if there was no Boolean constraints.
-  if (num_removed_constraints == 0) return;
+  if (num_removed_constraints == 0) return true;
 
   // Mark the variables appearing elsewhere or in the objective as non-removable
   // by the sat presolver.
@@ -6892,41 +6925,113 @@ void CpModelPresolver::PresolvePureSatPart() {
   // false and don't appear elsewhere.
   std::vector<bool> can_be_removed(num_variables, false);
   for (int i = 0; i < num_variables; ++i) {
-    if (context_->VarToConstraints(i).empty()) {
+    const int var = new_to_old_index[i];
+    if (context_->VarToConstraints(var).empty()) {
       can_be_removed[i] = true;
-    }
-
-    // Because we might not have reached the presove "fixed point" above, some
-    // variable in the added clauses might be fixed. We need to indicate this to
-    // the SAT presolver.
-    if (used_variables.contains(i) && context_->IsFixed(i)) {
-      if (context_->LiteralIsTrue(i)) {
-        sat_presolver.AddClause({convert(i)});
-      } else {
-        sat_presolver.AddClause({convert(NegatedRef(i))});
-      }
     }
   }
 
-  // Run the presolve for a small number of passes.
-  // TODO(user): Add probing like we do in the pure sat solver presolve loop?
-  // TODO(user): Add a time limit, this can be slow on big SAT problem.
-  const int num_passes = params.presolve_use_bva() ? 4 : 1;
-  for (int i = 0; i < num_passes; ++i) {
-    const int old_num_clause = sat_postsolver.NumClauses();
-    if (!sat_presolver.Presolve(can_be_removed)) {
-      VLOG(1) << "UNSAT during SAT presolve.";
-      return (void)context_->NotifyThatModelIsUnsat();
+  // The "full solver" postsolve does not support changing the value of a
+  // variable from the solution of the presolved problem, and we do need this
+  // for blocked clause. It should be possible to allow for this by adding extra
+  // variable to the mapping model at presolve and some linking constraints, but
+  // this is messy.
+  SatParameters params = context_->params();
+  if (params.debug_postsolve_with_full_solver()) {
+    params.set_presolve_blocked_clause(false);
+  }
+
+  SatPostsolver sat_postsolver(num_variables);
+
+  // If the problem is a pure-SAT problem, we run the new SAT presolver.
+  // This takes more time but it is usually worthwile
+  //
+  // Note that the probing that it does is faster than the
+  // ProbeAndFindEquivalentLiteral() call below, but does not do equivalence
+  // detection as completely, so we still apply the other "probing" code
+  // afterwards even if it will not fix more literals, but it will do one pass
+  // of proper equivalence detection.
+  absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
+  if (!context_->params().debug_postsolve_with_full_solver() &&
+      num_ignored_variables == 0 && num_ignored_constraints == 0 &&
+      !context_->working_model->has_objective()) {
+    // Some problems are formulated in such a way that our SAT heuristics
+    // simply works without conflict. Get them out of the way first because it
+    // is possible that the presolve lose this "lucky" ordering. This is in
+    // particular the case on the SAT14.crafted.complete-xxx-... problems.
+    if (!LookForTrivialSatSolution(/*deterministic_time_limit=*/1.0,
+                                   &local_model, logger_)) {
+      return false;
     }
+    if (sat_solver->LiteralTrail().Index() == num_variables) {
+      // Problem solved! We should be able to assign the solution.
+      CHECK(FixFromAssignment(sat_solver->Assignment(), new_to_old_index,
+                              context_));
+      return true;
+    }
+
+    SatPresolveOptions options;
+    options.log_info = true;  // log_info;
+    options.extract_binary_clauses_in_probing = false;
+    options.use_transitive_reduction = false;
+    options.deterministic_time_limit =
+        context_->params().presolve_probing_deterministic_time_limit();
+
+    auto* inprocessing = local_model.GetOrCreate<Inprocessing>();
+    inprocessing->ProvideLogger(logger_);
+    if (!inprocessing->PresolveLoop(options)) return false;
+    for (const auto& c : local_model.GetOrCreate<PostsolveClauses>()->clauses) {
+      sat_postsolver.Add(c[0], c);
+    }
+
+    // Probe + find equivalent literals.
+    // TODO(user): Use a derived time limit in the probing phase.
+    ProbeAndFindEquivalentLiteral(sat_solver, &sat_postsolver,
+                                  /*drat_proof_handler=*/nullptr, &equiv_map,
+                                  logger_);
+    if (sat_solver->ModelIsUnsat()) return false;
+  } else {
+    // TODO(user): BVA takes time and does not seems to help on the minizinc
+    // benchmarks. So we currently disable it, except if we are on a pure-SAT
+    // problem, where we follow the default (true) or the user specified value.
+    params.set_presolve_use_bva(false);
+  }
+
+  // Update the time limit of the initial propagation.
+  if (!sat_solver->ResetToLevelZero()) return false;
+  time_limit_->AdvanceDeterministicTime(
+      local_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+
+  // Apply the "old" SAT presolve.
+  SatPresolver sat_presolver(&sat_postsolver, logger_);
+  sat_presolver.SetNumVariables(num_variables);
+  if (!equiv_map.empty()) {
+    sat_presolver.SetEquivalentLiteralMapping(equiv_map);
+  }
+  sat_presolver.SetTimeLimit(time_limit_);
+  sat_presolver.SetParameters(params);
+
+  // Load in the presolver.
+  // Register the fixed variables with the postsolver.
+  for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
+    sat_postsolver.FixVariable(sat_solver->LiteralTrail()[i]);
+  }
+  sat_solver->ExtractClauses(&sat_presolver);
+
+  // Run the presolve for a small number of passes.
+  // TODO(user): Add a local time limit? this can be slow on big SAT problem.
+  for (int i = 0; i < 1; ++i) {
+    const int old_num_clause = sat_postsolver.NumClauses();
+    if (!sat_presolver.Presolve(can_be_removed)) return false;
     if (old_num_clause == sat_postsolver.NumClauses()) break;
   }
 
   // Add any new variables to our internal structure.
   const int new_num_variables = sat_presolver.NumVariables();
-  if (new_num_variables > context_->working_model->variables_size()) {
+  if (new_num_variables > num_variables) {
     VLOG(1) << "New variables added by the SAT presolver.";
-    for (int i = context_->working_model->variables_size();
-         i < new_num_variables; ++i) {
+    for (int i = num_variables; i < new_num_variables; ++i) {
+      new_to_old_index.push_back(context_->working_model->variables().size());
       IntegerVariableProto* var_proto =
           context_->working_model->add_variables();
       var_proto->add_domain(0);
@@ -6935,8 +7040,15 @@ void CpModelPresolver::PresolvePureSatPart() {
     context_->InitializeNewDomains();
   }
 
+  // Fix variables if any.
+  if (!FixFromAssignment(sat_postsolver.assignment(), new_to_old_index,
+                         context_)) {
+    return false;
+  }
+
   // Add the presolver clauses back into the model.
-  ExtractClauses(/*use_bool_and=*/true, sat_presolver, context_->working_model);
+  ExtractClauses(/*merge_into_bool_and=*/true, new_to_old_index, sat_presolver,
+                 context_->working_model);
 
   // Update the constraints <-> variables graph.
   context_->UpdateNewConstraintsVariableUsage();
@@ -6944,8 +7056,9 @@ void CpModelPresolver::PresolvePureSatPart() {
   // Add the sat_postsolver clauses to mapping_model.
   //
   // TODO(user): Mark removed variable as removed to detect any potential bugs.
-  ExtractClauses(/*use_bool_and=*/false, sat_postsolver,
-                 context_->mapping_model);
+  ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
+                 sat_postsolver, context_->mapping_model);
+  return true;
 }
 
 void CpModelPresolver::ShiftObjectiveWithExactlyOnes() {
@@ -7364,6 +7477,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
 // it implies all literals at zero inside the exactly one.
 void CpModelPresolver::TransformIntoMaxCliques() {
   if (context_->ModelIsUnsat()) return;
+  if (context_->params().merge_at_most_one_work_limit() <= 0.0) return;
 
   auto convert = [](int ref) {
     if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
@@ -11417,7 +11531,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     // part of the problem, there is no need to redo more presolve afterwards.
     if (context_->params().cp_model_use_sat_presolve()) {
       if (!time_limit_->LimitReached()) {
-        PresolvePureSatPart();
+        if (!PresolvePureSatPart()) {
+          (void)context_->NotifyThatModelIsUnsat("UNSAT during SAT presolve");
+          return InfeasibleStatus();
+        }
       }
     }
 
@@ -11473,7 +11590,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
     // The TransformIntoMaxCliques() call above transform all bool and into
     // at most one of size 2. This does the reverse and merge them.
-    ExtractBoolAnd();
+    ConvertToBoolAnd();
 
     // Call the main presolve to remove the fixed variables and do more
     // deductions.

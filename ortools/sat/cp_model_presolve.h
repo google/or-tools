@@ -216,7 +216,8 @@ class CpModelPresolver {
                            bool* stop_processing_superset);
 
   // Run SAT specific presolve code.
-  void PresolvePureSatPart();
+  // Returns false on UNSAT.
+  bool PresolvePureSatPart();
 
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
@@ -234,7 +235,7 @@ class CpModelPresolver {
   void TransformIntoMaxCliques();
 
   // Converts bool_or and at_most_one of size 2 to bool_and.
-  void ExtractBoolAnd();
+  void ConvertToBoolAnd();
 
   // Try to reformulate the objective in term of "base" variables. This is
   // mainly useful for core based approach where having more terms in the

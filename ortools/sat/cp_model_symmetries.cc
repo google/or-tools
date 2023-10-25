@@ -1181,6 +1181,14 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const int num_cols = orbitope[0].size();
     for (int i = 0; i + 1 < num_cols; ++i) {
       // Add orbitope[0][i] >= orbitope[0][i+1].
+      if (context->CanBeUsedAsLiteral(orbitope[0][i]) &&
+          context->CanBeUsedAsLiteral(orbitope[0][i + 1])) {
+        context->AddImplication(orbitope[0][i + 1], orbitope[0][i]);
+        context->UpdateRuleStats(
+            "symmetry: added symmetry breaking implication");
+        continue;
+      }
+
       ConstraintProto* ct = context->working_model->add_constraints();
       ct->mutable_linear()->add_coeffs(1);
       ct->mutable_linear()->add_vars(orbitope[0][i]);

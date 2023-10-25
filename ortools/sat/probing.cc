@@ -298,9 +298,13 @@ bool Prober::ProbeBooleanVariables(
   return true;
 }
 
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
+                               SolverLogger* logger) {
   WallTimer wall_timer;
   wall_timer.Start();
+
+  // Hack to not have empty logger.
+  if (logger == nullptr) logger = model->GetOrCreate<SolverLogger>();
 
   // Reset the solver in case it was already used.
   auto* sat_solver = model->GetOrCreate<SatSolver>();
@@ -309,7 +313,6 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
 
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
-  auto* logger = model->GetOrCreate<SolverLogger>();
 
   // Note that this code do not care about the non-Boolean part and just try to
   // assign the existing Booleans.
@@ -367,7 +370,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model) {
     const int num_fixed = sat_solver->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
     const int num_variables = sat_solver->NumVariables();
-    SOLVER_LOG(logger, "Random exploration.", " num_fixed: +", num_newly_fixed,
+    SOLVER_LOG(logger, "[Random exploration]", " num_fixed: +", num_newly_fixed,
                " (", num_fixed, "/", num_variables, ")",
                " dtime: ", elapsed_dtime, "/", deterministic_time_limit,
                " wtime: ", wall_timer.Get(),

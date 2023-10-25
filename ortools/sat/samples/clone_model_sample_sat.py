@@ -18,8 +18,8 @@
 from ortools.sat.python import cp_model
 
 
-def CopyModelSat():
-    """Showcases printing intermediate solutions found during search."""
+def CloneModelSampleSat():
+    """Showcases cloning a model."""
     # Creates the model.
     # [START model]
     model = cp_model.CpModel()
@@ -51,19 +51,21 @@ def CopyModelSat():
     if status == cp_model.OPTIMAL:
         print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
 
-    # Copy the model.
-    copy = cp_model.CpModel()
-    copy.CopyFrom(model)
+    # Clone the model.
+    # [START clone]
+    copy = model.Clone()
 
     copy_x = copy.GetIntVarFromProtoIndex(x.Index())
     copy_y = copy.GetIntVarFromProtoIndex(y.Index())
 
     copy.Add(copy_x + copy_y <= 1)
+    # [END clone]
+
     status = solver.Solve(copy)
 
     if status == cp_model.OPTIMAL:
         print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
 
 
-CopyModelSat()
+CloneModelSampleSat()
 # [END program]

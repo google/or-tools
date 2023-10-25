@@ -169,9 +169,10 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
 
 SchedulingDemandHelper* IntervalsRepository::GetOrCreateDemandHelper(
     SchedulingConstraintHelper* helper,
-    const std::vector<AffineExpression>& demands) {
+    absl::Span<const AffineExpression> demands) {
   const std::pair<SchedulingConstraintHelper*, std::vector<AffineExpression>>
-      key = {helper, demands};
+      key = {helper,
+             std::vector<AffineExpression>(demands.begin(), demands.end())};
   const auto it = demand_helper_repository_.find(key);
   if (it != demand_helper_repository_.end()) return it->second;
 
@@ -194,7 +195,15 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
       precedences_(model->GetOrCreate<PrecedencesPropagator>()),
-      interval_variables_(tasks) {
+      interval_variables_(tasks),
+      capacity_(tasks.size()),
+      cached_size_min_(new IntegerValue[capacity_]),
+      cached_start_min_(new IntegerValue[capacity_]),
+      cached_end_min_(new IntegerValue[capacity_]),
+      cached_negated_start_max_(new IntegerValue[capacity_]),
+      cached_negated_end_max_(new IntegerValue[capacity_]),
+      cached_shifted_start_min_(new IntegerValue[capacity_]),
+      cached_negated_shifted_end_max_(new IntegerValue[capacity_]) {
   starts_.clear();
   ends_.clear();
   minus_ends_.clear();
@@ -228,7 +237,15 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()) {
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
+      capacity_(num_tasks),
+      cached_size_min_(new IntegerValue[capacity_]),
+      cached_start_min_(new IntegerValue[capacity_]),
+      cached_end_min_(new IntegerValue[capacity_]),
+      cached_negated_start_max_(new IntegerValue[capacity_]),
+      cached_negated_end_max_(new IntegerValue[capacity_]),
+      cached_shifted_start_min_(new IntegerValue[capacity_]),
+      cached_negated_shifted_end_max_(new IntegerValue[capacity_]) {
   starts_.resize(num_tasks);
   CHECK_EQ(NumTasks(), num_tasks);
 }
@@ -380,13 +397,8 @@ void SchedulingConstraintHelper::InitSortedVectors() {
   recompute_all_cache_ = true;
   recompute_cache_.resize(num_tasks, true);
 
-  cached_shifted_start_min_.resize(num_tasks);
-  cached_negated_shifted_end_max_.resize(num_tasks);
-  cached_size_min_.resize(num_tasks);
-  cached_start_min_.resize(num_tasks);
-  cached_end_min_.resize(num_tasks);
-  cached_negated_start_max_.resize(num_tasks);
-  cached_negated_end_max_.resize(num_tasks);
+  // Make sure all the cached_* arrays can hold enough data.
+  CHECK_LE(num_tasks, capacity_);
 
   task_by_increasing_start_min_.resize(num_tasks);
   task_by_increasing_end_min_.resize(num_tasks);
@@ -491,7 +503,7 @@ void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
   }
 }
 
-const std::vector<TaskTime>&
+absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingStartMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -503,7 +515,7 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
   return task_by_increasing_start_min_;
 }
 
-const std::vector<TaskTime>&
+absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -515,7 +527,7 @@ SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   return task_by_increasing_end_min_;
 }
 
-const std::vector<TaskTime>&
+absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByDecreasingStartMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -528,7 +540,7 @@ SchedulingConstraintHelper::TaskByDecreasingStartMax() {
   return task_by_decreasing_start_max_;
 }
 
-const std::vector<TaskTime>&
+absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -540,7 +552,7 @@ SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   return task_by_decreasing_end_max_;
 }
 
-const std::vector<TaskTime>&
+absl::Span<const TaskTime>
 SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
   if (recompute_shifted_start_min_) {
     recompute_shifted_start_min_ = false;
@@ -822,13 +834,13 @@ IntegerValue ComputeEnergyMinInWindow(
 }
 
 SchedulingDemandHelper::SchedulingDemandHelper(
-    std::vector<AffineExpression> demands, SchedulingConstraintHelper* helper,
-    Model* model)
+    absl::Span<const AffineExpression> demands,
+    SchedulingConstraintHelper* helper, Model* model)
     : integer_trail_(model->GetOrCreate<IntegerTrail>()),
       product_decomposer_(model->GetOrCreate<ProductDecomposer>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
-      demands_(std::move(demands)),
+      demands_(demands.begin(), demands.end()),
       helper_(helper) {
   const int num_tasks = helper->NumTasks();
   linearized_energies_.resize(num_tasks);

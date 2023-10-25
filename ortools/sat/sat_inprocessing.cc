@@ -37,6 +37,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -64,11 +65,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  const bool log_info = options.log_info || VLOG_IS_ON(1);
-  const bool log_round_info = VLOG_IS_ON(1);
-
   // Mainly useful for development.
   double probing_time = 0.0;
+  const bool log_round_info = VLOG_IS_ON(1);
 
   // We currently do the transformations in a given order and restart each time
   // we did something to make sure that the earlier step cannot srengthen more.
@@ -141,17 +140,15 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   // TODO(user): Maintain the total number of literals in the watched clauses.
   if (!LevelZeroPropagate()) return false;
 
-  LOG_IF(INFO, log_info)
-      << "Presolve."
-      << " num_fixed: " << trail_->Index()
-      << " num_redundant: " << implication_graph_->num_redundant_literals() / 2
-      << "/" << sat_solver_->NumVariables()
-      << " num_implications: " << implication_graph_->num_implications()
-      << " num_watched_clauses: " << clause_manager_->num_watched_clauses()
-      << " dtime: " << time_limit_->GetElapsedDeterministicTime() - start_dtime
-      << "/" << options.deterministic_time_limit
-      << " wtime: " << wall_timer.Get()
-      << " non-probing time: " << (wall_timer.Get() - probing_time);
+  SOLVER_LOG(
+      logger_, "[Pure SAT presolve]", " num_fixed: ", trail_->Index(),
+      " num_redundant: ", implication_graph_->num_redundant_literals() / 2, "/",
+      sat_solver_->NumVariables(),
+      " num_implications: ", implication_graph_->num_implications(),
+      " num_watched_clauses: ", clause_manager_->num_watched_clauses(),
+      " dtime: ", time_limit_->GetElapsedDeterministicTime() - start_dtime, "/",
+      options.deterministic_time_limit, " wtime: ", wall_timer.Get(),
+      " non-probing time: ", (wall_timer.Get() - probing_time));
   return true;
 }
 

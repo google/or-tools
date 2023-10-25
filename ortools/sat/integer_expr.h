@@ -139,9 +139,9 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // (resp. coefficients) contained in the range [0, rev_num_fixed_vars_) of
   // vars_ (resp. coeffs_) are fixed (resp. belong to fixed variables).
   const int size_;
-  std::unique_ptr<IntegerVariable[]> vars_;
-  std::unique_ptr<IntegerValue[]> coeffs_;
-  std::unique_ptr<IntegerValue[]> max_variations_;
+  const std::unique_ptr<IntegerVariable[]> vars_;
+  const std::unique_ptr<IntegerValue[]> coeffs_;
+  const std::unique_ptr<IntegerValue[]> max_variations_;
 
   // This is just the negation of the enforcement literal and it never changes.
   std::vector<Literal> literal_reason_;

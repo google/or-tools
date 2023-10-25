@@ -2424,13 +2424,16 @@ class CpModel:
         model_ct.cumulative.capacity.CopyFrom(self.ParseLinearExpression(capacity))
         return ct
 
-    # Support for deep copy.
-    def CopyFrom(self, other_model: "CpModel"):
+    # Support for model cloning.
+    def Clone(self) -> "CpModel":
         """Reset the model, and creates a new one from a CpModelProto instance."""
-        self.__model.CopyFrom(other_model.Proto())
+        clone = CpModel()
+        clone.Proto().CopyFrom(self.Proto())
+        clone.RebuildConstantMap()
+        return clone
 
-        # Rebuild constant map.
-        self.__constant_map.clear()
+    def RebuildConstantMap(self):
+        """Internal method used during model cloning."""
         for i, var in enumerate(self.__model.variables):
             if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
                 self.__constant_map[var.domain[0]] = i
