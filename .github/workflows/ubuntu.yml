@@ -1,4 +1,4 @@
-name: Windows-Ubuntu
+name: Ubuntu
 
 on:
   push:
