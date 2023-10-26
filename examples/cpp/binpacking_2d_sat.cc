@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/container/btree_set.h"
@@ -49,6 +50,134 @@ ABSL_FLAG(bool, use_global_cumulative, true,
 
 namespace operations_research {
 namespace sat {
+
+namespace {
+
+class GreaterByArea {
+ public:
+  explicit GreaterByArea(
+      const packing::MultipleDimensionsBinPackingProblem& problem)
+      : problem_(problem) {}
+
+  bool operator()(int a, int b) const {
+    const auto& a_dims = problem_.items(a).shapes(0).dimensions();
+    const auto& b_dims = problem_.items(b).shapes(0).dimensions();
+
+    return a_dims.Get(0) * a_dims.Get(1) > b_dims.Get(0) * b_dims.Get(1);
+  }
+
+ private:
+  const packing::MultipleDimensionsBinPackingProblem& problem_;
+};
+
+bool ItemsAreIncompatible(
+    const packing::MultipleDimensionsBinPackingProblem& problem, int i1,
+    int i2) {
+  const auto& box_dimensions = problem.box_shape().dimensions();
+  const auto& i1_dims = problem.items(i1).shapes(0).dimensions();
+  const auto& i2_dims = problem.items(i2).shapes(0).dimensions();
+
+  return (i1_dims.Get(0) + i2_dims.Get(0) > box_dimensions[0]) &&
+         (i1_dims.Get(1) + i2_dims.Get(1) > box_dimensions[1]);
+}
+
+absl::btree_set<int> FindFixedItems(
+    const packing::MultipleDimensionsBinPackingProblem& problem) {
+  absl::btree_set<int> fixed_items;
+
+  // We start by fixing big pairwise incompatible items. Each to its own bin.
+  // See https://arxiv.org/pdf/1909.06835.pdf.
+  const int num_items = problem.items_size();
+  const auto box_dimensions = problem.box_shape().dimensions();
+
+  for (int i = 0; i < num_items; ++i) {
+    if (2 * problem.items(i).shapes(0).dimensions(0) > box_dimensions[0] &&
+        2 * problem.items(i).shapes(0).dimensions(1) > box_dimensions[1]) {
+      // Big items are pairwise incompatible. Just fix them in different bins.
+      fixed_items.insert(i);
+    }
+  }
+
+  // Now we fixed all items that are too big to fit any two of them in a bin.
+  // There could still be two items that are incompatible with all the big ones
+  // and one with one another: a very wide one and a very tall one. Let's fix
+  // those two too if they exist. Note that if there are no big items
+  // incompatible_pair_candidates contains all items and we will fix the first
+  // pairwise incompatible pair.
+  absl::btree_set<int> incompatible_pair_candidates;
+  for (int i = 0; i < num_items; ++i) {
+    if (fixed_items.contains(i)) {
+      continue;
+    }
+
+    bool incompatible_with_all = true;
+    for (int item : fixed_items) {
+      if (!ItemsAreIncompatible(problem, item, i)) {
+        incompatible_with_all = false;
+        break;
+      }
+    }
+    if (incompatible_with_all) {
+      incompatible_pair_candidates.insert(i);
+    }
+  }
+  bool found_incompatible_pair = false;
+  for (const int i1 : incompatible_pair_candidates) {
+    for (const int i2 : incompatible_pair_candidates) {
+      if (i1 == i2) {
+        continue;
+      }
+      if (ItemsAreIncompatible(problem, i1, i2)) {
+        // We found a pair that is incompatible with all the big items and
+        // between one another.
+        fixed_items.insert(i1);
+        fixed_items.insert(i2);
+        found_incompatible_pair = true;
+        break;
+      }
+    }
+    if (found_incompatible_pair) {
+      break;
+    }
+  }
+
+  if (!found_incompatible_pair && !incompatible_pair_candidates.empty()) {
+    // We could not add a pair of mutually incompatible items to our list. But
+    // we know a set of elements that are incompatible with all the big ones.
+    // Let's add the one with the largest area.
+    fixed_items.insert(*std::min_element(incompatible_pair_candidates.begin(),
+                                         incompatible_pair_candidates.end(),
+                                         GreaterByArea(problem)));
+  }
+
+  if (!fixed_items.empty()) {
+    std::string_view message_end = ".";
+    if (found_incompatible_pair) {
+      message_end =
+          " (including the extra two that are big in only one "
+          "dimensions).";
+    } else if (!incompatible_pair_candidates.empty()) {
+      message_end =
+          " (including an extra one that is incompatible with all big ones).";
+    }
+    LOG(INFO) << fixed_items.size() << " items are pairwise incompatible"
+              << message_end;
+  }
+
+  if (fixed_items.empty()) {
+    // We couldn't fix any items, just fix the one with the biggest area.
+    std::vector<int> all_items;
+    for (int i = 0; i < num_items; ++i) {
+      all_items.push_back(i);
+    }
+    fixed_items.insert(*std::min_element(all_items.begin(), all_items.end(),
+                                         GreaterByArea(problem)));
+  }
+
+  return fixed_items;
+}
+
+}  // namespace
 
 // Load a 2D bin packing problem and solve it.
 void LoadAndSolve(const std::string& file_name, int instance) {
@@ -115,47 +244,15 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     cp_model.AddExactlyOne(item_to_bin[item]);
   }
 
-  absl::btree_set<int> fixed_items;
-  // We start by fixing big pairwise incompatible items. Each to its own bin.
-  // See https://arxiv.org/pdf/1909.06835.pdf.
-  for (int i = 0; i < num_items; ++i) {
-    if (2 * problem.items(i).shapes(0).dimensions(0) > box_dimensions[0] &&
-        2 * problem.items(i).shapes(0).dimensions(1) > box_dimensions[1]) {
-      // Big items are pairwise incompatible. Just fix them in different bins.
-      fixed_items.insert(i);
-    }
-  }
+  const absl::btree_set<int> fixed_items = FindFixedItems(problem);
 
-  auto items_are_incompatible = [&problem, &box_dimensions](int i1, int i2) {
-    return (problem.items(i1).shapes(0).dimensions(0) +
-                problem.items(i2).shapes(0).dimensions(0) >
-            box_dimensions[0]) &&
-           (problem.items(i1).shapes(0).dimensions(1) +
-                problem.items(i2).shapes(0).dimensions(1) >
-            box_dimensions[1]);
-  };
-
-  // This loop looks redundant with the loop above but the order we add the
-  // items to fixed_items is important.
-  for (int i = 0; i < num_items; ++i) {
-    if (fixed_items.contains(i)) {
-      continue;
-    }
-
-    bool incompatible_with_all = true;
-    for (int item : fixed_items) {
-      if (!items_are_incompatible(item, i)) {
-        incompatible_with_all = false;
-        break;
-      }
-    }
-    if (incompatible_with_all) {
-      fixed_items.insert(i);
-    }
-  }
-
-  if (!fixed_items.empty()) {
-    LOG(INFO) << fixed_items.size() << " items are pairwise incompatible";
+  // Fix the fixed_items to the first fixed_items.size() bins.
+  CHECK_LT(fixed_items.size(), max_bins)
+      << "Infeasible problem, increase max_bins";
+  int count = 0;
+  for (const int item : fixed_items) {
+    cp_model.FixVariable(item_to_bin[item][count], true);
+    ++count;
   }
 
   // Detect incompatible pairs of items and add conflict at the bin level.
@@ -166,14 +263,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
         // Both are already fixed to different bins.
         continue;
       }
-      if (!items_are_incompatible(i1, i2)) {
+      if (!ItemsAreIncompatible(problem, i1, i2)) {
         continue;
-      }
-      if (num_incompatible_pairs == 0 && fixed_items.empty()) {
-        // If nothing is already fixed, fix the first incompatible pair to break
-        // symmetry.
-        fixed_items.insert(i1);
-        fixed_items.insert(i2);
       }
       num_incompatible_pairs++;
       for (int b = 0; b < max_bins; ++b) {
@@ -183,15 +274,6 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
   if (num_incompatible_pairs > 0) {
     LOG(INFO) << num_incompatible_pairs << " incompatible pairs of items";
-  }
-
-  // Fix the fixed_items to the first fixed_items.size() bins.
-  CHECK_LT(fixed_items.size(), max_bins)
-      << "Infeasible problem, increase max_bins";
-  int count = 0;
-  for (const int item : fixed_items) {
-    cp_model.FixVariable(item_to_bin[item][count], true);
-    ++count;
   }
 
   // Manages positions and sizes for each item.
@@ -280,12 +362,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
       }
     }
     std::sort(not_placed_items.begin(), not_placed_items.end(),
-              [&problem](int a, int b) {
-                return problem.items(a).shapes(0).dimensions(0) *
-                           problem.items(a).shapes(0).dimensions(1) >
-                       problem.items(b).shapes(0).dimensions(0) *
-                           problem.items(b).shapes(0).dimensions(1);
-              });
+              GreaterByArea(problem));
 
     // Symmetry breaking: i-th biggest item is in bin <= i for the first
     // max_bins items.

@@ -768,8 +768,8 @@ cc_binary(
 
 cc_test(
     name = "strawberry_fields_with_column_generation_test",
-    srcs = ["strawberry_fields_with_column_generation.cc"],
     size = "large",
+    srcs = ["strawberry_fields_with_column_generation.cc"],
     args = ["--colgen_instance=4"],
     deps = [
         "//ortools/base",
@@ -1026,8 +1026,8 @@ cc_binary(
 
 cc_test(
     name = "slitherlink_sat_test",
-    srcs = ["slitherlink_sat.cc"],
     size = "small",
+    srcs = ["slitherlink_sat.cc"],
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
@@ -1060,8 +1060,8 @@ cc_binary(
 
 cc_test(
     name = "variable_intervals_sat_test",
-    srcs = ["variable_intervals_sat.cc"],
     size = "small",
+    srcs = ["variable_intervals_sat.cc"],
     deps = [
         "//ortools/sat:cp_model",
         "//ortools/sat:sat_parameters_cc_proto",
