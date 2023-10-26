@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: shrd=${{ matrix.cmake.shared }} extras=${{ matrix.extras }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+    name: shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       XPRESSDIR: ${{ github.workspace }}/xpressmp
@@ -79,7 +79,7 @@ jobs:
             -DBUILD_PYTHON=${{ matrix.cmake.python }} \
             -DBUILD_JAVA=${{ matrix.cmake.java }} \
             -DBUILD_DOTNET=${{ matrix.cmake.dotnet }} \
-            -DBUILD_EXAMPLES=ON 
+            -DBUILD_EXAMPLES=ON \
             -DBUILD_SAMPLES=OFF \
             -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
             -DBUILD_DEPS=ON \
