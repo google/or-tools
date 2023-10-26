@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-20.04]
         python-version: ['3.7', '3.8', '3.9', '3.10']
         python: [ON, OFF]
         shared: [ON, OFF]
@@ -42,10 +42,11 @@ jobs:
         # ( xpress=ON ) X (linux shared) X
         # [ publish-or=ON  java=OFF  dotnet=OFF  python=OFF x (python-version=3.10)
         exclude:
-          - os: windows-latest
-            shared: ON
-          - os: windows-latest
+          - os: ubuntu-20.04
             shared: OFF
+            extras: ON
+          - os: ubuntu-20.04
+            shared: ON
             extras: OFF
           - extras: OFF
             python: ON
@@ -77,15 +78,24 @@ jobs:
       - name: Checkout or-tools
         uses: actions/checkout@v4
 
-      - name: setup environment
-        uses: ./.github/workflows/setup-env
+      - name: Swig install
+        run: |
+          sudo apt install -y swig
+          swig -version
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          os: ${{ matrix.os }}
-          python-version: ${{ matrix.python-version }}
-          dotnet: ${{ matrix.dotnet }}
+          python-version: ${{ matrix.python.version }}
+      - name: Update Path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Setup .NET 6.0
+        if: ${{ inputs.dotnet == 'ON' }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
 
       - name: Set-up Xpress with pip for Ubuntu
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
           python -m pip install xpress==9.0.0
@@ -95,43 +105,16 @@ jobs:
           echo "Create symbolic link for XPRESS library file because it is missing in the Python installation"
           ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
 
-      - name: Set-up Xpress with pip for Windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        shell: bash
-        run: |
-          python -m pip install --no-cache-dir xpress==9.0.0
-          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
-          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
-          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
-
       - name: ccache
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         uses: hendrikmuhs/ccache-action@v1
         with:
-          key: ${{ matrix.os }}-${{ matrix.shared }}-${{ matrix.python-version }}
-
-      - name: set cache variables
-        id: cache
-        shell: bash
-        run: |
-          OS=${{ matrix.os }}
-          [ $OS == "ubuntu-20.04" ] && CCACHE="-DCMAKE_C_COMPILER_LAUNCHER=ccache" || CCACHE=""
-          [ $OS == "ubuntu-20.04" ] && CXXCACHE="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache" || CXXCACHE=""
-          echo "CMAKE_CCACHE=$CCACHE" >> $GITHUB_OUTPUT
-          echo "CMAKE_CXXCACHE=$CXXCACHE" >> $GITHUB_OUTPUT
-
-      - name: Add xpress bin to path
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        shell: bash
-        run: |
-          echo "${{ env.XPAUTH_PATH }}" >> $GITHUB_PATH
+          key: ${{ matrix.shared }}-${{ matrix.python-version }}
 
       - name: Configure OR-Tools
         shell: bash
         run: |
           cmake --version
           cmake -S . -B build \
-            -DPython3_ROOT_DIR="${{ env.pythonLocation }}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
             -DBUILD_PYTHON=${{ matrix.python }} \
@@ -142,18 +125,13 @@ jobs:
             -DBUILD_DEPS=ON \
             -DBUILD_SAMPLES=OFF \
             -DCMAKE_INSTALL_PREFIX="build/install" \
-            ${{ steps.cache.outputs.CMAKE_CCACHE }} \
-            ${{ steps.cache.outputs.CMAKE_CXXCACHE }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: cmake --build build --config Release --target all install -j4
-
-      - name: Build OR-Tools windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
 
       - name: run tests not xpress
         working-directory: ./build/
