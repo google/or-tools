@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -321,14 +322,12 @@ TimeTablingPerTask::TimeTablingPerTask(AffineExpression capacity,
 
   num_profile_tasks_ = 0;
   profile_tasks_.resize(num_tasks_);
-  positions_in_profile_tasks_.resize(num_tasks_);
 
   initial_max_demand_ = IntegerValue(0);
   const bool capa_is_fixed = integer_trail_->IsFixed(capacity_);
   const IntegerValue capa_min = integer_trail_->LowerBound(capacity_);
   for (int t = 0; t < num_tasks_; ++t) {
     profile_tasks_[t] = t;
-    positions_in_profile_tasks_[t] = t;
 
     if (capa_is_fixed && demands_->DemandMin(t) >= capa_min) {
       // TODO(user): This usually correspond to a makespan interval.
@@ -380,27 +379,27 @@ bool TimeTablingPerTask::BuildProfile() {
   // contributing are still part of the profile so we only need to check the
   // other tasks.
   for (int i = num_profile_tasks_; i < num_tasks_; ++i) {
-    const int t1 = profile_tasks_[i];
-    if (helper_->IsPresent(t1) && helper_->StartMax(t1) < helper_->EndMin(t1)) {
-      // Swap values and positions.
-      const int t2 = profile_tasks_[num_profile_tasks_];
-      profile_tasks_[i] = t2;
-      profile_tasks_[num_profile_tasks_] = t1;
-      positions_in_profile_tasks_[t1] = num_profile_tasks_;
-      positions_in_profile_tasks_[t2] = i;
+    const int t = profile_tasks_[i];
+    if (helper_->IsPresent(t) && helper_->StartMax(t) < helper_->EndMin(t)) {
+      std::swap(profile_tasks_[i], profile_tasks_[num_profile_tasks_]);
       num_profile_tasks_++;
     }
   }
 
-  const auto& by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
-  const auto& by_end_min = helper_->TaskByIncreasingEndMin();
+  // Cache the demand min. If not in profile, it will be zero.
+  cached_demands_min_.assign(num_tasks_, 0);
+  absl::Span<IntegerValue> demands_min = absl::MakeSpan(cached_demands_min_);
+  for (int i = 0; i < num_profile_tasks_; ++i) {
+    const int t = profile_tasks_[i];
+    demands_min[t] = demands_->DemandMin(t);
+  }
 
   // Build the profile.
   // ------------------
   profile_.clear();
 
   // Start and height of the highest profile rectangle.
-  profile_max_height_ = 0;
+  IntegerValue max_height = 0;
   IntegerValue max_height_start = kMinIntegerValue;
 
   // Start and height of the currently built profile rectangle.
@@ -414,12 +413,18 @@ bool TimeTablingPerTask::BuildProfile() {
   // "rectangles" in a profile for exactly the same propagation!
   const IntegerValue relevant_height =
       integer_trail_->UpperBound(capacity_) - initial_max_demand_;
+  const IntegerValue default_non_relevant_height =
+      has_demand_equal_to_capacity_ ? 1 : 0;
+
+  const auto& by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
+  const auto& by_end_min = helper_->TaskByIncreasingEndMin();
 
   // Next start/end of the compulsory parts to be processed. Note that only the
   // task for which IsInProfile() is true must be considered.
   int next_start = num_tasks_ - 1;
   int next_end = 0;
-  while (next_end < num_tasks_) {
+  const int num_tasks = num_tasks_;
+  while (next_end < num_tasks) {
     IntegerValue time = by_end_min[next_end].time;
     if (next_start >= 0) {
       time = std::min(time, by_decreasing_start_max[next_start].time);
@@ -429,25 +434,25 @@ bool TimeTablingPerTask::BuildProfile() {
     while (next_start >= 0 &&
            by_decreasing_start_max[next_start].time == time) {
       const int t = by_decreasing_start_max[next_start].task_index;
-      if (IsInProfile(t)) current_height += demands_->DemandMin(t);
+      current_height += demands_min[t];
       --next_start;
     }
 
     // Process the ending compulsory parts.
-    while (next_end < num_tasks_ && by_end_min[next_end].time == time) {
+    while (next_end < num_tasks && by_end_min[next_end].time == time) {
       const int t = by_end_min[next_end].task_index;
-      if (IsInProfile(t)) current_height -= demands_->DemandMin(t);
+      current_height -= demands_min[t];
       ++next_end;
     }
 
-    if (current_height > profile_max_height_) {
-      profile_max_height_ = current_height;
+    if (current_height > max_height) {
+      max_height = current_height;
       max_height_start = time;
     }
 
     IntegerValue effective_height = current_height;
     if (effective_height > 0 && effective_height <= relevant_height) {
-      effective_height = IntegerValue(has_demand_equal_to_capacity_ ? 1 : 0);
+      effective_height = default_non_relevant_height;
     }
 
     // Insert a new profile rectangle if any.
@@ -464,6 +469,9 @@ bool TimeTablingPerTask::BuildProfile() {
 
   // Add a sentinel to simplify the algorithm.
   profile_.emplace_back(kMaxIntegerValue, IntegerValue(0));
+
+  // Save max_height.
+  profile_max_height_ = max_height;
 
   // Increase the capacity variable if required.
   return IncreaseCapacity(max_height_start, profile_max_height_);
