@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+    name: ${{ matrix.os }} shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       XPRESSDIR: ${{ github.workspace }}/xpressmp
