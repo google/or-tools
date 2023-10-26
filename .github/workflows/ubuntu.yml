@@ -23,11 +23,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-20.04"]
+        os: ["ubuntu-20.04", "ubuntu-22.04"]
         cmake: [
           {shared: OFF, java: OFF, dotnet: OFF, python: OFF, python-version: "3.8",  publish-cxx-or: ON},
           {shared: ON,  java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  publish-cxx-or: ON},
-          {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.7",  publish-cxx-or: OFF},
           {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.8",  publish-cxx-or: OFF},
           {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.9",  publish-cxx-or: OFF},
           {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.10", publish-cxx-or: OFF},
@@ -69,34 +68,45 @@ jobs:
           echo "Create symbolic link for XPRESS library file because it is missing in the Python installation"
           ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
 
+      - name: Check cmake
+        run: cmake --version
       - name: Configure OR-Tools
-        shell: bash
-        run: |
-          cmake --version
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=${{ matrix.cmake.shared }} \
-            -DBUILD_PYTHON=${{ matrix.cmake.python }} \
-            -DBUILD_JAVA=${{ matrix.cmake.java }} \
-            -DBUILD_DOTNET=${{ matrix.cmake.dotnet }} \
-            -DBUILD_EXAMPLES=ON \
-            -DBUILD_SAMPLES=OFF \
-            -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
-            -DCMAKE_INSTALL_PREFIX="build/install" \
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_SHARED_LIBS=${{ matrix.cmake.shared }}
+          -DBUILD_PYTHON=${{ matrix.cmake.python }}
+          -DBUILD_JAVA=${{ matrix.cmake.java }}
+          -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
+          -DBUILD_EXAMPLES=ON
+          -DBUILD_DEPS=ON
+          -DBUILD_SAMPLES=OFF
+          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
+          -DCMAKE_INSTALL_PREFIX="build/install"
 
       - name: Build OR-Tools Linux
-        shell: bash
-        run: cmake --build build --config Release --target all install -j4
+        run: >
+          cmake
+          --build build
+          --config Release
+          --target all install -j4
 
       - name: run tests not xpress
         working-directory: ./build/
-        run: |
-          ctest -C Release --output-on-failure  -E "xpress"
+        run: >
+          ctest
+          -C Release
+          --output-on-failure
+          -E "xpress"
 
       - name: run tests xpress
         working-directory: ./build/
-        run: |
-          ctest -V -C Release --output-on-failure  -R "xpress"
+        run: >
+          ctest 
+          -V 
+          -C Release 
+          --output-on-failure 
+          -R "xpress"
 
       - name: set name variables
         id: names
