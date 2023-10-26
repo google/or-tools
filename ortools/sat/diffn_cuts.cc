@@ -24,6 +24,7 @@
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -136,7 +137,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
 
 void GenerateNoOverlap2dEnergyCut(
     const std::vector<std::vector<LiteralValueValue>>& energies,
-    absl::Span<int> rectangles, const std::string& cut_name, Model* model,
+    absl::Span<int> rectangles, absl::string_view cut_name, Model* model,
     LinearConstraintManager* manager, SchedulingConstraintHelper* x_helper,
     SchedulingConstraintHelper* y_helper,
     SchedulingDemandHelper* y_demands_helper) {
@@ -295,7 +296,7 @@ void GenerateNoOverlap2dEnergyCut(
         add_energy_to_name = true;
       }
     }
-    std::string full_name = cut_name;
+    std::string full_name(cut_name);
     if (add_opt_to_name) full_name.append("_optional");
     if (add_quadratic_to_name) full_name.append("_quadratic");
     if (add_energy_to_name) full_name.append("_energy");
@@ -401,7 +402,7 @@ std::string DiffnCtEvent::DebugString() const {
 //
 // TODO(user): merge with Packing cuts.
 void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
-    const std::string& cut_name, std::vector<DiffnCtEvent> events,
+    absl::string_view cut_name, std::vector<DiffnCtEvent> events,
     bool use_lifting, bool skip_low_sizes, Model* model,
     LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
@@ -548,7 +549,7 @@ void GenerateNoOvelap2dCompletionTimeCutsWithEnergy(
         add_energy_to_name |= event.use_energy;
         cut.AddTerm(event.x_end, event.energy_min * best_capacity);
       }
-      std::string full_name = cut_name;
+      std::string full_name(cut_name);
       if (is_lifted) full_name.append("_lifted");
       if (add_energy_to_name) full_name.append("_energy");
       top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());

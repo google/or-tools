@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_SAT_PRECEDENCES_H_
 #define OR_TOOLS_SAT_PRECEDENCES_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"

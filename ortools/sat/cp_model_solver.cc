@@ -3452,13 +3452,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             shared.incomplete_solutions.get(), "rins/rens"),
         params, helper, &shared));
   }
-
+  const int num_incomplete_solvers =
+      params.num_workers() - num_full_problem_solvers;
   const LinearModel* linear_model = global_model->Get<LinearModel>();
-  if (params.num_violation_ls() > 0 && !params.interleave_search() &&
-      model_proto.has_objective()) {
-    const int num_violation_ls = params.test_feasibility_jump()
-                                     ? params.num_workers()
-                                     : params.num_violation_ls();
+  if (!params.interleave_search() && model_proto.has_objective()) {
+    int num_violation_ls = params.has_num_violation_ls()
+                               ? params.num_violation_ls()
+                               : num_incomplete_solvers / 8 + 1;
+    if (params.test_feasibility_jump()) {
+      num_violation_ls = params.num_workers();
+    }
     for (int i = 0; i < num_violation_ls; ++i) {
       SatParameters local_params = params;
       local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));

@@ -575,7 +575,7 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class DecompositionGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit DecompositionGraphNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, absl::BitGenRef random) final;
@@ -734,7 +734,7 @@ class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
 class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   RoutingRandomNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
-                                     const std::string& name)
+                                     absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -746,7 +746,7 @@ class RoutingRandomNeighborhoodGenerator : public NeighborhoodGenerator {
 class RoutingPathNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   RoutingPathNeighborhoodGenerator(NeighborhoodGeneratorHelper const* helper,
-                                   const std::string& name)
+                                   absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,
