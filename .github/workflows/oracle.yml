@@ -17,7 +17,7 @@ env:
 jobs:
 
   build:
-    name: shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+    name: shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} python=${{ matrix.cmake.python }}
     runs-on: ubuntu-latest
     container: 'oraclelinux:8'
     env:
@@ -26,8 +26,8 @@ jobs:
       fail-fast: false
       matrix:
         cmake: [
-          { shared: OFF, java: OFF, dotnet: OFF, python: OFF, python-version: "3.8"},
-          { shared: ON,  java: ON,  dotnet: OFF, python: ON,  python-version: "3.8"},
+          { shared: OFF, java: OFF, dotnet: OFF, python: OFF},
+          { shared: ON,  java: ON,  dotnet: OFF, python: ON},
         ]
     steps:
       - name: set name variables
@@ -53,7 +53,6 @@ jobs:
           dnf clean all
           rm -rf /var/cache/dnf
       - name: Install swig (dnf)
-        if: ${{ matrix.extras == 'ON' }}
         run: |
           dnf -y update
           dnf -y install pcre-devel

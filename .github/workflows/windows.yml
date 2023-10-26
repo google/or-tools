@@ -27,7 +27,6 @@ jobs:
         shared: [OFF]
         cmake: [
           { java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  python-dir: "Python309", publish-cxx-or: ON },
-          { java: OFF, dotnet: OFF, python: ON,  python-version: "3.7",  python-dir: "Python307", publish-cxx-or: OFF },
           { java: OFF, dotnet: OFF, python: ON,  python-version: "3.8",  python-dir: "Python308", publish-cxx-or: OFF },
           { java: OFF, dotnet: OFF, python: ON,  python-version: "3.9",  python-dir: "Python309", publish-cxx-or: OFF },
           { java: OFF, dotnet: OFF, python: ON,  python-version: "3.10", python-dir: "Python310", publish-cxx-or: OFF },
@@ -73,32 +72,43 @@ jobs:
       - name: Check cmake
         run: cmake --version
       - name: Configure OR-Tools
-        shell: bash
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
-            -DBUILD_PYTHON=${{ matrix.cmake.python }} \
-            -DBUILD_JAVA=${{ matrix.java }} \
-            -DBUILD_DOTNET=${{ matrix.dotnet }} \
-            -DBUILD_EXAMPLES=ON \
-            -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
-            -DBUILD_DEPS=ON \
-            -DBUILD_SAMPLES=OFF \
-            -DCMAKE_INSTALL_PREFIX="build/install" \
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+          -DBUILD_PYTHON=${{ matrix.cmake.python }}
+          -DBUILD_JAVA=${{ matrix.java }}
+          -DBUILD_DOTNET=${{ matrix.dotnet }}
+          -DBUILD_EXAMPLES=ON
+          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
+          -DBUILD_DEPS=ON
+          -DBUILD_SAMPLES=OFF
+          -DCMAKE_INSTALL_PREFIX="build/install"
 
       - name: Build OR-Tools windows
-        run: cmake --build build --config Release --target ALL_BUILD INSTALL -v -- /maxcpucount
+        run: >
+          cmake 
+          --build build 
+          --config Release 
+          --target ALL_BUILD INSTALL 
+          -v -j2
 
       - name: run tests not xpress
         working-directory: ./build/
-        run: |
-          ctest -C Release --output-on-failure  -E "xpress"
+        run: >
+          ctest 
+          -C Release 
+          --output-on-failure 
+          -E "xpress"
 
       - name: run tests xpress
         working-directory: ./build/
-        run: |
-          ctest -V -C Release --output-on-failure  -R "xpress"
+        run: >
+          ctest 
+          -V 
+          -C Release 
+          --output-on-failure 
+          -R "xpress"
 
       - name: set name variables
         id: names
