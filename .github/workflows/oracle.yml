@@ -73,15 +73,15 @@ jobs:
           dnf -y install pcre-devel
           dnf clean all
           rm -rf /var/cache/dnf
-          wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz"
-          tar xvf swig-4.0.2.tar.gz
-          rm swig-4.0.2.tar.gz
-          cd swig-4.0.2
+          wget -q "https://downloads.sourceforge.net/project/swig/swig/swig-4.1.1/swig-4.1.1.tar.gz"
+          tar xvf swig-4.1.1.tar.gz
+          rm swig-4.1.1.tar.gz
+          cd swig-4.1.1
           ./configure --prefix=/usr
           make -j 4
           make install
           cd ..
-          rm -rf swig-4.0.2
+          rm -rf swig-4.1.1
       - name: Install java (jdk)
         if: ${{ matrix.java == 'ON' }}
         run: |
@@ -96,13 +96,14 @@ jobs:
           dnf -y install python39-devel python39-pip python39-numpy
           dnf clean all
           echo "/root/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           python3 -m pip install --upgrade pip
           python3 -m pip install protobuf mypy-protobuf absl-py setuptools wheel pandas virtualenv
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
         with:
-          cmake-version: '3.22.x'
+          cmake-version: '3.26.x'
 
       - name: Checkout OR-Tools
         run: |
@@ -118,7 +119,6 @@ jobs:
 
       - name: Configure OR-Tools
         run: |
-          export PATH=/root/.local/bin:$PATH
           source /opt/rh/gcc-toolset-11/enable
           cmake --version
           cmake -S . -B build \
@@ -136,7 +136,6 @@ jobs:
 
       - name: Build OR-Tools Linux
         run: |
-          export PATH=/root/.local/bin:$PATH
           source /opt/rh/gcc-toolset-11/enable
           cmake --build build --config Release --target all install -j4
 
