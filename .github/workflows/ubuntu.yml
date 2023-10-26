@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} shrd=${{ matrix.shared }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
+    name: shrd=${{ matrix.cmake.shared }} extras=${{ matrix.extras }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       XPRESSDIR: ${{ github.workspace }}/xpressmp
@@ -23,58 +23,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-20.04']
-        python-version: ['3.7', '3.8', '3.9', '3.10']
-        python: [ON, OFF]
-        shared: [ON, OFF]
-        extras: [ON, OFF]
-        # the matrix is a bit complicated because
-        # we need static C++-libraries for both Windows and linux
-        # Under windows we can only build ortools Python/Java/C# libraries using a STATIC build
-        # Under Linux we can only build ortools Python/Java/C# libraries using a SHARED build
-        # we need python support for multiple python versions
-        # So we have the following jobs:
-        # 22 jobs
-        # ( xpress=ON  ) X (Windows static, linux shared) X
-        # [ publish-or=ON  java=ON  dotnet=ON  python=OFF x (python-version=3.10),
-        #   publish-or=OFF java=OFF dotnet=OFF python=ON  x (python-version=(3.7, 3.8, 3.9, 3.10)) ]
-        # 2 jobs
-        # ( xpress=ON ) X (linux shared) X
-        # [ publish-or=ON  java=OFF  dotnet=OFF  python=OFF x (python-version=3.10)
-        exclude:
-          - os: ubuntu-20.04
-            shared: OFF
-            extras: ON
-          - os: ubuntu-20.04
-            shared: ON
-            extras: OFF
-          - extras: OFF
-            python: ON
-          - python: OFF
-            python-version: '3.7'
-          - python: OFF
-            python-version: '3.9'
-          - python: OFF
-            python-version: '3.10'
-        include:
-          - extras: ON
-            python: OFF
-            publish-or: ON
-            dotnet: ON
-            java: ON
-          - extras: ON
-            python: ON
-            publish-or: OFF
-            dotnet: OFF
-            java: OFF
-          - extras: OFF
-            python: OFF
-            publish-or: ON
-            java: OFF
-            dotnet: OFF
+        os: ["ubuntu-20.04"]
+        cmake: [
+          {shared: OFF, java: OFF, dotnet: OFF, python: OFF, python-version: "3.8",  publish-cxx-or: ON},
+          {shared: ON,  java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  publish-cxx-or: ON},
+          {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.7",  publish-cxx-or: OFF},
+          {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.8",  publish-cxx-or: OFF},
+          {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.9",  publish-cxx-or: OFF},
+          {shared: ON,  java: OFF, dotnet: OFF, python: ON,  python-version: "3.10", publish-cxx-or: OFF},
+        ]
 
     steps:
-
       - name: Checkout or-tools
         uses: actions/checkout@v4
 
@@ -85,14 +44,16 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
-
+          python-version: ${{ matrix.cmake.python-version }}
       - name: Update Path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: '3.26.x'
 
       - name: Setup .NET 6.0
-        if: ${{ matrix.dotnet == 'ON' }}
+        if: ${{ matrix.cmake.dotnet == 'ON' }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
@@ -102,16 +63,11 @@ jobs:
         run: |
           python -m pip install xpress==9.0.0
           echo ${{ env.pythonLocation }}
-          XPRESS_DIR=${{ env.pythonLocation }}/lib/python${{ matrix.python-version }}/site-packages/xpress
+          XPRESS_DIR=${{ env.pythonLocation }}/lib/python${{ matrix.cmake.python-version }}/site-packages/xpress
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
           echo "Create symbolic link for XPRESS library file because it is missing in the Python installation"
           ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
-        with:
-          key: ${{ matrix.shared }}-${{ matrix.python-version }}
 
       - name: Configure OR-Tools
         shell: bash
@@ -119,18 +75,15 @@ jobs:
           cmake --version
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
-            -DBUILD_PYTHON=${{ matrix.python }} \
-            -DBUILD_JAVA=${{ matrix.java }} \
-            -DBUILD_DOTNET=${{ matrix.dotnet }} \
-            -DBUILD_EXAMPLES=ON \
+            -DBUILD_SHARED_LIBS=${{ matrix.cmake.shared }} \
+            -DBUILD_PYTHON=${{ matrix.cmake.python }} \
+            -DBUILD_JAVA=${{ matrix.cmake.java }} \
+            -DBUILD_DOTNET=${{ matrix.cmake.dotnet }} \
+            -DBUILD_EXAMPLES=ON 
+            -DBUILD_SAMPLES=OFF \
             -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
             -DBUILD_DEPS=ON \
-            -DBUILD_SAMPLES=OFF \
             -DCMAKE_INSTALL_PREFIX="build/install" \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DBUILD_FLATZINC=OFF
 
       - name: Build OR-Tools Linux
         shell: bash
@@ -150,7 +103,7 @@ jobs:
         id: names
         shell: bash
         run: |
-          SHARED=${{ matrix.shared }}
+          SHARED=${{ matrix.cmake.shared }}
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           OS="_${{ matrix.os }}"
           APPENDIX="${OS}"
@@ -171,7 +124,7 @@ jobs:
           bruceadams/get-release@v1.2.3
 
       - name: Prepare OR-Tools install
-        if: ${{ matrix.publish-or == 'ON' }}
+        if: ${{ matrix.publish-cxx-or == 'ON' }}
         id: or-install
         shell: bash
         run: |
@@ -185,13 +138,13 @@ jobs:
 
       - name: Upload OR-Tools install artifact
         uses: actions/upload-artifact@v3
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.publish-or == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.publish-cxx-or == 'ON' }}
         with:
           name: ${{ steps.or-install.outputs.archive_name }}
           path: ${{ steps.or-install.outputs.archive_path }}
 
       - name: Publish OR-Tools install asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.publish-or == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.publish-cxx-or == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -200,12 +153,12 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools wheel
-        if: ${{ matrix.python == 'ON' }}
+        if: ${{ matrix.cmake.python == 'ON' }}
         id: wheel
         shell: bash
         run: |
           cd ./build/python/dist
-          MY_DIR="ortools_python-${{ matrix.python-version }}${{ steps.names.outputs.appendix }}"
+          MY_DIR="ortools_python-${{ matrix.cmake.python-version }}${{ steps.names.outputs.appendix }}"
           mkdir ${MY_DIR}
           cp *.whl "${MY_DIR}"
           ARCHIVE_NAME="${MY_DIR}.zip"
@@ -215,13 +168,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools wheel artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.python == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.python == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
       - name: Publish OR-Tools wheel asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.python == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.python == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -230,7 +183,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools jar
-        if: ${{ matrix.java == 'ON' }}
+        if: ${{ matrix.cmake.java == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -245,13 +198,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools jar artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.java == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.java == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Publish OR-Tools jar asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.java == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.java == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -260,7 +213,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools dotnet
-        if: ${{ matrix.dotnet == 'ON' }}
+        if: ${{ matrix.cmake.dotnet == 'ON' }}
         id: dotnet
         shell: bash
         run: |
@@ -276,13 +229,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools dotnet artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.dotnet == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.dotnet == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
       - name: Publish OR-Tools dotnet asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.dotnet == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.dotnet == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
