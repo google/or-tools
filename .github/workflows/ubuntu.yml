@@ -85,14 +85,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python.version }}
+          python-version: ${{ matrix.python-version }}
           architecture: x64
 
       - name: Update Path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Setup .NET 6.0
-        if: ${{ inputs.dotnet == 'ON' }}
+        if: ${{ matrix.dotnet == 'ON' }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
