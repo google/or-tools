@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 #define OR_TOOLS_GLOP_VARIABLE_VALUES_H_
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
