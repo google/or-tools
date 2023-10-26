@@ -93,11 +93,11 @@ jobs:
         run: |
           export PATH=/root/.local/bin:$PATH
           dnf -y update
-          dnf -y install python39 python39-devel python39-pip
+          dnf -y install python39-devel python39-pip python39-numpy
           dnf clean all
           echo "/root/.local/bin" >> $GITHUB_PATH
           python3 -m pip install --upgrade pip
-          python3 -m pip install protobuf mypy-protobuf absl-py setuptools wheel numpy pandas virtualenv
+          python3 -m pip install protobuf mypy-protobuf absl-py setuptools wheel pandas virtualenv
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.13
@@ -128,7 +128,6 @@ jobs:
             -DBUILD_JAVA=${{ matrix.java }} \
             -DBUILD_DOTNET=${{ matrix.dotnet }} \
             -DBUILD_EXAMPLES=ON \
-            -DBUID_TESTING=ON \
             -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
             -DBUILD_DEPS=ON \
             -DCMAKE_INSTALL_PREFIX="build/install" \
