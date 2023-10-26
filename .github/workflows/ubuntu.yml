@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
+        os: ['ubuntu-20.04']
         python-version: ['3.7', '3.8', '3.9', '3.10']
         python: [ON, OFF]
         shared: [ON, OFF]
@@ -86,6 +86,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python.version }}
+          architecture: x64
+
       - name: Update Path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
@@ -99,6 +101,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install xpress==9.0.0
+          echo ${{ env.pythonLocation }}
           XPRESS_DIR=${{ env.pythonLocation }}/lib/python${{ matrix.python-version }}/site-packages/xpress
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
