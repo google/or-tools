@@ -17,7 +17,7 @@ env:
 jobs:
 
   build:
-    name: shrd=${{ matrix.shared }}  extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.python }}-${{ matrix.python-version }}
+    name: shrd=${{ matrix.cmake.shared }} java=${{ matrix.cmake.java }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: ubuntu-latest
     container: 'oraclelinux:8'
     env:
@@ -25,29 +25,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shared: [ON, OFF]
-        extras: [ON, OFF]
-        exclude:
-          - shared: OFF
-            extras: ON
-          - shared: ON
-            extras: OFF
-
-        include:
-          - extras: OFF
-            python: OFF
-            java: OFF
-            dotnet: OFF
-          - extras: ON
-            python: ON
-            java: ON
-            dotnet: OFF
-
+        cmake: [
+          { shared: OFF, java: OFF, dotnet: OFF, python: OFF, python-version: "3.8"},
+          { shared: ON,  java: ON,  dotnet: OFF, python: ON,  python-version: "3.8"},
+        ]
     steps:
       - name: set name variables
         id: names
         run: |
-          SHARED=${{ matrix.shared }}
+          SHARED=${{ matrix.cmake.shared }}
           [ $SHARED == "ON" ] && WITH_SHARED="_shared" || WITH_SHARED="_static"
           OS="_oraclelinux-8"
           APPENDIX="${OS}"
@@ -83,7 +69,7 @@ jobs:
           cd ..
           rm -rf swig-4.1.1
       - name: Install java (jdk)
-        if: ${{ matrix.java == 'ON' }}
+        if: ${{ matrix.cmake.java == 'ON' }}
         run: |
           dnf -y update
           dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven
@@ -123,10 +109,10 @@ jobs:
           cmake --version
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=${{ matrix.shared }} \
-            -DBUILD_PYTHON=${{ matrix.python }} \
-            -DBUILD_JAVA=${{ matrix.java }} \
-            -DBUILD_DOTNET=${{ matrix.dotnet }} \
+            -DBUILD_SHARED_LIBS=${{ matrix.cmake.shared }} \
+            -DBUILD_PYTHON=${{ matrix.cmake.python }} \
+            -DBUILD_JAVA=${{ matrix.cmake.java }} \
+            -DBUILD_DOTNET=${{ matrix.cmake.dotnet }} \
             -DBUILD_EXAMPLES=ON \
             -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
             -DBUILD_DEPS=ON \
@@ -166,7 +152,7 @@ jobs:
           path: ${{ steps.or-install.outputs.archive_path }}
 
       - name: prepare OR-Tools wheel
-        if: ${{ matrix.python == 'ON' }}
+        if: ${{ matrix.cmake.python == 'ON' }}
         id: wheel
         run: |
           MY_DIR="ortools_python-${{ steps.names.outputs.appendix }}"
@@ -178,14 +164,14 @@ jobs:
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
       - name: Upload OR-Tools wheel artifact
-        if: ${{ matrix.python == 'ON' }}
+        if: ${{ matrix.cmake.python == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.wheel.outputs.archive_name }}
           path: ${{ steps.wheel.outputs.archive_path }}
 
       - name: prepare OR-Tools jar
-        if: ${{ matrix.java == 'ON' }}
+        if: ${{ matrix.cmake.java == 'ON' }}
         id: jar
         run: |
           MY_DIR="ortools_java${{ steps.names.outputs.appendix }}"
@@ -204,7 +190,7 @@ jobs:
           echo "::set-output name=archive_name::$ARCHIVE_NAME"
           echo "::set-output name=archive_path::$ARCHIVE_PATH"
       - name: Upload OR-Tools jar artifact
-        if: ${{ matrix.java == 'ON' }}
+        if: ${{ matrix.cmake.java == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.jar.outputs.archive_name }}
