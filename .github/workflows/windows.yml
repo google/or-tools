@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.os }} shrd=${{ matrix.shared }} extras=${{ matrix.extras }} java=${{ matrix.java }} dotnet=${{ matrix.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+    name: ${{ matrix.os }} shrd=${{ matrix.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: ${{ matrix.os }}
     env:
       XPRESSDIR: ${{ github.workspace }}/xpressmp
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup .NET 6.0
-        if: ${{ matrix.dotnet == 'ON' }}
+        if: ${{ matrix.cmake.dotnet == 'ON' }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
@@ -77,8 +77,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=${{ matrix.shared }}
           -DBUILD_PYTHON=${{ matrix.cmake.python }}
-          -DBUILD_JAVA=${{ matrix.java }}
-          -DBUILD_DOTNET=${{ matrix.dotnet }}
+          -DBUILD_JAVA=${{ matrix.cmake.java }}
+          -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
           -DBUILD_EXAMPLES=ON
           -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
           -DBUILD_DEPS=ON
@@ -194,7 +194,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools jar
-        if: ${{ matrix.java == 'ON' }}
+        if: ${{ matrix.cmake.java == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -209,13 +209,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools jar artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.java == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.java == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Publish OR-Tools jar asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.java == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.java == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -224,7 +224,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools dotnet
-        if: ${{ matrix.dotnet == 'ON' }}
+        if: ${{ matrix.cmake.dotnet == 'ON' }}
         id: dotnet
         shell: bash
         run: |
@@ -240,13 +240,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools dotnet artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.dotnet == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.dotnet == 'ON' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
       - name: Publish OR-Tools dotnet asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.dotnet == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.dotnet == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
