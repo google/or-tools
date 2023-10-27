@@ -66,13 +66,31 @@ jobs:
           -DBUILD_PYTHON=${{ matrix.cmake.python }}
           -DBUILD_JAVA=${{ matrix.cmake.java }}
           -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
-          -DBUILD_EXAMPLES=ON
-          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
           -DBUILD_DEPS=ON
           -DBUILD_SAMPLES=OFF
           -DCMAKE_INSTALL_PREFIX="build/install"
 
       - name: Build
+        run: >
+          cmake --build build 
+          --config Release 
+          --target ALL_BUILD
+          -v -j2
+
+      - name: Configure2
+        run: >
+          cmake -S. -Bbuild
+          -G "Visual Studio 17 2022"
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_PYTHON=${{ matrix.cmake.python }}
+          -DBUILD_JAVA=${{ matrix.cmake.java }}
+          -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
+          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
+          -DBUILD_DEPS=ON
+          -DBUILD_SAMPLES=OFF
+          -DCMAKE_INSTALL_PREFIX="build/install"
+
+      - name: Build2
         run: >
           cmake --build build 
           --config Release 
