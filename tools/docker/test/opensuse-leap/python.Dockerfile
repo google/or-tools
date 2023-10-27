@@ -14,7 +14,7 @@ CMD ["/usr/bin/bash"]
 # Python Install
 RUN zypper install -y python3-devel python3-pip python3-wheel \
 && zypper clean -a
-RUN python3 -m pip install absl-py mypy-protobuf
+RUN python3 -m pip install absl-py mypy mypy-protobuf
 
 WORKDIR /root
 ADD or-tools_amd64_opensuse-leap_python_v*.tar.gz .

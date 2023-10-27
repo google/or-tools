@@ -46,7 +46,7 @@ RUN apk add --no-cache openjdk8 maven
 RUN apk add --no-cache python3-dev py3-pip py3-wheel \
  py3-numpy py3-pandas py3-matplotlib py3-scipy
 RUN rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED \
-&& python3 -m pip install absl-py mypy-protobuf
+&& python3 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##

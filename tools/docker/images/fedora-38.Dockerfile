@@ -36,7 +36,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 RUN dnf -y update \
 && dnf -y install python3 python3-devel python3-pip \
 && dnf clean all
-RUN python3 -m pip install absl-py mypy-protobuf
+RUN python3 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
