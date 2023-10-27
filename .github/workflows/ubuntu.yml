@@ -133,7 +133,7 @@ jobs:
           bruceadams/get-release@v1.2.3
 
       - name: Prepare OR-Tools install
-        if: ${{ matrix.publish-cxx-or == 'ON' }}
+        if: ${{ matrix.cmake.publish-cxx-or == 'ON' }}
         id: or-install
         shell: bash
         run: |
@@ -147,13 +147,13 @@ jobs:
 
       - name: Upload OR-Tools install artifact
         uses: actions/upload-artifact@v3
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.publish-cxx-or == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.publish-cxx-or == 'ON' }}
         with:
           name: ${{ steps.or-install.outputs.archive_name }}
           path: ${{ steps.or-install.outputs.archive_path }}
 
       - name: Publish OR-Tools install asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.publish-cxx-or == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.publish-cxx-or == 'ON' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
