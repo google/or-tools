@@ -60,10 +60,10 @@ class GreaterByArea {
       : problem_(problem) {}
 
   bool operator()(int a, int b) const {
-    const auto& a_dims = problem_.items(a).shapes(0).dimensions();
-    const auto& b_dims = problem_.items(b).shapes(0).dimensions();
+    const auto& a_sizes = problem_.items(a).shapes(0).dimensions();
+    const auto& b_sizes = problem_.items(b).shapes(0).dimensions();
 
-    return a_dims.Get(0) * a_dims.Get(1) > b_dims.Get(0) * b_dims.Get(1);
+    return a_sizes.Get(0) * a_sizes.Get(1) > b_sizes.Get(0) * b_sizes.Get(1);
   }
 
  private:
@@ -73,12 +73,12 @@ class GreaterByArea {
 bool ItemsAreIncompatible(
     const packing::MultipleDimensionsBinPackingProblem& problem, int i1,
     int i2) {
-  const auto& box_dimensions = problem.box_shape().dimensions();
-  const auto& i1_dims = problem.items(i1).shapes(0).dimensions();
-  const auto& i2_dims = problem.items(i2).shapes(0).dimensions();
+  const auto& bin_sizes = problem.box_shape().dimensions();
+  const auto& i1_sizes = problem.items(i1).shapes(0).dimensions();
+  const auto& i2_sizes = problem.items(i2).shapes(0).dimensions();
 
-  return (i1_dims.Get(0) + i2_dims.Get(0) > box_dimensions[0]) &&
-         (i1_dims.Get(1) + i2_dims.Get(1) > box_dimensions[1]);
+  return (i1_sizes.Get(0) + i2_sizes.Get(0) > bin_sizes[0]) &&
+         (i1_sizes.Get(1) + i2_sizes.Get(1) > bin_sizes[1]);
 }
 
 absl::btree_set<int> FindFixedItems(
@@ -89,11 +89,11 @@ absl::btree_set<int> FindFixedItems(
   // See Côté; Haouari; Iori. (2019). A Primal Decomposition Algorithm for the
   // Two-dimensional Bin Packing Problem (https://arxiv.org/pdf/1909.06835.pdf).
   const int num_items = problem.items_size();
-  const auto box_dimensions = problem.box_shape().dimensions();
+  const auto bin_sizes = problem.box_shape().dimensions();
 
   for (int i = 0; i < num_items; ++i) {
-    if (2 * problem.items(i).shapes(0).dimensions(0) > box_dimensions[0] &&
-        2 * problem.items(i).shapes(0).dimensions(1) > box_dimensions[1]) {
+    if (2 * problem.items(i).shapes(0).dimensions(0) > bin_sizes[0] &&
+        2 * problem.items(i).shapes(0).dimensions(1) > bin_sizes[1]) {
       // Big items are pairwise incompatible. Just fix them in different bins.
       fixed_items.insert(i);
     }
@@ -184,8 +184,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
             << file_name << "'";
   LOG(INFO) << "Instance has " << problem.items_size() << " items";
 
-  const auto box_dimensions = problem.box_shape().dimensions();
-  const int num_dimensions = box_dimensions.size();
+  const auto bin_sizes = problem.box_shape().dimensions();
+  const int num_dimensions = bin_sizes.size();
   const int num_items = problem.items_size();
 
   // Non overlapping.
@@ -195,7 +195,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(FATAL) << num_dimensions << " dimensions not supported.";
   }
 
-  const int64_t area_of_one_bin = box_dimensions[0] * box_dimensions[1];
+  const int64_t area_of_one_bin = bin_sizes[0] * bin_sizes[1];
   int64_t sum_of_items_area = 0;
   for (const auto& item : problem.items()) {
     CHECK_EQ(1, item.shapes_size());
@@ -269,9 +269,9 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(INFO) << num_incompatible_pairs << " incompatible pairs of items";
   }
 
-  // Compute the min size in each dimension.
-  std::vector<int64_t> min_sizes_per_dimension = {box_dimensions.begin(),
-                                                  box_dimensions.end()};
+  // Compute the min size of all items in each dimension.
+  std::vector<int64_t> min_sizes_per_dimension = {bin_sizes.begin(),
+                                                  bin_sizes.end()};
   for (int item = 0; item < num_items; ++item) {
     for (int dim = 0; dim < num_dimensions; ++dim) {
       min_sizes_per_dimension[dim] =
@@ -291,19 +291,19 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     for (int b = 0; b < max_bins; ++b) {
       interval_by_item_bin_dimension[item][b].resize(num_dimensions);
       for (int dim = 0; dim < num_dimensions; ++dim) {
-        const int64_t dimension = box_dimensions[dim];
+        const int64_t bin_size = bin_sizes[dim];
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
         IntVar start;
         if (b == 0) {
           // For item fixed to a given bin, by symmetry of rotation we can also
           // assume it is in the lower left corner.
           const int64_t start_max = fixed_items.contains(item)
-                                        ? (dimension - size + 1) / 2
-                                        : dimension - size;
+                                        ? (bin_size - size + 1) / 2
+                                        : bin_size - size;
           start = cp_model.NewIntVar({0, start_max});
           starts_by_dimension[item][dim] = start;
 
-          if (size + min_sizes_per_dimension[dim] > dimension) {
+          if (size + min_sizes_per_dimension[dim] > bin_size) {
             items_exclusive_in_at_least_one_dimension.insert(item);
           }
         } else {
@@ -317,29 +317,35 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   if (!items_exclusive_in_at_least_one_dimension.empty()) {
-    int num_boxes_fixed_in_corner = 0;
-    int num_boxes_fixed_on_one_border = 0;
+    int num_items_fixed_in_corner = 0;
+    int num_items_fixed_on_one_border = 0;
     for (const int item : items_exclusive_in_at_least_one_dimension) {
       for (int dim = 0; dim < num_dimensions; ++dim) {
-        if (fixed_items.contains(item)) {  // Fix to down left corner (0, 0).
-          cp_model.AddEquality(starts_by_dimension[item][dim], 0);
-          if (dim == 0) ++num_boxes_fixed_in_corner;
+        if (fixed_items.contains(item)) {
+          // Since this item is alone on its bin and effectively divides
+          // the bin in two we can put it in one corner. For example,
+          // for a horizontal long item, solutions where the long item
+          // sits in the middle would mean that there is also a
+          // solution the long item is in the bottom and the items below
+          // it were moved above it.
+          cp_model.FixVariable(starts_by_dimension[item][dim], 0);
+          if (dim == 0) ++num_items_fixed_in_corner;
         } else {
-          const int64_t dimension = box_dimensions[dim];
+          const int64_t bin_size = bin_sizes[dim];
           const int64_t size = problem.items(item).shapes(0).dimensions(dim);
-          if (size + min_sizes_per_dimension[dim] > dimension) {
-            cp_model.AddEquality(starts_by_dimension[item][dim], 0);
-            ++num_boxes_fixed_on_one_border;
+          if (size + min_sizes_per_dimension[dim] > bin_size) {
+            cp_model.FixVariable(starts_by_dimension[item][dim], 0);
+            ++num_items_fixed_on_one_border;
           }
         }
       }
     }
-    LOG(INFO) << num_boxes_fixed_in_corner << " boxes fixed in one corner";
-    LOG(INFO) << num_boxes_fixed_on_one_border << " boxes fixed on one border";
+    LOG(INFO) << num_items_fixed_in_corner << " items fixed in one corner";
+    LOG(INFO) << num_items_fixed_on_one_border << " items fixed on one border";
   }
 
   // Non overlapping.
-  LOG(INFO) << "Box size: " << box_dimensions[0] << "*" << box_dimensions[1];
+  LOG(INFO) << "Box size: " << bin_sizes[0] << "*" << bin_sizes[1];
   for (int b = 0; b < max_bins; ++b) {
     NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
     for (int item = 0; item < num_items; ++item) {
@@ -355,7 +361,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   if (absl::GetFlag(FLAGS_use_global_cumulative)) {
     DCHECK_EQ(num_dimensions, 2);
     for (int dim = 0; dim < num_dimensions; ++dim) {
-      const int other_size = box_dimensions[1 - dim];
+      const int other_size = bin_sizes[1 - dim];
       CumulativeConstraint cumul = cp_model.AddCumulative(obj * other_size);
       for (int item = 0; item < num_items; ++item) {
         const int size = problem.items(item).shapes(0).dimensions(dim);
