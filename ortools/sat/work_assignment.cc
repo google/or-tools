@@ -350,8 +350,8 @@ SharedTreeManager::Node* SharedTreeManager::GetSibling(Node* node) {
 void SharedTreeManager::Split(std::vector<std::pair<Node*, int>>& nodes,
                               ProtoLiteral lit) {
   const auto [parent, level] = nodes.back();
-  DCHECK_EQ(parent->children[0], nullptr);
-  DCHECK_EQ(parent->children[1], nullptr);
+  DCHECK(parent->children[0] == nullptr);
+  DCHECK(parent->children[1] == nullptr);
   parent->children[0] = MakeSubtree(parent, lit);
   parent->children[1] = MakeSubtree(parent, lit.Negated());
   nodes.push_back(std::make_pair(parent->children[0], level + 1));
@@ -405,8 +405,8 @@ void SharedTreeManager::ProcessNodeChanges() {
     to_update_.pop_back();
     // Iterate over parents while the lower bound can be improved.
     while (node != nullptr) {
-      DCHECK_NE(node->children[0], nullptr);
-      DCHECK_NE(node->children[1], nullptr);
+      DCHECK(node->children[0] != nullptr);
+      DCHECK(node->children[1] != nullptr);
       IntegerValue child_bound = std::min(node->children[0]->objective_lb,
                                           node->children[1]->objective_lb);
       if (child_bound <= node->objective_lb) break;
