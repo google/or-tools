@@ -126,6 +126,10 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   disjunctive_precedences_.insert({{a, b}, a_before_b});
   disjunctive_precedences_.insert({{b, a}, a_before_b.Negated()});
 
+  // Also insert it in precedences.
+  precedences_.insert({{a, b}, a_before_b});
+  precedences_.insert({{b, a}, a_before_b.Negated()});
+
   enforcement_literals.push_back(a_before_b);
   AddConditionalAffinePrecedence(enforcement_literals, end_a, start_b, model_);
   enforcement_literals.pop_back();
@@ -141,10 +145,37 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   }
 }
 
+bool IntervalsRepository::CreatePrecedenceLiteral(IntervalVariable a,
+                                                  IntervalVariable b) {
+  if (precedences_.find({a, b}) != disjunctive_precedences_.end()) return false;
+
+  // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
+  // Do not create l if the relation is always true or false.
+  const AffineExpression x = End(a);
+  const AffineExpression y = Start(b);
+  if (integer_trail_->UpperBound(x) <= integer_trail_->LowerBound(y)) {
+    return false;
+  }
+  if (integer_trail_->LowerBound(x) > integer_trail_->UpperBound(y)) {
+    return false;
+  }
+
+  // Create a new literal.
+  const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
+  const Literal x_before_y = Literal(boolean_var, true);
+  precedences_.insert({{a, b}, x_before_y});
+
+  AffineExpression y_plus_one = y;
+  y_plus_one.constant += 1;
+  AddConditionalAffinePrecedence({x_before_y}, x, y, model_);
+  AddConditionalAffinePrecedence({x_before_y.Negated()}, y_plus_one, x, model_);
+  return true;
+}
+
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     IntervalVariable a, IntervalVariable b) const {
-  const auto it = disjunctive_precedences_.find({a, b});
-  if (it != disjunctive_precedences_.end()) return it->second.Index();
+  const auto it = precedences_.find({a, b});
+  if (it != precedences_.end()) return it->second.Index();
   return kNoLiteralIndex;
 }
 

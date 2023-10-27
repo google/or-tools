@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 268
+// NEXT TAG: 269
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -746,7 +746,12 @@ message SatParameters {
   // Whether we try to branch on decision "interval A before interval B" rather
   // than on intervals bounds. This usually works better, but slow down a bit
   // the time to find first solutions.
+  //
+  // Note that for cumulative, this currently seems worse.
+  // These parameters are still EXPERIMENTAL, the result should be correct, but
+  // it some corner cases, they can cause some failing CHECK in the solver.
   optional bool use_dynamic_precedence_in_disjunctive = 263 [default = false];
+  optional bool use_dynamic_precedence_in_cumulative = 268 [default = false];
 
   // When this is true, the cumulative constraint is reinforced with overload
   // checking, i.e., an additional level of reasoning based on energy. This

@@ -229,7 +229,12 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 // Compared to SchedulingSearchHeuristic() this one take decision on precedences
 // between tasks. Lazily creating a precedence Boolean for the task in
 // disjunction.
-std::function<BooleanOrIntegerLiteral()> SchedulingPrecedenceSearchHeuristic(
+//
+// Note that this one is meant to be used when all Boolean has been fixed, so
+// more as a "completion" heuristic rather than a fixed search one.
+std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
+    Model* model);
+std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
     Model* model);
 
 // Returns true if the number of variables in the linearized part represent

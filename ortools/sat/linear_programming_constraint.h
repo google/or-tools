@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/numeric/int128.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
@@ -301,7 +302,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Return true if a new cut was added to the cut manager.
   bool AddCutFromConstraints(
-      const std::string& name,
+      absl::string_view name,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);
 

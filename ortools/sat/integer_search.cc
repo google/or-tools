@@ -605,7 +605,7 @@ bool PrecedenceIsBetter(SchedulingConstraintHelper* helper, int a,
 // - For each disjunctive, consider the intervals by start time, consider
 //   adding the first precedence between overlapping interval.
 // - Take the smallest start time amongst all disjunctive.
-std::function<BooleanOrIntegerLiteral()> SchedulingPrecedenceSearchHeuristic(
+std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
     Model* model) {
   auto* repo = model->GetOrCreate<IntervalsRepository>();
   return [repo]() {
@@ -653,11 +653,184 @@ std::function<BooleanOrIntegerLiteral()> SchedulingPrecedenceSearchHeuristic(
     }
 
     if (best_helper != nullptr) {
+      VLOG(2) << "New disjunctive precedence: "
+              << best_helper->TaskDebugString(best_before) << " "
+              << best_helper->TaskDebugString(best_after);
+      const IntervalVariable a = best_helper->IntervalVariables()[best_before];
+      const IntervalVariable b = best_helper->IntervalVariables()[best_after];
+      repo->CreateDisjunctivePrecedenceLiteral(a, b);
+      return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
+    }
+
+    return BooleanOrIntegerLiteral();
+  };
+}
+
+// The algo goes as follow:
+// - Build a profile of all the tasks packed to the right as long as that is
+//   feasible.
+// - If we can't grow the profile, we have identified a set of tasks that all
+//   overlap if they are packed on the right, and whose sum of demand exceed
+//   the capacity.
+// - Look for two tasks in that set that can be made non-overlapping, and take
+//   a "precedence" decision between them.
+std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
+    Model* model) {
+  auto* repo = model->GetOrCreate<IntervalsRepository>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* trail = model->GetOrCreate<Trail>();
+  return [repo, integer_trail, trail]() {
+    SchedulingConstraintHelper* best_helper = nullptr;
+    int best_before = 0;
+    int best_after = 0;
+    for (const auto h : repo->AllCumulativeHelpers()) {
+      auto* helper = h.task_helper;
+      if (!helper->SynchronizeAndSetTimeDirection(true)) {
+        return BooleanOrIntegerLiteral();
+      }
+
+      const int num_tasks = helper->NumTasks();
+      std::vector<IntegerValue> added_demand(num_tasks, 0);
+
+      // We use a similar algo as in BuildProfile() in timetable.cc
+      const auto& by_smin = helper->TaskByIncreasingStartMin();
+      const auto& by_emin = helper->TaskByIncreasingEndMin();
+      const IntegerValue capacity_max = integer_trail->UpperBound(h.capacity);
+
+      // Start and height of the currently built profile rectangle.
+      IntegerValue current_height = 0;
+      int first_skipped_task = -1;
+
+      int next_end = 0;
+      int next_start = 0;
+      int num_added = 0;
+      bool found = false;
+      while (!found && next_end < num_tasks) {
+        IntegerValue time = by_emin[next_end].time;
+        if (next_start < num_tasks) {
+          time = std::min(time, by_smin[next_start].time);
+        }
+
+        // Remove added task ending there.
+        // Set their demand to zero.
+        while (next_end < num_tasks && by_emin[next_end].time == time) {
+          const int t = by_emin[next_end].task_index;
+          if (added_demand[t] > 0) {
+            current_height -= added_demand[t];
+            added_demand[t] = 0;
+          } else {
+            // Corner case if task is of duration zero.
+            added_demand[t] = -1;
+          }
+          ++next_end;
+        }
+
+        // Add new task starting here.
+        // If the task cannot be added we have a candidate for precedence.
+        // TODO(user): tie-break tasks not fitting in the profile smartly.
+        while (next_start < num_tasks && by_smin[next_start].time == time) {
+          const int t = by_smin[next_start].task_index;
+          if (added_demand[t] == -1) continue;  // Corner case.
+          const IntegerValue demand_min = h.demand_helper->DemandMin(t);
+          if (current_height + demand_min <= capacity_max) {
+            ++num_added;
+            added_demand[t] = demand_min;
+            current_height += demand_min;
+          } else if (first_skipped_task == -1) {
+            // We should have everyting needed here to add a new precedence.
+            first_skipped_task = t;
+            found = true;
+            break;
+          }
+          ++next_start;
+        }
+      }
+
+      // If packing everything to the left is feasible, continue.
+      if (first_skipped_task == -1) {
+        CHECK_EQ(num_added, num_tasks);
+        continue;
+      }
+
+      // We will use a bunch of heuristic to add a new precedence. All the task
+      // in open_tasks cannot share a time point since they exceed the capacity.
+      // Moreover if we pack all to the left, they have an intersecting point.
+      // So we should be able to make two of them disjoint
+      std::vector<int> open_tasks;
+      for (int t = 0; t < num_tasks; ++t) {
+        if (added_demand[t] <= 0) continue;
+        open_tasks.push_back(t);
+      }
+      open_tasks.push_back(first_skipped_task);
+
+      // TODO(user): Add heuristic ordering for creating interesting precedence
+      // first.
+      bool found_precedence_to_add = false;
+      std::vector<Literal> conflict;
+      for (const int s : open_tasks) {
+        for (const int t : open_tasks) {
+          if (s == t) continue;
+
+          // Can we add s <= t ?
+          // All the considered tasks are intersecting if on the left.
+          CHECK_LT(helper->StartMin(s), helper->EndMin(t));
+          CHECK_LT(helper->StartMin(t), helper->EndMin(s));
+
+          // Make sure s could be before t.
+          if (helper->EndMin(s) > helper->StartMax(t)) continue;
+          best_before = s;
+          best_after = t;
+
+          // If the literal already exist (and is likely false), skip.
+          // Note that it being false only implies start_t < end_s.
+          const IntervalVariable a = helper->IntervalVariables()[best_before];
+          const IntervalVariable b = helper->IntervalVariables()[best_after];
+          if (!repo->CreatePrecedenceLiteral(a, b)) {
+            // Since s can be before t, this should only fail if the literal
+            // exist. It shouldn't be able to be true here otherwise we
+            // will have s and t disjoint.
+            const LiteralIndex existing = repo->GetPrecedenceLiteral(a, b);
+            CHECK_NE(existing, kNoLiteralIndex);
+            CHECK(!trail->Assignment().LiteralIsTrue(Literal(existing)))
+                << helper->TaskDebugString(s) << " ( <= ?) "
+                << helper->TaskDebugString(t);
+
+            // This should only be true in normal usage after SAT search has
+            // fixed all literal, but if it is not, we can just return this
+            // decision.
+            if (trail->Assignment().LiteralIsFalse(Literal(existing))) {
+              conflict.push_back(Literal(existing));
+              continue;
+            }
+          }
+          best_helper = helper;
+          found_precedence_to_add = true;
+          break;
+        }
+        if (found_precedence_to_add) break;
+      }
+      if (found_precedence_to_add) break;
+
+      // If no precedence can be created, and all precedence are assigned to
+      // false we have a conflict since all these interval must intersect but
+      // cannot fit in the capacity!
+      //
+      // TODO(user): We need to add the reason for demand_min and capacity_max.
+      // TODO(user): unfortunately we can't report it from here.
+      if (VLOG_IS_ON(2)) {
+        LOG(INFO) << "Conflict between precedences !";
+        for (const int t : open_tasks) LOG(INFO) << helper->TaskDebugString(t);
+      }
+    }
+
+    // TODO(user): add heuristic criteria, right now we stop at first
+    // one. See above.
+    if (best_helper != nullptr) {
       VLOG(2) << "New precedence: " << best_helper->TaskDebugString(best_before)
               << " " << best_helper->TaskDebugString(best_after);
       const IntervalVariable a = best_helper->IntervalVariables()[best_before];
       const IntervalVariable b = best_helper->IntervalVariables()[best_after];
-      repo->CreateDisjunctivePrecedenceLiteral(a, b);
+      repo->CreatePrecedenceLiteral(a, b);
       return BooleanOrIntegerLiteral(repo->GetPrecedenceLiteral(a, b));
     }
 

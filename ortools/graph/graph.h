@@ -201,7 +201,10 @@ class BaseGraph {
         num_arcs_(0),
         arc_capacity_(0),
         const_capacities_(false) {}
-  virtual ~BaseGraph() {}
+  BaseGraph(const BaseGraph&) = default;
+  BaseGraph& operator=(const BaseGraph&) = default;
+
+  virtual ~BaseGraph() = default;
 
   // Returns the number of valid nodes in the graph. Prefer using num_nodes():
   // the size() API is here to make Graph and vector<vector<int>> more alike.
