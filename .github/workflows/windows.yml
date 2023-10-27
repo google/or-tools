@@ -24,7 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         os: ['windows-latest']
-        shared: [OFF]
         cmake: [
           { java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  python-dir: "Python309", publish-cxx-or: ON },
           { java: OFF, dotnet: OFF, python: ON,  python-version: "3.8",  python-dir: "Python308", publish-cxx-or: OFF },
@@ -74,8 +73,8 @@ jobs:
       - name: Configure OR-Tools
         run: >
           cmake -S . -B build
+          -G "Visual Studio 17 2022"
           -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_SHARED_LIBS=${{ matrix.shared }}
           -DBUILD_PYTHON=${{ matrix.cmake.python }}
           -DBUILD_JAVA=${{ matrix.cmake.java }}
           -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
@@ -87,8 +86,7 @@ jobs:
 
       - name: Build OR-Tools windows
         run: >
-          cmake 
-          --build build 
+          cmake --build build 
           --config Release 
           --target ALL_BUILD INSTALL 
           -v -j2
@@ -96,17 +94,14 @@ jobs:
       - name: run tests not xpress
         working-directory: ./build/
         run: >
-          ctest 
-          -C Release 
+          ctest -C Release 
           --output-on-failure 
           -E "xpress"
 
       - name: run tests xpress
         working-directory: ./build/
         run: >
-          ctest 
-          -V 
-          -C Release 
+          ctest -V -C Release 
           --output-on-failure 
           -R "xpress"
 
