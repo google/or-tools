@@ -61,6 +61,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -301,7 +302,7 @@ class CoveringProblem {
   // Grid is a row-major string of length width*height with '@' for an
   // occupied cell (strawberry) and '.' for an empty cell.  Solver is
   // not owned.
-  CoveringProblem(MPSolver* solver, const Instance& instance)
+  CoveringProblem(MPSolver* const solver, const Instance& instance)
       : solver_(solver),
         max_boxes_(instance.max_boxes),
         width_(instance.width),
@@ -512,7 +513,7 @@ class CoveringProblem {
   }
 
   // Gets 2d array element, returning 0 if out-of-bounds.
-  double zero_access(const std::vector<double>& array, int x, int y) const {
+  double zero_access(absl::Span<const double> array, int x, int y) const {
     if (x < 0 || y < 0) {
       return 0;
     }
@@ -547,18 +548,15 @@ class CoveringProblem {
 
 // Solves iteratively using delayed column generation, up to maximum
 // number of steps.
-void SolveInstance(const Instance& instance, std::string solver_name) {
-  // Prepares the solver->
-  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver(solver_name));
-  if (!solver) {
-    LOG(INFO) << "Solver type '" << solver_name << "' not supported, or not linked in";
-    return;
-  }
-  solver->SuppressOutput();
-  solver->MutableObjective()->SetMinimization();
+void SolveInstance(const Instance& instance,
+                   MPSolver::OptimizationProblemType solver_type) {
+  // Prepares the solver.
+  MPSolver solver("ColumnGeneration", solver_type);
+  solver.SuppressOutput();
+  solver.MutableObjective()->SetMinimization();
 
   // Construct problem.
-  CoveringProblem problem(solver.get(), instance);
+  CoveringProblem problem(&solver, instance);
   CHECK(problem.Init());
   LOG(INFO) << "Initial problem:\n" << problem.PrintGrid();
 
@@ -569,7 +567,7 @@ void SolveInstance(const Instance& instance, std::string solver_name) {
     }
 
     // Solve with existing columns.
-    CHECK_EQ(MPSolver::OPTIMAL, solver->Solve());
+    CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
     if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << problem.PrintCovering();
     }
@@ -593,7 +591,7 @@ void SolveInstance(const Instance& instance, std::string solver_name) {
 
   if (step_number >= absl::GetFlag(FLAGS_colgen_max_iterations)) {
     // Solve one last time with all generated columns.
-    CHECK_EQ(MPSolver::OPTIMAL, solver->Solve());
+    CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
   }
 
   LOG(INFO) << step_number << " columns added";
@@ -609,6 +607,39 @@ int main(int argc, char** argv) {
 
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
   InitGoogle(usage.c_str(), &argc, &argv, true);
+
+  operations_research::MPSolver::OptimizationProblemType solver_type;
+  bool found = false;
+#if defined(USE_CLP)
+  if (absl::GetFlag(FLAGS_colgen_solver) == "clp") {
+    solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
+    found = true;
+  }
+#endif  // USE_CLP
+  //#if defined(USE_GLOP)
+  if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
+    solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
+    found = true;
+  }
+  //#endif  // USE_GLOP
+#if defined(USE_XPRESS)
+  if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
+    solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
+    // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    found = true;
+  }
+#endif
+#if defined(USE_CPLEX)
+  if (absl::GetFlag(FLAGS_colgen_solver) == "cplex") {
+    solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    found = true;
+  }
+#endif
+  if (!found) {
+    LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
+    return 1;
+  }
+
   LOG(INFO) << "Chosen solver: " << absl::GetFlag(FLAGS_colgen_solver)
             << std::endl;
 
@@ -616,7 +647,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {
       const operations_research::Instance& instance =
           operations_research::kInstances[i];
-      operations_research::SolveInstance(instance, absl::GetFlag(FLAGS_colgen_solver));
+      operations_research::SolveInstance(instance, solver_type);
     }
   } else {
     CHECK_GE(absl::GetFlag(FLAGS_colgen_instance), 0);
@@ -624,7 +655,7 @@ int main(int argc, char** argv) {
              operations_research::kInstanceCount);
     const operations_research::Instance& instance =
         operations_research::kInstances[absl::GetFlag(FLAGS_colgen_instance)];
-    operations_research::SolveInstance(instance, absl::GetFlag(FLAGS_colgen_solver));
+    operations_research::SolveInstance(instance, solver_type);
   }
   return EXIT_SUCCESS;
 }

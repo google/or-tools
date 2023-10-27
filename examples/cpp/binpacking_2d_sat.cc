@@ -46,7 +46,7 @@ ABSL_FLAG(int, max_bins, 0,
           "use some heuristics to compute this number.");
 ABSL_FLAG(bool, symmetry_breaking, true, "Use symmetry breaking constraints");
 ABSL_FLAG(bool, use_global_cumulative, true,
-          "Use a globalcumulative relaxation");
+          "Use a global cumulative relaxation");
 
 namespace operations_research {
 namespace sat {
@@ -86,7 +86,8 @@ absl::btree_set<int> FindFixedItems(
   absl::btree_set<int> fixed_items;
 
   // We start by fixing big pairwise incompatible items. Each to its own bin.
-  // See https://arxiv.org/pdf/1909.06835.pdf.
+  // See Côté; Haouari; Iori. (2019). A Primal Decomposition Algorithm for the
+  // Two-dimensional Bin Packing Problem (https://arxiv.org/pdf/1909.06835.pdf).
   const int num_items = problem.items_size();
   const auto box_dimensions = problem.box_shape().dimensions();
 
@@ -144,13 +145,15 @@ absl::btree_set<int> FindFixedItems(
   if (!found_incompatible_pair && !incompatible_pair_candidates.empty()) {
     // We could not add a pair of mutually incompatible items to our list. But
     // we know a set of elements that are incompatible with all the big ones.
-    // Let's add the one with the largest area.
+    // Let's add the one with the largest area. Note that if there are no big
+    // items, incompatible_pair_candidates contains all items and we will just
+    // fix the largest element.
     fixed_items.insert(*std::min_element(incompatible_pair_candidates.begin(),
                                          incompatible_pair_candidates.end(),
                                          GreaterByArea(problem)));
   }
 
-  if (!fixed_items.empty()) {
+  if (fixed_items.size() > 1) {
     std::string_view message_end = ".";
     if (found_incompatible_pair) {
       message_end =
@@ -162,16 +165,6 @@ absl::btree_set<int> FindFixedItems(
     }
     LOG(INFO) << fixed_items.size() << " items are pairwise incompatible"
               << message_end;
-  }
-
-  if (fixed_items.empty()) {
-    // We couldn't fix any items, just fix the one with the biggest area.
-    std::vector<int> all_items;
-    for (int i = 0; i < num_items; ++i) {
-      all_items.push_back(i);
-    }
-    fixed_items.insert(*std::min_element(all_items.begin(), all_items.end(),
-                                         GreaterByArea(problem)));
   }
 
   return fixed_items;
@@ -276,10 +269,22 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(INFO) << num_incompatible_pairs << " incompatible pairs of items";
   }
 
+  // Compute the min size in each dimension.
+  std::vector<int64_t> min_sizes_per_dimension = {box_dimensions.begin(),
+                                                  box_dimensions.end()};
+  for (int item = 0; item < num_items; ++item) {
+    for (int dim = 0; dim < num_dimensions; ++dim) {
+      min_sizes_per_dimension[dim] =
+          std::min(min_sizes_per_dimension[dim],
+                   problem.items(item).shapes(0).dimensions(dim));
+    }
+  }
+
   // Manages positions and sizes for each item.
   std::vector<std::vector<std::vector<IntervalVar>>>
       interval_by_item_bin_dimension(num_items);
   std::vector<std::vector<IntVar>> starts_by_dimension(num_items);
+  absl::btree_set<int> items_exclusive_in_at_least_one_dimension;
   for (int item = 0; item < num_items; ++item) {
     interval_by_item_bin_dimension[item].resize(max_bins);
     starts_by_dimension[item].resize(num_dimensions);
@@ -290,8 +295,17 @@ void LoadAndSolve(const std::string& file_name, int instance) {
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
         IntVar start;
         if (b == 0) {
-          start = cp_model.NewIntVar({0, dimension - size});
+          // For item fixed to a given bin, by symmetry of rotation we can also
+          // assume it is in the lower left corner.
+          const int64_t start_max = fixed_items.contains(item)
+                                        ? (dimension - size + 1) / 2
+                                        : dimension - size;
+          start = cp_model.NewIntVar({0, start_max});
           starts_by_dimension[item][dim] = start;
+
+          if (size + min_sizes_per_dimension[dim] > dimension) {
+            items_exclusive_in_at_least_one_dimension.insert(item);
+          }
         } else {
           start = starts_by_dimension[item][dim];
         }
@@ -300,6 +314,28 @@ void LoadAndSolve(const std::string& file_name, int instance) {
                                                      item_to_bin[item][b]);
       }
     }
+  }
+
+  if (!items_exclusive_in_at_least_one_dimension.empty()) {
+    int num_boxes_fixed_in_corner = 0;
+    int num_boxes_fixed_on_one_border = 0;
+    for (const int item : items_exclusive_in_at_least_one_dimension) {
+      for (int dim = 0; dim < num_dimensions; ++dim) {
+        if (fixed_items.contains(item)) {  // Fix to down left corner (0, 0).
+          cp_model.AddEquality(starts_by_dimension[item][dim], 0);
+          if (dim == 0) ++num_boxes_fixed_in_corner;
+        } else {
+          const int64_t dimension = box_dimensions[dim];
+          const int64_t size = problem.items(item).shapes(0).dimensions(dim);
+          if (size + min_sizes_per_dimension[dim] > dimension) {
+            cp_model.AddEquality(starts_by_dimension[item][dim], 0);
+            ++num_boxes_fixed_on_one_border;
+          }
+        }
+      }
+    }
+    LOG(INFO) << num_boxes_fixed_in_corner << " boxes fixed in one corner";
+    LOG(INFO) << num_boxes_fixed_on_one_border << " boxes fixed on one border";
   }
 
   // Non overlapping.
