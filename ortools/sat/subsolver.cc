@@ -266,7 +266,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       task();
 
       const absl::MutexLock mutex_lock(&mutex);
-      DCHECK_NE(subsolvers[best], nullptr);
+      DCHECK(subsolvers[best] != nullptr);
       DCHECK_GT(num_in_flight_per_subsolvers[best], 0);
       num_in_flight_per_subsolvers[best]--;
       VLOG(1) << name << " done in " << timer.Get() << "s.";
