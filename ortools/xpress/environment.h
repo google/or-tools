@@ -82,6 +82,12 @@ absl::Status LoadXpressDynamicLibrary(std::string &xpresspath);
 #define XPRS_TYPE_INT64                    2
 #define XPRS_TYPE_DOUBLE                   3
 #define XPRS_TYPE_STRING                   4
+/***************************************************************************\
+ * values related to NAMESPACES                                            *
+\***************************************************************************/
+#define XPRS_NAMES_ROW                      1
+#define XPRS_NAMES_COLUMN                   2
+
 
 #define XPRS_PLUSINFINITY 1.0e+20
 #define XPRS_MINUSINFINITY -1.0e+20

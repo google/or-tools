@@ -1,10 +1,10 @@
-#include "ortools/linear_solver/xpress_interface.cc"
-
 #include <fstream>
 #include <locale>
 
 #include "gtest/gtest.h"
 #include "ortools/base/init_google.h"
+#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/xpress/environment.h"
 #define XPRS_NAMELENGTH 1028
 
 namespace operations_research {
@@ -239,13 +239,13 @@ namespace operations_research {
       if (should_throw_) {
         throw std::runtime_error("This is a mocked exception in MyMPCallback");
       }
-      XpressMPCallbackContext* context_ = static_cast<XpressMPCallbackContext*>(callback_context);
+      //XpressMPCallbackContext* context_ = static_cast<XpressMPCallbackContext*>(callback_context);
       ++nSolutions_;
-      EXPECT_TRUE(context_->CanQueryVariableValues());
-      EXPECT_EQ(context_->Event(), MPCallbackEvent::kMipSolution);
+      EXPECT_TRUE(callback_context->CanQueryVariableValues());
+      EXPECT_EQ(callback_context->Event(), MPCallbackEvent::kMipSolution);
       last_variable_values_.resize(mpSolver_->NumVariables(), 0.0);
       for (int i = 0 ; i < mpSolver_->NumVariables(); i++) {
-        last_variable_values_[i] = context_->VariableValue(mpSolver_->variable(i));
+        last_variable_values_[i] = callback_context->VariableValue(mpSolver_->variable(i));
       }
     };
 

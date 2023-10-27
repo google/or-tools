@@ -32,8 +32,6 @@
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
-#define XPRS_NAMES_ROW 1
-#define XPRS_NAMES_COLUMN 2
 
 // The argument to this macro is the invocation of a XPRS function that
 // returns a status. If the function returns non-zero the macro aborts
