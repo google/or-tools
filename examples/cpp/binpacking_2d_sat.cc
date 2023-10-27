@@ -322,18 +322,22 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     for (const int item : items_exclusive_in_at_least_one_dimension) {
       for (int dim = 0; dim < num_dimensions; ++dim) {
         if (fixed_items.contains(item)) {
-          // Since this item is alone on its bin and effectively divides
-          // the bin in two we can put it in one corner. For example,
-          // for a horizontal long item, solutions where the long item
-          // sits in the middle would mean that there is also a
-          // solution the long item is in the bottom and the items below
-          // it were moved above it.
+          // Since this item is alone on its line (respectively column) and
+          // effectively divides the bin in two we can put it in one corner. For
+          // example, for a horizontal long item, solutions where the long item
+          // sits in the middle would mean that there is also a solution where
+          // the long item is moved all the way to the bottom.
           cp_model.FixVariable(starts_by_dimension[item][dim], 0);
           if (dim == 0) ++num_items_fixed_in_corner;
         } else {
+          // Since this item is alone on its line (respectively column), we can
+          // fix it at the beginning of the line (respectively column). Because
+          // this item can be in the same bin as a fixed item or another
+          // exclusive item, we cannot fix it to the bottom left corner.
           const int64_t bin_size = bin_sizes[dim];
-          const int64_t size = problem.items(item).shapes(0).dimensions(dim);
-          if (size + min_sizes_per_dimension[dim] > bin_size) {
+          const int64_t item_size =
+              problem.items(item).shapes(0).dimensions(dim);
+          if (item_size + min_sizes_per_dimension[dim] > bin_size) {
             cp_model.FixVariable(starts_by_dimension[item][dim], 0);
             ++num_items_fixed_on_one_border;
           }
