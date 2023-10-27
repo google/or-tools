@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/ubuntu
-FROM ubuntu:22.10
+FROM ubuntu:23.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq \
@@ -8,7 +8,7 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2110-
+# see https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-2304
 RUN apt-get update -qq \
 && apt-get install -yq dotnet-sdk-6.0 \
 && apt-get clean \
@@ -20,6 +20,6 @@ RUN dotnet --info
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /root
-ADD or-tools_amd64_ubuntu-22.10_dotnet_v*.tar.gz .
+ADD or-tools_amd64_ubuntu-23.10_dotnet_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test
