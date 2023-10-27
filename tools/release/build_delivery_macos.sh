@@ -229,7 +229,7 @@ function build_python() {
     echo "check python3..."
     command -v python3 | xargs echo "python3: " | tee -a build.log
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
-    "python${PY_VERSION}" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+    "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
     "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf virtualenv
     echo "check protoc-gen-mypy..."
