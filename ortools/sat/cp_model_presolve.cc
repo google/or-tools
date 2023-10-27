@@ -40,6 +40,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
@@ -10676,34 +10677,36 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         break;
       case ConstraintProto::kBoolOr:
         if (first_copy) {
-          if (!CopyBoolOrWithDupSupport(ct)) return CreateUnsatModel();
+          if (!CopyBoolOrWithDupSupport(ct)) return CreateUnsatModel(c, ct);
         } else {
-          if (!CopyBoolOr(ct)) return CreateUnsatModel();
+          if (!CopyBoolOr(ct)) return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kBoolAnd:
         if (temp_enforcement_literals_.empty()) {
           for (const int lit : ct.bool_and().literals()) {
             context_->UpdateRuleStats("bool_and: non-reified.");
-            if (!context_->SetLiteralToTrue(lit)) return CreateUnsatModel();
+            if (!context_->SetLiteralToTrue(lit)) {
+              return CreateUnsatModel(c, ct);
+            }
           }
         } else if (first_copy) {
-          if (!CopyBoolAndWithDupSupport(ct)) return CreateUnsatModel();
+          if (!CopyBoolAndWithDupSupport(ct)) return CreateUnsatModel(c, ct);
         } else {
-          if (!CopyBoolAnd(ct)) return CreateUnsatModel();
+          if (!CopyBoolAnd(ct)) return CreateUnsatModel(c, ct);
         }
         break;
       case ConstraintProto::kLinear:
-        if (!CopyLinear(ct)) return CreateUnsatModel();
+        if (!CopyLinear(ct)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kAtMostOne:
-        if (!CopyAtMostOne(ct)) return CreateUnsatModel();
+        if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kExactlyOne:
-        if (!CopyExactlyOne(ct)) return CreateUnsatModel();
+        if (!CopyExactlyOne(ct)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kInterval:
-        if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel();
+        if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kNoOverlap:
         if (first_copy) {
@@ -11128,10 +11131,31 @@ void ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   }
 }
 
-bool ModelCopy::CreateUnsatModel() {
+bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
   context_->working_model->mutable_constraints()->Clear();
   context_->working_model->add_constraints()->mutable_bool_or();
-  return false;
+
+  // If the model was already marked as unsat, we keep the old message and just
+  // return. TODO(user): Append messages instead?
+  if (context_->ModelIsUnsat()) return false;
+
+  std::string proto_string;
+#if !defined(__PORTABLE_PLATFORM__)
+  google::protobuf::TextFormat::Printer printer;
+  SetupTextFormatPrinter(&printer);
+  printer.PrintToString(ct, &proto_string);
+#endif  // !defined(__PORTABLE_PLATFORM__)
+  std::string message = absl::StrCat(
+      "proven during initial copy of constraint #", c, ":\n", proto_string);
+  std::vector<int> vars = UsedVariables(ct);
+  if (vars.size() < 10) {
+    absl::StrAppend(&message, "With current variable domains:\n");
+    for (const int var : vars) {
+      absl::StrAppend(&message, "var:", var,
+                      " domain:", context_->DomainOf(var).ToString(), "\n");
+    }
+  }
+  return context_->NotifyThatModelIsUnsat(message);
 }
 
 bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
@@ -11143,8 +11167,7 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                                                  context);
     return true;
   }
-  if (context->ModelIsUnsat()) return false;
-  return context->NotifyThatModelIsUnsat();
+  return !context->ModelIsUnsat();
 }
 
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(

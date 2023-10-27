@@ -368,7 +368,8 @@ class ModelCopy {
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
-  bool CreateUnsatModel();
+  // The arguments are used to log which constraint caused unsat.
+  bool CreateUnsatModel(int c, const ConstraintProto& ct);
 
   // Returns false if the constraint is never enforced and can be skipped.
   bool PrepareEnforcementCopy(const ConstraintProto& ct);

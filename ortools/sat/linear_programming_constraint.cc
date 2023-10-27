@@ -30,6 +30,7 @@
 #include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/logging.h"
@@ -990,7 +991,7 @@ bool LinearProgrammingConstraint::PreprocessCut(IntegerVariable first_slack,
 }
 
 bool LinearProgrammingConstraint::AddCutFromConstraints(
-    const std::string& name,
+    absl::string_view name,
     const std::vector<std::pair<RowIndex, IntegerValue>>& integer_multipliers) {
   // This is initialized to a valid linear constraint (by taking linear
   // combination of the LP rows) and will be transformed into a cut if
