@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-20.04", "ubuntu-22.04"]
+        os: ["ubuntu-22.04"]
         cmake: [
           {shared: OFF, java: OFF, dotnet: OFF, python: OFF, python-version: "3.8",  publish-cxx-or: ON},
           {shared: ON,  java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  publish-cxx-or: ON},
