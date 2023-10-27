@@ -1453,10 +1453,12 @@ void XpressInterface::ExtractNewVariables() {
           CHECK_STATUS(XPRSaddcols(mLp, new_col_count, nonzeros, obj.get(),
                                    cmatbeg, cmatind.get(), cmatval.get(),
                                    lb.get(), ub.get()));
-          if (have_names) {
-            CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(),
-                                      0, new_col_count - 1));
-          }
+          // TODO Fixme
+          // Writing all names worsen the performance significantly
+          // Performance are //if (have_names) {
+          //  CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(),
+          //                            0, new_col_count - 1));
+          //}
         }
       }
 
@@ -1474,10 +1476,12 @@ void XpressInterface::ExtractNewVariables() {
         CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(),
                                  cmatbeg.data(), cmatind.get(), cmatval.get(),
                                  lb.get(), ub.get()));
-        if (have_names) {
-          CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(), 0,
-                                    new_col_count - 1));
-        }
+        //TODO fixme
+        // Writing all names worsen the performance significantly
+        //if (have_names) {
+        //  CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(), 0,
+        //                            new_col_count - 1));
+        //}
         int const cols = getnumcols(mLp);
         unique_ptr<int[]> ind(new int[new_col_count]);
         for (int j = 0; j < cols; ++j) ind[j] = j;
@@ -1605,10 +1609,12 @@ void XpressInterface::ExtractNewConstraints() {
                                    rngval.get(), rmatbeg.get(), rmatind.get(),
                                    rmatval.get()));
 
-          if (have_names) {
-            CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_ROW, name.data(), offset,
-                                      offset + c - 1));
-          }
+          //TODO fixme
+          // Writing all names worsen the performance significantly
+          //if (have_names) {
+          //  CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_ROW, name.data(), offset,
+          //                            offset + c - 1));
+          //}
           if (haveRanges) {
             CHECK_STATUS(
                 XPRSchgrhsrange(mLp, nextRow, rngind.get(), rngval.get()));

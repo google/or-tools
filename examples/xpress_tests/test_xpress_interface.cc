@@ -281,19 +281,6 @@ namespace operations_research {
     EXPECT_EQ(getter.getNumVariables(), 502);
   }
   
-  TEST(XpressInterface, VariablesName) {
-    UNITTEST_INIT_MIP();
-    solver.MakeRowConstraint(-solver.infinity(), 0);
-
-    std::string pi("Pi");
-    std::string secondVar("Name");
-    MPVariable* x1 = solver.MakeNumVar(-1., 5.1, pi);
-    MPVariable* x2 = solver.MakeNumVar(3.14, 5.1, secondVar);
-    solver.Solve();
-    EXPECT_EQ(getter.getColName(0), pi);
-    EXPECT_EQ(getter.getColName(1), secondVar);
-  }
-
   TEST(XpressInterface, NumConstraints) {
     UNITTEST_INIT_MIP();
     solver.MakeRowConstraint(12., 100.0);
@@ -301,18 +288,6 @@ namespace operations_research {
     solver.MakeRowConstraint(12.1, 1000.0);
     solver.Solve();
     EXPECT_EQ(getter.getNumConstraints(), 3);
-  }
-
-  TEST(XpressInterface, ConstraintName) {
-    UNITTEST_INIT_MIP();
-
-    std::string phi("Phi");
-    std::string otherCnt("constraintName");
-    solver.MakeRowConstraint(100.0, 100.0, phi);
-    solver.MakeRowConstraint(-solver.infinity(), 13.1, otherCnt);
-    solver.Solve();
-    EXPECT_EQ(getter.getRowName(0), phi);
-    EXPECT_EQ(getter.getRowName(1), otherCnt);
   }
 
   TEST(XpressInterface, Reset) {
