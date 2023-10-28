@@ -58,7 +58,7 @@ jobs:
       - name: Check xpress installation
         working-directory: ./build/
         run: |
-          Get-ChildItem env:XPRESSDIR
+          Get-ChildItem env:XPRESSDIR;
           Get-ChildItem -Path $env:XPRESSDIR
 
 
