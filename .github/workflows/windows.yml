@@ -56,6 +56,16 @@ jobs:
           echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{ matrix.cmake.python-dir }}/Scripts" |
           Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      - name: Set-up Xpress with pip
+        shell: bash
+        run: |
+          python -m pip install --no-cache-dir xpress==9.0.0
+          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          ls -l $XPRESS_DIR
+          ls -l $XPRESS_DIR/bin
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
+
       - name: Check cmake
         run: cmake --version
       - name: Configure
@@ -104,13 +114,6 @@ jobs:
           --output-on-failure 
           -E "xpress"
 
-      - name: Set-up Xpress with pip
-        shell: bash
-        run: |
-          python -m pip install --no-cache-dir xpress==9.0.0
-          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
-          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
-          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
       - name: Tests xpress
         working-directory: ./build/
