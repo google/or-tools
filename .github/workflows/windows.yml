@@ -61,6 +61,7 @@ jobs:
         run: |
           python -m pip install --no-cache-dir xpress==9.0.0
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          echo $XPRESS_DIR
           ls -l $XPRESS_DIR
           cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
           ls -l $XPRESS_DIR/lib
