@@ -17,9 +17,6 @@ jobs:
   build:
     name: shrd=${{ matrix.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
     runs-on: windows-latest
-    env:
-      XPRESSDIR: ${{ github.workspace }}/xpressmp
-      XPAUTH_PATH: ${{ github.workspace }}/xpressmp/bin/xpauth.xpr
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +40,20 @@ jobs:
           python-version: ${{ matrix.cmake.python-version }}
       - name: Install python3
         run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+      - name: Set-up Xpress with pip
+        shell: bash
+        run: |
+          python3 -m pip install --no-cache-dir xpress==9.0.0
+          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          echo $XPRESS_DIR
+          ls -l $XPRESS_DIR
+          cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
+          echo $XPRESS_DIR/lib
+          ls -l $XPRESS_DIR/lib
+          echo $XPRESS_DIR/bin
+          ls -l $XPRESS_DIR/bin
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
       - name: Install SWIG 4.1.1
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip","swigwin-4.1.1.zip");
@@ -56,18 +67,6 @@ jobs:
           echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{ matrix.cmake.python-dir }}/Scripts" |
           Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Set-up Xpress with pip
-        shell: bash
-        run: |
-          python -m pip install --no-cache-dir xpress==9.0.0
-          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
-          echo $XPRESS_DIR
-          ls -l $XPRESS_DIR
-          cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
-          ls -l $XPRESS_DIR/lib
-          ls -l $XPRESS_DIR/bin
-          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
-          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
       - name: Check cmake
         run: cmake --version
