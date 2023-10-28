@@ -62,7 +62,7 @@ jobs:
           python -m pip install --no-cache-dir xpress==9.0.0
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
           ls -l $XPRESS_DIR
-          ls -l $XPRESS_DIR/bin
+          ls -l $XPRESS_DIR/lib
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
