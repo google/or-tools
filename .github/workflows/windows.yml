@@ -55,10 +55,10 @@ jobs:
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
-      - name: Tests xpress installation
+      - name: Check xpress installation
         working-directory: ./build/
         run: |
-          $env:XPRESSDIR
+          Get-ChildItem env:XPRESSDIR
           Get-ChildItem -Path $env:XPRESSDIR
 
 
