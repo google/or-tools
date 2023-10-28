@@ -63,6 +63,8 @@ jobs:
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
           ls -l $XPRESS_DIR
           cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
+          ls -l $XPRESS_DIR/lib
+          ls -l $XPRESS_DIR/bin
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
