@@ -54,6 +54,14 @@ jobs:
           ls -l $XPRESS_DIR/bin
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
+
+      - name: Tests xpress installation
+        working-directory: ./build/
+        run: |
+          $env:XPRESSDIR
+          Get-ChildItem -Path $env:XPRESSDIR
+
+
       - name: Install SWIG 4.1.1
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip","swigwin-4.1.1.zip");
@@ -78,6 +86,7 @@ jobs:
           -DBUILD_PYTHON=${{ matrix.cmake.python }}
           -DBUILD_JAVA=${{ matrix.cmake.java }}
           -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
+          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
           -DBUILD_DEPS=ON
           -DBUILD_SAMPLES=OFF
           -DCMAKE_INSTALL_PREFIX="build/install"
@@ -88,19 +97,6 @@ jobs:
           --config Release 
           --target ALL_BUILD
           -v -j2
-
-      - name: Configure2
-        run: >
-          cmake -S. -Bbuild
-          -G "Visual Studio 17 2022"
-          -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_PYTHON=${{ matrix.cmake.python }}
-          -DBUILD_JAVA=${{ matrix.cmake.java }}
-          -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
-          -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
-          -DBUILD_DEPS=ON
-          -DBUILD_SAMPLES=OFF
-          -DCMAKE_INSTALL_PREFIX="build/install"
 
       - name: Build2
         run: >
@@ -119,10 +115,10 @@ jobs:
 
       - name: Tests xpress
         working-directory: ./build/
-        run: >
-          ctest -V -C Release 
-          --output-on-failure 
-          -R "xpress"
+        run: |
+          $env:XPRESSDIR
+          Get-ChildItem -Path $env:XPRESSDIR
+          ctest -V -C Release --output-on-failure -R "xpress"
 
       - name: Install
         run: >
