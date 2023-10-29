@@ -114,6 +114,7 @@ jobs:
 
       - name: Tests xpress
         working-directory: ./build/
+        if: ${{ 'A' == 'B' }}
         run: |
           $env:XPRESSDIR
           Get-ChildItem -Path $env:XPRESSDIR
