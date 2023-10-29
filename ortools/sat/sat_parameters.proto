@@ -745,9 +745,8 @@ message SatParameters {
 
   // Whether we try to branch on decision "interval A before interval B" rather
   // than on intervals bounds. This usually works better, but slow down a bit
-  // the time to find first solutions.
+  // the time to find the first solution.
   //
-  // Note that for cumulative, this currently seems worse.
   // These parameters are still EXPERIMENTAL, the result should be correct, but
   // it some corner cases, they can cause some failing CHECK in the solver.
   optional bool use_dynamic_precedence_in_disjunctive = 263 [default = false];

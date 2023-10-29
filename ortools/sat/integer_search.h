@@ -271,7 +271,16 @@ class IntegerSearchHelper {
 
   // Calls the decision heuristics and extract a non-fixed literal.
   // Note that we do not want to copy the function here.
-  LiteralIndex GetDecision(const std::function<BooleanOrIntegerLiteral()>& f);
+  //
+  // Returns false if a conflict was found while trying to take a decision.
+  bool GetDecision(const std::function<BooleanOrIntegerLiteral()>& f,
+                   LiteralIndex* decision);
+
+  // Functions passed to GetDecision() might call this to notify a conflict
+  // was detected.
+  void NotifyThatConflictWasFoundDuringGetDecision() {
+    must_process_conflict_ = true;
+  }
 
   // Tries to take the current decision, this might backjump.
   // Returns false if the model is UNSAT.
@@ -301,6 +310,8 @@ class IntegerSearchHelper {
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;
   IntegerVariable objective_var_ = kNoIntegerVariable;
+
+  bool must_process_conflict_ = false;
 };
 
 // This class will loop continuously on model variables and try to probe/shave

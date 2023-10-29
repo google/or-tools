@@ -508,7 +508,8 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
 double FeasibilityJumpSolver::ComputeScore(absl::Span<const double> weights,
                                            int var, int64_t delta,
-                                           bool linear_only) const {
+                                           bool linear_only) {
+  ++num_scores_computed_;
   constexpr double kEpsilon = 1.0 / std::numeric_limits<int64_t>::max();
   double score =
       evaluator_->LinearEvaluator().WeightedViolationDelta(weights, var, delta);
@@ -818,10 +819,9 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
   RecomputeVarsToScan(general_jumps_);
   InitializeCompoundWeights();
   auto effort = [&]() {
-    return num_general_evals_ + num_linear_evals_ + num_weight_updates_ +
-           num_general_moves_;
+    return num_scores_computed_ + num_weight_updates_ + num_general_moves_;
   };
-  const int64_t effort_limit = effort() + 20000;
+  const int64_t effort_limit = effort() + 100000;
   while (effort() < effort_limit) {
     int var;
     int64_t value;
