@@ -83,6 +83,12 @@ jobs:
           -E "xpress"
 
 
+      - name: Check xpress installation
+        shell: bash
+        run: |
+          ls -l $XPRESSDIR
+          ls -l $XPAUTH_PATH
+
       - name: Tests xpress
         working-directory: ./build/
         run: |
