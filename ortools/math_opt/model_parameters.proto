@@ -59,8 +59,8 @@ message SolutionHintProto {
 }
 
 // TODO(b/183628247): follow naming convention in fields below.
-// Parameters to control a single solve that that are specific to the input
-// model (see SolveParametersProto for model independent parameters).
+// Parameters to control a single solve that are specific to the input model
+// (see SolveParametersProto for model independent parameters).
 message ModelSolveParametersProto {
   // Filter that is applied to all returned sparse containers keyed by variables
   // in PrimalSolutionProto and PrimalRayProto
