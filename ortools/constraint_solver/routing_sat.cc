@@ -249,9 +249,9 @@ void AddPickupDeliveryConstraints(const RoutingModel& model,
   const std::vector<int> ranks = CreateRanks(model, arc_vars, cp_model);
   const std::vector<int> vehicles =
       CreateVehicleVars(model, arc_vars, cp_model);
-  for (const auto& pairs : model.GetPickupAndDeliveryPairs()) {
-    const int64_t pickup = pairs.first[0];
-    const int64_t delivery = pairs.second[0];
+  for (const auto& [pickups, deliveries] : model.GetPickupAndDeliveryPairs()) {
+    const int64_t pickup = pickups[0];
+    const int64_t delivery = deliveries[0];
     // ranks[pickup] + 1 <= ranks[delivery].
     AddLinearConstraint(cp_model, 1, std::numeric_limits<int64_t>::max(),
                         {{ranks[delivery], 1}, {ranks[pickup], -1}});
@@ -613,8 +613,8 @@ void AddGeneralizedPickupDeliveryConstraints(
   if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks =
       CreateGeneralizedRanks(model, arc_vars, is_unperformed, cp_model);
-  for (const auto& pairs : model.GetPickupAndDeliveryPairs()) {
-    for (const int delivery : pairs.second) {
+  for (const auto& [pickups, deliveries] : model.GetPickupAndDeliveryPairs()) {
+    for (const int delivery : deliveries) {
       const int cp_delivery = delivery + 1;
       for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
         const Arc vehicle_start_delivery_arc = {
@@ -626,7 +626,7 @@ void AddGeneralizedPickupDeliveryConstraints(
         }
       }
 
-      for (const int pickup : pairs.first) {
+      for (const int pickup : pickups) {
         const int cp_pickup = pickup + 1;
         const Arc delivery_pickup_arc = {cp_delivery, cp_pickup};
         if (gtl::ContainsKey(arc_vars, delivery_pickup_arc)) {
@@ -657,12 +657,12 @@ void AddGeneralizedPickupDeliveryConstraints(
 
     std::vector<std::pair<int, double>> ranks_difference;
     // -SUM(pickup)ranks[pickup].
-    for (const int pickup : pairs.first) {
+    for (const int pickup : pickups) {
       const int cp_pickup = pickup + 1;
       ranks_difference.push_back({ranks[cp_pickup], -1});
     }
     // SUM(delivery)ranks[delivery].
-    for (const int delivery : pairs.second) {
+    for (const int delivery : deliveries) {
       const int cp_delivery = delivery + 1;
       ranks_difference.push_back({ranks[cp_delivery], 1});
     }
@@ -1137,6 +1137,8 @@ bool SolveModelWithSat(RoutingModel* model,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution) {
+  const absl::Duration remaining_time = model->RemainingTime();
+  const absl::Time deadline = model->solver()->Now() + remaining_time;
   sat::CpModelProto cp_model;
   cp_model.mutable_objective()->set_scaling_factor(
       search_parameters.log_cost_scaling_factor());
@@ -1153,17 +1155,21 @@ bool SolveModelWithSat(RoutingModel* model,
                                              &cp_model);
     const std::function<void(const sat::CpSolverResponse& response)> observer =
         search_parameters.report_intermediate_cp_sat_solutions() ?
-        [model, &objective, &arc_vars, solution]
+        [model, &objective, &arc_vars, solution, deadline]
         (const sat::CpSolverResponse& response) {
           // TODO(user): Check that performance is acceptable.
           sat::ConvertGeneralizedResponseToSolution(
               response, objective, *model, arc_vars, solution);
+          const absl::Duration remaining_time =
+              deadline - model->solver()->Now();
+          if (remaining_time < absl::ZeroDuration()) return;
+          model->UpdateTimeLimit(remaining_time);
           model->CheckIfAssignmentIsFeasible(
               *solution,
               /*call_at_solution_monitors=*/true);
         } : null_observer;
     return sat::ConvertGeneralizedResponseToSolution(
-        sat::SolveRoutingModel(cp_model, model->RemainingTime(),
+        sat::SolveRoutingModel(cp_model, remaining_time,
                                model->GetMutableCPSatInterrupt(),
                                search_parameters, observer),
         objective, *model, arc_vars, solution);
@@ -1174,15 +1180,19 @@ bool SolveModelWithSat(RoutingModel* model,
   sat::AddSolutionAsHintToModel(initial_solution, *model, arc_vars, &cp_model);
   const std::function<void(const sat::CpSolverResponse& response)> observer =
       search_parameters.report_intermediate_cp_sat_solutions() ?
-      [model, &objective, &arc_vars, solution]
+      [model, &objective, &arc_vars, solution, deadline]
       (const sat::CpSolverResponse& response) {
         // TODO(user): Check that performance is acceptable.
         sat::ConvertToSolution(response, objective, *model, arc_vars, solution);
+        const absl::Duration remaining_time = deadline - model->solver()->Now();
+        if (remaining_time < absl::ZeroDuration()) return;
+        model->UpdateTimeLimit(remaining_time);
+
         model->CheckIfAssignmentIsFeasible(*solution,
                                            /*call_at_solution_monitors=*/true);
       } : null_observer;
   return sat::ConvertToSolution(
-      sat::SolveRoutingModel(cp_model, model->RemainingTime(),
+      sat::SolveRoutingModel(cp_model, remaining_time,
                              model->GetMutableCPSatInterrupt(),
                              search_parameters, observer),
       objective, *model, arc_vars, solution);

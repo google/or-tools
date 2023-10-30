@@ -1532,14 +1532,14 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
 #ifndef SWIG
   /// Adds all sets of node alternatives of a vector of alternative pairs. No
-  /// node can be in two altrnatives.
+  /// node can be in two alternatives.
+  template <typename PairType>
   void AddPairAlternativeSets(
-      const std::vector<std::pair<std::vector<int64_t>, std::vector<int64_t>>>&
-          pair_alternative_sets) {
-    for (const auto& pair_alternative_set : pair_alternative_sets) {
-      const int alternative = AddAlternativeSet(pair_alternative_set.first);
-      sibling_alternative_.back() = alternative + 1;
-      AddAlternativeSet(pair_alternative_set.second);
+      const std::vector<PairType>& pair_alternative_sets) {
+    for (const auto& [alternative_set, sibling_alternative_set] :
+         pair_alternative_sets) {
+      sibling_alternative_.back() = AddAlternativeSet(alternative_set) + 1;
+      AddAlternativeSet(sibling_alternative_set);
     }
   }
 #endif  // SWIG
@@ -1678,18 +1678,21 @@ LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
 // in that case, the tightening function will return false, and the state will
 // be marked as invalid. No other operations than Revert() can be called on an
 // invalid state: in particular, an invalid state cannot be saved.
-class LocalSearchVariable;
-
 class LocalSearchState {
  public:
-  LocalSearchVariable AddVariable(int64_t initial_min, int64_t initial_max);
+  class Variable;
+  // Adds a variable to this state, return a handler to the new variable.
+  int AddVariable(int64_t initial_min, int64_t initial_max);
+  void ChangeInitialVariableBounds(int variable_index, int64_t min,
+                                   int64_t max);
+  // Makes an object with restricted operations on the variable identified by
+  // variable_index: only Relax, Tighten and read operations are available.
+  Variable MakeVariable(int variable_index);
   void Commit();
   void Revert();
   bool StateIsValid() const { return state_is_valid_; }
 
  private:
-  friend class LocalSearchVariable;
-
   struct Bounds {
     int64_t min;
     int64_t max;
@@ -1701,6 +1704,7 @@ class LocalSearchState {
   int64_t VariableMin(int variable_index) const;
   int64_t VariableMax(int variable_index) const;
 
+  // TODO(user): turn these into strong vectors.
   std::vector<Bounds> initial_variable_bounds_;
   std::vector<Bounds> variable_bounds_;
   std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
@@ -1713,7 +1717,7 @@ class LocalSearchState {
 // LocalSearchState pointers is too expensive, we could switch to index only,
 // and the user would have to know the relevant state. The present setup allows
 // to ensure that variable users will not misuse the state.
-class LocalSearchVariable {
+class LocalSearchState::Variable {
  public:
   int64_t Min() const { return state_->VariableMin(variable_index_); }
   int64_t Max() const { return state_->VariableMax(variable_index_); }
@@ -1729,7 +1733,7 @@ class LocalSearchVariable {
   // Only LocalSearchState can construct LocalSearchVariables.
   friend class LocalSearchState;
 
-  LocalSearchVariable(LocalSearchState* state, int variable_index)
+  Variable(LocalSearchState* state, int variable_index)
       : state_(state), variable_index_(variable_index) {}
 
   LocalSearchState* const state_;

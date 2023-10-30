@@ -3839,15 +3839,16 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
   }
 }
 
-LocalSearchVariable LocalSearchState::AddVariable(int64_t initial_min,
-                                                  int64_t initial_max) {
+int LocalSearchState::AddVariable(int64_t initial_min, int64_t initial_max) {
   DCHECK(state_is_valid_);
   DCHECK_LE(initial_min, initial_max);
   initial_variable_bounds_.push_back({initial_min, initial_max});
   variable_bounds_.push_back({initial_min, initial_max});
   variable_is_relaxed_.push_back(false);
+  return variable_bounds_.size() - 1;
+}
 
-  const int variable_index = variable_bounds_.size() - 1;
+LocalSearchState::Variable LocalSearchState::MakeVariable(int variable_index) {
   return {this, variable_index};
 }
 
@@ -3898,6 +3899,15 @@ bool LocalSearchState::TightenVariableMax(int variable_index,
   }
   bounds.max = std::min(bounds.max, max_value);
   return state_is_valid_;
+}
+
+void LocalSearchState::ChangeInitialVariableBounds(int variable_index,
+                                                   int64_t min, int64_t max) {
+  DCHECK(state_is_valid_);
+  DCHECK_GE(variable_index, 0);
+  DCHECK_LT(variable_index, variable_bounds_.size());
+  DCHECK(!variable_is_relaxed_[variable_index]);
+  initial_variable_bounds_[variable_index] = {min, max};
 }
 
 // TODO(user): When the class has more users, find a threshold ratio of

@@ -16,24 +16,21 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <iterator>
 #include <limits>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -63,10 +60,10 @@ bool RoutingModel::IsMatchingModel() const {
       if (!disjunction_nodes.insert(node).second) return false;
     }
   }
-  for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
+  for (const auto& [pickups, deliveries] : GetPickupAndDeliveryPairs()) {
     absl::flat_hash_set<DisjunctionIndex> disjunctions;
-    AddDisjunctionsFromNodes(*this, pd_pairs.first, &disjunctions);
-    AddDisjunctionsFromNodes(*this, pd_pairs.second, &disjunctions);
+    AddDisjunctionsFromNodes(*this, pickups, &disjunctions);
+    AddDisjunctionsFromNodes(*this, deliveries, &disjunctions);
     // Pairs involving more than 2 disjunctions are not supported.
     if (disjunctions.size() > 2) return false;
   }
@@ -98,23 +95,21 @@ bool RoutingModel::IsMatchingModel() const {
     int64_t min_transit = std::numeric_limits<int64_t>::max();
     // Find the minimal accumulated value resulting from a pickup and delivery
     // pair.
-    for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
+    for (const auto& [pickups, deliveries] : GetPickupAndDeliveryPairs()) {
       const auto transit_cmp = [&transits](int i, int j) {
         return transits[i] < transits[j];
       };
-      min_transit = std::min(
-          min_transit,
-          // Min transit from pickup.
-          transits[*std::min_element(pd_pairs.first.begin(),
-                                     pd_pairs.first.end(), transit_cmp)] +
-              // Min transit from delivery.
-              transits[*std::min_element(pd_pairs.second.begin(),
-                                         pd_pairs.second.end(), transit_cmp)]);
+      min_transit =
+          std::min(min_transit,
+                   // Min transit from pickup.
+                   transits[*absl::c_min_element(pickups, transit_cmp)] +
+                       // Min transit from delivery.
+                       transits[*absl::c_min_element(deliveries, transit_cmp)]);
     }
     // Find the minimal accumulated value resulting from a non-pickup/delivery
     // node.
     for (int i = 0; i < transits.size(); ++i) {
-      if (GetPickupIndexPairs(i).empty() && GetDeliveryIndexPairs(i).empty()) {
+      if (!IsPickup(i) && !IsDelivery(i)) {
         min_transit = std::min(min_transit, transits[i]);
       }
     }
@@ -184,14 +179,14 @@ bool RoutingModel::SolveMatchingModel(
   // TODO(user): Check pair alternatives correspond exactly to at most two
   // disjunctions.
   absl::flat_hash_map<int, std::pair<int64_t, int64_t>> flow_to_pd;
-  for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
+  for (const auto& [pickups, deliveries] : GetPickupAndDeliveryPairs()) {
     disjunction_to_flow_nodes.push_back({});
     absl::flat_hash_set<DisjunctionIndex> disjunctions;
-    AddDisjunctionsFromNodes(*this, pd_pairs.first, &disjunctions);
-    AddDisjunctionsFromNodes(*this, pd_pairs.second, &disjunctions);
-    for (int64_t pickup : pd_pairs.first) {
+    AddDisjunctionsFromNodes(*this, pickups, &disjunctions);
+    AddDisjunctionsFromNodes(*this, deliveries, &disjunctions);
+    for (int64_t pickup : pickups) {
       in_disjunction[pickup] = true;
-      for (int64_t delivery : pd_pairs.second) {
+      for (int64_t delivery : deliveries) {
         in_disjunction[delivery] = true;
         flow_to_pd[num_flow_nodes] = {pickup, delivery};
         disjunction_to_flow_nodes.back().push_back(num_flow_nodes);

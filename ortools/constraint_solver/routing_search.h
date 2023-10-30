@@ -824,13 +824,13 @@ class GlobalCheapestInsertionFilteredHeuristic
   }
 
   /// Returns the bucket of a pair of pickup and delivery alternates.
-  int64_t GetBucketOfPair(const RoutingModel::IndexPair& index_pair) const {
+  int64_t GetBucketOfPair(const PickupDeliveryPair& pair) const {
     int64_t max_pickup_bucket = 0;
-    for (int64_t pickup : index_pair.first) {
+    for (int64_t pickup : pair.pickup_alternatives) {
       max_pickup_bucket = std::max(max_pickup_bucket, GetBucketOfNode(pickup));
     }
     int64_t max_delivery_bucket = 0;
-    for (int64_t delivery : index_pair.second) {
+    for (int64_t delivery : pair.delivery_alternatives) {
       max_delivery_bucket =
           std::max(max_delivery_bucket, GetBucketOfNode(delivery));
     }
@@ -1103,14 +1103,14 @@ class LocalCheapestInsertionFilteredHeuristic
 
   // Tries to insert any alternative of the given pair,
   // ordered by cost of pickup insertion, then by cost of delivery insertion.
-  void InsertBestPickupThenDelivery(const RoutingModel::IndexPair& index_pair);
+  void InsertBestPickupThenDelivery(const PickupDeliveryPair& pair);
   // Tries to insert any alternative of the given pair,
   // ordered by the sum of pickup and delivery insertion.
-  void InsertBestPair(const RoutingModel::IndexPair& index_pair);
+  void InsertBestPair(const PickupDeliveryPair& pair);
   // Tries to insert any alternative of the given pair,
   // at a position that preserves the multitour property,
   // ordered by the sum of pickup and delivery insertion.
-  void InsertBestPairMultitour(const RoutingModel::IndexPair& index_pair);
+  void InsertBestPairMultitour(const PickupDeliveryPair& pair);
   // Tries to insert a pair at the given location. Returns true iff inserted.
   bool InsertPair(int64_t pickup, int64_t insert_pickup_after, int64_t delivery,
                   int64_t insert_delivery_after, int vehicle);
