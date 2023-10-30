@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: Windows java dotnet
+    name: Windows java and dotnet
     runs-on: windows-latest
     strategy:
       fail-fast: false
