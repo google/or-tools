@@ -21,7 +21,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-
+      - name: install zip
+        shell: cmd
+        run: |
+          choco install zip --no-progress
+    
       - name: Setup .NET 6.0
         uses: actions/setup-dotnet@v3
         with:

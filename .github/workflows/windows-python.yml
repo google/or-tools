@@ -28,6 +28,10 @@ jobs:
         ]
     steps:
       - uses: actions/checkout@v4
+      - name: install zip
+        shell: cmd
+        run: |
+          choco install zip --no-progress
 
       - name: Set up Python
         uses: actions/setup-python@v4
