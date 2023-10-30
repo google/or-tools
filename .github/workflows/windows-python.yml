@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         python: [
+          { version: "3.8", dir: Python308 },
           { version: "3.9", dir: Python309 },
           { version: "3.10", dir: Python310 },
           { version: "3.11", dir: Python311 },
-          { version: "3.12", dir: Python312 },
         ]
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - name: Set-up Xpress with pip
         shell: bash
         run: |
-          python3 -m pip install --no-cache-dir xpress==9.0.0
+          python3 -m pip install --no-cache-dir xpress>=9.0,<=9.1
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
           echo $XPRESS_DIR
           ls -l $XPRESS_DIR
