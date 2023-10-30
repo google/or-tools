@@ -82,12 +82,17 @@ jobs:
           --output-on-failure 
           -E "xpress"
 
-
       - name: Check xpress installation
         shell: bash
         run: |
+          echo "ls -l $XPRESSDIR"
           ls -l $XPRESSDIR
-          ls -l $XPAUTH_PATH
+          echo "ls -l $XPRESSDIR/bin"
+          ls -l $XPRESSDIR/bin
+          echo "ls -l $XPRESSDIR/lib"
+          ls -l $XPRESSDIR/lib
+          echo $XPAUTH_PATH
+          cat $XPAUTH_PATH
 
       - name: Tests xpress
         working-directory: ./build/
