@@ -476,15 +476,15 @@ class SatSolver {
   // Hack to allow to temporarily disable logging if it is enabled.
   SolverLogger* mutable_logger() { return logger_; }
 
- private:
-  // Calls Propagate() and returns true if no conflict occurred. Otherwise,
-  // learns the conflict, backtracks, enqueues the consequence of the learned
-  // conflict and returns false.
+  // Processes the current conflict from trail->FailingClause().
   //
-  // When handling assumptions, this might return false without backtracking
-  // in case of ASSUMPTIONS_UNSAT.
-  bool PropagateAndStopAfterOneConflictResolution();
+  // This learns the conflict, backtracks, enqueues the consequence of the
+  // learned conflict and return. When handling assumptions, this might return
+  // false without backtracking in case of ASSUMPTIONS_UNSAT. This is only
+  // exposed to allow processing a conflict detected outside normal propagation.
+  void ProcessCurrentConflict();
 
+ private:
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
 

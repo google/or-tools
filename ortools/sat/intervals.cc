@@ -127,8 +127,9 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
   disjunctive_precedences_.insert({{b, a}, a_before_b.Negated()});
 
   // Also insert it in precedences.
-  precedences_.insert({{a, b}, a_before_b});
-  precedences_.insert({{b, a}, a_before_b.Negated()});
+  // TODO(user): also add the reverse like start_b + 1 <= end_a if negated?
+  precedences_.insert({{end_a, start_b}, a_before_b});
+  precedences_.insert({{end_b, start_a}, a_before_b.Negated()});
 
   enforcement_literals.push_back(a_before_b);
   AddConditionalAffinePrecedence(enforcement_literals, end_a, start_b, model_);
@@ -147,12 +148,12 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
 
 bool IntervalsRepository::CreatePrecedenceLiteral(IntervalVariable a,
                                                   IntervalVariable b) {
-  if (precedences_.find({a, b}) != disjunctive_precedences_.end()) return false;
+  const AffineExpression x = End(a);
+  const AffineExpression y = Start(b);
+  if (precedences_.find({x, y}) != precedences_.end()) return false;
 
   // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
   // Do not create l if the relation is always true or false.
-  const AffineExpression x = End(a);
-  const AffineExpression y = Start(b);
   if (integer_trail_->UpperBound(x) <= integer_trail_->LowerBound(y)) {
     return false;
   }
@@ -163,7 +164,9 @@ bool IntervalsRepository::CreatePrecedenceLiteral(IntervalVariable a,
   // Create a new literal.
   const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
   const Literal x_before_y = Literal(boolean_var, true);
-  precedences_.insert({{a, b}, x_before_y});
+
+  // TODO(user): Also add {{y_plus_one, x}, x_before_y.Negated()} ?
+  precedences_.insert({{x, y}, x_before_y});
 
   AffineExpression y_plus_one = y;
   y_plus_one.constant += 1;
@@ -174,7 +177,9 @@ bool IntervalsRepository::CreatePrecedenceLiteral(IntervalVariable a,
 
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     IntervalVariable a, IntervalVariable b) const {
-  const auto it = precedences_.find({a, b});
+  const AffineExpression x = End(a);
+  const AffineExpression y = Start(b);
+  const auto it = precedences_.find({x, y});
   if (it != precedences_.end()) return it->second.Index();
   return kNoLiteralIndex;
 }

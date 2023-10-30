@@ -240,7 +240,7 @@ class SharedTreeWorker {
   void SyncWithSharedTree();
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
-  LiteralIndex NextDecision();
+  bool NextDecision(LiteralIndex* decision_index);
   void MaybeProposeSplit();
 
   // Add any implications to the clause database for the current level.

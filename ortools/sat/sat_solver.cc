@@ -584,7 +584,8 @@ bool SatSolver::FinishPropagation() {
   int num_loop = 0;
   while (true) {
     const int old_decision_level = current_decision_level_;
-    if (!PropagateAndStopAfterOneConflictResolution()) {
+    if (!Propagate()) {
+      ProcessCurrentConflict();
       if (model_is_unsat_) return false;
       if (current_decision_level_ == old_decision_level) {
         CHECK(!assumptions_.empty());
@@ -682,10 +683,9 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   return (status == SatSolver::FEASIBLE);
 }
 
-bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
+void SatSolver::ProcessCurrentConflict() {
   SCOPED_TIME_STAT(&stats_);
-  if (Propagate()) return true;
-  if (model_is_unsat_) return false;
+  if (model_is_unsat_) return;
 
   ++counters_.num_failures;
   const int conflict_trail_index = trail_->Index();
@@ -703,7 +703,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     // it reduces to only one literal in which case we can just fix it.
     const int highest_level =
         DecisionLevel((*trail_)[max_trail_index].Variable());
-    if (highest_level == 1) return false;
+    if (highest_level == 1) return;
   }
 
   ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
@@ -711,7 +711,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                           &subsumed_clauses_);
 
   // An empty conflict means that the problem is UNSAT.
-  if (learned_conflict_.empty()) return SetModelUnsat();
+  if (learned_conflict_.empty()) return (void)SetModelUnsat();
   DCHECK(IsConflictValid(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
@@ -789,7 +789,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     int pb_backjump_level;
     ComputePBConflict(max_trail_index, initial_slack, &pb_conflict_,
                       &pb_backjump_level);
-    if (pb_backjump_level == -1) return SetModelUnsat();
+    if (pb_backjump_level == -1) return (void)SetModelUnsat();
 
     // Convert the conflict into the vector<LiteralWithCoeff> form.
     std::vector<LiteralWithCoeff> cst;
@@ -817,7 +817,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                                                   trail_));
       CHECK_GT(trail_->Index(), last_decision_or_backtrack_trail_index_);
       counters_.num_learned_pb_literals += cst.size();
-      return false;
+      return;
     }
 
     // Continue with the normal clause flow, but use the PB conflict clause
@@ -941,7 +941,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       learned_conflict_, is_redundant);
   restart_->OnConflict(conflict_trail_index, conflict_decision_level,
                        conflict_lbd);
-  return false;
 }
 
 SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
@@ -1339,8 +1338,9 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
     }
 
     const int old_level = current_decision_level_;
-    if (!PropagateAndStopAfterOneConflictResolution()) {
+    if (!Propagate()) {
       // A conflict occurred, continue the loop.
+      ProcessCurrentConflict();
       if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
       if (old_level == current_decision_level_) {
         CHECK(!assumptions_.empty());

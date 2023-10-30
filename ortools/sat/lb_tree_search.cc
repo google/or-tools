@@ -538,8 +538,11 @@ SatSolver::Status LbTreeSearch::Search(
     while (true) {
       // TODO(user): We sometimes branch on the objective variable, this should
       // probably be avoided.
-      const LiteralIndex decision =
-          search_helper_->GetDecision(search_heuristic_);
+      if (sat_solver_->ModelIsUnsat()) return sat_solver_->UnsatStatus();
+      LiteralIndex decision;
+      if (!search_helper_->GetDecision(search_heuristic_, &decision)) {
+        continue;
+      }
 
       // No new decision: search done.
       if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;

@@ -241,9 +241,13 @@ class IntervalsRepository {
       demand_helper_repository_;
 
   // Disjunctive and normal precedences.
+  //
+  // Note that for normal precedences, we use directly the affine expression so
+  // that if many intervals share the same start, we don't re-create Booleans
+  // for no reason.
   absl::flat_hash_map<std::pair<IntervalVariable, IntervalVariable>, Literal>
       disjunctive_precedences_;
-  absl::flat_hash_map<std::pair<IntervalVariable, IntervalVariable>, Literal>
+  absl::flat_hash_map<std::pair<AffineExpression, AffineExpression>, Literal>
       precedences_;
 
   // Disjunctive/Cumulative helpers_.

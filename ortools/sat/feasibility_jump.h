@@ -165,7 +165,7 @@ class FeasibilityJumpSolver : public SubSolver {
 
   // Returns the weighted violation delta plus epsilon * the objective delta.
   double ComputeScore(absl::Span<const double> weights, int var, int64_t delta,
-                      bool linear_only) const;
+                      bool linear_only);
 
   // Computes the optimal value for variable v, considering only the violation
   // of linear constraints.
@@ -303,6 +303,7 @@ class FeasibilityJumpSolver : public SubSolver {
   int64_t num_restarts_ = 0;
   int64_t num_solutions_imported_ = 0;
   int64_t num_weight_updates_ = 0;
+  int64_t num_scores_computed_ = 0;
 
   std::unique_ptr<CompoundMoveBuilder> move_;
 

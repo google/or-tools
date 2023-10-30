@@ -596,7 +596,7 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
   return true;
 }
 
-LiteralIndex SharedTreeWorker::NextDecision() {
+bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const auto& decision_policy =
       heuristics_->decision_policies[heuristics_->policy_index];
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
@@ -608,11 +608,12 @@ LiteralIndex SharedTreeWorker::NextDecision() {
     CHECK(!sat_solver_->Assignment().LiteralIsFalse(decision))
         << " at depth " << next_level << " " << parameters_->name();
     CHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
-    return decision.Index();
+    *decision_index = decision.Index();
+    return true;
   }
   if (objective_ == nullptr ||
       objective_->objective_var == kNoIntegerVariable) {
-    return helper_->GetDecision(decision_policy);
+    return helper_->GetDecision(decision_policy, decision_index);
   }
   // If the current node is close to the global lower bound, maybe try to
   // improve it.
@@ -625,17 +626,21 @@ LiteralIndex SharedTreeWorker::NextDecision() {
                         *random_, 0, (root_obj_ub - root_obj_lb).value());
   const double objective_split_probability =
       parameters_->shared_tree_worker_objective_split_probability();
-  return helper_->GetDecision([&]() -> BooleanOrIntegerLiteral {
-    IntegerValue obj_lb = integer_trail_->LowerBound(objective_->objective_var);
-    IntegerValue obj_ub = integer_trail_->UpperBound(objective_->objective_var);
-    if (obj_lb > obj_split || obj_ub <= obj_split ||
-        next_level > assigned_tree_.MaxLevel() + 1 ||
-        absl::Bernoulli(*random_, 1 - objective_split_probability)) {
-      return decision_policy();
-    }
-    return BooleanOrIntegerLiteral(
-        IntegerLiteral::LowerOrEqual(objective_->objective_var, obj_split));
-  });
+  return helper_->GetDecision(
+      [&]() -> BooleanOrIntegerLiteral {
+        IntegerValue obj_lb =
+            integer_trail_->LowerBound(objective_->objective_var);
+        IntegerValue obj_ub =
+            integer_trail_->UpperBound(objective_->objective_var);
+        if (obj_lb > obj_split || obj_ub <= obj_split ||
+            next_level > assigned_tree_.MaxLevel() + 1 ||
+            absl::Bernoulli(*random_, 1 - objective_split_probability)) {
+          return decision_policy();
+        }
+        return BooleanOrIntegerLiteral(
+            IntegerLiteral::LowerOrEqual(objective_->objective_var, obj_split));
+      },
+      decision_index);
 }
 
 void SharedTreeWorker::MaybeProposeSplit() {
@@ -709,9 +714,10 @@ SatSolver::Status SharedTreeWorker::Search(
       SyncWithSharedTree();
     }
     if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();
-    Literal decision(NextDecision());
+    LiteralIndex decision_index;
+    if (!NextDecision(&decision_index)) continue;
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
-    if (decision.Index() == kNoLiteralIndex) {
+    if (decision_index == kNoLiteralIndex) {
       feasible_solution_observer();
       if (!has_objective) return SatSolver::FEASIBLE;
       const IntegerValue objective =
@@ -726,6 +732,7 @@ SatSolver::Status SharedTreeWorker::Search(
 
       continue;
     }
+    const Literal decision(decision_index);
     CHECK(!sat_solver_->Assignment().LiteralIsFalse(decision));
     CHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
     if (!helper_->TakeDecision(decision)) {

@@ -679,7 +679,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
   auto* repo = model->GetOrCreate<IntervalsRepository>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* trail = model->GetOrCreate<Trail>();
-  return [repo, integer_trail, trail]() {
+  auto* search_helper = model->GetOrCreate<IntegerSearchHelper>();
+  return [repo, integer_trail, trail, search_helper]() {
     SchedulingConstraintHelper* best_helper = nullptr;
     int best_before = 0;
     int best_after = 0;
@@ -715,6 +716,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
         // Set their demand to zero.
         while (next_end < num_tasks && by_emin[next_end].time == time) {
           const int t = by_emin[next_end].task_index;
+          if (!helper->IsPresent(t)) continue;
           if (added_demand[t] > 0) {
             current_height -= added_demand[t];
             added_demand[t] = 0;
@@ -730,6 +732,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
         // TODO(user): tie-break tasks not fitting in the profile smartly.
         while (next_start < num_tasks && by_smin[next_start].time == time) {
           const int t = by_smin[next_start].task_index;
+          if (!helper->IsPresent(t)) continue;
           if (added_demand[t] == -1) continue;  // Corner case.
           const IntegerValue demand_min = h.demand_helper->DemandMin(t);
           if (current_height + demand_min <= capacity_max) {
@@ -763,6 +766,9 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       }
       open_tasks.push_back(first_skipped_task);
 
+      // TODO(user): If the two box cannot overlap because of high demand, use
+      // repo.CreateDisjunctivePrecedenceLiteral() instead.
+      //
       // TODO(user): Add heuristic ordering for creating interesting precedence
       // first.
       bool found_precedence_to_add = false;
@@ -817,10 +823,29 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       //
       // TODO(user): We need to add the reason for demand_min and capacity_max.
       // TODO(user): unfortunately we can't report it from here.
+      std::vector<IntegerLiteral> integer_reason;
+      if (!h.capacity.IsConstant()) {
+        integer_reason.push_back(
+            integer_trail->UpperBoundAsLiteral(h.capacity));
+      }
+      const auto& demands = h.demand_helper->Demands();
+      for (const int t : open_tasks) {
+        if (helper->IsOptional(t)) {
+          CHECK(trail->Assignment().LiteralIsTrue(helper->PresenceLiteral(t)));
+          conflict.push_back(helper->PresenceLiteral(t).Negated());
+        }
+        const AffineExpression d = demands[t];
+        if (!d.IsConstant()) {
+          integer_reason.push_back(integer_trail->LowerBoundAsLiteral(d));
+        }
+      }
+      integer_trail->ReportConflict(conflict, integer_reason);
+      search_helper->NotifyThatConflictWasFoundDuringGetDecision();
       if (VLOG_IS_ON(2)) {
         LOG(INFO) << "Conflict between precedences !";
         for (const int t : open_tasks) LOG(INFO) << helper->TaskDebugString(t);
       }
+      return BooleanOrIntegerLiteral();
     }
 
     // TODO(user): add heuristic criteria, right now we stop at first
@@ -1252,9 +1277,9 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   return true;
 }
 
-LiteralIndex IntegerSearchHelper::GetDecision(
-    const std::function<BooleanOrIntegerLiteral()>& f) {
-  LiteralIndex decision = kNoLiteralIndex;
+bool IntegerSearchHelper::GetDecision(
+    const std::function<BooleanOrIntegerLiteral()>& f, LiteralIndex* decision) {
+  *decision = kNoLiteralIndex;
   while (!time_limit_->LimitReached()) {
     BooleanOrIntegerLiteral new_decision;
     if (integer_trail_->InPropagationLoop()) {
@@ -1267,6 +1292,12 @@ LiteralIndex IntegerSearchHelper::GetDecision(
     }
     if (!new_decision.HasValue()) {
       new_decision = f();
+      if (must_process_conflict_) {
+        must_process_conflict_ = false;
+        sat_solver_->ProcessCurrentConflict();
+        (void)sat_solver_->FinishPropagation();
+        return false;
+      }
     }
     if (!new_decision.HasValue() &&
         integer_trail_->CurrentBranchHadAnIncompletePropagation()) {
@@ -1283,13 +1314,13 @@ LiteralIndex IntegerSearchHelper::GetDecision(
     // until we have a conflict with these decisions, but it is currently
     // hard to do so.
     if (new_decision.boolean_literal_index != kNoLiteralIndex) {
-      decision = new_decision.boolean_literal_index;
+      *decision = new_decision.boolean_literal_index;
     } else {
-      decision =
+      *decision =
           encoder_->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
               .Index();
     }
-    if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
+    if (sat_solver_->Assignment().LiteralIsAssigned(Literal(*decision))) {
       // TODO(user): It would be nicer if this can never happen. For now, it
       // does because of the Propagate() not reaching the fixed point as
       // mentioned in a TODO above. As a work-around, we display a message
@@ -1300,7 +1331,7 @@ LiteralIndex IntegerSearchHelper::GetDecision(
     }
     break;
   }
-  return decision;
+  return true;
 }
 
 bool IntegerSearchHelper::TakeDecision(Literal decision) {
@@ -1382,17 +1413,22 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
+      if (sat_solver_->ModelIsUnsat()) return sat_solver_->UnsatStatus();
       if (heuristics.next_decision_override != nullptr) {
         // Note that to properly count the num_times, we do not want to move
         // this function, but actually call that copy.
-        decision = GetDecision(heuristics.next_decision_override);
+        if (!GetDecision(heuristics.next_decision_override, &decision)) {
+          continue;
+        }
         if (decision == kNoLiteralIndex) {
           heuristics.next_decision_override = nullptr;
         }
       }
       if (decision == kNoLiteralIndex) {
-        decision =
-            GetDecision(heuristics.decision_policies[heuristics.policy_index]);
+        if (!GetDecision(heuristics.decision_policies[heuristics.policy_index],
+                         &decision)) {
+          continue;
+        }
       }
 
       // Probing?
