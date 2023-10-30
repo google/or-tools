@@ -1,3 +1,12 @@
+if(NOT UNIX)
+  execute_process(
+    WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
+    COMMAND @Python3_EXECUTABLE@ -m pip install
+    --find-links=dist @PYTHON_PROJECT@==@PROJECT_VERSION@
+  )
+  return()
+endif()
+
 if(DEFINED ENV{DESTDIR})
   # If DESTDIR is not absolute path, make it relative to @PROJECT_BINARY_DIR@
   # like any install() command.
