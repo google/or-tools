@@ -42,7 +42,7 @@ jobs:
       - name: Set-up Xpress with pip
         shell: bash
         run: |
-          python3 -m pip install --no-cache-dir xpress>=9.0,<=9.1
+          python3 -m pip install --no-cache-dir xpress==9.0
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
           echo $XPRESS_DIR
           ls -l $XPRESS_DIR
