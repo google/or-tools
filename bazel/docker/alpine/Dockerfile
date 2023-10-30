@@ -11,7 +11,7 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Install Python
 RUN apk add --no-cache python3-dev py3-pip \
-py3-setuptools py3-wheel
+ py3-setuptools py3-wheel
 
 FROM env AS devel
 WORKDIR /home/project
