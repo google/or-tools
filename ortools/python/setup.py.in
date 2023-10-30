@@ -43,9 +43,9 @@ setup(
     packages=find_packages(),
     python_requires='>= 3.8',
     install_requires=[
-        'absl-py >= 0.13',
+        'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
-        'pandas >= 1.5.2',
+        'pandas >= 2.0.0',
         'protobuf >= 4.24.4',
     ],
     package_data={
