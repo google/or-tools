@@ -114,7 +114,7 @@ sizeof(long long): 8
 sizeof(int64_t): 8
 ```
 
-#### Visual Studio 2019
+#### Visual Studio 2022
 
 Thus, in `stdint.h` we have:
 
