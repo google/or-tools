@@ -21,11 +21,7 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: install zip
-        shell: cmd
-        run: |
-          choco install zip --no-progress
-    
+
       - name: Setup .NET 6.0
         uses: actions/setup-dotnet@v3
         with:
@@ -118,6 +114,11 @@ jobs:
         id: get_release
         uses:
           bruceadams/get-release@v1.2.3
+
+      - name: install zip
+        shell: cmd
+        run: |
+          choco install zip --no-progress
 
       - name: prepare OR-Tools jar
         id: jar

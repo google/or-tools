@@ -21,10 +21,6 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: install zip
-        shell: cmd
-        run: |
-          choco install zip --no-progress
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -108,6 +104,11 @@ jobs:
         id: get_release
         uses:
           bruceadams/get-release@v1.2.3
+
+      - name: install zip
+        shell: cmd
+        run: |
+          choco install zip --no-progress
 
       - name: Prepare OR-Tools install
         id: or-install
