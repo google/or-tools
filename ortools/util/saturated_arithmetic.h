@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 #include "absl/base/casts.h"
 #include "ortools/base/types.h"
@@ -281,6 +282,12 @@ inline int64_t CapProdGeneric(int64_t x, int64_t y) {
   return cap < 0 ? -abs_result : abs_result;
 }
 
+// A generic, safer version of CapAdd() where we don't silently convert double
+// or int32_t to int64_t. When the inputs are floating-point, uses '+', else
+// uses CapAdd() for int64_t, and a (slow-ish) int32_t version for int.
+template <typename T>
+T CapOrFloatAdd(T x, T y);
+
 inline int64_t CapAdd(int64_t x, int64_t y) {
 #if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__)
   return CapAddAsm(x, y);
@@ -315,6 +322,24 @@ inline int64_t CapProd(int64_t x, int64_t y) {
 #else
   return CapProdGeneric(x, y);
 #endif
+}
+
+template <typename T>
+T CapOrFloatAdd(T x, T y) {
+  static_assert(std::is_floating_point_v<T> || std::is_integral_v<T>);
+  if constexpr (std::is_integral_v<T>) {
+    if constexpr (std::is_same_v<T, int64_t>) {
+      return CapAdd(x, y);
+    } else {
+      static_assert(
+          std::is_same_v<T, int32_t>,
+          "CapOrFloatAdd() on integers only works for int and int64_t");
+      const int64_t sum = int64_t{x} + y;
+      return sum > kint32max ? kint32max : sum < kint32min ? kint32min : sum;
+    }
+  } else {
+    return x + y;
+  }
 }
 
 }  // namespace operations_research
