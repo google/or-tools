@@ -61,7 +61,7 @@ jobs:
           cmake --build build 
           --config Release 
           --target ALL_BUILD
-          -v -j2
+          -v -j4
 
       - name: Tests not xpress
         working-directory: ./build/
