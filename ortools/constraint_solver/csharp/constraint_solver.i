@@ -28,7 +28,7 @@ using System.Collections.Generic;
 %include "std_string.i"
 
 %include "ortools/base/base.i"
-%include "ortools/util/csharp/vector.i"
+%import "ortools/util/csharp/vector.i"
 %include "ortools/util/csharp/proto.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
@@ -226,7 +226,20 @@ DEFINE_ARGS_TO_R_CALLBACK(
 #undef DEFINE_ARGS_TO_R_CALLBACK
 #undef DEFINE_VOID_TO_STRING_CALLBACK
 
-// Renaming
+%template(IntVector) std::vector<int>;
+%template(IntVectorVector) std::vector<std::vector<int> >;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
+//REGULAR_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
+
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+//REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+
+
+// RENAMING
 namespace operations_research {
 
 // Decision
