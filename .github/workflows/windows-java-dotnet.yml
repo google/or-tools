@@ -1,4 +1,4 @@
-name: Windows
+name: Windows Java Dotnet
 
 on:
   push:
@@ -15,31 +15,21 @@ env:
 
 jobs:
   build:
-    name: shrd=${{ matrix.shared }} java=${{ matrix.cmake.java }} dotnet=${{ matrix.cmake.dotnet }} python=${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+    name: Windows java dotnet
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix:
-        cmake: [
-          { java: ON,  dotnet: ON,  python: OFF, python-version: "3.8",  python-dir: "Python309", publish-cxx-or: ON },
-          { java: OFF, dotnet: OFF, python: ON,  python-version: "3.8",  python-dir: "Python308", publish-cxx-or: OFF },
-          { java: OFF, dotnet: OFF, python: ON,  python-version: "3.9",  python-dir: "Python309", publish-cxx-or: OFF },
-          { java: OFF, dotnet: OFF, python: ON,  python-version: "3.10", python-dir: "Python310", publish-cxx-or: OFF },
-        ]
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup .NET 6.0
-        if: ${{ matrix.cmake.dotnet == 'ON' }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.cmake.python-version }}
-      - name: Install python3
-        run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+          python-version: "3.8"
       - name: Set-up Xpress with pip
         shell: bash
         run: |
@@ -55,12 +45,6 @@ jobs:
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
-      - name: Check xpress installation
-        run: |
-          Get-ChildItem env:XPRESSDIR;
-          Get-ChildItem -Path $env:XPRESSDIR
-
-
       - name: Install SWIG 4.1.1
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip","swigwin-4.1.1.zip");
@@ -69,11 +53,6 @@ jobs:
           Remove-Item .\swigwin-4.1.1.zip
       - name: Check swig
         run: swig -version
-      - name: Add Python binaries to path Windows
-        run: >
-          echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/${{ matrix.cmake.python-dir }}/Scripts" |
-          Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
 
       - name: Check cmake
         run: cmake --version
@@ -82,22 +61,14 @@ jobs:
           cmake -S. -Bbuild
           -G "Visual Studio 17 2022"
           -DCMAKE_BUILD_TYPE=Release
-          -DBUILD_PYTHON=${{ matrix.cmake.python }}
-          -DBUILD_JAVA=${{ matrix.cmake.java }}
-          -DBUILD_DOTNET=${{ matrix.cmake.dotnet }}
+          -DBUILD_JAVA=ON
+          -DBUILD_DOTNET=ON
           -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON
-          -DBUILD_DEPS=ON
+          -DBUILD_CXX_SAMPLES=OFF
           -DBUILD_SAMPLES=OFF
-          -DCMAKE_INSTALL_PREFIX="build/install"
+          -DCMAKE_INSTALL_PREFIX="install"
 
       - name: Build
-        run: >
-          cmake --build build 
-          --config Release 
-          --target ALL_BUILD
-          -v -j2
-
-      - name: Build2
         run: >
           cmake --build build 
           --config Release 
@@ -119,13 +90,6 @@ jobs:
           $env:XPRESSDIR
           Get-ChildItem -Path $env:XPRESSDIR
           ctest -V -C Release --output-on-failure -R "xpress"
-
-      - name: Install
-        run: >
-          cmake --build build
-          --config Release
-          --target INSTALL
-          -v
 
       - name: set name variables
         id: names
@@ -151,67 +115,7 @@ jobs:
         uses:
           bruceadams/get-release@v1.2.3
 
-      - name: Prepare OR-Tools install
-        if: ${{ matrix.cmake.publish-cxx-or == 'ON' }}
-        id: or-install
-        shell: bash
-        run: |
-          cd build
-          ARCHIVE_NAME="ortools_cxx${{ steps.names.outputs.appendix_with_shared }}.zip"
-          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
-          zip -r "$ARCHIVE_PATH" ./install
-          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          
-
-      - name: Upload OR-Tools install artifact
-        uses: actions/upload-artifact@v3
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.publish-cxx-or == 'ON' }}
-        with:
-          name: ${{ steps.or-install.outputs.archive_name }}
-          path: ${{ steps.or-install.outputs.archive_path }}
-
-      - name: Publish OR-Tools install asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.publish-cxx-or == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.or-install.outputs.archive_path }}
-          asset_name: ${{ steps.or-install.outputs.archive_name }}
-          asset_content_type: application/zip
-
-      - name: prepare OR-Tools wheel
-        if: ${{ matrix.cmake.python == 'ON' }}
-        id: wheel
-        shell: bash
-        run: |
-          cd ./build/python/dist
-          MY_DIR="ortools_python-${{ matrix.cmake.python-version }}${{ steps.names.outputs.appendix }}"
-          mkdir ${MY_DIR}
-          cp *.whl "${MY_DIR}"
-          ARCHIVE_NAME="${MY_DIR}.zip"
-          ARCHIVE_PATH="${{ github.workspace }}/build/${ARCHIVE_NAME}"
-          zip -r "${ARCHIVE_PATH}" "${MY_DIR}"
-          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-
-      - name: Upload OR-Tools wheel artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.python == 'ON' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ steps.wheel.outputs.archive_name }}
-          path: ${{ steps.wheel.outputs.archive_path }}
-      - name: Publish OR-Tools wheel asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.python == 'ON' }}
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ${{ steps.wheel.outputs.archive_path }}
-          asset_name: ${{ steps.wheel.outputs.archive_name }}
-          asset_content_type: application/zip
-
       - name: prepare OR-Tools jar
-        if: ${{ matrix.cmake.java == 'ON' }}
         id: jar
         shell: bash
         run: |
@@ -226,13 +130,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools jar artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.java == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false'}}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.jar.outputs.archive_name }}
           path: ${{ steps.jar.outputs.archive_path }}
       - name: Publish OR-Tools jar asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.java == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
@@ -241,7 +145,6 @@ jobs:
           asset_content_type: application/zip
 
       - name: prepare OR-Tools dotnet
-        if: ${{ matrix.cmake.dotnet == 'ON' }}
         id: dotnet
         shell: bash
         run: |
@@ -257,13 +160,13 @@ jobs:
           echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Upload OR-Tools dotnet artifact
-        if: ${{ env.RELEASE_CREATED == 'false' && matrix.cmake.dotnet == 'ON' }}
+        if: ${{ env.RELEASE_CREATED == 'false' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.dotnet.outputs.archive_name }}
           path: ${{ steps.dotnet.outputs.archive_path }}
       - name: Publish OR-Tools dotnet asset
-        if:  ${{ env.RELEASE_CREATED == 'true' && matrix.cmake.dotnet == 'ON' }}
+        if:  ${{ env.RELEASE_CREATED == 'true' }}
         uses: actions/upload-release-asset@v1.0.2
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
