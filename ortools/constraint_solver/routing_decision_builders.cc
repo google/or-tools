@@ -264,7 +264,6 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  using ResourceGroup = RoutingModel::ResourceGroup;
   using Resource = RoutingModel::ResourceGroup::Resource;
   using RouteDimensionTravelInfo = RoutingModel::RouteDimensionTravelInfo;
 
@@ -280,24 +279,23 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         dimension_travel_info_per_route_.empty()
             ? RouteDimensionTravelInfo()
             : dimension_travel_info_per_route_[vehicle];
-    if (optimize_and_pack_) {
+    const Resource* resource = nullptr;
+    if (resource_group_index_ >= 0 &&
+        model->ResourceVar(vehicle, resource_group_index_)->Bound()) {
       const int resource_index =
-          resource_group_index_ < 0
-              ? -1
-              : model->ResourceVar(vehicle, resource_group_index_)->Value();
-      const Resource* const resource =
-          resource_index < 0 ? nullptr
-                             : &model->GetResourceGroup(resource_group_index_)
-                                    ->GetResource(resource_index);
-      return optimizer->ComputePackedRouteCumuls(
-          vehicle, next, dimension_travel_info, resource, cumul_values,
-          break_start_end_values);
-    } else {
-      // TODO(user): Add the resource to the call in this case too!
-      return optimizer->ComputeRouteCumuls(vehicle, next, dimension_travel_info,
-                                           cumul_values,
-                                           break_start_end_values);
+          model->ResourceVar(vehicle, resource_group_index_)->Value();
+      if (resource_index >= 0) {
+        resource = &model->GetResourceGroup(resource_group_index_)
+                        ->GetResource(resource_index);
+      }
     }
+    return optimize_and_pack_
+               ? optimizer->ComputePackedRouteCumuls(
+                     vehicle, next, dimension_travel_info, resource,
+                     cumul_values, break_start_end_values)
+               : optimizer->ComputeRouteCumuls(
+                     vehicle, next, dimension_travel_info, resource,
+                     cumul_values, break_start_end_values);
   }
 
   LocalDimensionCumulOptimizer* const local_optimizer_;

@@ -26,6 +26,8 @@
 #ifndef OR_TOOLS_MATH_OPT_EXAMPLES_CPP_BRANCH_AND_BOUND_H_
 #define OR_TOOLS_MATH_OPT_EXAMPLES_CPP_BRANCH_AND_BOUND_H_
 
+#include <ostream>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"

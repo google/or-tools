@@ -4365,6 +4365,7 @@ void RegularLimit::ExitSearch() {
 
 void RegularLimit::UpdateLimits(absl::Duration time, int64_t branches,
                                 int64_t failures, int64_t solutions) {
+  Init();
   duration_limit_ = time;
   branches_ = branches;
   failures_ = failures;

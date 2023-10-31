@@ -225,8 +225,7 @@ class FilteredHeuristicCloseNodesLNSOperator
 
   std::vector<int64_t> GetActiveSiblings(int64_t node) const;
 
-  const std::vector<std::pair<std::vector<int64_t>, std::vector<int64_t>>>&
-      pickup_delivery_pairs_;
+  const std::vector<PickupDeliveryPair>& pickup_delivery_pairs_;
 
   int current_node_;
   int last_node_;

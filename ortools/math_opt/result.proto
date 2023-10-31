@@ -258,58 +258,26 @@ enum LimitProto {
 
 // Bounds on the optimal objective value.
 message ObjectiveBoundsProto {
-  // Solver claims the optimal value is equal or better (smaller for
-  // minimization and larger for maximization) than primal_bound up to the
-  // solvers primal feasibility tolerance (see warning below):
-  //   * primal_bound is trivial (+inf for minimization and -inf
-  //     maximization) when the solver does not claim to have such bound.
-  //   * primal_bound can be closer to the optimal value than the objective
-  //     of the best primal feasible solution. In particular, primal_bound
-  //     may be non-trivial even when no primal feasible solutions are returned.
-  // Warning: The precise claim is that there exists a primal solution that:
-  //  * is numerically feasible (i.e. feasible up to the solvers tolerance), and
-  //  * has an objective value primal_bound.
-  // This numerically feasible solution could be slightly infeasible, in which
-  // case primal_bound could be strictly better than the optimal value.
-  // Translating a primal feasibility tolerance to a tolerance on
-  // primal_bound is non-trivial, specially when the feasibility tolerance
-  // is relatively large (e.g. when solving with PDLP).
+  // Solver claims there exists a primal solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // primal_bound.
+  //
+  // The optimal value is equal or better (smaller for min objectives and larger
+  // for max objectives) than primal_bound, but only up to solver-tolerances.
   double primal_bound = 2;
 
-  // Solver claims the optimal value is equal or worse (larger for
-  // minimization and smaller for maximization) than dual_bound up to the
-  // solvers dual feasibility tolerance (see warning below):
-  //   * dual_bound is trivial (-inf for minimization and +inf
-  //     maximization) when the solver does not claim to have such bound.
-  //     Similarly to primal_bound, this may happen for some solvers even
-  //     when returning optimal. MIP solvers will typically report a bound even
-  //     if it is imprecise.
-  //   * for continuous problems dual_bound can be closer to the optimal
-  //     value than the objective of the best dual feasible solution. For MIP
-  //     one of the first non-trivial values for dual_bound is often the
-  //     optimal value of the LP relaxation of the MIP.
-  //   * dual_bound should be better (smaller for minimization and larger
-  //     for maximization) than primal_bound up to the solvers tolerances
-  //     (see warning below).
-  // Warning:
-  //  * For continuous problems, the precise claim is that there exists a
-  //    dual solution that:
-  //      * is numerically feasible (i.e. feasible up to the solvers tolerance),
-  //        and
-  //      * has an objective value dual_bound.
-  //    This numerically feasible solution could be slightly infeasible, in
-  //    which case dual_bound could be strictly worse than the optimal
-  //    value and primal_bound. Similar to the primal case, translating a
-  //    dual feasibility tolerance to a tolerance on dual_bound is
-  //    non-trivial, specially when the feasibility tolerance is relatively
-  //    large. However, some solvers provide a corrected version of
-  //    dual_bound that can be numerically safer. This corrected version
-  //    can be accessed through the solver's specific output (e.g. for PDLP,
-  //    pdlp_output.convergence_information.corrected_dual_objective).
-  //  * For MIP solvers, dual_bound may be associated to a dual solution
-  //    for some continuous relaxation (e.g. LP relaxation), but it is often a
-  //    complex consequence of the solvers execution and is typically more
-  //    imprecise than the bounds reported by LP solvers.
+  // Solver claims there exists a dual solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // dual_bound.
+  //
+  // For MIP solvers, the associated dual problem may be some continuous
+  // relaxation (e.g. LP relaxation), but it is often an implicitly defined
+  // problem that is a complex consequence of the solvers execution. For both
+  // continuous and MIP solvers, the optimal value is equal or worse (larger for
+  // min objective and smaller for max objectives) than dual_bound, but only up
+  // to solver-tolerances. Some continuous solvers provide a numerically safer
+  // dual bound through solver's specific output (e.g. for PDLP,
+  // pdlp_output.convergence_information.corrected_dual_objective).
   double dual_bound = 3;
 }
 
