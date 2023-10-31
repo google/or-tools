@@ -28,7 +28,7 @@ using System.Collections.Generic;
 %include "std_string.i"
 
 %include "ortools/base/base.i"
-%include "ortools/util/csharp/vector.i"
+%import "ortools/util/csharp/vector.i"
 %include "ortools/util/csharp/proto.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
