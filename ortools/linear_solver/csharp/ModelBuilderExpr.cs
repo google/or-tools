@@ -515,12 +515,18 @@ public class Variable : LinearExpr
         get {
             return helper_.VarLowerBound(index_);
         }
+        set {
+            helper_.SetVarLowerBound(index_, value);
+        }
     }
 
     public double UpperBound
     {
         get {
             return helper_.VarUpperBound(index_);
+        }
+        set {
+            helper_.SetVarUpperBound(index_, value);
         }
     }    
 
