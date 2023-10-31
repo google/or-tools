@@ -23,22 +23,22 @@ using Google.Protobuf.Collections;
 
 internal static class HelperExtensions
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void AddOrIncrement(this Dictionary<int, double> dict, int key, double increment)
-    {
-#if NET6_0_OR_GREATER
-        System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
-#else
-        if (dict.TryGetValue(key, out var value))
-        {
-            dict[key] = value + increment;
-        }
-        else
-        {
-            dict.Add(key, increment);
-        }
-#endif
-    }
+//     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//     public static void AddOrIncrement(this SortedDictionary<int, double> dict, int key, double increment)
+//     {
+// #if NET6_0_OR_GREATER
+//         System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
+// #else
+//         if (dict.TryGetValue(key, out var value))
+//         {
+//             dict[key] = value + increment;
+//         }
+//         else
+//         {
+//             dict.Add(key, increment);
+//         }
+// #endif
+//     }    
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void TrySetCapacity<TField, TValues>(this RepeatedField<TField> field, IEnumerable<TValues> values)
@@ -194,7 +194,7 @@ public class LinearExpr
     public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b)
     {
         return new BoundedLinearExpression(a, b, false);
-    }    
+    }
 
     public static BoundedLinearExpression operator ==(LinearExpr a, double v)
     {
@@ -252,7 +252,7 @@ public class LinearExpr
         }
     }
 
-    internal static double GetVarValueMap(LinearExpr e, Dictionary<int, double> dict, Queue<Term> terms)
+    internal static double GetVarValueMap(LinearExpr e, SortedDictionary<int, double> dict, Queue<Term> terms)
     {
         double constant = 0;
         double coefficient = 1;
@@ -281,7 +281,11 @@ public class LinearExpr
                 }
                 break;
             case Variable var:
-                dict.AddOrIncrement(var.Index, coefficient);
+                if (dict.TryGetValue(var.Index, out var c)) {
+                    dict[var.Index] = c + coefficient;
+                } else {
+                    dict.Add(var.Index, coefficient);
+                }
                 break;
             default:
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an expression");
@@ -475,14 +479,15 @@ public sealed class LinearExprBuilder : LinearExpr
  */
 public class Variable : LinearExpr
 {
-  public Variable(ModelBuilderHelper helper, double lb, double ub, bool isIntegral, string name)
+    public Variable(ModelBuilderHelper helper, double lb, double ub, bool isIntegral, string name)
     {
         helper_ = helper;
         index_ = helper_.AddVar();
         helper_.SetVarLowerBound(index_, lb);
         helper_.SetVarUpperBound(index_, ub);
         helper_.SetVarIntegrality(index_, isIntegral);
-        if (!string.IsNullOrEmpty(name)) {
+        if (!string.IsNullOrEmpty(name))
+        {
             helper_.SetVarName(index_, name);
         }
     }
@@ -528,7 +533,7 @@ public class Variable : LinearExpr
         set {
             helper_.SetVarUpperBound(index_, value);
         }
-    }    
+    }
 
     public override string ToString()
     {
@@ -600,7 +605,7 @@ public sealed class BoundedLinearExpression
         {
             return (object)left_ == (object)right_;
         }
-        else if (type_ == Type.VarDiffVar) 
+        else if (type_ == Type.VarDiffVar)
         {
             return (object)left_ != (object)right_;
         }
@@ -638,7 +643,7 @@ public sealed class BoundedLinearExpression
 
     public static BoundedLinearExpression operator <=(BoundedLinearExpression a, double v)
     {
-        if (a.CtType != Type.BoundExpression || a.Ub !=Double.PositiveInfinity)
+        if (a.CtType != Type.BoundExpression || a.Ub != Double.PositiveInfinity)
         {
             throw new ArgumentException("Operator <= not supported for this BoundedLinearExpression");
         }

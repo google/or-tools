@@ -13,77 +13,93 @@
 
 namespace Google.OrTools.ModelBuilder
 {
-  using Google.OrTools.Util;
-  using System;
-  using System.Collections;
-  using System.Collections.Generic;
-  using System.Linq;
-  using System.Runtime.CompilerServices;
-  using Google.Protobuf.Collections;
+using Google.OrTools.Util;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using Google.Protobuf.Collections;
 
-  /** Wrapper around a linear constraint stored in the ModelBuilderHelper instance. */
-  public class LinearConstraint
-  {
+/** Wrapper around a linear constraint stored in the ModelBuilderHelper instance. */
+public class LinearConstraint
+{
     public LinearConstraint(ModelBuilderHelper helper)
     {
-      helper_ = helper;
-      index_ = helper_.AddLinearConstraint();
+        helper_ = helper;
+        index_ = helper_.AddLinearConstraint();
     }
 
-    LinearConstraint(ModelBuilderHelper helper, int index)
+    public LinearConstraint(ModelBuilderHelper helper, int index)
     {
-      helper_ = helper;
-      index_ = index;
+        helper_ = helper;
+        index_ = index;
     }
 
     /** Returns the index of the constraint in the model. */
     public int Index
     {
-      get { return index_; }
+        get {
+            return index_;
+        }
     }
 
     /** Returns the constraint builder. */
     public ModelBuilderHelper Helper
     {
-      get { return helper_; }
+        get {
+            return helper_;
+        }
     }
 
     /** The lower bound of the constraint. */
     public double LowerBound
     {
-      get { return helper_.ConstraintLowerBound(index_); }
-      set { helper_.SetConstraintLowerBound(index_, value); }
+        get {
+            return helper_.ConstraintLowerBound(index_);
+        }
+        set {
+            helper_.SetConstraintLowerBound(index_, value);
+        }
     }
 
     /** The upper bound of the constraint. */
     public double UpperBound
     {
-      get { return helper_.ConstraintUpperBound(index_); }
-      set { helper_.SetConstraintUpperBound(index_, value); }
+        get {
+            return helper_.ConstraintUpperBound(index_);
+        }
+        set {
+            helper_.SetConstraintUpperBound(index_, value);
+        }
     }
 
     /** The name of the variable given upon creation. */
     public String Name
     {
-      get { return helper_.ConstraintName(index_); }
-      set { helper_.SetConstraintName(index_, value); }
+        get {
+            return helper_.ConstraintName(index_);
+        }
+        set {
+            helper_.SetConstraintName(index_, value);
+        }
     }
 
     // Adds var * coeff to the constraint.
     public void AddTerm(Variable var, double coeff)
     {
-      helper_.AddConstraintTerm(index_, var.Index, coeff);
+        helper_.AddConstraintTerm(index_, var.Index, coeff);
     }
 
     /** Inline setter */
     public LinearConstraint WithName(String name)
     {
-      Name = name;
-      return this;
+        Name = name;
+        return this;
     }
 
     private readonly int index_;
     private ModelBuilderHelper helper_;
-  }
+}
 
 } // namespace Google.OrTools.ModelBuilder
