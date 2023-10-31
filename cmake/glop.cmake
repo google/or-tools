@@ -82,6 +82,7 @@ target_sources(glop PRIVATE
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
+  ortools/base/gzipstring.h
   ortools/base/logging.h
   ortools/base/macros.h
   ortools/base/sysinfo.cc
@@ -242,6 +243,7 @@ target_sources(glop PRIVATE $<TARGET_OBJECTS:glop_proto>)
 add_dependencies(glop glop_proto)
 
 target_link_libraries(glop PUBLIC
+  ZLIB::ZLIB
   absl::memory
   absl::hash
   absl::flags
