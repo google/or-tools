@@ -22,6 +22,10 @@
     <SignAssembly>true</SignAssembly>
     <PublicSign>false</PublicSign>
     <DelaySign>false</DelaySign>
+
+    <!-- DefaultItems -->
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +34,7 @@
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/algorithms/csharp/*.cs"
              Exclude="@PROJECT_SOURCE_DIR@/ortools/algorithms/csharp/*Tests.cs">
-      <Link>graph/%(Filename)%(Extension)</Link>
+      <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/bop/*.cs">
@@ -38,7 +42,7 @@
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/glop/*.cs">
-      <Link>graph/%(Filename)%(Extension)</Link>
+      <Link>glop/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/graph/*.cs">
@@ -57,6 +61,10 @@
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/model_builder/*.cs">
+      <Link>model_builder/%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/constraint_solver/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
@@ -70,15 +78,15 @@
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/init/csharp/*.cs"
              Exclude="@PROJECT_SOURCE_DIR@/ortools/init/csharp/*Tests.cs">
-      <Link>sat/%(Filename)%(Extension)</Link>
+      <Link>init/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/pdlp/*.cs">
-      <Link>sat/%(Filename)%(Extension)</Link>
+      <Link>pdlp/%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="@PROJECT_SOURCE_DIR@/ortools/pdlp/csharp/*.cs"
              Exclude="@PROJECT_SOURCE_DIR@/ortools/pdlp/csharp/*Tests.cs">
-      <Link>sat/%(Filename)%(Extension)</Link>
+      <Link>pdlp/%(Filename)%(Extension)</Link>
     </Compile>
 
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
