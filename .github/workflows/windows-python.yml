@@ -49,6 +49,8 @@ jobs:
           ls -l $XPRESS_DIR/bin
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
+          cp $XPRESS_DIR\license\community-xpauth.xpr $XPRESS_DIR\bin\xpauth.xpr
+          echo "XPRESS=$XPRESS_DIR\bin" >> $GITHUB_ENV
 
       - name: Check xpress installation
         run: |
