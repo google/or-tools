@@ -235,16 +235,17 @@ public class ModelBuilder
     public void Optimize(LinearExpr obj, bool maximize)
     {
         helper_.ClearObjective();
-        double offset = LinearExpr.GetVarValueMap(expr, dict, terms_);
-        LinearConstraint lin = new LinearConstraint(helper_);
+        var dict = var_value_map_;
+        dict.Clear();
+        double offset = LinearExpr.GetVarValueMap(obj, dict, terms_);
         foreach (KeyValuePair<int, double> term in dict)
         {
             if (term.Value != 0.0)
             {
-                helper_.setVarObjectiveCoefficient(term.Key, term.Value);
+                helper_.SetVarObjectiveCoefficient(term.Key, term.Value);
             }
         }
-        helper_.SetObjectiveOffset(e.getOffset());
+        helper_.SetObjectiveOffset(offset);
         helper_.SetMaximize(maximize);
     }
 

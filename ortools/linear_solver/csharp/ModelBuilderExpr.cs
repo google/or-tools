@@ -23,22 +23,22 @@ using Google.Protobuf.Collections;
 
 internal static class HelperExtensions
 {
-//     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-//     public static void AddOrIncrement(this SortedDictionary<int, double> dict, int key, double increment)
-//     {
-// #if NET6_0_OR_GREATER
-//         System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
-// #else
-//         if (dict.TryGetValue(key, out var value))
-//         {
-//             dict[key] = value + increment;
-//         }
-//         else
-//         {
-//             dict.Add(key, increment);
-//         }
-// #endif
-//     }    
+    //     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //     public static void AddOrIncrement(this SortedDictionary<int, double> dict, int key, double increment)
+    //     {
+    // #if NET6_0_OR_GREATER
+    //         System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out _) += increment;
+    // #else
+    //         if (dict.TryGetValue(key, out var value))
+    //         {
+    //             dict[key] = value + increment;
+    //         }
+    //         else
+    //         {
+    //             dict.Add(key, increment);
+    //         }
+    // #endif
+    //     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void TrySetCapacity<TField, TValues>(this RepeatedField<TField> field, IEnumerable<TValues> values)
@@ -281,9 +281,12 @@ public class LinearExpr
                 }
                 break;
             case Variable var:
-                if (dict.TryGetValue(var.Index, out var c)) {
+                if (dict.TryGetValue(var.Index, out var c))
+                {
                     dict[var.Index] = c + coefficient;
-                } else {
+                }
+                else
+                {
                     dict.Add(var.Index, coefficient);
                 }
                 break;
