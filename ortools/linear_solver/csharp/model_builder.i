@@ -99,10 +99,10 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research::ModelBuilderHelper::OverwriteModel;
 
 // Callbacks support.
-%feature("director") operations_research::LogCallback;
-%unignore operations_research::LogCallback;
-%unignore operations_research::LogCallback::~LogCallback;
-%unignore operations_research::LogCallback::NewMessage;
+%feature("director") operations_research::MbLogCallback;
+%unignore operations_research::MbLogCallback;
+%unignore operations_research::MbLogCallback::~MbLogCallback;
+%unignore operations_research::MbLogCallback::NewMessage;
 
 // Solver API.
 %unignore operations_research::ModelSolverHelper;

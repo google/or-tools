@@ -421,7 +421,7 @@ void ModelSolverHelper::SetLogCallback(
 }
 
 void ModelSolverHelper::SetLogCallbackFromDirectorClass(
-    LogCallback* log_callback) {
+    MbLogCallback* log_callback) {
   log_callback_ = [log_callback](const std::string& message) {
     log_callback->NewMessage(message);
   };

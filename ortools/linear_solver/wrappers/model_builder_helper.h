@@ -107,9 +107,9 @@ class ModelBuilderHelper {
 };
 
 // Simple director class for C#.
-class LogCallback {
+class MbLogCallback {
  public:
-  virtual ~LogCallback() {}
+  virtual ~MbLogCallback() {}
   virtual void NewMessage(const std::string& message) = 0;
 };
 
@@ -150,7 +150,7 @@ class ModelSolverHelper {
   bool InterruptSolve();
 
   void SetLogCallback(std::function<void(const std::string&)> log_callback);
-  void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
+  void SetLogCallbackFromDirectorClass(MbLogCallback* log_callback);
   void ClearLogCallback();
 
   bool has_response() const;

@@ -208,7 +208,7 @@ public class ModelSolver
     /// <summary>
     /// Sets the log callback for the solver.
     /// </summary>
-    public LogCallback LogCallback
+    public MbLogCallback LogCallback
     {
         get {
             return logCallback_;
@@ -239,7 +239,7 @@ public class ModelSolver
     }
 
     private ModelSolverHelper helper_;
-    private LogCallback logCallback_;
+    private MbLogCallback logCallback_;
 }
 
 } // namespace Google.OrTools.ModelBuilder
