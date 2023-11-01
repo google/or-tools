@@ -22,7 +22,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Google.Protobuf.Collections;
 
-/** Model solver class */
+/// <summary>
+/// Model solver class
+/// </summary>
 public class ModelSolver
 {
     class ModelSolverException : Exception
@@ -32,15 +34,22 @@ public class ModelSolver
         }
     }
 
-    /** Creates the solver with the supplied solver backend. */
+    /// <summary>
+    /// Creates the solver with the supplied solver backend.
+    /// </summary>
+    /// <param name="solverName">the name of the solver backend</param>
     public ModelSolver(String solverName)
     {
         this.helper_ = new ModelSolverHelper(solverName);
         this.logCallback_ = null;
     }
 
-    /** Solves given model, and returns the status of the response. */
-    public SolveStatus solve(ModelBuilder model)
+    /// <summary>
+    /// Solves given model, and returns the status of the response.
+    /// </summary>
+    /// <param name="model">the model to solve</param>
+    /// <returns>the status of the solve</returns>
+    public SolveStatus Solve(ModelBuilder model)
     {
         if (logCallback_ == null)
         {
@@ -58,7 +67,10 @@ public class ModelSolver
         return helper_.Status();
     }
 
-    /** Enables or disables the underlying solver output. */
+    /// <summary>
+    /// Enables or disables the underlying solver output.
+    /// </summary>
+    /// <param name="enable">the Boolean that controls the output</param>
     public void EnableOutput(bool enable)
     {
         helper_.EnableOutput(enable);
@@ -76,108 +88,126 @@ public class ModelSolver
         helper_.SetSolverSpecificParameters(parameters);
     }
 
-    /** Returns whether solver specified during the ctor was found and correctly installed. */
+    /// <summary>
+    /// Returns whether solver specified during the ctor was found and correctly installed.
+    /// </summary>
+    /// <returns>whether the solver is supported or not</returns>
     public bool SolverIsSupported()
     {
         return helper_.SolverIsSupported();
     }
 
-    /** Tries to interrupt the solve. Returns true if the feature is supported. */
+    /// <summary>
+    /// Tries to interrupt the solve. Returns true if the feature is supported.
+    /// </summary>
+    /// <returns>whether the solver supports interruption</returns>
     public bool InterruptSolve()
     {
         return helper_.InterruptSolve();
     }
 
-    /** Returns true if solve() was called, and a response was returned. */
+    /// <summary>
+    /// Returns true if solve() was called, and a response was returned.
+    /// </summary>
+    /// <returns>whether solve did happen</returns>
     public bool HasResponse()
     {
         return helper_.HasResponse();
     }
 
-    /** Returns true if solve() was called, and a solution was returned. */
+    /// <summary>
+    /// Returns true if solve() was called, and a solution was returned.
+    /// </summary>
+    /// <returns>whether a solution was found</returns>
     public bool HasSolution()
     {
         return helper_.HasSolution();
     }
 
-    /** Checks that the solver has found a solution, and returns the objective value. */
+    /// <summary>
+    /// The best objective value found during search. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double ObjectiveValue
     {
         get {
             if (!helper_.HasSolution())
             {
-                throw new ModelSolverException("ModelSolver.getObjectiveValue()",
-                                               "solve() was not called or no solution was found");
+                throw new ModelSolverException("ModelSolver.ObjectiveValue",
+                                               "Solve() was not called or no solution was found");
             }
             return helper_.ObjectiveValue();
         }
     }
 
-    /** Checks that the solver has found a solution, and returns the objective value. */
+    /// <summary>
+    /// The best objective bound found during search. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double BestObjectiveBound
     {
         get {
             if (!helper_.HasSolution())
             {
-                throw new ModelSolverException("ModelSolver.getBestObjectiveBound()",
-                                               "solve() was not called or no solution was found");
+                throw new ModelSolverException("ModelSolver.BestObjectiveBound",
+                                               "Solve() was not called or no solution was found");
             }
             return helper_.BestObjectiveBound();
         }
     }
 
-    /** Checks that the solver has found a solution, and returns the value of the given variable. */
+    /// <summary>
+    /// The value of a variable in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double Value(Variable var)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.getValue())",
-                                           "solve() was not called or no solution was found");
+            throw new ModelSolverException("ModelSolver.Value())",
+                                           "Solve() was not called or no solution was found");
         }
         return helper_.VariableValue(var.Index);
     }
-    /**
-     * Checks that the solver has found a solution, and returns the reduced cost of the given
-     * variable.
-     */
+    /// <summary>
+    /// The reduced cost of a variable in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double ReducedCost(Variable var)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.getReducedCost())",
-                                           "solve() was not called or no solution was found");
+            throw new ModelSolverException("ModelSolver.ReducedCost())",
+                                           "Solve() was not called or no solution was found");
         }
         return helper_.ReducedCost(var.Index);
     }
 
-    /**
-     * Checks that the solver has found a solution, and returns the dual value of the given
-     * constraint.
-     */
+    /// <summary>
+    /// The dual value of a linear constraint in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double DualValue(LinearConstraint ct)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.getDualValue())",
-                                           "solve() was not called or no solution was found");
+            throw new ModelSolverException("ModelSolver.DualValue())",
+                                           "Solve() was not called or no solution was found");
         }
         return helper_.DualValue(ct.Index);
     }
 
-    /**
-     * Checks that the solver has found a solution, and returns the activity of the given constraint.
-     */
+    /// <summary>
+    /// The activity of a constraint in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// </summary>
     public double Activity(LinearConstraint ct)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.getActivity())",
-                                           "solve() was not called or no solution was found");
+            throw new ModelSolverException("ModelSolver.Activity())",
+                                           "Solve() was not called or no solution was found");
         }
         return helper_.Activity(ct.Index);
     }
 
-    /** Sets the log callback for the solver. */
+    /// <summary>
+    /// Sets the log callback for the solver.
+    /// </summary>
     public LogCallback LogCallback
     {
         get {
@@ -188,7 +218,9 @@ public class ModelSolver
         }
     }
 
-    /** Returns the elapsed time since the creation of the solver. */
+    /// <summary>
+    /// Returns the elapsed time since the creation of the solver.
+    /// </summary>
     public double WallTime
     {
         get {
@@ -196,7 +228,9 @@ public class ModelSolver
         }
     }
 
-    /** Returns the user time since the creation of the solver. */
+    /// <summary>
+    /// Returns the user time since the creation of the solver.
+    /// </summary>
     public double UserTime
     {
         get {

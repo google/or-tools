@@ -37,6 +37,7 @@ public class ModelBuilder
         helper_ = new ModelBuilderHelper();
         constantMap_ = new Dictionary<double, int>();
         var_value_map_ = new SortedDictionary<int, double>();
+        terms_ = new Queue<Term>();
     }
 
     /// <summary>
@@ -148,7 +149,6 @@ public class ModelBuilder
             throw new ArgumentException("Cannot use '" + lin.ToString() + "' as a linear constraint.");
         }
         }
-        return null;
     }
 
     /// <summary>
