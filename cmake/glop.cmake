@@ -79,16 +79,23 @@ target_link_libraries(glop_proto PRIVATE protobuf::libprotobuf)
 # Main Target
 add_library(glop)
 target_sources(glop PRIVATE
+  ortools/base/accurate_sum.h
+  ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
   ortools/base/gzipstring.h
+  ortools/base/hash.h
+  ortools/base/int_type.h
   ortools/base/logging.h
   ortools/base/macros.h
   ortools/base/sysinfo.cc
   ortools/base/sysinfo.h
+  ortools/base/timer.h
+  ortools/base/types.h
   ortools/base/version.cc
   ortools/base/version.h
+  ortools/base/vlog.h
   ortools/base/vlog_is_on.cc
   ortools/base/vlog_is_on.h
   ortools/glop/basis_representation.cc
@@ -299,15 +306,19 @@ install(FILES
   ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.h
+  ortools/base/gzipstring.h
   ortools/base/hash.h
   ortools/base/int_type.h
-  ortools/base/strong_int.h
-  ortools/base/strong_vector.h
   ortools/base/logging.h
   ortools/base/macros.h
   ortools/base/recordio.h
+  ortools/base/strong_int.h
+  ortools/base/strong_vector.h
   ortools/base/sysinfo.h
   ortools/base/timer.h
+  ortools/base/types.h
+  ortools/base/version.h
+  ortools/base/vlog.h
   ortools/base/vlog_is_on.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/base
   COMPONENT Devel)
