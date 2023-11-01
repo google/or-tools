@@ -255,6 +255,8 @@ foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solve
   target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()
 
+target_link_libraries(google-ortools-native PRIVATE dotnet_model_builder)
+
 file(COPY ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png DESTINATION ${PROJECT_BINARY_DIR}/dotnet)
 set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
 configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
