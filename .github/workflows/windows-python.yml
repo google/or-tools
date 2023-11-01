@@ -54,7 +54,6 @@ jobs:
           Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Checkout Xpress windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
         uses: actions/checkout@v4
         with:
           repository: rte-france/xpress-mp-temp
