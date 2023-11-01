@@ -5561,8 +5561,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
               context_->working_model->constraints(interval_index);
           if (!context_->IntersectDomainWith(interval_ct.interval().size(),
                                              {0, 0})) {
-            return context_->NotifyThatModelIsUnsat(
-                "cumulative: performed demand exceeds capacity.");
+            return true;
           }
           context_->UpdateRuleStats(
               "cumulative: zero size of performed demand that exceeds "
