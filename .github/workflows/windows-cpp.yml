@@ -38,7 +38,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp-temp
           path: ${{ env.XPRESSDIR }}
-          ref: "9.0a"
+          ref: "9.0b"
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Check cmake

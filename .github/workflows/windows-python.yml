@@ -40,11 +40,6 @@ jobs:
       - name: Install python3
         run: python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
 
-      - name: Check xpress installation
-        run: |
-          Get-ChildItem env:XPRESSDIR;
-          Get-ChildItem -Path $env:XPRESSDIR
-
       - name: Install SWIG 4.1.1
         run: |
           (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.1.1.zip","swigwin-4.1.1.zip");
@@ -64,7 +59,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp-temp
           path: ${{ env.XPRESSDIR }}
-          ref: "9.0a"
+          ref: "9.0b"
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Check cmake
