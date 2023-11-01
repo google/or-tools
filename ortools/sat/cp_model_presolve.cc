@@ -5553,6 +5553,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
               return true;
             }
             num_incompatible_intervals++;
+            continue;
           }
         } else {  // Interval performed.
           // Try to set the size to 0.
