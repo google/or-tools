@@ -68,6 +68,12 @@ jobs:
           echo "Create symbolic link for XPRESS library file because it is missing in the Python installation"
           ln -s $XPRESS_DIR/lib/libxprs.so.41 $XPRESS_DIR/lib/libxprs.so
 
+      - name: ccache
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}-${{ matrix.cmake.shared }}-${{ matrix.cmake.dotnet }}-${{ matrix.cmake.java }}-${{ matrix.cmake.python }}-${{ matrix.cmake.python-version }}
+
       - name: Check cmake
         run: cmake --version
       - name: Configure OR-Tools
