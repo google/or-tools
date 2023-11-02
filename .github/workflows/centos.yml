@@ -67,7 +67,7 @@ jobs:
         with:
           repository: rte-france/xpress-mp
           path: ${{ env.XPRESS_INSTALL_DIR }}
-          ref: "9.0"
+          ref: "9.0b"
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: set Xpress variables
