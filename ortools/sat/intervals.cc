@@ -83,8 +83,7 @@ IntervalVariable IntervalsRepository::CreateInterval(AffineExpression start,
 
 void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
     IntervalVariable a, IntervalVariable b) {
-  const auto it = disjunctive_precedences_.find({a, b});
-  if (it != disjunctive_precedences_.end()) return;
+  if (disjunctive_precedences_.contains({a, b})) return;
 
   std::vector<Literal> enforcement_literals;
   if (IsOptional(a)) enforcement_literals.push_back(PresenceLiteral(a));
@@ -150,7 +149,7 @@ bool IntervalsRepository::CreatePrecedenceLiteral(IntervalVariable a,
                                                   IntervalVariable b) {
   const AffineExpression x = End(a);
   const AffineExpression y = Start(b);
-  if (precedences_.find({x, y}) != precedences_.end()) return false;
+  if (precedences_.contains({x, y})) return false;
 
   // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
   // Do not create l if the relation is always true or false.

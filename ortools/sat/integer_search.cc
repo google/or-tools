@@ -773,6 +773,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       // first.
       bool found_precedence_to_add = false;
       std::vector<Literal> conflict;
+      helper->ClearReason();
       for (const int s : open_tasks) {
         for (const int t : open_tasks) {
           if (s == t) continue;
@@ -782,34 +783,39 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
           CHECK_LT(helper->StartMin(s), helper->EndMin(t));
           CHECK_LT(helper->StartMin(t), helper->EndMin(s));
 
-          // Make sure s could be before t.
-          if (helper->EndMin(s) > helper->StartMax(t)) continue;
-          best_before = s;
-          best_after = t;
-
-          // If the literal already exist (and is likely false), skip.
-          // Note that it being false only implies start_t < end_s.
-          const IntervalVariable a = helper->IntervalVariables()[best_before];
-          const IntervalVariable b = helper->IntervalVariables()[best_after];
-          if (!repo->CreatePrecedenceLiteral(a, b)) {
-            // Since s can be before t, this should only fail if the literal
-            // exist. It shouldn't be able to be true here otherwise we
-            // will have s and t disjoint.
-            const LiteralIndex existing = repo->GetPrecedenceLiteral(a, b);
-            CHECK_NE(existing, kNoLiteralIndex);
+          // skip if we already have a literal created and assigned to false.
+          const IntervalVariable a = helper->IntervalVariables()[s];
+          const IntervalVariable b = helper->IntervalVariables()[t];
+          const LiteralIndex existing = repo->GetPrecedenceLiteral(a, b);
+          if (existing != kNoLiteralIndex) {
+            // It shouldn't be able to be true here otherwise we will have s and
+            // t disjoint.
             CHECK(!trail->Assignment().LiteralIsTrue(Literal(existing)))
                 << helper->TaskDebugString(s) << " ( <= ?) "
                 << helper->TaskDebugString(t);
 
-            // This should only be true in normal usage after SAT search has
+            // This should always be true in normal usage after SAT search has
             // fixed all literal, but if it is not, we can just return this
             // decision.
             if (trail->Assignment().LiteralIsFalse(Literal(existing))) {
               conflict.push_back(Literal(existing));
               continue;
             }
+          } else {
+            // Make sure s could be before t.
+            if (helper->EndMin(s) > helper->StartMax(t)) {
+              helper->AddReasonForBeingBefore(t, s);
+              continue;
+            }
+
+            // It shouldn't be able to fail since s can be before t.
+            CHECK(repo->CreatePrecedenceLiteral(a, b));
           }
+
+          // Branch on that precedence.
           best_helper = helper;
+          best_before = s;
+          best_after = t;
           found_precedence_to_add = true;
           break;
         }
@@ -823,7 +829,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       //
       // TODO(user): We need to add the reason for demand_min and capacity_max.
       // TODO(user): unfortunately we can't report it from here.
-      std::vector<IntegerLiteral> integer_reason;
+      std::vector<IntegerLiteral> integer_reason =
+          *helper->MutableIntegerReason();
       if (!h.capacity.IsConstant()) {
         integer_reason.push_back(
             integer_trail->UpperBoundAsLiteral(h.capacity));
