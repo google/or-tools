@@ -18,9 +18,9 @@ jobs:
     name: Windows java and dotnet
     runs-on: windows-latest
     env:
-      XPRESSDIR: ${{ github.workspace }}\\xpressmp
-      XPRESS: ${{ github.workspace }}\\xpressmp\\bin
-      XPAUTH_PATH: ${{ github.workspace }}\\xpressmp\\bin\\xpauth.xpr
+      XPRESSDIR: ${{ github.workspace }}\xpressmp
+      XPRESS: ${{ github.workspace }}\xpressmp\\bin
+      XPAUTH_PATH: ${{ github.workspace }}\xpressmp\bin\xpauth.xpr
     strategy:
       fail-fast: false
     steps:
