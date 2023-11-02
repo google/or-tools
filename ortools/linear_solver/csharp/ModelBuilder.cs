@@ -36,8 +36,8 @@ public class ModelBuilder
     {
         helper_ = new ModelBuilderHelper();
         constantMap_ = new Dictionary<double, int>();
-        var_value_map_ = new SortedDictionary<int, double>();
-        terms_ = new Queue<Term>();
+        tmp_var_value_map_ = new SortedDictionary<int, double>();
+        tmp_terms_ = new Queue<Term>();
     }
 
     /// <summary>
@@ -160,9 +160,9 @@ public class ModelBuilder
     /// <returns>the linear constraint</returns>
     public LinearConstraint AddLinearConstraint(LinearExpr expr, double lb, double ub)
     {
-        var dict = var_value_map_;
+        var dict = tmp_var_value_map_;
         dict.Clear();
-        double offset = LinearExpr.GetVarValueMap(expr, dict, terms_);
+        double offset = LinearExpr.GetVarValueMap(expr, dict, tmp_terms_);
         LinearConstraint lin = new LinearConstraint(helper_);
         foreach (KeyValuePair<int, double> term in dict)
         {
@@ -235,9 +235,9 @@ public class ModelBuilder
     public void Optimize(LinearExpr obj, bool maximize)
     {
         helper_.ClearObjective();
-        var dict = var_value_map_;
+        var dict = tmp_var_value_map_;
         dict.Clear();
-        double offset = LinearExpr.GetVarValueMap(obj, dict, terms_);
+        double offset = LinearExpr.GetVarValueMap(obj, dict, tmp_terms_);
         foreach (KeyValuePair<int, double> term in dict)
         {
             if (term.Value != 0.0)
@@ -330,8 +330,8 @@ public class ModelBuilder
     private Dictionary<double, int> constantMap_;
 
     // Used to process linear exppressions.
-    private SortedDictionary<int, double> var_value_map_;
-    private Queue<Term> terms_;
+    private SortedDictionary<int, double> tmp_var_value_map_;
+    private Queue<Term> tmp_terms_;
 }
 
 } // namespace Google.OrTools.ModelBuilder
