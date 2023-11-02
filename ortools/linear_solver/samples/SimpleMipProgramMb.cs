@@ -51,7 +51,7 @@ public class SimpleMipProgramMb
         // [END objective]
 
         // [START solver]
-        // Create the model solver with the GLOP backend.
+        // Create the model solver with the SCIP backend.
         ModelSolver solver = new ModelSolver("SCIP");
         if (!solver.SolverIsSupported())
         {
