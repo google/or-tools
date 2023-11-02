@@ -74,9 +74,13 @@ public final class CloneModelMb {
     System.out.println("Number of constraints in the cloned model = " + modelCopy.numConstraints());
     // [END clone]
 
-    // [START solve]
-    // Solve with the SCIP MIP solver.
+    // [START solver]
+    // Create the solver with the SCIP backend and check it is supported.
     ModelSolver solver = new ModelSolver("scip");
+    if (!solver.solverIsSupported()) return;
+    // [END solver]
+
+    // [START solve]
     final SolveStatus status = solver.solve(modelCopy);
     // [END solve]
 

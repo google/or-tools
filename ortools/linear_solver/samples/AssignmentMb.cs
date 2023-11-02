@@ -87,12 +87,9 @@ public class AssignmentMb
         // [END objective]
 
         // [START solver]
-        // Create the model solver with the SCIP backend.
+        // Create the solver with the SCIP backend and check it is supported.
         ModelSolver solver = new ModelSolver("SCIP");
-        if (!solver.SolverIsSupported())
-        {
-            return;
-        }
+        if (!solver.SolverIsSupported()) return;
         // [END solver]
         
         // Solve
@@ -103,7 +100,7 @@ public class AssignmentMb
         // Print solution.
         // [START print_solution]
         // Check that the problem has a feasible solution.
-        if (resultStatus == SolverStatus.OPTIMAL || resultStatus == SolverStatus.FEASIBLE)
+        if (resultStatus == SolveStatus.OPTIMAL || resultStatus == SolveStatus.FEASIBLE)
         {
             Console.WriteLine($"Total cost: {solver.ObjectiveValue}\n");
             for (int i = 0; i < numWorkers; ++i)
