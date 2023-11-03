@@ -251,4 +251,3 @@
 // By default vector<vector<Type>> is mapped to a jagged array i.e. .Net type[][]
 // If you want a regular matrix i.e. .Net type[,] use REGULAR_MATRIX_AS_CSHARP_ARRAY instead.
 %include "std_vector.i"
-

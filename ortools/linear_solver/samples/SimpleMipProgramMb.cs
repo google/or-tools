@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Minimal example to call the SCIP solver.
+// Minimal example to solve a MIP problem.
 // [START program]
 // [START import]
 using System;

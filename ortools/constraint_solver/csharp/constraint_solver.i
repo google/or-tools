@@ -238,7 +238,7 @@ DEFINE_ARGS_TO_R_CALLBACK(
 #undef DEFINE_ARGS_TO_R_CALLBACK
 #undef DEFINE_VOID_TO_STRING_CALLBACK
 
-// RENAMING
+// Renaming
 namespace operations_research {
 
 // Decision

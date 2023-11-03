@@ -14,15 +14,16 @@
 // MIP example that solves a bin packing problem.
 // [START program]
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
-import com.google.ortools.modelbuilder.LinearConstraint;
 import com.google.ortools.modelbuilder.LinearExpr;
 import com.google.ortools.modelbuilder.LinearExprBuilder;
 import com.google.ortools.modelbuilder.ModelBuilder;
 import com.google.ortools.modelbuilder.ModelSolver;
 import com.google.ortools.modelbuilder.SolveStatus;
 import com.google.ortools.modelbuilder.Variable;
+
 // [END import]
 
 /** Bin packing problem. */
@@ -35,6 +36,7 @@ public class BinPackingMb {
     public final int numBins = weights.length;
     public final int binCapacity = 100;
   }
+
   // [END data_model]
 
   public static void main(String[] args) throws Exception {
@@ -71,7 +73,7 @@ public class BinPackingMb {
       model.addEquality(oneCopy, 1);
     }
 
-    // The bin capacity contraint for bin j is
+    // The bin capacity constraint for bin j is
     //   sum_i w_i x_ij <= C*y_j
     // To define this constraint, first subtract the left side from the right to get
     //   0 <= C*y_j - sum_i w_i x_ij
@@ -95,7 +97,9 @@ public class BinPackingMb {
     // [START solver]
     // Create the solver with the SCIP backend and check it is supported.
     ModelSolver solver = new ModelSolver("scip");
-    if (!solver.solverIsSupported()) return;
+    if (!solver.solverIsSupported()) {
+      return;
+    }
     // [END solver]
 
     // [START solve]

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Minimal example to call the SCIP solver.
+// Minimal example to clone a model.
 // [START program]
 // [START import]
 using System;
@@ -63,12 +63,13 @@ public class SimpleMipProgramMb
 
         Console.WriteLine("Number of constraints in the original model = " + model.ConstraintsCount());
         Console.WriteLine("Number of constraints in the cloned model = " + modelCopy.ConstraintsCount());
-        // [END clone]        
+        // [END clone]
 
         // [START solver]
-        // Create the solver with the SCIP backend and checks it is supported.
-        ModelSolver solver = new ModelSolver("SCIP");
-        if (!solver.SolverIsSupported()) return;
+        // Create the solver with the CP-SAT backend and checks it is supported.
+        ModelSolver solver = new ModelSolver("sat");
+        if (!solver.SolverIsSupported())
+            return;
         // [END solver]
 
         // [START solve]

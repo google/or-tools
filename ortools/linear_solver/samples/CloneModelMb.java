@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Minimal example to call the MIP solver.
+// Minimal example to clone a model.
 // [START program]
 package com.google.ortools.linearsolver.samples;
 
@@ -75,9 +75,11 @@ public final class CloneModelMb {
     // [END clone]
 
     // [START solver]
-    // Create the solver with the SCIP backend and check it is supported.
-    ModelSolver solver = new ModelSolver("scip");
-    if (!solver.solverIsSupported()) return;
+    // Create the solver with the CP-SAT backend and check it is supported.
+    ModelSolver solver = new ModelSolver("sat");
+    if (!solver.solverIsSupported()) {
+      return;
+    }
     // [END solver]
 
     // [START solve]

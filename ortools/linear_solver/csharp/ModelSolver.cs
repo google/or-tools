@@ -125,7 +125,8 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The best objective value found during search. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The best objective value found during search. This raises a ModelSolverException is no solution has been found,
+    /// or if Solve() has not been called.
     /// </summary>
     public double ObjectiveValue
     {
@@ -140,7 +141,8 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The best objective bound found during search. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The best objective bound found during search. This raises a ModelSolverException is no solution has been found,
+    /// or if Solve() has not been called.
     /// </summary>
     public double BestObjectiveBound
     {
@@ -155,19 +157,20 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The value of a variable in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The value of a variable in the current solution. This raises a ModelSolverException is no solution has been
+    /// found, or if Solve() has not been called.
     /// </summary>
     public double Value(Variable var)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.Value())",
-                                           "Solve() was not called or no solution was found");
+            throw new ModelSolverException("ModelSolver.Value())", "Solve() was not called or no solution was found");
         }
         return helper_.VariableValue(var.Index);
     }
     /// <summary>
-    /// The reduced cost of a variable in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The reduced cost of a variable in the current solution. This raises a ModelSolverException is no solution has
+    /// been found, or if Solve() has not been called.
     /// </summary>
     public double ReducedCost(Variable var)
     {
@@ -180,7 +183,8 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The dual value of a linear constraint in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The dual value of a linear constraint in the current solution. This raises a ModelSolverException is no solution
+    /// has been found, or if Solve() has not been called.
     /// </summary>
     public double DualValue(LinearConstraint ct)
     {
@@ -193,7 +197,8 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The activity of a constraint in the current solution. This raises a ModelSolverException is no solution has been found, or if Solve() has not been called.
+    /// The activity of a constraint in the current solution. This raises a ModelSolverException is no solution has been
+    /// found, or if Solve() has not been called.
     /// </summary>
     public double Activity(LinearConstraint ct)
     {

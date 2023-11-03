@@ -13,21 +13,23 @@
 
 // [START program]
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
-import com.google.ortools.modelbuilder.LinearConstraint;
 import com.google.ortools.modelbuilder.LinearExpr;
 import com.google.ortools.modelbuilder.LinearExprBuilder;
 import com.google.ortools.modelbuilder.ModelBuilder;
 import com.google.ortools.modelbuilder.ModelSolver;
 import com.google.ortools.modelbuilder.SolveStatus;
 import com.google.ortools.modelbuilder.Variable;
+
 // [END import]
 
 /** MIP example that solves an assignment problem. */
 public class AssignmentMb {
   public static void main(String[] args) {
     Loader.loadNativeLibraries();
+
     // Data
     // [START data_model]
     double[][] costs = {
@@ -92,7 +94,9 @@ public class AssignmentMb {
     // [START solver]
     // Create the solver with the SCIP backend and check it is supported.
     ModelSolver solver = new ModelSolver("scip");
-    if (!solver.solverIsSupported()) return;
+    if (!solver.solverIsSupported()) {
+      return;
+    }
     // [END solver]
 
     // [START solve]

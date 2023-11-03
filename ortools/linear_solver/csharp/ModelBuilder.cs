@@ -329,7 +329,7 @@ public class ModelBuilder
     private ModelBuilderHelper helper_;
     private Dictionary<double, int> constantMap_;
 
-    // Used to process linear exppressions.
+    // Used to process linear expressions.
     private SortedDictionary<int, double> tmp_var_value_map_;
     private Queue<Term> tmp_terms_;
 }

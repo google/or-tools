@@ -30,7 +30,7 @@ public class AssignmentMb
         int numTasks = costs.GetLength(1);
         // [END data_model]
 
-       // [START model]
+        // [START model]
         ModelBuilder model = new ModelBuilder();
         // [END model]
 
@@ -58,7 +58,7 @@ public class AssignmentMb
             {
                 assignedWork.Add(x[i, j]);
             }
-            model.Add(assignedWork <= 1); 
+            model.Add(assignedWork <= 1);
         }
 
         // Each task is assigned to exactly one worker.
@@ -69,7 +69,7 @@ public class AssignmentMb
             {
                 assignedWorker.Add(x[i, j]);
             }
-            model.Add(assignedWorker == 1); 
+            model.Add(assignedWorker == 1);
         }
         // [END constraints]
 
@@ -89,9 +89,10 @@ public class AssignmentMb
         // [START solver]
         // Create the solver with the SCIP backend and check it is supported.
         ModelSolver solver = new ModelSolver("SCIP");
-        if (!solver.SolverIsSupported()) return;
+        if (!solver.SolverIsSupported())
+            return;
         // [END solver]
-        
+
         // Solve
         // [START solve]
         SolveStatus resultStatus = solver.Solve(model);
