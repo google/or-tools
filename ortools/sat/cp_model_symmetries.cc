@@ -555,11 +555,11 @@ void FindCpModelSymmetries(
     }
   }
   generators->resize(num_generators);
-  average_support_size /= num_generators;
   SOLVER_LOG(logger, "[Symmetry] Symmetry computation done. time: ",
              time_limit->GetElapsedTime(),
              " dtime: ", time_limit->GetElapsedDeterministicTime());
   if (num_generators > 0) {
+    average_support_size /= num_generators;
     SOLVER_LOG(logger, "[Symmetry] #generators: ", num_generators,
                ", average support size: ", average_support_size);
     if (num_duplicate_constraints > 0) {

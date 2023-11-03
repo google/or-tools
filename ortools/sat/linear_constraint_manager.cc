@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -785,14 +786,14 @@ bool LinearConstraintManager::DebugCheckConstraint(
 }
 
 void TopNCuts::AddCut(
-    LinearConstraint ct, const std::string& name,
+    LinearConstraint ct, absl::string_view name,
     const absl::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.vars.empty()) return;
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =
       std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
   const double l2_norm = ComputeL2Norm(ct);
-  cuts_.Add({name, ct}, violation / l2_norm);
+  cuts_.Add({std::string(name), ct}, violation / l2_norm);
 }
 
 void TopNCuts::TransferToManager(LinearConstraintManager* manager) {

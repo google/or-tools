@@ -292,7 +292,7 @@ class TopNCuts {
   explicit TopNCuts(int n) : cuts_(n) {}
 
   // Adds a cut to the local pool.
-  void AddCut(LinearConstraint ct, const std::string& name,
+  void AddCut(LinearConstraint ct, absl::string_view name,
               const absl::StrongVector<IntegerVariable, double>& lp_solution);
 
   // Empty the local pool and add all its content to the manager.
