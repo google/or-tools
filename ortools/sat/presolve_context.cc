@@ -2194,6 +2194,7 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
+  if (sat_solver->ModelIsUnsat()) return false;
   if (!sat_solver->Propagate()) {
     return context->NotifyThatModelIsUnsat(
         "during probing initial propagation");
