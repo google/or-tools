@@ -345,6 +345,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
+      .def("clear_hints", &ModelBuilderHelper::ClearHints)
+      .def("add_hint", &ModelBuilderHelper::AddHint, arg("var_index"), arg("var_value"))
       .def("sort_and_regroup_terms",
            [](ModelBuilderHelper* helper, py::array_t<int> indices,
               py::array_t<double> coefficients) {

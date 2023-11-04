@@ -86,6 +86,10 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research::ModelBuilderHelper::ObjectiveOffset;
 %unignore operations_research::ModelBuilderHelper::SetObjectiveOffset;
 
+// Hints
+%unignore operations_research::ModelBuilderHelper::ClearHints;
+%unignore operations_research::ModelBuilderHelper::AddHint;
+
 // Model API.
 %rename (Name) operations_research::ModelBuilderHelper::name;
 %unignore operations_research::ModelBuilderHelper::SetName;

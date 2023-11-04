@@ -266,6 +266,15 @@ void ModelBuilderHelper::SetObjectiveOffset(double offset) {
   model_.set_objective_offset(offset);
 }
 
+void ModelBuilderHelper::ClearHints() {
+  model_.clear_solution_hint();
+}
+
+void ModelBuilderHelper::AddHint(int var_index, double var_value) {
+  model_.mutable_solution_hint()->add_var_index(var_index);
+  model_.mutable_solution_hint()->add_var_value(var_value);
+}
+
 std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
     const MPModelRequest& request) {
   if (!MPSolver::SupportsProblemType(

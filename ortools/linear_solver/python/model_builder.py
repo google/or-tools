@@ -1115,13 +1115,16 @@ class ModelBuilder:
 
     @property
     def num_constraints(self) -> int:
+        """The number of constraints in the model."""
         return self.__helper.num_constraints()
 
     # Objective.
     def minimize(self, linear_expr: LinearExprT) -> None:
+        """Minimize the given objective."""
         self.__optimize(linear_expr, False)
 
     def maximize(self, linear_expr: LinearExprT) -> None:
+        """Maximize the given objective."""
         self.__optimize(linear_expr, True)
 
     def __optimize(self, linear_expr: LinearExprT, maximize: bool) -> None:
@@ -1146,6 +1149,7 @@ class ModelBuilder:
 
     @property
     def objective_offset(self) -> np.double:
+        """Returns the fixed offset of the objective."""
         return self.__helper.objective_offset()
 
     @objective_offset.setter
@@ -1153,6 +1157,7 @@ class ModelBuilder:
         self.__helper.set_objective_offset(value)
 
     def objective_expression(self) -> "_LinearExpression":
+        """Returns the expression to optimize."""
         return _as_flat_linear_expression(
             sum(
                 variable * self.__helper.var_objective_coefficient(variable.index)
@@ -1161,6 +1166,18 @@ class ModelBuilder:
             )
             + self.__helper.objective_offset()
         )
+
+    # Hints.
+    def clear_hints(self):
+        """Clear all solution hints."""
+        self.__helper.clear_hints();
+
+    def add_hint(self, var:Variable, value:NumberT):
+        """Add var == value as a hint to the model.
+
+        Note that variables must not appear more than once in the list of hints.
+        """
+        self.__helper.add_hint(var.index, value)
 
     # Input/Output
     def export_to_lp_string(self, obfuscate: bool = False) -> str:
@@ -1192,6 +1209,7 @@ class ModelBuilder:
     # Utilities
     @property
     def name(self) -> str:
+        """The name of the model."""
         return self.__helper.name()
 
     @name.setter

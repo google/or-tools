@@ -102,6 +102,9 @@ class ModelBuilderHelper {
   double ObjectiveOffset() const;
   void SetObjectiveOffset(double offset);
 
+  void ClearHints();
+  void AddHint(int var_index, double var_value);
+
  private:
   MPModelProto model_;
 };

@@ -144,6 +144,10 @@ class GlobalRefGuard {
 %rename (getObjectiveOffset) operations_research::ModelBuilderHelper::ObjectiveOffset;
 %rename (setObjectiveOffset) operations_research::ModelBuilderHelper::SetObjectiveOffset;
 
+// Hints.
+%rename (clearHints) operations_research::ModelBuilderHelper::ClearHints;
+%rename (addHint) operations_research::ModelBuilderHelper::AddHint;
+
 // Model API.
 %rename (getName) operations_research::ModelBuilderHelper::name;
 %rename (setName) operations_research::ModelBuilderHelper::SetName;

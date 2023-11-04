@@ -263,6 +263,21 @@ public class ModelBuilder
     }
 
     /// <summary>
+    /// Remove all hints from the model.
+    /// </summary>
+    public void ClearHints() {
+        helper_.ClearHints();
+    }
+
+    /// <summary>
+    /// Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of hints.
+    /// </summary>
+    public void AddHint(Variable var, double value)
+    {
+        helper_.AddHint(var.Index, value);
+    }
+
+    /// <summary>
     /// The name of the model.
     /// </summary>
     public String Name

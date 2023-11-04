@@ -208,6 +208,16 @@ public final class ModelBuilder {
     helper.setObjectiveOffset(offset);
   }
 
+  /** Clears all hints from the solver. */
+  void clearHints() {
+    helper.clearHints();
+  }
+
+  /** Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of hints. */
+  void addHint(Variable var, double value) {
+    helper.addHint(var.getIndex(), value);
+  }
+
   // Model getters, import, export.
 
   /** Returns the name of the model. */
