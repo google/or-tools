@@ -77,10 +77,10 @@ public class ModelSolver
     }
 
     /** Sets the time limit for the solve in seconds. */
-    // public void SetTimeLimit(Duration limit)
-    // {
-    //     helper_.SetTimeLimitInSeconds((double)limit.toMillis() / 1000.0);
-    // }
+    public void SetTimeLimitInSeconds(double limit)
+    {
+        helper_.SetTimeLimitInSeconds(limit);
+    }
 
     /** Sets solver specific parameters as string. */
     public void SetSolverSpecificParameters(String parameters)
