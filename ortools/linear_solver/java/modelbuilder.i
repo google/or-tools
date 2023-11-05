@@ -117,14 +117,13 @@ class GlobalRefGuard {
 %rename (getVarName) operations_research::ModelBuilderHelper::VarName;
 %rename (getVarObjectiveCoefficient) operations_research::ModelBuilderHelper::VarObjectiveCoefficient;
 %rename (getVarUpperBound) operations_research::ModelBuilderHelper::VarUpperBound;
-%rename (numVariables) operations_research::ModelBuilderHelper::num_variables;
 %rename (setVarIntegrality) operations_research::ModelBuilderHelper::SetVarIntegrality;
 %rename (setVarLowerBound) operations_research::ModelBuilderHelper::SetVarLowerBound;
 %rename (setVarName) operations_research::ModelBuilderHelper::SetVarName;
 %rename (setVarObjectiveCoefficient) operations_research::ModelBuilderHelper::SetVarObjectiveCoefficient;
 %rename (setVarUpperBound) operations_research::ModelBuilderHelper::SetVarUpperBound;
 
-// Constraint API.
+// Linear Constraint API.
 %rename (addConstraintTerm) operations_research::ModelBuilderHelper::AddConstraintTerm;
 %rename (addLinearConstraint) operations_research::ModelBuilderHelper::AddLinearConstraint;
 %rename (getConstraintCoefficients) operations_research::ModelBuilderHelper::ConstraintCoefficients;
@@ -132,10 +131,28 @@ class GlobalRefGuard {
 %rename (getConstraintName) operations_research::ModelBuilderHelper::ConstraintName;
 %rename (getConstraintUpperBound) operations_research::ModelBuilderHelper::ConstraintUpperBound;
 %rename (getConstraintVarIndices) operations_research::ModelBuilderHelper::ConstraintVarIndices;
-%rename (numConstraints) operations_research::ModelBuilderHelper::num_constraints;
+%rename (safeAddConstraintTerm) operations_research::ModelBuilderHelper::SafeAddConstraintTerm;
+%rename (setConstraintCoefficients) operations_research::ModelBuilderHelper::SetConstraintCoefficients;
 %rename (setConstraintLowerBound) operations_research::ModelBuilderHelper::SetConstraintLowerBound;
 %rename (setConstraintName) operations_research::ModelBuilderHelper::SetConstraintName;
 %rename (setConstraintUpperBound) operations_research::ModelBuilderHelper::SetConstraintUpperBound;
+
+// Enforced Linear Constraint API.
+%rename (addEnforcedConstraintTerm) operations_research::ModelBuilderHelper::AddEnforcedConstraintTerm;
+%rename (addEnforcedLinearConstraint) operations_research::ModelBuilderHelper::AddEnforcedLinearConstraint;
+%rename (getEnforcedConstraintCoefficients) operations_research::ModelBuilderHelper::EnforcedConstraintCoefficients;
+%rename (getEnforcedConstraintLowerBound) operations_research::ModelBuilderHelper::EnforcedConstraintLowerBound;
+%rename (getEnforcedConstraintName) operations_research::ModelBuilderHelper::EnforcedConstraintName;
+%rename (getEnforcedConstraintUpperBound) operations_research::ModelBuilderHelper::EnforcedConstraintUpperBound;
+%rename (getEnforcedConstraintVarIndices) operations_research::ModelBuilderHelper::EnforcedConstraintVarIndices;
+%rename (getEnforcedIndicatorValue) operations_research::ModelBuilderHelper::EnforcedIndicatorValue;
+%rename (getEnforcedIndicatorVariableIndex) operations_research::ModelBuilderHelper::EnforcedIndicatorVariableIndex;
+%rename (safeAddEnforcedConstraintTerm) operations_research::ModelBuilderHelper::SafeAddEnforcedConstraintTerm;
+%rename (setEnforcedConstraintLowerBound) operations_research::ModelBuilderHelper::SetEnforcedConstraintLowerBound;
+%rename (setEnforcedConstraintName) operations_research::ModelBuilderHelper::SetEnforcedConstraintName;
+%rename (setEnforcedConstraintUpperBound) operations_research::ModelBuilderHelper::SetEnforcedConstraintUpperBound;
+%rename (setEnforcedIndicatorValue) operations_research::ModelBuilderHelper::SetEnforcedIndicatorValue;
+%rename (setEnforcedIndicatorVariable) operations_research::ModelBuilderHelper::SetEnforcedIndicatorVariable;
 
 // Objective API.
 %rename (clearObjective) operations_research::ModelBuilderHelper::ClearObjective;
@@ -149,6 +166,8 @@ class GlobalRefGuard {
 %rename (addHint) operations_research::ModelBuilderHelper::AddHint;
 
 // Model API.
+%rename (numVariables) operations_research::ModelBuilderHelper::num_variables;
+%rename (numConstraints) operations_research::ModelBuilderHelper::num_constraints;
 %rename (getName) operations_research::ModelBuilderHelper::name;
 %rename (setName) operations_research::ModelBuilderHelper::SetName;
 %rename (writeModelToFile) operations_research::ModelBuilderHelper::WriteModelToFile;

@@ -168,6 +168,12 @@ void ModelBuilderHelper::SetConstraintUpperBound(int ct_index, double ub) {
   model_.mutable_constraint(ct_index)->set_upper_bound(ub);
 }
 
+void ModelBuilderHelper::ClearConstraintTerms(int ct_index) {
+  MPConstraintProto* ct_proto = model_.mutable_constraint(ct_index);
+  ct_proto->clear_var_index();
+  ct_proto->clear_coefficient();
+}
+
 void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
                                            double coeff) {
   if (coeff == 0.0) return;
@@ -262,6 +268,14 @@ void ModelBuilderHelper::SetEnforcedConstraintUpperBound(int ct_index, double ub
   MPConstraintProto* ct_proto =
       gen->mutable_indicator_constraint()->mutable_constraint();
   ct_proto->set_upper_bound(ub);
+}
+
+void ModelBuilderHelper::ClearEnforcedConstraintTerms(int ct_index) {
+  MPConstraintProto* ct_proto = model_.mutable_general_constraint(ct_index)
+                                    ->mutable_indicator_constraint()
+                                    ->mutable_constraint();
+  ct_proto->clear_var_index();
+  ct_proto->clear_coefficient();
 }
 
 void ModelBuilderHelper::AddEnforcedConstraintTerm(int ct_index, int var_index,

@@ -694,6 +694,10 @@ class LinearConstraint:
         self.__helper.safe_add_term_to_constraint(self.__index, var.index,
                                                   coeff)
 
+    def clear_terms(self) -> None:
+        """Clear all terms of the constraint."""
+        self.__helper.clear_constraint_terms(self.__index)
+
 
 class EnforcedLinearConstraint:
     """Stores an enforced linear equation, also name indicator constraint.
@@ -808,6 +812,10 @@ class EnforcedLinearConstraint:
             )
         self.__helper.safe_add_term_to_enforced_constraint(
             self.__index, var.index, coeff)
+
+    def clear_terms(self) -> None:
+        """Clear all terms of the constraint."""
+        self.__helper.clear_enforced_constraint_terms(self.__index)
 
 
 class ModelBuilder:
