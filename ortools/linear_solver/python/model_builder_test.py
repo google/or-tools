@@ -2108,8 +2108,9 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         y = model.new_int_var(0, 10, 'y')
         z = model.new_bool_var('z')
         ct = model.add_enforced(x + 2 * y >= 10, z, False)
-        print(repr(ct))
-
+        self.assertEqual(ct.lower_bound, 10.0)
+        self.assertEqual(z.index, ct.indicator_variable.index)
+        self.assertFalse(ct.indicator_value)
 
 
 if __name__ == "__main__":

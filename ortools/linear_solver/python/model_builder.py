@@ -744,7 +744,7 @@ class EnforcedLinearConstraint:
     @property
     def indicator_variable(self) -> 'Variable':
         enforcement_var_index = self.__helper.enforced_constraint_indicator_variable_index(
-        self.__index)
+            self.__index)
         return Variable(self.__helper, enforcement_var_index, None, None, None)
 
     @indicator_variable.setter
@@ -1346,8 +1346,8 @@ class ModelBuilder:
     def add_enforced(
         self,
         ct: Union[ConstraintT, pd.Series],
-        ivar: 'Variable',
-        ivalue: bool,
+        ivar: Union['Variable', pd.Series],
+        ivalue: Union[bool, pd.Series],
         name: Optional[str] = None
     ) -> Union[EnforcedLinearConstraint, pd.Series]:
         """Adds a `ivar == ivalue => BoundedLinearExpression` to the model.
@@ -1378,12 +1378,16 @@ class ModelBuilder:
             return _add_enforced_linear_constraint_to_helper(
                 ct, self.__helper, ivar, ivalue, name)
         elif isinstance(ct, pd.Series):
+            ivar_series = _convert_to_var_series_and_validate_index(
+                ivar, ct.index)
+            ivalue_series = _convert_to_series_and_validate_index(
+                ivalue, ct.index)
             return pd.Series(
                 index=ct.index,
                 data=[
                     _add_enforced_linear_constraint_to_helper(
-                        expr, self.__helper, ivar, ivalue, f"{name}[{i}]")
-                    for (i, expr) in zip(ct.index, ct)
+                        expr, self.__helper, ivar_series[i], ivalue_series[i],
+                        f"{name}[{i}]") for (i, expr) in zip(ct.index, ct)
                 ],
             )
         else:
@@ -1885,4 +1889,32 @@ def _convert_to_series_and_validate_index(value_or_series: Union[bool, NumberT,
             raise ValueError("index does not match")
     else:
         raise TypeError("invalid type={}".format(type(value_or_series)))
+    return result
+
+
+def _convert_to_var_series_and_validate_index(var_or_series: Union['Variable',
+                                                                   pd.Series],
+                                              index: pd.Index) -> pd.Series:
+    """Returns a pd.Series of the given index with the corresponding values.
+
+    Args:
+      var_or_series: the variables to be converted (if applicable).
+      index: the index of the resulting pd.Series.
+
+    Returns:
+      pd.Series: The set of values with the given index.
+
+    Raises:
+      TypeError: If the type of `value_or_series` is not recognized.
+      ValueError: If the index does not match.
+    """
+    if isinstance(var_or_series, Variable):
+        result = pd.Series(data=var_or_series, index=index)
+    elif isinstance(var_or_series, pd.Series):
+        if var_or_series.index.equals(index):
+            result = var_or_series
+        else:
+            raise ValueError("index does not match")
+    else:
+        raise TypeError("invalid type={}".format(type(var_or_series)))
     return result
