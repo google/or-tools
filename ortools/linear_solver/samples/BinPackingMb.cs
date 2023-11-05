@@ -37,7 +37,7 @@ public class BinPackingMb
         // [END program_part1]
 
         // [START model]
-        ModelBuilder model = new ModelBuilder();
+        Model model = new Model();
         // [END model]
 
         // [START program_part2]
@@ -85,7 +85,7 @@ public class BinPackingMb
 
         // [START solver]
         // Create the solver with the SCIP backend and check it is supported.
-        ModelSolver solver = new ModelSolver("SCIP");
+        Solver solver = new Solver("SCIP");
         if (!solver.SolverIsSupported())
             return;
         // [END solver]

@@ -25,11 +25,11 @@ using Google.Protobuf.Collections;
 /// <summary>
 /// Model solver class
 /// </summary>
-public class ModelSolver
+public class Solver
 {
-    class ModelSolverException : Exception
+    class SolverException : Exception
     {
-        public ModelSolverException(String methodName, String msg) : base(methodName + ": " + msg)
+        public SolverException(String methodName, String msg) : base(methodName + ": " + msg)
         {
         }
     }
@@ -38,7 +38,7 @@ public class ModelSolver
     /// Creates the solver with the supplied solver backend.
     /// </summary>
     /// <param name="solverName">the name of the solver backend</param>
-    public ModelSolver(String solverName)
+    public Solver(String solverName)
     {
         this.helper_ = new ModelSolverHelper(solverName);
         this.logCallback_ = null;
@@ -49,7 +49,7 @@ public class ModelSolver
     /// </summary>
     /// <param name="model">the model to solve</param>
     /// <returns>the status of the solve</returns>
-    public SolveStatus Solve(ModelBuilder model)
+    public SolveStatus Solve(Model model)
     {
         if (logCallback_ == null)
         {
@@ -125,7 +125,7 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The best objective value found during search. This raises a ModelSolverException is no solution has been found,
+    /// The best objective value found during search. This raises a SolverException is no solution has been found,
     /// or if Solve() has not been called.
     /// </summary>
     public double ObjectiveValue
@@ -133,7 +133,7 @@ public class ModelSolver
         get {
             if (!helper_.HasSolution())
             {
-                throw new ModelSolverException("ModelSolver.ObjectiveValue",
+                throw new SolverException("Solver.ObjectiveValue",
                                                "Solve() was not called or no solution was found");
             }
             return helper_.ObjectiveValue();
@@ -141,7 +141,7 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The best objective bound found during search. This raises a ModelSolverException is no solution has been found,
+    /// The best objective bound found during search. This raises a SolverException is no solution has been found,
     /// or if Solve() has not been called.
     /// </summary>
     public double BestObjectiveBound
@@ -149,7 +149,7 @@ public class ModelSolver
         get {
             if (!helper_.HasSolution())
             {
-                throw new ModelSolverException("ModelSolver.BestObjectiveBound",
+                throw new SolverException("Solver.BestObjectiveBound",
                                                "Solve() was not called or no solution was found");
             }
             return helper_.BestObjectiveBound();
@@ -157,54 +157,54 @@ public class ModelSolver
     }
 
     /// <summary>
-    /// The value of a variable in the current solution. This raises a ModelSolverException is no solution has been
+    /// The value of a variable in the current solution. This raises a SolverException is no solution has been
     /// found, or if Solve() has not been called.
     /// </summary>
     public double Value(Variable var)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.Value())", "Solve() was not called or no solution was found");
+            throw new SolverException("Solver.Value())", "Solve() was not called or no solution was found");
         }
         return helper_.VariableValue(var.Index);
     }
     /// <summary>
-    /// The reduced cost of a variable in the current solution. This raises a ModelSolverException is no solution has
+    /// The reduced cost of a variable in the current solution. This raises a SolverException is no solution has
     /// been found, or if Solve() has not been called.
     /// </summary>
     public double ReducedCost(Variable var)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.ReducedCost())",
+            throw new SolverException("Solver.ReducedCost())",
                                            "Solve() was not called or no solution was found");
         }
         return helper_.ReducedCost(var.Index);
     }
 
     /// <summary>
-    /// The dual value of a linear constraint in the current solution. This raises a ModelSolverException is no solution
+    /// The dual value of a linear constraint in the current solution. This raises a SolverException is no solution
     /// has been found, or if Solve() has not been called.
     /// </summary>
     public double DualValue(LinearConstraint ct)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.DualValue())",
+            throw new SolverException("Solver.DualValue())",
                                            "Solve() was not called or no solution was found");
         }
         return helper_.DualValue(ct.Index);
     }
 
     /// <summary>
-    /// The activity of a constraint in the current solution. This raises a ModelSolverException is no solution has been
+    /// The activity of a constraint in the current solution. This raises a SolverException is no solution has been
     /// found, or if Solve() has not been called.
     /// </summary>
     public double Activity(LinearConstraint ct)
     {
         if (!helper_.HasSolution())
         {
-            throw new ModelSolverException("ModelSolver.Activity())",
+            throw new SolverException("Solver.Activity())",
                                            "Solve() was not called or no solution was found");
         }
         return helper_.Activity(ct.Index);

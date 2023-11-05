@@ -26,13 +26,13 @@ using Google.Protobuf.Collections;
 ///  Main modeling class.
 /// </summary>
 ///
-/// Proposes a factory to create all modeling objects understood by the ModelSolver.
-public class ModelBuilder
+/// Proposes a factory to create all modeling objects understood by the Solver.
+public class Model
 {
     /// <summary>
     /// Main constructor.
     /// </summary>
-    public ModelBuilder()
+    public Model()
     {
         helper_ = new ModelBuilderHelper();
         constantMap_ = new Dictionary<double, int>();
@@ -44,9 +44,9 @@ public class ModelBuilder
     /// Returns a cloned model.
     /// </summary>
     /// <returns>A deep copy of the model.</returns>
-    public ModelBuilder Clone()
+    public Model Clone()
     {
-        ModelBuilder clonedModel = new ModelBuilder();
+        Model clonedModel = new Model();
         clonedModel.Helper.OverwriteModel(Helper);
         foreach (KeyValuePair<double, int> entry in constantMap_)
         {
@@ -197,8 +197,8 @@ public class ModelBuilder
     /// Adds an enforced Linear constraint to the model.
     /// </summary>
     /// <param name="lin">A bounded linear expression</param>
-    /// <param name="iVar>The indicator variable of the constraint.</param>
-    /// <param name="iValue>The indicator value of the constraint.</param>
+    /// <param name="iVar">The indicator variable of the constraint.</param>
+    /// <param name="iValue">The indicator value of the constraint.</param>
     /// <returns>A linear expression</returns>
     /// <exception cref="ArgumentException">Throw when the constraint is not supported by the linear solver</exception>
     public EnforcedLinearConstraint AddEnforced(BoundedLinearExpression lin, Variable iVar, bool iValue)
@@ -232,12 +232,12 @@ public class ModelBuilder
     public EnforcedLinearConstraint AddEnforcedLinearConstraint(LinearExpr expr, double lb, double ub, Variable iVar,
                                                                 bool iValue)
     {
-        var dict = tmp_var_value_map_;
-        dict.Clear();
-        double offset = LinearExpr.GetVarValueMap(expr, dict, tmp_terms_);
         EnforcedLinearConstraint lin = new EnforcedLinearConstraint(helper_);
         lin.IndicatorVariable = iVar;
         lin.IndicatorValue = iValue;
+        var dict = tmp_var_value_map_;
+        dict.Clear();
+        double offset = LinearExpr.GetVarValueMap(expr, dict, tmp_terms_);
         foreach (KeyValuePair<int, double> term in dict)
         {
             helper_.AddEnforcedConstraintTerm(lin.Index, term.Key, term.Value);

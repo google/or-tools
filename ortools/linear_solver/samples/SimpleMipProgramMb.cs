@@ -24,7 +24,7 @@ public class SimpleMipProgramMb
     {
         // [START model]
         // Create the model builder.
-        ModelBuilder model = new ModelBuilder();
+        Model model = new Model();
         // [END model]
 
         // [START variables]
@@ -52,7 +52,7 @@ public class SimpleMipProgramMb
 
         // [START solver]
         // Create the model solver with the SCIP backend.
-        ModelSolver solver = new ModelSolver("SCIP");
+        Solver solver = new Solver("SCIP");
         if (!solver.SolverIsSupported())
         {
             return;

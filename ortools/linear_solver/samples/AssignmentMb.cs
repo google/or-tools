@@ -31,7 +31,7 @@ public class AssignmentMb
         // [END data_model]
 
         // [START model]
-        ModelBuilder model = new ModelBuilder();
+        Model model = new Model();
         // [END model]
 
         // Variables.
@@ -88,7 +88,7 @@ public class AssignmentMb
 
         // [START solver]
         // Create the solver with the SCIP backend and check it is supported.
-        ModelSolver solver = new ModelSolver("SCIP");
+        Solver solver = new Solver("SCIP");
         if (!solver.SolverIsSupported())
             return;
         // [END solver]

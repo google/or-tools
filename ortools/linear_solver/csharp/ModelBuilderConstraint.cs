@@ -148,7 +148,7 @@ public class EnforcedLinearConstraint
     public EnforcedLinearConstraint(ModelBuilderHelper helper)
     {
         helper_ = helper;
-        index_ = helper_.AddLinearConstraint();
+        index_ = helper_.AddEnforcedLinearConstraint();
     }
 
     public EnforcedLinearConstraint(ModelBuilderHelper helper, int index)

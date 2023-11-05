@@ -24,7 +24,7 @@ public class SimpleMipProgramMb
     {
         // [START model]
         // Create the model builder.
-        ModelBuilder model = new ModelBuilder();
+        Model model = new Model();
         // [END model]
 
         // [START variables]
@@ -49,7 +49,7 @@ public class SimpleMipProgramMb
         // [Start clone]
         // Clone the model.
         Console.WriteLine("Cloning the model");
-        ModelBuilder modelCopy = model.Clone();
+        Model modelCopy = model.Clone();
         Variable xCopy = modelCopy.VarFromIndex(x.Index);
         Variable yCopy = modelCopy.VarFromIndex(y.Index);
         Variable zCopy = modelCopy.NewBoolVar("z");
@@ -67,7 +67,7 @@ public class SimpleMipProgramMb
 
         // [START solver]
         // Create the solver with the CP-SAT backend and checks it is supported.
-        ModelSolver solver = new ModelSolver("sat");
+        Solver solver = new Solver("sat");
         if (!solver.SolverIsSupported())
             return;
         // [END solver]

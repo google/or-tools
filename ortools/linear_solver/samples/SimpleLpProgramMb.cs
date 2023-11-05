@@ -24,7 +24,7 @@ public class SimpleLpProgramMb
     {
         // [START model]
         // Create the model builder.
-        ModelBuilder model = new ModelBuilder();
+        Model model = new Model();
         // [END model]
 
         // [START variables]
@@ -52,7 +52,7 @@ public class SimpleLpProgramMb
 
         // [START solver]
         // Create the model solver with the GLOP backend.
-        ModelSolver solver = new ModelSolver("GLOP");
+        Solver solver = new Solver("GLOP");
         if (!solver.SolverIsSupported())
         {
             return;
