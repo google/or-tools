@@ -70,6 +70,12 @@ class ModelBuilderHelper {
   void SetVarObjectiveCoefficient(int var_index, double coeff);
   void SetVarName(int var_index, const std::string& name);
 
+  double VarLowerBound(int var_index) const;
+  double VarUpperBound(int var_index) const;
+  bool VarIsIntegral(int var_index) const;
+  double VarObjectiveCoefficient(int var_index) const;
+  std::string VarName(int var_index) const;
+
   int AddLinearConstraint();
   void SetConstraintLowerBound(int ct_index, double lb);
   void SetConstraintUpperBound(int ct_index, double ub);
@@ -79,19 +85,34 @@ class ModelBuilderHelper {
   void SetConstraintName(int ct_index, const std::string& name);
   void SetConstraintCoefficient(int ct_index, int var_index, double coeff);
 
-  int num_variables() const;
-  double VarLowerBound(int var_index) const;
-  double VarUpperBound(int var_index) const;
-  bool VarIsIntegral(int var_index) const;
-  double VarObjectiveCoefficient(int var_index) const;
-  std::string VarName(int var_index) const;
-
-  int num_constraints() const;
   double ConstraintLowerBound(int ct_index) const;
   double ConstraintUpperBound(int ct_index) const;
   std::string ConstraintName(int ct_index) const;
   std::vector<int> ConstraintVarIndices(int ct_index) const;
   std::vector<double> ConstraintCoefficients(int ct_index) const;
+
+  int AddEnforcedLinearConstraint();
+  bool IsEnforcedConstraint(int ct_index) const;
+  void SetEnforcedConstraintLowerBound(int ct_index, double lb);
+  void SetEnforcedConstraintUpperBound(int ct_index, double ub);
+  void AddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
+  // Safe version that checks is does not create duplicate entries.
+  void SafeAddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
+  void SetEnforcedConstraintName(int ct_index, const std::string& name);
+  void SetEnforcedConstraintCoefficient(int ct_index, int var_index, double coeff);  
+  void SetEnforcedIndicatorVariable(int ct_index, int var_index);
+  void SetEnforcedIndicatorValue(int ct_index, bool positive);
+
+  double EnforcedConstraintLowerBound(int ct_index) const;
+  double EnforcedConstraintUpperBound(int ct_index) const;
+  std::string EnforcedConstraintName(int ct_index) const;
+  std::vector<int> EnforcedConstraintVarIndices(int ct_index) const;
+  std::vector<double> EnforcedConstraintCoefficients(int ct_index) const;
+  int EnforcedIndicatorVariableIndex(int ct_index) const;
+  bool EnforcedIndicatorValue(int ct_index) const;
+
+  int num_constraints() const;
+  int num_variables() const;
 
   std::string name() const;
   void SetName(const std::string& name);

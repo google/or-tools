@@ -2102,6 +2102,15 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         self.assertEqual(run, mb.SolveStatus.OPTIMAL)
         self.assertEqual(solver.objective_value, 6)
 
+    def test_add_enforced(self):
+        model = mb.ModelBuilder()
+        x = model.new_int_var(0, 10, 'x')
+        y = model.new_int_var(0, 10, 'y')
+        z = model.new_bool_var('z')
+        ct = model.add_enforced(x + 2 * y >= 10, z, False)
+        print(repr(ct))
+
+
 
 if __name__ == "__main__":
     absltest.main()
