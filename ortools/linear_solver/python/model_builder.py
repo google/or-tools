@@ -716,6 +716,11 @@ class EnforcedLinearConstraint:
         if index is None:
             self.__index = helper.add_enforced_linear_constraint()
         else:
+            if not helper.is_enforced_linear_constraint(index):
+                raise ValueError(
+                    f"the given index {index} does not refer to an enforced linear constraint"
+                )
+
             self.__index = index
         self.__helper: mbh.ModelBuilderHelper = helper
 
@@ -1217,19 +1222,9 @@ class ModelBuilder:
         """
         return self.new_var_series(name, index, 0, 1, True)
 
-    def linear_constraint_from_index(self,
-                                     index: IntegerT) -> LinearConstraint:
-        """Rebuilds a linear constraint object from the model and its index."""
-        return LinearConstraint(self.__helper, index)
-
     def var_from_index(self, index: IntegerT) -> Variable:
         """Rebuilds a variable object from the model and its index."""
         return Variable(self.__helper, index, None, None, None)
-
-    @property
-    def num_variables(self) -> int:
-        """Returns the number of variables in the model."""
-        return self.__helper.num_variables()
 
     # Linear constraints.
 
@@ -1307,6 +1302,11 @@ class ModelBuilder:
             )
         else:
             raise TypeError("Not supported: ModelBuilder.add(" + str(ct) + ")")
+
+    def linear_constraint_from_index(self,
+                                     index: IntegerT) -> LinearConstraint:
+        """Rebuilds a linear constraint object from the model and its index."""
+        return LinearConstraint(self.__helper, index)
 
     # EnforcedLinear constraints.
 
@@ -1402,10 +1402,10 @@ class ModelBuilder:
             raise TypeError("Not supported: ModelBuilder.add_enforced(" +
                             str(ct) + ")")
 
-    @property
-    def num_constraints(self) -> int:
-        """The number of constraints in the model."""
-        return self.__helper.num_constraints()
+    def enforced_linear_constraint_from_index(
+            self, index: IntegerT) -> LinearConstraint:
+        """Rebuilds an enforced linear constraint object from the model and its index."""
+        return EnforcedLinearConstraint(self.__helper, index)
 
     # Objective.
     def minimize(self, linear_expr: LinearExprT) -> None:
@@ -1492,7 +1492,18 @@ class ModelBuilder:
     def import_from_lp_file(self, lp_file: str) -> bool:
         return self.__helper.import_from_lp_file(lp_file)
 
-    # Utilities
+    # Model getters and Setters
+
+    @property
+    def num_variables(self) -> int:
+        """Returns the number of variables in the model."""
+        return self.__helper.num_variables()
+
+    @property
+    def num_constraints(self) -> int:
+        """The number of constraints in the model."""
+        return self.__helper.num_constraints()
+
     @property
     def name(self) -> str:
         """The name of the model."""

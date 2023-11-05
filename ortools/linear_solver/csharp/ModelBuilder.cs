@@ -187,27 +187,87 @@ public class ModelBuilder
         return lin;
     }
 
-    /// <summary>
-    /// Returns the number of variables in the model.
-    /// </summary>
-    public int VariablesCount()
-    {
-        return helper_.VariablesCount();
-    }
-
-    /// <summary>
-    /// Returns the number of constraints in the model.
-    /// </summary>
-    public int ConstraintsCount()
-    {
-        return helper_.ConstraintsCount();
-    }
-
     /// Rebuilds a linear constraint from its index.
     public LinearConstraint ConstraintFromIndex(int index)
     {
         return new LinearConstraint(helper_, index);
     }
+
+    /// <summary>
+    /// Adds an enforced Linear constraint to the model.
+    /// </summary>
+    /// <param name="lin">A bounded linear expression</param>
+    /// <param name="iVar>The indicator variable of the constraint.</param>
+    /// <param name="iValue>The indicator value of the constraint.</param>
+    /// <returns>A linear expression</returns>
+    /// <exception cref="ArgumentException">Throw when the constraint is not supported by the linear solver</exception>
+    public EnforcedLinearConstraint AddEnforced(BoundedLinearExpression lin, Variable iVar, bool iValue)
+    {
+        switch (lin.CtType)
+        {
+        case BoundedLinearExpression.Type.BoundExpression: {
+            return AddEnforcedLinearConstraint(lin.Left, lin.Lb, lin.Ub, iVar, iValue);
+        }
+        case BoundedLinearExpression.Type.VarEqVar: {
+            return AddEnforcedLinearConstraint(lin.Left - lin.Right, 0, 0, iVar, iValue);
+        }
+        case BoundedLinearExpression.Type.VarEqCst: {
+            return AddEnforcedLinearConstraint(lin.Left, lin.Lb, lin.Lb, iVar, iValue);
+        }
+        default: {
+            throw new ArgumentException("Cannot use '" + lin.ToString() + "' as a linear constraint.");
+        }
+        }
+    }
+
+    /// <summary>
+    /// Adds the constraint iVar == iValue => expr in [lb, ub].
+    /// </summary>
+    /// <param name="expr">The constrained expression</param>
+    /// <param name="lb">the lower bound of the constraint</param>
+    /// <param name="ub">the upper bound of the constraint</param>
+    /// <param name="iVar">the indicator variable of the constraint</param>
+    /// <param name="iValue">the indicator value of the constraint</param>
+    /// <returns>the enforced linear constraint</returns>
+    public EnforcedLinearConstraint AddEnforcedLinearConstraint(LinearExpr expr, double lb, double ub, Variable iVar,
+                                                                bool iValue)
+    {
+        var dict = tmp_var_value_map_;
+        dict.Clear();
+        double offset = LinearExpr.GetVarValueMap(expr, dict, tmp_terms_);
+        EnforcedLinearConstraint lin = new EnforcedLinearConstraint(helper_);
+        lin.IndicatorVariable = iVar;
+        lin.IndicatorValue = iValue;
+        foreach (KeyValuePair<int, double> term in dict)
+        {
+            helper_.AddEnforcedConstraintTerm(lin.Index, term.Key, term.Value);
+        }
+        if (lb == Double.NegativeInfinity || lb == Double.PositiveInfinity)
+        {
+            lin.LowerBound = lb;
+        }
+        else
+        {
+            lin.LowerBound = lb - offset;
+        }
+        if (ub == Double.NegativeInfinity || ub == Double.PositiveInfinity)
+        {
+            lin.UpperBound = ub;
+        }
+        else
+        {
+            lin.UpperBound = ub - offset;
+        }
+        return lin;
+    }
+
+    /// Rebuilds a linear constraint from its index.
+    public EnforcedLinearConstraint EnforcedConstraintFromIndex(int index)
+    {
+        return new EnforcedLinearConstraint(helper_, index);
+    }
+
+    // Objective.
 
     /// <summary>
     /// Minimize expression.
@@ -265,16 +325,34 @@ public class ModelBuilder
     /// <summary>
     /// Remove all hints from the model.
     /// </summary>
-    public void ClearHints() {
+    public void ClearHints()
+    {
         helper_.ClearHints();
     }
 
     /// <summary>
-    /// Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of hints.
+    /// Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of
+    /// hints.
     /// </summary>
     public void AddHint(Variable var, double value)
     {
         helper_.AddHint(var.Index, value);
+    }
+
+    /// <summary>
+    /// Returns the number of variables in the model.
+    /// </summary>
+    public int VariablesCount()
+    {
+        return helper_.VariablesCount();
+    }
+
+    /// <summary>
+    /// Returns the number of constraints in the model.
+    /// </summary>
+    public int ConstraintsCount()
+    {
+        return helper_.ConstraintsCount();
     }
 
     /// <summary>

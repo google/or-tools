@@ -126,13 +126,14 @@ class GlobalRefGuard {
 // Linear Constraint API.
 %rename (addConstraintTerm) operations_research::ModelBuilderHelper::AddConstraintTerm;
 %rename (addLinearConstraint) operations_research::ModelBuilderHelper::AddLinearConstraint;
+%rename (clearConstraintTerms) operations_research::ModelBuilderHelper::ClearConstraintTerms;
 %rename (getConstraintCoefficients) operations_research::ModelBuilderHelper::ConstraintCoefficients;
 %rename (getConstraintLowerBound) operations_research::ModelBuilderHelper::ConstraintLowerBound;
 %rename (getConstraintName) operations_research::ModelBuilderHelper::ConstraintName;
 %rename (getConstraintUpperBound) operations_research::ModelBuilderHelper::ConstraintUpperBound;
 %rename (getConstraintVarIndices) operations_research::ModelBuilderHelper::ConstraintVarIndices;
 %rename (safeAddConstraintTerm) operations_research::ModelBuilderHelper::SafeAddConstraintTerm;
-%rename (setConstraintCoefficients) operations_research::ModelBuilderHelper::SetConstraintCoefficients;
+%rename (setConstraintCoefficient) operations_research::ModelBuilderHelper::SetConstraintCoefficient;
 %rename (setConstraintLowerBound) operations_research::ModelBuilderHelper::SetConstraintLowerBound;
 %rename (setConstraintName) operations_research::ModelBuilderHelper::SetConstraintName;
 %rename (setConstraintUpperBound) operations_research::ModelBuilderHelper::SetConstraintUpperBound;
@@ -140,6 +141,7 @@ class GlobalRefGuard {
 // Enforced Linear Constraint API.
 %rename (addEnforcedConstraintTerm) operations_research::ModelBuilderHelper::AddEnforcedConstraintTerm;
 %rename (addEnforcedLinearConstraint) operations_research::ModelBuilderHelper::AddEnforcedLinearConstraint;
+%rename (clearEnforcedConstraintTerms) operations_research::ModelBuilderHelper::ClearEnforcedConstraintTerms;
 %rename (getEnforcedConstraintCoefficients) operations_research::ModelBuilderHelper::EnforcedConstraintCoefficients;
 %rename (getEnforcedConstraintLowerBound) operations_research::ModelBuilderHelper::EnforcedConstraintLowerBound;
 %rename (getEnforcedConstraintName) operations_research::ModelBuilderHelper::EnforcedConstraintName;
@@ -147,12 +149,14 @@ class GlobalRefGuard {
 %rename (getEnforcedConstraintVarIndices) operations_research::ModelBuilderHelper::EnforcedConstraintVarIndices;
 %rename (getEnforcedIndicatorValue) operations_research::ModelBuilderHelper::EnforcedIndicatorValue;
 %rename (getEnforcedIndicatorVariableIndex) operations_research::ModelBuilderHelper::EnforcedIndicatorVariableIndex;
+%rename (isEnforcedConstraint) operations_research::ModelBuilderHelper::IsEnforcedConstraint;
 %rename (safeAddEnforcedConstraintTerm) operations_research::ModelBuilderHelper::SafeAddEnforcedConstraintTerm;
+%rename (setEnforcedConstraintCoefficient) operations_research::ModelBuilderHelper::SetEnforcedConstraintCoefficient;
 %rename (setEnforcedConstraintLowerBound) operations_research::ModelBuilderHelper::SetEnforcedConstraintLowerBound;
 %rename (setEnforcedConstraintName) operations_research::ModelBuilderHelper::SetEnforcedConstraintName;
 %rename (setEnforcedConstraintUpperBound) operations_research::ModelBuilderHelper::SetEnforcedConstraintUpperBound;
 %rename (setEnforcedIndicatorValue) operations_research::ModelBuilderHelper::SetEnforcedIndicatorValue;
-%rename (setEnforcedIndicatorVariable) operations_research::ModelBuilderHelper::SetEnforcedIndicatorVariable;
+%rename (setEnforcedIndicatorVariableIndex) operations_research::ModelBuilderHelper::SetEnforcedIndicatorVariableIndex;
 
 // Objective API.
 %rename (clearObjective) operations_research::ModelBuilderHelper::ClearObjective;

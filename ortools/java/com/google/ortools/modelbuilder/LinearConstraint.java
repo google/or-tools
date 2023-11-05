@@ -60,14 +60,24 @@ public class LinearConstraint {
     return helper.getConstraintName(index);
   }
 
-  // Sets the name of the constraint. */
+  /** Sets the name of the constraint. */
   public void setName(String name) {
     helper.setConstraintName(index, name);
   }
 
-  // Adds var * coeff to the constraint.
+  /** Adds var * coeff to the constraint. */
   public void addTerm(Variable v, double coeff) {
     helper.addConstraintTerm(index, v.getIndex(), coeff);
+  }
+
+  /** Sets the coefficient of v to coeff, adding or removing a term if needed. */
+  public void setCoefficient(Variable v, double coeff) {
+    helper.setConstraintCoefficient(index, v.getIndex(), coeff);
+  }
+
+  /** Clear all terms. */
+  public void clearTerms() {
+    helper.clearConstraintTerms(index);
   }
 
   /** Inline setter */

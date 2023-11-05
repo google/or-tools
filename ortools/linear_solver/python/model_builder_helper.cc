@@ -336,6 +336,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("constraint_coefficients",
            &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
       .def("add_enforced_linear_constraint", &ModelBuilderHelper::AddEnforcedLinearConstraint)
+      .def("is_enforced_linear_constraint", &ModelBuilderHelper::IsEnforcedConstraint)
       .def("set_enforced_constraint_lower_bound",
            &ModelBuilderHelper::SetEnforcedConstraintLowerBound, arg("ct_index"),
            arg("lb"))
@@ -372,7 +373,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("enforced_constraint_coefficients",
            &ModelBuilderHelper::EnforcedConstraintCoefficients, arg("ct_index"))
       .def("set_enforced_constraint_indicator_variable_index",
-           &ModelBuilderHelper::SetEnforcedIndicatorVariable, arg("ct_index"), arg("var_index"))
+           &ModelBuilderHelper::SetEnforcedIndicatorVariableIndex, arg("ct_index"), arg("var_index"))
       .def("set_enforced_constraint_indicator_value",
            &ModelBuilderHelper::SetEnforcedIndicatorValue, arg("ct_index"), arg("positive"))
       .def("enforced_constraint_indicator_variable_index",

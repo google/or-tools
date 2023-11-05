@@ -331,7 +331,7 @@ void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index, int var_
   ct_proto->add_coefficient(coeff);
 }
 
-void ModelBuilderHelper::SetEnforcedIndicatorVariable(int ct_index, int var_index) {
+void ModelBuilderHelper::SetEnforcedIndicatorVariableIndex(int ct_index, int var_index) {
   DCHECK(IsEnforcedConstraint(ct_index));
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
   gen->mutable_indicator_constraint()->set_var_index(var_index);

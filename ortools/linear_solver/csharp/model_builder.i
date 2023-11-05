@@ -59,25 +59,46 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research::ModelBuilderHelper::VarName;
 %unignore operations_research::ModelBuilderHelper::VarObjectiveCoefficient;
 %unignore operations_research::ModelBuilderHelper::VarUpperBound;
-%rename (VariablesCount) operations_research::ModelBuilderHelper::num_variables;
 %unignore operations_research::ModelBuilderHelper::SetVarIntegrality;
 %unignore operations_research::ModelBuilderHelper::SetVarLowerBound;
 %unignore operations_research::ModelBuilderHelper::SetVarName;
 %unignore operations_research::ModelBuilderHelper::SetVarObjectiveCoefficient;
 %unignore operations_research::ModelBuilderHelper::SetVarUpperBound;
 
-// Constraint API.
+// Linear Constraint API.
 %unignore operations_research::ModelBuilderHelper::AddConstraintTerm;
 %unignore operations_research::ModelBuilderHelper::AddLinearConstraint;
+%unignore operations_research::ModelBuilderHelper::ClearConstraintTerms;
 %unignore operations_research::ModelBuilderHelper::ConstraintCoefficients;
 %unignore operations_research::ModelBuilderHelper::ConstraintLowerBound;
 %unignore operations_research::ModelBuilderHelper::ConstraintName;
 %unignore operations_research::ModelBuilderHelper::ConstraintUpperBound;
 %unignore operations_research::ModelBuilderHelper::ConstraintVarIndices;
-%rename (ConstraintsCount) operations_research::ModelBuilderHelper::num_constraints;
+%unignore operations_research::ModelBuilderHelper::SafeAddConstraintTerm;
+%unignore operations_research::ModelBuilderHelper::SetConstraintCoefficient;
 %unignore operations_research::ModelBuilderHelper::SetConstraintLowerBound;
 %unignore operations_research::ModelBuilderHelper::SetConstraintName;
 %unignore operations_research::ModelBuilderHelper::SetConstraintUpperBound;
+
+// Enforced Linear Constraints API.
+%unignore operations_research::ModelBuilderHelper::AddEnforcedConstraintTerm;
+%unignore operations_research::ModelBuilderHelper::AddLinearEnforcedConstraint;
+%unignore operations_research::ModelBuilderHelper::ClearEnforcedConstraintTerms;
+%unignore operations_research::ModelBuilderHelper::EnforcedConstraintCoefficients;
+%unignore operations_research::ModelBuilderHelper::EnforcedConstraintLowerBound;
+%unignore operations_research::ModelBuilderHelper::EnforcedConstraintName;
+%unignore operations_research::ModelBuilderHelper::EnforcedConstraintUpperBound;
+%unignore operations_research::ModelBuilderHelper::EnforcedConstraintVarIndices;
+%unignore operations_research::ModelBuilderHelper::EnforcedIndicatorValue;
+%unignore operations_research::ModelBuilderHelper::EnforcedIndicatorVariableIndex;
+%unignore operations_research::ModelBuilderHelper::IsEnforcedConstraint;
+%unignore operations_research::ModelBuilderHelper::SafeAddEnforcedConstraintTerm;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintCoefficient;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintLowerBound;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintName;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedConstraintUpperBound;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedIndicatorValue;
+%unignore operations_research::ModelBuilderHelper::SetEnforcedIndicatorVariableIndex;
 
 // Objective API.
 %unignore operations_research::ModelBuilderHelper::ClearObjective;
@@ -91,6 +112,8 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research::ModelBuilderHelper::AddHint;
 
 // Model API.
+%rename (VariablesCount) operations_research::ModelBuilderHelper::num_variables;
+%rename (ConstraintsCount) operations_research::ModelBuilderHelper::num_constraints;
 %rename (Name) operations_research::ModelBuilderHelper::name;
 %unignore operations_research::ModelBuilderHelper::SetName;
 %unignore operations_research::ModelBuilderHelper::WriteModelToFile;

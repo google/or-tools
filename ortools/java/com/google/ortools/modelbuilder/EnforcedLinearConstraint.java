@@ -21,6 +21,10 @@ public class EnforcedLinearConstraint {
   }
 
   EnforcedLinearConstraint(ModelBuilderHelper helper, int index) {
+    if (!helper.isEnforcedConstraint(index)) {
+      throw new IllegalArgumentException(
+          "the given index does not refer to an enforced linear constraint");
+    }
     this.helper = helper;
     this.index = index;
   }
@@ -65,27 +69,37 @@ public class EnforcedLinearConstraint {
     helper.setEnforcedConstraintName(index, name);
   }
 
-  // Adds var * coeff to the constraint.
-  public void addEnforcedTerm(Variable v, double coeff) {
+  /** Adds var * coeff to the constraint.*/
+  public void addTerm(Variable v, double coeff) {
     helper.safeAddEnforcedConstraintTerm(index, v.getIndex(), coeff);
   }
 
-  // Returns the indicator variable of the constraint.
+  /** Sets the coefficient of v to coeff, adding or removing a term if needed. */
+  public void setCoefficient(Variable v, double coeff) {
+    helper.setEnforcedConstraintCoefficient(index, v.getIndex(), coeff);
+  }
+
+  /** Clear all terms. */
+  public void clearTerms() {
+    helper.clearEnforcedConstraintTerms(index);
+  }
+
+  /** Returns the indicator variable of the constraint/ */
   public Variable getIndicatorVariable() {
     return new Variable(helper, helper.getEnforcedIndicatorVariableIndex(index));
   }
 
-  // Sets the indicator variable of the constraint.
+  /** Sets the indicator variable of the constraint. */
   public void setIndicatorVariable(Variable v) {
-    helper.setEnforcedIndicatorVariable(index, v.index);
+    helper.setEnforcedIndicatorVariableIndex(index, v.index);
   }
 
-  // Returns the indicator value of the constraint.
+  /** Returns the indicator value of the constraint. */
   public boolean getIndicatorValue() {
     return helper.getEnforcedIndicatorValue(index);
   }
 
-  // Sets the indicator value of the constraint.
+  /** Sets the indicator value of the constraint. */
   public void setIndicatorValue(boolean b) {
     helper.setEnforcedIndicatorValue(index, b);
   }  
