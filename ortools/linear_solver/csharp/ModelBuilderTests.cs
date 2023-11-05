@@ -55,10 +55,11 @@ public class ModelBuilderTest
         Assert.Equal(3, model.VariablesCount());
 
         EnforcedLinearConstraint c0 = model.AddEnforced(x + 2 * y >= 10.0, z, false);
-        // Assert.Equal(1, model.ConstraintsCount());
-        // Assert.Equal(10.0, c0.LowerBound);
-        // Assert.Equal(c0.IndicatorVariable.Index, z.Index);
-        // Assert.False(c0.IndicatorValue);
+        Assert.Equal(1, model.ConstraintsCount());
+        Assert.Equal(10.0, c0.LowerBound);
+        Assert.Equal(infinity, c0.UpperBound);
+        Assert.Equal(c0.IndicatorVariable.Index, z.Index);
+        Assert.False(c0.IndicatorValue);
     }
 }
 

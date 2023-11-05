@@ -160,10 +160,10 @@ public class Model
     /// <returns>the linear constraint</returns>
     public LinearConstraint AddLinearConstraint(LinearExpr expr, double lb, double ub)
     {
+        LinearConstraint lin = new LinearConstraint(helper_);
         var dict = tmp_var_value_map_;
         dict.Clear();
         double offset = LinearExpr.GetVarValueMap(expr, dict, tmp_terms_);
-        LinearConstraint lin = new LinearConstraint(helper_);
         foreach (KeyValuePair<int, double> term in dict)
         {
             helper_.AddConstraintTerm(lin.Index, term.Key, term.Value);

@@ -82,7 +82,7 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 // Enforced Linear Constraints API.
 %unignore operations_research::ModelBuilderHelper::AddEnforcedConstraintTerm;
-%unignore operations_research::ModelBuilderHelper::AddLinearEnforcedConstraint;
+%unignore operations_research::ModelBuilderHelper::AddEnforcedLinearConstraint;
 %unignore operations_research::ModelBuilderHelper::ClearEnforcedConstraintTerms;
 %unignore operations_research::ModelBuilderHelper::EnforcedConstraintCoefficients;
 %unignore operations_research::ModelBuilderHelper::EnforcedConstraintLowerBound;
