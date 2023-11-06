@@ -26,15 +26,23 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/proto_solver/sat_solver_utils.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"

@@ -464,9 +464,9 @@ def _add_enforced_linear_constraint_to_helper(
 
     Args:
       bounded_expr: The bounded expression used to create the constraint.
+      helper: The helper to create the constraint.
       var: the variable used in the indicator
       value: the value used in the indicator
-      helper: The helper to create the constraint.
       name: The name of the constraint to be created.
 
     Returns:
@@ -531,7 +531,7 @@ class VarEqVar(_BoundedLinearExpr):
     def _add_enforced_linear_constraint(
         self,
         helper: mbh.ModelBuilderHelper,
-        var: "Variable",
+        var: Variable,
         value: bool,
         name: str,
     ) -> "EnforcedLinearConstraint":
@@ -566,17 +566,15 @@ class BoundedLinearExpression(_BoundedLinearExpr):
     def __str__(self) -> str:
         if self.__lb > -math.inf and self.__ub < math.inf:
             if self.__lb == self.__ub:
-                return str(self.__expr) + " == " + str(self.__lb)
+                return f"{self.__expr} == {self.__lb}"
             else:
-                return (
-                    str(self.__lb) + " <= " + str(self.__expr) + " <= " + str(self.__ub)
-                )
+                return f"{self.__lb} <= {self.__expr} <= {self.__ub}"
         elif self.__lb > -math.inf:
-            return str(self.__expr) + " >= " + str(self.__lb)
+            return f"{self.__expr} >= {self.__lb}"
         elif self.__ub < math.inf:
-            return str(self.__expr) + " <= " + str(self.__ub)
+            return f"{self.__expr} <= {self.__ub}"
         else:
-            return str(self.__expr) + " free"
+            return f"{self.__expr} free"
 
     def __repr__(self):
         return self.__str__()
