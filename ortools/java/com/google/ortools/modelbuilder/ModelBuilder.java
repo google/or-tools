@@ -117,11 +117,6 @@ public final class ModelBuilder {
     return lin;
   }
 
-  /** Returns the number of variables in the model. */
-  public int numVariables() {
-    return helper.numVariables();
-  }
-
   /** Adds {@code expr == value}. */
   public LinearConstraint addEquality(LinearArgument expr, double value) {
     return addLinearConstraint(expr, value, value);
@@ -161,14 +156,78 @@ public final class ModelBuilder {
     return addLinearConstraint(difference, 0.0, Double.POSITIVE_INFINITY);
   }
 
-  /** Returns the number of constraints in the model. */
-  public int numConstraints() {
-    return helper.numConstraints();
-  }
-
   /** Rebuilds a linear constraint from its index. */
   public LinearConstraint constraintFromIndex(int index) {
     return new LinearConstraint(helper, index);
+  }
+
+  // Enforced Linear constraints.
+
+  /** Adds {@code lb <= expr <= ub}. */
+  public EnforcedLinearConstraint addEnforcedLinearConstraint(LinearArgument expr, double lb, double ub, Variable iVar, boolean iValue) {
+    EnforcedLinearConstraint lin = new EnforcedLinearConstraint(helper);
+    lin.setIndicatorVariable(iVar);
+    lin.setIndicatorValue(iValue);
+    final LinearExpr e = expr.build();
+    for (int i = 0; i < e.numElements(); ++i) {
+      helper.addEnforcedConstraintTerm(lin.getIndex(), e.getVariableIndex(i), e.getCoefficient(i));
+    }
+    double offset = e.getOffset();
+    if (lb == Double.NEGATIVE_INFINITY || lb == Double.POSITIVE_INFINITY) {
+      lin.setLowerBound(lb);
+    } else {
+      lin.setLowerBound(lb - offset);
+    }
+    if (ub == Double.NEGATIVE_INFINITY || ub == Double.POSITIVE_INFINITY) {
+      lin.setUpperBound(ub);
+    } else {
+      lin.setUpperBound(ub - offset);
+    }
+    return lin;
+  }
+
+  /** Adds {@code expr == value}. */
+  public EnforcedLinearConstraint addEnforcedEquality(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+    return addEnforcedLinearConstraint(expr, value, value, iVar, iValue);
+  }
+
+  /** Adds {@code left == right}. */
+  public EnforcedLinearConstraint addEnforcedEquality(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addEnforcedLinearConstraint(difference, 0.0, 0.0, iVar, iValue);
+  }
+
+  /** Adds {@code expr <= value}. */
+  public EnforcedLinearConstraint addEnforcedLessOrEqual(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+    return addEnforcedLinearConstraint(expr, Double.NEGATIVE_INFINITY, value, iVar, iValue);
+  }
+
+  /** Adds {@code left <= right}. */
+  public EnforcedLinearConstraint addEnforcedLessOrEqual(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addEnforcedLinearConstraint(difference, Double.NEGATIVE_INFINITY, 0.0, iVar, iValue);
+  }
+
+  /** Adds {@code expr >= value}. */
+  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+    return addEnforcedLinearConstraint(expr, value, Double.POSITIVE_INFINITY, iVar, iValue);
+  }
+
+  /** Adds {@code left >= right}. */
+  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+    LinearExprBuilder difference = LinearExpr.newBuilder();
+    difference.addTerm(left, 1);
+    difference.addTerm(right, -1);
+    return addEnforcedLinearConstraint(difference, 0.0, Double.POSITIVE_INFINITY, iVar, iValue);
+  }
+
+  /** Rebuilds a linear constraint from its index. */
+  public EnforcedLinearConstraint enforcedConstraintFromIndex(int index) {
+    return new EnforcedLinearConstraint(helper, index);
   }
 
   /** Minimize expression */
@@ -208,7 +267,27 @@ public final class ModelBuilder {
     helper.setObjectiveOffset(offset);
   }
 
+  /** Clears all hints from the solver. */
+  void clearHints() {
+    helper.clearHints();
+  }
+
+  /** Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of hints. */
+  void addHint(Variable v, double value) {
+    helper.addHint(v.getIndex(), value);
+  }
+
   // Model getters, import, export.
+
+  /** Returns the number of variables in the model. */
+  public int numVariables() {
+    return helper.numVariables();
+  }
+
+  /** Returns the number of constraints in the model. */
+  public int numConstraints() {
+    return helper.numConstraints();
+  }
 
   /** Returns the name of the model. */
   public String getName() {

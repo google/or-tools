@@ -212,14 +212,6 @@ class MPSolver {
     SCIP_MIXED_INTEGER_PROGRAMMING = 3,
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
-
-    // Commercial software (need license).
-    GUROBI_LINEAR_PROGRAMMING = 6,
-    GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
-    CPLEX_LINEAR_PROGRAMMING = 10,
-    CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
-    XPRESS_LINEAR_PROGRAMMING = 101,
-    XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     HIGHS_MIXED_INTEGER_PROGRAMMING = 16,
 
     // Boolean optimization problem (requires only integer variables and works
@@ -235,6 +227,16 @@ class MPSolver {
 
     // Dedicated knapsack solvers.
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13,
+
+    // Commercial software (need license).
+    GUROBI_LINEAR_PROGRAMMING = 6,
+    GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
+    CPLEX_LINEAR_PROGRAMMING = 10,
+    CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
+    XPRESS_LINEAR_PROGRAMMING = 101,
+    XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+    COPT_LINEAR_PROGRAMMING = 103,
+    COPT_MIXED_INTEGER_PROGRAMMING = 104,
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -693,6 +695,11 @@ class MPSolver {
    */
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
+  // Gives some brief (a few lines, at most) human-readable information about
+  // the given request, suitable for debug logging.
+  static std::string GetMPModelRequestLoggingInfo(
+      const MPModelRequest& request);
+
   /**
    * Advanced usage: possible basis status values for a variable and the slack
    * variable of a linear constraint.
@@ -969,7 +976,7 @@ inline bool SolverTypeIsMip(MPSolver::OptimizationProblemType solver_type) {
   return SolverTypeIsMip(static_cast<MPModelRequest::SolverType>(solver_type));
 }
 
-const absl::string_view ToString(
+absl::string_view ToString(
     MPSolver::OptimizationProblemType optimization_problem_type);
 
 inline std::ostream& operator<<(
@@ -1648,10 +1655,10 @@ class MPSolverInterface {
   // underlying solver (possibly because interrupt != nullptr), in which case
   // the user should fall back to using MPSolver.
   virtual std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request,
+      const MPModelRequest& /*request*/,
       // `interrupt` is non-const because the internal
       // solver may set it to true itself, in some cases.
-      std::atomic<bool>* interrupt) {
+      std::atomic<bool>* /*interrupt*/) {
     return std::nullopt;
   }
 
@@ -1680,7 +1687,7 @@ class MPSolverInterface {
 
   // Adds an indicator constraint. Returns true if the feature is supported by
   // the underlying solver.
-  virtual bool AddIndicatorConstraint(MPConstraint* const ct) {
+  virtual bool AddIndicatorConstraint(MPConstraint* const /*ct*/) {
     LOG(ERROR) << "Solver doesn't support indicator constraints.";
     return false;
   }
@@ -1706,7 +1713,7 @@ class MPSolverInterface {
   // Clears the objective from all its terms.
   virtual void ClearObjective() = 0;
 
-  virtual void BranchingPriorityChangedForVariable(int var_index) {}
+  virtual void BranchingPriorityChangedForVariable(int /*var_index*/) {}
   // ------ Query statistics on the solution and the solve ------
   // Returns the number of simplex iterations. The problem must be discrete,
   // otherwise it crashes, or returns kUnknownNumberOfIterations in NDEBUG mode.
@@ -1727,7 +1734,7 @@ class MPSolverInterface {
 
   // Checks whether the solution is synchronized with the model, i.e. whether
   // the model has changed since the solution was computed last.
-  // If it isn't, it crashes in NDEBUG, and returns false othwerwise.
+  // If it isn't, it crashes in NDEBUG, and returns false otherwise.
   bool CheckSolutionIsSynchronized() const;
   // Checks whether a feasible solution exists. The behavior is similar to
   // CheckSolutionIsSynchronized() above.
@@ -1789,8 +1796,8 @@ class MPSolverInterface {
 
   // See MPSolver::SetStartingLpBasis().
   virtual void SetStartingLpBasis(
-      const std::vector<MPSolver::BasisStatus>& variable_statuses,
-      const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+      const std::vector<MPSolver::BasisStatus>& /*variable_statuses*/,
+      const std::vector<MPSolver::BasisStatus>& /*constraint_statuses*/) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 
@@ -1820,7 +1827,7 @@ class MPSolverInterface {
   virtual bool NextSolution() { return false; }
 
   // See MPSolver::SetCallback() for details.
-  virtual void SetCallback(MPCallback* mp_callback) {
+  virtual void SetCallback(MPCallback* /*mp_callback*/) {
     LOG(FATAL) << "Callbacks not supported for this solver.";
   }
 

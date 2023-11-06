@@ -23,12 +23,18 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/const_init.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -38,18 +44,23 @@
 #include "absl/strings/str_replace.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
+#include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/port/file.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, verify_solution, false,
@@ -613,7 +624,7 @@ bool MPSolver::ParseSolverType(absl::string_view solver_id,
   return false;
 }
 
-const absl::string_view ToString(
+absl::string_view ToString(
     MPSolver::OptimizationProblemType optimization_problem_type) {
   for (const auto& named_solver : kOptimizationProblemTypeNames) {
     if (named_solver.problem_type == optimization_problem_type) {
@@ -1018,6 +1029,8 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                       model_request.solver_type()));
   if (model_request.enable_internal_solver_output()) {
     solver.EnableOutput();
+    std::cout << "MPModelRequest info:\n"
+              << GetMPModelRequestLoggingInfo(model_request) << std::endl;
   }
 
   // If interruption support is not required, we don't need access to the
@@ -1029,7 +1042,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
 
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(model_request, response);
   if (!optional_model) {
     LOG_IF(WARNING, model_request.enable_internal_solver_output())
@@ -2305,6 +2318,25 @@ int MPSolverParameters::GetIntegerParam(
       return kUnknownIntegerParamValue;
     }
   }
+}
+
+// static
+std::string MPSolver::GetMPModelRequestLoggingInfo(
+    const MPModelRequest& request) {
+  std::string out;
+#if !defined(__PORTABLE_PLATFORM__)
+  MPModelRequest abbreviated_request;
+  abbreviated_request = request;
+  abbreviated_request.clear_model();
+  abbreviated_request.clear_model_delta();
+  google::protobuf::TextFormat::PrintToString(abbreviated_request, &out);
+#else   // __PORTABLE_PLATFORM__
+  out = "<Info unavailable because: __PORTABLE_PLATFORM__>\n";
+#endif  // __PORTABLE_PLATFORM__
+  if (request.model().has_name()) {
+    absl::StrAppendFormat(&out, "model_name: '%s'\n", request.model().name());
+  }
+  return out;
 }
 
 }  // namespace operations_research

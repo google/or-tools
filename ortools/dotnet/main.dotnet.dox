@@ -15,6 +15,7 @@ This repository contains several component:
 @li @ref Google.OrTools.Graph "Google.OrTools.Graph"
 
 @li @ref Google.OrTools.LinearSolver "Google.OrTools.LinearSolver"
+@li @ref Google.OrTools.ModelBuilder "Google.OrTools.ModelBuilder"
 @li @ref Google.OrTools.Bop "Google.OrTools.Bop"
 @li @ref Google.OrTools.Glop "Google.OrTools.Glop"
 @li @ref Google.OrTools.Sat "Google.OrTools.SAT"

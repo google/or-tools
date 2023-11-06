@@ -56,9 +56,15 @@ public final class SimpleMipProgramMb {
     model.maximize(LinearExpr.newBuilder().add(x).addTerm(y, 10.0));
     // [END objective]
 
-    // [START solve]
-    // Solve with the SCIP MIP solver.
+    // [START solver]
+    // Create the solver with the SCIP backend and check it is supported.
     ModelSolver solver = new ModelSolver("scip");
+    if (!solver.solverIsSupported()) {
+      return;
+    }
+    // [END solver]
+
+    // [START solve]
     final SolveStatus status = solver.solve(model);
     // [END solve]
 

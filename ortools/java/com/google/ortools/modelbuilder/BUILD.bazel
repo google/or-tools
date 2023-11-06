@@ -19,6 +19,7 @@ java_library(
     srcs = [
         "AffineExpression.java",
         "ConstantExpression.java",
+        "EnforcedLinearConstraint.java",
         "LinearArgument.java",
         "LinearConstraint.java",
         "LinearExpr.java",

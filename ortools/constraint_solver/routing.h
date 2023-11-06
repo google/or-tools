@@ -162,6 +162,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -289,12 +290,6 @@ class RoutingModel {
   typedef RoutingVehicleClassIndex VehicleClassIndex;
   typedef RoutingTransitCallback1 TransitCallback1;
   typedef RoutingTransitCallback2 TransitCallback2;
-
-// TODO(user): Remove all SWIG guards by adding the @ignore in .i.
-#if !defined(SWIG)
-  typedef RoutingIndexPair IndexPair;
-  typedef RoutingIndexPairs IndexPairs;
-#endif  // SWIG
 
 #if !defined(SWIG)
   /// What follows is relevant for models with time/state dependent transits.
@@ -897,22 +892,27 @@ class RoutingModel {
   /// performed node from the disjunction of index 'delivery_disjunction'.
   void AddPickupAndDeliverySets(DisjunctionIndex pickup_disjunction,
                                 DisjunctionIndex delivery_disjunction);
-  // clang-format off
-  /// Returns pairs for which the node is a pickup; the first element of each
-  /// pair is the index in the pickup and delivery pairs list in which the
-  /// pickup appears, the second element is its index in the pickups list.
-  const std::vector<std::pair<int, int> >&
-  GetPickupIndexPairs(int64_t node_index) const;
-  /// Same as above for deliveries.
-  const std::vector<std::pair<int, int> >&
-      GetDeliveryIndexPairs(int64_t node_index) const;
-  // clang-format on
+
+  /// The position of a node in the set of pickup and delivery pairs.
+  struct PickupDeliveryPosition {
+    /// The index of the pickup and delivery pair within which the node appears.
+    int pd_pair_index;
+    /// The index of the node in the vector of pickup (resp. delivery)
+    /// alternatives of the pair.
+    int alternative_index;
+  };
+  /// Returns the pickup and delivery positions where the node is a pickup.
+  const std::vector<PickupDeliveryPosition>& GetPickupPositions(
+      int64_t node_index) const;
+  /// Returns the pickup and delivery positions where the node is a delivery.
+  const std::vector<PickupDeliveryPosition>& GetDeliveryPositions(
+      int64_t node_index) const;
   /// Returns whether the node is a pickup (resp. delivery).
   bool IsPickup(int64_t node_index) const {
-    return !GetPickupIndexPairs(node_index).empty();
+    return !GetPickupPositions(node_index).empty();
   }
   bool IsDelivery(int64_t node_index) const {
-    return !GetDeliveryIndexPairs(node_index).empty();
+    return !GetDeliveryPositions(node_index).empty();
   }
 
   /// Sets the Pickup and delivery policy of all vehicles. It is equivalent to
@@ -929,7 +929,7 @@ class RoutingModel {
 
 #ifndef SWIG
   /// Returns pickup and delivery pairs currently in the model.
-  const IndexPairs& GetPickupAndDeliveryPairs() const {
+  const std::vector<PickupDeliveryPair>& GetPickupAndDeliveryPairs() const {
     return pickup_delivery_pairs_;
   }
   const std::vector<std::pair<DisjunctionIndex, DisjunctionIndex>>&
@@ -940,7 +940,8 @@ class RoutingModel {
   /// Pairs are implicit if they are not linked by a pickup and delivery
   /// constraint but that for a given unary dimension, the first element of the
   /// pair has a positive demand d, and the second element has a demand of -d.
-  const IndexPairs& GetImplicitUniquePickupAndDeliveryPairs() const {
+  const std::vector<PickupDeliveryPair>&
+  GetImplicitUniquePickupAndDeliveryPairs() const {
     DCHECK(closed_);
     return implicit_pickup_delivery_pairs_without_alternatives_;
   }
@@ -1689,6 +1690,14 @@ class RoutingModel {
     return limit_->AbsoluteSolverDeadline() - solver_->Now();
   }
 
+  /// Updates the time limit of the search limit.
+  void UpdateTimeLimit(absl::Duration time_limit) {
+    RegularLimit* limit = GetOrCreateLimit();
+    limit->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                        std::numeric_limits<int64_t>::max(),
+                        limit->solutions());
+  }
+
   /// Returns the time buffer to safely return a solution.
   absl::Duration TimeBuffer() const { return time_buffer_; }
 
@@ -2293,17 +2302,18 @@ class RoutingModel {
   std::vector<absl::flat_hash_set<int>> allowed_vehicles_;
 #endif  // SWIG
   /// Pickup and delivery
-  IndexPairs pickup_delivery_pairs_;
-  IndexPairs implicit_pickup_delivery_pairs_without_alternatives_;
+  std::vector<PickupDeliveryPair> pickup_delivery_pairs_;
+  std::vector<PickupDeliveryPair>
+      implicit_pickup_delivery_pairs_without_alternatives_;
   std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
-  // If node_index is a pickup, index_to_pickup_index_pairs_[node_index] is the
-  // vector of pairs {pair_index, pickup_index} such that
-  // (pickup_delivery_pairs_[pair_index].first)[pickup_index] == node_index
-  std::vector<std::vector<std::pair<int, int> > > index_to_pickup_index_pairs_;
+  // If node_index is a pickup, index_to_pickup_positions_[node_index] contains
+  // all the PickupDeliveryPosition {pickup_delivery_index, alternative_index}
+  // such that (pickup_delivery_pairs_[pickup_delivery_index]
+  //               .pickup_alternatives)[alternative_index] == node_index
+  std::vector<std::vector<PickupDeliveryPosition>> index_to_pickup_positions_;
   // Same as above for deliveries.
-  std::vector<std::vector<std::pair<int, int> > >
-      index_to_delivery_index_pairs_;
+  std::vector<std::vector<PickupDeliveryPosition>> index_to_delivery_positions_;
   // clang-format on
   std::vector<PickupAndDeliveryPolicy> vehicle_pickup_delivery_policy_;
   // Same vehicle group to which a node belongs.
@@ -3196,8 +3206,9 @@ class RoutingDimension {
 
   bool HasPickupToDeliveryLimits() const;
 #ifndef SWIG
-  int64_t GetPickupToDeliveryLimitForPair(int pair_index, int pickup,
-                                          int delivery) const;
+  int64_t GetPickupToDeliveryLimitForPair(int pair_index,
+                                          int pickup_alternative_index,
+                                          int delivery_alternative_index) const;
 
   struct NodePrecedence {
     int64_t first_node;

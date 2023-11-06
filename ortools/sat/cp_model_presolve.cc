@@ -5522,11 +5522,10 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         continue;
       }
 
+      // Inconsistent intervals cannot be performed.
       const int64_t start_min = context_->StartMin(interval_index);
       const int64_t end_max = context_->EndMax(interval_index);
-      if (start_min > end_max ||
-          (context_->SizeMin(interval_index) > 0 &&
-           context_->MinOf(demand_expr) > capacity_max)) {
+      if (start_min > end_max) {
         if (context_->ConstraintIsOptional(interval_index)) {
           ConstraintProto* interval_ct =
               context_->working_model->mutable_constraints(interval_index);
@@ -5537,9 +5536,38 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
           }
           num_incompatible_intervals++;
           continue;
-        } else {  // Interval is performed.
+        } else {
           return context_->NotifyThatModelIsUnsat(
-              "cumulative: performed demand exceeds capacity.");
+              "cumulative: inconsistent intervals cannot be performed.");
+        }
+      }
+
+      if (context_->MinOf(demand_expr) > capacity_max) {
+        if (context_->ConstraintIsOptional(interval_index)) {
+          if (context_->SizeMin(interval_index) > 0) {
+            ConstraintProto* interval_ct =
+                context_->working_model->mutable_constraints(interval_index);
+            DCHECK_EQ(interval_ct->enforcement_literal_size(), 1);
+            const int literal = interval_ct->enforcement_literal(0);
+            if (!context_->SetLiteralToFalse(literal)) {
+              return true;
+            }
+            num_incompatible_intervals++;
+            continue;
+          }
+        } else {  // Interval performed.
+          // Try to set the size to 0.
+          const ConstraintProto& interval_ct =
+              context_->working_model->constraints(interval_index);
+          if (!context_->IntersectDomainWith(interval_ct.interval().size(),
+                                             {0, 0})) {
+            return true;
+          }
+          context_->UpdateRuleStats(
+              "cumulative: zero size of performed demand that exceeds "
+              "capacity");
+          ++num_zero_demand_removed;
+          continue;
         }
       }
 
@@ -5576,6 +5604,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       const int interval = proto->intervals(i);
       const LinearExpressionProto& demand_expr = proto->demands(i);
       if (context_->ConstraintIsOptional(interval)) continue;
+      if (context_->SizeMin(interval) == 0) continue;
       bool domain_changed = false;
       if (!context_->IntersectDomainWith(demand_expr, {0, capacity_max},
                                          &domain_changed)) {
@@ -5713,13 +5742,15 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     int64_t max_of_performed_demand_mins = 0;
     int64_t sum_of_max_demands = 0;
     for (int i = 0; i < proto->intervals_size(); ++i) {
+      const int interval_index = proto->intervals(i);
       const ConstraintProto& interval_ct =
-          context_->working_model->constraints(proto->intervals(i));
+          context_->working_model->constraints(interval_index);
 
       const LinearExpressionProto& demand_expr = proto->demands(i);
       sum_of_max_demands += context_->MaxOf(demand_expr);
 
-      if (interval_ct.enforcement_literal().empty()) {
+      if (interval_ct.enforcement_literal().empty() &&
+          context_->SizeMin(interval_index) > 0) {
         max_of_performed_demand_mins = std::max(max_of_performed_demand_mins,
                                                 context_->MinOf(demand_expr));
       }

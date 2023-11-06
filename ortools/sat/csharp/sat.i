@@ -60,6 +60,14 @@ PROTO_INPUT(operations_research::sat::IntegerVariableProto,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
+%template(IntVector) std::vector<int>;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+
 %ignoreall
 
 // SatParameters are proto2, thus not compatible with C# Protobufs.

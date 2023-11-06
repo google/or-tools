@@ -70,28 +70,47 @@ class ModelBuilderHelper {
   void SetVarObjectiveCoefficient(int var_index, double coeff);
   void SetVarName(int var_index, const std::string& name);
 
-  int AddLinearConstraint();
-  void SetConstraintLowerBound(int ct_index, double lb);
-  void SetConstraintUpperBound(int ct_index, double ub);
-  void AddConstraintTerm(int ct_index, int var_index, double coeff);
-  // Safe version that checks is does not create duplicate entries.
-  void SafeAddConstraintTerm(int ct_index, int var_index, double coeff);
-  void SetConstraintName(int ct_index, const std::string& name);
-  void SetConstraintCoefficient(int ct_index, int var_index, double coeff);
-
-  int num_variables() const;
   double VarLowerBound(int var_index) const;
   double VarUpperBound(int var_index) const;
   bool VarIsIntegral(int var_index) const;
   double VarObjectiveCoefficient(int var_index) const;
   std::string VarName(int var_index) const;
 
-  int num_constraints() const;
   double ConstraintLowerBound(int ct_index) const;
   double ConstraintUpperBound(int ct_index) const;
+  int AddLinearConstraint();
   std::string ConstraintName(int ct_index) const;
-  std::vector<int> ConstraintVarIndices(int ct_index) const;
   std::vector<double> ConstraintCoefficients(int ct_index) const;
+  std::vector<int> ConstraintVarIndices(int ct_index) const;
+  void AddConstraintTerm(int ct_index, int var_index, double coeff);
+  void ClearConstraintTerms(int ct_index);
+  void SafeAddConstraintTerm(int ct_index, int var_index, double coeff);
+  void SetConstraintCoefficient(int ct_index, int var_index, double coeff);
+  void SetConstraintLowerBound(int ct_index, double lb);
+  void SetConstraintName(int ct_index, const std::string& name);
+  void SetConstraintUpperBound(int ct_index, double ub);
+
+  bool EnforcedIndicatorValue(int ct_index) const;
+  bool IsEnforcedConstraint(int ct_index) const;
+  double EnforcedConstraintLowerBound(int ct_index) const;
+  double EnforcedConstraintUpperBound(int ct_index) const;
+  int AddEnforcedLinearConstraint();
+  int EnforcedIndicatorVariableIndex(int ct_index) const;
+  std::string EnforcedConstraintName(int ct_index) const;
+  std::vector<double> EnforcedConstraintCoefficients(int ct_index) const;
+  std::vector<int> EnforcedConstraintVarIndices(int ct_index) const;
+  void AddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
+  void ClearEnforcedConstraintTerms(int ct_index);
+  void SafeAddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
+  void SetEnforcedConstraintCoefficient(int ct_index, int var_index, double coeff);  
+  void SetEnforcedConstraintLowerBound(int ct_index, double lb);
+  void SetEnforcedConstraintName(int ct_index, const std::string& name);
+  void SetEnforcedConstraintUpperBound(int ct_index, double ub);
+  void SetEnforcedIndicatorValue(int ct_index, bool positive);
+  void SetEnforcedIndicatorVariableIndex(int ct_index, int var_index);
+
+  int num_constraints() const;
+  int num_variables() const;
 
   std::string name() const;
   void SetName(const std::string& name);
@@ -102,14 +121,17 @@ class ModelBuilderHelper {
   double ObjectiveOffset() const;
   void SetObjectiveOffset(double offset);
 
+  void ClearHints();
+  void AddHint(int var_index, double var_value);
+
  private:
   MPModelProto model_;
 };
 
 // Simple director class for C#.
-class LogCallback {
+class MbLogCallback {
  public:
-  virtual ~LogCallback() {}
+  virtual ~MbLogCallback() {}
   virtual void NewMessage(const std::string& message) = 0;
 };
 
@@ -150,7 +172,7 @@ class ModelSolverHelper {
   bool InterruptSolve();
 
   void SetLogCallback(std::function<void(const std::string&)> log_callback);
-  void SetLogCallbackFromDirectorClass(LogCallback* log_callback);
+  void SetLogCallbackFromDirectorClass(MbLogCallback* log_callback);
   void ClearLogCallback();
 
   bool has_response() const;

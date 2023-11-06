@@ -400,7 +400,7 @@ public class CumulativeConstraint : Constraint
  * </summary>
  *
  * <remarks>
- * This constraint allows adding rectanles to the NoOverlap2D constraint incrementally.
+ * This constraint allows adding rectangles to the NoOverlap2D constraint incrementally.
  * </remarks>
  */
 public class NoOverlap2dConstraint : Constraint

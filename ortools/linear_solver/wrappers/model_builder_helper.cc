@@ -134,6 +134,26 @@ void ModelBuilderHelper::SetVarName(int var_index, const std::string& name) {
   model_.mutable_variable(var_index)->set_name(name);
 }
 
+double ModelBuilderHelper::VarLowerBound(int var_index) const {
+  return model_.variable(var_index).lower_bound();
+}
+
+double ModelBuilderHelper::VarUpperBound(int var_index) const {
+  return model_.variable(var_index).upper_bound();
+}
+
+bool ModelBuilderHelper::VarIsIntegral(int var_index) const {
+  return model_.variable(var_index).is_integer();
+}
+
+double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
+  return model_.variable(var_index).objective_coefficient();
+}
+
+std::string ModelBuilderHelper::VarName(int var_index) const {
+  return model_.variable(var_index).name();
+}
+
 int ModelBuilderHelper::AddLinearConstraint() {
   const int index = model_.constraint_size();
   model_.add_constraint();
@@ -146,6 +166,12 @@ void ModelBuilderHelper::SetConstraintLowerBound(int ct_index, double lb) {
 
 void ModelBuilderHelper::SetConstraintUpperBound(int ct_index, double ub) {
   model_.mutable_constraint(ct_index)->set_upper_bound(ub);
+}
+
+void ModelBuilderHelper::ClearConstraintTerms(int ct_index) {
+  MPConstraintProto* ct_proto = model_.mutable_constraint(ct_index);
+  ct_proto->clear_var_index();
+  ct_proto->clear_coefficient();
 }
 
 void ModelBuilderHelper::AddConstraintTerm(int ct_index, int var_index,
@@ -192,32 +218,6 @@ void ModelBuilderHelper::SetConstraintCoefficient(int ct_index, int var_index,
   ct_proto->add_coefficient(coeff);
 }
 
-int ModelBuilderHelper::num_variables() const { return model_.variable_size(); }
-
-double ModelBuilderHelper::VarLowerBound(int var_index) const {
-  return model_.variable(var_index).lower_bound();
-}
-
-double ModelBuilderHelper::VarUpperBound(int var_index) const {
-  return model_.variable(var_index).upper_bound();
-}
-
-bool ModelBuilderHelper::VarIsIntegral(int var_index) const {
-  return model_.variable(var_index).is_integer();
-}
-
-double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
-  return model_.variable(var_index).objective_coefficient();
-}
-
-std::string ModelBuilderHelper::VarName(int var_index) const {
-  return model_.variable(var_index).name();
-}
-
-int ModelBuilderHelper::num_constraints() const {
-  return model_.constraint_size();
-}
-
 double ModelBuilderHelper::ConstraintLowerBound(int ct_index) const {
   return model_.constraint(ct_index).lower_bound();
 }
@@ -239,6 +239,161 @@ std::vector<double> ModelBuilderHelper::ConstraintCoefficients(
     int ct_index) const {
   const MPConstraintProto& ct_proto = model_.constraint(ct_index);
   return {ct_proto.coefficient().begin(), ct_proto.coefficient().end()};
+}
+
+int ModelBuilderHelper::AddEnforcedLinearConstraint() {
+  const int index = model_.general_constraint_size();
+  model_.add_general_constraint();
+  return index;
+}
+
+bool ModelBuilderHelper::IsEnforcedConstraint(int ct_index) const {
+  const MPGeneralConstraintProto& gen = model_.general_constraint(ct_index);
+  return gen.general_constraint_case() ==
+         MPGeneralConstraintProto::kIndicatorConstraint;
+}
+
+void ModelBuilderHelper::SetEnforcedConstraintLowerBound(int ct_index,
+                                                         double lb) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  MPConstraintProto* ct_proto =
+      gen->mutable_indicator_constraint()->mutable_constraint();
+  ct_proto->set_lower_bound(lb);
+}
+
+void ModelBuilderHelper::SetEnforcedConstraintUpperBound(int ct_index, double ub) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  MPConstraintProto* ct_proto =
+      gen->mutable_indicator_constraint()->mutable_constraint();
+  ct_proto->set_upper_bound(ub);
+}
+
+void ModelBuilderHelper::ClearEnforcedConstraintTerms(int ct_index) {
+  MPConstraintProto* ct_proto = model_.mutable_general_constraint(ct_index)
+                                    ->mutable_indicator_constraint()
+                                    ->mutable_constraint();
+  ct_proto->clear_var_index();
+  ct_proto->clear_coefficient();
+}
+
+void ModelBuilderHelper::AddEnforcedConstraintTerm(int ct_index, int var_index,
+                                           double coeff) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  if (coeff == 0.0) return;
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  MPConstraintProto* ct_proto =
+      gen->mutable_indicator_constraint()->mutable_constraint();
+  ct_proto->add_var_index(var_index);
+  ct_proto->add_coefficient(coeff);
+}
+
+void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index, int var_index,
+                                               double coeff) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  if (coeff == 0.0) return;
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  MPConstraintProto* ct_proto =
+      gen->mutable_indicator_constraint()->mutable_constraint();
+  for (int i = 0; i < ct_proto->var_index_size(); ++i) {
+    if (ct_proto->var_index(i) == var_index) {
+      ct_proto->set_coefficient(i, coeff + ct_proto->coefficient(i));
+      return;
+    }
+  }
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
+  ct_proto->add_var_index(var_index);
+  ct_proto->add_coefficient(coeff);
+}
+
+void ModelBuilderHelper::SetEnforcedConstraintName(int ct_index,
+                                           const std::string& name) {
+  model_.mutable_general_constraint(ct_index)->set_name(name);
+}
+
+void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index, int var_index,
+                                                  double coeff) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  MPConstraintProto* ct_proto =
+      gen->mutable_indicator_constraint()->mutable_constraint();
+  for (int i = 0; i < ct_proto->var_index_size(); ++i) {
+    if (ct_proto->var_index(i) == var_index) {
+      ct_proto->set_coefficient(i, coeff);
+      return;
+    }
+  }
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
+  ct_proto->add_var_index(var_index);
+  ct_proto->add_coefficient(coeff);
+}
+
+void ModelBuilderHelper::SetEnforcedIndicatorVariableIndex(int ct_index, int var_index) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  gen->mutable_indicator_constraint()->set_var_index(var_index);
+}
+
+void ModelBuilderHelper::SetEnforcedIndicatorValue(int ct_index, bool positive) {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
+  gen->mutable_indicator_constraint()->set_var_value(positive);
+}
+
+double ModelBuilderHelper::EnforcedConstraintLowerBound(int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  return model_.general_constraint(ct_index)
+      .indicator_constraint()
+      .constraint()
+      .lower_bound();
+}
+
+double ModelBuilderHelper::EnforcedConstraintUpperBound(int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  return model_.general_constraint(ct_index)
+      .indicator_constraint()
+      .constraint()
+      .upper_bound();
+}
+
+std::string ModelBuilderHelper::EnforcedConstraintName(int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  return model_.general_constraint(ct_index).name();
+}
+
+std::vector<int> ModelBuilderHelper::EnforcedConstraintVarIndices(
+    int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  const MPConstraintProto& ct_proto =
+      model_.general_constraint(ct_index).indicator_constraint().constraint();
+  return {ct_proto.var_index().begin(), ct_proto.var_index().end()};
+}
+
+std::vector<double> ModelBuilderHelper::EnforcedConstraintCoefficients(
+    int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  const MPConstraintProto& ct_proto =
+      model_.general_constraint(ct_index).indicator_constraint().constraint();
+  return {ct_proto.coefficient().begin(), ct_proto.coefficient().end()};
+}
+
+int ModelBuilderHelper::EnforcedIndicatorVariableIndex(int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  return model_.general_constraint(ct_index).indicator_constraint().var_index();
+}
+
+bool ModelBuilderHelper::EnforcedIndicatorValue(int ct_index) const {
+  DCHECK(IsEnforcedConstraint(ct_index));
+  return model_.general_constraint(ct_index).indicator_constraint().var_value() != 0;
+}
+
+int ModelBuilderHelper::num_variables() const { return model_.variable_size(); }
+
+int ModelBuilderHelper::num_constraints() const {
+  return model_.constraint_size() + model_.general_constraint_size();
 }
 
 std::string ModelBuilderHelper::name() const { return model_.name(); }
@@ -264,6 +419,15 @@ double ModelBuilderHelper::ObjectiveOffset() const {
 
 void ModelBuilderHelper::SetObjectiveOffset(double offset) {
   model_.set_objective_offset(offset);
+}
+
+void ModelBuilderHelper::ClearHints() {
+  model_.clear_solution_hint();
+}
+
+void ModelBuilderHelper::AddHint(int var_index, double var_value) {
+  model_.mutable_solution_hint()->add_var_index(var_index);
+  model_.mutable_solution_hint()->add_var_value(var_value);
 }
 
 std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
@@ -421,7 +585,7 @@ void ModelSolverHelper::SetLogCallback(
 }
 
 void ModelSolverHelper::SetLogCallbackFromDirectorClass(
-    LogCallback* log_callback) {
+    MbLogCallback* log_callback) {
   log_callback_ = [log_callback](const std::string& message) {
     log_callback->NewMessage(message);
   };

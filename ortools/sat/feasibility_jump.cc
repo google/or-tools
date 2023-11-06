@@ -344,6 +344,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     bool should_recompute_violations = false;
     bool reset_weights = false;
+    bool recompute_compound_weights = false;
 
     // In incomplete mode, query the starting solution for the shared response
     // manager.
@@ -415,8 +416,6 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       if (ub < lb) return;  // Search is finished.
       if (evaluator_->ReduceObjectiveBounds(lb.value(), ub.value())) {
         should_recompute_violations = true;
-        // The scores in the current move may now be wrong.
-        move_->Clear();
       }
     }
 
@@ -448,13 +447,13 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       }
       // Check if compound move search might backtrack out of the new domains.
       if (!move_->StackValuesInDomains(var_domains_)) {
-        move_->Clear();
+        recompute_compound_weights = true;
       }
     }
 
     if (should_recompute_violations) {
       evaluator_->ComputeAllViolations();
-      move_->Clear();
+      recompute_compound_weights = true;
     }
     if (reset_weights) {
       // Each time we reset the weight, we randomly choose if we do decay or
@@ -462,16 +461,21 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       bump_value_ = 1.0;
       weights_.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
       use_decay_ = absl::Bernoulli(random_, 0.5);
-      move_->Clear();
       use_compound_moves_ = absl::Bernoulli(
           random_, params_.violation_ls_compound_move_probability());
+      recompute_compound_weights = true;
+    }
+    if (recompute_compound_weights) {
+      move_->Clear();
       if (use_compound_moves_) {
-        compound_move_max_discrepancy_ = 0;
+        compound_weights_.assign(weights_.begin(), weights_.end());
+        for (int c = 0; c < weights_.size(); ++c) {
+          if (evaluator_->IsViolated(c)) continue;
+          compound_weights_[c] *= kCompoundDiscount;
+        }
         compound_weight_changed_.clear();
         in_compound_weight_changed_.assign(weights_.size(), false);
-        // Compound weights for violated constraints will be set to the
-        // correct values in InitializeCompoundWeights.
-        compound_weights_.assign(weights_.size(), kCompoundDiscount);
+        compound_move_max_discrepancy_ = 0;
       }
     }
     // Search for feasible solution.
@@ -817,7 +821,6 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
   evaluator_->UpdateAllNonLinearViolations();
   evaluator_->RecomputeViolatedList(/*linear_only=*/false);
   RecomputeVarsToScan(general_jumps_);
-  InitializeCompoundWeights();
   auto effort = [&]() {
     return num_scores_computed_ + num_weight_updates_ + num_general_moves_;
   };
@@ -862,7 +865,8 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
               // Vars will be added in MarkJumpsThatNeedToBeRecomputed.
             }
           } else if (!evaluator_->IsViolated(c) &&
-                     !in_compound_weight_changed_[c]) {
+                     !in_compound_weight_changed_[c] &&
+                     compound_weights_[c] == weights_[c]) {
             in_compound_weight_changed_[c] = true;
             compound_weight_changed_.push_back(c);
           }
@@ -914,7 +918,7 @@ void FeasibilityJumpSolver::ResetChangedCompoundWeights() {
   DCHECK_EQ(move_->Size(), 0);
   for (const int c : compound_weight_changed_) {
     in_compound_weight_changed_[c] = false;
-    double expected_weight =
+    const double expected_weight =
         (evaluator_->IsViolated(c) ? 1.0 : kCompoundDiscount) * weights_[c];
     if (compound_weights_[c] == expected_weight) continue;
     compound_weights_[c] = expected_weight;
@@ -1047,13 +1051,6 @@ void FeasibilityJumpSolver::RecomputeVarsToScan(JumpTable& jumps) {
     for (const int v : evaluator_->ConstraintToVars(c)) {
       AddVarToScan(jumps, v);
     }
-  }
-}
-
-void FeasibilityJumpSolver::InitializeCompoundWeights() {
-  if (!use_compound_moves_) return;
-  for (const int c : evaluator_->ViolatedConstraints()) {
-    compound_weights_[c] = weights_[c];
   }
 }
 

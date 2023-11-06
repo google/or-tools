@@ -424,8 +424,8 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   Initialize();
 
   const int64_t size = Size();
-  index_to_pickup_index_pairs_.resize(size);
-  index_to_delivery_index_pairs_.resize(size);
+  index_to_pickup_positions_.resize(size);
+  index_to_delivery_positions_.resize(size);
   index_to_visit_type_.resize(index_manager.num_indices(), kUnassigned);
   index_to_type_policy_.resize(index_manager.num_indices());
 
@@ -1319,17 +1319,16 @@ void RoutingModel::FinalizeVisitTypes() {
     if (visit_type < 0) {
       continue;
     }
-    const std::vector<std::pair<int, int>>& pickup_index_pairs =
-        index_to_pickup_index_pairs_[index];
-    const std::vector<std::pair<int, int>>& delivery_index_pairs =
-        index_to_delivery_index_pairs_[index];
-    if (pickup_index_pairs.empty() && delivery_index_pairs.empty()) {
+    const std::vector<PickupDeliveryPosition>& pickup_positions =
+        index_to_pickup_positions_[index];
+    const std::vector<PickupDeliveryPosition>& delivery_positions =
+        index_to_delivery_positions_[index];
+    if (pickup_positions.empty() && delivery_positions.empty()) {
       single_nodes_of_type_[visit_type].push_back(index);
     }
-    for (const std::vector<std::pair<int, int>>* index_pairs :
-         {&pickup_index_pairs, &delivery_index_pairs}) {
-      for (const std::pair<int, int>& index_pair : *index_pairs) {
-        const int pair_index = index_pair.first;
+    for (const std::vector<RoutingModel::PickupDeliveryPosition>* positions :
+         {&pickup_positions, &delivery_positions}) {
+      for (const auto& [pair_index, unused] : *positions) {
         if (pair_indices_added_for_type[visit_type].insert(pair_index).second) {
           pair_indices_of_type_[visit_type].push_back(pair_index);
         }
@@ -1574,28 +1573,28 @@ void RoutingModel::AddPickupAndDeliverySetsInternal(
   for (int pickup_index = 0; pickup_index < pickups.size(); pickup_index++) {
     const int64_t pickup = pickups[pickup_index];
     CHECK_LT(pickup, size);
-    index_to_pickup_index_pairs_[pickup].emplace_back(pair_index, pickup_index);
+    index_to_pickup_positions_[pickup].push_back({pair_index, pickup_index});
   }
   for (int delivery_index = 0; delivery_index < deliveries.size();
        delivery_index++) {
     const int64_t delivery = deliveries[delivery_index];
     CHECK_LT(delivery, size);
-    index_to_delivery_index_pairs_[delivery].emplace_back(pair_index,
-                                                          delivery_index);
+    index_to_delivery_positions_[delivery].push_back(
+        {pair_index, delivery_index});
   }
   pickup_delivery_pairs_.push_back({pickups, deliveries});
 }
 
-const std::vector<std::pair<int, int>>& RoutingModel::GetPickupIndexPairs(
-    int64_t node_index) const {
-  CHECK_LT(node_index, index_to_pickup_index_pairs_.size());
-  return index_to_pickup_index_pairs_[node_index];
+const std::vector<RoutingModel::PickupDeliveryPosition>&
+RoutingModel::GetPickupPositions(int64_t node_index) const {
+  CHECK_LT(node_index, index_to_pickup_positions_.size());
+  return index_to_pickup_positions_[node_index];
 }
 
-const std::vector<std::pair<int, int>>& RoutingModel::GetDeliveryIndexPairs(
-    int64_t node_index) const {
-  CHECK_LT(node_index, index_to_delivery_index_pairs_.size());
-  return index_to_delivery_index_pairs_[node_index];
+const std::vector<RoutingModel::PickupDeliveryPosition>&
+RoutingModel::GetDeliveryPositions(int64_t node_index) const {
+  CHECK_LT(node_index, index_to_delivery_positions_.size());
+  return index_to_delivery_positions_[node_index];
 }
 
 void RoutingModel::SetPickupAndDeliveryPolicyOfVehicle(
@@ -1622,8 +1621,7 @@ int RoutingModel::GetNumOfSingletonNodes() const {
   int count = 0;
   for (int i = 0; i < Nexts().size(); ++i) {
     // End nodes have no next variables.
-    if (!IsStart(i) && GetPickupIndexPairs(i).empty() &&
-        GetDeliveryIndexPairs(i).empty()) {
+    if (!IsStart(i) && !IsPickup(i) && !IsDelivery(i)) {
       ++count;
     }
   }
@@ -1901,8 +1899,7 @@ class RoutingModelInspector : public ModelVisitor {
 void RoutingModel::DetectImplicitPickupAndDeliveries() {
   std::vector<int> non_pickup_delivery_nodes;
   for (int node = 0; node < Size(); ++node) {
-    if (!IsStart(node) && GetPickupIndexPairs(node).empty() &&
-        GetDeliveryIndexPairs(node).empty()) {
+    if (!IsStart(node) && !IsPickup(node) && !IsDelivery(node)) {
       non_pickup_delivery_nodes.push_back(node);
     }
   }
@@ -1939,8 +1936,8 @@ void RoutingModel::DetectImplicitPickupAndDeliveries() {
   }
   implicit_pickup_delivery_pairs_without_alternatives_.clear();
   for (auto [pickup, delivery] : implicit_pickup_deliveries) {
-    implicit_pickup_delivery_pairs_without_alternatives_.emplace_back(
-        std::vector<int64_t>({pickup}), std::vector<int64_t>({delivery}));
+    implicit_pickup_delivery_pairs_without_alternatives_.push_back(
+        {{pickup}, {delivery}});
   }
 }
 
@@ -2316,10 +2313,10 @@ void RoutingModel::CloseModelWithParameters(
 
   // Pickup-delivery precedences
   std::vector<std::pair<int, int>> pickup_delivery_precedences;
-  for (const auto& pair : pickup_delivery_pairs_) {
-    DCHECK(!pair.first.empty() && !pair.second.empty());
-    for (int pickup : pair.first) {
-      for (int delivery : pair.second) {
+  for (const auto& [pickups, deliveries] : pickup_delivery_pairs_) {
+    DCHECK(!pickups.empty() && !deliveries.empty());
+    for (int pickup : pickups) {
+      for (int delivery : deliveries) {
         pickup_delivery_precedences.emplace_back(pickup, delivery);
       }
     }
@@ -2544,13 +2541,6 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
                                             solutions);
 }
 
-namespace {
-bool PerformSecondaryLS(const RoutingSearchParameters& parameters) {
-  return GetTimeLimit(parameters) != absl::InfiniteDuration() &&
-         parameters.secondary_ls_time_limit_ratio() > 0;
-}
-}  // namespace
-
 const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     const std::vector<const Assignment*>& assignments,
     const RoutingSearchParameters& parameters,
@@ -2569,31 +2559,35 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     return nullptr;
   }
 
-  const auto update_time_limits = [this, start_time_ms,
-                                   &parameters](bool secondary_ls = false) {
-    if (secondary_ls && !PerformSecondaryLS(parameters)) return false;
-    const absl::Duration elapsed_time =
-        absl::Milliseconds(solver_->wall_time() - start_time_ms);
-    const absl::Duration time_left = GetTimeLimit(parameters) - elapsed_time;
+  const bool perform_secondary_ls =
+      GetTimeLimit(parameters) != absl::InfiniteDuration() &&
+      parameters.secondary_ls_time_limit_ratio() > 0;
+  const auto update_time_limits =
+      [this, start_time_ms, perform_secondary_ls,
+       &parameters](bool leave_secondary_solve_buffer = true) {
+        const absl::Duration elapsed_time =
+            absl::Milliseconds(solver_->wall_time() - start_time_ms);
+        const absl::Duration time_left =
+            GetTimeLimit(parameters) - elapsed_time;
 
-    if (time_left < absl::ZeroDuration()) return false;
+        if (time_left < absl::ZeroDuration()) return false;
 
-    const absl::Duration secondary_solve_buffer =
-        secondary_ls || !PerformSecondaryLS(parameters)
-            ? absl::ZeroDuration()
-            : parameters.secondary_ls_time_limit_ratio() * time_left;
-    const absl::Duration time_limit = time_left - secondary_solve_buffer;
-    limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                         std::numeric_limits<int64_t>::max(),
-                         parameters.solution_limit());
-    DCHECK_NE(ls_limit_, nullptr);
-    ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                            std::numeric_limits<int64_t>::max(), 1);
-    // TODO(user): Come up with a better formula. Ideally this should be
-    // calibrated in the first solution strategies.
-    time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
-    return true;
-  };
+        const absl::Duration secondary_solve_buffer =
+            !leave_secondary_solve_buffer || !perform_secondary_ls
+                ? absl::ZeroDuration()
+                : parameters.secondary_ls_time_limit_ratio() * time_left;
+        const absl::Duration time_limit = time_left - secondary_solve_buffer;
+        limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                             std::numeric_limits<int64_t>::max(),
+                             parameters.solution_limit());
+        DCHECK_NE(ls_limit_, nullptr);
+        ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                                std::numeric_limits<int64_t>::max(), 1);
+        // TODO(user): Come up with a better formula. Ideally this should be
+        // calibrated in the first solution strategies.
+        time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
+        return true;
+      };
   if (!update_time_limits()) {
     status_ = ROUTING_FAIL_TIMEOUT;
     return nullptr;
@@ -2623,9 +2617,10 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
   local_optimum_reached_ = false;
   objective_lower_bound_ = kint64min;
   if (parameters.use_cp() == BOOL_TRUE) {
-    const auto run_secondary_ls = [this, &update_time_limits]() {
-      if (collect_assignments_->has_solution() &&
-          update_time_limits(/*secondary_ls=*/true)) {
+    const auto run_secondary_ls = [this, perform_secondary_ls,
+                                   &update_time_limits]() {
+      if (collect_assignments_->has_solution() && perform_secondary_ls &&
+          update_time_limits(/*leave_secondary_solve_buffer=*/false)) {
         assignment_->CopyIntersection(
             collect_assignments_->last_solution_or_null());
         solver_->Solve(secondary_ls_db_, secondary_ls_monitors_);
@@ -2633,22 +2628,27 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     };
     if (first_solution_assignments.empty()) {
       bool solution_found = false;
-      Assignment matching(solver_.get());
-      if (IsMatchingModel() && SolveMatchingModel(&matching, parameters) &&
-          AppendAssignmentIfFeasible(matching, &solution_pool)) {
-        if (parameters.log_search()) {
-          LogSolution(parameters, "Min-Cost Flow Solution",
-                      solution_pool.back()->ObjectiveValue(), start_time_ms);
+      if (IsMatchingModel()) {
+        Assignment matching(solver_.get());
+        // TODO(user): Pass time limits to the flow.
+        if (SolveMatchingModel(&matching, parameters) &&
+            update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+            AppendAssignmentIfFeasible(matching, &solution_pool)) {
+          if (parameters.log_search()) {
+            LogSolution(parameters, "Min-Cost Flow Solution",
+                        solution_pool.back()->ObjectiveValue(), start_time_ms);
+          }
+          solution_found = true;
+          local_optimum_reached_ = true;
         }
-        solution_found = true;
-        local_optimum_reached_ = true;
       }
       if (!solution_found) {
         // Build trivial solutions to which we can come back too in case the
         // solver does not manage to build something better.
         Assignment unperformed(solver_.get());
         MakeAllUnperformedInAssignment(this, &unperformed);
-        if (AppendAssignmentIfFeasible(unperformed, &solution_pool, false) &&
+        if (update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+            AppendAssignmentIfFeasible(unperformed, &solution_pool, false) &&
             parameters.log_search()) {
           LogSolution(parameters, "All Unperformed Solution",
                       solution_pool.back()->ObjectiveValue(), start_time_ms);
@@ -2677,14 +2677,16 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
           ? collect_secondary_ls_assignments_
           : collect_assignments_;
 
-  if (parameters.use_cp_sat() == BOOL_TRUE ||
-      parameters.use_generalized_cp_sat() == BOOL_TRUE ||
-      (parameters.fallback_to_cp_sat_size_threshold() >= Size() &&
-       !solution_collector->has_solution() && solution_pool.empty())) {
+  if (update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+      (parameters.use_cp_sat() == BOOL_TRUE ||
+       parameters.use_generalized_cp_sat() == BOOL_TRUE ||
+       (parameters.fallback_to_cp_sat_size_threshold() >= Size() &&
+        !solution_collector->has_solution() && solution_pool.empty()))) {
     VLOG(1) << "Solving with CP-SAT";
     Assignment* const cp_solution = solution_collector->last_solution_or_null();
     Assignment sat_solution(solver_.get());
     if (SolveModelWithSat(this, parameters, cp_solution, &sat_solution) &&
+        update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
         AppendAssignmentIfFeasible(sat_solution, &solution_pool)) {
       if (parameters.log_search()) {
         LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
@@ -6466,9 +6468,9 @@ bool RoutingDimension::HasPickupToDeliveryLimits() const {
   return !pickup_to_delivery_limits_per_pair_index_.empty();
 }
 
-int64_t RoutingDimension::GetPickupToDeliveryLimitForPair(int pair_index,
-                                                          int pickup,
-                                                          int delivery) const {
+int64_t RoutingDimension::GetPickupToDeliveryLimitForPair(
+    int pair_index, int pickup_alternative_index,
+    int delivery_alternative_index) const {
   DCHECK_GE(pair_index, 0);
 
   if (pair_index >= pickup_to_delivery_limits_per_pair_index_.size()) {
@@ -6480,9 +6482,10 @@ int64_t RoutingDimension::GetPickupToDeliveryLimitForPair(int pair_index,
     // No limit function set for this pair.
     return std::numeric_limits<int64_t>::max();
   }
-  DCHECK_GE(pickup, 0);
-  DCHECK_GE(delivery, 0);
-  return pickup_to_delivery_limit_function(pickup, delivery);
+  DCHECK_GE(pickup_alternative_index, 0);
+  DCHECK_GE(delivery_alternative_index, 0);
+  return pickup_to_delivery_limit_function(pickup_alternative_index,
+                                           delivery_alternative_index);
 }
 
 void RoutingDimension::SetupSlackAndDependentTransitCosts() const {

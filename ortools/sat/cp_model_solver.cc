@@ -162,6 +162,9 @@ ABSL_FLAG(bool, drat_check, false,
           "checked if the problem is UNSAT. This will only be used for "
           "pure-SAT problems.");
 
+ABSL_FLAG(bool, debug_model_copy, false,
+          "If true, copy the input model as if with no basic presolve");
+
 ABSL_FLAG(double, max_drat_time_in_seconds,
           std::numeric_limits<double>::infinity(),
           "Maximum time in seconds to check the DRAT proof. This will only "
@@ -1510,7 +1513,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
       VLOG(2) << "UNSAT during extraction (after adding '"
               << ConstraintCaseName(ct.constraint_case()) << "'). "
               << ProtobufDebugString(ct);
-      break;
+      return unsat();
     }
   }
   if (num_ignored_constraints > 0) {
@@ -2806,6 +2809,15 @@ class ObjectiveShavingSolver : public SubSolver {
         return false;
       }
     }
+
+    // Tricky: If we aborted during the presolve above, some constraints might
+    // be in a non-canonical form (like having duplicates, etc...) and it seem
+    // not all our propagator code deal with that properly. So it is important
+    // to abort right away here.
+    //
+    // We had a bug when the LoadCpModel() below was returning infeasible on
+    // such non fully-presolved model.
+    if (local_repo_->GetOrCreate<TimeLimit>()->LimitReached()) return false;
 
     LoadCpModel(local_proto_, local_repo_.get());
     return true;
@@ -4105,7 +4117,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 
-  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
+  if (absl::GetFlag(FLAGS_debug_model_copy)) {
+    *new_cp_model_proto = model_proto;
+  } else if (!ImportModelWithBasicPresolveIntoContext(model_proto,
+                                                      context.get())) {
     VLOG(1) << "Model found infeasible during copy";
     // TODO(user): At this point, the model is trivial, but we could exit
     // early.
@@ -4263,6 +4278,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   std::vector<int> postsolve_mapping;
   const CpSolverStatus presolve_status =
       PresolveCpModel(context.get(), &postsolve_mapping);
+
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     SOLVER_LOG(logger, "Problem closed by presolve.");
     CpSolverResponse status_response;

@@ -66,7 +66,7 @@ public class CumulativeConstraint extends Constraint {
    * Adds all pairs (intervals[i], demands[i]) to the constraint.
    *
    * @param intervals an array of interval variables
-   * @param deamds an array of long values
+   * @param demands an array of long values
    * @return itself
    * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
    */
@@ -85,7 +85,7 @@ public class CumulativeConstraint extends Constraint {
    * Adds all pairs (intervals[i], demands[i]) to the constraint.
    *
    * @param intervals an array of interval variables
-   * @param deamds an array of integer values
+   * @param demands an array of integer values
    * @return itself
    * @throws CpModel.MismatchedArrayLengths if intervals and demands have different length
    */

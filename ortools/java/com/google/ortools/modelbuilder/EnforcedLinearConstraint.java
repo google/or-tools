@@ -14,13 +14,17 @@
 package com.google.ortools.modelbuilder;
 
 /** Wrapper around a linear constraint stored in the ModelBuilderHelper instance. */
-public class LinearConstraint {
-  public LinearConstraint(ModelBuilderHelper helper) {
+public class EnforcedLinearConstraint {
+  public EnforcedLinearConstraint(ModelBuilderHelper helper) {
     this.helper = helper;
-    this.index = helper.addLinearConstraint();
+    this.index = helper.addEnforcedLinearConstraint();
   }
 
-  LinearConstraint(ModelBuilderHelper helper, int index) {
+  EnforcedLinearConstraint(ModelBuilderHelper helper, int index) {
+    if (!helper.isEnforcedConstraint(index)) {
+      throw new IllegalArgumentException(
+          "the given index does not refer to an enforced linear constraint");
+    }
     this.helper = helper;
     this.index = index;
   }
@@ -37,51 +41,71 @@ public class LinearConstraint {
 
   /** Returns the lower bound of the constraint. */
   public double getLowerBound() {
-    return helper.getConstraintLowerBound(index);
+    return helper.getEnforcedConstraintLowerBound(index);
   }
 
-  /** Returns the lower bound of the constraint. */
+  /** Sets the lower bound of the constraint. */
   public void setLowerBound(double lb) {
-    helper.setConstraintLowerBound(index, lb);
+    helper.setEnforcedConstraintLowerBound(index, lb);
   }
 
   /** Returns the upper bound of the constraint. */
   public double getUpperBound() {
-    return helper.getConstraintUpperBound(index);
+    return helper.getEnforcedConstraintUpperBound(index);
   }
 
-  /** Returns the upper bound of the constraint. */
+  /** Sets the upper bound of the constraint. */
   public void setUpperBound(double ub) {
-    helper.setConstraintUpperBound(index, ub);
+    helper.setEnforcedConstraintUpperBound(index, ub);
   }
 
   /** Returns the name of the constraint given upon creation. */
   public String getName() {
-    return helper.getConstraintName(index);
+    return helper.getEnforcedConstraintName(index);
   }
 
-  /** Sets the name of the constraint. */
+  // Sets the name of the constraint. */
   public void setName(String name) {
-    helper.setConstraintName(index, name);
+    helper.setEnforcedConstraintName(index, name);
   }
 
-  /** Adds var * coeff to the constraint. */
+  /** Adds var * coeff to the constraint.*/
   public void addTerm(Variable v, double coeff) {
-    helper.addConstraintTerm(index, v.getIndex(), coeff);
+    helper.safeAddEnforcedConstraintTerm(index, v.getIndex(), coeff);
   }
 
   /** Sets the coefficient of v to coeff, adding or removing a term if needed. */
   public void setCoefficient(Variable v, double coeff) {
-    helper.setConstraintCoefficient(index, v.getIndex(), coeff);
+    helper.setEnforcedConstraintCoefficient(index, v.getIndex(), coeff);
   }
 
   /** Clear all terms. */
   public void clearTerms() {
-    helper.clearConstraintTerms(index);
+    helper.clearEnforcedConstraintTerms(index);
   }
 
+  /** Returns the indicator variable of the constraint/ */
+  public Variable getIndicatorVariable() {
+    return new Variable(helper, helper.getEnforcedIndicatorVariableIndex(index));
+  }
+
+  /** Sets the indicator variable of the constraint. */
+  public void setIndicatorVariable(Variable v) {
+    helper.setEnforcedIndicatorVariableIndex(index, v.index);
+  }
+
+  /** Returns the indicator value of the constraint. */
+  public boolean getIndicatorValue() {
+    return helper.getEnforcedIndicatorValue(index);
+  }
+
+  /** Sets the indicator value of the constraint. */
+  public void setIndicatorValue(boolean b) {
+    helper.setEnforcedIndicatorValue(index, b);
+  }  
+
   /** Inline setter */
-  public LinearConstraint withName(String name) {
+  public EnforcedLinearConstraint withName(String name) {
     setName(name);
     return this;
   }

@@ -195,11 +195,6 @@ class FeasibilityJumpSolver : public SubSolver {
 
   void RecomputeVarsToScan(JumpTable&);
 
-  // Ensures that all currently violated constraints have compound_weight_[c] ==
-  // weight_[c]. Mostly only necessary for the first batch with new weights or a
-  // new imported solution or if the objective bounds get tightened.
-  void InitializeCompoundWeights();
-
   // Returns true if it is possible that `var` may have value that reduces
   // weighted violation or improve the objective.
   // Note that this is independent of the actual weights used.

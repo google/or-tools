@@ -49,7 +49,8 @@ IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
 /// Returns a filter enforcing pickup and delivery constraints for the given
 /// pair of nodes and given policies.
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
-    const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
+    const RoutingModel& routing_model,
+    const std::vector<PickupDeliveryPair>& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 /// Returns a filter checking that vehicle variable domains are respected.

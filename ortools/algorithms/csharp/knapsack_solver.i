@@ -16,7 +16,7 @@
 %include "enums.swg"
 
 %include "ortools/base/base.i"
-%include "ortools/util/csharp/vector.i"
+%import "ortools/util/csharp/vector.i"
 
 // Include the file we want to wrap a first time.
 %{
@@ -25,6 +25,9 @@
 
 // by default vector<vector<int64_t>> is mapped to a jagged array i.e. .Net type long[][]
 // but here we want a regular matrix i.e. .Net type long[,]
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
 REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
