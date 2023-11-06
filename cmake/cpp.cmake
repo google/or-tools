@@ -582,24 +582,31 @@ endfunction()
 # Parameters:
 #  the C++ filename
 # e.g.:
-# add_cxx_test(foo.cc)
+# add_cxx_test(foo_test.cc)
 function(add_cxx_test FILE_NAME)
   message(STATUS "Configuring test ${FILE_NAME}: ...")
   get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
 
-  if(APPLE)
-    set(CMAKE_INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
-  endif()
-
   add_executable(${TEST_NAME} ${FILE_NAME})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  target_link_libraries(${TEST_NAME} PRIVATE
+    ${PROJECT_NAMESPACE}::ortools
+  )
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+               OUTPUT_VARIABLE libdir_relative_path)
+             set_target_properties(${TEST_NAME} PROPERTIES
+                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
 
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})

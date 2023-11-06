@@ -19,13 +19,14 @@
 #include <vector>
 
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 
 namespace file {
 
 absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
                    const file::Options& options);
+
+absl::Status IsDirectory(std::string_view path, const file::Options& options);
 
 }  // namespace file
 
