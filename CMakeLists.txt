@@ -281,7 +281,7 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 ## XPRESS
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
 CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
-option(BUILD_XPRESS_TEST_AND_EXAMPLES "Build Xpress-specific tests" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_XPRESS_TEST_AND_EXAMPLES "Build Xpress-specific tests" OFF "USE_XPRESS" OFF)
 
 # Language specific options
 if(BUILD_CXX)
