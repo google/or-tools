@@ -47,13 +47,12 @@ static constexpr size_t kMaxFunctionsNotFound = 10;
 
   bool TryToLoad(const std::string& library_name) {
 #if defined(_MSC_VER)
-    library_name_ = std::string(library_name + ".");
-    LOG(WARNING) << "trying to load " << library_name_;
-    library_handle_ = static_cast<void*>(LoadLibraryA(library_name_.c_str()));
+    LOG(WARNING) << "trying to load " << library_name;
+    library_handle_ = static_cast<void*>(LoadLibraryA(library_name.c_str()));
+    LOG(WARNING) << "result = " << (library_handle_ != nullptr);
 #elif defined(__GNUC__)
     library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
 #endif
-    LOG(WARNING) << "result = " << (library_handle_ != nullptr);
     return library_handle_ != nullptr;
   }
 
