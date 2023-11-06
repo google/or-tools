@@ -329,9 +329,6 @@ class PresolveContext {
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
 
-  // Returns another reference with exactly the same value.
-  int GetVariableRepresentative(int ref) const;
-
   // Used for statistics.
   int NumAffineRelations() const { return affine_relations_.NumRelations(); }
 
