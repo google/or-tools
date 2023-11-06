@@ -13,6 +13,8 @@
 
 #include "ortools/base/filesystem.h"
 
+#include <filesystem>  // NOLINT(build/c++17)
+
 #include "absl/status/status.h"
 
 namespace file {
@@ -21,4 +23,15 @@ absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
                    const file::Options& options) {
   return absl::Status();
 }
+
+absl::Status IsDirectory(std::string_view path, const file::Options& options) {
+  (void)options;
+  if (std::filesystem::is_directory(std::filesystem::path(path))) {
+    return absl::OkStatus();
+  } else {
+    return absl::Status(absl::StatusCode::kFailedPrecondition,
+                        absl::StrCat(path, " exists, but is not a directory"));
+  }
+}
+
 }  // namespace file
