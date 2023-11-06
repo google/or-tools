@@ -30,6 +30,12 @@
 namespace operations_research {
 namespace sat {
 
+// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
+// and (x + dx, y + dy) do not overlap.
+void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
+                                 const std::vector<IntervalVariable>& y,
+                                 Model* model);
+
 // Non overlapping rectangles. This includes box with zero-areas.
 // The following is forbidden:
 //   - a point box inside a box with a non zero area
@@ -94,63 +100,6 @@ class NonOverlappingRectanglesDisjunctivePropagator
   NonOverlappingRectanglesDisjunctivePropagator& operator=(
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
 };
-
-// Add a cumulative relaxation. That is, on one dimension, it does not enforce
-// the rectangle aspect, allowing vertical slices to move freely.
-void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
-                                   SchedulingConstraintHelper* y, Model* model);
-
-// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
-// and (x + dx, y + dy) do not overlap.
-inline std::function<void(Model*)> NonOverlappingRectangles(
-    const std::vector<IntervalVariable>& x,
-    const std::vector<IntervalVariable>& y) {
-  return [=](Model* model) {
-    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-    SchedulingConstraintHelper* x_helper = repository->GetOrCreateHelper(x);
-    SchedulingConstraintHelper* y_helper = repository->GetOrCreateHelper(y);
-
-    NonOverlappingRectanglesDisjunctivePropagator* constraint =
-        new NonOverlappingRectanglesDisjunctivePropagator(x_helper, y_helper,
-                                                          model);
-    constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
-    model->TakeOwnership(constraint);
-
-    const SatParameters* params = model->GetOrCreate<SatParameters>();
-    const bool add_cumulative_relaxation =
-        params->use_timetabling_in_no_overlap_2d() ||
-        params->use_energetic_reasoning_in_no_overlap_2d();
-
-    if (add_cumulative_relaxation) {
-      // We must first check if the cumulative relaxation is possible.
-      bool some_boxes_are_only_optional_on_x = false;
-      bool some_boxes_are_only_optional_on_y = false;
-      for (int i = 0; i < x.size(); ++i) {
-        if (x_helper->IsOptional(i) && y_helper->IsOptional(i) &&
-            x_helper->PresenceLiteral(i) != y_helper->PresenceLiteral(i)) {
-          // Abort as the task would be conditioned by two literals.
-          return;
-        }
-        if (x_helper->IsOptional(i) && !y_helper->IsOptional(i)) {
-          // We cannot use x_size as the demand of the cumulative based on
-          // the y_intervals.
-          some_boxes_are_only_optional_on_x = true;
-        }
-        if (y_helper->IsOptional(i) && !x_helper->IsOptional(i)) {
-          // We cannot use y_size as the demand of the cumulative based on
-          // the y_intervals.
-          some_boxes_are_only_optional_on_y = true;
-        }
-      }
-      if (!some_boxes_are_only_optional_on_y) {
-        AddDiffnCumulativeRelationOnX(x_helper, y_helper, model);
-      }
-      if (!some_boxes_are_only_optional_on_x) {
-        AddDiffnCumulativeRelationOnX(y_helper, x_helper, model);
-      }
-    }
-  };
-}
 
 }  // namespace sat
 }  // namespace operations_research

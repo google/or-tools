@@ -7331,6 +7331,15 @@ void CpModelPresolver::ExpandObjective() {
   // further.
   const auto topo_order = util::graph::FastTopologicalSort(index_graph);
   if (!topo_order.ok()) {
+    // Tricky: We need to cache all domains to derive the proper relations.
+    // This is because StoreAffineRelation() might propagate them.
+    std::vector<int64_t> var_min(num_variables);
+    std::vector<int64_t> var_max(num_variables);
+    for (int var = 0; var < num_variables; ++var) {
+      var_min[var] = context_->MinOf(var);
+      var_max[var] = context_->MaxOf(var);
+    }
+
     std::vector<std::vector<int>> components;
     FindStronglyConnectedComponents(static_cast<int>(index_graph.size()),
                                     index_graph, &components);
@@ -7343,13 +7352,13 @@ void CpModelPresolver::ExpandObjective() {
         const int var = compo[i] / 2;
         const bool to_lb = (compo[i] % 2) == 0;
 
-        // (rep - rep_lb)/(rep_ub - rep) == (var - var_lb)/(ub - var_ub)
+        // (rep - rep_lb) | (rep_ub - rep) == (var - var_lb) | (var_ub - var)
         // +/- rep = +/- var + offset.
         const int64_t rep_coeff = rep_to_lp ? 1 : -1;
         const int64_t var_coeff = to_lb ? 1 : -1;
         const int64_t offset =
-            (to_lb ? -context_->MinOf(var) : context_->MaxOf(var)) -
-            (rep_to_lp ? -context_->MinOf(rep_var) : context_->MaxOf(rep_var));
+            (to_lb ? -var_min[var] : var_max[var]) -
+            (rep_to_lp ? -var_min[rep_var] : var_max[rep_var]);
         if (!context_->StoreAffineRelation(rep_var, var, rep_coeff * var_coeff,
                                            rep_coeff * offset)) {
           return;
