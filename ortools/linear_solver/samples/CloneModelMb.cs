@@ -69,7 +69,9 @@ public class SimpleMipProgramMb
         // Create the solver with the CP-SAT backend and checks it is supported.
         Solver solver = new Solver("sat");
         if (!solver.SolverIsSupported())
+        {
             return;
+        }
         // [END solver]
 
         // [START solve]

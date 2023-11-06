@@ -2104,9 +2104,9 @@ class ModelBuilderExamplesTest(absltest.TestCase):
 
     def test_add_enforced(self):
         model = mb.ModelBuilder()
-        x = model.new_int_var(0, 10, 'x')
-        y = model.new_int_var(0, 10, 'y')
-        z = model.new_bool_var('z')
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_bool_var("z")
         ct = model.add_enforced(x + 2 * y >= 10, z, False)
         self.assertEqual(ct.lower_bound, 10.0)
         self.assertEqual(z.index, ct.indicator_variable.index)

@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -262,7 +263,8 @@ void ModelBuilderHelper::SetEnforcedConstraintLowerBound(int ct_index,
   ct_proto->set_lower_bound(lb);
 }
 
-void ModelBuilderHelper::SetEnforcedConstraintUpperBound(int ct_index, double ub) {
+void ModelBuilderHelper::SetEnforcedConstraintUpperBound(int ct_index,
+                                                         double ub) {
   DCHECK(IsEnforcedConstraint(ct_index));
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
   MPConstraintProto* ct_proto =
@@ -279,7 +281,7 @@ void ModelBuilderHelper::ClearEnforcedConstraintTerms(int ct_index) {
 }
 
 void ModelBuilderHelper::AddEnforcedConstraintTerm(int ct_index, int var_index,
-                                           double coeff) {
+                                                   double coeff) {
   DCHECK(IsEnforcedConstraint(ct_index));
   if (coeff == 0.0) return;
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
@@ -289,8 +291,9 @@ void ModelBuilderHelper::AddEnforcedConstraintTerm(int ct_index, int var_index,
   ct_proto->add_coefficient(coeff);
 }
 
-void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index, int var_index,
-                                               double coeff) {
+void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index,
+                                                       int var_index,
+                                                       double coeff) {
   DCHECK(IsEnforcedConstraint(ct_index));
   if (coeff == 0.0) return;
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
@@ -309,12 +312,13 @@ void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index, int var_ind
 }
 
 void ModelBuilderHelper::SetEnforcedConstraintName(int ct_index,
-                                           const std::string& name) {
+                                                   const std::string& name) {
   model_.mutable_general_constraint(ct_index)->set_name(name);
 }
 
-void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index, int var_index,
-                                                  double coeff) {
+void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index,
+                                                          int var_index,
+                                                          double coeff) {
   DCHECK(IsEnforcedConstraint(ct_index));
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
   MPConstraintProto* ct_proto =
@@ -331,13 +335,15 @@ void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index, int var_
   ct_proto->add_coefficient(coeff);
 }
 
-void ModelBuilderHelper::SetEnforcedIndicatorVariableIndex(int ct_index, int var_index) {
+void ModelBuilderHelper::SetEnforcedIndicatorVariableIndex(int ct_index,
+                                                           int var_index) {
   DCHECK(IsEnforcedConstraint(ct_index));
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
   gen->mutable_indicator_constraint()->set_var_index(var_index);
 }
 
-void ModelBuilderHelper::SetEnforcedIndicatorValue(int ct_index, bool positive) {
+void ModelBuilderHelper::SetEnforcedIndicatorValue(int ct_index,
+                                                   bool positive) {
   DCHECK(IsEnforcedConstraint(ct_index));
   MPGeneralConstraintProto* gen = model_.mutable_general_constraint(ct_index);
   gen->mutable_indicator_constraint()->set_var_value(positive);
@@ -387,7 +393,9 @@ int ModelBuilderHelper::EnforcedIndicatorVariableIndex(int ct_index) const {
 
 bool ModelBuilderHelper::EnforcedIndicatorValue(int ct_index) const {
   DCHECK(IsEnforcedConstraint(ct_index));
-  return model_.general_constraint(ct_index).indicator_constraint().var_value() != 0;
+  return model_.general_constraint(ct_index)
+             .indicator_constraint()
+             .var_value() != 0;
 }
 
 int ModelBuilderHelper::num_variables() const { return model_.variable_size(); }
@@ -421,9 +429,7 @@ void ModelBuilderHelper::SetObjectiveOffset(double offset) {
   model_.set_objective_offset(offset);
 }
 
-void ModelBuilderHelper::ClearHints() {
-  model_.clear_solution_hint();
-}
+void ModelBuilderHelper::ClearHints() { model_.clear_solution_hint(); }
 
 void ModelBuilderHelper::AddHint(int var_index, double var_value) {
   model_.mutable_solution_hint()->add_var_index(var_index);

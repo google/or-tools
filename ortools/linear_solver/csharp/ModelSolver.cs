@@ -133,8 +133,7 @@ public class Solver
         get {
             if (!helper_.HasSolution())
             {
-                throw new SolverException("Solver.ObjectiveValue",
-                                               "Solve() was not called or no solution was found");
+                throw new SolverException("Solver.ObjectiveValue", "Solve() was not called or no solution was found");
             }
             return helper_.ObjectiveValue();
         }
@@ -150,7 +149,7 @@ public class Solver
             if (!helper_.HasSolution())
             {
                 throw new SolverException("Solver.BestObjectiveBound",
-                                               "Solve() was not called or no solution was found");
+                                          "Solve() was not called or no solution was found");
             }
             return helper_.BestObjectiveBound();
         }
@@ -176,8 +175,7 @@ public class Solver
     {
         if (!helper_.HasSolution())
         {
-            throw new SolverException("Solver.ReducedCost())",
-                                           "Solve() was not called or no solution was found");
+            throw new SolverException("Solver.ReducedCost())", "Solve() was not called or no solution was found");
         }
         return helper_.ReducedCost(var.Index);
     }
@@ -190,8 +188,7 @@ public class Solver
     {
         if (!helper_.HasSolution())
         {
-            throw new SolverException("Solver.DualValue())",
-                                           "Solve() was not called or no solution was found");
+            throw new SolverException("Solver.DualValue())", "Solve() was not called or no solution was found");
         }
         return helper_.DualValue(ct.Index);
     }
@@ -204,8 +201,7 @@ public class Solver
     {
         if (!helper_.HasSolution())
         {
-            throw new SolverException("Solver.Activity())",
-                                           "Solve() was not called or no solution was found");
+            throw new SolverException("Solver.Activity())", "Solve() was not called or no solution was found");
         }
         return helper_.Activity(ct.Index);
     }

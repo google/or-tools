@@ -163,8 +163,9 @@ public final class ModelBuilder {
 
   // Enforced Linear constraints.
 
-  /** Adds {@code lb <= expr <= ub}. */
-  public EnforcedLinearConstraint addEnforcedLinearConstraint(LinearArgument expr, double lb, double ub, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => b <= expr <= ub}. */
+  public EnforcedLinearConstraint addEnforcedLinearConstraint(
+      LinearArgument expr, double lb, double ub, Variable iVar, boolean iValue) {
     EnforcedLinearConstraint lin = new EnforcedLinearConstraint(helper);
     lin.setIndicatorVariable(iVar);
     lin.setIndicatorValue(iValue);
@@ -186,39 +187,45 @@ public final class ModelBuilder {
     return lin;
   }
 
-  /** Adds {@code expr == value}. */
-  public EnforcedLinearConstraint addEnforcedEquality(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => expr == value}. */
+  public EnforcedLinearConstraint addEnforcedEquality(
+      LinearArgument expr, double value, Variable iVar, boolean iValue) {
     return addEnforcedLinearConstraint(expr, value, value, iVar, iValue);
   }
 
-  /** Adds {@code left == right}. */
-  public EnforcedLinearConstraint addEnforcedEquality(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => left == right}. */
+  public EnforcedLinearConstraint addEnforcedEquality(
+      LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
     return addEnforcedLinearConstraint(difference, 0.0, 0.0, iVar, iValue);
   }
 
-  /** Adds {@code expr <= value}. */
-  public EnforcedLinearConstraint addEnforcedLessOrEqual(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => expr <= value}. */
+  public EnforcedLinearConstraint addEnforcedLessOrEqual(
+      LinearArgument expr, double value, Variable iVar, boolean iValue) {
     return addEnforcedLinearConstraint(expr, Double.NEGATIVE_INFINITY, value, iVar, iValue);
   }
 
-  /** Adds {@code left <= right}. */
-  public EnforcedLinearConstraint addEnforcedLessOrEqual(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => left <= right}. */
+  public EnforcedLinearConstraint addEnforcedLessOrEqual(
+      LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
     return addEnforcedLinearConstraint(difference, Double.NEGATIVE_INFINITY, 0.0, iVar, iValue);
   }
 
-  /** Adds {@code expr >= value}. */
-  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(LinearArgument expr, double value, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => expr >= value}. */
+  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(
+      LinearArgument expr, double value, Variable iVar, boolean iValue) {
     return addEnforcedLinearConstraint(expr, value, Double.POSITIVE_INFINITY, iVar, iValue);
   }
 
-  /** Adds {@code left >= right}. */
-  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
+  /** Adds {@code ivar == iValue => left >= right}. */
+  public EnforcedLinearConstraint addEnforcedGreaterOrEqual(
+      LinearArgument left, LinearArgument right, Variable iVar, boolean iValue) {
     LinearExprBuilder difference = LinearExpr.newBuilder();
     difference.addTerm(left, 1);
     difference.addTerm(right, -1);
@@ -272,7 +279,10 @@ public final class ModelBuilder {
     helper.clearHints();
   }
 
-  /** Adds var == value as a hint to the model.  Note that variables must not appear more than once in the list of hints. */
+  /**
+   * Adds var == value as a hint to the model. Note that variables must not appear more than once in
+   * the list of hints.
+   */
   void addHint(Variable v, double value) {
     helper.addHint(v.getIndex(), value);
   }

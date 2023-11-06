@@ -69,7 +69,7 @@ public class EnforcedLinearConstraint {
     helper.setEnforcedConstraintName(index, name);
   }
 
-  /** Adds var * coeff to the constraint.*/
+  /** Adds var * coeff to the constraint. */
   public void addTerm(Variable v, double coeff) {
     helper.safeAddEnforcedConstraintTerm(index, v.getIndex(), coeff);
   }
@@ -102,7 +102,7 @@ public class EnforcedLinearConstraint {
   /** Sets the indicator value of the constraint. */
   public void setIndicatorValue(boolean b) {
     helper.setEnforcedIndicatorValue(index, b);
-  }  
+  }
 
   /** Inline setter */
   public EnforcedLinearConstraint withName(String name) {
