@@ -163,7 +163,7 @@ public final class ModelBuilder {
 
   // Enforced Linear constraints.
 
-  /** Adds {@code ivar == iValue => b <= expr <= ub}. */
+  /** Adds {@code ivar == iValue => lb <= expr <= ub}. */
   public EnforcedLinearConstraint addEnforcedLinearConstraint(
       LinearArgument expr, double lb, double ub, Variable iVar, boolean iValue) {
     EnforcedLinearConstraint lin = new EnforcedLinearConstraint(helper);

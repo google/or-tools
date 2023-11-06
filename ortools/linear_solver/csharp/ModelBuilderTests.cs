@@ -33,6 +33,10 @@ public class ModelBuilderTest
         model.Maximize(v3);
 
         Solver solver = new Solver("scip");
+        if (!solver.SolverIsSupported())
+        {
+            return;
+        }
         SolveStatus status = solver.Solve(model);
         Assert.Equal(SolveStatus.OPTIMAL, status);
 

@@ -244,7 +244,8 @@ std::vector<double> ModelBuilderHelper::ConstraintCoefficients(
 
 int ModelBuilderHelper::AddEnforcedLinearConstraint() {
   const int index = model_.general_constraint_size();
-  model_.add_general_constraint();
+  // Create the new general constraint, and force the type to indicator ct.
+  model_.add_general_constraint()->mutable_indicator_constraint();
   return index;
 }
 

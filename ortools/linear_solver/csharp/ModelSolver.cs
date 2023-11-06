@@ -125,7 +125,7 @@ public class Solver
     }
 
     /// <summary>
-    /// The best objective value found during search. This raises a SolverException is no solution has been found,
+    /// The best objective value found during search. This raises a SolverException if no solution has been found,
     /// or if Solve() has not been called.
     /// </summary>
     public double ObjectiveValue
@@ -140,7 +140,7 @@ public class Solver
     }
 
     /// <summary>
-    /// The best objective bound found during search. This raises a SolverException is no solution has been found,
+    /// The best objective bound found during search. This raises a SolverException if no solution has been found,
     /// or if Solve() has not been called.
     /// </summary>
     public double BestObjectiveBound
@@ -156,7 +156,7 @@ public class Solver
     }
 
     /// <summary>
-    /// The value of a variable in the current solution. This raises a SolverException is no solution has been
+    /// The value of a variable in the current solution. This raises a SolverException if no solution has been
     /// found, or if Solve() has not been called.
     /// </summary>
     public double Value(Variable var)
@@ -168,7 +168,7 @@ public class Solver
         return helper_.VariableValue(var.Index);
     }
     /// <summary>
-    /// The reduced cost of a variable in the current solution. This raises a SolverException is no solution has
+    /// The reduced cost of a variable in the current solution. This raises a SolverException if no solution has
     /// been found, or if Solve() has not been called.
     /// </summary>
     public double ReducedCost(Variable var)
@@ -181,7 +181,7 @@ public class Solver
     }
 
     /// <summary>
-    /// The dual value of a linear constraint in the current solution. This raises a SolverException is no solution
+    /// The dual value of a linear constraint in the current solution. This raises a SolverException if no solution
     /// has been found, or if Solve() has not been called.
     /// </summary>
     public double DualValue(LinearConstraint ct)
@@ -194,7 +194,7 @@ public class Solver
     }
 
     /// <summary>
-    /// The activity of a constraint in the current solution. This raises a SolverException is no solution has been
+    /// The activity of a constraint in the current solution. This raises a SolverException if no solution has been
     /// found, or if Solve() has not been called.
     /// </summary>
     public double Activity(LinearConstraint ct)

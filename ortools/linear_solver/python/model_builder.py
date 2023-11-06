@@ -16,21 +16,22 @@
 The following two sections describe the main
 methods for building and solving those models.
 
-* [`ModelBuilder`](#model_builder.ModelBuilder): Methods for creating
+* [`Model`](#model_builder.Model): Methods for creating
 models, including variables and constraints.
-* [`ModelSolver`](#model_builder.ModelSolver): Methods for solving
+* [`Solver`](#model_builder.Solver): Methods for solving
 a model and evaluating solutions.
 
-Additional methods for solving ModelBuilder models:
+Additional methods for solving Model models:
 
 * [`Constraint`](#model_builder.Constraint): A few utility methods for modifying
-  constraints created by `ModelBuilder`.
+  constraints created by `Model`.
 * [`LinearExpr`](#model_builder.LinearExpr): Methods for creating constraints
   and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
+
 import abc
 import dataclasses
 import math
@@ -67,7 +68,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
     A linear expression is built from constants and variables.
     For example, `x + 2.0 * (y - z + 1.0)`.
 
-    Linear expressions are used in ModelBuilder models in constraints and in the
+    Linear expressions are used in Model models in constraints and in the
     objective:
 
     * You can define linear constraints as in:
@@ -77,7 +78,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
     model.add(sum(array_of_vars) == 5.0)
     ```
 
-    * In ModelBuilder, the objective is a linear expression:
+    * In Model, the objective is a linear expression:
 
     ```
     model.minimize(x + 2.0 * y + z)
@@ -252,11 +253,11 @@ class Variable(LinearExpr):
         is_integral: Optional[bool],
         name: Optional[str],
     ):
-        """See ModelBuilder.new_var below."""
+        """See Model.new_var below."""
         LinearExpr.__init__(self)
         self.__helper: mbh.ModelBuilderHelper = helper
         # Python do not support multiple __init__ methods.
-        # This method is only called from the ModelBuilder class.
+        # This method is only called from the Model class.
         # We hack the parameter to support the two cases:
         # case 1:
         #     helper is a ModelBuilderHelper, lb is a double value, ub is a double
@@ -451,9 +452,9 @@ def _add_linear_constraint_to_helper(
 
 def _add_enforced_linear_constraint_to_helper(
     bounded_expr: Union[bool, _BoundedLinearExpr],
+    helper: mbh.ModelBuilderHelper,
     var: Variable,
     value: bool,
-    helper: mbh.ModelBuilderHelper,
     name: Optional[str],
 ):
     """Creates a new enforced linear constraint in the helper.
@@ -551,8 +552,8 @@ class VarEqVar(_BoundedLinearExpr):
 class BoundedLinearExpression(_BoundedLinearExpr):
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
-    The only use of this class is to be added to the ModelBuilder through
-    `ModelBuilder.add(bounded expression)`, as in:
+    The only use of this class is to be added to the Model through
+    `Model.add(bounded expression)`, as in:
 
         model.Add(x + 2 * y -1 >= z)
     """
@@ -865,7 +866,7 @@ class EnforcedLinearConstraint:
         self.__helper.clear_enforced_constraint_terms(self.__index)
 
 
-class ModelBuilder:
+class Model:
     """Methods for building a linear model.
 
     Methods beginning with:
@@ -877,9 +878,9 @@ class ModelBuilder:
     def __init__(self):
         self.__helper: mbh.ModelBuilderHelper = mbh.ModelBuilderHelper()
 
-    def clone(self) -> "ModelBuilder":
+    def clone(self) -> "Model":
         """Returns a clone of the current model."""
-        clone = ModelBuilder()
+        clone = Model()
         clone.helper.overwrite_model(self.helper)
         return clone
 
@@ -1306,7 +1307,7 @@ class ModelBuilder:
             )
         else:
             raise TypeError(
-                f"Not supported: ModelBuilder.add_linear_constraint({linear_expr})"
+                f"Not supported: Model.add_linear_constraint({linear_expr})"
                 f" with type {type(linear_expr)}"
             )
         return ct
@@ -1348,7 +1349,7 @@ class ModelBuilder:
                 ],
             )
         else:
-            raise TypeError("Not supported: ModelBuilder.add(" + str(ct) + ")")
+            raise TypeError("Not supported: Model.add(" + str(ct) + ")")
 
     def linear_constraint_from_index(self, index: IntegerT) -> LinearConstraint:
         """Rebuilds a linear constraint object from the model and its index."""
@@ -1389,7 +1390,7 @@ class ModelBuilder:
         else:
             raise TypeError(
                 "Not supported:"
-                f" ModelBuilder.add_enforced_linear_constraint({linear_expr}) with"
+                f" Model.add_enforced_linear_constraint({linear_expr}) with"
                 f" type {type(linear_expr)}"
             )
         return ct
@@ -1397,7 +1398,7 @@ class ModelBuilder:
     def add_enforced(
         self,
         ct: Union[ConstraintT, pd.Series],
-        var: Union["Variable", pd.Series],
+        var: Union[Variable, pd.Series],
         value: Union[bool, pd.Series],
         name: Optional[str] = None,
     ) -> Union[EnforcedLinearConstraint, pd.Series]:
@@ -1431,10 +1432,8 @@ class ModelBuilder:
             and isinstance(var, Variable)
             and isinstance(value, bool)
         ):
-            typed_var: Variable = var
-            typed_value: bool = value
             return _add_enforced_linear_constraint_to_helper(
-                ct, self.__helper, typed_var, typed_value, name
+                ct, self.__helper, var, value, name
             )
         elif isinstance(ct, pd.Series):
             ivar_series = _convert_to_var_series_and_validate_index(var, ct.index)
@@ -1453,7 +1452,7 @@ class ModelBuilder:
                 ],
             )
         else:
-            raise TypeError("Not supported: ModelBuilder.add_enforced(" + str(ct) + ")")
+            raise TypeError("Not supported: Model.add_enforced(" + str(ct) + ")")
 
     def enforced_linear_constraint_from_index(
         self, index: IntegerT
@@ -1486,9 +1485,7 @@ class ModelBuilder:
                 flat_expr._variable_indices, flat_expr._coefficients
             )
         else:
-            raise TypeError(
-                f"Not supported: ModelBuilder.minimize/maximize({linear_expr})"
-            )
+            raise TypeError(f"Not supported: Model.minimize/maximize({linear_expr})")
 
     @property
     def objective_offset(self) -> np.double:
@@ -1515,10 +1512,10 @@ class ModelBuilder:
         """Clear all solution hints."""
         self.__helper.clear_hints()
 
-    def add_hint(self, var: Variable, value: NumberT):
+    def add_hint(self, var: Variable, value: NumberT) -> None:
         """Add var == value as a hint to the model.
 
-        args:
+        Args:
           var: The variable of the hint
           value: The value of the hint
 
@@ -1580,7 +1577,7 @@ class ModelBuilder:
         return self.__helper
 
 
-class ModelSolver:
+class Solver:
     """Main solver class.
 
     The purpose of this class is to search for a solution to the model provided
@@ -1612,7 +1609,7 @@ class ModelSolver:
         """Controls the solver backend logs."""
         self.__solve_helper.enable_output(enabled)
 
-    def solve(self, model: ModelBuilder) -> SolveStatus:
+    def solve(self, model: Model) -> SolveStatus:
         """Solves a problem and passes each solution to the callback if not null."""
         if self.log_callback is not None:
             self.__solve_helper.set_log_callback(self.log_callback)
@@ -1997,3 +1994,8 @@ def _convert_to_var_series_and_validate_index(
     else:
         raise TypeError("invalid type={}".format(type(var_or_series)))
     return result
+
+
+# Compatibility.
+ModelBuilder = Model
+ModelSolver = Solver
