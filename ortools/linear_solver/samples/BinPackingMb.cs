@@ -87,7 +87,9 @@ public class BinPackingMb
         // Create the solver with the SCIP backend and check it is supported.
         Solver solver = new Solver("SCIP");
         if (!solver.SolverIsSupported())
+        {
             return;
+        }
         // [END solver]
 
         // [START solve]

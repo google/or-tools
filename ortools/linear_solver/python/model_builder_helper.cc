@@ -335,16 +335,19 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("ct_index"))
       .def("constraint_coefficients",
            &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
-      .def("add_enforced_linear_constraint", &ModelBuilderHelper::AddEnforcedLinearConstraint)
-      .def("is_enforced_linear_constraint", &ModelBuilderHelper::IsEnforcedConstraint)
+      .def("add_enforced_linear_constraint",
+           &ModelBuilderHelper::AddEnforcedLinearConstraint)
+      .def("is_enforced_linear_constraint",
+           &ModelBuilderHelper::IsEnforcedConstraint)
       .def("set_enforced_constraint_lower_bound",
-           &ModelBuilderHelper::SetEnforcedConstraintLowerBound, arg("ct_index"),
-           arg("lb"))
+           &ModelBuilderHelper::SetEnforcedConstraintLowerBound,
+           arg("ct_index"), arg("lb"))
       .def("set_enforced_constraint_upper_bound",
-           &ModelBuilderHelper::SetEnforcedConstraintUpperBound, arg("ct_index"),
-           arg("ub"))
-      .def("add_term_to_enforced_constraint", &ModelBuilderHelper::AddEnforcedConstraintTerm,
-           arg("ct_index"), arg("var_index"), arg("coeff"))
+           &ModelBuilderHelper::SetEnforcedConstraintUpperBound,
+           arg("ct_index"), arg("ub"))
+      .def("add_term_to_enforced_constraint",
+           &ModelBuilderHelper::AddEnforcedConstraintTerm, arg("ct_index"),
+           arg("var_index"), arg("coeff"))
       .def("add_terms_to_enforced_constraint",
            [](ModelBuilderHelper* helper, int ct_index,
               const std::vector<int>& indices,
@@ -357,25 +360,28 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("safe_add_term_to_enforced_constraint",
            &ModelBuilderHelper::SafeAddEnforcedConstraintTerm, arg("ct_index"),
            arg("var_index"), arg("coeff"))
-      .def("set_enforced_constraint_name", &ModelBuilderHelper::SetEnforcedConstraintName,
-           arg("ct_index"), arg("name"))
+      .def("set_enforced_constraint_name",
+           &ModelBuilderHelper::SetEnforcedConstraintName, arg("ct_index"),
+           arg("name"))
       .def("set_enforced_constraint_coefficient",
-           &ModelBuilderHelper::SetEnforcedConstraintCoefficient, arg("ct_index"),
-           arg("var_index"), arg("coeff"))
-      .def("enforced_constraint_lower_bound", &ModelBuilderHelper::EnforcedConstraintLowerBound,
-           arg("ct_index"))
-      .def("enforced_constraint_upper_bound", &ModelBuilderHelper::EnforcedConstraintUpperBound,
-           arg("ct_index"))
-      .def("enforced_constraint_name", &ModelBuilderHelper::EnforcedConstraintName,
-           arg("ct_index"))
-      .def("enforced_constraint_var_indices", &ModelBuilderHelper::EnforcedConstraintVarIndices,
-           arg("ct_index"))
+           &ModelBuilderHelper::SetEnforcedConstraintCoefficient,
+           arg("ct_index"), arg("var_index"), arg("coeff"))
+      .def("enforced_constraint_lower_bound",
+           &ModelBuilderHelper::EnforcedConstraintLowerBound, arg("ct_index"))
+      .def("enforced_constraint_upper_bound",
+           &ModelBuilderHelper::EnforcedConstraintUpperBound, arg("ct_index"))
+      .def("enforced_constraint_name",
+           &ModelBuilderHelper::EnforcedConstraintName, arg("ct_index"))
+      .def("enforced_constraint_var_indices",
+           &ModelBuilderHelper::EnforcedConstraintVarIndices, arg("ct_index"))
       .def("enforced_constraint_coefficients",
            &ModelBuilderHelper::EnforcedConstraintCoefficients, arg("ct_index"))
       .def("set_enforced_constraint_indicator_variable_index",
-           &ModelBuilderHelper::SetEnforcedIndicatorVariableIndex, arg("ct_index"), arg("var_index"))
+           &ModelBuilderHelper::SetEnforcedIndicatorVariableIndex,
+           arg("ct_index"), arg("var_index"))
       .def("set_enforced_constraint_indicator_value",
-           &ModelBuilderHelper::SetEnforcedIndicatorValue, arg("ct_index"), arg("positive"))
+           &ModelBuilderHelper::SetEnforcedIndicatorValue, arg("ct_index"),
+           arg("positive"))
       .def("enforced_constraint_indicator_variable_index",
            &ModelBuilderHelper::EnforcedIndicatorVariableIndex, arg("ct_index"))
       .def("enforced_constraint_indicator_value",
@@ -391,7 +397,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
       .def("clear_hints", &ModelBuilderHelper::ClearHints)
-      .def("add_hint", &ModelBuilderHelper::AddHint, arg("var_index"), arg("var_value"))
+      .def("add_hint", &ModelBuilderHelper::AddHint, arg("var_index"),
+           arg("var_value"))
       .def("sort_and_regroup_terms",
            [](ModelBuilderHelper* helper, py::array_t<int> indices,
               py::array_t<double> coefficients) {

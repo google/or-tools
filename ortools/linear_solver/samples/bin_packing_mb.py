@@ -68,7 +68,7 @@ def main():
 
     # [START model]
     # Create the model.
-    model = model_builder.ModelBuilder()
+    model = model_builder.Model()
     # [END model]
 
     # [START program_part2]
@@ -106,7 +106,9 @@ def main():
 
     # [START solve]
     # Create the solver with the CP-SAT backend, and solve the model.
-    solver = model_builder.ModelSolver("sat")
+    solver = model_builder.Solver("sat")
+    if not solver.solver_is_supported():
+        return
     status = solver.solve(model)
     # [END solve]
 

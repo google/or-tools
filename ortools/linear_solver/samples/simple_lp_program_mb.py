@@ -24,7 +24,7 @@ from ortools.linear_solver.python import model_builder
 def main():
     # [START model]
     # Create the model.
-    model = model_builder.ModelBuilder()
+    model = model_builder.Model()
     # [END model]
 
     # [START variables]
@@ -52,7 +52,9 @@ def main():
 
     # [START solve]
     # Create the solver with the GLOP backend, and solve the model.
-    solver = model_builder.ModelSolver("glop")
+    solver = model_builder.Solver("glop")
+    if not solver.solver_is_supported():
+        return
     status = solver.solve(model)
     # [END solve]
 

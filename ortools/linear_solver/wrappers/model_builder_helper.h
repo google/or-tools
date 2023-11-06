@@ -102,7 +102,8 @@ class ModelBuilderHelper {
   void AddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
   void ClearEnforcedConstraintTerms(int ct_index);
   void SafeAddEnforcedConstraintTerm(int ct_index, int var_index, double coeff);
-  void SetEnforcedConstraintCoefficient(int ct_index, int var_index, double coeff);  
+  void SetEnforcedConstraintCoefficient(int ct_index, int var_index,
+                                        double coeff);
   void SetEnforcedConstraintLowerBound(int ct_index, double lb);
   void SetEnforcedConstraintName(int ct_index, const std::string& name);
   void SetEnforcedConstraintUpperBound(int ct_index, double ub);

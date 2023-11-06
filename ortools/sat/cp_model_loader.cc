@@ -1566,7 +1566,7 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  m->Add(NonOverlappingRectangles(x_intervals, y_intervals));
+  AddNonOverlappingRectangles(x_intervals, y_intervals, m);
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
