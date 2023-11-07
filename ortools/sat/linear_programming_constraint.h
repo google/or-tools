@@ -531,6 +531,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // fixing.
   int rev_optimal_constraints_size_ = 0;
   std::vector<std::unique_ptr<IntegerSumLE128>> optimal_constraints_;
+  std::vector<int64_t> cumulative_optimal_constraint_sizes_;
 
   // Last OPTIMAL solution found by a call to the underlying LP solver.
   // On IncrementalPropagate(), if the bound updates do not invalidate this
