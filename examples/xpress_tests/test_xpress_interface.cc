@@ -1185,7 +1185,7 @@ ENDATA
     // Usually XPRESS finds it in ~3000 seconds but in this case it should be able
     // to retain it in juste a few seconds using the hint.
     // Note that the logs should mention "User solution (USER_HINT) stored."
-    buildLargeMipWithCallback(solver, 60, 2);
+    buildLargeMipWithCallback(solver, 60, 4);
 
     std::vector<double> hintValues{
         -2,  -3,  -19, 8,    -1,  -1, 7,   9,   -20, -17,  7,    -7,
