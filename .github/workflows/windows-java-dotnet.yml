@@ -52,6 +52,11 @@ jobs:
           ref: "9.0b"
           token: ${{ secrets.ACCESS_TOKEN }}
 
+      - name: Add xpress bin to path
+        shell: bash
+        run: |
+          echo "${{ env.XPRESS }}" >> $GITHUB_PATH
+
       - name: Check cmake
         run: cmake --version
       - name: Configure
