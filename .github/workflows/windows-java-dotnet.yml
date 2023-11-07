@@ -44,18 +44,15 @@ jobs:
       - name: Check swig
         run: swig -version
 
-      - name: Checkout Xpress windows
-        uses: actions/checkout@v4
-        with:
-          repository: rte-france/xpress-mp-temp
-          path: ${{ env.XPRESSDIR }}
-          ref: "9.0b"
-          token: ${{ secrets.ACCESS_TOKEN }}
-
-      - name: Add xpress bin to path
+      - name: Set-up Xpress with pip
         shell: bash
         run: |
-          echo "${{ env.XPRESS }}" >> $GITHUB_PATH
+          python -m pip install --no-cache-dir "xpress>=9.0,<9.1"
+          XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
+          echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
+          echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
+          echo "$XPRESS_DIR/bin" >> $GITHUB_PATH
 
       - name: Check cmake
         run: cmake --version
