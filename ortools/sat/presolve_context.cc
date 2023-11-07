@@ -1111,7 +1111,8 @@ bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
   if (!insert_status.second) {
     // Tricky: overwrite if the old value refer to a now unused variable.
     const int candidate = insert_status.first->second.Get();
-    if (removed_variables_.contains(candidate)) {
+    if (removed_variables_.contains(candidate) ||
+        GetAffineRelation(candidate).representative != candidate) {
       insert_status.first->second = SavedVariable(PositiveRef(ref));
       return true;
     }
@@ -1121,16 +1122,20 @@ bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
 }
 
 bool PresolveContext::GetAbsRelation(int target_ref, int* ref) {
+  // This is currently only called with representative and positive ref.
+  // It is important to keep it like this.
+  CHECK(RefIsPositive(target_ref));
+  CHECK_EQ(GetAffineRelation(target_ref).representative, target_ref);
+
   auto it = abs_relations_.find(target_ref);
   if (it == abs_relations_.end()) return false;
 
   // Tricky: In some rare case the stored relation can refer to a deleted
-  // variable, so we need to ignore it.
-  //
-  // TODO(user): Incorporate this as part of SavedVariable/SavedLiteral so we
-  // make sure we never forget about this.
+  // variable, so we need to ignore it. We also ignore any relation involving
+  // a variable that has a different affine representatitive.
   const int candidate = PositiveRef(it->second.Get());
-  if (removed_variables_.contains(candidate)) {
+  if (removed_variables_.contains(candidate) ||
+      GetAffineRelation(candidate).representative != candidate) {
     abs_relations_.erase(it);
     return false;
   }

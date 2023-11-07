@@ -625,6 +625,7 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   // Get rid of all optimal constraint each time we go back to level zero.
   if (level == 0) rev_optimal_constraints_size_ = 0;
   optimal_constraints_.resize(rev_optimal_constraints_size_);
+  cumulative_optimal_constraint_sizes_.resize(rev_optimal_constraints_size_);
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
   }
@@ -652,6 +653,26 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
+  // If we have a really deep branch, with a lot of LP explanation constraint,
+  // we could take a quadratic amount of memory: O(num_var) per number of
+  // propagation in that branch. To avoid that, once the memory starts to be
+  // over a few GB, we only propagate from time to time. This way we do not need
+  // to keep that many constraints around.
+  //
+  // Note that 100 Millions int32_t variables, with the int128 coefficients and
+  // extra propagation vector is already a few GB.
+  if (!cumulative_optimal_constraint_sizes_.empty()) {
+    const double current_size =
+        static_cast<double>(cumulative_optimal_constraint_sizes_.back());
+    const double low_limit = 1e7;
+    if (current_size > low_limit) {
+      // We only propagate if we use less that 100 times the number of current
+      // integer literal enqueued.
+      const double num_enqueues = static_cast<double>(integer_trail_->Index());
+      if ((current_size - low_limit) > 100 * num_enqueues) return true;
+    }
+  }
+
   if (!lp_solution_is_set_) {
     return Propagate();
   }
@@ -2213,7 +2234,13 @@ bool LinearProgrammingConstraint::PropagateLpConstraint(
   const int64_t stamp = integer_trail_->num_enqueues();
   const bool no_conflict = cp_constraint->Propagate();
   if (no_conflict && integer_trail_->num_enqueues() == stamp) return true;
+
+  const int64_t current_size =
+      cumulative_optimal_constraint_sizes_.empty()
+          ? 0
+          : cumulative_optimal_constraint_sizes_.back();
   optimal_constraints_.push_back(std::move(cp_constraint));
+  cumulative_optimal_constraint_sizes_.push_back(current_size + ct.vars.size());
   rev_optimal_constraints_size_ = optimal_constraints_.size();
   return no_conflict;
 }

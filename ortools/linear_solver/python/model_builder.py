@@ -615,7 +615,7 @@ class BoundedLinearExpression(_BoundedLinearExpr):
     def _add_enforced_linear_constraint(
         self,
         helper: mbh.ModelBuilderHelper,
-        var: "Variable",
+        var: Variable,
         value: bool,
         name: Optional[str],
     ) -> "EnforcedLinearConstraint":
