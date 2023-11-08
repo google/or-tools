@@ -140,14 +140,6 @@ class PresolveContext {
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
 
-  // Returns a positive constant factor that divides the expression.
-  // Currently, it only works with expression with 0 or 1 term.
-  int64_t ExpressionDivisor(const LinearExpressionProto& expr) const;
-
-  // Divide the expression in place by 'divisor'. It will DCHECK that 'divisor'
-  // divides all constants.
-  void DivideExpression(LinearExpressionProto* expr, int64_t divisor) const;
-
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
   // that this ignore any offset.

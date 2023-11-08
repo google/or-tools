@@ -52,6 +52,14 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
   return ct.enforcement_literal(0);
 }
 
+// Returns the gcd of the given LinearExpressionProto.
+// Specifying the second argument will take the gcd with it.
+int64_t LinearExpressionGcd(const LinearExpressionProto& expr, int64_t gcd = 0);
+
+// Divide the expression in place by 'divisor'.
+// It will DCHECK that 'divisor' divides all constants.
+void DivideLinearExpression(int64_t divisor, LinearExpressionProto* expr);
+
 // Fills the target as negated ref.
 void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
                                   LinearExpressionProto* output_negated_expr);
