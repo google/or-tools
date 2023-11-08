@@ -297,10 +297,12 @@ void LoadAndSolve(const std::string& file_name, int instance) {
         if (b == 0) {
           // For item fixed to a given bin, by symmetry of rotation we can also
           // assume it is in the lower left corner.
+          // Note that the data defines the global size, so the range of the
+          // interval is [0, bin_size - 1].
           const int64_t start_max = fixed_items.contains(item)
-                                        ? (bin_size - size + 1) / 2
-                                        : bin_size - size;
-          start = cp_model.NewIntVar({0, start_max});
+                                        ? (bin_size - size) / 2
+                                        : bin_size - 1 - size;
+	  start = cp_model.NewIntVar({0, start_max});
           starts_by_dimension[item][dim] = start;
 
           if (size + min_sizes_per_dimension[dim] > bin_size) {
