@@ -19,7 +19,6 @@
 #include <string>
 #include <vector>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "gmock/gmock.h"

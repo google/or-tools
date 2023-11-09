@@ -20,7 +20,6 @@
 #include <tuple>
 #include <vector>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/strings/str_cat.h"

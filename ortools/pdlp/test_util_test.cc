@@ -19,7 +19,6 @@
 #include <list>
 #include <vector>
 
-#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
