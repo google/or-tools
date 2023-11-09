@@ -19,6 +19,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -513,7 +514,7 @@ class PrintModelVisitor : public ModelVisitor {
     return result;
   }
 
-  void set_prefix(const std::string& prefix) { prefix_ = prefix; }
+  void set_prefix(absl::string_view prefix) { prefix_ = prefix; }
 
   int indent_;
   std::string prefix_;
@@ -685,15 +686,15 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
-  void AddConstraintType(const std::string& constraint_type) {
+  void AddConstraintType(absl::string_view constraint_type) {
     constraint_types_[constraint_type]++;
   }
 
-  void AddExpressionType(const std::string& expression_type) {
+  void AddExpressionType(absl::string_view expression_type) {
     expression_types_[expression_type]++;
   }
 
-  void AddExtensionType(const std::string& extension_type) {
+  void AddExtensionType(absl::string_view extension_type) {
     extension_types_[extension_type]++;
   }
 

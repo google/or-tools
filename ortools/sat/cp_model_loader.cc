@@ -1401,64 +1401,88 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                                                   coeffs, ub));
       }
     }
-  } else {
-    // In this case, we can create just one Boolean instead of two since one
-    // is the negation of the other.
-    const bool special_case =
-        ct.enforcement_literal().empty() && ct.linear().domain_size() == 4;
+    return;
+  }
 
-    std::vector<Literal> clause;
-    for (int i = 0; i < ct.linear().domain_size(); i += 2) {
-      int64_t lb = ct.linear().domain(i);
-      int64_t ub = ct.linear().domain(i + 1);
-      if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
-      if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
+  // We have a linear with a complex Domain, we need to create extra Booleans.
 
-      const Literal subdomain_literal(
-          special_case && i > 0 ? clause.back().Negated()
-                                : Literal(m->Add(NewBooleanVariable()), true));
-      clause.push_back(subdomain_literal);
+  // In this case, we can create just one Boolean instead of two since one
+  // is the negation of the other.
+  const bool special_case =
+      ct.enforcement_literal().empty() && ct.linear().domain_size() == 4;
 
-      if (lb != std::numeric_limits<int64_t>::min()) {
-        m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
-                                                    coeffs, lb));
-      }
-      if (ub != std::numeric_limits<int64_t>::max()) {
-        m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
-                                                  coeffs, ub));
-      }
-    }
+  // For enforcement => var \in domain, we can potentially reuse the encoding
+  // literal directly rather than creating new ones.
+  const bool is_linear1 = !special_case && vars.size() == 1 && coeffs[0] == 1;
 
-    const std::vector<Literal> enforcement_literals =
-        mapping->Literals(ct.enforcement_literal());
+  std::vector<Literal> clause;
+  std::vector<Literal> for_enumeration;
+  auto* encoding = m->GetOrCreate<IntegerEncoder>();
+  for (int i = 0; i < ct.linear().domain_size(); i += 2) {
+    const int64_t lb = ct.linear().domain(i);
+    const int64_t ub = ct.linear().domain(i + 1);
 
-    // Make sure all booleans are tights when enumerating all solutions.
-    if (params.enumerate_all_solutions() && !enforcement_literals.empty()) {
-      Literal linear_is_enforced;
-      if (enforcement_literals.size() == 1) {
-        linear_is_enforced = enforcement_literals[0];
-      } else {
-        linear_is_enforced = Literal(m->Add(NewBooleanVariable()), true);
-        std::vector<Literal> maintain_linear_is_enforced;
-        for (const Literal e_lit : enforcement_literals) {
-          m->Add(Implication(e_lit.Negated(), linear_is_enforced.Negated()));
-          maintain_linear_is_enforced.push_back(e_lit.Negated());
-        }
-        maintain_linear_is_enforced.push_back(linear_is_enforced);
-        m->Add(ClauseConstraint(maintain_linear_is_enforced));
-      }
-      for (const Literal lit : clause) {
-        m->Add(Implication(linear_is_enforced.Negated(), lit.Negated()));
-        if (special_case) break;  // For the unique Boolean var to be false.
+    if (is_linear1) {
+      if (lb == ub) {
+        clause.push_back(
+            encoding->GetOrCreateLiteralAssociatedToEquality(vars[0], lb));
+        continue;
+      } else if (min_sum >= lb) {
+        clause.push_back(encoding->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::LowerOrEqual(vars[0], ub)));
+        continue;
+      } else if (max_sum <= ub) {
+        clause.push_back(encoding->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::GreaterOrEqual(vars[0], lb)));
+        continue;
       }
     }
 
-    if (!special_case) {
+    const Literal subdomain_literal(
+        special_case && i > 0 ? clause.back().Negated()
+                              : Literal(m->Add(NewBooleanVariable()), true));
+    clause.push_back(subdomain_literal);
+    for_enumeration.push_back(subdomain_literal);
+
+    if (min_sum < lb) {
+      m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
+                                                  coeffs, lb));
+    }
+    if (max_sum > ub) {
+      m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
+                                                coeffs, ub));
+    }
+  }
+
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+
+  // Make sure all booleans are tights when enumerating all solutions.
+  if (params.enumerate_all_solutions() && !enforcement_literals.empty()) {
+    Literal linear_is_enforced;
+    if (enforcement_literals.size() == 1) {
+      linear_is_enforced = enforcement_literals[0];
+    } else {
+      linear_is_enforced = Literal(m->Add(NewBooleanVariable()), true);
+      std::vector<Literal> maintain_linear_is_enforced;
       for (const Literal e_lit : enforcement_literals) {
-        clause.push_back(e_lit.Negated());
+        m->Add(Implication(e_lit.Negated(), linear_is_enforced.Negated()));
+        maintain_linear_is_enforced.push_back(e_lit.Negated());
       }
-      m->Add(ClauseConstraint(clause));
+      maintain_linear_is_enforced.push_back(linear_is_enforced);
+      m->Add(ClauseConstraint(maintain_linear_is_enforced));
     }
+    for (const Literal lit : for_enumeration) {
+      m->Add(Implication(linear_is_enforced.Negated(), lit.Negated()));
+      if (special_case) break;  // For the unique Boolean var to be false.
+    }
+  }
+
+  if (!special_case) {
+    for (const Literal e_lit : enforcement_literals) {
+      clause.push_back(e_lit.Negated());
+    }
+    m->Add(ClauseConstraint(clause));
   }
 }
 

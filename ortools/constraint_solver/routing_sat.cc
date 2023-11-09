@@ -16,13 +16,14 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <map>
 #include <memory>
 #include <ostream>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/time/time.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -37,6 +38,7 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -111,7 +113,8 @@ struct Arc {
   }
 };
 
-using ArcVarMap = std::map<Arc, int>;  // needs to be stable when iterating
+using ArcVarMap =
+    absl::btree_map<Arc, int>;  // needs to be stable when iterating
 
 void AddSoftCumulBounds(const RoutingDimension* dimension, int index, int cumul,
                         int64_t cumul_min, int64_t cumul_max,
@@ -290,7 +293,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
                                         : model.UnperformedPenalty(tail);
       if (cost == std::numeric_limits<int64_t>::max()) continue;
       const Arc arc = {tail_index, head_index};
-      if (gtl::ContainsKey(arc_vars, arc)) continue;
+      if (arc_vars.contains(arc)) continue;
       const int index = AddVariable(cp_model, 0, 1);
       gtl::InsertOrDie(&arc_vars, arc, index);
       cp_model->mutable_objective()->add_vars(index);
@@ -619,7 +622,7 @@ void AddGeneralizedPickupDeliveryConstraints(
       for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
         const Arc vehicle_start_delivery_arc = {
             static_cast<int>(model.Start(vehicle) + 1), cp_delivery};
-        if (gtl::ContainsKey(arc_vars, vehicle_start_delivery_arc)) {
+        if (arc_vars.contains(vehicle_start_delivery_arc)) {
           // Forbid vehicle_start -> delivery arc.
           AddLinearConstraint(cp_model, 0, 0,
                               {{arc_vars.at(vehicle_start_delivery_arc), 1}});
@@ -629,7 +632,7 @@ void AddGeneralizedPickupDeliveryConstraints(
       for (const int pickup : pickups) {
         const int cp_pickup = pickup + 1;
         const Arc delivery_pickup_arc = {cp_delivery, cp_pickup};
-        if (gtl::ContainsKey(arc_vars, delivery_pickup_arc)) {
+        if (arc_vars.contains(delivery_pickup_arc)) {
           // Forbid delivery -> pickup arc.
           AddLinearConstraint(cp_model, 0, 0,
                               {{arc_vars.at(delivery_pickup_arc), 1}});
@@ -693,13 +696,13 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
     const int cp_start = model.Start(vehicle) + 1;
     const Arc start_arc = {depot, cp_start};
     const int start_arc_var = AddVariable(cp_model, 1, 1);
-    DCHECK(!gtl::ContainsKey(arc_vars, start_arc));
+    DCHECK(!arc_vars.contains(start_arc));
     arc_vars.insert({start_arc, start_arc_var});
 
     const int cp_end = model.End(vehicle) + 1;
     const Arc end_arc = {cp_end, depot};
     const int end_arc_var = AddVariable(cp_model, 1, 1);
-    DCHECK(!gtl::ContainsKey(arc_vars, end_arc));
+    DCHECK(!arc_vars.contains(end_arc));
     arc_vars.insert({end_arc, end_arc_var});
 
     vehicle_performs_node[vehicle][cp_start] = start_arc_var;
@@ -753,7 +756,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
         is_unperformed[disjunction_indices[0] + 1] == -1) {
       const int cp_node = disjunction_indices[0] + 1;
       const Arc arc = {cp_node, cp_node};
-      DCHECK(!gtl::ContainsKey(arc_vars, arc));
+      DCHECK(!arc_vars.contains(arc));
       is_unperformed[cp_node] = AddVariable(cp_model, 0, 1);
       arc_vars.insert({arc, is_unperformed[cp_node]});
       cp_model->mutable_objective()->add_vars(is_unperformed[cp_node]);
@@ -769,7 +772,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       // Node can be unperformed.
       if (is_unperformed[cp_node] == -1) {
         const Arc arc = {cp_node, cp_node};
-        DCHECK(!gtl::ContainsKey(arc_vars, arc));
+        DCHECK(!arc_vars.contains(arc));
         is_unperformed[cp_node] = AddVariable(cp_model, 0, 1);
         arc_vars.insert({arc, is_unperformed[cp_node]});
       }
@@ -821,7 +824,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       if (!feasible) continue;
 
       const Arc arc = {cp_tail, cp_head};
-      DCHECK(!gtl::ContainsKey(arc_vars, arc));
+      DCHECK(!arc_vars.contains(arc));
       const int arc_var = AddVariable(cp_model, 0, 1);
       arc_vars.insert({arc, arc_var});
     }

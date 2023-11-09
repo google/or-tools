@@ -32,6 +32,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -2873,7 +2874,7 @@ std::string VariablesToString(
     absl::flat_hash_map<std::string, std::vector<int>>& variable_instances,
     absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>&
         variable_childs,
-    const sat::CpSolverResponse& response_, const std::string& variable,
+    const sat::CpSolverResponse& response_, absl::string_view variable,
     std::string prefix = "") {
   if (variable.empty()) {
     std::string s = "";
@@ -2888,7 +2889,7 @@ std::string VariablesToString(
   }
 
   const auto& instances = variable_instances[variable];
-  std::string variable_display = variable;
+  std::string variable_display(variable);
   std::size_t bracket_pos = variable.find_last_of(')');
   if (bracket_pos != std::string::npos) {
     variable_display = variable.substr(bracket_pos + 1);

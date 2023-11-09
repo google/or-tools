@@ -218,7 +218,16 @@ class PresolveContext {
   // constraints of the form lit => var in domain. When this is the case, then
   // we can usually remove this variable and replace these constraints with
   // the proper constraints on the enforcement literals.
-  bool VariableIsOnlyUsedInEncodingAndMaybeInObjective(int ref) const;
+  bool VariableIsOnlyUsedInEncodingAndMaybeInObjective(int var) const;
+
+  // Similar to VariableIsOnlyUsedInEncodingAndMaybeInObjective() for the case
+  // where we have one extra constraint instead of the objective. Sometimes it
+  // is possible to transfer the linear1 domain restrictions to another
+  // variable. for instance if the other constraint is of the form Y = abs(X) or
+  // Y = X^2, then a domain restriction on Y can be transferred to X. We can
+  // then move the extra constraint to the mapping model and remove one
+  // variable. This happens on the flatzinc celar problems for instance.
+  bool VariableIsOnlyUsedInLinear1AndOneExtraConstraint(int var) const;
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
@@ -312,11 +321,6 @@ class PresolveContext {
   // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
   // Returns false if this makes the problem infeasible.
   bool StoreBooleanEqualityRelation(int ref_a, int ref_b);
-
-  // Stores/Get the relation target_ref = abs(ref); The first function returns
-  // false if it already exist and the second false if it is not present.
-  bool StoreAbsRelation(int target_ref, int ref);
-  bool GetAbsRelation(int target_ref, int* ref);
 
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
@@ -659,9 +663,6 @@ class PresolveContext {
   // We maintain how many time each interval is used.
   std::vector<std::vector<int>> constraint_to_intervals_;
   std::vector<int> interval_usage_;
-
-  // Contains abs relation (key = abs(saved_variable)).
-  absl::flat_hash_map<int, SavedVariable> abs_relations_;
 
   // Used by GetTrueLiteral()/GetFalseLiteral().
   bool true_literal_is_defined_ = false;

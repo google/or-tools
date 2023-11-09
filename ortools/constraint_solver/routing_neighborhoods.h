@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -613,6 +614,30 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
   }
 }
 
+/// A utility class to maintain pickup and delivery information of nodes.
+class PickupAndDeliveryData {
+ public:
+  PickupAndDeliveryData(int num_nodes,
+                        const std::vector<PickupDeliveryPair>& pairs);
+  bool IsPickupNode(int64_t node) const {
+    DCHECK_LT(node, is_pickup_node_.size());
+    return is_pickup_node_[node];
+  }
+  bool IsDeliveryNode(int64_t node) const {
+    DCHECK_LT(node, is_delivery_node_.size());
+    return is_delivery_node_[node];
+  }
+  int GetPairOfNode(int64_t node) const {
+    DCHECK_LT(node, pair_of_node_.size());
+    return pair_of_node_[node];
+  }
+
+ private:
+  std::vector<bool> is_pickup_node_;
+  std::vector<bool> is_delivery_node_;
+  std::vector<int> pair_of_node_;
+};
+
 /// Tries to move subtrips after an insertion node.
 /// A subtrip is a subsequence that contains only matched pickup and delivery
 /// nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a
@@ -649,24 +674,13 @@ class RelocateSubtrip : public PathOperator {
   /// Relocates the subtrip ending at chain_first_node. It must be a delivery.
   bool RelocateSubTripFromDelivery(int64_t chain_last_node,
                                    int64_t insertion_node);
-  bool IsPickupNode(int64_t node) const {
-    DCHECK_LT(node, is_pickup_node_.size());
-    DCHECK_GE(node, 0);
-    return is_pickup_node_[node];
-  }
-  bool IsDeliveryNode(int64_t node) const {
-    DCHECK_LT(node, is_delivery_node_.size());
-    DCHECK_GE(node, 0);
-    return is_delivery_node_[node];
-  }
+  void SetPath(const std::vector<int64_t>& path, int path_id);
 
-  std::vector<bool> is_pickup_node_;
-  std::vector<bool> is_delivery_node_;
-  std::vector<int> pair_of_node_;
+  const PickupAndDeliveryData pd_data_;
   // Represents the set of pairs that have been opened during a call to
   // MakeNeighbor(). This vector must be all false before and after calling
   // RelocateSubTripFromPickup() and RelocateSubTripFromDelivery().
-  std::vector<bool> opened_pairs_bitset_;
+  std::vector<bool> opened_pairs_set_;
 
   std::vector<int64_t> rejected_nodes_;
   std::vector<int64_t> subtrip_nodes_;
@@ -718,21 +732,8 @@ class ExchangeSubtrip : public PathOperator {
                                  std::vector<int64_t>* rejects,
                                  std::vector<int64_t>* subtrip);
   void SetPath(const std::vector<int64_t>& path, int path_id);
-  bool IsPickupNode(int64_t node) const {
-    DCHECK_LT(node, is_pickup_node_.size());
-    DCHECK_GE(node, 0);
-    return is_pickup_node_[node];
-  }
-  bool IsDeliveryNode(int64_t node) const {
-    DCHECK_LT(node, is_delivery_node_.size());
-    DCHECK_GE(node, 0);
-    return is_delivery_node_[node];
-  }
 
-  // Precompute some information about nodes.
-  std::vector<bool> is_pickup_node_;
-  std::vector<bool> is_delivery_node_;
-  std::vector<int> pair_of_node_;
+  const PickupAndDeliveryData pd_data_;
   // Represents the set of opened pairs during ExtractChainsFromXXX().
   std::vector<bool> opened_pairs_set_;
   // Keep internal structures under hand to avoid reallocation.

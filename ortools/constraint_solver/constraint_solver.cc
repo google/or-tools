@@ -1083,7 +1083,7 @@ class Search {
       solver_->Fail();
     }
   }
-  void set_search_context(const std::string& search_context) {
+  void set_search_context(absl::string_view search_context) {
     search_context_ = search_context;
   }
   std::string search_context() const { return search_context_; }
@@ -2512,7 +2512,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
 }
 
 void Solver::SetName(const PropagationBaseObject* object,
-                     const std::string& name) {
+                     absl::string_view name) {
   if (parameters_.store_names() &&
       GetName(object) != name) {  // in particular if name.empty()
     propagation_object_names_[object] = name;

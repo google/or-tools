@@ -33,6 +33,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -2192,7 +2193,7 @@ class CumulativeConstraint : public Constraint {
   CumulativeConstraint(Solver* const s,
                        const std::vector<IntervalVar*>& intervals,
                        const std::vector<int64_t>& demands,
-                       IntVar* const capacity, const std::string& name)
+                       IntVar* const capacity, absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2388,7 +2389,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
                                      const std::vector<IntervalVar*>& intervals,
                                      const std::vector<IntVar*>& demands,
                                      IntVar* const capacity,
-                                     const std::string& name)
+                                     absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),

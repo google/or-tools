@@ -251,6 +251,7 @@ class CpModelPresolver {
   // merge this with what ExpandObjective() is doing.
   void ShiftObjectiveWithExactlyOnes();
 
+  void MaybeTransferLinear1ToAnotherVariable(int var);
   void ProcessVariableOnlyUsedInEncoding(int var);
   void TryToSimplifyDomain(int var);
 
