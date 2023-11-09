@@ -19,6 +19,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
@@ -2297,7 +2298,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
 
 void Solver::MakeFixedDurationIntervalVarArray(
     int count, int64_t start_min, int64_t start_max, int64_t duration,
-    bool optional, const std::string& name, std::vector<IntervalVar*>* array) {
+    bool optional, absl::string_view name, std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);
   array->clear();
@@ -2342,7 +2343,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, int64_t duration,
-    const std::string& name, std::vector<IntervalVar*>* array) {
+    absl::string_view name, std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
@@ -2356,7 +2357,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 // the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    absl::Span<const int64_t> durations, const std::string& name,
+    absl::Span<const int64_t> durations, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
@@ -2370,7 +2371,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    absl::Span<const int> durations, const std::string& name,
+    absl::Span<const int> durations, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
@@ -2385,7 +2386,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
     absl::Span<const int> durations,
-    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
@@ -2399,7 +2400,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
     absl::Span<const int64_t> durations,
-    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
@@ -2425,7 +2426,7 @@ void Solver::MakeIntervalVarArray(int count, int64_t start_min,
                                   int64_t start_max, int64_t duration_min,
                                   int64_t duration_max, int64_t end_min,
                                   int64_t end_max, bool optional,
-                                  const std::string& name,
+                                  absl::string_view name,
                                   std::vector<IntervalVar*>* const array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);

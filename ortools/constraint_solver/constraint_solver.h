@@ -89,6 +89,7 @@
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -1060,7 +1061,7 @@ class Solver {
   uint64_t fail_stamp() const;
 
   /// Sets the current context of the search.
-  void set_context(const std::string& context) { context_ = context; }
+  void set_context(absl::string_view context) { context_ = context; }
 
   /// Gets the current context of the search.
   const std::string& context() const { return context_; }
@@ -1897,7 +1898,7 @@ class Solver {
   /// the corresponding parameters.
   void MakeFixedDurationIntervalVarArray(int count, int64_t start_min,
                                          int64_t start_max, int64_t duration,
-                                         bool optional, const std::string& name,
+                                         bool optional, absl::string_view name,
                                          std::vector<IntervalVar*>* array);
 
   /// Creates a performed interval var with a fixed duration. The duration must
@@ -1917,19 +1918,19 @@ class Solver {
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables, int64_t duration,
-      const std::string& name, std::vector<IntervalVar*>* array);
+      absl::string_view name, std::vector<IntervalVar*>* array);
 
   /// This method fills the vector with interval variables built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      absl::Span<const int64_t> durations, const std::string& name,
+      absl::Span<const int64_t> durations, absl::string_view name,
       std::vector<IntervalVar*>* array);
   /// This method fills the vector with interval variables built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
-      absl::Span<const int> durations, const std::string& name,
+      absl::Span<const int> durations, absl::string_view name,
       std::vector<IntervalVar*>* array);
 
   /// This method fills the vector with interval variables built with
@@ -1937,7 +1938,7 @@ class Solver {
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
       absl::Span<const int64_t> durations,
-      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      const std::vector<IntVar*>& performed_variables, absl::string_view name,
       std::vector<IntervalVar*>* array);
 
   /// This method fills the vector with interval variables built with
@@ -1945,7 +1946,7 @@ class Solver {
   void MakeFixedDurationIntervalVarArray(
       const std::vector<IntVar*>& start_variables,
       absl::Span<const int> durations,
-      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      const std::vector<IntVar*>& performed_variables, absl::string_view name,
       std::vector<IntervalVar*>* array);
 
   /// Creates a fixed and performed interval.
@@ -1964,7 +1965,7 @@ class Solver {
   void MakeIntervalVarArray(int count, int64_t start_min, int64_t start_max,
                             int64_t duration_min, int64_t duration_max,
                             int64_t end_min, int64_t end_max, bool optional,
-                            const std::string& name,
+                            absl::string_view name,
                             std::vector<IntervalVar*>* array);
 
   /// Creates an interval var that is the mirror image of the given one, that
@@ -3206,7 +3207,7 @@ class Solver {
 
   /// Naming
   std::string GetName(const PropagationBaseObject* object);
-  void SetName(const PropagationBaseObject* object, const std::string& name);
+  void SetName(const PropagationBaseObject* object, absl::string_view name);
 
   /// Variable indexing (note that indexing is not reversible).
   /// Returns a new index for an IntVar.
@@ -3443,7 +3444,7 @@ class DecisionBuilder : public BaseObject {
                               std::vector<SearchMonitor*>* extras);
   virtual void Accept(ModelVisitor* visitor) const;
 #endif
-  void set_name(const std::string& name) { name_ = name; }
+  void set_name(absl::string_view name) { name_ = name; }
   std::string GetName() const;
 
  private:
