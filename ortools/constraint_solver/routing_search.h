@@ -386,9 +386,6 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
       SeedQueue* sq);
   // clang-format on
 
-  /// Creates and returns a Seed corresponding to the given node/pair_index.
-  Seed CreateSeed(int index, bool is_pair_index, StartEndValue start_end_value);
-
   /// Adds a Seed corresponding to the given 'node' to sq.priority_queue, based
   /// on the last entry in its 'start_end_distances' (from which it's deleted).
   void AddSeedNodeToQueue(int node,

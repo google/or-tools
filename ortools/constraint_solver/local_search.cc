@@ -12,35 +12,35 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <iterator>
 #include <limits>
-#include <map>
 #include <memory>
 #include <numeric>
 #include <optional>
 #include <random>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/memory/memory.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/types.h"
+#include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/hamiltonian_path.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 ABSL_FLAG(int, cp_local_search_sync_frequency, 16,
@@ -319,9 +319,7 @@ class IncrementValue : public ChangeValue {
   explicit IncrementValue(const std::vector<IntVar*>& vars)
       : ChangeValue(vars) {}
   ~IncrementValue() override {}
-  int64_t ModifyValue(int64_t index, int64_t value) override {
-    return value + 1;
-  }
+  int64_t ModifyValue(int64_t, int64_t value) override { return value + 1; }
 
   std::string DebugString() const override { return "IncrementValue"; }
 };
@@ -333,9 +331,7 @@ class DecrementValue : public ChangeValue {
   explicit DecrementValue(const std::vector<IntVar*>& vars)
       : ChangeValue(vars) {}
   ~DecrementValue() override {}
-  int64_t ModifyValue(int64_t index, int64_t value) override {
-    return value - 1;
-  }
+  int64_t ModifyValue(int64_t, int64_t value) override { return value - 1; }
 
   std::string DebugString() const override { return "DecrementValue"; }
 };
@@ -1437,7 +1433,7 @@ class MakeChainInactiveOperator : public PathOperator {
   }
 
  protected:
-  bool OnSamePathAsPreviousBase(int64_t base_index) override {
+  bool OnSamePathAsPreviousBase(int64_t) override {
     // Start and end of chain (defined by both base nodes) must be on the same
     // path.
     return true;
@@ -2162,9 +2158,7 @@ int64_t CompoundOperatorNoRestart(int size, int active_index,
                                          : operator_index - active_index;
 }
 
-int64_t CompoundOperatorRestart(int active_index, int operator_index) {
-  return 0;
-}
+int64_t CompoundOperatorRestart(int, int) { return 0; }
 }  // namespace
 
 LocalSearchOperator* Solver::ConcatenateOperators(
@@ -2633,12 +2627,10 @@ namespace {
 class AcceptFilter : public LocalSearchFilter {
  public:
   std::string DebugString() const override { return "AcceptFilter"; }
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t obj_min, int64_t obj_max) override {
+  bool Accept(const Assignment*, const Assignment*, int64_t, int64_t) override {
     return true;
   }
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {}
+  void Synchronize(const Assignment*, const Assignment*) override {}
 };
 }  // namespace
 
@@ -2651,12 +2643,10 @@ namespace {
 class RejectFilter : public LocalSearchFilter {
  public:
   std::string DebugString() const override { return "RejectFilter"; }
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t obj_min, int64_t obj_max) override {
+  bool Accept(const Assignment*, const Assignment*, int64_t, int64_t) override {
     return false;
   }
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {}
+  void Synchronize(const Assignment*, const Assignment*) override {}
 };
 }  // namespace
 
@@ -2829,12 +2819,10 @@ class PathStateFilter : public LocalSearchFilter {
   PathStateFilter(std::unique_ptr<PathState> path_state,
                   const std::vector<IntVar*>& nexts);
   void Relax(const Assignment* delta, const Assignment* deltadelta) override;
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t objective_min, int64_t objective_max) override {
+  bool Accept(const Assignment*, const Assignment*, int64_t, int64_t) override {
     return true;
   }
-  void Synchronize(const Assignment* delta,
-                   const Assignment* deltadelta) override{};
+  void Synchronize(const Assignment*, const Assignment*) override{};
   void Commit(const Assignment* assignment, const Assignment* delta) override;
   void Revert() override;
   void Reset() override;
@@ -2902,8 +2890,7 @@ PathStateFilter::PathStateFilter(std::unique_ptr<PathState> path_state,
   path_has_changed_.assign(path_state_->NumPaths(), false);
 }
 
-void PathStateFilter::Relax(const Assignment* delta,
-                            const Assignment* deltadelta) {
+void PathStateFilter::Relax(const Assignment* delta, const Assignment*) {
   path_state_->Revert();
   changed_arcs_.clear();
   for (const IntVarElement& var_value : delta->IntVarContainer().elements()) {
@@ -3452,13 +3439,11 @@ class DimensionFilter : public LocalSearchFilter {
       : checker_(std::move(checker)),
         name_(absl::StrCat("DimensionFilter(", dimension_name, ")")) {}
 
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t objective_min, int64_t objective_max) override {
+  bool Accept(const Assignment*, const Assignment*, int64_t, int64_t) override {
     return checker_->Check();
   }
 
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {
+  void Synchronize(const Assignment*, const Assignment*) override {
     checker_->Commit();
   }
 
@@ -3487,16 +3472,13 @@ class VariableDomainFilter : public LocalSearchFilter {
   ~VariableDomainFilter() override {}
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override;
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {}
+  void Synchronize(const Assignment*, const Assignment*) override {}
 
   std::string DebugString() const override { return "VariableDomainFilter"; }
 };
 
-bool VariableDomainFilter::Accept(const Assignment* delta,
-                                  const Assignment* deltadelta,
-                                  int64_t objective_min,
-                                  int64_t objective_max) {
+bool VariableDomainFilter::Accept(const Assignment* delta, const Assignment*,
+                                  int64_t, int64_t) {
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int size = container.Size();
   for (int i = 0; i < size; ++i) {
@@ -3642,7 +3624,7 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
   bool incremental_;
 
  private:
-  void OnSynchronize(const Assignment* delta) override {
+  void OnSynchronize(const Assignment*) override {
     synchronized_sum_ = 0;
     for (int i = 0; i < primary_vars_size_; ++i) {
       const int64_t cost = CostOfSynchronizedVariable(i);
@@ -3779,14 +3761,14 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     Solver::LocalSearchFilterBound filter_enum) {
   switch (filter_enum) {
     case Solver::LE: {
-      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+      auto filter = [](int64_t value, int64_t, int64_t max_value) {
         return value <= max_value;
       };
       return RevAlloc(new BinaryObjectiveFilter<decltype(filter)>(
           vars, std::move(values), std::move(filter)));
     }
     case Solver::GE: {
-      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+      auto filter = [](int64_t value, int64_t min_value, int64_t) {
         return value >= min_value;
       };
       return RevAlloc(new BinaryObjectiveFilter<decltype(filter)>(
@@ -3812,14 +3794,14 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     Solver::LocalSearchFilterBound filter_enum) {
   switch (filter_enum) {
     case Solver::LE: {
-      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+      auto filter = [](int64_t value, int64_t, int64_t max_value) {
         return value <= max_value;
       };
       return RevAlloc(new TernaryObjectiveFilter<decltype(filter)>(
           vars, secondary_vars, std::move(values), std::move(filter)));
     }
     case Solver::GE: {
-      auto filter = [](int64_t value, int64_t min_value, int64_t max_value) {
+      auto filter = [](int64_t value, int64_t min_value, int64_t) {
         return value >= min_value;
       };
       return RevAlloc(new TernaryObjectiveFilter<decltype(filter)>(
@@ -3840,9 +3822,9 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
 }
 
 int LocalSearchState::AddVariable(int64_t initial_min, int64_t initial_max) {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK_LE(initial_min, initial_max);
-  initial_variable_bounds_.push_back({initial_min, initial_max});
+  relaxed_variable_bounds_.push_back({initial_min, initial_max});
   variable_bounds_.push_back({initial_min, initial_max});
   variable_is_relaxed_.push_back(false);
   return variable_bounds_.size() - 1;
@@ -3853,80 +3835,103 @@ LocalSearchState::Variable LocalSearchState::MakeVariable(int variable_index) {
 }
 
 void LocalSearchState::RelaxVariableBounds(int variable_index) {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK(0 <= variable_index && variable_index < variable_is_relaxed_.size());
+  if (!state_has_relaxed_variables_) {
+    trailed_num_committed_empty_domains_ = num_committed_empty_domains_;
+  }
+  state_has_relaxed_variables_ = true;
   if (!variable_is_relaxed_[variable_index]) {
     variable_is_relaxed_[variable_index] = true;
-    saved_variable_bounds_trail_.emplace_back(variable_bounds_[variable_index],
-                                              variable_index);
-    variable_bounds_[variable_index] = initial_variable_bounds_[variable_index];
+    trailed_variable_bounds_.emplace_back(variable_bounds_[variable_index],
+                                          variable_index);
+    if (BoundsIntersectionIsEmpty(relaxed_variable_bounds_[variable_index],
+                                  variable_bounds_[variable_index])) {
+      DCHECK_GT(num_committed_empty_domains_, 0);
+      --num_committed_empty_domains_;
+    }
+    variable_bounds_[variable_index] = relaxed_variable_bounds_[variable_index];
   }
 }
 
 int64_t LocalSearchState::VariableMin(int variable_index) const {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
   return variable_bounds_[variable_index].min;
 }
 
 int64_t LocalSearchState::VariableMax(int variable_index) const {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
   return variable_bounds_[variable_index].max;
 }
 
 bool LocalSearchState::TightenVariableMin(int variable_index,
                                           int64_t min_value) {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK(variable_is_relaxed_[variable_index]);
   DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
   Bounds& bounds = variable_bounds_[variable_index];
   if (bounds.max < min_value) {
-    state_is_valid_ = false;
+    state_all_variable_bounds_are_correct_ = false;
   }
   bounds.min = std::max(bounds.min, min_value);
-  return state_is_valid_;
+  return state_all_variable_bounds_are_correct_;
 }
 
 bool LocalSearchState::TightenVariableMax(int variable_index,
                                           int64_t max_value) {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK(variable_is_relaxed_[variable_index]);
   DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
   Bounds& bounds = variable_bounds_[variable_index];
   if (bounds.min > max_value) {
-    state_is_valid_ = false;
+    state_all_variable_bounds_are_correct_ = false;
   }
   bounds.max = std::min(bounds.max, max_value);
-  return state_is_valid_;
+  return state_all_variable_bounds_are_correct_;
 }
 
-void LocalSearchState::ChangeInitialVariableBounds(int variable_index,
+void LocalSearchState::ChangeRelaxedVariableBounds(int variable_index,
                                                    int64_t min, int64_t max) {
-  DCHECK(state_is_valid_);
+  DCHECK(state_all_variable_bounds_are_correct_);
   DCHECK_GE(variable_index, 0);
   DCHECK_LT(variable_index, variable_bounds_.size());
   DCHECK(!variable_is_relaxed_[variable_index]);
-  initial_variable_bounds_[variable_index] = {min, max};
+  const bool domain_was_empty =
+      BoundsIntersectionIsEmpty(relaxed_variable_bounds_[variable_index],
+                                variable_bounds_[variable_index]);
+  relaxed_variable_bounds_[variable_index] = {min, max};
+  const bool domain_is_empty =
+      BoundsIntersectionIsEmpty({min, max}, variable_bounds_[variable_index]);
+
+  if (!domain_was_empty && domain_is_empty) {
+    num_committed_empty_domains_++;
+  } else if (domain_was_empty && !domain_is_empty) {
+    num_committed_empty_domains_--;
+  }
 }
 
 // TODO(user): When the class has more users, find a threshold ratio of
 // saved/total variables under which a sparse clear would be more efficient
 // for both Commit() and Revert().
 void LocalSearchState::Commit() {
-  DCHECK(state_is_valid_);
-  saved_variable_bounds_trail_.clear();
+  DCHECK(StateIsFeasible());
+  state_has_relaxed_variables_ = false;
+  trailed_variable_bounds_.clear();
   variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
 }
 
 void LocalSearchState::Revert() {
-  for (const auto& bounds_index : saved_variable_bounds_trail_) {
+  for (const auto& bounds_index : trailed_variable_bounds_) {
     DCHECK(variable_is_relaxed_[bounds_index.second]);
     variable_bounds_[bounds_index.second] = bounds_index.first;
   }
-  saved_variable_bounds_trail_.clear();
+  trailed_variable_bounds_.clear();
+  state_has_relaxed_variables_ = false;
   variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
-  state_is_valid_ = true;
+  state_all_variable_bounds_are_correct_ = true;
+  num_committed_empty_domains_ = trailed_num_committed_empty_domains_;
 }
 
 // ----- LocalSearchProfiler -----
@@ -4047,7 +4052,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     std::string overview;
     size_t max_name_size = 0;
     ParseFirstSolutionStatistics(
-        [&max_name_size](const std::string& name, double duration_seconds) {
+        [&max_name_size](const std::string& name, double) {
           max_name_size = std::max(max_name_size, name.length());
         });
     if (max_name_size > 0) {
@@ -4062,13 +4067,11 @@ class LocalSearchProfiler : public LocalSearchMonitor {
           });
     }
     max_name_size = 0;
-    ParseLocalSearchOperatorStatistics(
-        [&max_name_size](const std::string& name, int64_t num_neighbors,
-                         int64_t num_filtered_neighbors,
-                         int64_t num_accepted_neighbors,
-                         double duration_seconds) {
-          max_name_size = std::max(max_name_size, name.length());
-        });
+    ParseLocalSearchOperatorStatistics([&max_name_size](const std::string& name,
+                                                        int64_t, int64_t,
+                                                        int64_t, double) {
+      max_name_size = std::max(max_name_size, name.length());
+    });
     if (max_name_size > 0) {
       absl::StrAppendFormat(
           &overview,
@@ -4097,9 +4100,8 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
     max_name_size = 0;
     ParseLocalSearchFilterStatistics(
-        [&max_name_size](const std::string& context, const std::string& name,
-                         int64_t num_calls, int64_t num_rejects,
-                         double duration_seconds) {
+        [&max_name_size](const std::string&, const std::string& name, int64_t,
+                         int64_t, double) {
           max_name_size = std::max(max_name_size, name.length());
         });
     if (max_name_size > 0) {
@@ -4152,20 +4154,19 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
   }
   void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
-                           const Assignment* delta,
-                           const Assignment* deltadelta) override {
+                           const Assignment*, const Assignment*) override {
     if (neighbor_found) {
       operator_stats_[op->Self()].neighbors++;
     }
   }
-  void BeginFilterNeighbor(const LocalSearchOperator* op) override {}
+  void BeginFilterNeighbor(const LocalSearchOperator*) override {}
   void EndFilterNeighbor(const LocalSearchOperator* op,
                          bool neighbor_found) override {
     if (neighbor_found) {
       operator_stats_[op->Self()].filtered_neighbors++;
     }
   }
-  void BeginAcceptNeighbor(const LocalSearchOperator* op) override {}
+  void BeginAcceptNeighbor(const LocalSearchOperator*) override {}
   void EndAcceptNeighbor(const LocalSearchOperator* op,
                          bool neighbor_found) override {
     if (neighbor_found) {
@@ -4909,7 +4910,7 @@ void NestedSolveDecision::Apply(Solver* const solver) {
   }
 }
 
-void NestedSolveDecision::Refute(Solver* const solver) {}
+void NestedSolveDecision::Refute(Solver* const) {}
 }  // namespace
 
 // ----- Local search decision builder -----
@@ -5202,7 +5203,7 @@ class DefaultSolutionPool : public SolutionPool {
     assignment->CopyIntersection(reference_assignment_.get());
   }
 
-  bool SyncNeeded(Assignment* const local_assignment) override { return false; }
+  bool SyncNeeded(Assignment* const) override { return false; }
 
   std::string DebugString() const override { return "DefaultSolutionPool"; }
 

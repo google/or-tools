@@ -33,9 +33,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
@@ -48,7 +50,6 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(bool, routing_strong_debug_checks, false,
           "Run stronger checks in debug; these stronger tests might change "
@@ -1089,18 +1090,6 @@ class PathCumulFilter : public BasePathFilter {
            (has_breaks || filter_objective_cost_);
   }
 
-  bool FilterDimensionForbiddenIntervals() const {
-    for (const SortedDisjointIntervalList& intervals :
-         dimension_.forbidden_intervals()) {
-      // TODO(user): Change the following test to check intervals within
-      // the domain of the corresponding variables.
-      if (intervals.NumIntervals() > 0) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   int64_t GetCumulPiecewiseLinearCost(int64_t node, int64_t cumul_value) const;
 
   bool FilterCumulSoftLowerBounds() const {
@@ -2130,7 +2119,7 @@ void AppendLightWeightDimensionFilters(
           dimension->GetUnaryTransitEvaluator(vehicle);
       if (unary_evaluator != nullptr) {
         transits[vehicle_class] = [&unary_evaluator, dimension, num_slacks](
-                                      int64_t node, int64_t next) -> Interval {
+                                      int64_t node, int64_t) -> Interval {
           if (node >= num_slacks) return {0, 0};
           const int64_t min_transit = unary_evaluator(node);
           const int64_t max_transit =
@@ -2476,13 +2465,15 @@ class VehicleVarFilter : public BasePathFilter {
   std::vector<int64_t> start_to_vehicle_;
   std::vector<IntVar*> vehicle_vars_;
   const int64_t unconstrained_vehicle_var_domain_size_;
+  SparseBitset<int> touched_;
 };
 
 VehicleVarFilter::VehicleVarFilter(const RoutingModel& routing_model)
     : BasePathFilter(routing_model.Nexts(),
                      routing_model.Size() + routing_model.vehicles()),
       vehicle_vars_(routing_model.VehicleVars()),
-      unconstrained_vehicle_var_domain_size_(routing_model.vehicles()) {
+      unconstrained_vehicle_var_domain_size_(routing_model.vehicles()),
+      touched_(routing_model.Nexts().size()) {
   start_to_vehicle_.resize(Size(), -1);
   for (int i = 0; i < routing_model.vehicles(); ++i) {
     start_to_vehicle_[routing_model.Start(i)] = i;
@@ -2491,12 +2482,14 @@ VehicleVarFilter::VehicleVarFilter(const RoutingModel& routing_model)
 
 bool VehicleVarFilter::AcceptPath(int64_t path_start, int64_t chain_start,
                                   int64_t chain_end) {
+  touched_.SparseClearAll();
   const int64_t vehicle = start_to_vehicle_[path_start];
   int64_t node = chain_start;
   while (node != chain_end) {
-    if (!vehicle_vars_[node]->Contains(vehicle)) {
+    if (touched_[node] || !vehicle_vars_[node]->Contains(vehicle)) {
       return false;
     }
+    touched_.Set(node);
     node = GetNext(node);
   }
   return vehicle_vars_[node]->Contains(vehicle);
@@ -3165,20 +3158,19 @@ class PathEnergyCostFilter : public LocalSearchFilter {
  public:
   std::string DebugString() const override { return name_; }
   PathEnergyCostFilter(std::unique_ptr<PathEnergyCostChecker> checker,
-                       const std::string& energy_name)
+                       absl::string_view energy_name)
       : checker_(std::move(checker)),
         name_(absl::StrCat("PathEnergyCostFilter(", energy_name, ")")) {}
 
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t objective_min, int64_t objective_max) override {
+  bool Accept(const Assignment*, const Assignment*, int64_t objective_min,
+              int64_t objective_max) override {
     if (objective_max > kint64max / 2) return true;
     if (!checker_->Check()) return false;
     const int64_t cost = checker_->AcceptedCost();
     return objective_min <= cost && cost <= objective_max;
   }
 
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {
+  void Synchronize(const Assignment*, const Assignment*) override {
     checker_->Commit();
   }
 

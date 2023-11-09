@@ -1683,20 +1683,26 @@ class LocalSearchState {
   class Variable;
   // Adds a variable to this state, return a handler to the new variable.
   int AddVariable(int64_t initial_min, int64_t initial_max);
-  void ChangeInitialVariableBounds(int variable_index, int64_t min,
+  void ChangeRelaxedVariableBounds(int variable_index, int64_t min,
                                    int64_t max);
   // Makes an object with restricted operations on the variable identified by
   // variable_index: only Relax, Tighten and read operations are available.
   Variable MakeVariable(int variable_index);
   void Commit();
   void Revert();
-  bool StateIsValid() const { return state_is_valid_; }
+  bool StateIsFeasible() const {
+    return state_all_variable_bounds_are_correct_ &&
+           num_committed_empty_domains_ == 0;
+  }
 
  private:
   struct Bounds {
     int64_t min;
     int64_t max;
   };
+  bool BoundsIntersectionIsEmpty(const Bounds& b1, const Bounds& b2) const {
+    return b1.max < b2.min || b2.max < b1.min;
+  }
 
   void RelaxVariableBounds(int variable_index);
   bool TightenVariableMin(int variable_index, int64_t value);
@@ -1705,11 +1711,17 @@ class LocalSearchState {
   int64_t VariableMax(int variable_index) const;
 
   // TODO(user): turn these into strong vectors.
-  std::vector<Bounds> initial_variable_bounds_;
+  std::vector<Bounds> relaxed_variable_bounds_;
   std::vector<Bounds> variable_bounds_;
-  std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
+  std::vector<std::pair<Bounds, int>> trailed_variable_bounds_;
   std::vector<bool> variable_is_relaxed_;
-  bool state_is_valid_ = true;
+  // True iff all variable have their variable_bounds_ min <= max.
+  bool state_all_variable_bounds_are_correct_ = true;
+  bool state_has_relaxed_variables_ = false;
+  // Number of variables v for which the intersection of
+  // variable_bounds_[v] and relaxed_variable_bounds_[v] is empty.
+  int num_committed_empty_domains_ = 0;
+  int trailed_num_committed_empty_domains_ = 0;
 };
 
 // A LocalSearchVariable can only be created by a LocalSearchState, then it is
