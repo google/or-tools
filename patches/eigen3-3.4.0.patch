@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f3e69b845..1aa7a944e 100644
+index f3e69b845..919f43bb2 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,6 +1,11 @@
@@ -14,3 +14,25 @@ index f3e69b845..1aa7a944e 100644
  project(Eigen3)
  
  # guard against in-source builds
+@@ -21,6 +26,7 @@ if (NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE "Release")
+ endif()
+ 
++option(EIGEN_MPL2_ONLY "Only use MPL2 or more permissive license." OFF)
+ 
+ #############################################################################
+ # retrieve version information                                               #
+@@ -592,7 +598,12 @@ set ( EIGEN_VERSION_STRING ${EIGEN_VERSION_NUMBER} )
+ set ( EIGEN_VERSION_MAJOR  ${EIGEN_WORLD_VERSION} )
+ set ( EIGEN_VERSION_MINOR  ${EIGEN_MAJOR_VERSION} )
+ set ( EIGEN_VERSION_PATCH  ${EIGEN_MINOR_VERSION} )
+-set ( EIGEN_DEFINITIONS "")
++
++if(EIGEN_MPL2_ONLY)
++  set ( EIGEN_DEFINITIONS EIGEN_MPL2_ONLY)
++else()
++  set ( EIGEN_DEFINITIONS "")
++endif()
+ set ( EIGEN_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${INCLUDE_INSTALL_DIR}" )
+ set ( EIGEN_ROOT_DIR ${CMAKE_INSTALL_PREFIX} )
+ 

@@ -147,6 +147,7 @@ cc_library(
     srcs = [],
     includes = ['.'],
     hdrs = glob(['Eigen/**']),
+    defines = ["EIGEN_MPL2_ONLY",],
     visibility = ['//visibility:public'],
 )
 """
