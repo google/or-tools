@@ -762,7 +762,6 @@ bool CpModelPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
-
   const LinearExpressionProto& target = ct->lin_max().target();
 
   // x = max(x, xi...) => forall i, x >= xi.
@@ -1187,21 +1186,6 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
     *context_->mapping_model->add_constraints() = *ct;
     context_->UpdateRuleStats("int_abs: unused target");
     return RemoveConstraint(ct);
-  }
-
-  // Store the x == abs(y) relation if expr and target_expr can be cast into a
-  // ref.
-  // TODO(user): Support general affine expression in for expr in the Store
-  //                method call.
-  {
-    if (ExpressionContainsSingleRef(target_expr) &&
-        ExpressionContainsSingleRef(expr)) {
-      const int target_ref = GetSingleRefFromExpression(target_expr);
-      const int expr_ref = GetSingleRefFromExpression(expr);
-      if (context_->StoreAbsRelation(target_ref, expr_ref)) {
-        context_->UpdateRuleStats("int_abs: store abs(x) == y");
-      }
-    }
   }
 
   return false;
@@ -2406,37 +2390,6 @@ bool CpModelPresolver::PresolveLinearOfSizeOne(ConstraintProto* ct) {
       }
       return false;
     }
-  }
-
-  // If the constraint is literal => x in domain and x = abs(abs_arg), we can
-  // replace x by abs_arg and hopefully remove the variable x later.
-  //
-  // Tricky: Note that we do not do that for "encoding" constraints as this
-  // can be problematic if it is referenced by HasVarValueEncoding().
-  int abs_arg;
-  if (context_->GetAbsRelation(var, &abs_arg) && var != abs_arg) {
-    DCHECK(RefIsPositive(abs_arg));
-    context_->UpdateRuleStats("linear1: remove abs from abs(x) in domain");
-    const Domain implied_abs_target_domain =
-        rhs.IntersectionWith({0, std::numeric_limits<int64_t>::max()});
-    if (implied_abs_target_domain.IsEmpty()) {
-      return MarkConstraintAsFalse(ct);
-    }
-
-    const Domain new_abs_var_domain =
-        implied_abs_target_domain
-            .UnionWith(implied_abs_target_domain.Negation())
-            .IntersectionWith(context_->DomainOf(abs_arg));
-    if (new_abs_var_domain.IsEmpty()) {
-      return MarkConstraintAsFalse(ct);
-    }
-
-    // Modify the constraint in-place.
-    ct->clear_linear();
-    ct->mutable_linear()->add_vars(abs_arg);
-    ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(new_abs_var_domain, ct->mutable_linear());
-    return true;
   }
 
   return false;
@@ -7695,16 +7648,15 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 
 namespace {
 
-bool IsAffineIntAbs(ConstraintProto* ct) {
-  if (ct->constraint_case() != ConstraintProto::kLinMax ||
-      ct->lin_max().exprs_size() != 2 ||
-      ct->lin_max().target().vars_size() > 1 ||
-      ct->lin_max().exprs(0).vars_size() != 1 ||
-      ct->lin_max().exprs(1).vars_size() != 1) {
+bool IsAffineIntAbs(const ConstraintProto& ct) {
+  if (ct.constraint_case() != ConstraintProto::kLinMax ||
+      ct.lin_max().exprs_size() != 2 || ct.lin_max().target().vars_size() > 1 ||
+      ct.lin_max().exprs(0).vars_size() != 1 ||
+      ct.lin_max().exprs(1).vars_size() != 1) {
     return false;
   }
 
-  const LinearArgumentProto& lin_max = ct->lin_max();
+  const LinearArgumentProto& lin_max = ct.lin_max();
   if (lin_max.exprs(0).offset() != -lin_max.exprs(1).offset()) return false;
   if (PositiveRef(lin_max.exprs(0).vars(0)) !=
       PositiveRef(lin_max.exprs(1).vars(0))) {
@@ -7753,7 +7705,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (!DivideLinMaxByGcd(c, ct)) return false;
-      if (IsAffineIntAbs(ct)) {
+      if (IsAffineIntAbs(*ct)) {
         return PresolveIntAbs(ct);
       } else {
         return PresolveLinMax(ct);
@@ -10042,6 +9994,121 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   }
 }
 
+// If we have a bunch of constraint of the form literal => Y \in domain and
+// another constraint Y = f(X), we can remove Y, that constraint, and transform
+// all linear1 from constraining Y to constraining X.
+//
+// We can for instance do it for Y = abs(X) or Y = X^2 easily. More complex
+// function might be trickier.
+//
+// Note that we can't always do it in the reverse direction though!
+// If we have l => X = -1, we can't transfer that to abs(X) for instance, since
+// X=1 will also map to abs(-1). We can only do it if for all implied domain D
+// we have f^-1(f(D)) = D, which is not easy to check.
+void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
+  // Find the extra constraint and do basic CHECKs.
+  int other_c;
+  int num_others = 0;
+  std::vector<int> to_rewrite;
+  for (const int c : context_->VarToConstraints(var)) {
+    if (c >= 0) {
+      const ConstraintProto& ct = context_->working_model->constraints(c);
+      if (ct.constraint_case() == ConstraintProto::kLinear &&
+          ct.linear().vars().size() == 1) {
+        to_rewrite.push_back(c);
+        continue;
+      }
+    }
+    ++num_others;
+    other_c = c;
+  }
+  if (num_others != 1) return;
+  if (other_c < 0) return;
+
+  // In general constraint with more than two variable can't be removed.
+  // Similarly for linear2 with non-fixed rhs as we would need to check the form
+  // of all implied domain.
+  const auto& other_ct = context_->working_model->constraints(other_c);
+  if (context_->ConstraintToVars(other_c).size() != 2 ||
+      !other_ct.enforcement_literal().empty() ||
+      other_ct.constraint_case() == ConstraintProto::kLinear) {
+    return;
+  }
+
+  // This will be the rewriting function. It takes the implied domain of var
+  // from linear1, and return a pair {new_var, new_var_implied_domain}.
+  std::function<std::pair<int, Domain>(const Domain& implied)> transfer_f =
+      nullptr;
+
+  // We only support a few cases.
+  //
+  // TODO(user): implement more! Note that the linear2 case was tempting, but if
+  // we don't have an equality, we can't transfer, and if we do, we actually
+  // have affine equivalence already.
+  if (other_ct.constraint_case() == ConstraintProto::kLinMax &&
+      other_ct.lin_max().target().vars().size() == 1 &&
+      other_ct.lin_max().target().vars(0) == var &&
+      std::abs(other_ct.lin_max().target().coeffs(0)) == 1 &&
+      IsAffineIntAbs(other_ct)) {
+    context_->UpdateRuleStats("linear1: transferred from abs(X) to X");
+    const LinearExpressionProto& target = other_ct.lin_max().target();
+    const LinearExpressionProto& expr = other_ct.lin_max().exprs(0);
+    transfer_f = [target, expr](const Domain& implied) {
+      Domain target_domain =
+          implied.ContinuousMultiplicationBy(target.coeffs(0))
+              .AdditionWith(Domain(target.offset()));
+      target_domain =
+          target_domain.IntersectionWith(Domain(0, target_domain.Max()));
+
+      // We have target = abs(expr).
+      const Domain expr_domain =
+          target_domain.UnionWith(target_domain.Negation());
+      const Domain new_domain = expr_domain.AdditionWith(Domain(-expr.offset()))
+                                    .InverseMultiplicationBy(expr.coeffs(0));
+      return std::make_pair(expr.vars(0), new_domain);
+    };
+  }
+
+  if (transfer_f == nullptr) {
+    context_->UpdateRuleStats(
+        "TODO linear1: appear in only one extra 2-var constraint");
+    return;
+  }
+
+  // Applies transfer_f to all linear1.
+  std::sort(to_rewrite.begin(), to_rewrite.end());
+  const Domain var_domain = context_->DomainOf(var);
+  for (const int c : to_rewrite) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    if (ct->linear().vars(0) != var || ct->linear().coeffs(0) != 1) {
+      // This shouldn't happen.
+      LOG(INFO) << "Aborted in MaybeTransferLinear1ToAnotherVariable()";
+      return;
+    }
+
+    const Domain implied =
+        var_domain.IntersectionWith(ReadDomainFromProto(ct->linear()));
+    auto [new_var, new_domain] = transfer_f(implied);
+    const Domain current = context_->DomainOf(new_var);
+    new_domain = new_domain.IntersectionWith(current);
+    if (new_domain.IsEmpty()) {
+      if (!MarkConstraintAsFalse(ct)) return;
+    } else if (new_domain == current) {
+      ct->Clear();
+    } else {
+      ct->mutable_linear()->set_vars(0, new_var);
+      FillDomainInProto(new_domain, ct->mutable_linear());
+    }
+    context_->UpdateConstraintVariableUsage(c);
+  }
+
+  // Copy other_ct to the mapping model and delete var!
+  *context_->mapping_model->add_constraints() = other_ct;
+  context_->working_model->mutable_constraints(other_c)->Clear();
+  context_->UpdateConstraintVariableUsage(other_c);
+  context_->MarkVariableAsRemoved(var);
+}
+
 // TODO(user): We can still remove the variable even if we want to keep
 // all feasible solutions for the cases when we have a full encoding.
 //
@@ -10056,8 +10123,15 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
   if (context_->IsFixed(var)) return;
   if (context_->VariableWasRemoved(var)) return;
   if (context_->CanBeUsedAsLiteral(var)) return;
-  if (!context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var)) return;
   if (context_->params().search_branching() == SatParameters::FIXED_SEARCH) {
+    return;
+  }
+
+  if (!context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var)) {
+    if (context_->VariableIsOnlyUsedInLinear1AndOneExtraConstraint(var)) {
+      MaybeTransferLinear1ToAnotherVariable(var);
+      return;
+    }
     return;
   }
 

@@ -379,12 +379,21 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
 }
 
 bool PresolveContext::VariableIsOnlyUsedInEncodingAndMaybeInObjective(
-    int ref) const {
+    int var) const {
+  CHECK(RefIsPositive(var));
   if (!ConstraintVariableGraphIsUpToDate()) return false;
-  const int var = PositiveRef(ref);
+  if (var_to_num_linear1_[var] == 0) return false;
   return var_to_num_linear1_[var] == var_to_constraints_[var].size() ||
          (var_to_constraints_[var].contains(kObjectiveConstraint) &&
           var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size());
+}
+
+bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
+    int var) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
+  if (var_to_num_linear1_[var] == 0) return false;
+  CHECK(RefIsPositive(var));
+  return var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size();
 }
 
 Domain PresolveContext::DomainOf(int ref) const {
@@ -1073,45 +1082,6 @@ bool PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   }
   // a = 1 - b
   return StoreAffineRelation(var_a, var_b, /*coeff=*/-1, /*offset=*/1);
-}
-
-bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
-  const auto insert_status = abs_relations_.insert(
-      std::make_pair(target_ref, SavedVariable(PositiveRef(ref))));
-  if (!insert_status.second) {
-    // Tricky: overwrite if the old value refer to a now unused variable.
-    const int candidate = insert_status.first->second.Get();
-    if (removed_variables_.contains(candidate) ||
-        GetAffineRelation(candidate).representative != candidate) {
-      insert_status.first->second = SavedVariable(PositiveRef(ref));
-      return true;
-    }
-    return false;
-  }
-  return true;
-}
-
-bool PresolveContext::GetAbsRelation(int target_ref, int* ref) {
-  // This is currently only called with representative and positive ref.
-  // It is important to keep it like this.
-  CHECK(RefIsPositive(target_ref));
-  CHECK_EQ(GetAffineRelation(target_ref).representative, target_ref);
-
-  auto it = abs_relations_.find(target_ref);
-  if (it == abs_relations_.end()) return false;
-
-  // Tricky: In some rare case the stored relation can refer to a deleted
-  // variable, so we need to ignore it. We also ignore any relation involving
-  // a variable that has a different affine representatitive.
-  const int candidate = PositiveRef(it->second.Get());
-  if (removed_variables_.contains(candidate) ||
-      GetAffineRelation(candidate).representative != candidate) {
-    abs_relations_.erase(it);
-    return false;
-  }
-  CHECK(!VariableWasRemoved(candidate));
-  *ref = candidate;
-  return true;
 }
 
 int PresolveContext::GetLiteralRepresentative(int ref) const {
