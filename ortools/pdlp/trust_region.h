@@ -20,6 +20,7 @@
 #include <limits>
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"

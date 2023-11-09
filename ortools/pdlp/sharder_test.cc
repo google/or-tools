@@ -20,6 +20,7 @@
 #include <random>
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/random/distributions.h"

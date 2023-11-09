@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "absl/log/check.h"
 #include "ortools/base/logging.h"

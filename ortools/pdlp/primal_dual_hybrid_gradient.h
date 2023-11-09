@@ -18,6 +18,7 @@
 #include <functional>
 #include <optional>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/pdlp/quadratic_program.h"

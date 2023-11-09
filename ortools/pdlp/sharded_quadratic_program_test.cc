@@ -16,6 +16,7 @@
 #include <limits>
 #include <optional>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

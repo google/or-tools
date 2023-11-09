@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#define EIGEN_MPL2_ONLY
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
