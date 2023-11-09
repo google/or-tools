@@ -115,10 +115,11 @@ class CpModelPresolver {
   bool PresolveElement(ConstraintProto* ct);
   bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
-  bool PresolveIntMod(ConstraintProto* ct);
+  bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
+  bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);

@@ -709,6 +709,56 @@ bool CpModelPresolver::CanonicalizeLinearArgument(const ConstraintProto& ct,
   return changed;
 }
 
+// Deal with X = lin_max(exprs) where all exprs are divisible by gcd.
+// X must be divisible also, and we can divide everything.
+bool CpModelPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
+  LinearArgumentProto* lin_max = ct->mutable_lin_max();
+
+  // Compute gcd of exprs first.
+  int64_t gcd = 0;
+  for (const LinearExpressionProto& expr : lin_max->exprs()) {
+    gcd = LinearExpressionGcd(expr, gcd);
+    if (gcd == 1) break;
+  }
+  if (gcd <= 1) return true;
+
+  // TODO(user): deal with all UNSAT case.
+  // Also if the target is affine, we can canonicalize it.
+  const LinearExpressionProto& target = lin_max->target();
+  const int64_t old_gcd = gcd;
+  gcd = LinearExpressionGcd(target, gcd);
+  if (gcd != old_gcd) {
+    if (target.vars().empty()) {
+      return context_->NotifyThatModelIsUnsat("infeasible lin_max");
+    }
+
+    // If the target is affine, we can solve the diophantine equation and
+    // express the target in term of a new variable.
+    if (target.vars().size() == 1) {
+      gcd = old_gcd;
+      context_->UpdateRuleStats("lin_max: canonicalize target using gcd");
+      if (!context_->CanonicalizeAffineVariable(
+              target.vars(0), target.coeffs(0), gcd, -target.offset())) {
+        return false;
+      }
+      CanonicalizeLinearExpression(*ct, lin_max->mutable_target());
+      context_->UpdateConstraintVariableUsage(c);
+      CHECK_EQ(LinearExpressionGcd(target, gcd), gcd);
+    } else {
+      context_->UpdateRuleStats(
+          "TODO lin_max: lhs not trivially divisible by rhs gcd");
+    }
+  }
+  if (gcd <= 1) return true;
+
+  context_->UpdateRuleStats("lin_max: divising by gcd");
+  DivideLinearExpression(gcd, lin_max->mutable_target());
+  for (LinearExpressionProto& expr : *lin_max->mutable_exprs()) {
+    DivideLinearExpression(gcd, &expr);
+  }
+  return true;
+}
+
 bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
@@ -1189,8 +1239,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       context_->UpdateRuleStats("int_prod: removed constant expressions.");
       changed = true;
     } else {
-      const int64_t expr_divisor = context_->ExpressionDivisor(expr);
-      context_->DivideExpression(&expr, expr_divisor);
+      const int64_t expr_divisor = LinearExpressionGcd(expr);
+      DivideLinearExpression(expr_divisor, &expr);
       constant_factor = CapProd(constant_factor, expr_divisor);
       *proto->mutable_exprs(new_size++) = expr;
     }
@@ -1247,7 +1297,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
 
-    const int64_t target_divisor = context_->ExpressionDivisor(*target);
+    const int64_t target_divisor = LinearExpressionGcd(*target);
 
     // Reduce coefficients.
     const int64_t gcd =
@@ -1255,7 +1305,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
                         static_cast<uint64_t>(std::abs(target_divisor)));
     if (gcd != 1) {
       constant_factor /= gcd;
-      context_->DivideExpression(target, gcd);
+      DivideLinearExpression(gcd, target);
     }
 
     // expression * constant_factor = target.
@@ -1558,7 +1608,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   return false;
 }
 
-bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
+bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   const LinearExpressionProto target = ct->int_mod().target();
@@ -1625,6 +1675,38 @@ bool CpModelPresolver::PresolveIntMod(ConstraintProto* ct) {
 
   if (domain_changed) {
     context_->UpdateRuleStats("int_mod: reduce target domain");
+  }
+
+  // Remove the constraint if the target is removable.
+  // This is triggered on the flatzinc rotating-workforce problems.
+  //
+  // TODO(user): We can deal with more cases, sometime even if the domain of
+  // expr.vars(0) is large, the implied domain is not too complex.
+  if (target.vars().size() == 1 && expr.vars().size() == 1 &&
+      context_->DomainOf(expr.vars(0)).Size() < 100 && context_->IsFixed(mod) &&
+      context_->VariableIsUniqueAndRemovable(target.vars(0))) {
+    const int64_t fixed_mod = context_->FixedValue(mod);
+    std::vector<int64_t> values;
+    const Domain dom = context_->DomainOf(target.vars(0));
+    for (const int64_t v : context_->DomainOf(expr.vars(0)).Values()) {
+      const int64_t rhs = (v * expr.coeffs(0) + expr.offset()) % fixed_mod;
+      const int64_t target_term = rhs - target.offset();
+      if (target_term % target.coeffs(0) != 0) continue;
+      if (dom.Contains(target_term / target.coeffs(0))) {
+        values.push_back(v);
+      }
+    }
+
+    context_->UpdateRuleStats("int_mod: remove singleton target");
+    if (!context_->IntersectDomainWith(expr.vars(0),
+                                       Domain::FromValues(values))) {
+      return false;
+    }
+    *context_->mapping_model->add_constraints() = *ct;
+    ct->Clear();
+    context_->UpdateConstraintVariableUsage(c);
+    context_->MarkVariableAsRemoved(target.vars(0));
+    return true;
   }
 
   return false;
@@ -7670,6 +7752,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinearArgument(*ct, ct->mutable_lin_max())) {
         context_->UpdateConstraintVariableUsage(c);
       }
+      if (!DivideLinMaxByGcd(c, ct)) return false;
       if (IsAffineIntAbs(ct)) {
         return PresolveIntAbs(ct);
       } else {
@@ -7689,7 +7772,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_mod())) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      return PresolveIntMod(ct);
+      return PresolveIntMod(c, ct);
     case ConstraintProto::kLinear: {
       if (CanonicalizeLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
