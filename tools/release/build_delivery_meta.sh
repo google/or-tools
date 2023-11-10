@@ -87,7 +87,7 @@ function build_dotnet() {
 
   echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
-  -DBUILD_DOTNET=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
+  -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON -DUNIVERSAL_DOTNET_PACKAGE=ON
   cmake --build temp_dotnet -j8 -v
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
@@ -211,7 +211,7 @@ function main() {
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a build.log
 
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+  #(cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
