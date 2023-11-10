@@ -1,5 +1,5 @@
 Protobuf=v24.4
-abseil-cpp=20230802.0
+abseil-cpp=20230802.1
 Cbc=2.10.7
 Cgl=0.60.5
 Clp=1.17.7
