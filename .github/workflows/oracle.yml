@@ -117,7 +117,7 @@ jobs:
 
       - name: Set-up Xpress with pip
         run: |
-          python3 -m pip install xpress==9.0.0
+          python3 -m pip install "xpress>=9.0,<9.1"
           XPRESS_DIR=/usr/local/lib64/python3.9/site-packages/xpress
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
