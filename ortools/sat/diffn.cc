@@ -16,6 +16,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <utility>
@@ -43,11 +44,22 @@ namespace sat {
 
 namespace {
 
+IntegerVariable CreateVariableWithTightDomain(
+    absl::Span<const AffineExpression> exprs, Model* model) {
+  IntegerValue min = kMaxIntegerValue;
+  IntegerValue max = kMinIntegerValue;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (const AffineExpression& e : exprs) {
+    min = std::min(min, integer_trail->LevelZeroLowerBound(e));
+    max = std::max(max, integer_trail->LevelZeroUpperBound(e));
+  }
+  return integer_trail->AddIntegerVariable(min, max);
+}
+
 // TODO(user): Use the faster variable only version if all expressions reduce
 // to a single variable?
-void AddIsEqualToMinOf(IntegerVariable min_var,
-                       const std::vector<AffineExpression>& exprs,
-                       Model* model) {
+IntegerVariable CreateVariableEqualToMinOf(
+    absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
   for (const AffineExpression& affine : exprs) {
     LinearExpression e;
@@ -58,15 +70,17 @@ void AddIsEqualToMinOf(IntegerVariable min_var,
     }
     converted.push_back(e);
   }
+
   LinearExpression target;
-  target.vars.push_back(min_var);
+  const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
+  target.vars.push_back(var);
   target.coeffs.push_back(IntegerValue(1));
   model->Add(IsEqualToMinOf(target, converted));
+  return var;
 }
 
-void AddIsEqualToMaxOf(IntegerVariable max_var,
-                       const std::vector<AffineExpression>& exprs,
-                       Model* model) {
+IntegerVariable CreateVariableEqualToMaxOf(
+    absl::Span<const AffineExpression> exprs, Model* model) {
   std::vector<LinearExpression> converted;
   for (const AffineExpression& affine : exprs) {
     LinearExpression e;
@@ -77,74 +91,105 @@ void AddIsEqualToMaxOf(IntegerVariable max_var,
     }
     converted.push_back(NegationOf(e));
   }
+
   LinearExpression target;
-  target.vars.push_back(NegationOf(max_var));
+  const IntegerVariable var = CreateVariableWithTightDomain(exprs, model);
+  target.vars.push_back(NegationOf(var));
   target.coeffs.push_back(IntegerValue(1));
   model->Add(IsEqualToMinOf(target, converted));
+  return var;
 }
 
-}  // namespace
-
+// Add a cumulative relaxation. That is, on one dimension, it does not enforce
+// the rectangle aspect, allowing vertical slices to move freely.
 void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
                                    SchedulingConstraintHelper* y,
                                    Model* model) {
-  int64_t min_starts = std::numeric_limits<int64_t>::max();
-  int64_t max_ends = std::numeric_limits<int64_t>::min();
-  std::vector<AffineExpression> sizes;
-  for (int box = 0; box < y->NumTasks(); ++box) {
-    min_starts = std::min(min_starts, y->StartMin(box).value());
-    max_ends = std::max(max_ends, y->EndMax(box).value());
-    sizes.push_back(y->Sizes()[box]);
-  }
-
+  // TODO(user): Use conditional affine min/max !!
   const IntegerVariable min_start_var =
-      model->Add(NewIntegerVariable(min_starts, max_ends));
-  AddIsEqualToMinOf(min_start_var, y->Starts(), model);
-
+      CreateVariableEqualToMinOf(y->Starts(), model);
   const IntegerVariable max_end_var =
-      model->Add(NewIntegerVariable(min_starts, max_ends));
-  AddIsEqualToMaxOf(max_end_var, y->Ends(), model);
+      CreateVariableEqualToMaxOf(y->Ends(), model);
 
   // (max_end - min_start) >= capacity.
-  const AffineExpression capacity(
-      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts))));
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const AffineExpression capacity(model->Add(NewIntegerVariable(
+      0, CapSub(integer_trail->UpperBound(max_end_var).value(),
+                integer_trail->LowerBound(min_start_var).value()))));
   const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
   model->Add(
       WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
                                 coeffs, capacity.constant.value()));
 
-  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-
-  const SatParameters* params = model->GetOrCreate<SatParameters>();
-  const bool add_timetabling_relaxation =
-      params->use_timetabling_in_no_overlap_2d();
-  bool add_energetic_relaxation =
-      params->use_energetic_reasoning_in_no_overlap_2d();
-
-  // Needed if we use one of the relaxation below.
-  SchedulingDemandHelper* demands;
-  if (add_timetabling_relaxation || add_energetic_relaxation) {
-    demands =
-        model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
-            x, sizes);
-  }
+  SchedulingDemandHelper* demands =
+      model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
+          x, y->Sizes());
 
   // Propagator responsible for applying Timetabling filtering rule. It
   // increases the minimum of the start variables, decrease the maximum of the
   // end variables, and increase the minimum of the capacity variable.
-  if (add_timetabling_relaxation) {
-    DCHECK(demands != nullptr);
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  if (params.use_timetabling_in_no_overlap_2d()) {
     TimeTablingPerTask* time_tabling =
         new TimeTablingPerTask(capacity, x, demands, model);
-    time_tabling->RegisterWith(watcher);
+    time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(time_tabling);
   }
 
   // Propagator responsible for applying the Overload Checking filtering rule.
   // It increases the minimum of the capacity variable.
-  if (add_energetic_relaxation) {
-    DCHECK(demands != nullptr);
+  if (params.use_energetic_reasoning_in_no_overlap_2d()) {
     AddCumulativeOverloadChecker(capacity, x, demands, model);
+  }
+}
+
+}  // namespace
+
+void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
+                                 const std::vector<IntervalVariable>& y,
+                                 Model* model) {
+  IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+  SchedulingConstraintHelper* x_helper = repository->GetOrCreateHelper(x);
+  SchedulingConstraintHelper* y_helper = repository->GetOrCreateHelper(y);
+
+  NonOverlappingRectanglesDisjunctivePropagator* constraint =
+      new NonOverlappingRectanglesDisjunctivePropagator(x_helper, y_helper,
+                                                        model);
+  constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
+  model->TakeOwnership(constraint);
+
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  const bool add_cumulative_relaxation =
+      params.use_timetabling_in_no_overlap_2d() ||
+      params.use_energetic_reasoning_in_no_overlap_2d();
+
+  if (add_cumulative_relaxation) {
+    // We must first check if the cumulative relaxation is possible.
+    bool some_boxes_are_only_optional_on_x = false;
+    bool some_boxes_are_only_optional_on_y = false;
+    for (int i = 0; i < x.size(); ++i) {
+      if (x_helper->IsOptional(i) && y_helper->IsOptional(i) &&
+          x_helper->PresenceLiteral(i) != y_helper->PresenceLiteral(i)) {
+        // Abort as the task would be conditioned by two literals.
+        return;
+      }
+      if (x_helper->IsOptional(i) && !y_helper->IsOptional(i)) {
+        // We cannot use x_size as the demand of the cumulative based on
+        // the y_intervals.
+        some_boxes_are_only_optional_on_x = true;
+      }
+      if (y_helper->IsOptional(i) && !x_helper->IsOptional(i)) {
+        // We cannot use y_size as the demand of the cumulative based on
+        // the y_intervals.
+        some_boxes_are_only_optional_on_y = true;
+      }
+    }
+    if (!some_boxes_are_only_optional_on_y) {
+      AddDiffnCumulativeRelationOnX(x_helper, y_helper, model);
+    }
+    if (!some_boxes_are_only_optional_on_x) {
+      AddDiffnCumulativeRelationOnX(y_helper, x_helper, model);
+    }
   }
 }
 
@@ -330,7 +375,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // Compute relevant boxes, the one with a mandatory part of y. Because we will
   // need to sort it this way, we consider them by increasing start max.
   indexed_boxes_.clear();
-  const std::vector<TaskTime>& temp = y->TaskByDecreasingStartMax();
+  const auto temp = y->TaskByDecreasingStartMax();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
     // Ignore absent boxes.

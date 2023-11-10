@@ -351,8 +351,12 @@ message ConstraintProto {
     BoolArgumentProto bool_xor = 5;
 
     // The int_div constraint forces the target to equal exprs[0] / exprs[1].
-    // In particular, exprs[1] can never take the value 0. Also, as for now, we
-    // do not support exprs[1] spanning across 0.
+    // The division is "rounded" towards zero, so we can have for instance
+    // (2 = 12 / 5) or (-3 = -10 / 3). If you only want exact integer division,
+    // then you should use instead of t = a / b, the int_prod constraint
+    // a = b * t.
+    //
+    // If 0 belongs to the domain of exprs[1], then the model is deemed invalid.
     LinearArgumentProto int_div = 7;
 
     // The int_mod constraint forces the target to equal exprs[0] % exprs[1].
@@ -364,11 +368,10 @@ message ConstraintProto {
     // variables. By convention, because we can just remove term equal to one,
     // the empty product forces the target to be one.
     //
-    // Note that the solver checks for potential integer overflow. So it is
-    // recommended to limit the domain of the variables such that the product
-    // fits in [INT_MIN + 1..INT_MAX - 1].
-    //
-    // TODO(user): Support more than two terms in the product.
+    // Note that the solver checks for potential integer overflow. So the
+    // product of the maximum absolute value of all the terms (using the initial
+    // domain) should fit on an int64. Otherwise the model will be declared
+    // invalid.
     LinearArgumentProto int_prod = 11;
 
     // The lin_max constraint forces the target to equal the maximum of all
@@ -792,7 +795,10 @@ message CpSolverResponse {
   int64 inner_objective_lower_bound = 29;
 
   // Some statistics about the solve.
-  // TODO(user): These are broken in multi-thread.
+  //
+  // Important: in multithread, this correspond the statistics of the first
+  // subsolver. Which is usually the one with the user defined parameters. Or
+  // the default-search if none are specified.
   int64 num_integers = 30;
   int64 num_booleans = 10;
   int64 num_conflicts = 11;

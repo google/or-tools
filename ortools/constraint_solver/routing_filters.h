@@ -14,18 +14,19 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -49,7 +50,8 @@ IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
 /// Returns a filter enforcing pickup and delivery constraints for the given
 /// pair of nodes and given policies.
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
-    const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
+    const RoutingModel& routing_model,
+    const std::vector<PickupDeliveryPair>& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 /// Returns a filter checking that vehicle variable domains are respected.
@@ -169,14 +171,11 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual bool DisableFiltering() const { return false; }
   virtual void OnBeforeSynchronizePaths() {}
   virtual void OnAfterSynchronizePaths() {}
-  virtual void OnSynchronizePathFromStart(int64_t start) {}
+  virtual void OnSynchronizePathFromStart(int64_t) {}
   virtual bool InitializeAcceptPath() { return true; }
   virtual bool AcceptPath(int64_t path_start, int64_t chain_start,
                           int64_t chain_end) = 0;
-  virtual bool FinalizeAcceptPath(int64_t objective_min,
-                                  int64_t objective_max) {
-    return true;
-  }
+  virtual bool FinalizeAcceptPath(int64_t, int64_t) { return true; }
   /// Detects path starts, used to track which node belongs to which path.
   void ComputePathStarts(std::vector<int64_t>* path_starts,
                          std::vector<int>* index_to_path);

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_STATUS_BUILDER_H_
 #define OR_TOOLS_BASE_STATUS_BUILDER_H_
 
+#include <ios>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -30,6 +31,24 @@ class StatusBuilder {
 
   explicit StatusBuilder(const absl::Status status)
       : base_status_(std::move(status)) {}
+
+  StatusBuilder(const StatusBuilder& other)
+      : base_status_(other.base_status_),
+        ss_(other.ss_.str(), std::ios_base::app) {}
+  StatusBuilder& operator=(const StatusBuilder& other) {
+    base_status_ = other.base_status_;
+    ss_ = std::ostringstream(other.ss_.str(), std::ios_base::app);
+    return *this;
+  }
+
+  StatusBuilder(StatusBuilder&& other)
+      : base_status_(std::exchange(other.base_status_, absl::OkStatus())),
+        ss_(std::move(other.ss_)) {}
+  StatusBuilder& operator=(StatusBuilder&& other) {
+    base_status_ = std::exchange(other.base_status_, absl::OkStatus());
+    ss_ = std::move(other.ss_);
+    return *this;
+  }
 
   operator absl::Status() const {  // NOLINT
     const std::string annotation = ss_.str();
@@ -53,7 +72,7 @@ class StatusBuilder {
   StatusBuilder& SetAppend() { return *this; }
 
  private:
-  const absl::Status base_status_;
+  absl::Status base_status_;
   std::ostringstream ss_;
 };
 

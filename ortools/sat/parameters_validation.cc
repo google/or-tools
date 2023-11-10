@@ -72,19 +72,17 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(strategy_change_increase_ratio);
   TEST_IS_FINITE(absolute_gap_limit);
   TEST_IS_FINITE(relative_gap_limit);
-  TEST_IS_FINITE(log_frequency_in_seconds);
-  TEST_IS_FINITE(model_reduction_log_frequency_in_seconds);
   TEST_IS_FINITE(probing_deterministic_time_limit);
   TEST_IS_FINITE(presolve_probing_deterministic_time_limit);
   TEST_IS_FINITE(propagation_loop_detection_factor);
   TEST_IS_FINITE(merge_no_overlap_work_limit);
   TEST_IS_FINITE(merge_at_most_one_work_limit);
   TEST_IS_FINITE(min_orthogonality_for_lp_constraints);
+  TEST_IS_FINITE(mip_var_scaling);
   TEST_IS_FINITE(cut_max_active_count_value);
   TEST_IS_FINITE(cut_active_count_decay);
   TEST_IS_FINITE(shaving_search_deterministic_time);
   TEST_IS_FINITE(mip_max_bound);
-  TEST_IS_FINITE(mip_var_scaling);
   TEST_IS_FINITE(mip_wanted_precision);
   TEST_IS_FINITE(mip_check_precision);
   TEST_IS_FINITE(mip_max_valid_magnitude);
@@ -95,7 +93,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(max_deterministic_time);
 
   // Parallelism.
-  const int kMaxReasonableParallelism = 1'000'000;
+  const int kMaxReasonableParallelism = 10'000;
   TEST_IN_RANGE(num_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(num_search_workers, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(min_num_lns_workers, 0, kMaxReasonableParallelism);
@@ -113,17 +111,25 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NOT_NAN(feasibility_jump_decay);
   TEST_NOT_NAN(feasibility_jump_var_randomization_probability);
   TEST_NOT_NAN(feasibility_jump_var_perburbation_range_ratio);
-  TEST_IN_RANGE(feasibility_jump_max_num_values_scanned, 2, 1'000'000'000);
   TEST_IN_RANGE(feasibility_jump_decay, 0.0, 1.0);
   TEST_IN_RANGE(feasibility_jump_var_randomization_probability, 0.0, 1.0);
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);
 
   // Violation ls.
+  TEST_NOT_NAN(violation_ls_compound_move_probability);
   TEST_IN_RANGE(num_violation_ls, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(violation_ls_perturbation_period, 1, 1'000'000'000);
+  TEST_IN_RANGE(violation_ls_compound_move_probability, 0.0, 1.0);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
+  TEST_POSITIVE(mip_var_scaling);
+
+  // Test LP tolerances.
+  TEST_IS_FINITE(lp_primal_tolerance);
+  TEST_IS_FINITE(lp_dual_tolerance);
+  TEST_NON_NEGATIVE(lp_primal_tolerance);
+  TEST_NON_NEGATIVE(lp_dual_tolerance);
 
   TEST_NON_NEGATIVE(mip_wanted_precision);
   TEST_NON_NEGATIVE(max_time_in_seconds);

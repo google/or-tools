@@ -56,23 +56,24 @@ def LinearProgrammingExample():
 
     # Solve the system.
     # [START solve]
+    print(f"Solving with {solver.SolverVersion()}")
     status = solver.Solve()
     # [END solve]
 
     # [START print_solution]
     if status == pywraplp.Solver.OPTIMAL:
         print("Solution:")
-        print("Objective value =", solver.Objective().Value())
-        print("x =", x.solution_value())
-        print("y =", y.solution_value())
+        print(f"Objective value = {solver.Objective().Value():0.1f}")
+        print(f"x = {x.solution_value():0.1f}")
+        print(f"y = {y.solution_value():0.1f}")
     else:
         print("The problem does not have an optimal solution.")
     # [END print_solution]
 
     # [START advanced]
     print("\nAdvanced usage:")
-    print("Problem solved in %f milliseconds" % solver.wall_time())
-    print("Problem solved in %d iterations" % solver.iterations())
+    print(f"Problem solved in {solver.wall_time():d} milliseconds")
+    print(f"Problem solved in {solver.iterations():d} iterations")
     # [END advanced]
 
 

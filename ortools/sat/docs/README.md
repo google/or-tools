@@ -1,23 +1,8 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://or-tools.github.io/docs/python/ortools/sat/python/cp_model.html) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
-
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Using the CP-SAT solver
 
 https://developers.google.com/optimization/cp/cp_solver
-
-
-<!--ts-->
-* [Using the CP-SAT solver](#using-the-cp-sat-solver)
-   * [Documentation structure](#documentation-structure)
-   * [Searching for one (optimal) solution of a CP-SAT model](#searching-for-one-optimal-solution-of-a-cp-sat-model)
-      * [Python code samples](#python-code-samples)
-      * [C++ code samples](#c-code-samples)
-      * [Java code samples](#java-code-samples)
-      * [C# code samples](#c-code-samples-1)
-
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Documentation structure
 

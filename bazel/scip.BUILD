@@ -93,7 +93,7 @@ cc_library(
         "-DSCIP_WITH_ZLIB",
         "-DWITH_SCIPDEF",
         "-DSCIP_ROUNDING_FE",
-        "-DTPI_TNYC",  # src/tpi/type_tpi_tnycthrd.h
+        "-DTPI_TNY",  # src/tpi/type_tpi_tnycthrd.h
         # Compile in thead-safe mode (required since we use TPI_TNYC). Note,
         # one does not technically need to add this, as SCIP code always
         # uses syntax like "#ifndef NPARASCIP". But let's be explicit here.

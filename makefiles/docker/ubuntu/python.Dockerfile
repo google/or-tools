@@ -7,7 +7,7 @@ RUN apt-get update -qq \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN python3 -m pip install --break-system-package \
- absl-py mypy-protobuf
+ absl-py mypy mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

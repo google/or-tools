@@ -341,4 +341,36 @@ void SetCoverLedger::UpdateMarginalImpacts(
   DCHECK(CheckCoverageAndMarginalImpacts(is_selected_));
 }
 
+std::vector<SubsetIndex> SetCoverLedger::ComputeSettableSubsets() const {
+  const SparseRowView& rows = model_->rows();
+  absl::flat_hash_set<SubsetIndex> collection;
+  for (ElementIndex element(0); element < rows.size(); ++element) {
+    if (coverage_[element] >= 1) continue;
+    for (const SubsetIndex subset : rows[element]) {
+      if (is_selected_[subset]) continue;
+      collection.insert(subset);
+    }
+  }
+  std::vector<SubsetIndex> focus(collection.begin(), collection.end());
+  DCHECK_LE(focus.size(), model_->num_subsets());
+  std::sort(focus.begin(), focus.end());
+  return focus;
+}
+
+std::vector<SubsetIndex> SetCoverLedger::ComputeResettableSubsets() const {
+  const SparseRowView& rows = model_->rows();
+  absl::flat_hash_set<SubsetIndex> collection;
+  for (ElementIndex element(0); element < rows.size(); ++element) {
+    if (coverage_[element] < 1) continue;
+    for (const SubsetIndex subset : rows[element]) {
+      if (!is_selected_[subset]) continue;
+      collection.insert(subset);
+    }
+  }
+  std::vector<SubsetIndex> focus(collection.begin(), collection.end());
+  DCHECK_LE(focus.size(), model_->num_subsets());
+  std::sort(focus.begin(), focus.end());
+  return focus;
+}
+
 }  // namespace operations_research

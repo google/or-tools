@@ -29,10 +29,6 @@
 namespace operations_research {
 namespace sat {
 
-LinearModel::LinearModel(const CpModelProto& model_proto)
-    : model_proto_(model_proto),
-      ignored_constraints_(model_proto.constraints_size(), false) {}
-
 namespace {
 
 // This struct stores constraints of the form literal => var ==/!= value.
@@ -83,12 +79,11 @@ struct VarValueCtIndex {
 
 }  // namespace
 
-// TODO(user): Do we use the loader code to detect full encodings and element
-// encodings.
-void LinearModel::Initialize() {
-  if (initialized_) return;
-  initialized_ = true;
-
+LinearModel::LinearModel(const CpModelProto& model_proto)
+    : model_proto_(model_proto),
+      ignored_constraints_(model_proto.constraints_size(), false) {
+  // TODO(user): Do we use the loader code to detect full encodings and
+  // element encodings.
   absl::flat_hash_set<BoolArgumentProto> exactly_ones_cache;
   absl::flat_hash_set<LinearConstraintProto> encoding_cache;
   std::vector<std::vector<EqualityDetectionHelper>> var_to_equalities(

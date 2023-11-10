@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {

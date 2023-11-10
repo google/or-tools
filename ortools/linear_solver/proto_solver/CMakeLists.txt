@@ -12,6 +12,22 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+if(NOT USE_COINOR)
+  list(FILTER _SRCS EXCLUDE REGEX "/clp_proto_solver.")
+  list(FILTER _SRCS EXCLUDE REGEX "/cbc_proto_solver.")
+endif()
+if(NOT USE_GLPK)
+  list(FILTER _SRCS EXCLUDE REGEX "/glpk_proto_solver.")
+endif()
+if(NOT USE_HIGHS)
+  list(FILTER _SRCS EXCLUDE REGEX "/highs_proto_solver.")
+endif()
+if(NOT USE_PDLP)
+  list(FILTER _SRCS EXCLUDE REGEX "/pdlp_proto_solver.")
+endif()
+if(NOT USE_SCIP)
+  list(FILTER _SRCS EXCLUDE REGEX "/scip_proto_solver.")
+endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver_proto_solver)
 
@@ -29,8 +45,7 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::status
   absl::str_format
-  protobuf::libprotobuf
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+#add_library(${PROJECT_NAMESPACE}::linear_solver_proto_solver ALIAS ${NAME})

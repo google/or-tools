@@ -21,6 +21,7 @@
 #include <deque>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -44,6 +45,67 @@
 namespace operations_research {
 namespace sat {
 
+// A simple class with always IdentityMap[t] == t.
+// This is to avoid allocating vector with std::iota() in some Apis.
+template <typename T>
+class IdentityMap {
+ public:
+  T operator[](T t) const { return t; }
+};
+
+// Small utility class to store a vector<vector<>> where one can only append new
+// vector and never change previously added ones. This allows to store a static
+// key -> value(s) mapping.
+//
+// This is a lot more compact memorywise and thus faster than vector<vector<>>.
+// Note that we implement a really small subset of the vector<vector<>> API.
+//
+// We support int and StrongType for key K and any copyable type for value V.
+template <typename K = int, typename V = int>
+class CompactVectorVector {
+ public:
+  // Size of the "key" space, always in [0, size()).
+  size_t size() const;
+
+  // Getters, either via [] or via a wrapping to be compatible with older api.
+  //
+  // Warning: Spans are only valid until the next modification!
+  absl::Span<const V> operator[](K key) const;
+  std::vector<absl::Span<const V>> AsVectorOfSpan() const;
+
+  // Restore to empty vector<vector<>>.
+  void clear();
+
+  // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not
+  // necessarily sorted by key, regroup the same key so that
+  // CompactVectorVector[key] list all values in the order in which they appear.
+  //
+  // We only check keys.size(), so this can be used with IdentityMap() as
+  // second argument.
+  template <typename Keys, typename Values>
+  void ResetFromFlatMapping(Keys keys, Values values);
+
+  // Append a new entry.
+  // Returns the previous size() as this is convenient for how we use it.
+  int Add(absl::Span<const V> values);
+
+  // Hacky: same as Add() but for sat::Literal or any type from which we can get
+  // a value type V via L.Index().value().
+  template <typename L>
+  int AddLiterals(const std::vector<L>& wrapped_values);
+
+ private:
+  // Convert int and StrongInt to normal int.
+  static int InternalKey(K key);
+
+  // TODO(user): with a sentinel, we can infer
+  // size_[i] = starts_[i + 1] - starts_[i]. This should be slightly faster.
+  // Benchmark and change.
+  std::vector<int> starts_;
+  std::vector<int> sizes_;
+  std::vector<V> buffer_;
+};
+
 // Prints a positive number with separators for easier reading (ex: 1'348'065).
 std::string FormatCounter(int64_t num);
 
@@ -55,7 +117,7 @@ inline std::string FormatName(absl::string_view name) {
 // Display tabular data by auto-computing cell width. Note that we right align
 // everything but the first row/col that is assumed to be the table name and is
 // left aligned.
-std::string FormatTable(const std::vector<std::vector<std::string>>& table,
+std::string FormatTable(std::vector<std::vector<std::string>>& table,
                         int spacing = 2);
 
 // Returns a in [0, m) such that a * x = 1 modulo m.
@@ -579,6 +641,108 @@ IntType CeilOfRatio(IntType numerator, IntType denominator) {
 template <typename IntType>
 IntType FloorOfRatio(IntType numerator, IntType denominator) {
   return CeilOrFloorOfRatio<IntType, false>(numerator, denominator);
+}
+
+template <typename K, typename V>
+inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
+  const int index = size();
+  starts_.push_back(buffer_.size());
+  sizes_.push_back(values.size());
+  buffer_.insert(buffer_.end(), values.begin(), values.end());
+  return index;
+}
+
+template <typename K, typename V>
+template <typename L>
+inline int CompactVectorVector<K, V>::AddLiterals(
+    const std::vector<L>& wrapped_values) {
+  const int index = size();
+  starts_.push_back(buffer_.size());
+  sizes_.push_back(wrapped_values.size());
+  for (const L wrapped_value : wrapped_values) {
+    buffer_.push_back(wrapped_value.Index().value());
+  }
+  return index;
+}
+
+// We need to support both StrongType and normal int.
+template <typename K, typename V>
+inline int CompactVectorVector<K, V>::InternalKey(K key) {
+  if constexpr (std::is_same_v<K, int>) {
+    return key;
+  } else {
+    return key.value();
+  }
+}
+
+template <typename K, typename V>
+inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
+  DCHECK_GE(key, 0);
+  DCHECK_LT(key, starts_.size());
+  DCHECK_LT(key, sizes_.size());
+  const int k = InternalKey(key);
+  const size_t size = static_cast<size_t>(sizes_[k]);
+  if (size == 0) return {};
+  return {&buffer_[starts_[k]], size};
+}
+
+template <typename K, typename V>
+inline std::vector<absl::Span<const V>>
+CompactVectorVector<K, V>::AsVectorOfSpan() const {
+  std::vector<absl::Span<const V>> result(starts_.size());
+  for (int k = 0; k < starts_.size(); ++k) {
+    result[k] = (*this)[k];
+  }
+  return result;
+}
+
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::clear() {
+  starts_.clear();
+  sizes_.clear();
+  buffer_.clear();
+}
+
+template <typename K, typename V>
+inline size_t CompactVectorVector<K, V>::size() const {
+  return starts_.size();
+}
+
+template <typename K, typename V>
+template <typename Keys, typename Values>
+inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
+                                                            Values values) {
+  if (keys.empty()) return clear();
+
+  // Compute maximum index.
+  int max_key = 0;
+  for (const K key : keys) {
+    max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  // Compute sizes_;
+  sizes_.assign(max_key, 0);
+  for (const K key : keys) {
+    sizes_[InternalKey(key)]++;
+  }
+
+  // Compute starts_;
+  starts_.assign(max_key, 0);
+  for (int k = 1; k < max_key; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  buffer_.resize(keys.size());
+  for (int i = 0; i < keys.size(); ++i) {
+    buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = max_key - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
 }
 
 }  // namespace sat

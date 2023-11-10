@@ -51,6 +51,10 @@ class LPDecomposer {
  public:
   LPDecomposer();
 
+  // This type is neither copyable nor movable.
+  LPDecomposer(const LPDecomposer&) = delete;
+  LPDecomposer& operator=(const LPDecomposer&) = delete;
+
   // Decomposes the problem into independent problems.
   // Note that a pointer is kept (no copy) on the linear_problem, so the problem
   // should not change during the life of the LPDecomposer object.
@@ -84,8 +88,6 @@ class LPDecomposer {
   std::vector<std::vector<ColIndex>> clusters_;
 
   mutable absl::Mutex mutex_;
-
-  DISALLOW_COPY_AND_ASSIGN(LPDecomposer);
 };
 
 }  // namespace glop

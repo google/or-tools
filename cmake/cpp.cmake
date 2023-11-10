@@ -15,26 +15,30 @@ if(NOT BUILD_CXX)
   return()
 endif()
 
-# Main Target
-add_library(${PROJECT_NAME} "")
-# Xcode fails to build if library doesn't contains at least one source file.
-if(XCODE)
-  file(GENERATE
-    OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp
-    CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
-  target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
-endif()
+#############
+##  FLAGS  ##
+#############
+set(OR_TOOLS_COMPILE_DEFINITIONS)
+set(OR_TOOLS_COMPILE_OPTIONS)
+set(OR_TOOLS_LINK_OPTIONS)
 
 if(BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
 endif()
+# Mandatory built-in components
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
+# Optional built-in components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
 endif()
+if(BUILD_MATH_OPT)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MATH_OPT")
+  set(MATH_OPT_DIR math_opt)
+endif()
+# Optional solvers
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
@@ -44,6 +48,9 @@ endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
   set(GLPK_DIR glpk)
+endif()
+if(USE_GUROBI)
+  set(GUROBI_DIR gurobi)
 endif()
 if(USE_HIGHS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_HIGHS")
@@ -71,6 +78,8 @@ endif()
 if(WIN32)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
 endif()
+
+# Compiler options
 if(MSVC)
   list(APPEND OR_TOOLS_COMPILE_OPTIONS
     "/bigobj" # Allow big object
@@ -110,33 +119,161 @@ else()
   list(APPEND OR_TOOLS_COMPILE_OPTIONS "-fwrapv")
 endif()
 
-# Includes
-target_include_directories(${PROJECT_NAME} INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include>
+# Link option
+if(MSVC)
+  list(APPEND OR_TOOLS_LINK_OPTIONS
+   "/WHOLEARCHIVE:${PROJECT_NAME}"
+  )
+endif()
+
+##################
+##  PROTO FILE  ##
+##################
+# Get Protobuf include dir
+set(PROTO_DIRS)
+get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+foreach(dir IN LISTS protobuf_dirs)
+  if (NOT "${dir}" MATCHES "INSTALL_INTERFACE|-NOTFOUND")
+    #message(STATUS "Adding proto path: ${dir}")
+    list(APPEND PROTO_DIRS "--proto_path=${dir}")
+  endif()
+endforeach()
+
+# Generate C++ OBJECT library from proto files,
+# e.g
+# generate_proto_library(
+#   NAME
+#     ortools_proto
+#   FILES
+#     ortools/foo/foo.proto
+#     ortools/bar/bar.proto
+#   NO_ALIAS
+# )
+function(generate_proto_library)
+  set(options NO_ALIAS)
+  set(oneValueArgs NAME)
+  set(multiValueArgs FILES LINK_LIBRARIES)
+  cmake_parse_arguments(PROTO
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
   )
 
+ if(NOT PROTOC_PRG)
+   message(FATAL_ERROR "protoc binary not found.")
+ endif()
+
+ # Generate proto C++ files.
+ set(PROTO_HDRS)
+ set(PROTO_SRCS)
+ foreach(PROTO_FILE IN LISTS PROTO_FILES)
+   #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
+   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+   get_filename_component(PROTO_NAME_WE ${PROTO_FILE} NAME_WE)
+   set(PROTO_HDR ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.h)
+   set(PROTO_SRC ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME_WE}.pb.cc)
+   #message(STATUS "protoc hdr: ${PROTO_HDR}")
+   #message(STATUS "protoc src: ${PROTO_SRC}")
+   add_custom_command(
+     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
+     COMMAND ${PROTOC_PRG}
+     "--proto_path=${PROJECT_SOURCE_DIR}"
+     ${PROTO_DIRS}
+     "--cpp_out=${PROJECT_BINARY_DIR}"
+     ${PROTO_FILE}
+     DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
+     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
+     VERBATIM)
+   list(APPEND PROTO_HDRS ${PROTO_HDR})
+   list(APPEND PROTO_SRCS ${PROTO_SRC})
+ endforeach()
+
+ # Create library
+ add_library(${PROTO_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
+ target_compile_features(${PROTO_NAME}_proto PUBLIC $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
+ if(MSVC)
+   set_target_properties(${PROTO_NAME}_proto PROPERTIES CXX_STANDARD 20)
+ else()
+   set_target_properties(${PROTO_NAME}_proto PROPERTIES CXX_STANDARD 17)
+ endif()
+ set_target_properties(${PROTO_NAME}_proto PROPERTIES
+   CXX_STANDARD_REQUIRED ON
+   CXX_EXTENSIONS OFF
+   POSITION_INDEPENDENT_CODE ON)
+ target_include_directories(${PROTO_NAME}_proto PRIVATE
+   ${PROJECT_SOURCE_DIR}
+   ${PROJECT_BINARY_DIR}
+   #$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
+ )
+ target_compile_definitions(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+ target_compile_options(${PROTO_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
+ target_link_libraries(${PROTO_NAME}_proto PUBLIC protobuf::libprotobuf ${PROTO_LINK_LIBRARIES})
+ add_library(${PROJECT_NAMESPACE}::${PROTO_NAME}_proto ALIAS ${PROTO_NAME}_proto)
+ #message(FATAL_ERROR "Proto target alias: ${PROJECT_NAMESPACE}::${PROTO_NAME}_proto")
+endfunction()
+
+# Generate Protobuf cpp sources
+set(OR_TOOLS_PROTO_FILES)
+file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
+  "ortools/constraint_solver/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/packing/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/scheduling/*.proto"
+  "ortools/util/*.proto"
+  )
+if(USE_PDLP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  list(APPEND OR_TOOLS_PROTO_FILES ${PDLP_PROTO_FILES})
+endif()
+if(USE_SCIP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE GSCIP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND OR_TOOLS_PROTO_FILES ${GSCIP_PROTO_FILES})
+endif()
+
+generate_proto_library(
+  NAME ${PROJECT_NAME}
+  FILES ${OR_TOOLS_PROTO_FILES})
+
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE MATH_OPT_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solvers/*.proto"
+  )
+  generate_proto_library(
+    NAME math_opt
+    FILES ${MATH_OPT_PROTO_FILES}
+    LINK_LIBRARIES ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+endif()
+
+###############
+##  ORTOOLS  ##
+###############
+# Main Target
+add_library(${PROJECT_NAME} "")
 # Compile options
 if(MSVC)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    CXX_STANDARD 20)
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 else()
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    CXX_STANDARD 17)
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
   CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF
-  )
+  CXX_EXTENSIONS OFF)
 target_compile_features(${PROJECT_NAME} PUBLIC
   $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
-
+target_link_options(${PROJECT_NAME} INTERFACE ${OR_TOOLS_LINK_OPTIONS})
 # Properties
 if(NOT APPLE)
-  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${PROJECT_VERSION})
 else()
   # Clang don't support version x.y.z with z > 255
   set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -147,9 +284,72 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
   POSITION_INDEPENDENT_CODE ON
   INTERFACE_POSITION_INDEPENDENT_CODE ON
+  INTERFACE_${PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR}
+  COMPATIBLE_INTERFACE_STRING ${PROJECT_NAME}_MAJOR_VERSION
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_${PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(${PROJECT_NAME} PROPERTIES COMPATIBLE_INTERFACE_STRING ${PROJECT_NAME}_MAJOR_VERSION)
+
+# Includes
+target_include_directories(${PROJECT_NAME} INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+# Xcode fails to build if library doesn't contains at least one source file.
+if(XCODE)
+  file(GENERATE
+    OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp
+    CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
+  target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
+endif()
+
+# Add ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto to libortools
+#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::proto)
+target_sources(${PROJECT_NAME} PRIVATE
+  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+
+foreach(SUBPROJECT IN ITEMS
+ algorithms
+ base
+ bop
+ constraint_solver
+ ${GLPK_DIR}
+ ${PDLP_DIR}
+ ${GSCIP_DIR}
+ glop
+ graph
+ ${GUROBI_DIR}
+ init
+ linear_solver
+ lp_data
+ packing
+ port
+ sat
+ scheduling
+ util)
+  add_subdirectory(ortools/${SUBPROJECT})
+  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
+  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
+  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
+endforeach()
+
+if(BUILD_MATH_OPT)
+  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::math_opt_proto)
+  target_sources(${PROJECT_NAME} PRIVATE
+    $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::math_opt_proto>)
+  add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::math_opt_proto)
+
+  add_subdirectory(ortools/${MATH_OPT_DIR})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_math_opt)
+endif()
+
+add_subdirectory(ortools/linear_solver/wrappers)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_wrappers>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
+
+add_subdirectory(ortools/linear_solver/proto_solver)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -169,124 +369,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 endif()
-
 # ALIAS
 add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-
-# Generate Protobuf cpp sources
-set(PROTO_HDRS)
-set(PROTO_SRCS)
-file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
-  "ortools/bop/*.proto"
-  "ortools/constraint_solver/*.proto"
-  "ortools/glop/*.proto"
-  "ortools/graph/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/linear_solver/*.proto"
-  "ortools/packing/*.proto"
-  "ortools/sat/*.proto"
-  "ortools/scheduling/*.proto"
-  "ortools/util/*.proto"
-  )
-if(USE_PDLP)
-  file(GLOB_RECURSE pdlp_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
-  list(APPEND proto_files ${pdlp_proto_files})
-endif()
-if(USE_SCIP)
-  file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
-  list(APPEND proto_files ${gscip_proto_files})
-endif()
-
-## Get Protobuf include dir
-get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
-foreach(dir IN LISTS protobuf_dirs)
-  if (NOT "${dir}" MATCHES "INSTALL_INTERFACE|-NOTFOUND")
-    message(STATUS "Adding proto path: ${dir}")
-    list(APPEND PROTO_DIRS "--proto_path=${dir}")
-  endif()
-endforeach()
-
-foreach(PROTO_FILE IN LISTS proto_files)
-  #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
-  get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
-  get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
-  set(PROTO_HDR ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.h)
-  set(PROTO_SRC ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.cc)
-  #message(STATUS "protoc hdr: ${PROTO_HDR}")
-  #message(STATUS "protoc src: ${PROTO_SRC}")
-  add_custom_command(
-    OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-    COMMAND ${PROTOC_PRG}
-    "--proto_path=${PROJECT_SOURCE_DIR}"
-    ${PROTO_DIRS}
-    "--cpp_out=${PROJECT_BINARY_DIR}"
-    ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-    COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
-    VERBATIM)
-  list(APPEND PROTO_HDRS ${PROTO_HDR})
-  list(APPEND PROTO_SRCS ${PROTO_SRC})
-endforeach()
-
-if(MSVC)
-  set(CMAKE_CXX_STANDARD 20)
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-#add_library(${PROJECT_NAME}_proto STATIC ${PROTO_SRCS} ${PROTO_HDRS})
-add_library(${PROJECT_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES
-  POSITION_INDEPENDENT_CODE ON)
-target_include_directories(${PROJECT_NAME}_proto PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR}
-  $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-  )
-target_compile_definitions(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
-target_compile_options(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
-#target_link_libraries(${PROJECT_NAME}_proto PRIVATE protobuf::libprotobuf)
-add_dependencies(${PROJECT_NAME}_proto protobuf::libprotobuf)
-add_library(${PROJECT_NAMESPACE}::proto ALIAS ${PROJECT_NAME}_proto)
-# Add ${PROJECT_NAMESPACE}::proto to libortools
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::proto)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::proto)
-
-foreach(SUBPROJECT IN ITEMS
- algorithms
- base
- bop
- constraint_solver
- ${GLPK_DIR}
- ${PDLP_DIR}
- ${GSCIP_DIR}
- glop
- graph
- gurobi
- init
- linear_solver
- lp_data
- packing
- port
- sat
- scheduling
- util)
-  add_subdirectory(ortools/${SUBPROJECT})
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
-endforeach()
-
-add_subdirectory(ortools/linear_solver/wrappers)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_wrappers>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
-
-add_subdirectory(ortools/linear_solver/proto_solver)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
 ###############
 ## Doc rules ##
@@ -457,7 +541,6 @@ function(add_cxx_sample FILE_NAME)
     set_target_properties(${SAMPLE_NAME} PROPERTIES
                           INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
-
   install(TARGETS ${SAMPLE_NAME})
 
   if(BUILD_TESTING)
@@ -494,7 +577,6 @@ function(add_cxx_example FILE_NAME)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES
                           INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
-
   install(TARGETS ${EXAMPLE_NAME})
 
   if(BUILD_TESTING)
@@ -508,24 +590,31 @@ endfunction()
 # Parameters:
 #  the C++ filename
 # e.g.:
-# add_cxx_test(foo.cc)
+# add_cxx_test(foo_test.cc)
 function(add_cxx_test FILE_NAME)
   message(STATUS "Configuring test ${FILE_NAME}: ...")
   get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
   get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
 
-  if(APPLE)
-    set(CMAKE_INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/../lib64:$ORIGIN/../lib:$ORIGIN")
-  endif()
-
   add_executable(${TEST_NAME} ${FILE_NAME})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  target_link_libraries(${TEST_NAME} PRIVATE
+    ${PROJECT_NAMESPACE}::ortools
+  )
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+               OUTPUT_VARIABLE libdir_relative_path)
+             set_target_properties(${TEST_NAME} PROPERTIES
+                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
 
   if(BUILD_TESTING)
     add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})

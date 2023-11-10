@@ -13,7 +13,6 @@
 
 #include "ortools/pdlp/quadratic_program_io.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -32,7 +31,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/basictypes.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"

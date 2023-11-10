@@ -30,6 +30,25 @@ set_target_properties(dotnet_linear_solver PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_linear_solver PRIVATE ortools::ortools)
 
+set_property(SOURCE model_builder.i PROPERTY CPLUSPLUS ON)
+set_property(SOURCE model_builder.i PROPERTY SWIG_MODULE_NAME operations_research_model_builder)
+set_property(SOURCE model_builder.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE model_builder.i PROPERTY COMPILE_OPTIONS
+  -namespace ${DOTNET_PROJECT}.ModelBuilder
+  -dllimport google-ortools-native)
+swig_add_library(dotnet_model_builder
+  TYPE OBJECT
+  LANGUAGE csharp
+  OUTPUT_DIR ${DOTNET_PROJECT_DIR}/ortools/model_builder
+  SOURCES model_builder.i)
+
+#target_include_directories(dotnet_model_builder PRIVATE ${DOTNET_INCLUDE_DIRS})
+set_target_properties(dotnet_model_builder PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(dotnet_model_builder PRIVATE ortools::ortools)
+
 if(BUILD_TESTING)
   file(GLOB DOTNET_SRCS "*Tests.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)

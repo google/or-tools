@@ -92,7 +92,7 @@ def print_solution(manager, routing, assignment):
             plan_output += f' {node} ->'
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+            route_distance += routing.GetArcCostForVehicle(previous_index, index, v)
         plan_output += f' {manager.IndexToNode(index)}\n'
         plan_output += f'Distance of the route: {route_distance}m\n'
         plan_output += f'Value collected: {value_collected}\n'

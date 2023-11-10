@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,17 +27,62 @@
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
+
+// Simple helper class to:
+// - log in an uniform way a "time-consuming" presolve operation.
+// - track a deterministic work limit.
+// - update the deterministic time on finish.
+class PresolveTimer {
+ public:
+  PresolveTimer(std::string name, SolverLogger* logger, TimeLimit* time_limit)
+      : name_(std::move(name)), logger_(logger), time_limit_(time_limit) {
+    timer_.Start();
+  }
+
+  // Track the work done (which is also the deterministic time).
+  // By default we want a limit of around 1 deterministic seconds.
+  void AddToWork(double dtime) { work_ += dtime; }
+  void TrackSimpleLoop(int size) { work_ += 5e-9 * size; }
+  bool WorkLimitIsReached() const { return work_ >= 1.0; }
+
+  // Extra stats=value to display at the end.
+  // We filter value of zero to have less clutter.
+  void AddCounter(std::string name, int64_t count) {
+    if (count == 0) return;
+    counters_.emplace_back(std::move(name), count);
+  }
+
+  // Extra info at the end of the log line.
+  void AddMessage(std::string name) { extra_infos_.push_back(std::move(name)); }
+
+  // Update dtime and log operation summary.
+  ~PresolveTimer();
+
+ private:
+  const std::string name_;
+
+  WallTimer timer_;
+  SolverLogger* logger_;
+  TimeLimit* time_limit_;
+
+  double work_ = 0;
+  std::vector<std::pair<std::string, int64_t>> counters_;
+  std::vector<std::string> extra_infos_;
+};
 
 // If for each literal of a clause, we can infer a domain on an integer
 // variable, then we know that this variable domain is included in the union of
@@ -95,8 +141,18 @@ class DomainDeductions {
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 
+// Does "to_modify += factor * to_add". Both constraint must be linear.
+// Returns false and does not change anything in case of overflow.
+//
+// Note that the enforcement literals (if any) are ignored and left untouched.
+bool AddLinearConstraintMultiple(int64_t factor, const ConstraintProto& to_add,
+                                 ConstraintProto* to_modify);
+
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
+//
+// This might return false and NOT modify ConstraintProto in case of overflow
+// or other issue with the substitution.
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
 
@@ -157,7 +213,7 @@ class ActivityBoundHelper {
   bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
                            absl::flat_hash_set<int>* literals_at_true);
 
-  // partition the list of literals into disjoint at most ones. The returned
+  // Partition the list of literals into disjoint at most ones. The returned
   // spans are only valid until another function from this class is used.
   std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
       absl::Span<const int> literals);
@@ -199,10 +255,7 @@ class ActivityBoundHelper {
   std::vector<int64_t> second_max_by_partition_;
 
   // Used by PartitionLiteralsIntoAmo().
-  std::vector<int> part_starts_;
-  std::vector<int> part_ends_;
-  std::vector<int> part_sizes_;
-  std::vector<int> reordered_literals_;
+  CompactVectorVector<int, int> part_to_literals_;
 
   absl::flat_hash_set<int> triggered_amo_;
 };
@@ -256,6 +309,21 @@ inline bool ClauseIsEnforcementImpliesLiteral(absl::Span<const int> clause,
     ++j;
   }
   return true;
+}
+
+// Same as LinearsDifferAtOneTerm() below but also fills the differing terms.
+bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
+                                const LinearConstraintProto& lin2, int* var1,
+                                int64_t* coeff1, int* var2, int64_t* coeff2);
+
+// Returns true iff the two linear constraint only differ at a single term.
+//
+// Preconditions: Constraint should be sorted by variable and of same size.
+inline bool LinearsDifferAtOneTerm(const LinearConstraintProto& lin1,
+                                   const LinearConstraintProto& lin2) {
+  int var1, var2;
+  int64_t coeff1, coeff2;
+  return FindSingleLinearDifference(lin1, lin2, &var1, &coeff1, &var2, &coeff2);
 }
 
 }  // namespace sat

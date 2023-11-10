@@ -84,6 +84,7 @@ def print_solution(
         print(plan_output)
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
+
 # [END solution_callback_printer]
 
 
@@ -111,6 +112,7 @@ class SolutionCallback:
             self._counter += 1
         if self._counter > self._counter_limit:
             self._routing_model.solver().FinishCurrentSearch()
+
 # [END solution_callback]
 
 

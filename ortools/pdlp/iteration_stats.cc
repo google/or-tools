@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <random>
 #include <utility>
@@ -133,20 +134,46 @@ ResidualNorms PrimalResidualNorms(
   };
 }
 
-// Decides whether a primal gradient term should be handled as a reduced cost or
-// as a dual residual. See the documentation for
-// `PrimalDualHybridGradientParams::
-// handle_some_primal_gradients_on_finite_bounds_as_residuals`.
-bool HandlePrimalGradientTermAsReducedCost(
-    const PrimalDualHybridGradientParams& params, double primal_gradient,
-    double primal_value, double lower_bound, double upper_bound) {
-  if (primal_gradient == 0.0) return true;
-  const double active_bound = primal_gradient > 0.0 ? lower_bound : upper_bound;
+bool TreatVariableBoundAsFinite(const PrimalDualHybridGradientParams& params,
+                                double primal_value, double bound) {
   if (params.handle_some_primal_gradients_on_finite_bounds_as_residuals()) {
-    // Note that this test is always false if `active_bound` is infinite.
-    return std::abs(primal_value - active_bound) <= std::abs(primal_value);
+    // Note that this test is always false if `bound` is infinite.
+    return std::abs(primal_value - bound) <= std::abs(primal_value);
   } else {
-    return std::isfinite(active_bound);
+    return std::isfinite(bound);
+  }
+}
+
+struct VariableBounds {
+  double lower_bound;
+  double upper_bound;
+};
+
+VariableBounds EffectiveVariableBounds(
+    const PrimalDualHybridGradientParams& params, double primal_value,
+    double lower_bound, double upper_bound) {
+  return {.lower_bound =
+              TreatVariableBoundAsFinite(params, primal_value, lower_bound)
+                  ? lower_bound
+                  : -std::numeric_limits<double>::infinity(),
+          .upper_bound =
+              TreatVariableBoundAsFinite(params, primal_value, upper_bound)
+                  ? upper_bound
+                  : std::numeric_limits<double>::infinity()};
+}
+
+double VariableBoundForDualObjective(double primal_gradient,
+                                     const VariableBounds& bounds) {
+  const double primary_bound =
+      primal_gradient >= 0.0 ? bounds.lower_bound : bounds.upper_bound;
+  const double secondary_bound =
+      primal_gradient >= 0.0 ? bounds.upper_bound : bounds.lower_bound;
+  if (std::isfinite(primary_bound)) {
+    return primary_bound;
+  } else if (std::isfinite(secondary_bound)) {
+    return secondary_bound;
+  } else {
+    return 0.0;
   }
 }
 
@@ -198,11 +225,19 @@ ResidualNorms DualResidualNorms(const PrimalDualHybridGradientParams& params,
                                           ? lower_bound_shard[i]
                                           : upper_bound_shard[i];
           dual_full_correction += bound_for_rc * primal_gradient_shard[i];
-          if (HandlePrimalGradientTermAsReducedCost(
-                  params, primal_gradient_shard[i], primal_solution_shard[i],
-                  lower_bound_shard[i], upper_bound_shard[i])) {
-            dual_correction += bound_for_rc * primal_gradient_shard[i];
-          } else {
+          VariableBounds effective_bounds = EffectiveVariableBounds(
+              params, primal_solution_shard[i], lower_bound_shard[i],
+              upper_bound_shard[i]);
+          // The dual correction (using the appropriate bound) is applied even
+          // if the gradient is handled as a residual, so that the dual
+          // objective is convex.
+          dual_correction += VariableBoundForDualObjective(
+                                 primal_gradient_shard[i], effective_bounds) *
+                             primal_gradient_shard[i];
+          const double effective_bound_for_residual =
+              primal_gradient_shard[i] > 0.0 ? effective_bounds.lower_bound
+                                             : effective_bounds.upper_bound;
+          if (std::isinf(effective_bound_for_residual)) {
             const double scaled_residual = std::abs(primal_gradient_shard[i]);
             const double residual = scaled_residual / col_scaling_shard[i];
             l_inf_residual = std::max(l_inf_residual, residual);
@@ -541,27 +576,9 @@ VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
   } else {
     objective_product = ObjectiveProduct(sharded_qp, primal_solution);
   }
-  VectorXd reduced_costs = PrimalGradientFromObjectiveProduct(
-      sharded_qp, dual_solution, std::move(objective_product),
-      use_zero_primal_objective);
-  sharded_qp.PrimalSharder().ParallelForEachShard(
-      [&](const Sharder::Shard& shard) {
-        auto rc_shard = shard(reduced_costs);
-        const auto lower_bound_shard =
-            shard(sharded_qp.Qp().variable_lower_bounds);
-        const auto upper_bound_shard =
-            shard(sharded_qp.Qp().variable_upper_bounds);
-        const auto primal_solution_shard = shard(primal_solution);
-        for (int64_t i = 0; i < rc_shard.size(); ++i) {
-          if (rc_shard[i] != 0.0 &&
-              !HandlePrimalGradientTermAsReducedCost(
-                  params, rc_shard[i], primal_solution_shard[i],
-                  lower_bound_shard[i], upper_bound_shard[i])) {
-            rc_shard[i] = 0.0;
-          }
-        }
-      });
-  return reduced_costs;
+  return PrimalGradientFromObjectiveProduct(sharded_qp, dual_solution,
+                                            std::move(objective_product),
+                                            use_zero_primal_objective);
 }
 
 std::optional<ConvergenceInformation> GetConvergenceInformation(

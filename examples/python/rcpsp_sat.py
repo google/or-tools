@@ -39,7 +39,7 @@ _OUTPUT_PROTO = flags.DEFINE_string(
 _PARAMS = flags.DEFINE_string("params", "", "Sat solver parameters.")
 _USE_INTERVAL_MAKESPAN = flags.DEFINE_bool(
     "use_interval_makespan",
-    False,
+    True,
     "Whether we encode the makespan using an interval or not.",
 )
 _HORIZON = flags.DEFINE_integer("horizon", -1, "Force horizon.")
@@ -51,7 +51,7 @@ _ADD_REDUNDANT_ENERGETIC_CONSTRAINTS = flags.DEFINE_bool(
 )
 _DELAY_TIME_LIMIT = flags.DEFINE_float(
     "delay_time_limit",
-    0.0,
+    20.0,
     "Time limit when computing min delay between tasks."
     + " A non-positive time limit disable min delays computation.",
 )
@@ -530,24 +530,32 @@ def SolveRcpsp(
 
     # Solve model.
     solver = cp_model.CpSolver()
-    if not _USE_INTERVAL_MAKESPAN.value:
-        solver.parameters.exploit_all_precedences = True
-        solver.parameters.use_hard_precedences_in_cumulative = True
+
+    # Parse user specified parameters.
     if params:
         text_format.Parse(params, solver.parameters)
+
+    # Favor objective_shaving_search over objective_lb_search.
     if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:
         solver.parameters.ignore_subsolvers.append("objective_lb_search")
         solver.parameters.extra_subsolvers.append("objective_shaving_search")
+
+    # Experimental: Specify the fact that the objective is a makespan
+    solver.parameters.push_all_tasks_toward_start = True
+
+    # Enable logging in the main solve.
+
     if in_main_solve:
         solver.parameters.log_search_progress = True
+    #
     status = solver.Solve(model)
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         assignment = rcpsp_pb2.RcpspAssignment()
         for t, _ in enumerate(problem.tasks):
             if t in task_starts:
                 assignment.start_of_task.append(solver.Value(task_starts[t]))
-                for r in range(len(task_to_presence_literals[t])):
-                    if solver.BooleanValue(task_to_presence_literals[t][r]):
+                for r, recipe_literal in enumerate(task_to_presence_literals[t]):
+                    if solver.BooleanValue(recipe_literal):
                         assignment.selected_recipe_of_task.append(r)
                         break
             else:  # t is not an active task.

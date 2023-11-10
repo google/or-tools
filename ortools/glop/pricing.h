@@ -246,8 +246,9 @@ inline Index DynamicMaximum<Index>::GetMaximum() {
   // We need to iterate over all the candidates.
   threshold_ = -kInfinity;
   DCHECK(tops_.empty());
+  const auto values = values_.const_view();
   for (const Index position : is_candidate_) {
-    const Fractional value = values_[position];
+    const Fractional value = values[position];
 
     // TODO(user): Add a mode when we do not maintain the TopK for small sizes
     // (like n < 1000) ? The gain might not be worth the extra code though.

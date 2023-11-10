@@ -8,4 +8,48 @@ This is the reference documentation for the Google OR-Tools Python wrappers.
 
 This repository contains several components:
 
+Link with the C++ layer
+
+@li @ref ortools.init.python.init,
+
+Knapsack solver
+
+@li @ref ortools.algorithms.python.knapsack_solver,
+
+Graph and flow algorithms
+
+@li @ref ortools.graph.python.linear_sum_assignment,
+@li @ref ortools.graph.python.max_flow,
+@li @ref ortools.graph.python.min_cost_flow,
+
+Routing library and legacy Constraint Programming Solver
+
+@li @ref ortools.constraint_solver.pywrapcp,
+
+Minimalistic linear solver wrapper
+
+@li @ref ortools.linear_solver.python.model_builder
+
+CP-SAT
+
+@li @ref ortools.sat.python.cp_model,
+@li @ref ortools.util.python.sorted_interval_list,
+@li @ref ortools.sat.cp_model_pb2
+@li @ref ortools.sat.sat_parameters_pb2
+
+Legacy linear solver wrapper
+
+@li @ref ortools.linear_solver.pywraplp,
+@li @ref ortools.linear_solver.linear_solver_pb2,
+
+Linear solver backends
+
+@li @ref ortools.bop.bop_parameters_pb2,
+@li @ref ortools.glop.parameters_pb2,
+@li @ref ortools.pdlp,
+
+PSPLIB Parser
+
+@li @ref ortools.scheduling.python.rcpsp
+
 */

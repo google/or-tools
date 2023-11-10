@@ -130,7 +130,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 

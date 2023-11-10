@@ -35,8 +35,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -60,6 +58,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -81,7 +80,6 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   InitializeHelperData();
   RecomputeHelperData();
   Synchronize();
-  last_logging_time_ = absl::Now();
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
@@ -360,13 +358,11 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // TODO(user): This is not ideal, as if two reductions appears in a row and
   // nothing else is done for a while, we will never see the "latest" size
   // in the log until it is reduced again.
-  shared_response_->LogPeriodicMessage(
+  shared_response_->LogMessageWithThrottling(
       "Model",
       absl::StrCat("var:", active_variables_.size(), "/", num_variables,
                    " constraints:", simplied_model_proto_.constraints().size(),
-                   "/", model_proto_.constraints().size(), compo_message),
-      parameters_.model_reduction_log_frequency_in_seconds(),
-      &last_logging_time_);
+                   "/", model_proto_.constraints().size(), compo_message));
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {
@@ -397,52 +393,47 @@ Neighborhood NeighborhoodGeneratorHelper::NoNeighborhood() const {
   return neighborhood;
 }
 
+bool NeighborhoodGeneratorHelper::IntervalIsActive(
+    int index, const CpSolverResponse& initial_solution) const {
+  const ConstraintProto& interval_ct = ModelProto().constraints(index);
+  // We only look at intervals that are performed in the solution. The
+  // unperformed intervals should be automatically freed during the generation
+  // phase.
+  if (interval_ct.enforcement_literal().size() == 1) {
+    const int enforcement_ref = interval_ct.enforcement_literal(0);
+    const int enforcement_var = PositiveRef(enforcement_ref);
+    const int value = initial_solution.solution(enforcement_var);
+    if (RefIsPositive(enforcement_ref) == (value == 0)) return false;
+  }
+
+  for (const int v : interval_ct.interval().start().vars()) {
+    if (!IsConstant(v)) return true;
+  }
+  for (const int v : interval_ct.interval().size().vars()) {
+    if (!IsConstant(v)) return true;
+  }
+  for (const int v : interval_ct.interval().end().vars()) {
+    if (!IsConstant(v)) return true;
+  }
+  return false;
+}
+
+std::vector<int> NeighborhoodGeneratorHelper::KeepActiveIntervals(
+    absl::Span<const int> unfiltered_intervals,
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> filtered_intervals;
+  filtered_intervals.reserve(unfiltered_intervals.size());
+  absl::ReaderMutexLock lock(&domain_mutex_);
+  for (const int i : unfiltered_intervals) {
+    if (IntervalIsActive(i, initial_solution)) filtered_intervals.push_back(i);
+  }
+  return filtered_intervals;
+}
+
 std::vector<int> NeighborhoodGeneratorHelper::GetActiveIntervals(
     const CpSolverResponse& initial_solution) const {
-  std::vector<int> active_intervals;
-  absl::ReaderMutexLock lock(&domain_mutex_);
-  for (const int i : TypeToConstraints(ConstraintProto::kInterval)) {
-    const ConstraintProto& interval_ct = ModelProto().constraints(i);
-    // We only look at intervals that are performed in the solution. The
-    // unperformed intervals should be automatically freed during the generation
-    // phase.
-    if (interval_ct.enforcement_literal().size() == 1) {
-      const int enforcement_ref = interval_ct.enforcement_literal(0);
-      const int enforcement_var = PositiveRef(enforcement_ref);
-      const int value = initial_solution.solution(enforcement_var);
-      if (RefIsPositive(enforcement_ref) == (value == 0)) {
-        continue;
-      }
-    }
-
-    // We filter out fixed intervals. Because of presolve, if there is an
-    // enforcement literal, it cannot be fixed.
-    if (interval_ct.enforcement_literal().empty()) {
-      bool is_constant = true;
-      for (const int v : interval_ct.interval().start().vars()) {
-        if (!IsConstant(v)) {
-          is_constant = false;
-          break;
-        }
-      }
-      for (const int v : interval_ct.interval().size().vars()) {
-        if (!IsConstant(v)) {
-          is_constant = false;
-          break;
-        }
-      }
-      for (const int v : interval_ct.interval().end().vars()) {
-        if (!IsConstant(v)) {
-          is_constant = false;
-          break;
-        }
-      }
-      if (is_constant) continue;
-    }
-
-    active_intervals.push_back(i);
-  }
-  return active_intervals;
+  return KeepActiveIntervals(TypeToConstraints(ConstraintProto::kInterval),
+                             initial_solution);
 }
 
 std::vector<std::pair<int, int>>
@@ -515,15 +506,22 @@ struct StartEndIndex {
   int64_t start;
   int64_t end;
   int index_in_input_vector;
+  double noise;
   bool operator<(const StartEndIndex& o) const {
-    return std::tie(start, end, index_in_input_vector) <
-           std::tie(o.start, o.end, o.index_in_input_vector);
+    return std::tie(start, end, noise, index_in_input_vector) <
+           std::tie(o.start, o.end, o.noise, o.index_in_input_vector);
   }
+};
+
+struct TimePartition {
+  std::vector<int> indices_before_selected;
+  std::vector<int> selected_indices;
+  std::vector<int> indices_after_selected;
 };
 
 // Selects all intervals in a random time window to meet the difficulty
 // requirement.
-std::vector<int> SelectIndicesInRandomTimeWindow(
+TimePartition PartitionIndicesAroundRandomTimeWindow(
     const std::vector<int>& intervals, const CpModelProto& model_proto,
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
@@ -531,22 +529,12 @@ std::vector<int> SelectIndicesInRandomTimeWindow(
   for (int index = 0; index < intervals.size(); ++index) {
     const int interval = intervals[index];
     const ConstraintProto& interval_ct = model_proto.constraints(interval);
-    // We only look at intervals that are performed in the solution. The
-    // unperformed intervals should be automatically freed during the
-    // generation phase.
-    if (interval_ct.enforcement_literal().size() == 1) {
-      const int enforcement_ref = interval_ct.enforcement_literal(0);
-      const int enforcement_var = PositiveRef(enforcement_ref);
-      const int64_t value = initial_solution.solution(enforcement_var);
-      if (RefIsPositive(enforcement_ref) == (value == 0)) {
-        continue;
-      }
-    }
     const int64_t start_value = GetLinearExpressionValue(
         interval_ct.interval().start(), initial_solution);
     const int64_t end_value = GetLinearExpressionValue(
         interval_ct.interval().end(), initial_solution);
-    start_end_indices.push_back({start_value, end_value, index});
+    start_end_indices.push_back(
+        {start_value, end_value, index, absl::Uniform(random, 0., 1.0)});
   }
 
   if (start_end_indices.empty()) return {};
@@ -568,12 +556,22 @@ std::vector<int> SelectIndicesInRandomTimeWindow(
   std::sort(start_end_indices.begin() + random_start_index,
             start_end_indices.end(),
             [](const StartEndIndex& a, const StartEndIndex& b) {
-              return std::tie(a.end, a.index_in_input_vector) <
-                     std::tie(b.end, b.index_in_input_vector);
+              return std::tie(a.end, a.noise, a.index_in_input_vector) <
+                     std::tie(b.end, b.noise, b.index_in_input_vector);
             });
-  std::vector<int> result;
-  for (int i = random_start_index; i < random_start_index + relaxed_size; ++i) {
-    result.push_back(start_end_indices[i].index_in_input_vector);
+  TimePartition result;
+  int i = 0;
+  for (; i < random_start_index; ++i) {
+    result.indices_before_selected.push_back(
+        start_end_indices[i].index_in_input_vector);
+  }
+  for (; i < random_start_index + relaxed_size; ++i) {
+    result.selected_indices.push_back(
+        start_end_indices[i].index_in_input_vector);
+  }
+  for (; i < start_end_indices.size(); ++i) {
+    result.indices_after_selected.push_back(
+        start_end_indices[i].index_in_input_vector);
   }
   return result;
 }
@@ -1001,6 +999,13 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const absl::flat_hash_set<int>& variables_to_fix) const {
   Neighborhood neighborhood;
 
+  // TODO(user): Maybe relax all variables in the objective when the number
+  // is small or negligible compared to the number of variables.
+  const int unique_objective_variable =
+      model_proto_.has_objective() && model_proto_.objective().vars_size() == 1
+          ? model_proto_.objective().vars(0)
+          : -1;
+
   // Fill in neighborhood.delta all variable domains.
   {
     absl::ReaderMutexLock domain_lock(&domain_mutex_);
@@ -1019,7 +1024,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
       const Domain domain = ReadDomainFromProto(current_var);
       const int64_t base_value = base_solution.solution(i);
 
-      if (variables_to_fix.contains(i)) {
+      if (variables_to_fix.contains(i) && i != unique_objective_variable) {
         if (domain.Contains(base_value)) {
           new_var->add_domain(base_value);
           new_var->add_domain(base_value);
@@ -1173,7 +1178,7 @@ double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {
   return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
 }
 
-void NeighborhoodGenerator::Synchronize() {
+double NeighborhoodGenerator::Synchronize() {
   absl::MutexLock mutex_lock(&generator_mutex_);
 
   // To make the whole update process deterministic, we currently sort the
@@ -1184,6 +1189,7 @@ void NeighborhoodGenerator::Synchronize() {
   int num_fully_solved_in_batch = 0;
   int num_not_fully_solved_in_batch = 0;
 
+  double total_dtime = 0.0;
   for (const SolveData& data : solve_data_) {
     ++num_calls_;
 
@@ -1229,7 +1235,7 @@ void NeighborhoodGenerator::Synchronize() {
       current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
     }
 
-    deterministic_time_ += data.deterministic_time;
+    total_dtime += data.deterministic_time;
   }
 
   // Update the difficulty.
@@ -1252,6 +1258,7 @@ void NeighborhoodGenerator::Synchronize() {
   }
 
   solve_data_.clear();
+  return total_dtime;
 }
 
 namespace {
@@ -1914,7 +1921,8 @@ Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
 }
 
 Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-    const absl::Span<const int> intervals_to_relax,
+    absl::Span<const int> intervals_to_relax,
+    absl::Span<const int> variables_to_fix,
     const CpSolverResponse& initial_solution, absl::BitGenRef random,
     const NeighborhoodGeneratorHelper& helper) {
   Neighborhood neighborhood = helper.FullNeighborhood();
@@ -1979,6 +1987,14 @@ Neighborhood GenerateSchedulingNeighborhoodFromRelaxedIntervals(
     AddPrecedence(before_end, after_start, &neighborhood.delta);
   }
 
+  // fix the extra variables passed as parameters.
+  for (const int var : variables_to_fix) {
+    const int value = initial_solution.solution(var);
+    neighborhood.delta.mutable_variables(var)->clear_domain();
+    neighborhood.delta.mutable_variables(var)->add_domain(value);
+    neighborhood.delta.mutable_variables(var)->add_domain(value);
+  }
+
   // Set the current solution as a hint.
   helper.AddSolutionHinting(initial_solution, &neighborhood.delta);
   neighborhood.is_generated = true;
@@ -1994,7 +2010,7 @@ Neighborhood RandomIntervalSchedulingNeighborhoodGenerator::Generate(
   GetRandomSubset(difficulty, &intervals_to_relax, random);
 
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-      intervals_to_relax, initial_solution, random, helper_);
+      intervals_to_relax, {}, initial_solution, random, helper_);
 }
 
 Neighborhood RandomPrecedenceSchedulingNeighborhoodGenerator::Generate(
@@ -2007,6 +2023,19 @@ Neighborhood RandomPrecedenceSchedulingNeighborhoodGenerator::Generate(
       precedences, initial_solution, helper_);
 }
 
+namespace {
+void AppendVarsFromAllIntervalIndices(absl::Span<const int> indices,
+                                      absl::Span<const int> all_intervals,
+                                      const CpModelProto& model_proto,
+                                      std::vector<int>* variables) {
+  for (const int index : indices) {
+    const std::vector<int> vars =
+        UsedVariables(model_proto.constraints(all_intervals[index]));
+    variables->insert(variables->end(), vars.begin(), vars.end());
+  }
+}
+}  // namespace
+
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
@@ -2015,34 +2044,64 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 
   if (active_intervals.empty()) return helper_.FullNeighborhood();
 
-  const std::vector<int> selected_indices =
-      SelectIndicesInRandomTimeWindow(active_intervals, helper_.ModelProto(),
-                                      initial_solution, difficulty, random);
+  const TimePartition partition = PartitionIndicesAroundRandomTimeWindow(
+      active_intervals, helper_.ModelProto(), initial_solution, difficulty,
+      random);
   std::vector<int> intervals_to_relax;
-  intervals_to_relax.reserve(selected_indices.size());
-  for (const int index : selected_indices) {
-    intervals_to_relax.push_back(active_intervals[index]);
+  intervals_to_relax.reserve(partition.selected_indices.size());
+  std::vector<int> variables_to_fix;
+  intervals_to_relax.insert(intervals_to_relax.end(),
+                            partition.selected_indices.begin(),
+                            partition.selected_indices.end());
+
+  if (helper_.Parameters().push_all_tasks_toward_start()) {
+    intervals_to_relax.insert(intervals_to_relax.end(),
+                              partition.indices_before_selected.begin(),
+                              partition.indices_before_selected.end());
+    AppendVarsFromAllIntervalIndices(partition.indices_before_selected,
+                                     active_intervals, helper_.ModelProto(),
+                                     &variables_to_fix);
   }
+
+  gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
+  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-      intervals_to_relax, initial_solution, random, helper_);
+      intervals_to_relax, variables_to_fix, initial_solution, random, helper_);
 }
 
 Neighborhood SchedulingResourceWindowsNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
   std::vector<int> intervals_to_relax;
+  std::vector<int> variables_to_fix;
+  std::vector<int> active_intervals;
   for (const std::vector<int>& intervals : intervals_in_constraints_) {
-    const std::vector<int> selected_indices = SelectIndicesInRandomTimeWindow(
-        intervals, helper_.ModelProto(), initial_solution, difficulty, random);
-    for (const int index : selected_indices) {
-      intervals_to_relax.push_back(intervals[index]);
+    active_intervals = helper_.KeepActiveIntervals(intervals, initial_solution);
+    const TimePartition partition = PartitionIndicesAroundRandomTimeWindow(
+        active_intervals, helper_.ModelProto(), initial_solution, difficulty,
+        random);
+    intervals_to_relax.insert(intervals_to_relax.end(),
+                              partition.selected_indices.begin(),
+                              partition.selected_indices.end());
+
+    if (helper_.Parameters().push_all_tasks_toward_start()) {
+      intervals_to_relax.insert(intervals_to_relax.end(),
+                                partition.indices_before_selected.begin(),
+                                partition.indices_before_selected.end());
+      AppendVarsFromAllIntervalIndices(partition.indices_before_selected,
+                                       active_intervals, helper_.ModelProto(),
+                                       &variables_to_fix);
     }
   }
 
-  if (intervals_to_relax.empty()) return helper_.FullNeighborhood();
+  if (intervals_to_relax.empty() && variables_to_fix.empty()) {
+    return helper_.FullNeighborhood();
+  }
+
   gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
+  gtl::STLSortAndRemoveDuplicates(&variables_to_fix);
   return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
-      intervals_to_relax, initial_solution, random, helper_);
+      intervals_to_relax, variables_to_fix, initial_solution, random, helper_);
 }
 
 Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
@@ -2061,6 +2120,23 @@ Neighborhood RandomRectanglesPackingNeighborhoodGenerator::Generate(
   return helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 }
 
+Neighborhood RandomPrecedencesPackingNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    absl::BitGenRef random) {
+  std::vector<std::pair<int, int>> rectangles_to_relax =
+      helper_.GetActiveRectangles(initial_solution);
+  GetRandomSubset(difficulty, &rectangles_to_relax, random);
+  std::vector<int> intervals_to_relax;
+  for (const auto& [x, y] : rectangles_to_relax) {
+    intervals_to_relax.push_back(x);
+    intervals_to_relax.push_back(y);
+  }
+  gtl::STLSortAndRemoveDuplicates(&intervals_to_relax);
+
+  return GenerateSchedulingNeighborhoodFromRelaxedIntervals(
+      intervals_to_relax, {}, initial_solution, random, helper_);
+}
+
 Neighborhood SlicePackingNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, double difficulty,
     absl::BitGenRef random) {
@@ -2073,11 +2149,13 @@ Neighborhood SlicePackingNeighborhoodGenerator::Generate(
     projected_intervals.push_back(use_first_dimension ? x : y);
   }
 
-  const std::vector<int> indices_to_relax =
-      SelectIndicesInRandomTimeWindow(projected_intervals, helper_.ModelProto(),
-                                      initial_solution, difficulty, random);
+  const TimePartition partition = PartitionIndicesAroundRandomTimeWindow(
+      projected_intervals, helper_.ModelProto(), initial_solution, difficulty,
+      random);
   std::vector<bool> indices_to_fix(active_rectangles.size(), true);
-  for (const int index : indices_to_relax) indices_to_fix[index] = false;
+  for (const int index : partition.selected_indices) {
+    indices_to_fix[index] = false;
+  }
 
   absl::flat_hash_set<int> variables_to_freeze;
   for (int index = 0; index < active_rectangles.size(); ++index) {

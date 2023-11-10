@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
+
 namespace operations_research {
 // ---------- Pretty Print Helpers ----------
 
@@ -36,27 +38,27 @@ namespace operations_research {
 // Join v[i].DebugString().
 template <class T>
 std::string JoinDebugString(const std::vector<T>& v,
-                            const std::string& separator) {
+                            absl::string_view separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, .DebugString());
 }
 
 // Join v[i]->DebugString().
 template <class T>
 std::string JoinDebugStringPtr(const std::vector<T>& v,
-                               const std::string& separator) {
+                               absl::string_view separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->DebugString());
 }
 
 // Join v[i]->name().
 template <class T>
-std::string JoinNamePtr(const std::vector<T>& v, const std::string& separator) {
+std::string JoinNamePtr(const std::vector<T>& v, absl::string_view separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->name());
 }
 
 // Join v[i]->name.
 template <class T>
 std::string JoinNameFieldPtr(const std::vector<T>& v,
-                             const std::string& separator) {
+                             absl::string_view separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->name);
 }
 

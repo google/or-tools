@@ -18,6 +18,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -169,10 +170,30 @@ void AddDualSchedulingHeuristics(SatParameters& new_params) {
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
 }
 
+// We want a random tie breaking among variables with equivalent values.
+struct NoisyInteger {
+  int64_t value;
+  double noise;
+
+  bool operator<=(const NoisyInteger& other) const {
+    return value < other.value ||
+           (value == other.value && noise <= other.noise);
+  }
+  bool operator>(const NoisyInteger& other) const {
+    return value > other.value || (value == other.value && noise > other.noise);
+  }
+};
+
 }  // namespace
 
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
-    const std::vector<DecisionStrategyProto>& strategies, Model* model) {
+std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+    const CpModelProto& cp_model_proto, Model* model) {
+  if (cp_model_proto.search_strategy().empty()) return nullptr;
+
+  std::vector<DecisionStrategyProto> strategies;
+  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
+    strategies.push_back(proto);
+  }
   const auto& view = *model->GetOrCreate<CpModelView>();
   const auto& parameters = *model->GetOrCreate<SatParameters>();
   auto* random = model->GetOrCreate<ModelRandomGenerator>();
@@ -181,14 +202,18 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
   // independently of the life of the passed vector.
   return [&view, &parameters, random, strategies]() {
     for (const DecisionStrategyProto& strategy : strategies) {
-      int candidate;
+      int candidate_ref = -1;
       int64_t candidate_value = std::numeric_limits<int64_t>::max();
 
       // TODO(user): Improve the complexity if this becomes an issue which
       // may be the case if we do a fixed_search.
 
       // To store equivalent variables in randomized search.
-      std::vector<VarValue> active_refs;
+      const bool randomize_decision =
+          parameters.search_random_variable_pool_size() > 1;
+      TopN<int, NoisyInteger> top_variables(
+          randomize_decision ? parameters.search_random_variable_pool_size()
+                             : 1);
 
       int t_index = 0;  // Index in strategy.transformations().
       for (int i = 0; i < strategy.variables().size(); ++i) {
@@ -238,42 +263,40 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
             LOG(FATAL) << "Unknown VariableSelectionStrategy "
                        << strategy.variable_selection_strategy();
         }
-        if (value < candidate_value) {
-          candidate = ref;
+
+        if (randomize_decision) {
+          // We need to use -value as we want the minimum valued variables.
+          // We add a random noise to get improve the entropy.
+          const double noise = absl::Uniform(*random, 0., 1.0);
+          top_variables.Add(ref, {-value, noise});
+          candidate_value = std::min(candidate_value, value);
+        } else if (value < candidate_value) {
+          candidate_ref = ref;
           candidate_value = value;
         }
+
+        // We can stop scanning if the variable selection strategy is to use the
+        // first unbound variable and no randomization is needed.
         if (strategy.variable_selection_strategy() ==
                 DecisionStrategyProto::CHOOSE_FIRST &&
-            !parameters.randomize_search()) {
+            !randomize_decision) {
           break;
-        } else if (parameters.randomize_search()) {
-          if (value <=
-              candidate_value + parameters.search_randomization_tolerance()) {
-            active_refs.push_back({ref, value});
-          }
         }
       }
 
+      // Check if one active variable has been found.
       if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
-      if (parameters.randomize_search()) {
-        CHECK(!active_refs.empty());
-        const IntegerValue threshold(
-            candidate_value + parameters.search_randomization_tolerance());
-        auto is_above_tolerance = [threshold](const VarValue& entry) {
-          return entry.value > threshold;
-        };
-        // Remove all values above tolerance.
-        active_refs.erase(std::remove_if(active_refs.begin(), active_refs.end(),
-                                         is_above_tolerance),
-                          active_refs.end());
-        const int winner =
-            absl::Uniform(*random, 0, static_cast<int>(active_refs.size()));
-        candidate = active_refs[winner].ref;
+
+      // Pick the winner when decisions are randomized.
+      if (randomize_decision) {
+        const std::vector<int>& candidates = top_variables.UnorderedElements();
+        candidate_ref = candidates[absl::Uniform(
+            *random, 0, static_cast<int>(candidates.size()))];
       }
 
       DecisionStrategyProto::DomainReductionStrategy selection =
           strategy.domain_reduction_strategy();
-      if (!RefIsPositive(candidate)) {
+      if (!RefIsPositive(candidate_ref)) {
         switch (selection) {
           case DecisionStrategyProto::SELECT_MIN_VALUE:
             selection = DecisionStrategyProto::SELECT_MAX_VALUE;
@@ -292,7 +315,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
         }
       }
 
-      const int var = PositiveRef(candidate);
+      const int var = PositiveRef(candidate_ref);
       const int64_t lb = view.Min(var);
       const int64_t ub = view.Max(var);
       switch (selection) {
@@ -315,47 +338,83 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
   };
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
+// TODO(user): Implement a routing search.
+std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model) {
-  std::vector<DecisionStrategyProto> strategies;
-  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
-    strategies.push_back(proto);
+  if (ModelHasSchedulingConstraints(cp_model_proto)) {
+    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
+    const auto& params = *model->GetOrCreate<SatParameters>();
+    if (params.use_dynamic_precedence_in_disjunctive()) {
+      heuristics.push_back(DisjunctivePrecedenceSearchHeuristic(model));
+    }
+    if (params.use_dynamic_precedence_in_cumulative()) {
+      heuristics.push_back(CumulativePrecedenceSearchHeuristic(model));
+    }
+    heuristics.push_back(SchedulingSearchHeuristic(model));
+    return SequentialSearch(std::move(heuristics));
   }
-  return ConstructSearchStrategyInternal(strategies, model);
+  return PseudoCost(model);
+}
+
+std::function<BooleanOrIntegerLiteral()>
+ConstructIntegerCompletionSearchStrategy(
+    const std::vector<IntegerVariable>& variable_mapping,
+    IntegerVariable objective_var, Model* model) {
+  const auto& params = *model->GetOrCreate<SatParameters>();
+  if (!params.instantiate_all_variables()) {
+    return []() { return BooleanOrIntegerLiteral(); };
+  }
+
+  std::vector<IntegerVariable> decisions;
+  for (const IntegerVariable var : variable_mapping) {
+    if (var == kNoIntegerVariable) continue;
+
+    // Make sure we try to fix the objective to its lowest value first.
+    // TODO(user): we could also fix terms of the objective in the right
+    // direction.
+    if (var == NegationOf(objective_var)) {
+      decisions.push_back(objective_var);
+    } else {
+      decisions.push_back(var);
+    }
+  }
+  return FirstUnassignedVarAtItsMinHeuristic(decisions, model);
+}
+
+// Constructs a search strategy that follow the hint from the model.
+std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
+    const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model) {
+  std::vector<BooleanOrIntegerVariable> vars;
+  std::vector<IntegerValue> values;
+  for (int i = 0; i < cp_model_proto.solution_hint().vars_size(); ++i) {
+    const int ref = cp_model_proto.solution_hint().vars(i);
+    CHECK(RefIsPositive(ref));
+    BooleanOrIntegerVariable var;
+    if (mapping->IsBoolean(ref)) {
+      var.bool_var = mapping->Literal(ref).Variable();
+    } else {
+      var.int_var = mapping->Integer(ref);
+    }
+    vars.push_back(var);
+    values.push_back(IntegerValue(cp_model_proto.solution_hint().values(i)));
+  }
+  return FollowHint(vars, values, model);
 }
 
 std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    IntegerVariable objective_var, Model* model) {
-  std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
-
+    std::function<BooleanOrIntegerLiteral()> user_search,
+    std::function<BooleanOrIntegerLiteral()> heuristic_search,
+    std::function<BooleanOrIntegerLiteral()> integer_completion) {
   // We start by the user specified heuristic.
-  const auto& params = *model->GetOrCreate<SatParameters>();
-  if (params.search_branching() != SatParameters::PARTIAL_FIXED_SEARCH) {
-    heuristics.push_back(ConstructUserSearchStrategy(cp_model_proto, model));
+  std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
+  if (user_search != nullptr) {
+    heuristics.push_back(user_search);
   }
-
-  // If there are some scheduling constraint, we complete with a custom
-  // "scheduling" strategy.
-  if (ModelHasSchedulingConstraints(cp_model_proto)) {
-    heuristics.push_back(SchedulingSearchHeuristic(model));
+  if (heuristic_search != nullptr) {
+    heuristics.push_back(heuristic_search);
   }
-
-  // If needed, we finish by instantiating anything left.
-  if (params.instantiate_all_variables()) {
-    std::vector<IntegerVariable> decisions;
-    for (const IntegerVariable var : variable_mapping) {
-      if (var == kNoIntegerVariable) continue;
-
-      // Make sure we try to fix the objective to its lowest value first.
-      if (var == NegationOf(objective_var)) {
-        decisions.push_back(objective_var);
-      } else {
-        decisions.push_back(var);
-      }
-    }
-    heuristics.push_back(FirstUnassignedVarAtItsMinHeuristic(decisions, model));
+  if (integer_completion != nullptr) {
+    heuristics.push_back(integer_completion);
   }
 
   return SequentialSearch(heuristics);
@@ -508,23 +567,23 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   {
     SatParameters new_params = base_params;
-    new_params.set_linearization_level(1);
     new_params.set_use_objective_lb_search(true);
-    if (base_params.use_dual_scheduling_heuristics()) {
-      AddDualSchedulingHeuristics(new_params);
-    }
-    strategies["objective_lb_search"] = new_params;
 
     new_params.set_linearization_level(0);
     strategies["objective_lb_search_no_lp"] = new_params;
 
+    new_params.set_linearization_level(1);
+    strategies["objective_lb_search"] = new_params;
+
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddDualSchedulingHeuristics(new_params);
+    }
     new_params.set_linearization_level(2);
     strategies["objective_lb_search_max_lp"] = new_params;
   }
 
   {
     SatParameters new_params = base_params;
-    new_params.set_linearization_level(2);
     new_params.set_use_objective_shaving_search(true);
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
@@ -532,7 +591,14 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       AddDualSchedulingHeuristics(new_params);
     }
+
     strategies["objective_shaving_search"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["objective_shaving_search_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    strategies["objective_shaving_search_max_lp"] = new_params;
   }
 
   {
@@ -548,6 +614,9 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["probing_no_lp"] = new_params;
 
     new_params.set_linearization_level(2);
+    // We want to spend more time on the LP here.
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;
   }
 
@@ -558,19 +627,22 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["auto"] = new_params;
 
     new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+    new_params.set_use_dynamic_precedence_in_disjunctive(false);
+    new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
+  }
 
+  // Quick restart.
+  {
+    // TODO(user): Experiment with search_random_variable_pool_size.
+    SatParameters new_params = base_params;
     new_params.set_search_branching(
         SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     strategies["quick_restart"] = new_params;
 
-    new_params.set_search_branching(
-        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     new_params.set_linearization_level(0);
     strategies["quick_restart_no_lp"] = new_params;
 
-    new_params.set_search_branching(
-        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
     new_params.set_linearization_level(2);
     strategies["quick_restart_max_lp"] = new_params;
   }
@@ -586,6 +658,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
   }
 
   {
+    // Note: no dual scheduling heuristics.
     SatParameters new_params = base_params;
     new_params.set_linearization_level(2);
     new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
@@ -642,37 +715,27 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back(name);
   }
 
-  const int num_workers_to_generate =
-      base_params.num_workers() - base_params.shared_tree_num_workers();
   // We use the default if empty.
   if (base_params.subsolvers().empty()) {
+    // Note that the order is important as the list can be truncated.
     names.push_back("default_lp");
     names.push_back("fixed");
-    names.push_back("less_encoding");
-
+    names.push_back("core");
     names.push_back("no_lp");
     names.push_back("max_lp");
-    names.push_back("core");
-
-    names.push_back("reduced_costs");
-    names.push_back("pseudo_costs");
-
     names.push_back("quick_restart");
+    names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
+    names.push_back("pseudo_costs");
     names.push_back("lb_tree_search");
-    // Do not add objective_lb_search if core is active and num_workers <= 16.
-    if (cp_model.has_objective() &&
-        (cp_model.objective().vars().size() == 1 ||  // core is not active
-         num_workers_to_generate > 16)) {
-      names.push_back("objective_lb_search");
-    }
     names.push_back("probing");
-    if (num_workers_to_generate >= 20) {
-      names.push_back("probing_max_lp");
-    }
-    if (num_workers_to_generate >= 24) {
-      names.push_back("objective_shaving_search");
-    }
+    names.push_back("objective_lb_search");
+    names.push_back("objective_shaving_search_no_lp");
+    names.push_back("objective_shaving_search_max_lp");
+    names.push_back("probing_max_lp");
+    names.push_back("objective_lb_search_no_lp");
+    names.push_back("objective_lb_search_max_lp");
+
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
     if (absl::GetFlag(FLAGS_cp_model_use_max_hs)) names.push_back("max_hs");
 #endif  // !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
@@ -715,17 +778,24 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
         params.search_branching() == SatParameters::FIXED_SEARCH) {
       continue;
     }
+
     // TODO(user): Enable probing_search in deterministic mode.
     // Currently it timeouts on small problems as the deterministic time limit
     // never hits the sharding limit.
     if (params.use_probing_search() && params.interleave_search()) continue;
+
+    // TODO(user): Enable shaving search in interleave mode.
+    // Currently it do not respect ^C, and has no per chunk time limit.
+    if (params.use_objective_shaving_search() && params.interleave_search()) {
+      continue;
+    }
 
     // In the corner case of empty variable, lets not schedule the probing as
     // it currently just loop forever instead of returning right away.
     if (params.use_probing_search() && cp_model.variables().empty()) continue;
 
     if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
-      // Disable core search if only 1 term in the objective.
+      // Disable core search if there is only 1 term in the objective.
       if (cp_model.objective().vars().size() == 1 &&
           params.optimize_with_core()) {
         continue;
@@ -763,40 +833,46 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     result.push_back(params);
   }
 
+  // In interleaved mode, we run all of them
+  // TODO(user): Actually make sure the gap num_workers <-> num_heuristics is
+  // contained.
+  if (base_params.interleave_search()) return result;
+
+  const int num_non_shared_workers = std::max(
+      0, base_params.num_workers() - base_params.shared_tree_num_workers());
+
   if (cp_model.has_objective() && !cp_model.objective().vars().empty()) {
+    const auto heuristic_num_workers = [](int num_workers) {
+      DCHECK_GE(num_workers, 0);
+      if (num_workers == 1) return 1;
+      if (num_workers <= 4) return num_workers - 1;
+      if (num_workers <= 8) return num_workers - 2;
+      if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
+      return num_workers - (num_workers / 2 - 3);
+    };
+    const int target = std::min<int>(
+        heuristic_num_workers(num_non_shared_workers), result.size());
+
     // If there is an objective, the extra workers will use LNS.
     // Make sure we have at least min_num_lns_workers() of them.
-    const int target =
-        std::max(base_params.shared_tree_num_workers() > 0 ? 0 : 1,
-                 num_workers_to_generate - base_params.min_num_lns_workers());
-    if (!base_params.interleave_search() && result.size() > target) {
-      result.resize(target);
-    }
-  } else {
+    if (result.size() > target) result.resize(target);
+  } else {  // No objective.
     // If strategies that do not require a full worker are present, leave a
     // few workers for them.
     const bool need_extra_workers =
-        !base_params.interleave_search() &&
         (base_params.use_rins_lns() || base_params.use_feasibility_pump());
-    int target = num_workers_to_generate;
-    if (need_extra_workers && target > 4) {
-      if (target <= 8) {
-        target -= 1;
-      } else if (target == 9) {
-        target -= 2;
-      } else {
-        target -= 3;
-      }
-    }
-    if (!base_params.interleave_search() && result.size() > target) {
-      result.resize(target);
-    }
+    // Currently, we have 8 SAT search heuristics. So
+    const int num_extra_workers =
+        num_non_shared_workers <= 4 ? 0 : 1 + need_extra_workers;
+    const int target = std::min<int>(num_non_shared_workers - num_extra_workers,
+                                     result.size());
+    if (result.size() > target) result.resize(target);
   }
   return result;
 }
 
 std::vector<SatParameters> GetFirstSolutionParams(
-    const SatParameters& base_params, const CpModelProto& cp_model,
+    const SatParameters& base_params, const CpModelProto& /*cp_model*/,
     int num_params_to_generate) {
   std::vector<SatParameters> result;
   if (num_params_to_generate <= 0) return result;
@@ -806,25 +882,15 @@ std::vector<SatParameters> GetFirstSolutionParams(
     SatParameters new_params = base_params;
     const int base_seed = base_params.random_seed();
     if (num_random <= num_random_qr) {  // Random search.
-      // Alternate between automatic search and fixed search (if defined).
-      //
-      // TODO(user): Maybe alternate between more search types.
-      // TODO(user): Check the randomization tolerance.
-      if (cp_model.search_strategy().empty() && num_random % 2 == 0) {
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      } else {
-        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-      }
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(num_random + 1);
+      new_params.set_search_branching(SatParameters::RANDOMIZED_SEARCH);
+      new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
       new_params.set_name("random");
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-      new_params.set_randomize_search(true);
-      new_params.set_search_randomization_tolerance(num_random_qr + 1);
+      new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
       new_params.set_name("random_quick_restart");
       num_random_qr++;

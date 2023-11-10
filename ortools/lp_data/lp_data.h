@@ -33,9 +33,9 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"  // for CHECK*
-#include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -68,11 +68,15 @@ class LinearProgram {
 
   LinearProgram();
 
+  // This type is neither copyable nor movable.
+  LinearProgram(const LinearProgram&) = delete;
+  LinearProgram& operator=(const LinearProgram&) = delete;
+
   // Clears, i.e. reset the object to its initial value.
   void Clear();
 
   // Name setter and getter.
-  void SetName(const std::string& name) { name_ = name; }
+  void SetName(absl::string_view name) { name_ = name; }
   const std::string& name() const { return name_; }
 
   // Creates a new variable and returns its index.
@@ -650,8 +654,6 @@ class LinearProgram {
 
   friend void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
                     GlopParameters::ScalingAlgorithm scaling_method);
-
-  DISALLOW_COPY_AND_ASSIGN(LinearProgram);
 };
 
 // --------------------------------------------------------

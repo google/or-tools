@@ -1,47 +1,8 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
-
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Scheduling recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
-
-<!--ts-->
-* [Scheduling recipes for the CP-SAT solver.](#scheduling-recipes-for-the-cp-sat-solver)
-   * [Introduction](#introduction)
-   * [Interval variables](#interval-variables)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Optional intervals](#optional-intervals)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
-   * [NoOverlap constraint](#nooverlap-constraint)
-      * [Python code](#python-code-2)
-      * [C++ code](#c-code-4)
-      * [Java code](#java-code-2)
-      * [C# code](#c-code-5)
-   * [Cumulative constraint](#cumulative-constraint)
-   * [Alternative resources for one interval](#alternative-resources-for-one-interval)
-   * [Ranking tasks in a disjunctive resource](#ranking-tasks-in-a-disjunctive-resource)
-      * [Python code](#python-code-3)
-      * [C++ code](#c-code-6)
-      * [Java code](#java-code-3)
-      * [C# code](#c-code-7)
-   * [Intervals spanning over breaks in the calendar](#intervals-spanning-over-breaks-in-the-calendar)
-      * [Python code](#python-code-4)
-   * [Detecting if two intervals overlap.](#detecting-if-two-intervals-overlap)
-      * [Python code](#python-code-5)
-   * [Transitions in a disjunctive resource](#transitions-in-a-disjunctive-resource)
-   * [Precedences between intervals](#precedences-between-intervals)
-   * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
-   * [Reservoir constraint](#reservoir-constraint)
-
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Introduction
 
@@ -53,8 +14,8 @@ exclusivity between tasks, and temporal relations between tasks.
 ## Interval variables
 
 Intervals are constraints containing three constant of affine expressions
-(start, size, and end). Creating an interval constraint will enforce that start
-+ size == end.
+(start, size, and end). Creating an interval constraint will enforce that
+`start + size == end`.
 
 The more general API uses three expressions to define the interval. If the size
 is fixed, a simpler API uses the start expression and the fixed size.
@@ -402,7 +363,7 @@ public class OptionalIntervalSampleSat
 
 ## NoOverlap constraint
 
-A NoOverlap constraint simply states that all intervals are disjoint. It is
+A no_overlap constraint simply states that all intervals are disjoint. It is
 built with a list of interval variables. Fixed intervals are useful for
 excluding part of the timeline.
 
@@ -685,17 +646,166 @@ public class NoOverlapSampleSat
 }
 ```
 
-## Cumulative constraint
+## Cumulative constraint with varying capacity profile.
 
 A cumulative constraint takes a list of intervals, and a list of demands, and a
 capacity. It enforces that at any time point, the sum of demands of tasks active
 at that time point is less than a given capacity.
 
+Modeling a varying profile can be done using fixed (interval, demand) to occupy
+the capacity between the actual profile and it max capacity.
+
+### Python code
+
+```python
+#!/usr/bin/env python3
+"""Solve a simple scheduling problem with a variable work load."""
+import io
+
+import pandas as pd
+
+from ortools.sat.python import cp_model
+
+
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Creates the two dataframes that describes the model."""
+
+    capacity_str: str = """
+  start_hour  capacity
+     0            0
+     2            0
+     4            1
+     6            3
+     8            6
+    10           12
+    12            8
+    14           12
+    16           10
+    18            4
+    20            2
+    22            0
+  """
+
+    tasks_str: str = """
+  name  duration load  priority
+   t1      60      3      2
+   t2     180      2      1
+   t3     240      5      3
+   t4      90      4      2
+   t5     120      3      1
+   t6     300      3      3
+   t7     120      1      2
+   t8     100      5      2
+   t9     110      2      1
+   t10    300      5      3
+   t11     90      4      2
+   t12    120      3      1
+   t13    250      3      3
+   t14    120      1      2
+   t15     40      5      3
+   t16     70      4      2
+   t17     90      8      1
+   t18     40      3      3
+   t19    120      5      2
+   t20     60      3      2
+   t21    180      2      1
+   t22    240      5      3
+   t23     90      4      2
+   t24    120      3      1
+   t25    300      3      3
+   t26    120      1      2
+   t27    100      5      2
+   t28    110      2      1
+   t29    300      5      3
+   t30     90      4      2
+  """
+
+    capacity_df = pd.read_table(io.StringIO(capacity_str), sep=r"\s+")
+    tasks_df = pd.read_table(io.StringIO(tasks_str), index_col=0, sep=r"\s+")
+    return capacity_df, tasks_df
+
+
+def main():
+    """Create the model and solves it."""
+    capacity_df, tasks_df = create_data_model()
+
+    # Create the model.
+    model = cp_model.CpModel()
+
+    # Get the max capacity from the capacity dataframe.
+    max_capacity = capacity_df.capacity.max()
+    print(f"Max capacity = {max_capacity}")
+    print(f"#tasks = {len(tasks_df)}")
+
+    minutes_per_period: int = 120
+    horizon: int = 24 * 60
+
+    # Variables
+    starts = model.NewIntVarSeries(
+        name="starts", lower_bounds=0, upper_bounds=horizon, index=tasks_df.index
+    )
+    performed = model.NewBoolVarSeries(name="performed", index=tasks_df.index)
+
+    intervals = model.NewOptionalFixedSizeIntervalVarSeries(
+        name="intervals",
+        index=tasks_df.index,
+        starts=starts,
+        sizes=tasks_df.duration,
+        are_present=performed,
+    )
+
+    # Set up the profile. We use fixed (intervals, demands) to fill in the space
+    # between the actual load profile and the max capacity.
+    time_period_intervals = model.NewFixedSizeIntervalVarSeries(
+        name="time_period_intervals",
+        index=capacity_df.index,
+        starts=capacity_df.start_hour * minutes_per_period,
+        sizes=minutes_per_period,
+    )
+    time_period_heights = max_capacity - capacity_df.capacity
+
+    # Cumulative constraint.
+    model.AddCumulative(
+        intervals.to_list() + time_period_intervals.to_list(),
+        tasks_df.load.to_list() + time_period_heights.to_list(),
+        max_capacity,
+    )
+
+    # Objective: maximize the value of performed intervals.
+    # 1 is the max priority.
+    max_priority = max(tasks_df.priority)
+    model.Maximize(sum(performed * (max_priority + 1 - tasks_df.priority)))
+
+    # Create the solver and solve the model.
+    solver = cp_model.CpSolver()
+    solver.parameters.log_search_progress = True
+    solver.parameters.num_workers = 8
+    solver.parameters.max_time_in_seconds = 30.0
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        start_values = solver.Values(starts)
+        performed_values = solver.BooleanValues(performed)
+        for task in tasks_df.index:
+            if performed_values[task]:
+                print(f"task {task} starts at {start_values[task]}")
+            else:
+                print(f"task {task} is not performed")
+    elif status == cp_model.INFEASIBLE:
+        print("No solution found")
+    else:
+        print("Something is wrong, check the status and the log of the solve")
+
+
+if __name__ == "__main__":
+    main()
+```
+
 ## Alternative resources for one interval
 
 ## Ranking tasks in a disjunctive resource
 
-To rank intervals in a NoOverlap constraint, we will count the number of
+To rank intervals in a no_overlap constraint, we will count the number of
 performed intervals that precede each interval.
 
 This is slightly complicated if some interval variables are optional. To
@@ -877,9 +987,9 @@ void RankingSampleSat() {
   const int kHorizon = 100;
   const int kNumTasks = 4;
 
-  auto add_task_ranking = [&cp_model](const std::vector<IntVar>& starts,
-                                      const std::vector<BoolVar>& presences,
-                                      const std::vector<IntVar>& ranks) {
+  auto add_task_ranking = [&cp_model](absl::Span<const IntVar> starts,
+                                      absl::Span<const BoolVar> presences,
+                                      absl::Span<const IntVar> ranks) {
     const int num_tasks = starts.size();
 
     // Creates precedence variables between pairs of intervals.
@@ -1340,6 +1450,185 @@ public class RankingSampleSat
 }
 ```
 
+## Ranking tasks in a disjunctive resource with a circuit constraint.
+
+To rank intervals in a no_overlap constraint, we will use a circuit constraint
+to perform the transitive reduction from precedences to successors.
+
+This is slightly complicated if some interval variables are optional, and we
+need to take into account the case where no task is performed.
+
+### Python code
+
+```python
+#!/usr/bin/env python3
+"""Code sample to demonstrates how to rank intervals using a circuit."""
+
+from typing import List, Sequence
+
+
+from ortools.sat.python import cp_model
+
+
+def rank_tasks_with_circuit(
+    model: cp_model.CpModel,
+    starts: Sequence[cp_model.IntVar],
+    durations: Sequence[int],
+    presences: Sequence[cp_model.IntVar],
+    ranks: Sequence[cp_model.IntVar],
+):
+    """This method uses a circuit constraint to rank tasks.
+
+    This method assumes that all starts are disjoint, meaning that all tasks have
+    a strictly positive duration, and they appear in the same NoOverlap
+    constraint.
+
+    To implement this ranking, we will create a dense graph with num_tasks + 1
+    nodes.
+    The extra node (with id 0) will be used to decide which task is first with
+    its only outgoing arc, and whhich task is last with its only incoming arc.
+    Each task i will be associated with id i + 1, and an arc between i + 1 and j +
+    1 indicates that j is the immediate successor of i.
+
+    The circuit constraint ensures there is at most 1 hamiltonian path of
+    length > 1. If no such path exists, then no tasks are active.
+
+    The multiple enforced linear constraints are meant to ensure the compatibility
+    between the order of starts and the order of ranks,
+
+    Args:
+      model: The CpModel to add the constraints to.
+      starts: The array of starts variables of all tasks.
+      durations: the durations of all tasks.
+      presences: The array of presence variables of all tasks.
+      ranks: The array of rank variables of all tasks.
+    """
+
+    num_tasks = len(starts)
+    all_tasks = range(num_tasks)
+
+    arcs: List[cp_model.ArcT] = []
+    for i in all_tasks:
+        # if node i is first.
+        start_lit = model.NewBoolVar(f"start_{i}")
+        arcs.append((0, i + 1, start_lit))
+        model.Add(ranks[i] == 0).OnlyEnforceIf(start_lit)
+
+        # As there are no other constraints on the problem, we can add this
+        # redundant constraint.
+        model.Add(starts[i] == 0).OnlyEnforceIf(start_lit)
+
+        # if node i is last.
+        end_lit = model.NewBoolVar(f"end_{i}")
+        arcs.append((i + 1, 0, end_lit))
+
+        for j in all_tasks:
+            if i == j:
+                arcs.append((i + 1, i + 1, presences[i].Not()))
+                model.Add(ranks[i] == -1).OnlyEnforceIf(presences[i].Not())
+            else:
+                literal = model.NewBoolVar(f"arc_{i}_to_{j}")
+                arcs.append((i + 1, j + 1, literal))
+                model.Add(ranks[j] == ranks[i] + 1).OnlyEnforceIf(literal)
+
+                # To perform the transitive reduction from precedences to successors,
+                # we need to tie the starts of the tasks with 'literal'.
+                # In a pure problem, the following inequality could be an equality.
+                # It is not true in general.
+                #
+                # Note that we could use this literal to penalize the transition, add an
+                # extra delay to the precedence.
+                model.Add(starts[j] >= starts[i] + durations[i]).OnlyEnforceIf(literal)
+
+    # Manage the empty circuit
+    empty = model.NewBoolVar("empty")
+    arcs.append((0, 0, empty))
+
+    for i in all_tasks:
+        model.AddImplication(empty, presences[i].Not())
+
+    # Add the circuit constraint.
+    model.AddCircuit(arcs)
+
+
+def ranking_sample_sat():
+    """Ranks tasks in a NoOverlap constraint."""
+
+    model = cp_model.CpModel()
+    horizon = 100
+    num_tasks = 4
+    all_tasks = range(num_tasks)
+
+    starts = []
+    durations = []
+    intervals = []
+    presences = []
+    ranks = []
+
+    # Creates intervals, half of them are optional.
+    for t in all_tasks:
+        start = model.NewIntVar(0, horizon, f"start[{t}]")
+        duration = t + 1
+        presence = model.NewBoolVar(f"presence[{t}]")
+        interval = model.NewOptionalFixedSizeIntervalVar(
+            start, duration, presence, f"opt_interval[{t}]"
+        )
+        if t < num_tasks // 2:
+            model.Add(presence == 1)
+
+        starts.append(start)
+        durations.append(duration)
+        intervals.append(interval)
+        presences.append(presence)
+
+        # Ranks = -1 if and only if the tasks is not performed.
+        ranks.append(model.NewIntVar(-1, num_tasks - 1, f"rank[{t}]"))
+
+    # Adds NoOverlap constraint.
+    model.AddNoOverlap(intervals)
+
+    # Adds ranking constraint.
+    rank_tasks_with_circuit(model, starts, durations, presences, ranks)
+
+    # Adds a constraint on ranks.
+    model.Add(ranks[0] < ranks[1])
+
+    # Creates makespan variable.
+    makespan = model.NewIntVar(0, horizon, "makespan")
+    for t in all_tasks:
+        model.Add(starts[t] + durations[t] <= makespan).OnlyEnforceIf(presences[t])
+
+    # Minimizes makespan - fixed gain per tasks performed.
+    # As the fixed cost is less that the duration of the last interval,
+    # the solver will not perform the last interval.
+    model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
+
+    # Solves the model model.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL:
+        # Prints out the makespan and the start times and ranks of all tasks.
+        print(f"Optimal cost: {solver.ObjectiveValue()}")
+        print(f"Makespan: {solver.Value(makespan)}")
+        for t in all_tasks:
+            if solver.Value(presences[t]):
+                print(
+                    f"Task {t} starts at {solver.Value(starts[t])} "
+                    f"with rank {solver.Value(ranks[t])}"
+                )
+            else:
+                print(
+                    f"Task {t} in not performed "
+                    f"and ranked at {solver.Value(ranks[t])}"
+                )
+    else:
+        print(f"Solver exited with nonoptimal status: {status}")
+
+
+ranking_sample_sat()
+```
+
 ## Intervals spanning over breaks in the calendar
 
 Sometimes, a task can be interrupted by a break (overnight, lunch break). In
@@ -1436,10 +1725,10 @@ SchedulingWithCalendarSampleSat()
 
 ## Detecting if two intervals overlap.
 
-We want a Boolean variable to be true iff two intervals overlap. To enforce
-this, we will create 3 Boolean variables, link two of them to the relative
-positions of the two intervals, and define the third one using the other two
-Boolean variables.
+We want a Boolean variable to be true if and only if two intervals overlap. To
+enforce this, we will create 3 Boolean variables, link two of them to the
+relative positions of the two intervals, and define the third one using the
+other two Boolean variables.
 
 There are two ways of linking the three Boolean variables. The first version
 uses one clause and two implications. Propagation will be faster using this
@@ -1563,5 +1852,3 @@ OverlappingIntervals()
 ## Precedences between intervals
 
 ## Convex hull of a set of intervals
-
-## Reservoir constraint

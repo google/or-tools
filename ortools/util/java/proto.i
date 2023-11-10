@@ -37,7 +37,7 @@
 // @param param_name the parameter name
 
 %{
-#include "ortools/base/integral_types.h"
+#include <cstdint>
 %}
 
 %define PROTO_INPUT(CppProtoType, JavaProtoType, param_name)

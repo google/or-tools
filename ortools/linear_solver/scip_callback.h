@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// See go/scip-callbacks for documentation.
 //
 // This file provides a simplified C++ API for using callbacks with SCIP and
 // MPSolver.  It can be used directly by users, although in most cases, the
 // mp_callback.h should be sufficient (in fact, SCIP's mp_callback.h
-// implementation is built on top of this).  See also go/mpsolver-callbacks.
+// implementation is built on top of this).
 
 #ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
 #define OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
@@ -115,7 +114,6 @@ struct CallbackRangeConstraint {
   bool local = false;
 };
 
-// See go/scip-callbacks for additional documentation.
 template <typename Constraint>
 class ScipConstraintHandler {
  public:

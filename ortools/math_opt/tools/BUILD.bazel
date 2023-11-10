@@ -24,7 +24,6 @@ cc_binary(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/cpp:statistics",
-        "//ortools/math_opt/io:mps_converter",
         "//ortools/math_opt/io:names_removal",
         "//ortools/math_opt/io:proto_converter",
         "//ortools/math_opt/labs:solution_feasibility_checker",

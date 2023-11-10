@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_BASE_VLOG_IS_ON_H_
 #define OR_TOOLS_BASE_VLOG_IS_ON_H_
 
+#include <cstdint>
+
 #include "absl/flags/declare.h"
 #include "absl/log/log.h"
-#include "ortools/base/integral_types.h"
 
 ABSL_DECLARE_FLAG(int, v);
 

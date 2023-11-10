@@ -1294,7 +1294,13 @@ void CpModelBuilder::ClearAssumptions() {
   cp_model_.mutable_assumptions()->Clear();
 }
 
-void CpModelBuilder::CopyFrom(const CpModelProto& model_proto) {
+CpModelBuilder CpModelBuilder::Clone() const {
+  CpModelBuilder clone;
+  clone.ResetAndImport(cp_model_);
+  return clone;
+}
+
+void CpModelBuilder::ResetAndImport(const CpModelProto& model_proto) {
   cp_model_ = model_proto;
   // Rebuild constant to index map.
   constant_to_index_map_.clear();

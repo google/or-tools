@@ -14,17 +14,18 @@
 #ifndef OR_TOOLS_SAT_PRECEDENCES_H_
 #define OR_TOOLS_SAT_PRECEDENCES_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -79,8 +80,39 @@ class PrecedenceRelations {
   void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
                               std::vector<FullIntegerPrecedence>* output);
 
- private:
+  // If we don't have too many variable, we compute the full transtive closure
+  // and can query in O(1) if there is a relation between two variables.
+  // This can be used to optimize some scheduling propagation and reasons.
+  //
+  // Warning: If we there are too many, this will NOT contain all relations.
+  //
+  // Returns kMinIntegerValue if there are none.
+  // Otherwise a + offset <= b.
+  IntegerValue GetOffset(IntegerVariable a, IntegerVariable b) {
+    const auto it = all_relations_.find({a, b});
+    return it == all_relations_.end() ? kMinIntegerValue : it->second;
+  }
+
+  // Update the hash table of precedence relation.
+  void UpdateOffset(IntegerVariable a, IntegerVariable b, IntegerValue offset) {
+    InternalUpdate(a, b, offset);
+    InternalUpdate(NegationOf(b), NegationOf(a), -offset);
+  }
+
+  // The current code requires the internal data to be processed once all
+  // relations are loaded.
+  //
+  // TODO(user): Be more dynamic as we start to add relations during search.
   void Build();
+
+ private:
+  void InternalUpdate(IntegerVariable a, IntegerVariable b,
+                      IntegerValue offset) {
+    const auto [it, inserted] = all_relations_.insert({{a, b}, offset});
+    if (!inserted) {
+      it->second = std::max(it->second, offset);
+    }
+  }
 
   IntegerTrail* integer_trail_;
 
@@ -90,6 +122,9 @@ class PrecedenceRelations {
   bool is_built_ = false;
   bool is_dag_ = false;
   std::vector<IntegerVariable> topological_order_;
+
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>, IntegerValue>
+      all_relations_;
 };
 
 // This class implement a propagator on simple inequalities between integer
@@ -121,6 +156,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
     integer_trail_->RegisterWatcher(&modified_vars_);
     watcher_->SetPropagatorPriority(watcher_id_, 0);
   }
+
+  // This type is neither copyable nor movable.
+  PrecedencesPropagator(const PrecedencesPropagator&) = delete;
+  PrecedencesPropagator& operator=(const PrecedencesPropagator&) = delete;
   ~PrecedencesPropagator() override;
 
   bool Propagate() final;
@@ -155,6 +194,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                                    IntegerValue offset,
                                    IntegerVariable offset_var,
                                    absl::Span<const Literal> presence_literals);
+
+  // This version check current precedence. It is however "slow".
+  bool AddPrecedenceWithOffsetIfNew(IntegerVariable i1, IntegerVariable i2,
+                                    IntegerValue offset);
 
   // Finds all the IntegerVariable that are "after" at least two of the
   // IntegerVariable in vars. Returns a vector of these precedences relation
@@ -201,6 +244,20 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // TODO(user): This can be quite slow, add some kind of deterministic limit
   // so that we can use it all the time.
   int AddGreaterThanAtLeastOneOfConstraints(Model* model);
+
+  // If known, return an offset such that we have a + offset <= b.
+  // Note that this only cover the case where this was conditionned by a single
+  // literal.
+  //
+  // TODO(user): Support list of literals, it isn't that much harder.
+  std::pair<Literal, IntegerValue> GetConditionalOffset(IntegerVariable a,
+                                                        IntegerVariable b) {
+    const auto it = conditional_relations_.find({a, b});
+    if (it == conditional_relations_.end()) {
+      return {Literal(), kMinIntegerValue};
+    }
+    return it->second;
+  }
 
  private:
   DEFINE_STRONG_INDEX_TYPE(ArcIndex);
@@ -285,6 +342,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // This is only meant to be used in a DCHECK() and is not optimized.
   bool NoPropagationLeft(const Trail& trail) const;
 
+  // Update conditional_relations_.
+  void AddToConditionalRelations(const ArcInfo& arc);
+  void RemoveFromConditionalRelations(const ArcInfo& arc);
+
   // External class needed to get the IntegerVariable lower bounds and Enqueue
   // new ones.
   Trail* trail_;
@@ -358,12 +419,18 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // Temp vector used by the tree traversal in DisassembleSubtree().
   std::vector<int> tmp_vector_;
 
+  // When a literal => X + offset <= Y become true, we add it here if X and Y
+  // do not already have a conditial relation. We also remove it on untrail.
+  // This is especially useful when we create all the literal between pair of
+  // interval for a disjunctive constraint.
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
+                      std::pair<Literal, IntegerValue>>
+      conditional_relations_;
+
   // Stats.
   int64_t num_cycles_ = 0;
   int64_t num_pushes_ = 0;
   int64_t num_enforcement_pushes_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(PrecedencesPropagator);
 };
 
 // =============================================================================

@@ -24,7 +24,7 @@
 //   solver.Maximize(10 * x1 + 6 * x2)
 //
 // USAGE EXAMPLES:
-// - examples/python/linear_programming.py
+// - ortools/python/linear_programming.py
 // - ./pywraplp_test.py
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
@@ -56,15 +56,15 @@ class IISResponse;
 
 %pythoncode %{
 import numbers
-from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
-from ortools.linear_solver.linear_solver_natural_api import inf
-from ortools.linear_solver.linear_solver_natural_api import LinearExpr
-from ortools.linear_solver.linear_solver_natural_api import ProductCst
-from ortools.linear_solver.linear_solver_natural_api import Sum
-from ortools.linear_solver.linear_solver_natural_api import SumArray
-from ortools.linear_solver.linear_solver_natural_api import SumCst
-from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
-from ortools.linear_solver.linear_solver_natural_api import VariableExpr
+from ortools.linear_solver.python.linear_solver_natural_api import OFFSET_KEY
+from ortools.linear_solver.python.linear_solver_natural_api import inf
+from ortools.linear_solver.python.linear_solver_natural_api import LinearExpr
+from ortools.linear_solver.python.linear_solver_natural_api import ProductCst
+from ortools.linear_solver.python.linear_solver_natural_api import Sum
+from ortools.linear_solver.python.linear_solver_natural_api import SumArray
+from ortools.linear_solver.python.linear_solver_natural_api import SumCst
+from ortools.linear_solver.python.linear_solver_natural_api import LinearConstraint
+from ortools.linear_solver.python.linear_solver_natural_api import VariableExpr
 %}  // %pythoncode
 
 %extend operations_research::MPVariable {

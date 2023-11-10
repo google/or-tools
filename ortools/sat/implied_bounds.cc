@@ -314,9 +314,9 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
       !integer_encoder->VariableIsFullyEncoded(right.var)) {
     return terms;
   }
-  const std::vector<ValueLiteralPair>& left_enc =
+  const std::vector<ValueLiteralPair> left_enc =
       integer_encoder->FullDomainEncoding(left.var);
-  const std::vector<ValueLiteralPair>& right_enc =
+  const std::vector<ValueLiteralPair> right_enc =
       integer_encoder->FullDomainEncoding(right.var);
   if (left_enc.size() != 2 || right_enc.size() != 2) {
     VLOG(2) << "encodings are not fully propagated";

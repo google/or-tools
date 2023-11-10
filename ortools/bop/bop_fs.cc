@@ -14,6 +14,7 @@
 #include "ortools/bop/bop_fs.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -21,21 +22,35 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
+#include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/bop/bop_base.h"
+#include "ortools/bop/bop_parameters.pb.h"
+#include "ortools/bop/bop_solution.h"
+#include "ortools/bop/bop_types.h"
+#include "ortools/bop/bop_util.h"
 #include "ortools/glop/lp_solver.h"
-#include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/bitset.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {

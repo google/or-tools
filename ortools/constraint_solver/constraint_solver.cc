@@ -35,14 +35,13 @@
 #include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
 #include "zlib.h"
@@ -531,6 +530,10 @@ template <class T>
 class TrailPacker {
  public:
   explicit TrailPacker(int block_size) : block_size_(block_size) {}
+
+  // This type is neither copyable nor movable.
+  TrailPacker(const TrailPacker&) = delete;
+  TrailPacker& operator=(const TrailPacker&) = delete;
   virtual ~TrailPacker() {}
   int input_size() const { return block_size_ * sizeof(addrval<T>); }
   virtual void Pack(const addrval<T>* block, std::string* packed_block) = 0;
@@ -538,7 +541,6 @@ class TrailPacker {
 
  private:
   const int block_size_;
-  DISALLOW_COPY_AND_ASSIGN(TrailPacker);
 };
 
 template <class T>
@@ -546,6 +548,10 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
  public:
   explicit NoCompressionTrailPacker(int block_size)
       : TrailPacker<T>(block_size) {}
+
+  // This type is neither copyable nor movable.
+  NoCompressionTrailPacker(const NoCompressionTrailPacker&) = delete;
+  NoCompressionTrailPacker& operator=(const NoCompressionTrailPacker&) = delete;
   ~NoCompressionTrailPacker() override {}
   void Pack(const addrval<T>* block, std::string* packed_block) override {
     DCHECK(block != nullptr);
@@ -558,9 +564,6 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
     DCHECK(block != nullptr);
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker);
 };
 
 template <class T>
@@ -570,6 +573,10 @@ class ZlibTrailPacker : public TrailPacker<T> {
       : TrailPacker<T>(block_size),
         tmp_size_(compressBound(this->input_size())),
         tmp_block_(new char[tmp_size_]) {}
+
+  // This type is neither copyable nor movable.
+  ZlibTrailPacker(const ZlibTrailPacker&) = delete;
+  ZlibTrailPacker& operator=(const ZlibTrailPacker&) = delete;
 
   ~ZlibTrailPacker() override {}
 
@@ -599,7 +606,6 @@ class ZlibTrailPacker : public TrailPacker<T> {
  private:
   const uint64_t tmp_size_;
   std::unique_ptr<char[]> tmp_block_;
-  DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker);
 };
 
 template <class T>
@@ -1077,7 +1083,7 @@ class Search {
       solver_->Fail();
     }
   }
-  void set_search_context(const std::string& search_context) {
+  void set_search_context(absl::string_view search_context) {
     search_context_ = search_context;
   }
   std::string search_context() const { return search_context_; }
@@ -2506,7 +2512,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
 }
 
 void Solver::SetName(const PropagationBaseObject* object,
-                     const std::string& name) {
+                     absl::string_view name) {
   if (parameters_.store_names() &&
       GetName(object) != name) {  // in particular if name.empty()
     propagation_object_names_[object] = name;

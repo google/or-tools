@@ -22,8 +22,9 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "ortools/base/integral_types.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -36,7 +37,7 @@ class BaseAllDifferent : public Constraint {
   BaseAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s), vars_(vars) {}
   ~BaseAllDifferent() override {}
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 

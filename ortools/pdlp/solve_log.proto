@@ -141,6 +141,10 @@ message ConvergenceInformation {
 
   // The dual objective. The dual need not be feasible. The dual objective
   // includes the contributions from reduced costs.
+  // NOTE: The definition of dual_objective changed in OR-tools version 9.8.
+  // See
+  // https://developers.google.com/optimization/lp/pdlp_math#reduced_costs_dual_residuals_and_the_corrected_dual_objective
+  // for details.
   optional double dual_objective = 3;
 
   // If possible (e.g., when all primal variables have lower and upper bounds),

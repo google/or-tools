@@ -19,9 +19,8 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/util/range_minimum_query.h"
 
 namespace operations_research {
@@ -33,6 +32,11 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
   explicit LinearRangeIntToIntFunction(
       std::function<int64_t(int64_t)> base_function)
       : base_function_(std::move(base_function)) {}
+
+  // This type is neither copyable nor movable.
+  LinearRangeIntToIntFunction(const LinearRangeIntToIntFunction&) = delete;
+  LinearRangeIntToIntFunction& operator=(const LinearRangeIntToIntFunction&) =
+      delete;
 
   int64_t Query(int64_t argument) const override {
     return base_function_(argument);
@@ -87,8 +91,6 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
 
  private:
   std::function<int64_t(int64_t)> base_function_;
-
-  DISALLOW_COPY_AND_ASSIGN(LinearRangeIntToIntFunction);
 };
 
 std::vector<int64_t> FunctionToVector(const std::function<int64_t(int64_t)>& f,
@@ -116,6 +118,11 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
         rmq_max_(rmq_min_.array()) {
     CHECK_LT(domain_start, domain_end);
   }
+
+  // This type is neither copyable nor movable.
+  CachedRangeIntToIntFunction(const CachedRangeIntToIntFunction&) = delete;
+  CachedRangeIntToIntFunction& operator=(const CachedRangeIntToIntFunction&) =
+      delete;
 
   int64_t Query(int64_t argument) const override {
     DCHECK_LE(domain_start_, argument);
@@ -173,8 +180,6 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
   const int64_t domain_start_;
   const RangeMinimumQuery<int64_t, std::less<int64_t>> rmq_min_;
   const RangeMinimumQuery<int64_t, std::greater<int64_t>> rmq_max_;
-
-  DISALLOW_COPY_AND_ASSIGN(CachedRangeIntToIntFunction);
 };
 
 class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
@@ -187,6 +192,12 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
         index_rmq_max_(index_rmq_min_.array()) {
     CHECK_LT(domain_start, domain_end);
   }
+
+  // This type is neither copyable nor movable.
+  CachedRangeMinMaxIndexFunction(const CachedRangeMinMaxIndexFunction&) =
+      delete;
+  CachedRangeMinMaxIndexFunction& operator=(
+      const CachedRangeMinMaxIndexFunction&) = delete;
 
   inline int64_t RangeMinArgument(int64_t from, int64_t to) const override {
     DCHECK_LE(domain_start_, from);
@@ -210,8 +221,6 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
   const int64_t domain_end_;
   const RangeMinimumIndexQuery<int64_t, std::less<int64_t>> index_rmq_min_;
   const RangeMinimumIndexQuery<int64_t, std::greater<int64_t>> index_rmq_max_;
-
-  DISALLOW_COPY_AND_ASSIGN(CachedRangeMinMaxIndexFunction);
 };
 }  // namespace
 

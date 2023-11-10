@@ -8,7 +8,7 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2110-
+# see https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-2304
 RUN apt-get update -qq \
 && apt-get install -yq dotnet-sdk-6.0 \
 && apt-get clean \

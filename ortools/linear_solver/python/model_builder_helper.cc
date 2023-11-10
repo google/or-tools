@@ -169,6 +169,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
 
   py::class_<ModelBuilderHelper>(m, "ModelBuilderHelper")
       .def(py::init<>())
+      .def("overwrite_model", &ModelBuilderHelper::OverwriteModel,
+           arg("other_helper"))
       .def("export_to_mps_string", &ModelBuilderHelper::ExportToMpsString,
            arg("options") = MPModelExportOptions())
       .def("export_to_lp_string", &ModelBuilderHelper::ExportToLpString,
@@ -288,6 +290,15 @@ PYBIND11_MODULE(model_builder_helper, m) {
            })
       .def("set_var_name", &ModelBuilderHelper::SetVarName, arg("var_index"),
            arg("name"))
+      .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
+           arg("var_index"))
+      .def("var_upper_bound", &ModelBuilderHelper::VarUpperBound,
+           arg("var_index"))
+      .def("var_is_integral", &ModelBuilderHelper::VarIsIntegral,
+           arg("var_index"))
+      .def("var_objective_coefficient",
+           &ModelBuilderHelper::VarObjectiveCoefficient, arg("var_index"))
+      .def("var_name", &ModelBuilderHelper::VarName, arg("var_index"))
       .def("add_linear_constraint", &ModelBuilderHelper::AddLinearConstraint)
       .def("set_constraint_lower_bound",
            &ModelBuilderHelper::SetConstraintLowerBound, arg("ct_index"),
@@ -314,17 +325,6 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("set_constraint_coefficient",
            &ModelBuilderHelper::SetConstraintCoefficient, arg("ct_index"),
            arg("var_index"), arg("coeff"))
-      .def("num_variables", &ModelBuilderHelper::num_variables)
-      .def("var_lower_bound", &ModelBuilderHelper::VarLowerBound,
-           arg("var_index"))
-      .def("var_upper_bound", &ModelBuilderHelper::VarUpperBound,
-           arg("var_index"))
-      .def("var_is_integral", &ModelBuilderHelper::VarIsIntegral,
-           arg("var_index"))
-      .def("var_objective_coefficient",
-           &ModelBuilderHelper::VarObjectiveCoefficient, arg("var_index"))
-      .def("var_name", &ModelBuilderHelper::VarName, arg("var_index"))
-      .def("num_constraints", &ModelBuilderHelper::num_constraints)
       .def("constraint_lower_bound", &ModelBuilderHelper::ConstraintLowerBound,
            arg("ct_index"))
       .def("constraint_upper_bound", &ModelBuilderHelper::ConstraintUpperBound,
@@ -335,6 +335,59 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("ct_index"))
       .def("constraint_coefficients",
            &ModelBuilderHelper::ConstraintCoefficients, arg("ct_index"))
+      .def("add_enforced_linear_constraint",
+           &ModelBuilderHelper::AddEnforcedLinearConstraint)
+      .def("is_enforced_linear_constraint",
+           &ModelBuilderHelper::IsEnforcedConstraint)
+      .def("set_enforced_constraint_lower_bound",
+           &ModelBuilderHelper::SetEnforcedConstraintLowerBound,
+           arg("ct_index"), arg("lb"))
+      .def("set_enforced_constraint_upper_bound",
+           &ModelBuilderHelper::SetEnforcedConstraintUpperBound,
+           arg("ct_index"), arg("ub"))
+      .def("add_term_to_enforced_constraint",
+           &ModelBuilderHelper::AddEnforcedConstraintTerm, arg("ct_index"),
+           arg("var_index"), arg("coeff"))
+      .def("add_terms_to_enforced_constraint",
+           [](ModelBuilderHelper* helper, int ct_index,
+              const std::vector<int>& indices,
+              const std::vector<double>& coefficients) {
+             for (const auto& [i, c] :
+                  SortedGroupedTerms(indices, coefficients)) {
+               helper->AddEnforcedConstraintTerm(ct_index, i, c);
+             }
+           })
+      .def("safe_add_term_to_enforced_constraint",
+           &ModelBuilderHelper::SafeAddEnforcedConstraintTerm, arg("ct_index"),
+           arg("var_index"), arg("coeff"))
+      .def("set_enforced_constraint_name",
+           &ModelBuilderHelper::SetEnforcedConstraintName, arg("ct_index"),
+           arg("name"))
+      .def("set_enforced_constraint_coefficient",
+           &ModelBuilderHelper::SetEnforcedConstraintCoefficient,
+           arg("ct_index"), arg("var_index"), arg("coeff"))
+      .def("enforced_constraint_lower_bound",
+           &ModelBuilderHelper::EnforcedConstraintLowerBound, arg("ct_index"))
+      .def("enforced_constraint_upper_bound",
+           &ModelBuilderHelper::EnforcedConstraintUpperBound, arg("ct_index"))
+      .def("enforced_constraint_name",
+           &ModelBuilderHelper::EnforcedConstraintName, arg("ct_index"))
+      .def("enforced_constraint_var_indices",
+           &ModelBuilderHelper::EnforcedConstraintVarIndices, arg("ct_index"))
+      .def("enforced_constraint_coefficients",
+           &ModelBuilderHelper::EnforcedConstraintCoefficients, arg("ct_index"))
+      .def("set_enforced_constraint_indicator_variable_index",
+           &ModelBuilderHelper::SetEnforcedIndicatorVariableIndex,
+           arg("ct_index"), arg("var_index"))
+      .def("set_enforced_constraint_indicator_value",
+           &ModelBuilderHelper::SetEnforcedIndicatorValue, arg("ct_index"),
+           arg("positive"))
+      .def("enforced_constraint_indicator_variable_index",
+           &ModelBuilderHelper::EnforcedIndicatorVariableIndex, arg("ct_index"))
+      .def("enforced_constraint_indicator_value",
+           &ModelBuilderHelper::EnforcedIndicatorValue, arg("ct_index"))
+      .def("num_variables", &ModelBuilderHelper::num_variables)
+      .def("num_constraints", &ModelBuilderHelper::num_constraints)
       .def("name", &ModelBuilderHelper::name)
       .def("set_name", &ModelBuilderHelper::SetName, arg("name"))
       .def("clear_objective", &ModelBuilderHelper::ClearObjective)
@@ -343,6 +396,9 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("set_objective_offset", &ModelBuilderHelper::SetObjectiveOffset,
            arg("offset"))
       .def("objective_offset", &ModelBuilderHelper::ObjectiveOffset)
+      .def("clear_hints", &ModelBuilderHelper::ClearHints)
+      .def("add_hint", &ModelBuilderHelper::AddHint, arg("var_index"),
+           arg("var_value"))
       .def("sort_and_regroup_terms",
            [](ModelBuilderHelper* helper, py::array_t<int> indices,
               py::array_t<double> coefficients) {
@@ -416,13 +472,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def("enable_output", &ModelSolverHelper::EnableOutput, arg("output"))
       .def("has_solution", &ModelSolverHelper::has_solution)
       .def("has_response", &ModelSolverHelper::has_response)
-      .def("status",
-           [](const ModelSolverHelper& solver) {
-             // TODO(user):
-             //    - Return the true enum when pybind11_protobuf is working.
-             //    - Return the response proto
-             return static_cast<int>(solver.status());
-           })
+      .def("response", &ModelSolverHelper::response)
+      .def("status", &ModelSolverHelper::status)
       .def("status_string", &ModelSolverHelper::status_string)
       .def("wall_time", &ModelSolverHelper::wall_time)
       .def("user_time", &ModelSolverHelper::user_time)

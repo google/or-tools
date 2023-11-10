@@ -36,7 +36,7 @@ absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
 absl::StatusOr<ModelProto> ReadMpsFile(const absl::string_view filename) {
   glop::MPSReader mps_reader;
   MPModelProto mp_model;
-  RETURN_IF_ERROR(mps_reader.ParseFile(std::string(filename), &mp_model));
+  RETURN_IF_ERROR(mps_reader.ParseFile(filename, &mp_model));
   return MPModelProtoToMathOptModel(mp_model);
 }
 

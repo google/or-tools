@@ -423,7 +423,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     const ColIndex start = lu_factorization_.LeftSolveUForUnitRow(j, y);
     if (y->non_zeros.empty()) {
       left_pool_mapping_[j] = storage_.AddDenseColumnPrefix(
-          Transpose(y->values), ColToRowIndex(start));
+          Transpose(y->values).const_view(), ColToRowIndex(start));
     } else {
       left_pool_mapping_[j] = storage_.AddDenseColumnWithNonZeros(
           Transpose(y->values),

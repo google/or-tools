@@ -12,13 +12,18 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/init_google.h"
@@ -26,8 +31,11 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/scheduling/jobshop_scheduling_parser.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
 ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
@@ -190,7 +198,7 @@ struct AlternativeTaskData {
 // main task of the job.
 void CreateAlternativeTasks(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks, int64_t horizon,
+    absl::Span<const std::vector<JobTaskData>> job_to_tasks, int64_t horizon,
     std::vector<std::vector<std::vector<AlternativeTaskData>>>&
         job_task_to_alternatives,
     CpModelBuilder& cp_model) {
@@ -289,7 +297,7 @@ struct MachineTaskData {
 
 std::vector<std::vector<MachineTaskData>> GetDataPerMachine(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
+    absl::Span<const std::vector<std::vector<AlternativeTaskData>>>
         job_task_to_alternatives) {
   const int num_jobs = problem.jobs_size();
   const int num_machines = problem.machines_size();
@@ -435,8 +443,8 @@ void CreateMachines(
 // Collect all objective terms and add them to the model.
 void CreateObjective(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks,
-    const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
+    absl::Span<const std::vector<JobTaskData>> job_to_tasks,
+    absl::Span<const std::vector<std::vector<AlternativeTaskData>>>
         job_task_to_alternatives,
     int64_t horizon, IntVar makespan, CpModelBuilder& cp_model) {
   LinearExpr objective;
@@ -505,7 +513,7 @@ void CreateObjective(
 // and not the alternate copies.
 void AddCumulativeRelaxation(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks,
+    absl::Span<const std::vector<JobTaskData>> job_to_tasks,
     IntervalVar makespan_interval, CpModelBuilder& cp_model) {
   const int num_jobs = problem.jobs_size();
   const int num_machines = problem.machines_size();
@@ -572,33 +580,13 @@ void AddCumulativeRelaxation(
       cumul.AddDemand(makespan_interval, component.size());
     }
   }
-
-  // Add a global cumulative that contains all main intervals.
-  //
-  // On most benchmarks, this is the only cumulative constraint created as the
-  // graph of connected interval has only one component.
-  //
-  // Even on benchmarks with cliques, it still helps, as it allows a global
-  // energetic reasoning that uses the makespan.
-  LOG(INFO) << "Add global cumulative with  " << num_tasks << " intervals and "
-            << num_machines << " machines";
-  CumulativeConstraint global_cumul = cp_model.AddCumulative(num_machines);
-  for (int j = 0; j < num_jobs; ++j) {
-    const int num_tasks_in_job = problem.jobs(j).tasks_size();
-    for (int t = 0; t < num_tasks_in_job; ++t) {
-      global_cumul.AddDemand(job_to_tasks[j][t].interval, 1);
-    }
-  }
-  if (absl::GetFlag(FLAGS_use_interval_makespan)) {
-    global_cumul.AddDemand(makespan_interval, num_machines);
-  }
 }
 
 // This redundant linear constraints states that the sum of durations of all
 // tasks is a lower bound of the makespan * number of machines.
 void AddMakespanRedundantConstraints(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks, IntVar makespan,
+    absl::Span<const std::vector<JobTaskData>> job_to_tasks, IntVar makespan,
     CpModelBuilder& cp_model) {
   const int num_machines = problem.machines_size();
 
@@ -614,8 +602,8 @@ void AddMakespanRedundantConstraints(
 
 void DisplayJobStatistics(
     const JsspInputProblem& problem, int64_t horizon,
-    const std::vector<std::vector<JobTaskData>>& job_to_tasks,
-    const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
+    absl::Span<const std::vector<JobTaskData>> job_to_tasks,
+    absl::Span<const std::vector<std::vector<AlternativeTaskData>>>
         job_task_to_alternatives) {
   const int num_jobs = job_to_tasks.size();
   int num_tasks = 0;
@@ -740,7 +728,7 @@ void Solve(const JsspInputProblem& problem) {
   // CP-SAT now has a default strategy for scheduling problem that works best.
 
   if (absl::GetFlag(FLAGS_display_sat_model)) {
-    LOG(INFO) << cp_model.Proto().DebugString();
+    LOG(INFO) << cp_model.Proto();
   }
 
   // Setup parameters.
@@ -758,6 +746,11 @@ void Solve(const JsspInputProblem& problem) {
     parameters.add_ignore_subsolvers("objective_lb_search");
     parameters.add_extra_subsolvers("objective_shaving_search");
   }
+
+  // Tells the solver we have a makespan objective.
+  // Also take decision based on precedence, this usually work better.
+  parameters.set_push_all_tasks_toward_start(true);
+  parameters.set_use_dynamic_precedence_in_disjunctive(true);
 
   const CpSolverResponse response =
       SolveWithParameters(cp_model.Build(), parameters);

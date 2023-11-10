@@ -31,9 +31,9 @@ void RankingSampleSat() {
   const int kHorizon = 100;
   const int kNumTasks = 4;
 
-  auto add_task_ranking = [&cp_model](const std::vector<IntVar>& starts,
-                                      const std::vector<BoolVar>& presences,
-                                      const std::vector<IntVar>& ranks) {
+  auto add_task_ranking = [&cp_model](absl::Span<const IntVar> starts,
+                                      absl::Span<const BoolVar> presences,
+                                      absl::Span<const IntVar> ranks) {
     const int num_tasks = starts.size();
 
     // Creates precedence variables between pairs of intervals.

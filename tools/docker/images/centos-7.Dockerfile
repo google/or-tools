@@ -69,7 +69,7 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum \
 && echo "source /opt/rh/rh-python38/enable" >> /etc/bashrc
-RUN python -m pip install absl-py mypy-protobuf
+RUN python -m pip install absl-py mypy mypy-protobuf
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

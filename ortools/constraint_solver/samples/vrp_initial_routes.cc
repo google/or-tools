@@ -15,10 +15,15 @@
 // [START import]
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
+#include "google/protobuf/duration.pb.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 // [END import]
@@ -151,11 +156,14 @@ void VrpInitialRoutes() {
   // Close model with the custom search parameters
   // [START parameters]
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
-  searchParameters.set_first_solution_strategy(FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC);
-  searchParameters.set_local_search_metaheuristic(LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
+  searchParameters.set_first_solution_strategy(
+      FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+  searchParameters.set_local_search_metaheuristic(
+      LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   searchParameters.mutable_time_limit()->set_seconds(5);
-  // When an initial solution is given for search, the model will be closed with the default
-  // search parameters unless it is explicitly closed with the custom search parameters.
+  // When an initial solution is given for search, the model will be closed with
+  // the default search parameters unless it is explicitly closed with the
+  // custom search parameters.
   routing.CloseModelWithParameters(searchParameters);
   // [END parameters]
 

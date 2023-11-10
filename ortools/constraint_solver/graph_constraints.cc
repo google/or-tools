@@ -23,8 +23,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/integral_types.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -1339,7 +1340,7 @@ namespace {
 class PathConnectedConstraint : public Constraint {
  public:
   PathConnectedConstraint(Solver* solver, std::vector<IntVar*> nexts,
-                          const std::vector<int64_t>& sources,
+                          absl::Span<const int64_t> sources,
                           std::vector<int64_t> sinks,
                           std::vector<IntVar*> status)
       : Constraint(solver),
@@ -1452,7 +1453,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
   };
   PathTransitPrecedenceConstraint(
       Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-      const std::vector<std::pair<int, int>>& precedences,
+      absl::Span<const std::pair<int, int>> precedences,
       absl::flat_hash_map<int, PrecedenceType> precedence_types)
       : Constraint(solver),
         nexts_(std::move(nexts)),
@@ -1628,8 +1629,8 @@ Constraint* Solver::MakePathPrecedenceConstraint(
 Constraint* Solver::MakePathPrecedenceConstraint(
     std::vector<IntVar*> nexts,
     const std::vector<std::pair<int, int>>& precedences,
-    const std::vector<int>& lifo_path_starts,
-    const std::vector<int>& fifo_path_starts) {
+    absl::Span<const int> lifo_path_starts,
+    absl::Span<const int> fifo_path_starts) {
   absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
       precedence_types;
   for (int start : lifo_path_starts) {

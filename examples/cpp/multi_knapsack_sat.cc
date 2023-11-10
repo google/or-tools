@@ -30,7 +30,9 @@
 #include "ortools/sat/cp_model.h"
 
 ABSL_FLAG(int, size, 16, "scaling factor of the model");
-ABSL_FLAG(std::string, params, "", "Sat parameters");
+ABSL_FLAG(std::string, params,
+          "num_workers:8,log_search_progress:true,max_time_in_seconds:10.0",
+          "Sat parameters");
 
 namespace operations_research {
 namespace sat {

@@ -29,8 +29,8 @@
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/solver.h"
-#include "ortools/math_opt/cpp/infeasible_subsystem_arguments.h"  // IWYU pragma: export
-#include "ortools/math_opt/cpp/infeasible_subsystem_result.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/compute_infeasible_subsystem_arguments.h"  // IWYU pragma: export
+#include "ortools/math_opt/cpp/compute_infeasible_subsystem_result.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/parameters.h"             // IWYU pragma: export
 #include "ortools/math_opt/cpp/solve_arguments.h"        // IWYU pragma: export
@@ -92,21 +92,21 @@ using SolveFunction =
 //
 // A Status error will be returned if the inputs are invalid or there is an
 // unexpected failure in an underlying solver or for some internal math_opt
-// errors. Otherwise, check InfeasibleSubsystemResult::feasibility to see if an
-// infeasible subsystem was found.
+// errors. Otherwise, check ComputeInfeasibleSubsystemResult::feasibility to see
+// if an infeasible subsystem was found.
 //
-// Memory model: the returned InfeasibleSubsystemResult owns its own memory (for
-// subsystems, solve stats, etc.), EXCEPT for a pointer back to the model. As a
-// result:
-//  * Keep the model alive to access InfeasibleSubsystemResult,
-//  * Avoid unnecessarily copying InfeasibleSubsystemResult,
+// Memory model: the returned ComputeInfeasibleSubsystemResult owns its own
+// memory (for subsystems, solve stats, etc.), EXCEPT for a pointer back to the
+// model. As a result:
+//  * Keep the model alive to access ComputeInfeasibleSubsystemResult,
+//  * Avoid unnecessarily copying ComputeInfeasibleSubsystemResult,
 //  * The result is generally accessible after mutating the model, but some care
 //    is needed if variables or linear constraints are added or deleted.
 //
 // Thread-safety: this method is safe to call concurrently on the same Model.
-absl::StatusOr<InfeasibleSubsystemResult> InfeasibleSubsystem(
+absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystem(
     const Model& model, SolverType solver_type,
-    const InfeasibleSubsystemArguments& infeasible_subsystem_args = {},
+    const ComputeInfeasibleSubsystemArguments& infeasible_subsystem_args = {},
     const SolverInitArguments& init_args = {});
 
 // Incremental solve of a model.
@@ -222,7 +222,7 @@ class IncrementalSolver {
 
   SolverType solver_type() const { return solver_type_; }
 
-  // TODO(b/273961536): Add InfeasibleSubsystem() member function.
+  // TODO(b/273961536): Add ComputeInfeasibleSubsystem() member function.
 
  private:
   IncrementalSolver(SolverType solver_type, SolverInitArguments init_args,

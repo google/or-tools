@@ -71,7 +71,7 @@ void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
 }
 
 void PrecedenceRelations::Build() {
-  CHECK(!is_built_);
+  if (is_built_) return;
 
   is_built_ = true;
   std::vector<int> permutation;
@@ -103,6 +103,49 @@ void PrecedenceRelations::Build() {
     }
   }
   is_dag_ = !graph_has_cycle;
+
+  // Lets build full precedences if we don't have too many of them.
+  // TODO(user): Also do that if we don't have a DAG?
+  if (!is_dag_) return;
+
+  int work = 0;
+  const int kWorkLimit = 1e6;
+  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> before(
+      graph_.num_nodes());
+  const auto add = [&before, this](IntegerVariable a, IntegerVariable b,
+                                   IntegerValue offset) {
+    const auto [it, inserted] = all_relations_.insert({{a, b}, offset});
+    if (inserted) {
+      before[b].push_back(a);
+    } else {
+      it->second = std::max(it->second, offset);
+    }
+  };
+
+  // TODO(user): We probably do not need to do both var and its negation.
+  for (const IntegerVariable tail_var : topological_order_) {
+    if (++work > kWorkLimit) break;
+    for (const int arc : graph_.OutgoingArcs(tail_var.value())) {
+      CHECK_EQ(tail_var.value(), graph_.Tail(arc));
+      const IntegerVariable head_var = IntegerVariable(graph_.Head(arc));
+      const IntegerValue arc_offset = arc_offset_[arc];
+
+      if (++work > kWorkLimit) break;
+      add(tail_var, head_var, arc_offset);
+      add(NegationOf(head_var), NegationOf(tail_var), -arc_offset);
+
+      for (const IntegerVariable before_var : before[tail_var]) {
+        if (++work > kWorkLimit) break;
+        const IntegerValue offset =
+            all_relations_.at({before_var, tail_var}) + arc_offset;
+        add(before_var, head_var, offset);
+        add(NegationOf(head_var), NegationOf(before_var), -offset);
+      }
+    }
+  }
+
+  VLOG(2) << "Full precedences. Work=" << work
+          << " Relations=" << all_relations_.size();
 }
 
 void PrecedenceRelations::ComputeFullPrecedences(
@@ -235,6 +278,7 @@ bool PrecedencesPropagator::Propagate() {
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (--arc_counts_[arc_index] == 0) {
         const ArcInfo& arc = arcs_[arc_index];
+        AddToConditionalRelations(arc);
         impacted_arcs_[arc.tail_var].push_back(arc_index);
       }
     }
@@ -292,6 +336,36 @@ bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
   return true;
 }
 
+// TODO(user): Add as fixed precedence if we fix at level zero.
+void PrecedencesPropagator::AddToConditionalRelations(const ArcInfo& arc) {
+  if (arc.presence_literals.size() != 1) return;
+
+  // We currently do not handle variable size in the reasons.
+  // TODO(user): we could easily take a level zero ArcOffset() instead, or
+  // add this to the reason though.
+  if (arc.offset_var != kNoIntegerVariable) return;
+  const std::pair<IntegerVariable, IntegerVariable> key = {arc.tail_var,
+                                                           arc.head_var};
+  const IntegerValue offset = ArcOffset(arc);
+
+  // We only insert if it is not already present!
+  conditional_relations_.insert({key, {arc.presence_literals[0], offset}});
+}
+
+void PrecedencesPropagator::RemoveFromConditionalRelations(const ArcInfo& arc) {
+  if (arc.presence_literals.size() != 1) return;
+  if (arc.offset_var != kNoIntegerVariable) return;
+  const std::pair<IntegerVariable, IntegerVariable> key = {arc.tail_var,
+                                                           arc.head_var};
+  const auto it = conditional_relations_.find(key);
+  if (it == conditional_relations_.end()) return;
+  if (it->second.first != arc.presence_literals[0]) return;
+
+  // It is okay if we erase a wrong one on untrail, what is important is not to
+  // forget to erase one we added.
+  conditional_relations_.erase(it);
+}
+
 void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
   if (propagation_trail_index_ > trail_index) {
     // This means that we already propagated all there is to propagate
@@ -306,6 +380,7 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (arc_counts_[arc_index]++ == 0) {
         const ArcInfo& arc = arcs_[arc_index];
+        RemoveFromConditionalRelations(arc);
         impacted_arcs_[arc.tail_var].pop_back();
       }
     }
@@ -450,7 +525,6 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
 void PrecedencesPropagator::AddArc(
     IntegerVariable tail, IntegerVariable head, IntegerValue offset,
     IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
-  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
   if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
@@ -475,16 +549,19 @@ void PrecedencesPropagator::AddArc(
           integer_trail_->IsIgnoredLiteral(offset_var).Negated());
     }
     gtl::STLSortAndRemoveDuplicates(&enforcement_literals);
-    int new_size = 0;
-    for (const Literal l : enforcement_literals) {
-      if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
-        continue;  // At true, ignore this literal.
-      } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
-        return;  // At false, ignore completely this arc.
+
+    if (trail_->CurrentDecisionLevel() == 0) {
+      int new_size = 0;
+      for (const Literal l : enforcement_literals) {
+        if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
+          continue;  // At true, ignore this literal.
+        } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
+          return;  // At false, ignore completely this arc.
+        }
+        enforcement_literals[new_size++] = l;
       }
-      enforcement_literals[new_size++] = l;
+      enforcement_literals.resize(new_size);
     }
-    enforcement_literals.resize(new_size);
   }
 
   if (head == tail) {
@@ -500,8 +577,8 @@ void PrecedencesPropagator::AddArc(
   // Remove the offset_var if it is fixed.
   // TODO(user): We should also handle the case where tail or head is fixed.
   if (offset_var != kNoIntegerVariable) {
-    const IntegerValue lb = integer_trail_->LowerBound(offset_var);
-    if (lb == integer_trail_->UpperBound(offset_var)) {
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(offset_var);
+    if (lb == integer_trail_->LevelZeroUpperBound(offset_var)) {
       offset += lb;
       offset_var = kNoIntegerVariable;
     }
@@ -585,8 +662,42 @@ void PrecedencesPropagator::AddArc(
         literal_to_new_impacted_arcs_[l.Index()].push_back(arc_index);
       }
     }
-    arc_counts_.push_back(presence_literals.size());
+
+    if (trail_->CurrentDecisionLevel() == 0) {
+      arc_counts_.push_back(presence_literals.size());
+    } else {
+      arc_counts_.push_back(0);
+      for (const Literal l : presence_literals) {
+        if (!trail_->Assignment().LiteralIsTrue(l)) {
+          ++arc_counts_.back();
+        }
+      }
+      CHECK(presence_literals.empty() || arc_counts_.back() > 0);
+    }
   }
+}
+
+bool PrecedencesPropagator::AddPrecedenceWithOffsetIfNew(IntegerVariable i1,
+                                                         IntegerVariable i2,
+                                                         IntegerValue offset) {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (i1 < impacted_arcs_.size() && i2 < impacted_arcs_.size()) {
+    for (const ArcIndex index : impacted_arcs_[i1]) {
+      const ArcInfo& arc = arcs_[index];
+      if (arc.head_var == i2) {
+        const IntegerValue current = ArcOffset(arc);
+        if (offset <= current) {
+          return false;
+        } else {
+          // TODO(user): Modify arc in place!
+        }
+        break;
+      }
+    }
+  }
+
+  AddPrecedenceWithOffset(i1, i2, offset);
+  return true;
 }
 
 // TODO(user): On jobshop problems with a lot of tasks per machine (500), this

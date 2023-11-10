@@ -94,7 +94,7 @@ This software suite has been tested under:
 
 *   Ubuntu 18.04 LTS and up (64-bit);
 *   Apple macOS Mojave with Xcode 9.x (64-bit);
-*   Microsoft Windows with Visual Studio 2019 (64-bit).
+*   Microsoft Windows with Visual Studio 2022 (64-bit).
 
 OR-Tools currently builds with a Makefile, but also provides Bazel and CMake
 support.

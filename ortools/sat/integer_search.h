@@ -31,10 +31,8 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
@@ -83,14 +81,26 @@ struct SearchHeuristics {
   // Index in the vectors above that indicate the current configuration.
   int policy_index;
 
-  // Two special decision functions that are constructed at loading time.
+  // Special decision functions that are constructed at loading time.
   // These are used by ConfigureSearchHeuristics() to fill the policies above.
-  std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
-  std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
 
-  // This is currently only filled and used by PARTIAL_FIXED_SEARCH.
-  // It contains only the part specified in the input cp model proto.
+  // Contains the search specified by the user in CpModelProto.
   std::function<BooleanOrIntegerLiteral()> user_search = nullptr;
+
+  // Heuristic search build after introspecting the model. It can be used as
+  // a replacement of the user search. This can include dedicated scheduling or
+  // routing heuristics.
+  std::function<BooleanOrIntegerLiteral()> heuristic_search = nullptr;
+
+  // Default integer heuristic that will fix all integer variables.
+  std::function<BooleanOrIntegerLiteral()> integer_completion_search = nullptr;
+
+  // Fixed search, built from above building blocks.
+  std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
+
+  // The search heuristic aims at following the given hint with minimum
+  // deviation.
+  std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
 
   // Some search strategy need to take more than one decision at once. They can
   // set this function that will be called on the next decision. It will be
@@ -204,7 +214,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
     std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
     Model* model);
 
-// Returns the BooleanOrIntegerLiteral advised by the underliying SAT solver.
+// Returns the BooleanOrIntegerLiteral advised by the underlying SAT solver.
 std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model);
 
 // Gets the branching variable using pseudo costs and combines it with a value
@@ -214,6 +224,17 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model);
 // Simple scheduling heuristic that looks at all the no-overlap constraints
 // and try to assign and perform the intervals that can be scheduled first.
 std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model);
+
+// Compared to SchedulingSearchHeuristic() this one take decision on precedences
+// between tasks. Lazily creating a precedence Boolean for the task in
+// disjunction.
+//
+// Note that this one is meant to be used when all Boolean has been fixed, so
+// more as a "completion" heuristic rather than a fixed search one.
+std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
+    Model* model);
+std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
     Model* model);
 
 // Returns true if the number of variables in the linearized part represent
@@ -250,7 +271,16 @@ class IntegerSearchHelper {
 
   // Calls the decision heuristics and extract a non-fixed literal.
   // Note that we do not want to copy the function here.
-  LiteralIndex GetDecision(const std::function<BooleanOrIntegerLiteral()>& f);
+  //
+  // Returns false if a conflict was found while trying to take a decision.
+  bool GetDecision(const std::function<BooleanOrIntegerLiteral()>& f,
+                   LiteralIndex* decision);
+
+  // Functions passed to GetDecision() might call this to notify a conflict
+  // was detected.
+  void NotifyThatConflictWasFoundDuringGetDecision() {
+    must_process_conflict_ = true;
+  }
 
   // Tries to take the current decision, this might backjump.
   // Returns false if the model is UNSAT.
@@ -280,6 +310,8 @@ class IntegerSearchHelper {
   TimeLimit* time_limit_;
   PseudoCosts* pseudo_costs_;
   IntegerVariable objective_var_ = kNoIntegerVariable;
+
+  bool must_process_conflict_ = false;
 };
 
 // This class will loop continuously on model variables and try to probe/shave
@@ -332,7 +364,6 @@ class ContinuousProber {
   absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
   absl::flat_hash_set<LiteralIndex> probed_literals_;
   int iteration_ = 1;
-  absl::Time last_logging_time_;
   int current_int_var_ = 0;
   int current_bool_var_ = 0;
 };

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple assignment problem."""
+"""Solve a simple assignment problem with CP-SAT."""
 # [START program]
 # [START import]
 import io
@@ -92,8 +92,10 @@ def main():
         selected = data.loc[solver.BooleanValues(x).loc[lambda x: x].index]
         for unused_index, row in selected.iterrows():
             print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
+    elif status == cp_model.INFEASIBLE:
+        print("No solution found")
     else:
-        print("No solution found.")
+        print("Something is wrong, check the status and the log of the solve")
     # [END print_solution]
 
 

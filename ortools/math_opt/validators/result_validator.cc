@@ -13,23 +13,24 @@
 
 #include "ortools/math_opt/validators/result_validator.h"
 
-#include <limits>
-#include <string>
-
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
+#include "google/protobuf/repeated_ptr_field.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/solve_stats_validator.h"
+#include "ortools/math_opt/validators/termination_validator.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
 namespace {
+// constexpr double kInf = std::numeric_limits<double>::infinity();
 
 bool HasPrimalFeasibleSolution(const SolutionProto& solution) {
   return solution.has_primal_solution() &&
@@ -37,10 +38,10 @@ bool HasPrimalFeasibleSolution(const SolutionProto& solution) {
              SOLUTION_STATUS_FEASIBLE;
 }
 
-bool HasPrimalFeasibleSolution(const SolveResultProto& result) {
+bool HasPrimalFeasibleSolution(
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
   // Assumes first solution is primal feasible if there is any primal solution.
-  return !result.solutions().empty() &&
-         HasPrimalFeasibleSolution(result.solutions(0));
+  return !solutions.empty() && HasPrimalFeasibleSolution(solutions.at(0));
 }
 
 bool HasDualFeasibleSolution(const SolutionProto& solution) {
@@ -49,14 +50,16 @@ bool HasDualFeasibleSolution(const SolutionProto& solution) {
              SOLUTION_STATUS_FEASIBLE;
 }
 
-bool HasDualFeasibleSolution(const SolveResultProto& result) {
-  for (const auto& solution : result.solutions()) {
+bool HasDualFeasibleSolution(
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
+  for (const auto& solution : solutions) {
     if (HasDualFeasibleSolution(solution)) {
       return true;
     }
   }
   return false;
 }
+}  // namespace
 
 absl::Status ValidateSolutions(
     const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
@@ -100,54 +103,19 @@ absl::Status ValidateSolutions(
   return absl::OkStatus();
 }
 
+namespace {
 absl::Status RequireNoPrimalFeasibleSolution(const SolveResultProto& result) {
-  if (HasPrimalFeasibleSolution(result)) {
+  if (HasPrimalFeasibleSolution(result.solutions())) {
     return absl::InvalidArgumentError(
         "expected no primal feasible solution, but one was returned");
   }
 
   return absl::OkStatus();
 }
-
-absl::Status RequireNoDualFeasibleSolution(const SolveResultProto& result) {
-  if (HasDualFeasibleSolution(result)) {
-    return absl::InvalidArgumentError(
-        "expected no dual feasible solution, but one was returned");
-  }
-
-  return absl::OkStatus();
-}
 }  // namespace
 
-absl::Status ValidateTermination(const TerminationProto& termination) {
-  if (termination.reason() == TERMINATION_REASON_UNSPECIFIED) {
-    return absl::InvalidArgumentError("termination reason must be specified");
-  }
-  if (termination.reason() == TERMINATION_REASON_FEASIBLE ||
-      termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
-    if (termination.limit() == LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason ", ProtoEnumToString(termination.reason()),
-                       ", limit must be specified"));
-    }
-    if (termination.limit() == LIMIT_CUTOFF &&
-        termination.reason() == TERMINATION_REASON_FEASIBLE) {
-      return absl::InvalidArgumentError(
-          "For LIMIT_CUTOFF expected no solutions");
-    }
-  } else {
-    if (termination.limit() != LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason:", ProtoEnumToString(termination.reason()),
-                       ", limit should be unspecified, but was set to: ",
-                       ProtoEnumToString(termination.limit())));
-    }
-  }
-  return absl::OkStatus();
-}
-
 absl::Status CheckHasPrimalSolution(const SolveResultProto& result) {
-  if (!HasPrimalFeasibleSolution(result)) {
+  if (!HasPrimalFeasibleSolution(result.solutions())) {
     return absl::InvalidArgumentError(
         "primal feasible solution expected, but not found");
   }
@@ -156,10 +124,11 @@ absl::Status CheckHasPrimalSolution(const SolveResultProto& result) {
 }
 
 absl::Status CheckPrimalSolutionAndStatusConsistency(
-    const SolveResultProto& result) {
-  if (result.solve_stats().problem_status().primal_status() !=
+    const TerminationProto& termination,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
+  if (termination.problem_status().primal_status() !=
           FEASIBILITY_STATUS_FEASIBLE &&
-      HasPrimalFeasibleSolution(result)) {
+      HasPrimalFeasibleSolution(solutions)) {
     return absl::InvalidArgumentError(
         "primal feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
         "primal feasible solution is returned.");
@@ -168,10 +137,11 @@ absl::Status CheckPrimalSolutionAndStatusConsistency(
 }
 
 absl::Status CheckDualSolutionAndStatusConsistency(
-    const SolveResultProto& result) {
-  if (result.solve_stats().problem_status().dual_status() !=
+    const TerminationProto& termination,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
+  if (termination.problem_status().dual_status() !=
           FEASIBILITY_STATUS_FEASIBLE &&
-      HasDualFeasibleSolution(result)) {
+      HasDualFeasibleSolution(solutions)) {
     return absl::InvalidArgumentError(
         "dual feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
         "dual feasible solution is returned.");
@@ -179,117 +149,100 @@ absl::Status CheckDualSolutionAndStatusConsistency(
   return absl::OkStatus();
 }
 
-// Assumes ValidateTermination has been called and ValidateProblemStatusProto
-// has been called on result.solve_stats.problem_status.
-absl::Status ValidateTerminationConsistency(const SolveResultProto& result) {
-  const ProblemStatusProto status = result.solve_stats().problem_status();
-  switch (result.termination().reason()) {
-    case TERMINATION_REASON_OPTIMAL:
-      RETURN_IF_ERROR(CheckPrimalStatusIs(status, FEASIBILITY_STATUS_FEASIBLE));
-      RETURN_IF_ERROR(CheckDualStatusIs(status, FEASIBILITY_STATUS_FEASIBLE));
-      RETURN_IF_ERROR(CheckHasPrimalSolution(result));
-      // Dual feasible solution is not required.
-      // Primal/dual requirements imply primal/dual solution-status consistency.
-      return absl::OkStatus();
-    case TERMINATION_REASON_INFEASIBLE:
-      RETURN_IF_ERROR(
-          CheckPrimalStatusIs(status, FEASIBILITY_STATUS_INFEASIBLE));
-      RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result));
-      // Primal requirements imply primal solution-status consistency.
-      // No dual requirements so we check consistency.
-      RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
-      return absl::OkStatus();
-    case TERMINATION_REASON_UNBOUNDED:
-      RETURN_IF_ERROR(CheckPrimalStatusIs(status, FEASIBILITY_STATUS_FEASIBLE));
-      RETURN_IF_ERROR(CheckDualStatusIs(status, FEASIBILITY_STATUS_INFEASIBLE));
-      // No primal feasible solution is required.
-      RETURN_IF_ERROR(RequireNoDualFeasibleSolution(result));
-      // Primal/dual requirements imply primal/dual solution-status consistency.
-      return absl::OkStatus();
-    case TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED:
-      RETURN_IF_ERROR(
-          CheckPrimalStatusIs(status, FEASIBILITY_STATUS_UNDETERMINED));
-      RETURN_IF_ERROR(
-          CheckDualStatusIs(status, FEASIBILITY_STATUS_INFEASIBLE,
-                            /*primal_or_dual_infeasible_also_ok=*/true));
-      RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result));
-      RETURN_IF_ERROR(RequireNoDualFeasibleSolution(result));
-      // Primal/dual requirements imply primal/dual solution-status consistency.
-      // Note if primal status was not FEASIBILITY_STATUS_UNDETERMINED, then
-      // primal_or_dual_infeasible must be false and dual status would be
-      // FEASIBILITY_STATUS_INFEASIBLE. Then if primal status was
-      // FEASIBILITY_STATUS_INFEASIBLE we would have
-      // TERMINATION_REASON_INFEASIBLE and if it was FEASIBILITY_STATUS_FEASIBLE
-      // we would have TERMINATION_REASON_UNBOUNDED.
-      return absl::OkStatus();
-    case TERMINATION_REASON_IMPRECISE:
-      // TODO(b/211679884): update when imprecise solutions are added.
-      return absl::OkStatus();
-    case TERMINATION_REASON_FEASIBLE:
-      RETURN_IF_ERROR(CheckPrimalStatusIs(status, FEASIBILITY_STATUS_FEASIBLE));
-      RETURN_IF_ERROR(CheckHasPrimalSolution(result));
-      RETURN_IF_ERROR(
-          CheckDualStatusIsNot(status, FEASIBILITY_STATUS_INFEASIBLE));
-      // Primal requirement implies primal solution-status consistency so we
-      // only check dual consistency.
-      RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
-      // Note if dual status was FEASIBILITY_STATUS_INFEASIBLE, then we would
-      // have TERMINATION_REASON_UNBOUNDED (For MIP this follows tha assumption
-      // that every floating point ray can be scaled to be integer).
-      return absl::OkStatus();
-    case TERMINATION_REASON_NO_SOLUTION_FOUND:
-      RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result));
-      RETURN_IF_ERROR(
-          CheckPrimalStatusIsNot(status, FEASIBILITY_STATUS_INFEASIBLE));
-      // Primal requirement implies primal solution-status consistency so we
-      // only check dual consistency.
-      RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result));
-      // Note if primal status was FEASIBILITY_STATUS_INFEASIBLE, then we would
-      // have TERMINATION_REASON_INFEASIBLE.
-      return absl::OkStatus();
-    case TERMINATION_REASON_NUMERICAL_ERROR:
-    case TERMINATION_REASON_OTHER_ERROR: {
-      RETURN_IF_ERROR(
-          CheckPrimalStatusIs(status, FEASIBILITY_STATUS_UNDETERMINED));
-      RETURN_IF_ERROR(
-          CheckDualStatusIs(status, FEASIBILITY_STATUS_UNDETERMINED));
-      if (!result.solutions().empty()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("termination reason is ",
-                         ProtoEnumToString(result.termination().reason()),
-                         ", but solutions are available"));
-      }
-      if (result.solve_stats().problem_status().primal_or_dual_infeasible()) {
-        return absl::InvalidArgumentError(absl::StrCat(
-            "termination reason is ",
-            ProtoEnumToString(result.termination().reason()),
-            ", but solve_stats.problem_status.primal_or_dual_infeasible = "
-            "true"));
-      }
-      // Primal/dual requirements imply primal/dual solution-status consistency.
-    }
-      return absl::OkStatus();
-    default:
-      LOG(FATAL) << ProtoEnumToString(result.termination().reason())
-                 << " not implemented";
+namespace {
+// TODO(b/290091715): Delete once problem_status and objective bounds are
+// removed from solve_stats and their presence is guaranteed in termination.
+absl::Status ValidateSolveStatsTerminationEqualities(
+    const SolveResultProto& solve_result) {
+  const ObjectiveBoundsProto objective_bounds =
+      GetObjectiveBounds(solve_result);
+  const SolveStatsProto solve_stats = solve_result.solve_stats();
+  const ProblemStatusProto problem_status = GetProblemStatus(solve_result);
+  if (problem_status.primal_status() !=
+      solve_stats.problem_status().primal_status()) {
+    return util::InvalidArgumentErrorBuilder()
+           << problem_status.primal_status()
+           << " = termination.problem_status.primal_status != "
+              "solve_stats.problem_status.primal_status = "
+           << solve_stats.problem_status().primal_status();
   }
-
+  if (problem_status.dual_status() !=
+      solve_stats.problem_status().dual_status()) {
+    return util::InvalidArgumentErrorBuilder()
+           << problem_status.dual_status()
+           << " = termination.problem_status.dual_status != "
+              "solve_stats.problem_status.dual_status = "
+           << solve_stats.problem_status().dual_status();
+  }
+  if (problem_status.primal_or_dual_infeasible() !=
+      solve_stats.problem_status().primal_or_dual_infeasible()) {
+    return util::InvalidArgumentErrorBuilder()
+           << problem_status.primal_or_dual_infeasible()
+           << " = termination.problem_status.primal_or_dual_infeasible != "
+              "solve_stats.problem_status.primal_or_dual_infeasible = "
+           << solve_stats.problem_status().primal_or_dual_infeasible();
+  }
+  if (objective_bounds.primal_bound() != solve_stats.best_primal_bound()) {
+    return util::InvalidArgumentErrorBuilder()
+           << objective_bounds.primal_bound()
+           << " = termination.objective_bounds.primal_bound != "
+              "solve_stats.best_primal_bound = "
+           << solve_stats.best_primal_bound();
+  }
+  if (objective_bounds.dual_bound() != solve_stats.best_dual_bound()) {
+    return util::InvalidArgumentErrorBuilder()
+           << objective_bounds.dual_bound()
+           << " = termination.objective_bounds.dual_bound != "
+              "solve_stats.best_dual_bound = "
+           << solve_stats.best_dual_bound();
+  }
   return absl::OkStatus();
 }
+
+}  // namespace
 
 absl::Status ValidateResult(const SolveResultProto& result,
                             const ModelSolveParametersProto& parameters,
                             const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(ValidateTermination(result.termination()));
+  // TODO(b/290091715): Remove once problem_status and objective bounds are
+  // removed from solve_stats and their presence is guaranteed in termination.
+  RETURN_IF_ERROR(ValidateSolveStatsTerminationEqualities(result));
+  // TODO(b/290091715): Replace by
+  // TerminationProto termination = result.termination();
+  // once problem_status and objective bounds are removed from solve_stats and
+  // their presence is guaranteed in termination.
+  TerminationProto termination = result.termination();
+  *termination.mutable_objective_bounds() = GetObjectiveBounds(result);
+  *termination.mutable_problem_status() = GetProblemStatus(result);
+
+  RETURN_IF_ERROR(ValidateTermination(termination, model_summary.maximize));
   RETURN_IF_ERROR(ValidateSolveStats(result.solve_stats()));
   RETURN_IF_ERROR(
       ValidateSolutions(result.solutions(), parameters, model_summary));
 
+  if (termination.reason() == TERMINATION_REASON_OPTIMAL ||
+      termination.reason() == TERMINATION_REASON_FEASIBLE) {
+    RETURN_IF_ERROR(CheckHasPrimalSolution(result))
+        << "inconsistent termination reason "
+        << ProtoEnumToString(termination.reason());
+  }
+  if (termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
+    RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result))
+        << "inconsistent termination reason "
+        << ProtoEnumToString(termination.reason());
+  }
+
+  RETURN_IF_ERROR(CheckPrimalSolutionAndStatusConsistency(result.termination(),
+                                                          result.solutions()));
+  RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result.termination(),
+                                                        result.solutions()));
+
   if (result.primal_rays_size() > 0 &&
-      result.solve_stats().problem_status().dual_status() ==
+      termination.problem_status().dual_status() ==
           FEASIBILITY_STATUS_FEASIBLE) {
     return absl::InvalidArgumentError(
-        "solve_stats.problem_status.dual_status = FEASIBILITY_STATUS_FEASIBLE, "
+        "termination.problem_status.dual_status = "
+        "FEASIBILITY_STATUS_FEASIBLE, "
         "but a primal ray is returned");
   }
   for (int i = 0; i < result.primal_rays_size(); ++i) {
@@ -299,10 +252,10 @@ absl::Status ValidateResult(const SolveResultProto& result,
         << "Invalid primal_rays[" << i << "]";
   }
   if (result.dual_rays_size() > 0 &&
-      result.solve_stats().problem_status().primal_status() ==
+      termination.problem_status().primal_status() ==
           FEASIBILITY_STATUS_FEASIBLE) {
     return absl::InvalidArgumentError(
-        "solve_stats.problem_status.primal_status = "
+        "termination.problem_status.primal_status = "
         "FEASIBILITY_STATUS_FEASIBLE, but a dual ray is returned");
   }
   for (int i = 0; i < result.dual_rays_size(); ++i) {
@@ -310,10 +263,6 @@ absl::Status ValidateResult(const SolveResultProto& result,
         ValidateDualRay(result.dual_rays(i), parameters, model_summary))
         << "Invalid dual_rays[" << i << "]";
   }
-
-  RETURN_IF_ERROR(ValidateTerminationConsistency(result))
-      << "inconsistent termination reason "
-      << ProtoEnumToString(result.termination().reason());
 
   return absl::OkStatus();
 }

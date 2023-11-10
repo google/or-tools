@@ -26,15 +26,23 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
+#include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/proto_solver/sat_solver_utils.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
@@ -50,10 +58,10 @@ using google::protobuf::Message;
 using google::protobuf::Message;
 #endif
 
-// Proto-lite disables some features of protos (see
-// go/abp-libraries/proto2-lite) and messages inherit from MessageLite directly
-// instead of inheriting from Message (which is itself a specialization of
-// MessageLite).
+// Proto-lite disables some features of protos and messages inherit from
+// MessageLite directly instead of inheriting from Message (which is itself a
+// specialization of MessageLite).
+// See https://protobuf.dev/reference/cpp/cpp-generated/#message for details.
 constexpr bool kProtoLiteSatParameters =
     !std::is_base_of<Message, sat::SatParameters>::value;
 
@@ -217,7 +225,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
-  if (!params.enumerate_all_solutions()) {
+  if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
     const glop::ProblemStatus status =
         ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
     switch (status) {

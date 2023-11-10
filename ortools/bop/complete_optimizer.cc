@@ -19,9 +19,22 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "ortools/bop/bop_base.h"
+#include "ortools/bop/bop_parameters.pb.h"
+#include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_util.h"
-#include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/encoding.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/stats.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {
@@ -174,9 +187,10 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     const sat::Coefficient min_weight =
         sat::ComputeCoreMinWeight(encoder_.nodes(), core);
     std::string info_str;
-    encoder_.ProcessCore(core, min_weight,
-                         /*gap=*/std::numeric_limits<sat::Coefficient>::max(),
-                         &info_str);
+    encoder_.ProcessCore(
+        core, min_weight,
+        /*gap=*/std::numeric_limits<sat::Coefficient::ValueType>::max(),
+        &info_str);
     assumptions_already_added_ = false;
   }
   return BopOptimizerBase::CONTINUE;

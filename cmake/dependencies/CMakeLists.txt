@@ -82,8 +82,8 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20230125.3"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20230125.3.patch"
+    GIT_TAG "20230802.1"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20230802.1.patch"
   )
   FetchContent_MakeAvailable(absl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -103,9 +103,9 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v23.3"
+    GIT_TAG "v25.0"
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v23.3.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v25.0.patch")
   FetchContent_MakeAvailable(protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -121,8 +121,8 @@ if(BUILD_re2)
   FetchContent_Declare(
     re2
     GIT_REPOSITORY "https://github.com/google/re2.git"
-    GIT_TAG "2023-07-01"
-    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2023-07-01.patch"
+    GIT_TAG "2023-11-01"
+    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2023-11-01.patch"
   )
   FetchContent_MakeAvailable(re2)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -135,6 +135,7 @@ endif()
 if(BUILD_Eigen3)
   message(CHECK_START "Fetching Eigen3")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(EIGEN_MPL2_ONLY ON)
   set(EIGEN_BUILD_PKGCONFIG OFF)
   set(EIGEN_BUILD_DOC OFF)
   set(EIGEN_BUILD_TESTING OFF)
@@ -217,7 +218,7 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.2.2"
+    GIT_TAG        "v1.6.0"
   )
   FetchContent_MakeAvailable(highs)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -245,8 +246,8 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v803"
-    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v803.patch"
+    GIT_TAG        "v804"
+    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v804.patch"
   )
   FetchContent_MakeAvailable(scip)
   set(LPI_GLOP_SRC ${scip_SOURCE_DIR}/src/lpi/lpi_glop.cpp PARENT_SCOPE)

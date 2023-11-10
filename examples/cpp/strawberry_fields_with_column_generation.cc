@@ -61,6 +61,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -512,7 +513,7 @@ class CoveringProblem {
   }
 
   // Gets 2d array element, returning 0 if out-of-bounds.
-  double zero_access(const std::vector<double>& array, int x, int y) const {
+  double zero_access(absl::Span<const double> array, int x, int y) const {
     if (x < 0 || y < 0) {
       return 0;
     }
@@ -604,6 +605,7 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   InitGoogle(usage.c_str(), &argc, &argv, true);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
@@ -614,12 +616,12 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif  // USE_CLP
-#if defined(USE_GLOP)
+  //#if defined(USE_GLOP)
   if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif  // USE_GLOP
+  //#endif  // USE_GLOP
 #if defined(USE_XPRESS)
   if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;

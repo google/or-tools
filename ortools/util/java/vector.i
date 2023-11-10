@@ -19,8 +19,8 @@
 %include "ortools/base/base.i"
 
 %{
+#include <cstdint>
 #include <vector>
-#include "ortools/base/integral_types.h"
 %}
 
 // Typemaps to represents arguments of types "const std::vector<CType>&" or

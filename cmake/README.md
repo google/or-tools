@@ -253,8 +253,10 @@ cmake -S. -Bbuild -LH
 | `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
 | | | |
 | `BUILD_pybind11` | `BUILD_DEPS` | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `BUILD_pybind11_protobuf` | `BUILD_DEPS` | Static build the pybind11_protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
+| `GENERATE_PYTHON_STUB` | ON | Generate python stub files<br>Only available if `BUILD_PYTHON=ON` |
 | `BUILD_VENV` | `BUILD_TESTING` | Create python venv in `BINARY_DIR/python/venv`<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. `py3-numpy` on Alpine)<br>Only available if `BUILD_PYTHON=ON` |
+| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. `py3-numpy` on Alpine)<br>Only available if `BUILD_PYTHON=ON` and `BUILD_VENV=ON` |
 | `FETCH_PYTHON_DEPS`  | `BUILD_DEPS` | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
 | | | |
 

@@ -36,10 +36,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -459,6 +458,10 @@ class IntegerEncoder {
         domains_(*model->GetOrCreate<IntegerDomains>()),
         num_created_variables_(0) {}
 
+  // This type is neither copyable nor movable.
+  IntegerEncoder(const IntegerEncoder&) = delete;
+  IntegerEncoder& operator=(const IntegerEncoder&) = delete;
+
   ~IntegerEncoder() {
     VLOG(1) << "#variables created = " << num_created_variables_;
   }
@@ -496,8 +499,12 @@ class IntegerEncoder {
   //
   // The FullDomainEncoding() just check VariableIsFullyEncoded() and returns
   // the same result.
-  std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
-  std::vector<ValueLiteralPair> PartialDomainEncoding(
+  //
+  // WARNING: The reference returned is only valid until the next call to one
+  // of these functions.
+  const std::vector<ValueLiteralPair>& FullDomainEncoding(
+      IntegerVariable var) const;
+  const std::vector<ValueLiteralPair>& PartialDomainEncoding(
       IntegerVariable var) const;
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
@@ -559,7 +566,7 @@ class IntegerEncoder {
     if (lit.Index() >= reverse_encoding_.size()) {
       return empty_integer_literal_vector_;
     }
-    return reverse_encoding_[lit.Index()];
+    return reverse_encoding_[lit];
   }
 
   // Returns the variable == value pairs that were associated with the given
@@ -568,7 +575,7 @@ class IntegerEncoder {
     if (lit.Index() >= reverse_equality_encoding_.size()) {
       return empty_integer_value_vector_;
     }
-    return reverse_equality_encoding_[lit.Index()];
+    return reverse_equality_encoding_[lit];
   }
 
   // Returns all the variables for which this literal is associated to either
@@ -591,7 +598,7 @@ class IntegerEncoder {
   // calling AssociateToIntegerEqualValue().
   IntegerVariable GetLiteralView(Literal lit) const {
     if (lit.Index() >= literal_view_.size()) return kNoIntegerVariable;
-    return literal_view_[lit.Index()];
+    return literal_view_[lit];
   }
 
   // If this is true, then a literal can be linearized with an affine expression
@@ -618,7 +625,10 @@ class IntegerEncoder {
       const Literal literal_true =
           Literal(sat_solver_->NewBooleanVariable(), true);
       literal_index_true_ = literal_true.Index();
-      sat_solver_->AddUnitClause(literal_true);
+
+      // This might return false if we are already UNSAT.
+      // TODO(user): Make sure we abort right away on unsat!
+      (void)sat_solver_->AddUnitClause(literal_true);
     }
     return Literal(literal_index_true_);
   }
@@ -713,7 +723,8 @@ class IntegerEncoder {
   std::vector<IntegerValue> tmp_values_;
   std::vector<ValueLiteralPair> tmp_encoding_;
 
-  DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
+  // Temporary memory for the result of PartialDomainEncoding().
+  mutable std::vector<ValueLiteralPair> partial_encoding_;
 };
 
 // This class maintains a set of integer variables with their current bounds.
@@ -731,6 +742,10 @@ class IntegerTrail : public SatPropagator {
         parameters_(*model->GetOrCreate<SatParameters>()) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
+
+  // This type is neither copyable nor movable.
+  IntegerTrail(const IntegerTrail&) = delete;
+  IntegerTrail& operator=(const IntegerTrail&) = delete;
   ~IntegerTrail() final;
 
   // SatPropagator interface. These functions make sure the current bounds
@@ -876,6 +891,10 @@ class IntegerTrail : public SatPropagator {
   // Returns the current lower bound assuming the literal is true.
   IntegerValue ConditionalLowerBound(Literal l, IntegerVariable i) const;
   IntegerValue ConditionalLowerBound(Literal l, AffineExpression expr) const;
+
+  // Returns the current upper bound assuming the literal is true.
+  IntegerValue ConditionalUpperBound(Literal l, IntegerVariable i) const;
+  IntegerValue ConditionalUpperBound(Literal l, AffineExpression expr) const;
 
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
@@ -1301,8 +1320,6 @@ class IntegerTrail : public SatPropagator {
   std::function<bool(absl::Span<const Literal> clause,
                      absl::Span<const IntegerLiteral> integers)>
       debug_checker_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
 
 // Base class for CP like propagators.
@@ -1357,6 +1374,11 @@ class RevIntegerValueRepository : public RevRepository<IntegerValue> {
 class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
+
+  // This type is neither copyable nor movable.
+  GenericLiteralWatcher(const GenericLiteralWatcher&) = delete;
+  GenericLiteralWatcher& operator=(const GenericLiteralWatcher&) = delete;
+
   ~GenericLiteralWatcher() final = default;
 
   // Memory optimization: you can call this before registering watchers.
@@ -1413,9 +1435,9 @@ class GenericLiteralWatcher : public SatPropagator {
 
   // No-op overload for "constant" IntegerVariable that are sometimes templated
   // as an IntegerValue.
-  void WatchLowerBound(IntegerValue i, int id) {}
-  void WatchUpperBound(IntegerValue i, int id) {}
-  void WatchIntegerVariable(IntegerValue v, int id) {}
+  void WatchLowerBound(IntegerValue /*i*/, int /*id*/) {}
+  void WatchUpperBound(IntegerValue /*i*/, int /*id*/) {}
+  void WatchIntegerVariable(IntegerValue /*v*/, int /*id*/) {}
 
   // Registers a reversible class with a given propagator. This class will be
   // changed to the correct state just before the propagator is called.
@@ -1436,7 +1458,7 @@ class GenericLiteralWatcher : public SatPropagator {
   // Alternatively, one can directly get the underlying RevRepository<int> with
   // a call to model.Get<>(), and use SaveWithStamp() before each modification
   // to have just a slight overhead per int updates. This later option is what
-  // is usually done in a CP solver at the cost of a sligthly more complex API.
+  // is usually done in a CP solver at the cost of a slightly more complex API.
   void RegisterReversibleInt(int id, int* rev);
 
   // Returns the number of registered propagators.
@@ -1522,8 +1544,6 @@ class GenericLiteralWatcher : public SatPropagator {
       level_zero_modified_variable_callback_;
 
   std::function<bool()> stop_propagation_callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
 
 // ============================================================================
@@ -1610,6 +1630,17 @@ inline IntegerValue IntegerTrail::ConditionalLowerBound(
     Literal l, AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return ConditionalLowerBound(l, expr.var) * expr.coeff + expr.constant;
+}
+
+inline IntegerValue IntegerTrail::ConditionalUpperBound(
+    Literal l, IntegerVariable i) const {
+  return -ConditionalLowerBound(l, NegationOf(i));
+}
+
+inline IntegerValue IntegerTrail::ConditionalUpperBound(
+    Literal l, AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return ConditionalUpperBound(l, expr.var) * expr.coeff + expr.constant;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
@@ -1701,7 +1732,7 @@ inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
   if (l.Index() >= literal_to_watcher_.size()) {
     literal_to_watcher_.resize(l.Index().value() + 1);
   }
-  literal_to_watcher_[l.Index()].push_back({id, watch_index});
+  literal_to_watcher_[l].push_back({id, watch_index});
 }
 
 inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,

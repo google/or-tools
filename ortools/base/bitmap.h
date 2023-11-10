@@ -15,9 +15,8 @@
 #define OR_TOOLS_BASE_BITMAP_H_
 
 #include <cassert>
+#include <cstdint>
 #include <cstring>
-
-#include "ortools/base/integral_types.h"
 
 namespace operations_research {
 namespace internal {

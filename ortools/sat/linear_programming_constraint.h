@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/numeric/int128.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
@@ -146,7 +147,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
                               absl::Span<const IntegerVariable> vars);
 
   // Add a new linear constraint to this LP.
-  void AddLinearConstraint(const LinearConstraint& ct);
+  void AddLinearConstraint(LinearConstraint ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.
@@ -230,12 +231,29 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return average_degeneracy_.CurrentAverage();
   }
 
+  // Stats.
   int64_t total_num_simplex_iterations() const {
     return total_num_simplex_iterations_;
   }
+  int64_t total_num_cut_propagations() const {
+    return total_num_cut_propagations_;
+  }
+  int64_t total_num_eq_propagations() const {
+    return total_num_eq_propagations_;
+  }
+  int64_t num_solves() const { return num_solves_; }
+  int64_t num_adjusts() const { return num_adjusts_; }
+  int64_t num_cut_overflows() const { return num_cut_overflows_; }
+  int64_t num_bad_cuts() const { return num_bad_cuts_; }
+  int64_t num_scaling_issues() const { return num_scaling_issues_; }
 
-  // Returns some statistics about this LP.
-  std::string Statistics() const;
+  const std::vector<int64_t>& num_solves_by_status() const {
+    return num_solves_by_status_;
+  }
+
+  const LinearConstraintManager& constraint_manager() const {
+    return constraint_manager_;
+  }
 
   // Important: this is only temporarily valid.
   IntegerSumLE128* LatestOptimalConstraintOrNull() const {
@@ -284,7 +302,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Return true if a new cut was added to the cut manager.
   bool AddCutFromConstraints(
-      const std::string& name,
+      absl::string_view name,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);
 
@@ -305,12 +323,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Use the dual optimal lp values to compute an EXACT lower bound on the
   // objective. Fills its reason and perform reduced cost strenghtening.
   // Returns false in case of conflict.
-  bool ExactLpReasonning();
+  bool PropagateExactLpReason();
 
   // Same as FillDualRayReason() but perform the computation EXACTLY. Returns
   // false in the case that the problem is not provably infeasible with exact
   // computations, true otherwise.
-  bool FillExactDualRayReason();
+  bool PropagateExactDualRay();
+
+  // Called by PropagateExactLpReason() and PropagateExactDualRay() to finish
+  // propagation.
+  bool PropagateLpConstraint(const LinearConstraint& ct);
 
   // Returns number of non basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
@@ -367,11 +389,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Compute the implied lower bound of the given linear expression using the
   // current variable bound.
   absl::int128 GetImpliedLowerBound(const LinearConstraint& terms) const;
-
-  // Fills integer_reason_ with the reason for the implied lower bound of the
-  // given linear expression. We relax the reason if we have some slack.
-  void SetImpliedLowerBoundReason(const LinearConstraint& terms,
-                                  IntegerValue slack);
 
   // Fills the deductions vector with reduced cost deductions that can be made
   // from the current state of the LP solver. The given delta should be the
@@ -514,6 +531,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // fixing.
   int rev_optimal_constraints_size_ = 0;
   std::vector<std::unique_ptr<IntegerSumLE128>> optimal_constraints_;
+  std::vector<int64_t> cumulative_optimal_constraint_sizes_;
 
   // Last OPTIMAL solution found by a call to the underlying LP solver.
   // On IncrementalPropagate(), if the bound updates do not invalidate this

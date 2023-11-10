@@ -57,12 +57,12 @@ endif()
 # Layout build dir like install dir
 include(GNUInstallDirs)
 if(UNIX)
-  option(BUILD_SHARED_LIBS "Build shared libraries (.so or .dyld)." ON)
+  option(BUILD_SHARED_LIBS "Build shared libraries (.so or .dylib)." ON)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
-  # for multi-config build system (e.g. xcode)
+  # for multi-config build system (e.g. Xcode, Ninja Multi-Config)
   foreach(OUTPUTCONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
     string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/${CMAKE_INSTALL_LIBDIR})
@@ -115,15 +115,23 @@ endif()
 
 include(CMakeDependentOption)
 
+# Optional components (enabled by default)
+## Flatzinc
 CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
+## LP Parser
 CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
 message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
+
+## MathOpt
+CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
+message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
 
 CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
 message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
+## Samples
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
@@ -135,6 +143,7 @@ message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 
+## Examples
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
@@ -226,6 +235,10 @@ if(USE_GLPK)
   message(STATUS "Build GLPK: ${BUILD_GLPK}")
 endif()
 
+## GUROBI
+# Since it is dynamicaly loaded upon use, OFF is currently not supported.
+CMAKE_DEPENDENT_OPTION(USE_GUROBI "Use the Gurobi solver" ON "BUILD_CXX" OFF)
+
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
 CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" OFF "BUILD_CXX" OFF)
@@ -251,6 +264,7 @@ if(USE_PDLP)
 endif()
 
 ## SCIP
+# see: https://github.com/scipopt/scip
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
@@ -348,6 +362,9 @@ if(BUILD_PYTHON)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11_protobuf: ${BUILD_pybind11_protobuf}")
 
+  option(GENERATE_PYTHON_STUB "Generate Python stub file (.pyi)" ON)
+  message(STATUS "Python: Generate stub file: ${GENERATE_PYTHON_STUB}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" OFF "NOT BUILD_DOC" ON)
   message(STATUS "Python: Build doc: ${BUILD_PYTHON_DOC}")
 
@@ -355,7 +372,8 @@ CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" OFF "NOT BUILD_DO
     "NOT BUILD_TESTING" ON)
   message(STATUS "Python: Create venv: ${BUILD_VENV}")
 
-  option(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF)
+  CMAKE_DEPENDENT_OPTION(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF
+    "BUILD_VENV" OFF)
   message(STATUS "Python: Allow venv to use system site packages: ${VENV_USE_SYSTEM_SITE_PACKAGES}")
 
   option(FETCH_PYTHON_DEPS "Install python required modules if not available" ${BUILD_DEPS})
@@ -401,7 +419,15 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-foreach(SAMPLES IN ITEMS algorithms graph glop constraint_solver linear_solver pdlp sat)
+foreach(SAMPLES IN ITEMS
+ algorithms
+ graph
+ glop
+ constraint_solver
+ linear_solver
+ ${MATH_OPT_DIR}
+ ${PDLP_DIR}
+ sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
 

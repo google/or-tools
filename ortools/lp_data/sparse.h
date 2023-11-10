@@ -73,6 +73,11 @@ class SparseMatrix {
 #if (!defined(_MSC_VER) || _MSC_VER >= 1800)
   SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
+
+  // This type is neither copyable nor movable.
+  SparseMatrix(const SparseMatrix&) = delete;
+  SparseMatrix& operator=(const SparseMatrix&) = delete;
+
 #endif
   // Clears internal data structure, i.e. erases all the columns and set
   // the number of rows to zero.
@@ -211,8 +216,6 @@ class SparseMatrix {
   // Number of rows. This is needed as sparse columns don't have a maximum
   // number of rows.
   RowIndex num_rows_;
-
-  DISALLOW_COPY_AND_ASSIGN(SparseMatrix);
 };
 
 // A matrix constructed from a list of already existing SparseColumn. This class
@@ -339,6 +342,10 @@ class CompactSparseMatrix {
     PopulateFromMatrixView(MatrixView(matrix));
   }
 
+  // This type is neither copyable nor movable.
+  CompactSparseMatrix(const CompactSparseMatrix&) = delete;
+  CompactSparseMatrix& operator=(const CompactSparseMatrix&) = delete;
+
   // Creates a CompactSparseMatrix from the given MatrixView. The matrices are
   // the same, only the representation differ. Note that the entry order in
   // each column is preserved.
@@ -364,7 +371,7 @@ class CompactSparseMatrix {
   ColIndex AddDenseColumn(const DenseColumn& dense_column);
 
   // Same as AddDenseColumn(), but only adds the non-zero from the given start.
-  ColIndex AddDenseColumnPrefix(const DenseColumn& dense_column,
+  ColIndex AddDenseColumnPrefix(DenseColumn::ConstView dense_column,
                                 RowIndex start);
 
   // Same as AddDenseColumn(), but uses the given non_zeros pattern of input.
@@ -426,14 +433,18 @@ class CompactSparseMatrix {
   // dense_column. If multiplier is 0.0, this function does nothing. This
   // function is declared in the .h for efficiency.
   void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
-                                      DenseColumn* dense_column) const {
-    RETURN_IF_NULL(dense_column);
+                                      DenseColumn::View dense_column) const {
     if (multiplier == 0.0) return;
     const auto entry_rows = rows_.view();
     const auto entry_coeffs = coefficients_.view();
     for (const EntryIndex i : Column(col)) {
-      (*dense_column)[entry_rows[i]] += multiplier * entry_coeffs[i];
+      dense_column[entry_rows[i]] += multiplier * entry_coeffs[i];
     }
+  }
+  void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
+                                      DenseColumn* dense_column) const {
+    return ColumnAddMultipleToDenseColumn(col, multiplier,
+                                          dense_column->view());
   }
 
   // Same as ColumnAddMultipleToDenseColumn() but also adds the new non-zeros to
@@ -506,9 +517,6 @@ class CompactSparseMatrix {
   StrictITIVector<EntryIndex, Fractional> coefficients_;
   StrictITIVector<EntryIndex, RowIndex> rows_;
   StrictITIVector<ColIndex, EntryIndex> starts_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(CompactSparseMatrix);
 };
 
 inline Fractional CompactSparseMatrix::ConstView::ColumnScalarProduct(
@@ -583,6 +591,10 @@ class CompactSparseMatrixView {
 class TriangularMatrix : private CompactSparseMatrix {
  public:
   TriangularMatrix() : all_diagonal_coefficients_are_one_(true) {}
+
+  // This type is neither copyable nor movable.
+  TriangularMatrix(const TriangularMatrix&) = delete;
+  TriangularMatrix& operator=(const TriangularMatrix&) = delete;
 
   // Only a subset of the functions from CompactSparseMatrix are exposed (note
   // the private inheritance). They are extended to deal with diagonal
@@ -917,8 +929,6 @@ class TriangularMatrix : private CompactSparseMatrix {
   // TODO(user): Use this during the "normal" hyper-sparse solves so that
   // we can benefit from the pruned lower matrix there?
   StrictITIVector<ColIndex, EntryIndex> pruned_ends_;
-
-  DISALLOW_COPY_AND_ASSIGN(TriangularMatrix);
 };
 
 }  // namespace glop

@@ -310,7 +310,7 @@ void ReducedCosts::ClearAndRemoveCostShifts() {
   SetRecomputeReducedCostsAndNotifyWatchers();
 }
 
-const DenseRow& ReducedCosts::GetFullReducedCosts() {
+DenseRow::ConstView ReducedCosts::GetFullReducedCosts() {
   SCOPED_TIME_STAT(&stats_);
   if (!are_reduced_costs_recomputed_) {
     SetRecomputeReducedCostsAndNotifyWatchers();
@@ -318,7 +318,7 @@ const DenseRow& ReducedCosts::GetFullReducedCosts() {
   return GetReducedCosts();
 }
 
-const DenseRow& ReducedCosts::GetReducedCosts() {
+DenseRow::ConstView ReducedCosts::GetReducedCosts() {
   SCOPED_TIME_STAT(&stats_);
   if (basis_factorization_.IsRefactorized()) {
     must_refactorize_basis_ = false;
@@ -326,7 +326,7 @@ const DenseRow& ReducedCosts::GetReducedCosts() {
   if (recompute_reduced_costs_) {
     ComputeReducedCosts();
   }
-  return reduced_costs_;
+  return reduced_costs_.const_view();
 }
 
 const DenseColumn& ReducedCosts::GetDualValues() {
@@ -475,16 +475,17 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
   // The edge of the 'leaving_col' in the new basis is equal to
   // 'entering_edge / -pivot'.
   const Fractional new_leaving_reduced_cost = entering_reduced_cost / -pivot;
+  auto rc = reduced_costs_.view();
+  auto update_coeffs = update_row->GetCoefficients().const_view();
   for (const ColIndex col : update_row->GetNonZeroPositions()) {
-    const Fractional coeff = update_row->GetCoefficient(col);
-    reduced_costs_[col] += new_leaving_reduced_cost * coeff;
+    rc[col] += new_leaving_reduced_cost * update_coeffs[col];
   }
-  reduced_costs_[leaving_col] = new_leaving_reduced_cost;
+  rc[leaving_col] = new_leaving_reduced_cost;
 
   // In the dual, since we compute the update before selecting the entering
   // variable, this cost is still in the update_position_list, so we make sure
   // it is 0 here.
-  reduced_costs_[entering_col] = 0.0;
+  rc[entering_col] = 0.0;
 }
 
 bool ReducedCosts::IsValidPrimalEnteringCandidate(ColIndex col) const {
@@ -536,8 +537,9 @@ void PrimalPrices::UpdateBeforeBasisPivot(ColIndex entering_col,
 void PrimalPrices::RecomputePriceAt(ColIndex col) {
   if (recompute_) return;
   if (reduced_costs_->IsValidPrimalEnteringCandidate(col)) {
-    const DenseRow& squared_norms = primal_edge_norms_->GetSquaredNorms();
-    const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+    const DenseRow::ConstView squared_norms =
+        primal_edge_norms_->GetSquaredNorms();
+    const DenseRow::ConstView reduced_costs = reduced_costs_->GetReducedCosts();
     DCHECK_NE(0.0, squared_norms[col]);
     prices_.AddOrUpdate(col, Square(reduced_costs[col]) / squared_norms[col]);
   } else {
@@ -556,7 +558,7 @@ void PrimalPrices::SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col) {
 
 ColIndex PrimalPrices::GetBestEnteringColumn() {
   if (recompute_) {
-    const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+    const DenseRow::ConstView reduced_costs = reduced_costs_->GetReducedCosts();
     prices_.ClearAndResize(reduced_costs.size());
     UpdateEnteringCandidates</*from_clean_state=*/true>(
         variables_info_.GetIsRelevantBitRow());
@@ -573,10 +575,13 @@ ColIndex PrimalPrices::GetBestEnteringColumn() {
 template <bool from_clean_state, typename ColumnsToUpdate>
 void PrimalPrices::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
   const Fractional tolerance = reduced_costs_->GetDualFeasibilityTolerance();
-  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
-  const DenseRow& squared_norms = primal_edge_norms_->GetSquaredNorms();
-  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
+  const DenseBitRow::ConstView can_decrease =
+      variables_info_.GetCanDecreaseBitRow().const_view();
+  const DenseBitRow::ConstView can_increase =
+      variables_info_.GetCanIncreaseBitRow().const_view();
+  const DenseRow::ConstView squared_norms =
+      primal_edge_norms_->GetSquaredNorms();
+  const DenseRow::ConstView reduced_costs = reduced_costs_->GetReducedCosts();
   for (const ColIndex col : cols) {
     const Fractional reduced_cost = reduced_costs[col];
 

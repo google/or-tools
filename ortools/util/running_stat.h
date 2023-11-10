@@ -17,7 +17,6 @@
 #include <deque>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -28,6 +27,10 @@ class RunningAverage {
   // Initialize the class with the maximum window size.
   // It must be positive (this is CHECKed).
   explicit RunningAverage(int window_size = 1);
+
+  // This type is neither copyable nor movable.
+  RunningAverage(const RunningAverage&) = delete;
+  RunningAverage& operator=(const RunningAverage&) = delete;
 
   // Resets the class to the exact same state as if it was just constructed with
   // the given window size.
@@ -57,8 +60,6 @@ class RunningAverage {
   double global_sum_;
   double local_sum_;
   std::deque<int> values_;
-
-  DISALLOW_COPY_AND_ASSIGN(RunningAverage);
 };
 
 // Simple class to compute efficiently the maximum over a fixed size window
@@ -68,6 +69,10 @@ class RunningMax {
  public:
   // Takes the size of the running window. The size must be positive.
   explicit RunningMax(int window_size);
+
+  // This type is neither copyable nor movable.
+  RunningMax(const RunningMax&) = delete;
+  RunningMax& operator=(const RunningMax&) = delete;
 
   // Processes a new element from the stream.
   void Add(Number value);
@@ -87,8 +92,6 @@ class RunningMax {
 
   // Index of the current maximum element.
   int max_index_;
-
-  DISALLOW_COPY_AND_ASSIGN(RunningMax);
 };
 
 // ################## Implementations below #####################

@@ -16,8 +16,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
+#include <utility>
 
+#include "absl/functional/function_ref.h"
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/logging.h"
@@ -99,7 +103,7 @@ Point BinarySearchMidpoint(Point x, Point y);
 // - We technically do not need the points to be sorted and can use
 //   linear-time median computation to speed this up.
 //
-// TODO(user): replace std::function by absl::AnyInvocable here and in
+// TODO(user): replace std::function by absl::FunctionRef here and in
 // BinarySearch().
 template <class Point, class Value>
 std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
@@ -114,6 +118,15 @@ std::pair<Point, Value> ConvexMinimum(bool is_to_the_right,
                                       std::pair<Point, Value> current_min,
                                       absl::Span<const Point> sorted_points,
                                       std::function<Value(Point)> f);
+
+// Searches in the range [begin, end), where Point supports basic arithmetic.
+template <class Point, class Value>
+std::pair<Point, Value> RangeConvexMinimum(Point begin, Point end,
+                                           absl::FunctionRef<Value(Point)> f);
+template <class Point, class Value>
+std::pair<Point, Value> RangeConvexMinimum(std::pair<Point, Value> current_min,
+                                           Point begin, Point end,
+                                           absl::FunctionRef<Value(Point)> f);
 
 // _____________________________________________________________________________
 // Implementation.
@@ -222,38 +235,89 @@ Point BinarySearch(Point x_true, Point x_false, std::function<bool(Point)> f) {
 }
 
 template <class Point, class Value>
-std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
-                                      std::function<Value(Point)> f) {
-  DCHECK(!sorted_points.empty());
-  if (sorted_points.size() == 1) {
-    return {sorted_points[0], f(sorted_points[0])};
+std::pair<Point, Value> RangeConvexMinimum(Point begin, Point end,
+                                           absl::FunctionRef<Value(Point)> f) {
+  DCHECK_LT(begin, end);
+  const Value size = end - begin;
+  if (size == 1) {
+    return {begin, f(begin)};
   }
 
   // Starts by splitting interval in two with two queries and getting some info.
   // Note the current min will be outside the interval.
-  bool is_to_the_right;
   std::pair<Point, Value> current_min;
   {
-    DCHECK_GE(sorted_points.size(), 2);
-    const int i = sorted_points.size() / 2;
-    const Value v = f(sorted_points[i]);
-    const int before_i = i - 1;
-    const Value before_v = f(sorted_points[before_i]);
-    if (before_v == v) return {sorted_points[before_i], before_v};
+    DCHECK_GE(size, 2);
+    const Point mid = begin + (end - begin) / 2;
+    DCHECK_GT(mid, begin);
+    const Value v = f(mid);
+    const Point before_mid = mid - 1;
+    const Value before_v = f(before_mid);
+    if (before_v == v) return {before_mid, before_v};
     if (before_v < v) {
-      // Note that we exclude before_i from the span.
-      current_min = {sorted_points[before_i], before_v};
-      is_to_the_right = true;
-      sorted_points = sorted_points.subspan(0, std::max(0, before_i));
+      // Note that we exclude before_mid from the range.
+      current_min = {before_mid, before_v};
+      end = before_mid;
     } else {
-      is_to_the_right = false;
-      current_min = {sorted_points[i], v};
-      sorted_points = sorted_points.subspan(i + 1);
+      current_min = {mid, v};
+      begin = mid + 1;
     }
   }
-  if (sorted_points.empty()) return current_min;
-  return ConvexMinimum<Point, Value>(is_to_the_right, current_min,
-                                     sorted_points, std::move(f));
+  if (begin >= end) return current_min;
+  return RangeConvexMinimum<Point, Value>(current_min, begin, end, f);
+}
+
+template <class Point, class Value>
+std::pair<Point, Value> RangeConvexMinimum(std::pair<Point, Value> current_min,
+                                           Point begin, Point end,
+                                           absl::FunctionRef<Value(Point)> f) {
+  DCHECK_LT(begin, end);
+  while ((end - begin) > 1) {
+    DCHECK(current_min.first < begin || current_min.first >= end);
+    bool current_is_after_end = current_min.first >= end;
+    const Point mid = begin + (end - begin) / 2;
+    const Value v = f(mid);
+    if (v >= current_min.second) {
+      // If the midpoint is no better than our current minimum, then the
+      // global min must lie between our midpoint and our current min.
+      if (current_is_after_end) {
+        begin = mid + 1;
+      } else {
+        end = mid;
+      }
+    } else {
+      // v < current_min.second, we cannot decide, so we use a second value
+      // close to v like in the initial step.
+      DCHECK_GT(mid, begin);
+      const Point before_mid = mid - 1;
+      const Value before_v = f(before_mid);
+      if (before_v == v) return {before_mid, before_v};
+      if (before_v < v) {
+        current_min = {before_mid, before_v};
+        current_is_after_end = true;
+        end = before_mid;
+      } else {
+        current_is_after_end = false;
+        current_min = {mid, v};
+        begin = mid + 1;
+      }
+    }
+  }
+
+  if (end - begin == 1) {
+    const Value v = f(begin);
+    if (v <= current_min.second) return {begin, v};
+  }
+  return current_min;
+}
+
+template <class Point, class Value>
+std::pair<Point, Value> ConvexMinimum(absl::Span<const Point> sorted_points,
+                                      std::function<Value(Point)> f) {
+  auto index_f = [&](int index) -> Value { return f(sorted_points[index]); };
+  const auto& [index, v] =
+      RangeConvexMinimum<int64_t, Value>(0, sorted_points.size(), index_f);
+  return {sorted_points[index], v};
 }
 
 template <class Point, class Value>
@@ -261,44 +325,14 @@ std::pair<Point, Value> ConvexMinimum(bool is_to_the_right,
                                       std::pair<Point, Value> current_min,
                                       absl::Span<const Point> sorted_points,
                                       std::function<Value(Point)> f) {
-  DCHECK(!sorted_points.empty());
-  while (sorted_points.size() > 1) {
-    const int i = sorted_points.size() / 2;
-    const Value v = f(sorted_points[i]);
-    if (v >= current_min.second) {
-      // If the midpoint is no better than our current minimum, then the
-      // global min must lie between our midpoint and our current min.
-      if (is_to_the_right) {
-        sorted_points = sorted_points.subspan(i + 1);
-      } else {
-        sorted_points = sorted_points.subspan(0, i);
-      }
-    } else {
-      // v < current_min.second, we cannot decide, so we use a second value
-      // close to v like in the initial step.
-      DCHECK_GT(i, 0);
-      const int before_i = i - 1;
-      const Value before_v = f(sorted_points[before_i]);
-      if (before_v == v) return {sorted_points[before_i], before_v};
-      if (before_v < v) {
-        current_min = {sorted_points[before_i], before_v};
-        is_to_the_right = true;
-        sorted_points = sorted_points.subspan(0, std::max(0, before_i));
-      } else {
-        is_to_the_right = false;
-        current_min = {sorted_points[i], v};
-        sorted_points = sorted_points.subspan(i + 1);
-      }
-    }
-  }
-
-  if (!sorted_points.empty()) {
-    const Value v = f(sorted_points[0]);
-    if (v <= current_min.second) return {sorted_points[0], v};
-  }
-  return current_min;
+  auto index_f = [&](int index) -> Value { return f(sorted_points[index]); };
+  std::pair<int, Value> index_current_min = std::make_pair(
+      is_to_the_right ? sorted_points.size() : -1, current_min.second);
+  const auto& [index, v] = RangeConvexMinimum<int64_t, Value>(
+      index_current_min, 0, sorted_points.size(), index_f);
+  if (index == index_current_min.first) return current_min;
+  return {sorted_points[index], v};
 }
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_BINARY_SEARCH_H_

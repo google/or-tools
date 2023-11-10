@@ -26,6 +26,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/logging.h"
 
@@ -200,7 +201,7 @@ bool Domain::IntersectWithInterval(int64_t interval_min, int64_t interval_max) {
   return false;
 }
 
-bool Domain::IntersectWithListOfIntegers(const std::vector<int64_t>& integers) {
+bool Domain::IntersectWithListOfIntegers(absl::Span<const int64_t> integers) {
   if (is_interval) {
     const int64_t dmin =
         values.empty() ? std::numeric_limits<int64_t>::min() : values[0];
@@ -370,7 +371,7 @@ bool Domain::Contains(int64_t value) const {
 
 namespace {
 bool IntervalOverlapValues(int64_t lb, int64_t ub,
-                           const std::vector<int64_t>& values) {
+                           absl::Span<const int64_t> values) {
   for (int64_t value : values) {
     if (lb <= value && value <= ub) {
       return true;

@@ -160,6 +160,7 @@ def main():
     # [END objective]
 
     # [START solve]
+    print(f"Solving with {solver.SolverVersion()}")
     status = solver.Solve()
     # [END solve]
 
@@ -192,8 +193,8 @@ def main():
 
     # [START advanced]
     print("\nAdvanced usage:")
-    print("Problem solved in ", solver.wall_time(), " milliseconds")
-    print("Problem solved in ", solver.iterations(), " iterations")
+    print(f"Problem solved in {solver.wall_time():d} milliseconds")
+    print(f"Problem solved in {solver.iterations():d} iterations")
     # [END advanced]
 
 

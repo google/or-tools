@@ -163,8 +163,7 @@ enum TerminationReasonProto {
 
   // The primal problem is either infeasible or unbounded. More details on the
   // problem status may be available in solve_stats.problem_status. Note that
-  // Gurobi's unbounded status may be mapped here as explained in
-  // go/mathopt-solver-specific#gurobi-inf-or-unb.
+  // Gurobi's unbounded status may be mapped here.
   TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED = 4;
 
   // The problem was solved to one of the criteria above (Optimal, Infeasible,
@@ -257,6 +256,31 @@ enum LimitProto {
   LIMIT_OTHER = 11;
 }
 
+// Bounds on the optimal objective value.
+message ObjectiveBoundsProto {
+  // Solver claims there exists a primal solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // primal_bound.
+  //
+  // The optimal value is equal or better (smaller for min objectives and larger
+  // for max objectives) than primal_bound, but only up to solver-tolerances.
+  double primal_bound = 2;
+
+  // Solver claims there exists a dual solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // dual_bound.
+  //
+  // For MIP solvers, the associated dual problem may be some continuous
+  // relaxation (e.g. LP relaxation), but it is often an implicitly defined
+  // problem that is a complex consequence of the solvers execution. For both
+  // continuous and MIP solvers, the optimal value is equal or worse (larger for
+  // min objective and smaller for max objectives) than dual_bound, but only up
+  // to solver-tolerances. Some continuous solvers provide a numerically safer
+  // dual bound through solver's specific output (e.g. for PDLP,
+  // pdlp_output.convergence_information.corrected_dual_objective).
+  double dual_bound = 3;
+}
+
 // All information regarding why a call to Solve() terminated.
 message TerminationProto {
   // Additional information in `limit` when value is TERMINATION_REASON_FEASIBLE
@@ -271,6 +295,19 @@ message TerminationProto {
 
   // Additional typically solver specific information about termination.
   string detail = 3;
+
+  // Feasibility statuses for primal and dual problems.
+  // As of July 18, 2023 this message may be missing. If missing, problem_status
+  // can be found in SolveResultProto.solve_stats.
+  ProblemStatusProto problem_status = 4;
+
+  // Bounds on the optimal objective value.
+  // As of July 18, 2023 this message may be missing. If missing,
+  // objective_bounds.primal_bound can be found in
+  // SolveResultProto.solve.stats.best_primal_bound and
+  // objective_bounds.dual_bound can be found in
+  // SolveResultProto.solve.stats.best_dual_bound
+  ObjectiveBoundsProto objective_bounds = 5;
 }
 
 // The contract of when primal/dual solutions/rays is complex, see

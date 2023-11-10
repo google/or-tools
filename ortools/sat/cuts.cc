@@ -31,6 +31,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -45,16 +46,6 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-
-// TODO(user): move to or-tools/base/logging.h
-namespace absl {
-template <typename Sink>
-void AbslStringify(Sink& sink, absl::int128 v) {
-  std::ostringstream oss;
-  oss << v;
-  sink.Append(oss.str());
-}
-}  // namespace absl
 
 namespace operations_research {
 namespace sat {
@@ -979,7 +970,7 @@ CoverCutHelper::~CoverCutHelper() {
   if (shared_stats_ == nullptr) return;
 
   std::vector<std::pair<std::string, int64_t>> stats;
-  const auto add_stats = [&stats](const std::string& name, const CutStats& s) {
+  const auto add_stats = [&stats](absl::string_view name, const CutStats& s) {
     stats.push_back(
         {absl::StrCat(name, "num_overflows"), s.num_overflow_aborts});
     stats.push_back({absl::StrCat(name, "num_lifting"), s.num_lifting});
@@ -2626,7 +2617,24 @@ bool BuildMaxAffineUpConstraint(
   // -delta_y * var + delta_x * target <= delta_x * y_at_min - delta_y * x_min
   //
   // Checks the rhs for overflows.
-  if (ProdOverflow(delta_x, y_at_min) || ProdOverflow(delta_y, x_min)) {
+  if (ProdOverflow(delta_x, y_at_min) || ProdOverflow(delta_x, y_at_max) ||
+      ProdOverflow(delta_y, x_min) || ProdOverflow(delta_y, x_max)) {
+    return false;
+  }
+
+  // Checks target * delta_x for overflow.
+  int64_t abs_magnitude = std::abs(target.offset.value());
+  for (int i = 0; i < target.vars.size(); ++i) {
+    const IntegerVariable var = target.vars[i];
+    const IntegerValue var_min = integer_trail->LevelZeroLowerBound(var);
+    const IntegerValue var_max = integer_trail->LevelZeroUpperBound(var);
+    abs_magnitude = CapAdd(
+        CapProd(std::max(std::abs(var_min.value()), std::abs(var_max.value())),
+                std::abs(target.coeffs[i].value())),
+        abs_magnitude);
+  }
+  if (AtMinOrMaxInt64(abs_magnitude) ||
+      AtMinOrMaxInt64(CapProd(abs_magnitude, delta_x.value()))) {
     return false;
   }
 

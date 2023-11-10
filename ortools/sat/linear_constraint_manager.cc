@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -46,28 +47,6 @@
 namespace operations_research {
 namespace sat {
 
-bool PossibleOverflow(const IntegerTrail& integer_trail,
-                      const LinearConstraint& constraint) {
-  IntegerValue min_activity(0);
-  IntegerValue max_activity(0);
-  const int size = constraint.vars.size();
-  for (int i = 0; i < size; ++i) {
-    const IntegerVariable var = constraint.vars[i];
-    const IntegerValue coeff = constraint.coeffs[i];
-    CHECK_NE(coeff, 0);
-    const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
-    const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
-    if (coeff > 0) {
-      if (!AddProductTo(lb, coeff, &min_activity)) return true;
-      if (!AddProductTo(ub, coeff, &max_activity)) return true;
-    } else {
-      if (!AddProductTo(ub, coeff, &min_activity)) return true;
-      if (!AddProductTo(lb, coeff, &max_activity)) return true;
-    }
-  }
-  return AtMinOrMaxInt64(CapSub(max_activity.value(), min_activity.value()));
-}
-
 namespace {
 
 const LinearConstraintManager::ConstraintIndex kInvalidConstraintIndex(-1);
@@ -84,44 +63,6 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
 }
 
 }  // namespace
-
-std::string LinearConstraintManager::Statistics() const {
-  std::string result;
-  absl::StrAppend(&result, "  managed constraints: ",
-                  FormatCounter(constraint_infos_.size()), "\n");
-  if (num_merged_constraints_ > 0) {
-    absl::StrAppend(&result, "  merged constraints: ",
-                    FormatCounter(num_merged_constraints_), "\n");
-  }
-  if (num_shortened_constraints_ > 0) {
-    absl::StrAppend(&result, "  shortened constraints: ",
-                    FormatCounter(num_shortened_constraints_), "\n");
-  }
-  if (num_split_constraints_ > 0) {
-    absl::StrAppend(&result, "  splitable constraint: ",
-                    FormatCounter(num_split_constraints_), "\n");
-  }
-  if (num_coeff_strenghtening_ > 0) {
-    absl::StrAppend(&result, "  coefficient strenghtenings: ",
-                    FormatCounter(num_coeff_strenghtening_), "\n");
-  }
-  if (num_simplifications_ > 0) {
-    absl::StrAppend(&result, "  num simplifications: ",
-                    FormatCounter(num_simplifications_), "\n");
-  }
-  if (num_constraint_updates_ > 0) {
-    absl::StrAppend(&result, "  num constraint updates: ",
-                    FormatCounter(num_constraint_updates_), "\n");
-  }
-  absl::StrAppend(&result, "  total cuts added: ", FormatCounter(num_cuts_),
-                  " (out of ", FormatCounter(num_add_cut_calls_), " calls)\n");
-  for (const auto& entry : type_to_num_cuts_) {
-    absl::StrAppend(&result, "    - '", entry.first,
-                    "': ", FormatCounter(entry.second), "\n");
-  }
-  if (!result.empty()) result.pop_back();  // Remove last \n.
-  return result;
-}
 
 LinearConstraintManager::~LinearConstraintManager() {
   if (!VLOG_IS_ON(1)) return;
@@ -190,7 +131,8 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
     LinearConstraint ct, bool* added) {
-  CHECK(!ct.vars.empty());
+  DCHECK(!ct.vars.empty());
+  DCHECK(!PossibleOverflow(integer_trail_, ct)) << ct.DebugString();
   DCHECK(NoDuplicateVariable(ct));
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
@@ -844,14 +786,14 @@ bool LinearConstraintManager::DebugCheckConstraint(
 }
 
 void TopNCuts::AddCut(
-    LinearConstraint ct, const std::string& name,
+    LinearConstraint ct, absl::string_view name,
     const absl::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.vars.empty()) return;
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =
       std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
   const double l2_norm = ComputeL2Norm(ct);
-  cuts_.Add({name, ct}, violation / l2_norm);
+  cuts_.Add({std::string(name), ct}, violation / l2_norm);
 }
 
 void TopNCuts::TransferToManager(LinearConstraintManager* manager) {

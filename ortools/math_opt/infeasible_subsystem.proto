@@ -65,7 +65,7 @@ message ModelSubsetProto {
   repeated int64 indicator_constraints = 8;
 }
 
-message InfeasibleSubsystemResultProto {
+message ComputeInfeasibleSubsystemResultProto {
   // The primal feasibility status of the model, as determined by the solver.
   FeasibilityStatusProto feasibility = 1;
 

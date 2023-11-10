@@ -54,6 +54,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <limits>
 #include <ostream>  // NOLINT
 
 #include "absl/strings/str_format.h"
@@ -346,12 +347,135 @@ H AbslHashValue(H h, const StrongInt64<StrongIntegerName>& i) {
 // -- STD HASHING SUPPORT -----------------------------------------------------
 namespace std {
 template <typename Tag>
-struct hash<operations_research::StrongIndex<Tag> >
+struct hash<operations_research::StrongIndex<Tag>>
     : ::operations_research::StrongIndex<Tag>::Hasher {};
 
 template <typename Tag>
-struct hash<operations_research::StrongInt64<Tag> >
+struct hash<operations_research::StrongInt64<Tag>>
     : ::operations_research::StrongInt64<Tag>::Hasher {};
+}  // namespace std
+
+// -- STD NUMERIC_LIMITS SUPPORT ----------------------------------------------
+namespace std {
+
+template <typename Tag>
+struct numeric_limits<operations_research::StrongIndex<Tag>> {
+ private:
+  using StrongIntT = operations_research::StrongIndex<Tag>;
+  using NativeTypeT = typename operations_research::StrongIndex<Tag>::ValueType;
+
+ public:
+  // NOLINTBEGIN(google3-readability-class-member-naming)
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = numeric_limits<NativeTypeT>::is_signed;
+  static constexpr bool is_integer = numeric_limits<NativeTypeT>::is_integer;
+  static constexpr bool is_exact = numeric_limits<NativeTypeT>::is_exact;
+  static constexpr bool has_infinity =
+      numeric_limits<NativeTypeT>::has_infinity;
+  static constexpr bool has_quiet_NaN =
+      numeric_limits<NativeTypeT>::has_quiet_NaN;
+  static constexpr bool has_signaling_NaN =
+      numeric_limits<NativeTypeT>::has_signaling_NaN;
+  static constexpr float_denorm_style has_denorm =
+      numeric_limits<NativeTypeT>::has_denorm;
+  static constexpr bool has_denorm_loss =
+      numeric_limits<NativeTypeT>::has_denorm_loss;
+  static constexpr float_round_style round_style =
+      numeric_limits<NativeTypeT>::round_style;
+  static constexpr bool is_iec559 = numeric_limits<NativeTypeT>::is_iec559;
+  static constexpr bool is_bounded = numeric_limits<NativeTypeT>::is_bounded;
+  static constexpr bool is_modulo = numeric_limits<NativeTypeT>::is_modulo;
+  static constexpr int digits = numeric_limits<NativeTypeT>::digits;
+  static constexpr int digits10 = numeric_limits<NativeTypeT>::digits10;
+  static constexpr int max_digits10 = numeric_limits<NativeTypeT>::max_digits10;
+  static constexpr int radix = numeric_limits<NativeTypeT>::radix;
+  static constexpr int min_exponent = numeric_limits<NativeTypeT>::min_exponent;
+  static constexpr int min_exponent10 =
+      numeric_limits<NativeTypeT>::min_exponent10;
+  static constexpr int max_exponent = numeric_limits<NativeTypeT>::max_exponent;
+  static constexpr int max_exponent10 =
+      numeric_limits<NativeTypeT>::max_exponent10;
+  static constexpr bool traps = numeric_limits<NativeTypeT>::traps;
+  static constexpr bool tinyness_before =
+      numeric_limits<NativeTypeT>::tinyness_before;
+  // NOLINTEND(google3-readability-class-member-naming)
+
+  static constexpr StrongIntT(min)() {
+    return StrongIntT(numeric_limits<NativeTypeT>::min());
+  }
+  static constexpr StrongIntT lowest() {
+    return StrongIntT(numeric_limits<NativeTypeT>::lowest());
+  }
+  static constexpr StrongIntT(max)() {
+    return StrongIntT(numeric_limits<NativeTypeT>::max());
+  }
+  static constexpr StrongIntT epsilon() { return StrongIntT(); }
+  static constexpr StrongIntT round_error() { return StrongIntT(); }
+  static constexpr StrongIntT infinity() { return StrongIntT(); }
+  static constexpr StrongIntT quiet_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT signaling_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT denorm_min() { return StrongIntT(); }
+};
+
+template <typename Tag>
+struct numeric_limits<operations_research::StrongInt64<Tag>> {
+ private:
+  using StrongIntT = operations_research::StrongInt64<Tag>;
+  using NativeTypeT = typename operations_research::StrongInt64<Tag>::ValueType;
+
+ public:
+  // NOLINTBEGIN(google3-readability-class-member-naming)
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = numeric_limits<NativeTypeT>::is_signed;
+  static constexpr bool is_integer = numeric_limits<NativeTypeT>::is_integer;
+  static constexpr bool is_exact = numeric_limits<NativeTypeT>::is_exact;
+  static constexpr bool has_infinity =
+      numeric_limits<NativeTypeT>::has_infinity;
+  static constexpr bool has_quiet_NaN =
+      numeric_limits<NativeTypeT>::has_quiet_NaN;
+  static constexpr bool has_signaling_NaN =
+      numeric_limits<NativeTypeT>::has_signaling_NaN;
+  static constexpr float_denorm_style has_denorm =
+      numeric_limits<NativeTypeT>::has_denorm;
+  static constexpr bool has_denorm_loss =
+      numeric_limits<NativeTypeT>::has_denorm_loss;
+  static constexpr float_round_style round_style =
+      numeric_limits<NativeTypeT>::round_style;
+  static constexpr bool is_iec559 = numeric_limits<NativeTypeT>::is_iec559;
+  static constexpr bool is_bounded = numeric_limits<NativeTypeT>::is_bounded;
+  static constexpr bool is_modulo = numeric_limits<NativeTypeT>::is_modulo;
+  static constexpr int digits = numeric_limits<NativeTypeT>::digits;
+  static constexpr int digits10 = numeric_limits<NativeTypeT>::digits10;
+  static constexpr int max_digits10 = numeric_limits<NativeTypeT>::max_digits10;
+  static constexpr int radix = numeric_limits<NativeTypeT>::radix;
+  static constexpr int min_exponent = numeric_limits<NativeTypeT>::min_exponent;
+  static constexpr int min_exponent10 =
+      numeric_limits<NativeTypeT>::min_exponent10;
+  static constexpr int max_exponent = numeric_limits<NativeTypeT>::max_exponent;
+  static constexpr int max_exponent10 =
+      numeric_limits<NativeTypeT>::max_exponent10;
+  static constexpr bool traps = numeric_limits<NativeTypeT>::traps;
+  static constexpr bool tinyness_before =
+      numeric_limits<NativeTypeT>::tinyness_before;
+  // NOLINTEND(google3-readability-class-member-naming)
+
+  static constexpr StrongIntT(min)() {
+    return StrongIntT(numeric_limits<NativeTypeT>::min());
+  }
+  static constexpr StrongIntT lowest() {
+    return StrongIntT(numeric_limits<NativeTypeT>::lowest());
+  }
+  static constexpr StrongIntT(max)() {
+    return StrongIntT(numeric_limits<NativeTypeT>::max());
+  }
+  static constexpr StrongIntT epsilon() { return StrongIntT(); }
+  static constexpr StrongIntT round_error() { return StrongIntT(); }
+  static constexpr StrongIntT infinity() { return StrongIntT(); }
+  static constexpr StrongIntT quiet_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT signaling_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT denorm_min() { return StrongIntT(); }
+};
+
 }  // namespace std
 
 #endif  // OR_TOOLS_UTIL_STRONG_INTEGERS_H_

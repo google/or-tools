@@ -151,6 +151,35 @@ class Variable {
   VariableId id_;
 };
 
+namespace internal {
+
+// The result of the equality comparison between two Variable.
+//
+// We use an object here to delay the evaluation of equality so that we can use
+// the operator== in two use-cases:
+//
+// 1. when the user want to test that two Variable values references the same
+//    variable. This is supported by having this object support implicit
+//    conversion to bool.
+//
+// 2. when the user want to use the equality to create a constraint of equality
+//    between two variables.
+struct VariablesEquality {
+  // Users are not expected to call this constructor. Instead they should only
+  // use the overload of `operator==` that returns this when comparing two
+  // Variable. For example `x == y`.
+  inline VariablesEquality(Variable lhs, Variable rhs);
+  inline operator bool() const;  // NOLINT
+  Variable lhs;
+  Variable rhs;
+};
+
+}  // namespace internal
+
+inline internal::VariablesEquality operator==(const Variable& lhs,
+                                              const Variable& rhs);
+inline bool operator!=(const Variable& lhs, const Variable& rhs);
+
 template <typename V>
 using VariableMap = absl::flat_hash_map<Variable, V>;
 
@@ -462,35 +491,6 @@ inline LinearExpression operator-(LinearExpression lhs,
 inline LinearExpression operator*(LinearExpression lhs, double rhs);
 inline LinearExpression operator*(double lhs, LinearExpression rhs);
 inline LinearExpression operator/(LinearExpression lhs, double rhs);
-
-namespace internal {
-
-// The result of the equality comparison between two Variable.
-//
-// We use an object here to delay the evaluation of equality so that we can use
-// the operator== in two use-cases:
-//
-// 1. when the user want to test that two Variable values references the same
-//    variable. This is supported by having this object support implicit
-//    conversion to bool.
-//
-// 2. when the user want to use the equality to create a constraint of equality
-//    between two variables.
-struct VariablesEquality {
-  // Users are not expected to call this constructor. Instead they should only
-  // use the overload of `operator==` that returns this when comparing two
-  // Variable. For example `x == y`.
-  inline VariablesEquality(Variable lhs, Variable rhs);
-  inline operator bool() const;  // NOLINT
-  Variable lhs;
-  Variable rhs;
-};
-
-}  // namespace internal
-
-inline internal::VariablesEquality operator==(const Variable& lhs,
-                                              const Variable& rhs);
-inline bool operator!=(const Variable& lhs, const Variable& rhs);
 
 // A LinearExpression with a lower bound.
 struct LowerBoundedLinearExpression {
@@ -2053,7 +2053,8 @@ QuadraticTermKey::QuadraticTermKey(const ModelStorage* storage,
                                    const QuadraticProductId id)
     : storage_(storage), variable_ids_(id) {
   if (variable_ids_.first > variable_ids_.second) {
-    using std::swap;  // go/using-std-swap
+    // See https://en.cppreference.com/w/cpp/named_req/Swappable for details.
+    using std::swap;
     swap(variable_ids_.first, variable_ids_.second);
   }
 }

@@ -74,11 +74,9 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
     const Eigen::VectorXd& scaled_dual_ray, PointType candidate_type);
 
 // Computes the reduced costs vector, objective_matrix * `primal_solution` +
-// objective_vector - constraint_matrix * `dual_solution` - dual_residuals, when
+// objective_vector - constraint_matrix * `dual_solution`, when
 // `use_zero_primal_objective` is false, and -constraint_matrix *
-// `dual_solution` - dual_residuals when `use_zero_primal_objective` is true.
-// The elements of the vector are corrected component-wise to zero to ensure
-// that the dual objective takes a finite value. See
+// `dual_solution` when `use_zero_primal_objective` is true. See
 // https://developers.google.com/optimization/lp/pdlp_math#reduced_costs_dual_residuals_and_the_corrected_dual_objective.
 Eigen::VectorXd ReducedCosts(const PrimalDualHybridGradientParams& params,
                              const ShardedQuadraticProgram& scaled_sharded_qp,

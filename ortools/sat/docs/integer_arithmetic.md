@@ -1,42 +1,8 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
-
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Integer arithmetic recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
-
-<!--ts-->
-* [Integer arithmetic recipes for the CP-SAT solver.](#integer-arithmetic-recipes-for-the-cp-sat-solver)
-   * [Introduction](#introduction)
-   * [Integer variables](#integer-variables)
-      * [Interval domain](#interval-domain)
-      * [Non-contiguous domain](#non-contiguous-domain)
-      * [Boolean variables](#boolean-variables)
-      * [Other methods](#other-methods)
-   * [Linear constraints](#linear-constraints)
-      * [C++ and Java linear constraints and linear expressions](#c-and-java-linear-constraints-and-linear-expressions)
-      * [Python and C# linear constraints and linear expressions](#python-and-c-linear-constraints-and-linear-expressions)
-      * [Generic linear constraint](#generic-linear-constraint)
-      * [Limitations](#limitations)
-   * [Rabbits and Pheasants examples](#rabbits-and-pheasants-examples)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Earliness-Tardiness cost function.](#earliness-tardiness-cost-function)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
-   * [Step function.](#step-function)
-      * [Python code](#python-code-2)
-      * [C++ code](#c-code-4)
-      * [Java code](#java-code-2)
-      * [C# code](#c-code-5)
-
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Introduction
 
@@ -764,10 +730,7 @@ step_function_sample_sat()
 ```cpp
 #include <stdlib.h>
 
-#include <memory>
-
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"

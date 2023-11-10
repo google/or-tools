@@ -55,9 +55,10 @@ class GlopSolver : public SolverInterface {
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
-  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
-      const SolveParametersProto& parameters, MessageCallback message_cb,
-      SolveInterrupter* interrupter) override;
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                             MessageCallback message_cb,
+                             SolveInterrupter* interrupter) override;
 
   // Returns the merged parameters and a list of warnings from any parameter
   // settings that are invalid for this solver.
@@ -94,8 +95,7 @@ class GlopSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       const SolveInterrupter* interrupter, absl::Duration solve_time);
 
-  absl::Status FillSolveStats(glop::ProblemStatus status,
-                              absl::Duration solve_time,
+  absl::Status FillSolveStats(absl::Duration solve_time,
                               SolveStatsProto& solve_stats);
 
   void SetGlopBasis(const BasisProto& basis);

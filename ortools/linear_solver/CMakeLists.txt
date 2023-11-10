@@ -15,6 +15,7 @@ file(GLOB _SRCS "*.h" "*.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/solve.cc
 )
+list(FILTER _SRCS EXCLUDE REGEX "/model_exporter_main\\.cc")
 if(USE_SCIP)
   list(APPEND _SRCS ${LPI_GLOP_SRC})
 endif()
@@ -44,8 +45,8 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
-  ${PROJECT_NAME}::proto)
-#add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+#add_library(${PROJECT_NAMESPACE}::linear_solver ALIAS ${NAME})
 
 # solve
 add_executable(solve)

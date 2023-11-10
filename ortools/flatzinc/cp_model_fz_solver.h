@@ -17,11 +17,13 @@
 #include <string>
 
 #include "ortools/flatzinc/model.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 namespace fz {
 
 struct FlatzincSatParameters {
+  bool search_all_solutions = false;
   bool display_all_solutions = false;
   bool use_free_search = false;
   bool log_search_progress = false;
@@ -29,6 +31,7 @@ struct FlatzincSatParameters {
   int random_seed = 0;
   int number_of_threads = 0;
   double max_time_in_seconds = 0.0;
+  bool ortools_mode = false;
 };
 
 }  // namespace fz

@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <numeric>  // must be call before fenv_access see: https://github.com/microsoft/STL/issues/2613
@@ -40,8 +41,6 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
-
-#include "ortools/base/integral_types.h"
 
 #if defined(_MSC_VER)
 static inline double isnan(double value) { return _isnan(value); }
@@ -171,7 +170,6 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
-// TODO(user): investigate moving this to ortools/base/ or some other place.
 #define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
   EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
       expected, obtained, epsilon, epsilon))                              \

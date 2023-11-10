@@ -61,6 +61,10 @@ struct SolverResult {
   // See https://developers.google.com/optimization/lp/pdlp_math for the
   // interpretation of `dual_solution` and `reduced_costs`.
   Eigen::VectorXd dual_solution;
+  // NOTE: The definition of reduced_costs changed in OR-tools version 9.8.
+  // See
+  // https://developers.google.com/optimization/lp/pdlp_math#reduced_costs_dual_residuals_and_the_corrected_dual_objective
+  // for details.
   Eigen::VectorXd reduced_costs;
   SolveLog solve_log;
 };

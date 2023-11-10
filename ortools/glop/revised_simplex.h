@@ -96,8 +96,7 @@
 #include <vector>
 
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"
@@ -125,6 +124,10 @@ namespace glop {
 class RevisedSimplex {
  public:
   RevisedSimplex();
+
+  // This type is neither copyable nor movable.
+  RevisedSimplex(const RevisedSimplex&) = delete;
+  RevisedSimplex& operator=(const RevisedSimplex&) = delete;
 
   // Sets or gets the algorithm parameters to be used on the next Solve().
   void SetParameters(const GlopParameters& parameters);
@@ -523,7 +526,7 @@ class RevisedSimplex {
   // This must be called each time the dual_pricing_vector_ is changed at
   // position row.
   template <bool use_dense_update = false>
-  void OnDualPriceChange(const DenseColumn& squared_norms, RowIndex row,
+  void OnDualPriceChange(DenseColumn::ConstView squared_norms, RowIndex row,
                          VariableType type, Fractional threshold);
 
   // Updates the prices used by DualChooseLeavingVariableRow() when the reduced
@@ -826,8 +829,6 @@ class RevisedSimplex {
 
   // This is used by Polish().
   DenseRow integrality_scale_;
-
-  DISALLOW_COPY_AND_ASSIGN(RevisedSimplex);
 };
 
 // Hides the details of the dictionary matrix implementation. In the future,
@@ -848,6 +849,10 @@ class RevisedSimplexDictionary {
             ABSL_DIE_IF_NULL(revised_simplex)->ComputeDictionary(col_scales)),
         basis_vars_(ABSL_DIE_IF_NULL(revised_simplex)->GetBasisVector()) {}
 
+  // This type is neither copyable nor movable.
+  RevisedSimplexDictionary(const RevisedSimplexDictionary&) = delete;
+  RevisedSimplexDictionary& operator=(const RevisedSimplexDictionary&) = delete;
+
   ConstIterator begin() const { return dictionary_.begin(); }
   ConstIterator end() const { return dictionary_.end(); }
 
@@ -860,7 +865,6 @@ class RevisedSimplexDictionary {
  private:
   const RowMajorSparseMatrix dictionary_;
   const RowToColMapping basis_vars_;
-  DISALLOW_COPY_AND_ASSIGN(RevisedSimplexDictionary);
 };
 
 // TODO(user): When a row-by-row generation of the dictionary is supported,

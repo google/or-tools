@@ -59,6 +59,7 @@
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/glpk.pb.h"
+#include "ortools/math_opt/solvers/glpk/gap.h"
 #include "ortools/math_opt/solvers/glpk/glpk_sparse_vector.h"
 #include "ortools/math_opt/solvers/glpk/rays.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
@@ -72,6 +73,7 @@ namespace math_opt {
 namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 constexpr SupportedProblemStructures kGlpkSupportedStructures = {
     .integer_variables = SupportType::kSupported};
@@ -585,16 +587,34 @@ InvertedBounds ListInvertedBounds(
 // assuming that the last call to glp_intopt() returned 0 and that the model has
 // not been modified since.
 absl::StatusOr<TerminationProto> MipTerminationOnSuccess(
-    glp_prob* const problem) {
+    glp_prob* const problem, MipCallbackData* const mip_cb_data) {
+  if (mip_cb_data == nullptr) {
+    return absl::InternalError(
+        "MipTerminationOnSuccess() called with nullptr mip_cb_data");
+  }
   const int status = glp_mip_status(problem);
+  const bool is_maximize = glp_get_obj_dir(problem) == GLP_MAX;
   switch (status) {
     case GLP_OPT:
-      return TerminateForReason(TERMINATION_REASON_OPTIMAL);
-    case GLP_FEAS:
-      return FeasibleTermination(LIMIT_UNDETERMINED,
-                                 "glp_mip_status() returned GLP_FEAS");
+    case GLP_FEAS: {
+      const double objective_value = glp_mip_obj_val(problem);
+      if (status == GLP_OPT) {
+        // Note that here we don't use MipCallbackData->best_bound(), even if
+        // set, as if the Gap was used to interrupt the solve GLPK is supposed
+        // to return GLP_EMIPGAP and not 0. And thus we should not go through
+        // this code path if the Gap limit is used.
+        return OptimalTerminationProto(objective_value, objective_value);
+      }
+      return FeasibleTerminationProto(
+          is_maximize, LIMIT_UNDETERMINED, objective_value,
+          mip_cb_data->best_bound(), "glp_mip_status() returned GLP_FEAS");
+    }
     case GLP_NOFEAS:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE);
+      // According to InfeasibleTerminationProto()'s documentation: "the
+      // convention for infeasible MIPs is that dual_feasibility_status is
+      // feasible".
+      return InfeasibleTerminationProto(
+          is_maximize, /*dual_feasibility_status=*/FEASIBILITY_STATUS_FEASIBLE);
     default:
       return absl::InternalError(
           absl::StrCat("glp_intopt() returned 0 but glp_mip_status()"
@@ -607,14 +627,22 @@ absl::StatusOr<TerminationProto> MipTerminationOnSuccess(
 // the problem assuming that the last call to glp_interior() returned 0 and that
 // the model has not been modified since.
 absl::StatusOr<TerminationProto> InteriorTerminationOnSuccess(
-    glp_prob* const problem) {
+    glp_prob* const problem, MipCallbackData*) {
   const int status = glp_ipt_status(problem);
+  const bool is_maximize = glp_get_obj_dir(problem) == GLP_MAX;
   switch (status) {
-    case GLP_OPT:
-      return TerminateForReason(TERMINATION_REASON_OPTIMAL);
+    case GLP_OPT: {
+      const double objective_value = glp_ipt_obj_val(problem);
+      // TODO(b/290359402): here we assume that the objective value of the dual
+      // is exactly the same as the one of the primal. This may not be true as
+      // some tolerance may apply.
+      return OptimalTerminationProto(objective_value, objective_value);
+    }
     case GLP_INFEAS:
-      return NoSolutionFoundTermination(LIMIT_UNDETERMINED,
-                                        "glp_ipt_status() returned GLP_INFEAS");
+      return NoSolutionFoundTerminationProto(
+          is_maximize, LIMIT_UNDETERMINED,
+          /*optional_dual_objective=*/std::nullopt,
+          "glp_ipt_status() returned GLP_INFEAS");
     case GLP_NOFEAS:
       // Documentation in glpapi08.c for glp_ipt_status says this status means
       // "no feasible solution exists", but the Reference Manual for GLPK
@@ -624,7 +652,9 @@ absl::StatusOr<TerminationProto> InteriorTerminationOnSuccess(
       // primal problem, the dual problem (or both) are infeasible. Under this
       // condition if the primal is feasible, then the dual must be infeasible
       // and hence the primal is unbounded.
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED);
     default:
       return absl::InternalError(
           absl::StrCat("glp_interior() returned 0 but glp_ipt_status()"
@@ -637,7 +667,7 @@ absl::StatusOr<TerminationProto> InteriorTerminationOnSuccess(
 // the problem assuming that the last call to glp_simplex() returned 0 and that
 // the model has not been modified since.
 absl::StatusOr<TerminationProto> SimplexTerminationOnSuccess(
-    glp_prob* const problem) {
+    glp_prob* const problem, MipCallbackData*) {
   // Here we don't use glp_get_status() since it is biased towards the primal
   // simplex algorithm. For example if the dual simplex returns GLP_NOFEAS for
   // the dual and GLP_INFEAS for the primal then glp_get_status() returns
@@ -647,66 +677,67 @@ absl::StatusOr<TerminationProto> SimplexTerminationOnSuccess(
   // combines them anyway, it does not have any other benefit).
   const int prim_status = glp_get_prim_stat(problem);
   const int dual_status = glp_get_dual_stat(problem);
-
-  // Returns the undetermined limit for cases where we can't draw a conclusion.
-  const auto undetermined_limit = [&]() {
-    const std::string detail = absl::StrCat(
-        "glp_get_prim_stat() returned ", SolutionStatusString(prim_status),
-        " and glp_get_dual_stat() returned ",
-        SolutionStatusString(dual_status));
-    if (prim_status == GLP_FEAS) {
-      return FeasibleTermination(LIMIT_UNDETERMINED, detail);
-    }
-    return NoSolutionFoundTermination(LIMIT_UNDETERMINED, detail);
-  };
+  const bool is_maximize = glp_get_obj_dir(problem) == GLP_MAX;
 
   // Returns a status error indicating that glp_get_dual_stat() returned an
   // unexpected value.
-  const auto unexpected_dual_stat = [&]() {
-    return absl::InternalError(
-        absl::StrCat("glp_simplex() returned 0 but glp_get_dual_stat() "
-                     "returned the unexpected value ",
-                     SolutionStatusString(dual_status)));
+  const auto unexpected_dual_stat = [&]() -> absl::Status {
+    return util::InternalErrorBuilder()
+           << "glp_simplex() returned 0 but glp_get_dual_stat() returned the "
+              "unexpected value "
+           << SolutionStatusString(dual_status)
+           << " while glp_get_prim_stat() returned "
+           << SolutionStatusString(prim_status);
   };
 
   switch (prim_status) {
     case GLP_FEAS:
       switch (dual_status) {
-        case GLP_FEAS:
+        case GLP_FEAS: {
           // Dual feasibility here means that the solution is dual feasible
           // (correct signs of the residual costs) and that the complementary
           // slackness condition are respected. Hence the solution is optimal.
-          return TerminateForReason(TERMINATION_REASON_OPTIMAL);
-        case GLP_INFEAS:
-          return undetermined_limit();
+          const double objective_value = glp_get_obj_val(problem);
+          return OptimalTerminationProto(objective_value, objective_value);
+        }
         case GLP_NOFEAS:
-          return TerminateForReason(TERMINATION_REASON_UNBOUNDED);
+          return UnboundedTerminationProto(is_maximize);
+        case GLP_INFEAS:
         default:
           return unexpected_dual_stat();
       }
     case GLP_INFEAS:
       switch (dual_status) {
+        case GLP_NOFEAS:
+          return InfeasibleOrUnboundedTerminationProto(
+              is_maximize,
+              /*dual_feasibility_status=*/FEASIBILITY_STATUS_INFEASIBLE);
         case GLP_FEAS:
         case GLP_INFEAS:
-          return undetermined_limit();
-        case GLP_NOFEAS:
-          return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
         default:
           return unexpected_dual_stat();
       }
     case GLP_NOFEAS:
       switch (dual_status) {
         case GLP_FEAS:
-        case GLP_INFEAS:
-        case GLP_NOFEAS:
           // Dual being feasible (GLP_FEAS) here would lead to dual unbounded;
           // but this does not exist as a reason.
-          //
+          return InfeasibleTerminationProto(
+              is_maximize,
+              /*dual_feasibility_status=*/FEASIBILITY_STATUS_FEASIBLE);
+        case GLP_INFEAS:
+          return InfeasibleTerminationProto(
+              is_maximize,
+              /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED);
+          return unexpected_dual_stat();
+        case GLP_NOFEAS:
           // If both the primal and dual are proven infeasible (GLP_NOFEAS), the
           // primal wins. Maybe GLPK does never return that though since it
           // implements either primal or dual simplex algorithm but does not
           // combine both of them.
-          return TerminateForReason(TERMINATION_REASON_INFEASIBLE);
+          return InfeasibleTerminationProto(
+              is_maximize,
+              /*dual_feasibility_status=*/FEASIBILITY_STATUS_INFEASIBLE);
         default:
           return unexpected_dual_stat();
       }
@@ -718,6 +749,13 @@ absl::StatusOr<TerminationProto> SimplexTerminationOnSuccess(
   }
 }
 
+// Function called by BuildTermination() when the return code of the solve
+// function is 0.
+//
+// Parameter mip_cb_data is not nullptr iff glp_intopt() was used.
+using TerminationOnSuccessFn = std::function<absl::StatusOr<TerminationProto>(
+    glp_prob* problem, MipCallbackData* const mip_cb_data)>;
+
 // Returns the termination reason based on the return code rc of calling fn_name
 // function which is glp_simplex(), glp_interior() or glp_intopt().
 //
@@ -727,28 +765,30 @@ absl::StatusOr<TerminationProto> SimplexTerminationOnSuccess(
 //
 // For glp_intopt(), the optional mip_cb_data is used to test for interruption
 // and the LIMIT_INTERRUPTED is set if the interrupter has been triggered (even
-// if the return code is 0).
+// if the return code is 0). It is also used to get the dual bound. The
+// gap_limit must also be set to the gap limit parameter.
 //
-// The parameters `(variable|linear_constraint)_ids` are the
-// `GlpkSolver::(LinearConstraints|Variables)::ids`.
+// When a primal feasible solution exists, feasible_solution_objective_value
+// must be set with its objective. When this variable is unset this function
+// assumes no such solution exists.
 absl::StatusOr<TerminationProto> BuildTermination(
     glp_prob* const problem, const absl::string_view fn_name, const int rc,
-    const std::function<absl::StatusOr<TerminationProto>(glp_prob*)>
-        termination_on_success,
-    MipCallbackData* const mip_cb_data, const bool has_feasible_solution,
-    const std::vector<int64_t>& variable_ids,
-    const std::vector<int64_t>& linear_constraint_ids) {
+    const TerminationOnSuccessFn termination_on_success,
+    MipCallbackData* const mip_cb_data,
+    const std::optional<double> feasible_solution_objective_value,
+    const double gap_limit) {
+  const bool is_maximize = glp_get_obj_dir(problem) == GLP_MAX;
   if (mip_cb_data != nullptr &&
       mip_cb_data->HasBeenInterruptedByInterrupter()) {
-    return TerminateForLimit(LIMIT_INTERRUPTED,
-                             /*feasible=*/has_feasible_solution);
+    return LimitTerminationProto(is_maximize, LIMIT_INTERRUPTED,
+                                 feasible_solution_objective_value);
   }
 
   // TODO(b/187027049): see if GLP_EOBJLL and GLP_EOBJUL should be handled with
   // dual simplex.
   switch (rc) {
     case 0:
-      return termination_on_success(problem);
+      return termination_on_success(problem, mip_cb_data);
     case GLP_EBOUND: {
       // GLP_EBOUND is returned when a variable or a constraint has the GLP_DB
       // bounds type and lower_bound >= upper_bound. The code in this file makes
@@ -763,33 +803,54 @@ absl::StatusOr<TerminationProto> BuildTermination(
                 "bounds";
     }
     case GLP_EITLIM:
-      return TerminateForLimit(LIMIT_ITERATION,
-                               /*feasible=*/has_feasible_solution);
+      return LimitTerminationProto(is_maximize, LIMIT_ITERATION,
+                                   feasible_solution_objective_value);
     case GLP_ETMLIM:
-      return TerminateForLimit(LIMIT_TIME, /*feasible=*/has_feasible_solution);
-    case GLP_EMIPGAP:
-      return TerminateForReason(
-          TERMINATION_REASON_OPTIMAL,
-          absl::StrCat(fn_name, "() returned ", ReturnCodeString(rc)));
+      return LimitTerminationProto(is_maximize, LIMIT_TIME,
+                                   feasible_solution_objective_value);
+    case GLP_EMIPGAP: {
+      if (!feasible_solution_objective_value.has_value()) {
+        return util::InternalErrorBuilder()
+               << fn_name << "() returned `" << ReturnCodeString(rc)
+               << "` but glp_mip_status() returned "
+               << SolutionStatusString(glp_mip_status(problem));
+      }
+      if (!mip_cb_data) {
+        return util::InternalErrorBuilder()
+               << fn_name << "() returned `" << ReturnCodeString(rc)
+               << "` but there is no MipCallbackData";
+      }
+      const double objective_value = feasible_solution_objective_value.value();
+      // Here we expect mip_cb_data->best_bound() to always be set. If this is
+      // not the case we use a worst estimation of the dual bound.
+      return OptimalTerminationProto(
+          objective_value,
+          mip_cb_data->best_bound().value_or(
+              WorstGLPKDualBound(is_maximize, objective_value, gap_limit)));
+    }
     case GLP_ESTOP:
-      return TerminateForLimit(LIMIT_INTERRUPTED,
-                               /*feasible=*/has_feasible_solution);
+      return LimitTerminationProto(is_maximize, LIMIT_INTERRUPTED,
+                                   feasible_solution_objective_value);
     case GLP_ENOPFS:
       // With presolve on, this error is returned if the LP has no feasible
       // solution.
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE);
+      return InfeasibleTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED);
     case GLP_ENODFS:
       // With presolve on, this error is returned if the LP has no dual
       // feasible solution.
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_INFEASIBLE);
     case GLP_ENOCVG:
       // Very slow convergence/divergence (for glp_interior).
-      return TerminateForLimit(LIMIT_SLOW_PROGRESS,
-                               /*feasible=*/has_feasible_solution);
+      return LimitTerminationProto(is_maximize, LIMIT_SLOW_PROGRESS,
+                                   feasible_solution_objective_value);
     case GLP_EINSTAB:
       // Numeric stability solving Newtonian system (for glp_interior).
       return TerminateForReason(
-          TERMINATION_REASON_NUMERICAL_ERROR,
+          is_maximize, TERMINATION_REASON_NUMERICAL_ERROR,
           absl::StrCat(fn_name, "() returned ", ReturnCodeString(rc),
                        " which means that there is a numeric stability issue "
                        "solving Newtonian system"));
@@ -1121,13 +1182,14 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const int mip_status = glp_mip_status(problem_);
     const bool has_feasible_solution =
         mip_status == GLP_OPT || mip_status == GLP_FEAS;
+    const std::optional<double> feasible_solution_objective_value =
+        has_feasible_solution ? std::make_optional(glp_mip_obj_val(problem_))
+                              : std::nullopt;
     ASSIGN_OR_RETURN(
         *result.mutable_termination(),
         BuildTermination(problem_, "glp_intopt", rc, MipTerminationOnSuccess,
-                         &mip_cb_data,
-                         /*has_feasible_solution=*/has_feasible_solution,
-                         /*variable_ids=*/variables_.ids,
-                         /*linear_constraint_ids=*/linear_constraints_.ids));
+                         &mip_cb_data, feasible_solution_objective_value,
+                         glpk_parameters.mip_gap));
     if (mip_cb_data.best_bound().has_value()) {
       best_dual_bound = *mip_cb_data.best_bound();
     }
@@ -1165,8 +1227,10 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
         get_prim_stat = OptStatus;
         get_dual_stat = OptStatus;
         obj_val = OffsetOnlyObjVal;
-        *result.mutable_termination() = TerminateForReason(
-            TERMINATION_REASON_OPTIMAL,
+        const double objective_value = OffsetOnlyObjVal(problem_);
+        *result.mutable_termination() = OptimalTerminationProto(
+            /*finite_primal_objective=*/objective_value,
+            /*dual_objective=*/objective_value,
             "glp_interior() not called since the model is empty");
         result.mutable_solve_stats()
             ->mutable_problem_status()
@@ -1179,15 +1243,17 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
         const int glp_interior_rc = glp_interior(problem_, &glpk_parameters);
         const int ipt_status = glp_ipt_status(problem_);
         const bool has_feasible_solution = ipt_status == GLP_OPT;
+        const std::optional<double> feasible_solution_objective_value =
+            has_feasible_solution
+                ? std::make_optional(glp_ipt_obj_val(problem_))
+                : std::nullopt;
         ASSIGN_OR_RETURN(
             *result.mutable_termination(),
-            BuildTermination(
-                problem_, "glp_interior", glp_interior_rc,
-                InteriorTerminationOnSuccess,
-                /*mip_cb_data=*/nullptr,
-                /*has_feasible_solution=*/has_feasible_solution,
-                /*variable_ids=*/variables_.ids,
-                /*linear_constraint_ids=*/linear_constraints_.ids));
+            BuildTermination(problem_, "glp_interior", glp_interior_rc,
+                             InteriorTerminationOnSuccess,
+                             /*mip_cb_data=*/nullptr,
+                             feasible_solution_objective_value,
+                             /*gap_limit=*/kNaN));
         ASSIGN_OR_RETURN(
             *result.mutable_solve_stats()->mutable_problem_status(),
             GetBarrierProblemStatusProto(/*glp_interior_rc=*/glp_interior_rc,
@@ -1214,14 +1280,23 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
       const int glp_simplex_rc = glp_simplex(problem_, &glpk_parameters);
       const int prim_stat = glp_get_prim_stat(problem_);
       const bool has_feasible_solution = prim_stat == GLP_FEAS;
-      ASSIGN_OR_RETURN(
-          *result.mutable_termination(),
-          BuildTermination(problem_, "glp_simplex", glp_simplex_rc,
-                           SimplexTerminationOnSuccess,
-                           /*mip_cb_data=*/nullptr,
-                           /*has_feasible_solution=*/has_feasible_solution,
-                           /*variable_ids=*/variables_.ids,
-                           /*linear_constraint_ids=*/linear_constraints_.ids));
+      const std::optional<double> feasible_solution_objective_value =
+          has_feasible_solution ? std::make_optional(glp_get_obj_val(problem_))
+                                : std::nullopt;
+      ASSIGN_OR_RETURN(*result.mutable_termination(),
+                       BuildTermination(problem_, "glp_simplex", glp_simplex_rc,
+                                        SimplexTerminationOnSuccess,
+                                        /*mip_cb_data=*/nullptr,
+                                        feasible_solution_objective_value,
+                                        /*gap_limit=*/kNaN));
+
+      // If the primal is proven infeasible and the dual is feasible, the dual
+      // is unbounded. Thus we can compute a better dual bound rather than the
+      // default value.
+      if (glp_get_prim_stat(problem_) == GLP_NOFEAS &&
+          glp_get_dual_stat(problem_) == GLP_FEAS) {
+        best_dual_bound = maximize ? -kInf : +kInf;
+      }
 
       ASSIGN_OR_RETURN(*result.mutable_solve_stats()->mutable_problem_status(),
                        GetSimplexProblemStatusProto(
@@ -1239,14 +1314,22 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
   // Unregister the callback and flush the potential last unfinished line.
   std::move(message_cb_cleanup).Invoke();
 
-  double best_primal_bound = maximize ? -kInf : kInf;
-  switch (get_prim_stat(problem_)) {
-    case GLP_OPT:   // OPT is returned by glp_ipt_status & glp_mip_status.
-    case GLP_FEAS:  // FEAS is returned by glp_mip_status & glp_get_prim_stat.
-      best_primal_bound = obj_val(problem_);
+  switch (result.termination().reason()) {
+    case TERMINATION_REASON_OPTIMAL:
+    case TERMINATION_REASON_FEASIBLE:
+      result.mutable_solve_stats()->set_best_primal_bound(obj_val(problem_));
+      break;
+    case TERMINATION_REASON_UNBOUNDED:
+      // Here we can't use obj_val(problem_) as it would be a finite value of
+      // the feasible solution found.
+      result.mutable_solve_stats()->set_best_primal_bound(maximize ? +kInf
+                                                                   : -kInf);
+      break;
+    default:
+      result.mutable_solve_stats()->set_best_primal_bound(maximize ? -kInf
+                                                                   : kInf);
       break;
   }
-  result.mutable_solve_stats()->set_best_primal_bound(best_primal_bound);
   // TODO(b/187027049): compute the dual value when the dual is feasible (or
   // problem optimal for interior point) based on the bounds and the dual values
   // for LPs.
@@ -1719,9 +1802,10 @@ std::optional<SolveResultProto> GlpkSolver::EmptyIntegerBoundsResult() {
   return std::nullopt;
 }
 
-absl::StatusOr<InfeasibleSubsystemResultProto> GlpkSolver::InfeasibleSubsystem(
-    const SolveParametersProto& parameters, MessageCallback message_cb,
-    SolveInterrupter* const interrupter) {
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+GlpkSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                                       MessageCallback message_cb,
+                                       SolveInterrupter* const interrupter) {
   return absl::UnimplementedError(
       "GLPK does not provide a method to compute an infeasible subsystem");
 }

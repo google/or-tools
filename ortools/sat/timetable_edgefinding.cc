@@ -68,8 +68,8 @@ void TimeTableEdgeFinding::BuildTimeTable() {
   ecp_.clear();
 
   // Build start of compulsory part events.
-  for (const auto task_time :
-       ::gtl::reversed_view(helper_->TaskByDecreasingStartMax())) {
+  const auto by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
+  for (const auto task_time : ::gtl::reversed_view(by_decreasing_start_max)) {
     const int t = task_time.task_index;
     if (!helper_->IsPresent(t)) continue;
     if (task_time.time < helper_->EndMin(t)) {
@@ -88,10 +88,8 @@ void TimeTableEdgeFinding::BuildTimeTable() {
 
   DCHECK_EQ(scp_.size(), ecp_.size());
 
-  const std::vector<TaskTime>& by_decreasing_end_max =
-      helper_->TaskByDecreasingEndMax();
-  const std::vector<TaskTime>& by_start_min =
-      helper_->TaskByIncreasingStartMin();
+  const auto by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
+  const auto by_start_min = helper_->TaskByIncreasingStartMin();
 
   IntegerValue height = IntegerValue(0);
   IntegerValue energy = IntegerValue(0);

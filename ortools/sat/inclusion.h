@@ -26,65 +26,10 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace sat {
-
-// Small utility class to store a vector<vector<>> where one can only append new
-// vector and never change previously added ones.
-//
-// Note that we implement a really small subset of the vector<vector<>> API.
-template <typename T>
-class CompactVectorVector {
- public:
-  // Same as push_back().
-  // Returns the previous size() as this is convenient for how we use it.
-  int Add(absl::Span<const T> data) {
-    const int index = size();
-    starts_.push_back(buffer_.size());
-    sizes_.push_back(data.size());
-    buffer_.insert(buffer_.end(), data.begin(), data.end());
-    return index;
-  }
-
-  // Same as Add() but for sat::Literal or any type from which we can get
-  // indices.
-  template <typename L>
-  int AddLiterals(const std::vector<L>& data) {
-    const int index = size();
-    starts_.push_back(buffer_.size());
-    sizes_.push_back(data.size());
-    for (const L literal : data) {
-      buffer_.push_back(literal.Index().value());
-    }
-    return index;
-  }
-
-  // Warning: this is only valid until the next clear() or Add() call.
-  absl::Span<const T> operator[](int index) const {
-    DCHECK_GE(index, 0);
-    DCHECK_LT(index, starts_.size());
-    DCHECK_LT(index, sizes_.size());
-    const size_t size = static_cast<size_t>(sizes_[index]);
-    if (size == 0) return {};
-    return {&buffer_[starts_[index]], size};
-  }
-
-  void clear() {
-    starts_.clear();
-    sizes_.clear();
-    buffer_.clear();
-  }
-
-  size_t size() const { return starts_.size(); }
-
- private:
-  std::vector<int> starts_;
-  std::vector<int> sizes_;
-  std::vector<T> buffer_;
-};
 
 // An helper class to process many sets of integer in [0, n] and detects all the
 // set included in each others. This is a common operations in presolve, and
@@ -99,10 +44,12 @@ class CompactVectorVector {
 // The number n will be detected automatically but we allocate various vector
 // of size n, so avoid having large integer values in your sets.
 //
-// All set contents will be accessed via storage_[index]. And of course Storage
-// can be the CompactVectorVector defined above. But it can also be something
-// that return a class that support .size() and integer range iteration over the
-// element in the set on the fly.
+// All set contents will be accessed via storage_[index].
+// This can be used with a vector<vector<>> or our CompactVectorVector that we
+// use in a few place. But it can also be anything that support:
+// - storage_.size()
+// - range iteration over storage_[index]
+// - storage_[index].size()
 template <class Storage>
 class InclusionDetector {
  public:
@@ -211,6 +158,7 @@ class InclusionDetector {
   bool stop_with_current_superset_;
   std::vector<uint64_t> signatures_;
   std::vector<std::vector<int>> one_watcher_;  // Index in candidates_.
+  std::vector<int> superset_elements_;
   std::vector<bool> is_in_superset_;
 };
 
@@ -294,7 +242,6 @@ inline void InclusionDetector<Storage>::DetectInclusions(
     stop_with_current_superset_ = false;
     if (candidate.CanBeSuperset()) {
       const Candidate& superset = candidate;
-      const auto& superset_elements = candidate_elements;
 
       // Bitset should be cleared.
       DCHECK(std::all_of(is_in_superset_.begin(), is_in_superset_.end(),
@@ -303,12 +250,22 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       // Find any subset included in current superset.
       work_done_ += 2 * superset.size;
       if (work_done_ > work_limit_) return Stop();
-      for (const int e : superset_elements) {
+
+      // We make a copy because process() might alter the content of the
+      // storage when it returns "stop_with_current_superset_" and we need
+      // to clean is_in_superset_ properly.
+      //
+      // TODO(user): Alternatively, we could clean is_in_superset_ in the
+      // call to StopProcessingCurrentSuperset() and force client to call it
+      // before altering the superset content.
+      superset_elements_.assign(candidate_elements.begin(),
+                                candidate_elements.end());
+      for (const int e : superset_elements_) {
         is_in_superset_[e] = true;
       }
 
       const uint64_t superset_signature = signatures_.back();
-      for (const int superset_e : superset_elements) {
+      for (const int superset_e : superset_elements_) {
         for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
           const int c_index = one_watcher_[superset_e][i];
           const Candidate& subset = candidates_[c_index];
@@ -348,7 +305,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       }
 
       // Cleanup.
-      for (const int e : superset_elements) {
+      for (const int e : superset_elements_) {
         is_in_superset_[e] = false;
       }
     }

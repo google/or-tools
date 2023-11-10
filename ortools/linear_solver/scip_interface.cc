@@ -32,7 +32,6 @@
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
@@ -149,8 +148,7 @@ class SCIPInterface : public MPSolverInterface {
   //  * We also support SCIP's more general callback interface, built on
   //    'constraint handlers'. See ./scip_callback.h and test, these are added
   //    directly to the underlying SCIP object, bypassing SCIPInterface.
-  // The former works by calling the latter. See go/scip-callbacks for
-  // a complete documentation of this design.
+  // The former works by calling the latter.
 
   // MPCallback API
   void SetCallback(MPCallback* mp_callback) override;
@@ -1123,13 +1121,7 @@ class ScipMPCallbackContext : public MPCallbackContext {
 
 ScipConstraintHandlerForMPCallback::ScipConstraintHandlerForMPCallback(
     MPCallback* mp_callback)
-    : ScipConstraintHandler<EmptyStruct>(
-          // MOE(begin-strip):
-          {/*name=*/"mp_solver_constraint_handler",
-           /*description=*/
-           "A single constraint handler for all MPSolver models."}
-          // MOE(end-strip-and-replace): ScipConstraintHandlerDescription()
-          ),
+    : ScipConstraintHandler<EmptyStruct>(ScipConstraintHandlerDescription()),
       mp_callback_(mp_callback) {}
 
 std::vector<CallbackRangeConstraint>

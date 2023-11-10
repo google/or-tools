@@ -87,7 +87,7 @@ function build_wheel() {
   # shellcheck source=/dev/null
   source "${VENV_DIR}/bin/activate"
   pip install -U pip setuptools wheel absl-py  # absl-py is needed by make test_python
-  pip install -U mypy-protobuf  # need to generate protobuf mypy files
+  pip install -U mypy mypy-protobuf  # need to generate protobuf mypy files
 
   echo "current dir: $(pwd)"
 

@@ -16,21 +16,22 @@
 The following two sections describe the main
 methods for building and solving those models.
 
-* [`ModelBuilder`](#model_builder.ModelBuilder): Methods for creating
+* [`Model`](#model_builder.Model): Methods for creating
 models, including variables and constraints.
-* [`ModelSolver`](#model_builder.ModelSolver): Methods for solving
+* [`Solver`](#model_builder.Solver): Methods for solving
 a model and evaluating solutions.
 
-Additional methods for solving ModelBuilder models:
+Additional methods for solving Model models:
 
 * [`Constraint`](#model_builder.Constraint): A few utility methods for modifying
-  constraints created by `ModelBuilder`.
+  constraints created by `Model`.
 * [`LinearExpr`](#model_builder.LinearExpr): Methods for creating constraints
   and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
+
 import abc
 import dataclasses
 import math
@@ -55,10 +56,8 @@ ConstraintT = Union["_BoundedLinearExpr", bool]
 _IndexOrSeries = Union[pd.Index, pd.Series]
 _VariableOrConstraint = Union["LinearConstraint", "Variable"]
 
-
 # Forward solve statuses.
 SolveStatus = mbh.SolveStatus
-
 
 # pylint: disable=protected-access
 
@@ -69,7 +68,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
     A linear expression is built from constants and variables.
     For example, `x + 2.0 * (y - z + 1.0)`.
 
-    Linear expressions are used in ModelBuilder models in constraints and in the
+    Linear expressions are used in Model models in constraints and in the
     objective:
 
     * You can define linear constraints as in:
@@ -79,7 +78,7 @@ class LinearExpr(metaclass=abc.ABCMeta):
     model.add(sum(array_of_vars) == 5.0)
     ```
 
-    * In ModelBuilder, the objective is a linear expression:
+    * In Model, the objective is a linear expression:
 
     ```
     model.minimize(x + 2.0 * y + z)
@@ -254,11 +253,11 @@ class Variable(LinearExpr):
         is_integral: Optional[bool],
         name: Optional[str],
     ):
-        """See ModelBuilder.new_var below."""
+        """See Model.new_var below."""
         LinearExpr.__init__(self)
         self.__helper: mbh.ModelBuilderHelper = helper
         # Python do not support multiple __init__ methods.
-        # This method is only called from the ModelBuilder class.
+        # This method is only called from the Model class.
         # We hack the parameter to support the two cases:
         # case 1:
         #     helper is a ModelBuilderHelper, lb is a double value, ub is a double
@@ -389,6 +388,27 @@ class _BoundedLinearExpr(metaclass=abc.ABCMeta):
           LinearConstraint: A reference to the linear constraint in the helper.
         """
 
+    @abc.abstractmethod
+    def _add_enforced_linear_constraint(
+        self,
+        helper: mbh.ModelBuilderHelper,
+        var: Variable,
+        value: bool,
+        name: str,
+    ) -> "EnforcedLinearConstraint":
+        """Creates a new enforced linear constraint in the helper.
+
+        Args:
+          helper (mbh.ModelBuilderHelper): The helper to create the constraint.
+          var (Variable): The indicator variable of the constraint.
+          value (bool): The indicator value of the constraint.
+          name (str): The name of the linear constraint.
+
+        Returns:
+          Enforced LinearConstraint: A reference to the linear constraint in the
+          helper.
+        """
+
 
 def _add_linear_constraint_to_helper(
     bounded_expr: Union[bool, _BoundedLinearExpr],
@@ -430,6 +450,53 @@ def _add_linear_constraint_to_helper(
     raise TypeError("invalid type={}".format(type(bounded_expr)))
 
 
+def _add_enforced_linear_constraint_to_helper(
+    bounded_expr: Union[bool, _BoundedLinearExpr],
+    helper: mbh.ModelBuilderHelper,
+    var: Variable,
+    value: bool,
+    name: Optional[str],
+):
+    """Creates a new enforced linear constraint in the helper.
+
+    It handles boolean values (which might arise in the construction of
+    BoundedLinearExpressions).
+
+    Args:
+      bounded_expr: The bounded expression used to create the constraint.
+      helper: The helper to create the constraint.
+      var: the variable used in the indicator
+      value: the value used in the indicator
+      name: The name of the constraint to be created.
+
+    Returns:
+      EnforcedLinearConstraint: a constraint in the helper corresponding to the
+      input.
+
+    Raises:
+      TypeError: If constraint is an invalid type.
+    """
+    if isinstance(bounded_expr, bool):
+        c = EnforcedLinearConstraint(helper)
+        c.indicator_variable = var
+        c.indicator_value = value
+        if name is not None:
+            helper.set_enforced_constraint_name(c.index, name)
+        if bounded_expr:
+            # constraint that is always feasible: 0.0 <= nothing <= 0.0
+            helper.set_enforced_constraint_lower_bound(c.index, 0.0)
+            helper.set_enforced_constraint_upper_bound(c.index, 0.0)
+        else:
+            # constraint that is always infeasible: +oo <= nothing <= -oo
+            helper.set_enforced_constraint_lower_bound(c.index, 1)
+            helper.set_enforced_constraint_upper_bound(c.index, -1)
+        return c
+    if isinstance(bounded_expr, _BoundedLinearExpr):
+        # pylint: disable=protected-access
+        return bounded_expr._add_enforced_linear_constraint(helper, var, value, name)
+    raise TypeError("invalid type={}".format(type(bounded_expr)))
+
+
 @dataclasses.dataclass(repr=False, eq=False, frozen=True)
 class VarEqVar(_BoundedLinearExpr):
     """Represents var == var."""
@@ -461,12 +528,32 @@ class VarEqVar(_BoundedLinearExpr):
         helper.set_constraint_name(c.index, name)
         return c
 
+    def _add_enforced_linear_constraint(
+        self,
+        helper: mbh.ModelBuilderHelper,
+        var: Variable,
+        value: bool,
+        name: str,
+    ) -> "EnforcedLinearConstraint":
+        """Adds an enforced linear constraint to the model."""
+        c = EnforcedLinearConstraint(helper)
+        c.indicator_variable = var
+        c.indicator_value = value
+        helper.set_enforced_constraint_lower_bound(c.index, 0.0)
+        helper.set_enforced_constraint_upper_bound(c.index, 0.0)
+        # pylint: disable=protected-access
+        helper.add_term_to_enforced_constraint(c.index, self.left.index, 1.0)
+        helper.add_term_to_enforced_constraint(c.index, self.right.index, -1.0)
+        # pylint: enable=protected-access
+        helper.set_enforced_constraint_name(c.index, name)
+        return c
+
 
 class BoundedLinearExpression(_BoundedLinearExpr):
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
-    The only use of this class is to be added to the ModelBuilder through
-    `ModelBuilder.add(bounded expression)`, as in:
+    The only use of this class is to be added to the Model through
+    `Model.add(bounded expression)`, as in:
 
         model.Add(x + 2 * y -1 >= z)
     """
@@ -479,17 +566,15 @@ class BoundedLinearExpression(_BoundedLinearExpr):
     def __str__(self) -> str:
         if self.__lb > -math.inf and self.__ub < math.inf:
             if self.__lb == self.__ub:
-                return str(self.__expr) + " == " + str(self.__lb)
+                return f"{self.__expr} == {self.__lb}"
             else:
-                return (
-                    str(self.__lb) + " <= " + str(self.__expr) + " <= " + str(self.__ub)
-                )
+                return f"{self.__lb} <= {self.__expr} <= {self.__ub}"
         elif self.__lb > -math.inf:
-            return str(self.__expr) + " >= " + str(self.__lb)
+            return f"{self.__expr} >= {self.__lb}"
         elif self.__ub < math.inf:
-            return str(self.__expr) + " <= " + str(self.__ub)
+            return f"{self.__expr} <= {self.__ub}"
         else:
-            return str(self.__expr) + " free"
+            return f"{self.__expr} free"
 
     def __repr__(self):
         return self.__str__()
@@ -525,6 +610,33 @@ class BoundedLinearExpression(_BoundedLinearExpr):
         # pylint: enable=protected-access
         if name is not None:
             helper.set_constraint_name(c.index, name)
+        return c
+
+    def _add_enforced_linear_constraint(
+        self,
+        helper: mbh.ModelBuilderHelper,
+        var: Variable,
+        value: bool,
+        name: Optional[str],
+    ) -> "EnforcedLinearConstraint":
+        """Adds an enforced linear constraint to the model."""
+        c = EnforcedLinearConstraint(helper)
+        c.indicator_variable = var
+        c.indicator_value = value
+        flat_expr = _as_flat_linear_expression(self.__expr)
+        # pylint: disable=protected-access
+        helper.add_terms_to_enforced_constraint(
+            c.index, flat_expr._variable_indices, flat_expr._coefficients
+        )
+        helper.set_enforced_constraint_lower_bound(
+            c.index, self.__lb - flat_expr._offset
+        )
+        helper.set_enforced_constraint_upper_bound(
+            c.index, self.__ub - flat_expr._offset
+        )
+        # pylint: enable=protected-access
+        if name is not None:
+            helper.set_enforced_constraint_name(c.index, name)
         return c
 
 
@@ -618,8 +730,141 @@ class LinearConstraint:
             )
         self.__helper.safe_add_term_to_constraint(self.__index, var.index, coeff)
 
+    def clear_terms(self) -> None:
+        """Clear all terms of the constraint."""
+        self.__helper.clear_constraint_terms(self.__index)
 
-class ModelBuilder:
+
+class EnforcedLinearConstraint:
+    """Stores an enforced linear equation, also name indicator constraint.
+
+    Example:
+        x = model.new_num_var(0, 10, 'x')
+        y = model.new_num_var(0, 10, 'y')
+        z = model.new_bool_var('z')
+
+        enforced_linear_constraint = model.add_enforced(x + 2 * y == 5, z, False)
+    """
+
+    def __init__(
+        self, helper: mbh.ModelBuilderHelper, index: Optional[IntegerT] = None
+    ):
+        if index is None:
+            self.__index = helper.add_enforced_linear_constraint()
+        else:
+            if not helper.is_enforced_linear_constraint(index):
+                raise ValueError(
+                    f"the given index {index} does not refer to an enforced linear"
+                    " constraint"
+                )
+
+            self.__index = index
+        self.__helper: mbh.ModelBuilderHelper = helper
+
+    @property
+    def index(self) -> IntegerT:
+        """Returns the index of the constraint in the helper."""
+        return self.__index
+
+    @property
+    def helper(self) -> mbh.ModelBuilderHelper:
+        """Returns the ModelBuilderHelper instance."""
+        return self.__helper
+
+    @property
+    def lower_bound(self) -> np.double:
+        return self.__helper.enforced_constraint_lower_bound(self.__index)
+
+    @lower_bound.setter
+    def lower_bound(self, bound: NumberT) -> None:
+        self.__helper.set_enforced_constraint_lower_bound(self.__index, bound)
+
+    @property
+    def upper_bound(self) -> np.double:
+        return self.__helper.enforced_constraint_upper_bound(self.__index)
+
+    @upper_bound.setter
+    def upper_bound(self, bound: NumberT) -> None:
+        self.__helper.set_enforced_constraint_upper_bound(self.__index, bound)
+
+    @property
+    def indicator_variable(self) -> "Variable":
+        enforcement_var_index = (
+            self.__helper.enforced_constraint_indicator_variable_index(self.__index)
+        )
+        return Variable(self.__helper, enforcement_var_index, None, None, None)
+
+    @indicator_variable.setter
+    def indicator_variable(self, var: "Variable") -> None:
+        self.__helper.set_enforced_constraint_indicator_variable_index(
+            self.__index, var.index
+        )
+
+    @property
+    def indicator_value(self) -> bool:
+        return self.__helper.enforced_constraint_indicator_value(self.__index)
+
+    @indicator_value.setter
+    def indicator_value(self, value: bool) -> None:
+        self.__helper.set_enforced_constraint_indicator_value(self.__index, value)
+
+    @property
+    def name(self) -> str:
+        constraint_name = self.__helper.enforced_constraint_name(self.__index)
+        if constraint_name:
+            return constraint_name
+        return f"enforced_linear_constraint#{self.__index}"
+
+    @name.setter
+    def name(self, name: str) -> None:
+        return self.__helper.set_enforced_constraint_name(self.__index, name)
+
+    def is_always_false(self) -> bool:
+        """Returns True if the constraint is always false.
+
+        Usually, it means that it was created by model.add(False)
+        """
+        return self.lower_bound > self.upper_bound
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return (
+            f"EnforcedLinearConstraint({self.name}, lb={self.lower_bound},"
+            f" ub={self.upper_bound},"
+            f" var_indices={self.helper.enforced_constraint_var_indices(self.index)},"
+            f" coefficients={self.helper.enforced_constraint_coefficients(self.index)},"
+            f" indicator_variable={self.indicator_variable}"
+            f" indicator_value={self.indicator_value})"
+        )
+
+    def set_coefficient(self, var: Variable, coeff: NumberT) -> None:
+        """Sets the coefficient of the variable in the constraint."""
+        if self.is_always_false():
+            raise ValueError(
+                f"Constraint {self.index} is always false and cannot be modified"
+            )
+        self.__helper.set_enforced_constraint_coefficient(
+            self.__index, var.index, coeff
+        )
+
+    def add_term(self, var: Variable, coeff: NumberT) -> None:
+        """Adds var * coeff to the constraint."""
+        if self.is_always_false():
+            raise ValueError(
+                f"Constraint {self.index} is always false and cannot be modified"
+            )
+        self.__helper.safe_add_term_to_enforced_constraint(
+            self.__index, var.index, coeff
+        )
+
+    def clear_terms(self) -> None:
+        """Clear all terms of the constraint."""
+        self.__helper.clear_enforced_constraint_terms(self.__index)
+
+
+class Model:
     """Methods for building a linear model.
 
     Methods beginning with:
@@ -630,6 +875,12 @@ class ModelBuilder:
 
     def __init__(self):
         self.__helper: mbh.ModelBuilderHelper = mbh.ModelBuilderHelper()
+
+    def clone(self) -> "Model":
+        """Returns a clone of the current model."""
+        clone = Model()
+        clone.helper.overwrite_model(self.helper)
+        return clone
 
     @typing.overload
     def _get_linear_constraints(self, constraints: Optional[pd.Index]) -> pd.Index:
@@ -1020,18 +1271,9 @@ class ModelBuilder:
         """
         return self.new_var_series(name, index, 0, 1, True)
 
-    def linear_constraint_from_index(self, index: IntegerT) -> LinearConstraint:
-        """Rebuilds a linear constraint object from the model and its index."""
-        return LinearConstraint(self.__helper, index)
-
     def var_from_index(self, index: IntegerT) -> Variable:
         """Rebuilds a variable object from the model and its index."""
         return Variable(self.__helper, index, None, None, None)
-
-    @property
-    def num_variables(self) -> int:
-        """Returns the number of variables in the model."""
-        return self.__helper.num_variables()
 
     # Linear constraints.
 
@@ -1063,7 +1305,7 @@ class ModelBuilder:
             )
         else:
             raise TypeError(
-                f"Not supported: ModelBuilder.add_linear_constraint({linear_expr})"
+                f"Not supported: Model.add_linear_constraint({linear_expr})"
                 f" with type {type(linear_expr)}"
             )
         return ct
@@ -1105,17 +1347,124 @@ class ModelBuilder:
                 ],
             )
         else:
-            raise TypeError("Not supported: ModelBuilder.Add(" + str(ct) + ")")
+            raise TypeError("Not supported: Model.add(" + str(ct) + ")")
 
-    @property
-    def num_constraints(self) -> int:
-        return self.__helper.num_constraints()
+    def linear_constraint_from_index(self, index: IntegerT) -> LinearConstraint:
+        """Rebuilds a linear constraint object from the model and its index."""
+        return LinearConstraint(self.__helper, index)
+
+    # EnforcedLinear constraints.
+
+    def add_enforced_linear_constraint(  # pytype: disable=annotation-type-mismatch  # numpy-scalars
+        self,
+        linear_expr: LinearExprT,
+        ivar: "Variable",
+        ivalue: bool,
+        lb: NumberT = -math.inf,
+        ub: NumberT = math.inf,
+        name: Optional[str] = None,
+    ) -> EnforcedLinearConstraint:
+        """Adds the constraint: `ivar == ivalue => lb <= linear_expr <= ub` with the given name."""
+        ct = EnforcedLinearConstraint(self.__helper)
+        ct.indicator_variable = ivar
+        ct.indicator_value = ivalue
+        if name:
+            self.__helper.set_constraint_name(ct.index, name)
+        if mbn.is_a_number(linear_expr):
+            self.__helper.set_constraint_lower_bound(ct.index, lb - linear_expr)
+            self.__helper.set_constraint_upper_bound(ct.index, ub - linear_expr)
+        elif isinstance(linear_expr, Variable):
+            self.__helper.set_constraint_lower_bound(ct.index, lb)
+            self.__helper.set_constraint_upper_bound(ct.index, ub)
+            self.__helper.add_term_to_constraint(ct.index, linear_expr.index, 1.0)
+        elif isinstance(linear_expr, LinearExpr):
+            flat_expr = _as_flat_linear_expression(linear_expr)
+            # pylint: disable=protected-access
+            self.__helper.set_constraint_lower_bound(ct.index, lb - flat_expr._offset)
+            self.__helper.set_constraint_upper_bound(ct.index, ub - flat_expr._offset)
+            self.__helper.add_terms_to_constraint(
+                ct.index, flat_expr._variable_indices, flat_expr._coefficients
+            )
+        else:
+            raise TypeError(
+                "Not supported:"
+                f" Model.add_enforced_linear_constraint({linear_expr}) with"
+                f" type {type(linear_expr)}"
+            )
+        return ct
+
+    def add_enforced(
+        self,
+        ct: Union[ConstraintT, pd.Series],
+        var: Union[Variable, pd.Series],
+        value: Union[bool, pd.Series],
+        name: Optional[str] = None,
+    ) -> Union[EnforcedLinearConstraint, pd.Series]:
+        """Adds a `ivar == ivalue => BoundedLinearExpression` to the model.
+
+        Args:
+          ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+          var: The indicator variable
+          value: the indicator value
+          name: An optional name.
+
+        Returns:
+          An instance of the `Constraint` class.
+
+        Note that a special treatment is done when the argument does not contain any
+        variable, and thus evaluates to True or False.
+
+        model.add_enforced(True, ivar, ivalue) will create a constraint 0 <= empty
+        sum <= 0
+
+        model.add_enforced(False, var, value) will create a constraint inf <=
+        empty sum <= -inf
+
+        you can check the if a constraint is always false (lb=inf, ub=-inf) by
+        calling EnforcedLinearConstraint.is_always_false()
+        """
+        if isinstance(ct, _BoundedLinearExpr):
+            return ct._add_enforced_linear_constraint(self.__helper, var, value, name)
+        elif (
+            isinstance(ct, bool)
+            and isinstance(var, Variable)
+            and isinstance(value, bool)
+        ):
+            return _add_enforced_linear_constraint_to_helper(
+                ct, self.__helper, var, value, name
+            )
+        elif isinstance(ct, pd.Series):
+            ivar_series = _convert_to_var_series_and_validate_index(var, ct.index)
+            ivalue_series = _convert_to_series_and_validate_index(value, ct.index)
+            return pd.Series(
+                index=ct.index,
+                data=[
+                    _add_enforced_linear_constraint_to_helper(
+                        expr,
+                        self.__helper,
+                        ivar_series[i],
+                        ivalue_series[i],
+                        f"{name}[{i}]",
+                    )
+                    for (i, expr) in zip(ct.index, ct)
+                ],
+            )
+        else:
+            raise TypeError("Not supported: Model.add_enforced(" + str(ct) + ")")
+
+    def enforced_linear_constraint_from_index(
+        self, index: IntegerT
+    ) -> EnforcedLinearConstraint:
+        """Rebuilds an enforced linear constraint object from the model and its index."""
+        return EnforcedLinearConstraint(self.__helper, index)
 
     # Objective.
     def minimize(self, linear_expr: LinearExprT) -> None:
+        """Minimize the given objective."""
         self.__optimize(linear_expr, False)
 
     def maximize(self, linear_expr: LinearExprT) -> None:
+        """Maximize the given objective."""
         self.__optimize(linear_expr, True)
 
     def __optimize(self, linear_expr: LinearExprT, maximize: bool) -> None:
@@ -1134,12 +1483,11 @@ class ModelBuilder:
                 flat_expr._variable_indices, flat_expr._coefficients
             )
         else:
-            raise TypeError(
-                f"Not supported: ModelBuilder.minimize/maximize({linear_expr})"
-            )
+            raise TypeError(f"Not supported: Model.minimize/maximize({linear_expr})")
 
     @property
     def objective_offset(self) -> np.double:
+        """Returns the fixed offset of the objective."""
         return self.__helper.objective_offset()
 
     @objective_offset.setter
@@ -1147,6 +1495,7 @@ class ModelBuilder:
         self.__helper.set_objective_offset(value)
 
     def objective_expression(self) -> "_LinearExpression":
+        """Returns the expression to optimize."""
         return _as_flat_linear_expression(
             sum(
                 variable * self.__helper.var_objective_coefficient(variable.index)
@@ -1155,6 +1504,22 @@ class ModelBuilder:
             )
             + self.__helper.objective_offset()
         )
+
+    # Hints.
+    def clear_hints(self):
+        """Clear all solution hints."""
+        self.__helper.clear_hints()
+
+    def add_hint(self, var: Variable, value: NumberT) -> None:
+        """Add var == value as a hint to the model.
+
+        Args:
+          var: The variable of the hint
+          value: The value of the hint
+
+        Note that variables must not appear more than once in the list of hints.
+        """
+        self.__helper.add_hint(var.index, value)
 
     # Input/Output
     def export_to_lp_string(self, obfuscate: bool = False) -> str:
@@ -1183,9 +1548,21 @@ class ModelBuilder:
     def import_from_lp_file(self, lp_file: str) -> bool:
         return self.__helper.import_from_lp_file(lp_file)
 
-    # Utilities
+    # Model getters and Setters
+
+    @property
+    def num_variables(self) -> int:
+        """Returns the number of variables in the model."""
+        return self.__helper.num_variables()
+
+    @property
+    def num_constraints(self) -> int:
+        """The number of constraints in the model."""
+        return self.__helper.num_constraints()
+
     @property
     def name(self) -> str:
+        """The name of the model."""
         return self.__helper.name()
 
     @name.setter
@@ -1198,7 +1575,7 @@ class ModelBuilder:
         return self.__helper
 
 
-class ModelSolver:
+class Solver:
     """Main solver class.
 
     The purpose of this class is to search for a solution to the model provided
@@ -1230,7 +1607,7 @@ class ModelSolver:
         """Controls the solver backend logs."""
         self.__solve_helper.enable_output(enabled)
 
-    def solve(self, model: ModelBuilder) -> SolveStatus:
+    def solve(self, model: Model) -> SolveStatus:
         """Solves a problem and passes each solution to the callback if not null."""
         if self.log_callback is not None:
             self.__solve_helper.set_log_callback(self.log_callback)
@@ -1321,7 +1698,7 @@ class ModelSolver:
 
         Args:
           constraints (Union[pd.Index, pd.Series]): The set of constraints from
-          which to get the dual values.
+            which to get the dual values.
 
         Returns:
           pd.Series: The dual_values of all constraints in the set.
@@ -1587,3 +1964,36 @@ def _convert_to_series_and_validate_index(
     else:
         raise TypeError("invalid type={}".format(type(value_or_series)))
     return result
+
+
+def _convert_to_var_series_and_validate_index(
+    var_or_series: Union["Variable", pd.Series], index: pd.Index
+) -> pd.Series:
+    """Returns a pd.Series of the given index with the corresponding values.
+
+    Args:
+      var_or_series: the variables to be converted (if applicable).
+      index: the index of the resulting pd.Series.
+
+    Returns:
+      pd.Series: The set of values with the given index.
+
+    Raises:
+      TypeError: If the type of `value_or_series` is not recognized.
+      ValueError: If the index does not match.
+    """
+    if isinstance(var_or_series, Variable):
+        result = pd.Series(data=var_or_series, index=index)
+    elif isinstance(var_or_series, pd.Series):
+        if var_or_series.index.equals(index):
+            result = var_or_series
+        else:
+            raise ValueError("index does not match")
+    else:
+        raise TypeError("invalid type={}".format(type(var_or_series)))
+    return result
+
+
+# Compatibility.
+ModelBuilder = Model
+ModelSolver = Solver

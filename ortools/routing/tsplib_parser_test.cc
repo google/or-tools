@@ -25,10 +25,10 @@
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/memfile.h"
 #include "ortools/base/path.h"
+#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 
 #if defined(_MSC_VER)

@@ -19,9 +19,10 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/integral_types.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -61,6 +62,10 @@ class MirrorIntervalVar : public IntervalVar {
  public:
   MirrorIntervalVar(Solver* const s, IntervalVar* const t)
       : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
+
+  // This type is neither copyable nor movable.
+  MirrorIntervalVar(const MirrorIntervalVar&) = delete;
+  MirrorIntervalVar& operator=(const MirrorIntervalVar&) = delete;
   ~MirrorIntervalVar() override {}
 
   // These methods query, set and watch the start position of the
@@ -144,7 +149,6 @@ class MirrorIntervalVar : public IntervalVar {
 
  private:
   IntervalVar* const t_;
-  DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
 };
 
 // An IntervalVar that passes all function calls to an underlying interval
@@ -172,6 +176,12 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
         start_expr_(nullptr),
         duration_expr_(nullptr),
         end_expr_(nullptr) {}
+
+  // This type is neither copyable nor movable.
+  AlwaysPerformedIntervalVarWrapper(const AlwaysPerformedIntervalVarWrapper&) =
+      delete;
+  AlwaysPerformedIntervalVarWrapper& operator=(
+      const AlwaysPerformedIntervalVarWrapper&) = delete;
 
   ~AlwaysPerformedIntervalVarWrapper() override {}
   int64_t StartMin() const override {
@@ -285,7 +295,6 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
   IntExpr* start_expr_;
   IntExpr* duration_expr_;
   IntExpr* end_expr_;
-  DISALLOW_COPY_AND_ASSIGN(AlwaysPerformedIntervalVarWrapper);
 };
 
 // An interval variable that wraps around an underlying one, relaxing the max
@@ -2058,6 +2067,12 @@ class FixedDurationSyncedIntervalVar : public IntervalVar {
         t_(t),
         duration_(duration),
         offset_(offset) {}
+
+  // This type is neither copyable nor movable.
+  FixedDurationSyncedIntervalVar(const FixedDurationSyncedIntervalVar&) =
+      delete;
+  FixedDurationSyncedIntervalVar& operator=(
+      const FixedDurationSyncedIntervalVar&) = delete;
   ~FixedDurationSyncedIntervalVar() override {}
   int64_t DurationMin() const override { return duration_; }
   int64_t DurationMax() const override { return duration_; }
@@ -2107,9 +2122,6 @@ class FixedDurationSyncedIntervalVar : public IntervalVar {
   IntervalVar* const t_;
   const int64_t duration_;
   const int64_t offset_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(FixedDurationSyncedIntervalVar);
 };
 
 // ----- Fixed duration interval var synced on start -----
@@ -2286,7 +2298,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
 
 void Solver::MakeFixedDurationIntervalVarArray(
     int count, int64_t start_min, int64_t start_max, int64_t duration,
-    bool optional, const std::string& name, std::vector<IntervalVar*>* array) {
+    bool optional, absl::string_view name, std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);
   array->clear();
@@ -2331,7 +2343,7 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables, int64_t duration,
-    const std::string& name, std::vector<IntervalVar*>* array) {
+    absl::string_view name, std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
@@ -2345,7 +2357,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 // the corresponding start variables.
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int64_t>& durations, const std::string& name,
+    absl::Span<const int64_t> durations, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
@@ -2359,7 +2371,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int>& durations, const std::string& name,
+    absl::Span<const int> durations, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   CHECK_EQ(start_variables.size(), durations.size());
@@ -2373,8 +2385,8 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int>& durations,
-    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    absl::Span<const int> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
@@ -2387,8 +2399,8 @@ void Solver::MakeFixedDurationIntervalVarArray(
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
-    const std::vector<int64_t>& durations,
-    const std::vector<IntVar*>& performed_variables, const std::string& name,
+    absl::Span<const int64_t> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
     std::vector<IntervalVar*>* array) {
   CHECK(array != nullptr);
   array->clear();
@@ -2414,7 +2426,7 @@ void Solver::MakeIntervalVarArray(int count, int64_t start_min,
                                   int64_t start_max, int64_t duration_min,
                                   int64_t duration_max, int64_t end_min,
                                   int64_t end_max, bool optional,
-                                  const std::string& name,
+                                  absl::string_view name,
                                   std::vector<IntervalVar*>* const array) {
   CHECK_GT(count, 0);
   CHECK(array != nullptr);

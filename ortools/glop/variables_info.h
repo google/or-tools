@@ -57,6 +57,10 @@ class VariablesInfo {
   // Takes references to the linear program data we need.
   explicit VariablesInfo(const CompactSparseMatrix& matrix);
 
+  // This type is neither copyable nor movable.
+  VariablesInfo(const VariablesInfo&) = delete;
+  VariablesInfo& operator=(const VariablesInfo&) = delete;
+
   // Updates the internal bounds and recomputes the variable types from the
   // bounds (this is the only function that changes them).
   //
@@ -166,9 +170,9 @@ class VariablesInfo {
   // TODO(user): Shall we re-add the bound when the variable is moved out of
   // the base? it is not needed, but might allow for more bound flips?
   void TransformToDualPhaseIProblem(Fractional dual_feasibility_tolerance,
-                                    const DenseRow& reduced_costs);
+                                    DenseRow::ConstView reduced_costs);
   void EndDualPhaseI(Fractional dual_feasibility_tolerance,
-                     const DenseRow& reduced_costs);
+                     DenseRow::ConstView reduced_costs);
 
  private:
   // Computes the initial/default variable status from its type. A constrained
@@ -236,8 +240,6 @@ class VariablesInfo {
   // Whether we are between the calls TransformToDualPhaseIProblem() and
   // EndDualPhaseI().
   bool in_dual_phase_one_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(VariablesInfo);
 };
 
 }  // namespace glop

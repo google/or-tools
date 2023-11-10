@@ -15,10 +15,9 @@
 #define OR_TOOLS_BASE_HASH_H_
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <utility>
-
-#include "ortools/base/integral_types.h"
 
 // In SWIG mode, we don't want anything besides these top-level includes.
 #if !defined(SWIG)

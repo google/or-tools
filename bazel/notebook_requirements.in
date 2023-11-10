@@ -1,20 +1,25 @@
 # OR-Tools code dependencies
-absl-py==1.4.0
-numpy==1.24.3
-protobuf==4.23.3
-scipy==1.10.0
+absl-py==2.0.0
+numpy==1.26.1
+protobuf==4.25.0
+scipy==1.11.3
 
 # OR-Tools build dependencies
-mypy-protobuf==3.4.0
-virtualenv==20.16.6
-black==23.3.0
+mypy==1.6.1
+mypy-protobuf==3.5.0
+virtualenv==20.24.6
+black==23.10.1
 
 # Example dependencies
-pandas==1.5.3
+pandas==2.1.2
 
 # Visualization dependencies
 svgwrite==1.4.3
-plotly==5.13.0
+plotly==5.15.0
 
 # Notebook
-notebook==6.5.4
+jupyter==1.0.0
+tornado==6.3.3
+Pygments==2.15.0
+jupyter-server==2.7.2
+jsonschema==4.19.0

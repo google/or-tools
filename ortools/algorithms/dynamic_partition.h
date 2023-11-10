@@ -34,8 +34,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -289,9 +289,11 @@ class SimpleDynamicPartition {
 
   void Refine(absl::Span<const int> distinguished_subset);
 
-  // This is meant to be called once after a bunch of Refine().
-  // The returned Span<> points into the given buffer which is re-initialized.
-  std::vector<absl::Span<const int>> GetParts(std::vector<int>* buffer);
+  // This is meant to be called once after a bunch of Refine(). The returned
+  // Span<> points into the given buffer which is re-initialized. To handle
+  // strongly typed int, we actually call T(int) as we fill the buffer.
+  template <typename T>
+  std::vector<absl::Span<const T>> GetParts(std::vector<T>* buffer);
 
  private:
   std::vector<int> part_of_;
@@ -374,6 +376,35 @@ inline void MergingPartition::ResetNode(int node) {
   part_size_[node] = 1;
 }
 
+template <typename T>
+inline std::vector<absl::Span<const T>> SimpleDynamicPartition::GetParts(
+    std::vector<T>* buffer) {
+  const int num_elements = part_of_.size();
+  const int num_parts = size_of_part_.size();
+  buffer->resize(num_elements);
+
+  std::vector<absl::Span<const T>> result(num_parts);
+  if (result.empty()) return result;
+
+  // Compute start of each part in buffer.
+  std::vector<int>& starts = temp_data_by_part_;
+  starts.resize(num_parts, 0);
+  for (int i = 1; i < num_parts; ++i) {
+    starts[i] = starts[i - 1] + size_of_part_[i - 1];
+  }
+
+  // Fill result.
+  for (int i = 0; i < num_parts; ++i) {
+    result[i] = absl::MakeSpan(&(*buffer)[starts[i]], size_of_part_[i]);
+  }
+
+  // Copy elements in order and at their place.
+  for (int element = 0; element < num_elements; ++element) {
+    (*buffer)[starts[part_of_[element]]++] = T(element);
+  }
+  starts.clear();
+  return result;
+}
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_

@@ -176,9 +176,8 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 
@@ -579,6 +578,11 @@ class ForwardStaticGraph
         : ArrayIndexCycleHandler<NodeIndexType, ArcIndexType>(&data[kFirstArc]),
           annotation_handler_(annotation_handler) {}
 
+    // This type is neither copyable nor movable.
+    CycleHandlerForAnnotatedArcs(const CycleHandlerForAnnotatedArcs&) = delete;
+    CycleHandlerForAnnotatedArcs& operator=(
+        const CycleHandlerForAnnotatedArcs&) = delete;
+
     void SetTempFromIndex(ArcIndexType source) override {
       Base::SetTempFromIndex(source);
       annotation_handler_->SetTempFromIndex(source);
@@ -597,8 +601,6 @@ class ForwardStaticGraph
 
    private:
     PermutationCycleHandler<ArcIndexType>* annotation_handler_;
-
-    DISALLOW_COPY_AND_ASSIGN(CycleHandlerForAnnotatedArcs);
   };
 #endif  // SWIG
 
@@ -1056,6 +1058,11 @@ class EbertGraphBase
           head_temp_(kNilNode),
           tail_temp_(kNilNode) {}
 
+    // This type is neither copyable nor movable.
+    CycleHandlerForAnnotatedArcs(const CycleHandlerForAnnotatedArcs&) = delete;
+    CycleHandlerForAnnotatedArcs& operator=(
+        const CycleHandlerForAnnotatedArcs&) = delete;
+
     void SetTempFromIndex(ArcIndexType source) override {
       if (annotation_handler_ != nullptr) {
         annotation_handler_->SetTempFromIndex(source);
@@ -1100,8 +1107,6 @@ class EbertGraphBase
     DerivedGraph* graph_;
     NodeIndexType head_temp_;
     NodeIndexType tail_temp_;
-
-    DISALLOW_COPY_AND_ASSIGN(CycleHandlerForAnnotatedArcs);
   };
 #endif  // SWIG
 

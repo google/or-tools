@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
@@ -43,7 +44,7 @@ namespace sat {
 void CheckAndPrint2DSolution(
     const CpSolverResponse& response,
     const packing::MultipleDimensionsBinPackingProblem& problem,
-    const std::vector<std::vector<IntervalVar>>& interval_by_item_dimension,
+    absl::Span<const std::vector<IntervalVar>> interval_by_item_dimension,
     std::string* solution_in_ascii_form) {
   const int num_items = problem.items_size();
 

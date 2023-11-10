@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
+#include <cstdint>
 #include <iterator>
 #include <ostream>
 #include <set>
@@ -23,8 +24,8 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 

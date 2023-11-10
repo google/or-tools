@@ -21,11 +21,11 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <set>
 #include <string>
 #include <tuple>
@@ -35,17 +35,13 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/mathutil.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_utils.h"
-#include "ortools/util/bitset.h"
 
 namespace operations_research {
 
@@ -182,7 +178,7 @@ class IntVarFilteredHeuristic {
 
   /// Builds a solution. Returns the resulting assignment if a solution was
   /// found, and nullptr otherwise.
-  Assignment* const BuildSolution();
+  Assignment* BuildSolution();
 
   /// Returns statistics on search, number of decisions sent to filters, number
   /// of decisions rejected by filters.
@@ -336,36 +332,65 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
     }
   };
   struct StartEndValue {
-    int64_t num_allowed_vehicles;
     int64_t distance;
     int vehicle;
 
     bool operator<(const StartEndValue& other) const {
-      return std::tie(num_allowed_vehicles, distance, vehicle) <
-             std::tie(other.num_allowed_vehicles, other.distance,
-                      other.vehicle);
+      return std::tie(distance, vehicle) <
+             std::tie(other.distance, other.vehicle);
     }
   };
-  typedef std::pair<StartEndValue, /*seed_node*/ int> Seed;
+  struct Seed {
+    uint64_t num_allowed_vehicles;
+    int64_t neg_penalty;
+    StartEndValue start_end_value;
+    /// Indicates whether this Seed corresponds to a pair or a single node.
+    /// If false, the 'index' is the pair_index, otherwise it's the node index.
+    bool is_node_index = true;
+    int index;
+
+    bool operator>(const Seed& other) const {
+      return std::tie(num_allowed_vehicles, neg_penalty, start_end_value,
+                      is_node_index, index) >
+             std::tie(other.num_allowed_vehicles, other.neg_penalty,
+                      other.start_end_value, other.is_node_index, other.index);
+    }
+  };
+  // clang-format off
+  struct SeedQueue {
+    explicit SeedQueue(bool prioritize_farthest_nodes) :
+      prioritize_farthest_nodes(prioritize_farthest_nodes) {}
+
+    /// By default, the priority is given (hierarchically) to nodes with lower
+    /// number of allowed vehicles, higher penalty and lower start/end distance.
+    std::priority_queue<Seed, std::vector<Seed>, std::greater<Seed> >
+        priority_queue;
+    /// When 'prioritize_farthest_nodes' is true, the start/end distance is
+    /// inverted so higher priority is given to farther nodes.
+    const bool prioritize_farthest_nodes;
+  };
 
   /// Computes and returns the distance of each uninserted node to every vehicle
-  /// in "vehicles" as a std::vector<std::vector<StartEndValue>>,
+  /// in 'vehicles' as a std::vector<std::vector<StartEndValue>>,
   /// start_end_distances_per_node.
   /// For each node, start_end_distances_per_node[node] is sorted in decreasing
   /// order.
-  // clang-format off
   std::vector<std::vector<StartEndValue> >
       ComputeStartEndDistanceForVehicles(const std::vector<int>& vehicles);
 
-  /// Initializes the priority_queue by inserting the best entry corresponding
+  /// Initializes sq->priority_queue by inserting the best entry corresponding
   /// to each node, i.e. the last element of start_end_distances_per_node[node],
   /// which is supposed to be sorted in decreasing order.
-  /// Queue is a priority queue containing Seeds.
-  template <class Queue>
-  void InitializePriorityQueue(
+  void InitializeSeedQueue(
       std::vector<std::vector<StartEndValue> >* start_end_distances_per_node,
-      Queue* priority_queue);
+      SeedQueue* sq);
   // clang-format on
+
+  /// Adds a Seed corresponding to the given 'node' to sq.priority_queue, based
+  /// on the last entry in its 'start_end_distances' (from which it's deleted).
+  void AddSeedNodeToQueue(int node,
+                          std::vector<StartEndValue>* start_end_distances,
+                          SeedQueue* sq);
 
   /// Inserts 'node' just after 'predecessor', and just before 'successor' on
   /// the route of 'vehicle', resulting in the following subsequence:
@@ -631,10 +656,9 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// used to insert a new entry for that node if necessary (next best vehicle).
   /// If a seed node is successfully inserted, updates is_vehicle_used and
   /// returns the vehice of the corresponding route. Returns -1 otherwise.
-  template <class Queue>
   int InsertSeedNode(
       std::vector<std::vector<StartEndValue>>* start_end_distances_per_node,
-      Queue* priority_queue, std::vector<bool>* is_vehicle_used);
+      SeedQueue* sq, std::vector<bool>* is_vehicle_used);
   // clang-format on
 
   /// Initializes the priority queue and the pair entries for the given pair
@@ -797,13 +821,13 @@ class GlobalCheapestInsertionFilteredHeuristic
   }
 
   /// Returns the bucket of a pair of pickup and delivery alternates.
-  int64_t GetBucketOfPair(const RoutingModel::IndexPair& index_pair) const {
+  int64_t GetBucketOfPair(const PickupDeliveryPair& pair) const {
     int64_t max_pickup_bucket = 0;
-    for (int64_t pickup : index_pair.first) {
+    for (int64_t pickup : pair.pickup_alternatives) {
       max_pickup_bucket = std::max(max_pickup_bucket, GetBucketOfNode(pickup));
     }
     int64_t max_delivery_bucket = 0;
-    for (int64_t delivery : index_pair.second) {
+    for (int64_t delivery : pair.delivery_alternatives) {
       max_delivery_bucket =
           std::max(max_delivery_bucket, GetBucketOfNode(delivery));
     }
@@ -938,7 +962,7 @@ class InsertionSequenceContainer {
 
   // Adds an insertion sequence to the container.
   void AddInsertionSequence(int vehicle,
-                            const std::vector<Insertion>& insertion_sequence) {
+                            absl::Span<const Insertion> insertion_sequence) {
     insertion_bounds_.push_back(
         {.begin = insertions_.size(),
          .end = insertions_.size() + insertion_sequence.size(),
@@ -1002,8 +1026,8 @@ class InsertionSequenceGenerator {
   ///   path that conserve order are equivalent.
   void AppendPickupDeliveryMultitourInsertions(
       int pickup, int delivery, int vehicle, const std::vector<int>& path,
-      const std::vector<bool>& node_is_pickup,
-      const std::vector<bool>& node_is_delivery,
+      const std::vector<bool>& path_node_is_pickup,
+      const std::vector<bool>& path_node_is_delivery,
       InsertionSequenceContainer& insertions);
 
  private:
@@ -1053,6 +1077,10 @@ class LocalCheapestInsertionFilteredHeuristic
   void Initialize() override;
 
  private:
+  /// Computes the order of insertion of the node/pairs in the model based on
+  /// the "Seed" values (number of allowed vehicles, penalty, distance from
+  /// vehicle start/ends), and stores them in insertion_order_.
+  void ComputeInsertionOrder();
   /// Computes the possible insertion positions of 'node' and sorts them
   /// according to the current cost evaluator.
   /// 'node' is a variable index corresponding to a node.
@@ -1072,30 +1100,23 @@ class LocalCheapestInsertionFilteredHeuristic
 
   // Tries to insert any alternative of the given pair,
   // ordered by cost of pickup insertion, then by cost of delivery insertion.
-  void InsertBestPickupThenDelivery(const RoutingModel::IndexPair& index_pair);
+  void InsertBestPickupThenDelivery(const PickupDeliveryPair& pair);
   // Tries to insert any alternative of the given pair,
   // ordered by the sum of pickup and delivery insertion.
-  void InsertBestPair(const RoutingModel::IndexPair& index_pair);
+  void InsertBestPair(const PickupDeliveryPair& pair);
   // Tries to insert any alternative of the given pair,
   // at a position that preserves the multitour property,
   // ordered by the sum of pickup and delivery insertion.
-  void InsertBestPairMultitour(const RoutingModel::IndexPair& index_pair,
-                               const std::vector<bool>& node_is_pickup,
-                               const std::vector<bool>& node_is_delivery);
+  void InsertBestPairMultitour(const PickupDeliveryPair& pair);
   // Tries to insert a pair at the given location. Returns true iff inserted.
   bool InsertPair(int64_t pickup, int64_t insert_pickup_after, int64_t delivery,
                   int64_t insert_delivery_after, int vehicle);
-  // Sets all nodes of pair alternatives as visited.
-  void SetIndexPairVisited(const RoutingModel::IndexPair& index_pair);
 
-  bool update_start_end_distances_per_node_;
-  std::vector<std::vector<StartEndValue>> start_end_distances_per_node_;
+  std::vector<Seed> insertion_order_;
   const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
 
-  // Marks whether a node has already been tried for insertion.
-  std::vector<bool> visited_;
   BinCapacities* const bin_capacities_;
 };
 
@@ -1388,6 +1409,11 @@ class SweepArranger {
  public:
   explicit SweepArranger(
       const std::vector<std::pair<int64_t, int64_t>>& points);
+
+  // This type is neither copyable nor movable.
+  SweepArranger(const SweepArranger&) = delete;
+  SweepArranger& operator=(const SweepArranger&) = delete;
+
   virtual ~SweepArranger() {}
   void ArrangeIndices(std::vector<int64_t>* indices);
   void SetSectors(int sectors) { sectors_ = sectors; }
@@ -1395,8 +1421,6 @@ class SweepArranger {
  private:
   std::vector<int> coordinates_;
   int sectors_;
-
-  DISALLOW_COPY_AND_ASSIGN(SweepArranger);
 };
 #endif  // SWIG
 

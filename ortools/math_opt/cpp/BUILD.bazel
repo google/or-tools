@@ -277,12 +277,8 @@ cc_library(
 
 cc_library(
     name = "message_callback",
-    srcs = [
-        "message_callback.cc",
-    ],
-    hdrs = [
-        "message_callback.h",
-    ],
+    srcs = ["message_callback.cc"],
+    hdrs = ["message_callback.h"],
     deps = [
         "//ortools/base",
         "//ortools/base:source_location",
@@ -295,12 +291,7 @@ cc_library(
 
 cc_library(
     name = "solver_init_arguments",
-    srcs = [
-        "solver_init_arguments.cc",
-    ],
-    hdrs = [
-        "solver_init_arguments.h",
-    ],
+    hdrs = ["solver_init_arguments.h"],
     deps = [
         ":streamable_solver_init_arguments",
         "//ortools/math_opt/core:non_streamable_solver_init_arguments",
@@ -310,9 +301,7 @@ cc_library(
 cc_library(
     name = "solve_arguments",
     srcs = ["solve_arguments.cc"],
-    hdrs = [
-        "solve_arguments.h",
-    ],
+    hdrs = ["solve_arguments.h"],
     deps = [
         ":callback",
         ":message_callback",
@@ -332,9 +321,9 @@ cc_library(
     hdrs = ["solve.h"],
     deps = [
         ":callback",
+        ":compute_infeasible_subsystem_arguments",
+        ":compute_infeasible_subsystem_result",
         ":enums",
-        ":infeasible_subsystem_arguments",
-        ":infeasible_subsystem_result",
         ":model",
         ":model_solve_parameters",
         ":parameters",
@@ -445,9 +434,9 @@ cc_library(
 )
 
 cc_library(
-    name = "infeasible_subsystem_result",
-    srcs = ["infeasible_subsystem_result.cc"],
-    hdrs = ["infeasible_subsystem_result.h"],
+    name = "compute_infeasible_subsystem_result",
+    srcs = ["compute_infeasible_subsystem_result.cc"],
+    hdrs = ["compute_infeasible_subsystem_result.h"],
     deps = [
         ":enums",
         ":key_types",
@@ -462,6 +451,7 @@ cc_library(
         "//ortools/math_opt/constraints/second_order_cone:second_order_cone_constraint",
         "//ortools/math_opt/constraints/sos:sos1_constraint",
         "//ortools/math_opt/constraints/sos:sos2_constraint",
+        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/validators:infeasible_subsystem_validator",
         "//ortools/util:status_macros",
@@ -476,8 +466,8 @@ cc_library(
 )
 
 cc_library(
-    name = "infeasible_subsystem_arguments",
-    hdrs = ["infeasible_subsystem_arguments.h"],
+    name = "compute_infeasible_subsystem_arguments",
+    hdrs = ["compute_infeasible_subsystem_arguments.h"],
     deps = [
         ":message_callback",
         ":parameters",

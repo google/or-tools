@@ -32,6 +32,10 @@ class LPSolver {
  public:
   LPSolver();
 
+  // This type is neither copyable nor movable.
+  LPSolver(const LPSolver&) = delete;
+  LPSolver& operator=(const LPSolver&) = delete;
+
   // Sets and gets the solver parameters.
   // See the proto for an extensive documentation.
   void SetParameters(const GlopParameters& parameters);
@@ -299,8 +303,6 @@ class LPSolver {
 
   // The number of times Solve() was called. Used to number dump files.
   int num_solves_;
-
-  DISALLOW_COPY_AND_ASSIGN(LPSolver);
 };
 
 }  // namespace glop

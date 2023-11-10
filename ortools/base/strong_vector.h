@@ -14,9 +14,9 @@
 // This file provides the StrongVector container that wraps around the STL
 // std::vector.
 // The wrapper restricts indexing to a pre-specified type-safe integer type or
-// IntType (see int_type.h).  It prevents accidental indexing
-// by different "logical" integer-like types (e.g.  another IntType) or native
-// integer types.  The wrapper is useful as C++ and the standard template
+// IntType (see int_type.h). It prevents accidental indexing
+// by different "logical" integer-like types (e.g. another IntType) or native
+// integer types. The wrapper is useful as C++ and the standard template
 // library allows the user to mix "logical" integral indices that might have a
 // different role.
 //
@@ -30,7 +30,7 @@
 // uint64_t (see int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
-// pass-through.  The only method modified to ensure type-safety is the operator
+// pass-through. The only method modified to ensure type-safety is the operator
 // [] and the at() method.
 //
 // EXAMPLES --------------------------------------------------------------------
@@ -52,7 +52,7 @@
 //    vec.at(logical_index) = ...;     <-- fails to compile.
 //
 // NB: Iterator arithmetic is not allowed as the iterators are not wrapped
-// themselves.  Therefore, the following caveat is possible:
+// themselves. Therefore, the following caveat is possible:
 //    *(vec.begin() + 0) = ...;
 
 #ifndef OR_TOOLS_BASE_STRONG_VECTOR_H_
@@ -96,6 +96,8 @@ class StrongVector {
 
   explicit StrongVector(const allocator_type& a) : v_(a) {}
   explicit StrongVector(size_type n) : v_(n) {}
+  explicit StrongVector(IntType n)
+      : StrongVector(static_cast<size_type>(n.value())) {}
 
   StrongVector(size_type n, const value_type& v,
                const allocator_type& a = allocator_type())
@@ -114,9 +116,9 @@ class StrongVector {
   // This const accessor is useful in defining the comparison operators below.
   const ParentType& get() const { return v_; }
   // The mutable accessor is useful when using auxiliar methods relying on
-  // vector parameters such as JoinUsing(), SplitStringUsing(), etc.  Methods
+  // vector parameters such as JoinUsing(), SplitStringUsing(), etc. Methods
   // relying solely on iterators (e.g. STLDeleteElements) should work just fine
-  // without the need for mutable_get().  NB: It should be used only in this
+  // without the need for mutable_get(). NB: It should be used only in this
   // case and thus should not be abused to index the underlying vector without
   // the appropriate IntType.
   ParentType* mutable_get() { return &v_; }
@@ -159,6 +161,7 @@ class StrongVector {
   size_type capacity() const { return v_.capacity(); }
   bool empty() const { return v_.empty(); }
   void reserve(size_type n) { v_.reserve(n); }
+  void reserve(IntType n) { reserve(static_cast<size_type>(n.value())); }
   void push_back(const value_type& x) { v_.push_back(x); }
   void push_back(value_type&& x) { v_.push_back(std::move(x)); }  // NOLINT
   template <typename... Args>

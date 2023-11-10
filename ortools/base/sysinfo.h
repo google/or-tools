@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_SYSINFO_H_
 #define OR_TOOLS_BASE_SYSINFO_H_
 
-#include "ortools/base/integral_types.h"
+#include <cstdint>
 
 namespace operations_research {
 // Returns the memory usage of the process.

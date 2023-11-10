@@ -68,7 +68,6 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
@@ -104,6 +103,11 @@ class PathContainerImpl;
 class PathContainer {
  public:
   PathContainer();
+
+  // This type is neither copyable nor movable.
+  PathContainer(const PathContainer&) = delete;
+  PathContainer& operator=(const PathContainer&) = delete;
+
   ~PathContainer();
 
   // Returns the distance between node 'from' and node 'to' following the path
@@ -153,8 +157,6 @@ class PathContainer {
 
  private:
   std::unique_ptr<PathContainerImpl> container_;
-
-  DISALLOW_COPY_AND_ASSIGN(PathContainer);
 };
 
 // Utility function which returns a vector containing all nodes of a graph.

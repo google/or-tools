@@ -21,9 +21,8 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -58,6 +57,10 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
                     const std::vector<int>& heads,
                     const std::vector<Literal>& literals, Options options,
                     Model* model);
+
+  // This type is neither copyable nor movable.
+  CircuitPropagator(const CircuitPropagator&) = delete;
+  CircuitPropagator& operator=(const CircuitPropagator&) = delete;
 
   void SetLevel(int level) final;
   bool Propagate() final;
@@ -113,8 +116,6 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // Temporary vectors.
   std::vector<bool> processed_;
   std::vector<bool> in_current_path_;
-
-  DISALLOW_COPY_AND_ASSIGN(CircuitPropagator);
 };
 
 // Enforce the fact that there is no cycle in the given directed graph.

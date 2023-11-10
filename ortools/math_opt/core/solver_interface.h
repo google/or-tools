@@ -36,14 +36,6 @@
 
 namespace operations_research {
 namespace math_opt {
-namespace internal {
-
-// The message of the InvalidArgumentError returned by solvers that are passed a
-// non null message callback when they don't support it.
-inline constexpr absl::string_view kMessageCallbackNotSupported =
-    "This solver does not support message callbacks.";
-
-}  // namespace internal
 
 // Interface implemented by actual solvers.
 //
@@ -113,9 +105,12 @@ class SolverInterface {
   // Parameters `message_cb`, `cb` and `interrupter` are optional. They are
   // nullptr when not set.
   //
+  // When parameter `message_cb` is not null the value of
+  // parameters.enable_output should be ignored the solver should behave as it
+  // is was false (i.e. not print anything).
+  //
   // When parameter `message_cb` is not null and the underlying solver does not
-  // supports message callbacks, it must return an InvalidArgumentError with the
-  // message internal::kMessageCallbackNotSupported.
+  // supports message callbacks, it should ignore it.
   //
   // Solvers should return a InvalidArgumentError when called with events on
   // callback_registration that are not supported by the solver for the type of
@@ -147,12 +142,16 @@ class SolverInterface {
   // The parameters `message_cb` and `interrupter` are optional. They are
   // nullptr when not set.
   //
+  // When parameter `message_cb` is not null the value of
+  // parameters.enable_output should be ignored the solver should behave as it
+  // is was false (i.e. not print anything).
+  //
   // When parameter `message_cb` is not null and the underlying solver does not
-  // supports message callbacks, it must return an InvalidArgumentError with the
-  // message internal::kMessageCallbackNotSupported.
-  virtual absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
-      const SolveParametersProto& parameters, MessageCallback message_cb,
-      SolveInterrupter* interrupter) = 0;
+  // supports message callbacks, it should ignore it.
+  virtual absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                             MessageCallback message_cb,
+                             SolveInterrupter* interrupter) = 0;
 };
 
 class AllSolversRegistry {

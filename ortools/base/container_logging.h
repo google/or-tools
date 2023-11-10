@@ -34,6 +34,7 @@
 #ifndef OR_TOOLS_BASE_CONTAINER_LOGGING_H_
 #define OR_TOOLS_BASE_CONTAINER_LOGGING_H_
 
+#include <cstdint>
 #include <limits>
 #include <ostream>
 #include <sstream>
@@ -41,7 +42,6 @@
 #include <type_traits>
 
 #include "absl/base/port.h"
-#include "ortools/base/integral_types.h"
 
 namespace gtl {
 

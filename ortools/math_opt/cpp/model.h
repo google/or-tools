@@ -41,9 +41,9 @@
 #include "ortools/math_opt/cpp/objective.h"          // IWYU pragma: export
 #include "ortools/math_opt/cpp/update_tracker.h"     // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"  // IWYU pragma: export
-#include "ortools/math_opt/model.pb.h"         // IWYU pragma: export
-#include "ortools/math_opt/model_update.pb.h"  // IWYU pragma: export
-#include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/model.pb.h"               // IWYU pragma: export
+#include "ortools/math_opt/model_update.pb.h"        // IWYU pragma: export
+#include "ortools/math_opt/storage/model_storage.h"  // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage_types.h"  // IWYU pragma: export
 
 namespace operations_research {
@@ -849,7 +849,7 @@ class Model {
   // Returns a proto representation of the optimization model.
   //
   // See FromModelProto() to build a Model from a proto.
-  ModelProto ExportModel() const;
+  ModelProto ExportModel(bool remove_names = false) const;
 
   // Returns a tracker that can be used to generate a ModelUpdateProto with the
   // updates that happened since the last checkpoint. The tracker initial

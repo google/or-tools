@@ -211,7 +211,6 @@ def create_section_data():
           'ortools/constraint_solver/constraint_solver.h ' +
           'ortools/constraint_solver/constraint_solveri.h ' +
           'ortools/constraint_solver/routing.h ' +
-          'ortools/constraint_solver/routing_flags.h ' +
           'ortools/constraint_solver/routing_index_manager.h ' +
           'ortools/constraint_solver/routing_lp_scheduling.h ' +
           'ortools/constraint_solver/routing_neighborhoods.h ' +

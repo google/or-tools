@@ -63,7 +63,6 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/macros.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
@@ -79,6 +78,10 @@ class SparseMatrix;
 class SparseMatrixScaler {
  public:
   SparseMatrixScaler();
+
+  // This type is neither copyable nor movable.
+  SparseMatrixScaler(const SparseMatrixScaler&) = delete;
+  SparseMatrixScaler& operator=(const SparseMatrixScaler&) = delete;
 
   // Initializes the object with the SparseMatrix passed as argument.
   // The row and column scaling factors are all set to 1.0 (i.e. no scaling.)
@@ -184,8 +187,6 @@ class SparseMatrixScaler {
 
   // Array of scaling factors for each column. Indexed by column number.
   DenseRow col_scale_;
-
-  DISALLOW_COPY_AND_ASSIGN(SparseMatrixScaler);
 };
 
 }  // namespace glop

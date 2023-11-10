@@ -19,15 +19,12 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_propagation.h"
@@ -36,7 +33,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -105,13 +101,32 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // needed just before pushing something.
   void FillIntegerReason();
 
-  const std::vector<Literal> enforcement_literals_;
   const IntegerValue upper_bound_;
 
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  TimeLimit* time_limit_;
-  RevIntegerValueRepository* rev_integer_value_repository_;
+  // To gain a bit on memory (since we might have many linear constraint),
+  // we share this amongst all of them. Note that this is not accessed by
+  // two different thread though. Also the vector are only used as "temporary"
+  // so they are okay to be shared.
+  struct Shared {
+    explicit Shared(Model* model)
+        : assignment(model->GetOrCreate<Trail>()->Assignment()),
+          integer_trail(model->GetOrCreate<IntegerTrail>()),
+          time_limit(model->GetOrCreate<TimeLimit>()),
+          rev_int_repository(model->GetOrCreate<RevIntRepository>()),
+          rev_integer_value_repository(
+              model->GetOrCreate<RevIntegerValueRepository>()) {}
+
+    const VariablesAssignment& assignment;
+    IntegerTrail* integer_trail;
+    TimeLimit* time_limit;
+    RevIntRepository* rev_int_repository;
+    RevIntegerValueRepository* rev_integer_value_repository;
+
+    // Parallel vectors.
+    std::vector<IntegerLiteral> integer_reason;
+    std::vector<IntegerValue> reason_coeffs;
+  };
+  Shared* shared_;
 
   // Reversible sum of the lower bound of the fixed variables.
   bool is_registered_ = false;
@@ -123,15 +138,13 @@ class LinearConstraintPropagator : public PropagatorInterface {
   // Those vectors are shuffled during search to ensure that the variables
   // (resp. coefficients) contained in the range [0, rev_num_fixed_vars_) of
   // vars_ (resp. coeffs_) are fixed (resp. belong to fixed variables).
-  std::vector<IntegerVariable> vars_;
-  std::vector<IntegerValue> coeffs_;
-  std::vector<IntegerValue> max_variations_;
+  const int size_;
+  const std::unique_ptr<IntegerVariable[]> vars_;
+  const std::unique_ptr<IntegerValue[]> coeffs_;
+  const std::unique_ptr<IntegerValue[]> max_variations_;
 
+  // This is just the negation of the enforcement literal and it never changes.
   std::vector<Literal> literal_reason_;
-
-  // Parallel vectors.
-  std::vector<IntegerLiteral> integer_reason_;
-  std::vector<IntegerValue> reason_coeffs_;
 };
 
 using IntegerSumLE = LinearConstraintPropagator<false>;
@@ -193,6 +206,10 @@ class MinPropagator : public PropagatorInterface {
   MinPropagator(const std::vector<IntegerVariable>& vars,
                 IntegerVariable min_var, IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  MinPropagator(const MinPropagator&) = delete;
+  MinPropagator& operator=(const MinPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -202,8 +219,6 @@ class MinPropagator : public PropagatorInterface {
   IntegerTrail* integer_trail_;
 
   std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(MinPropagator);
 };
 
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
@@ -248,6 +263,10 @@ class ProductPropagator : public PropagatorInterface {
   ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
                     IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  ProductPropagator(const ProductPropagator&) = delete;
+  ProductPropagator& operator=(const ProductPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -270,8 +289,6 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression p_;
 
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(ProductPropagator);
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -283,13 +300,18 @@ class DivisionPropagator : public PropagatorInterface {
   DivisionPropagator(AffineExpression num, AffineExpression denom,
                      AffineExpression div, IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  DivisionPropagator(const DivisionPropagator&) = delete;
+  DivisionPropagator& operator=(const DivisionPropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   // Propagates the fact that the signs of each domain, if fixed, are
   // compatible.
-  bool PropagateSigns();
+  bool PropagateSigns(AffineExpression num, AffineExpression denom,
+                      AffineExpression div);
 
   // If both num and div >= 0, we can propagate their upper bounds.
   bool PropagateUpperBounds(AffineExpression num, AffineExpression denom,
@@ -305,11 +327,10 @@ class DivisionPropagator : public PropagatorInterface {
   const AffineExpression num_;
   const AffineExpression denom_;
   const AffineExpression div_;
+  const AffineExpression negated_denom_;
   const AffineExpression negated_num_;
   const AffineExpression negated_div_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
@@ -318,6 +339,10 @@ class FixedDivisionPropagator : public PropagatorInterface {
  public:
   FixedDivisionPropagator(AffineExpression a, IntegerValue b,
                           AffineExpression c, IntegerTrail* integer_trail);
+
+  // This type is neither copyable nor movable.
+  FixedDivisionPropagator(const FixedDivisionPropagator&) = delete;
+  FixedDivisionPropagator& operator=(const FixedDivisionPropagator&) = delete;
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -328,8 +353,6 @@ class FixedDivisionPropagator : public PropagatorInterface {
   const AffineExpression c_;
 
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
 };
 
 // Propagates target == expr % mod. Basic version, we don't extract any special
@@ -338,6 +361,10 @@ class FixedModuloPropagator : public PropagatorInterface {
  public:
   FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
                         AffineExpression target, IntegerTrail* integer_trail);
+
+  // This type is neither copyable nor movable.
+  FixedModuloPropagator(const FixedModuloPropagator&) = delete;
+  FixedModuloPropagator& operator=(const FixedModuloPropagator&) = delete;
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -354,8 +381,6 @@ class FixedModuloPropagator : public PropagatorInterface {
   const AffineExpression negated_expr_;
   const AffineExpression negated_target_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(FixedModuloPropagator);
 };
 
 // Propagates x * x = s.
@@ -365,6 +390,10 @@ class SquarePropagator : public PropagatorInterface {
   SquarePropagator(AffineExpression x, AffineExpression s,
                    IntegerTrail* integer_trail);
 
+  // This type is neither copyable nor movable.
+  SquarePropagator(const SquarePropagator&) = delete;
+  SquarePropagator& operator=(const SquarePropagator&) = delete;
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -372,8 +401,6 @@ class SquarePropagator : public PropagatorInterface {
   const AffineExpression x_;
   const AffineExpression s_;
   IntegerTrail* integer_trail_;
-
-  DISALLOW_COPY_AND_ASSIGN(SquarePropagator);
 };
 
 // =============================================================================

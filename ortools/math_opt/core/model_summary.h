@@ -140,6 +140,7 @@ struct ModelSummary {
   IdNameBiMap sos1_constraints;
   IdNameBiMap sos2_constraints;
   IdNameBiMap indicator_constraints;
+  bool maximize = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 

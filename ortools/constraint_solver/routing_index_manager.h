@@ -101,9 +101,6 @@ class RoutingIndexManager {
   /// complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
-  absl::StrongVector<NodeIndex, int64_t> GetNodeToIndexMap() const {
-    return node_to_index_;
-  }
 
  private:
   void Initialize(

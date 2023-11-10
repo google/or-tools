@@ -20,33 +20,7 @@
 namespace operations_research {
 namespace math_opt {
 
-absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status);
-absl::Status ValidateProblemStatus(const ProblemStatusProto& status);
 absl::Status ValidateSolveStats(const SolveStatsProto& solve_stats);
-
-// Returns absl::Ok only if status.primal_status = required_status. Assumes
-// validateProblemStatus(status) returns absl::Ok.
-absl::Status CheckPrimalStatusIs(const ProblemStatusProto& status,
-                                 FeasibilityStatusProto required_status);
-
-// Returns absl::Ok only if status.primal_status != forbidden_status. Assumes
-// validateProblemStatus(status) returns absl::Ok.
-absl::Status CheckPrimalStatusIsNot(const ProblemStatusProto& status,
-                                    FeasibilityStatusProto forbidden_status);
-
-// If primal_or_dual_infeasible_also_ok is false, returns absl::Ok only if
-// status.dual_status = required_status. If primal_or_dual_infeasible_also_ok
-// is true, it returns absl::Ok when status.dual_status = required_status and
-// when primal_or_dual_infeasible is true. Assumes validateProblemStatus(status)
-// returns absl::Ok.
-absl::Status CheckDualStatusIs(const ProblemStatusProto& status,
-                               FeasibilityStatusProto required_status,
-                               bool primal_or_dual_infeasible_also_ok = false);
-
-// Returns absl::Ok only if status.dual_status != forbidden_status. Assumes
-// validateProblemStatus(status) returns absl::Ok.
-absl::Status CheckDualStatusIsNot(const ProblemStatusProto& status,
-                                  FeasibilityStatusProto forbidden_status);
 
 }  // namespace math_opt
 }  // namespace operations_research

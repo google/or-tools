@@ -17,10 +17,8 @@
 // This file contains class definitions for the wrapping of C++ std::functions
 // in Java. It is #included by java/functions.i.
 
-#include <functional>
+#include <cstdint>
 #include <string>
-
-#include "ortools/base/integral_types.h"
 
 namespace operations_research {
 namespace swig_util {

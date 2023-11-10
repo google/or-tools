@@ -28,9 +28,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -231,7 +231,8 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
 class ObjectiveEncoder {
  public:
   explicit ObjectiveEncoder(Model* model)
-      : sat_solver_(model->GetOrCreate<SatSolver>()),
+      : params_(*model->GetOrCreate<SatParameters>()),
+        sat_solver_(model->GetOrCreate<SatSolver>()),
         implications_(model->GetOrCreate<BinaryImplicationGraph>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
@@ -268,6 +269,7 @@ class ObjectiveEncoder {
   std::vector<EncodingNode*> nodes_;
   std::deque<EncodingNode> repository_;
 
+  const SatParameters& params_;
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
   ModelRandomGenerator* random_;

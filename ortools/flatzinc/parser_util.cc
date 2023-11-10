@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
@@ -42,7 +43,7 @@ namespace operations_research {
 namespace fz {
 // Whether the given list of annotations contains the given identifier
 // (or function call).
-bool ContainsId(std::vector<Annotation>* annotations, const std::string& id) {
+bool ContainsId(std::vector<Annotation>* annotations, absl::string_view id) {
   if (annotations != nullptr) {
     for (int i = 0; i < annotations->size(); ++i) {
       if (((*annotations)[i].type == Annotation::IDENTIFIER ||

@@ -180,9 +180,6 @@ class LbTreeSearch {
 
   // Count the number of time we are back to decision level zero.
   int64_t num_back_to_root_node_ = 0;
-
-  // Used to display periodic info to the log.
-  absl::Time last_logging_time_;
 };
 
 }  // namespace sat

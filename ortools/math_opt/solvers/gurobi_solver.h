@@ -62,9 +62,10 @@ class GurobiSolver : public SolverInterface {
       const CallbackRegistrationProto& callback_registration, Callback cb,
       SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
-  absl::StatusOr<InfeasibleSubsystemResultProto> InfeasibleSubsystem(
-      const SolveParametersProto& parameters, MessageCallback message_cb,
-      SolveInterrupter* interrupter) override;
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
+                             MessageCallback message_cb,
+                             SolveInterrupter* interrupter) override;
 
  private:
   struct GurobiCallbackData {
@@ -189,8 +190,6 @@ class GurobiSolver : public SolverInterface {
 
   using IdHashMap = gtl::linked_hash_map<int64_t, int>;
 
-  absl::StatusOr<ProblemStatusProto> GetProblemStatus(
-      int grb_termination, SolutionClaims solution_claims);
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters);
   absl::Status FillRays(const ModelSolveParametersProto& model_parameters,
@@ -198,8 +197,7 @@ class GurobiSolver : public SolverInterface {
                         SolveResultProto& result);
   absl::StatusOr<GurobiSolver::SolutionsAndClaims> GetSolutions(
       const ModelSolveParametersProto& model_parameters);
-  absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start,
-                                                SolutionClaims solution_claims);
+  absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
   absl::StatusOr<double> GetBestDualBound();
   absl::StatusOr<double> GetBestPrimalBound(bool has_primal_feasible_solution);
@@ -221,13 +219,13 @@ class GurobiSolver : public SolverInterface {
   // not. This occurs because Gurobi does not return variable integrality IIS
   // attributes, and because internally we apply model transformations to handle
   // ranged constraints and linear expressions in nonlinear constraints.
-  absl::StatusOr<InfeasibleSubsystemResultProto>
-  ExtractInfeasibleSubsystemResultProto(bool proven_infeasible);
+  absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+  ExtractComputeInfeasibleSubsystemResultProto(bool proven_infeasible);
 
   // Warning: is read from gurobi, take care with gurobi update.
   absl::StatusOr<bool> IsMaximize() const;
 
-  static absl::StatusOr<TerminationProto> ConvertTerminationReason(
+  absl::StatusOr<TerminationProto> ConvertTerminationReason(
       int gurobi_status, SolutionClaims solution_claims);
 
   // Returns solution information appropriate and available for an LP (linear

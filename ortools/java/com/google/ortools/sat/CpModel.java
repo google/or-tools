@@ -66,6 +66,14 @@ public final class CpModel {
     constantMap = new LinkedHashMap<>();
   }
 
+  public CpModel getClone() {
+    CpModel clone = new CpModel();
+    clone.modelBuilder.mergeFrom(modelBuilder.build());
+    clone.constantMap.clear();
+    clone.constantMap.putAll(constantMap);
+    return clone;
+  }
+
   // Integer variables.
 
   /** Creates an integer variable with domain [lb, ub]. */
@@ -117,6 +125,16 @@ public final class CpModel {
     BoolVar cste = new BoolVar(modelBuilder, new Domain(0), ""); // bounds and name.
     constantMap.put(0L, cste.getIndex());
     return cste;
+  }
+
+  /** Rebuilds a Boolean variable from an index. Useful after cloning a model. */
+  public BoolVar getBoolVarFromProtoIndex(int index) {
+    return new BoolVar(modelBuilder, index);
+  }
+
+  /** Rebuilds an integer variable from an index. Useful after cloning a model. */
+  public IntVar getIntVarFromProtoIndex(int index) {
+    return new IntVar(modelBuilder, index);
   }
 
   // Boolean Constraints.

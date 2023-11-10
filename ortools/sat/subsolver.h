@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/integral_types.h"
+#include "ortools/base/types.h"
 #include "ortools/util/stats.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -70,6 +70,8 @@ class SubSolver {
   // finished. This is the case for first solution subsolvers for instances.
   //
   // This is only called by the main thread in a sequential fashion.
+  // Important: This is only called when there is currently no task from that
+  // SubSolver in flight.
   virtual bool IsDone() { return false; }
 
   // Returns true iff GenerateTask() can be called.
@@ -95,10 +97,6 @@ class SubSolver {
 
   // Returns the type of the subsolver.
   SubsolverType type() const { return type_; }
-
-  // Returns search statistics.
-  virtual std::string StatisticsString() const { return std::string(); }
-  virtual std::vector<std::string> TableLineStats() const { return {}; }
 
   // Note that this is protected by the global execution mutex and so it is
   // called sequentially. Subclasses do not need to call this.

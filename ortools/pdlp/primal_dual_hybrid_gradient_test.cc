@@ -437,10 +437,9 @@ TEST_P(PrimalDualHybridGradientLPTest, InfeasiblePrimal) {
   // absolute difference, and hence large reduced costs. The following test uses
   // the exact formula to make sure we're not adding the objective vector to the
   // reduced costs.
-  EXPECT_THAT(output.reduced_costs,
-              EigenArrayNear<double>({std::max(dual[1] - dual[0], 0.0),
-                                      std::max(dual[0] - dual[1], 0.0)},
-                                     1.0e-6));
+  EXPECT_THAT(
+      output.reduced_costs,
+      EigenArrayNear<double>({dual[1] - dual[0], dual[0] - dual[1]}, 1.0e-6));
   EXPECT_LE(output.solve_log.iteration_count(), iteration_upperbound);
   EXPECT_EQ(output.solve_log.original_problem_stats().num_variables(), 2);
   EXPECT_LE(output.solve_log.preprocessed_problem_stats().num_variables(), 2);

@@ -28,9 +28,8 @@
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -50,6 +49,10 @@ namespace sat {
 class SatPostsolver {
  public:
   explicit SatPostsolver(int num_variables);
+
+  // This type is neither copyable nor movable.
+  SatPostsolver(const SatPostsolver&) = delete;
+  SatPostsolver& operator=(const SatPostsolver&) = delete;
 
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
@@ -102,6 +105,10 @@ class SatPostsolver {
     return result;
   }
 
+  // This will initially contains the Fixed variable.
+  // If PostsolveSolution() is called, it will contain the final solution.
+  const VariablesAssignment& assignment() { return assignment_; }
+
  private:
   Literal ApplyReverseMapping(Literal l);
   void Postsolve(VariablesAssignment* assignment) const;
@@ -126,8 +133,6 @@ class SatPostsolver {
   // This will stores the fixed variables value and later the postsolved
   // assignment.
   VariablesAssignment assignment_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatPostsolver);
 };
 
 // This class holds a SAT problem (i.e. a set of clauses) and the logic to
@@ -153,6 +158,10 @@ class SatPresolver {
         num_trivial_clauses_(0),
         drat_proof_handler_(nullptr),
         logger_(logger) {}
+
+  // This type is neither copyable nor movable.
+  SatPresolver(const SatPresolver&) = delete;
+  SatPresolver& operator=(const SatPresolver&) = delete;
 
   void SetParameters(const SatParameters& params) { parameters_ = params; }
   void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
@@ -365,8 +374,6 @@ class SatPresolver {
   DratProofHandler* drat_proof_handler_;
   TimeLimit* time_limit_ = nullptr;
   SolverLogger* logger_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
 
 // Visible for testing. Returns true iff:
@@ -426,7 +433,8 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
     DratProofHandler* drat_proof_handler,
-    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping);
+    absl::StrongVector<LiteralIndex, LiteralIndex>* mapping,
+    SolverLogger* = nullptr);
 
 // Given a 'solver' with a problem already loaded, this will try to simplify the
 // problem (i.e. presolve it) before calling solver->Solve(). In the process,

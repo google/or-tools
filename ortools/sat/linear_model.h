@@ -30,9 +30,6 @@ class LinearModel {
  public:
   explicit LinearModel(const CpModelProto& model_proto);
 
-  // Scans the model, hide constraints, and adds new one.
-  void Initialize();
-
   const CpModelProto& model_proto() const { return model_proto_; }
 
   // Mask on the constraints of the model passed to the ctor.
@@ -55,7 +52,6 @@ class LinearModel {
   const CpModelProto& model_proto_;
 
   // Model delta.
-  bool initialized_ = false;
   std::vector<bool> ignored_constraints_;
   std::vector<ConstraintProto> additional_constraints_;
 

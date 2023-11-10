@@ -40,8 +40,8 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
 

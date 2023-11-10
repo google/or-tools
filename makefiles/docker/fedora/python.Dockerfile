@@ -4,7 +4,7 @@ RUN dnf -y update \
  python3-wheel \
  python3-numpy python3-pandas \
 && dnf clean all
-RUN python3 -m pip install absl-py mypy-protobuf
+RUN python3 -m pip install absl-py mypy mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project

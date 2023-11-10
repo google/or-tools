@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
@@ -42,6 +44,26 @@ void AddIndices(const IntList& indices, std::vector<int>* output) {
 }
 
 }  // namespace
+
+int64_t LinearExpressionGcd(const LinearExpressionProto& expr, int64_t gcd) {
+  gcd = std::gcd(gcd, std::abs(expr.offset()));
+  for (const int64_t coeff : expr.coeffs()) {
+    gcd = std::gcd(gcd, std::abs(coeff));
+  }
+  return gcd;
+}
+
+void DivideLinearExpression(int64_t divisor, LinearExpressionProto* expr) {
+  CHECK_NE(divisor, 0);
+  if (divisor == 1) return;
+
+  DCHECK_EQ(expr->offset() % divisor, 0);
+  expr->set_offset(expr->offset() / divisor);
+  for (int i = 0; i < expr->vars_size(); ++i) {
+    DCHECK_EQ(expr->coeffs(i) % divisor, 0);
+    expr->set_coeffs(i, expr->coeffs(i) / divisor);
+  }
+}
 
 void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
                                   LinearExpressionProto* output_negated_expr) {

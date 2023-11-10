@@ -24,10 +24,10 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/recordio.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 

@@ -14,6 +14,7 @@
 #include "ortools/pdlp/sharded_quadratic_program.h"
 
 #include <limits>
+#include <optional>
 
 #include "Eigen/Core"
 #include "gmock/gmock.h"
@@ -74,6 +75,40 @@ TEST(ShardedQuadraticProgramTest, SwapConstraintBounds) {
   EXPECT_THAT(new_ub, ElementsAre(1.0));
   EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds, ElementsAre(1.0));
   EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds, ElementsAre(5.0));
+}
+
+TEST(ShardedQuadraticProgramTest, SetConstraintBounds) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  sharded_qp.SetConstraintBounds(/*constraint_index=*/0, /*lower_bound=*/-1.0,
+                                 /*upper_bound=*/10.0);
+  EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds, ElementsAre(-1.0));
+  EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds, ElementsAre(10.0));
+}
+
+TEST(ShardedQuadraticProgramTest, SetConstraintLowerBound) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  sharded_qp.SetConstraintBounds(/*constraint_index=*/0, /*lower_bound=*/-1.0,
+                                 /*upper_bound=*/std::nullopt);
+  EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds, ElementsAre(-1.0));
+  EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds, ElementsAre(1.0));
+}
+
+TEST(ShardedQuadraticProgramTest, SetConstraintUpperBound) {
+  const int num_threads = 2;
+  const int num_shards = 2;
+  ShardedQuadraticProgram sharded_qp(TestDiagonalQp1(), num_threads,
+                                     num_shards);
+  sharded_qp.SetConstraintBounds(/*constraint_index=*/0,
+                                 /*lower_bound=*/std::nullopt,
+                                 /*upper_bound=*/10.0);
+  EXPECT_THAT(sharded_qp.Qp().constraint_lower_bounds, ElementsAre(-kInfinity));
+  EXPECT_THAT(sharded_qp.Qp().constraint_upper_bounds, ElementsAre(10.0));
 }
 
 TEST(ShardedQuadraticProgramTest, SwapObjectiveVector) {

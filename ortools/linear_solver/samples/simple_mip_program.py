@@ -68,9 +68,9 @@ def main():
 
     # [START advanced]
     print("\nAdvanced usage:")
-    print("Problem solved in %f milliseconds" % solver.wall_time())
-    print("Problem solved in %d iterations" % solver.iterations())
-    print("Problem solved in %d branch-and-bound nodes" % solver.nodes())
+    print(f"Problem solved in {solver.wall_time():d} milliseconds")
+    print(f"Problem solved in {solver.iterations():d} iterations")
+    print(f"Problem solved in {solver.nodes():d} branch-and-bound nodes")
     # [END advanced]
 
 

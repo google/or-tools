@@ -191,8 +191,7 @@ enum class TerminationReason {
 
   // The primal problem is either infeasible or unbounded. More details on the
   // problem status may be available in solve_stats.problem_status. Note that
-  // Gurobi's unbounded status may be mapped here as explained in
-  // go/mathopt-solver-specific#gurobi-inf-or-unb.
+  // Gurobi's unbounded status may be mapped here.
   kInfeasibleOrUnbounded = TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
 
   // The problem was solved to one of the criteria above (Optimal, Infeasible,

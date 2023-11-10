@@ -20,8 +20,9 @@
 
 %{
 // TODO(user): see if we can remove <vector>
+#include <cstdint>
 #include <vector>
-#include "ortools/base/integral_types.h"
+
 #include "ortools/util/tuple_set.h"
 %}
 

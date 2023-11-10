@@ -84,6 +84,7 @@ class Prober {
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.
   // Note however that we do not reset them on a call to ProbeOneVariable().
+  int num_decisions() const { return num_decisions_; }
   int num_new_literals_fixed() const { return num_new_literals_fixed_; }
   int num_new_binary_clauses() const { return num_new_binary_; }
 
@@ -118,6 +119,7 @@ class Prober {
   std::vector<std::pair<Literal, Literal>> new_binary_clauses_;
 
   // Probing statistics.
+  int num_decisions_ = 0;
   int num_new_holes_ = 0;
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
@@ -139,7 +141,8 @@ class Prober {
 // abort and leave the solver with the full solution assigned.
 //
 // Returns false iff the problem is UNSAT.
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model);
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
+                               SolverLogger* logger);
 
 // Options for the FailedLiteralProbing() code below.
 //

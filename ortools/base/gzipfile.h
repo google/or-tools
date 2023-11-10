@@ -28,11 +28,6 @@ enum class AppendedStreams {
   kIgnoreAppendedData,
 };
 
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
-
 // Return a readonly file that contains a uncompressed version of
 // another File.
 //

@@ -174,4 +174,17 @@ void ShardedQuadraticProgram::ReplaceLargeConstraintBoundsWithInfinity(
                                  qp_.constraint_upper_bounds);
 }
 
+void ShardedQuadraticProgram::SetConstraintBounds(
+    int64_t constraint_index, std::optional<double> lower_bound,
+    std::optional<double> upper_bound) {
+  CHECK_LT(constraint_index, DualSize());
+  CHECK_GE(constraint_index, 0);
+  if (lower_bound.has_value()) {
+    qp_.constraint_lower_bounds[constraint_index] = *lower_bound;
+  }
+  if (upper_bound.has_value()) {
+    qp_.constraint_upper_bounds[constraint_index] = *upper_bound;
+  }
+}
+
 }  // namespace operations_research::pdlp

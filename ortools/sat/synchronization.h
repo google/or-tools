@@ -29,6 +29,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
@@ -339,18 +340,18 @@ class SharedResponseManager {
   }
 
   // Debug only. Set dump prefix for solutions written to file.
-  void set_dump_prefix(const std::string& dump_prefix) {
+  void set_dump_prefix(absl::string_view dump_prefix) {
     dump_prefix_ = dump_prefix;
   }
 
   // Display improvement stats.
   void DisplayImprovementStatistics();
 
+  // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(const std::string& prefix, const std::string& message);
-  void LogPeriodicMessage(const std::string& prefix, const std::string& message,
-                          double frequency_seconds,
-                          absl::Time* last_logging_time);
-  bool LoggingIsEnabled() const { return logger_->LoggingIsEnabled(); }
+  void LogMessageWithThrottling(const std::string& prefix,
+                                const std::string& message);
+  bool LoggingIsEnabled() const;
 
   void AppendResponseToBeMerged(const CpSolverResponse& response);
 
@@ -399,7 +400,7 @@ class SharedResponseManager {
   CpSolverStatus synchronized_best_status_ ABSL_GUARDED_BY(mutex_) =
       CpSolverStatus::UNKNOWN;
   std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
-  SharedSolutionRepository<int64_t> solutions_ ABSL_GUARDED_BY(mutex_);
+  SharedSolutionRepository<int64_t> solutions_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) =
@@ -445,7 +446,10 @@ class SharedResponseManager {
   absl::btree_map<std::string, int> dual_improvements_count_
       ABSL_GUARDED_BY(mutex_);
 
-  SolverLogger* logger_;
+  SolverLogger* logger_ ABSL_GUARDED_BY(mutex_);
+  absl::flat_hash_map<std::string, int> throttling_ids_ ABSL_GUARDED_BY(mutex_);
+
+  int bounds_logging_id_;
   std::vector<CpSolverResponse> subsolver_responses_ ABSL_GUARDED_BY(mutex_);
 
   std::atomic<bool> first_solution_solvers_should_stop_ = false;

@@ -13,6 +13,8 @@
 
 #include "ortools/bop/bop_portfolio.h"
 
+#include <stddef.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>
@@ -21,19 +23,30 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"
+#include "ortools/bop/bop_parameters.pb.h"
+#include "ortools/bop/bop_solution.h"
+#include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/bop/complete_optimizer.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
+#include "ortools/util/random_engine.h"
+#include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace bop {

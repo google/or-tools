@@ -1376,20 +1376,6 @@ void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
 // ImpliedFreePreprocessor
 // --------------------------------------------------------
 
-namespace {
-struct ColWithDegree {
-  ColIndex col;
-  EntryIndex num_entries;
-  ColWithDegree(ColIndex c, EntryIndex n) : col(c), num_entries(n) {}
-  bool operator<(const ColWithDegree& other) const {
-    if (num_entries == other.num_entries) {
-      return col < other.col;
-    }
-    return num_entries < other.num_entries;
-  }
-};
-}  // namespace
-
 bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, false);
@@ -1454,10 +1440,10 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   // column. For instance if we have 3 doubleton columns that use the rows (1,2)
   // (2,3) and (3,4) then it is better not to make (2,3) free so the two other
   // two can be made free.
-  std::vector<ColWithDegree> col_by_degree;
+  std::vector<std::pair<EntryIndex, ColIndex>> col_by_degree;
+  col_by_degree.reserve(num_cols.value());
   for (ColIndex col(0); col < num_cols; ++col) {
-    col_by_degree.push_back(
-        ColWithDegree(col, lp->GetSparseColumn(col).num_entries()));
+    col_by_degree.push_back({lp->GetSparseColumn(col).num_entries(), col});
   }
   std::sort(col_by_degree.begin(), col_by_degree.end());
 
@@ -1465,9 +1451,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   int num_already_free_variables = 0;
   int num_implied_free_variables = 0;
   int num_fixed_variables = 0;
-  for (ColWithDegree col_with_degree : col_by_degree) {
-    const ColIndex col = col_with_degree.col;
-
+  for (const auto [_, col] : col_by_degree) {
     // If the variable is already free or fixed, we do nothing.
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
     const Fractional upper_bound = lp->variable_upper_bounds()[col];

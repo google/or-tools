@@ -32,4 +32,4 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>)
-#add_library(${PROJECT_NAME}::glpk ALIAS ${NAME})
+#add_library(${PROJECT_NAMESPACE}::glpk ALIAS ${NAME})

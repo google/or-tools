@@ -15,9 +15,9 @@
 #
 
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@rules_java//java:defs.bzl", "java_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -200,11 +200,13 @@ cc_library(
         ":integer",
         ":linear_model",
         ":sat_parameters_cc_proto",
+        ":stat_tables",
         ":subsolver",
         ":synchronization",
         ":util",
         "//ortools/algorithms:binary_search",
         "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/functional:bind_front",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings",
@@ -313,6 +315,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":simplification",
+        ":stat_tables",
         ":subsolver",
         ":synchronization",
         ":work_assignment",
@@ -413,11 +416,14 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":util",
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
+        "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
@@ -775,6 +781,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         "//ortools/base",
+        "//ortools/base:cleanup",
         "//ortools/base:hash",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:stl_util",
@@ -1115,6 +1122,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_mapping",
         ":cuts",
+        ":diffn_cuts",
         ":implied_bounds",
         ":integer",
         ":integer_expr",
@@ -1240,6 +1248,26 @@ cc_library(
     name = "scheduling_cuts",
     srcs = ["scheduling_cuts.cc"],
     hdrs = ["scheduling_cuts.h"],
+    deps = [
+        ":cuts",
+        ":integer",
+        ":intervals",
+        ":linear_constraint",
+        ":linear_constraint_manager",
+        ":model",
+        ":sat_base",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
+    ],
+)
+
+cc_library(
+    name = "diffn_cuts",
+    srcs = ["diffn_cuts.cc"],
+    hdrs = ["diffn_cuts.h"],
     deps = [
         ":cuts",
         ":diffn_util",
@@ -1377,6 +1405,27 @@ cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "stat_tables",
+    srcs = ["stat_tables.cc"],
+    hdrs = ["stat_tables.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_lns",
+        ":linear_programming_constraint",
+        ":model",
+        ":subsolver",
+        ":synchronization",
+        ":util",
+        "//ortools/lp_data:base",
+        "//ortools/util:logging",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/synchronization",
     ],
 )
 
@@ -1721,6 +1770,7 @@ cc_binary(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:path",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:proto_utils",

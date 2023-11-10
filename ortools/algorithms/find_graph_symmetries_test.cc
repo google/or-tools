@@ -43,16 +43,11 @@
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/dump_vars.h"
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/path.h"
-#include "ortools/base/walltime.h"
 #include "ortools/graph/io.h"
-#include "ortools/graph/random_graph.h"
 #include "ortools/graph/util.h"
-#include "ortools/util/filelineiter.h"
-#include "strings/stringpiece_utils.h"
 
 namespace operations_research {
 namespace {
@@ -64,7 +59,6 @@ using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 using ::util::GraphIsSymmetric;
-using ::util::ReadGraphFile;
 
 // Shortcut that calls RecursivelyRefinePartitionByAdjacency() on all nodes
 // of a graph, and outputs the resulting partition.
@@ -140,6 +134,33 @@ TEST(RecursivelyRefinePartitionByAdjacencyTest, FlowerOfCycles) {
                                                    {8, 9},
                                                    {9, 0},  // 0-7-8-9
                                                }));
+}
+
+TEST(GraphSymmetryFinderTest, EmptyGraph) {
+  for (bool is_undirected : {true, false}) {
+    SCOPED_TRACE(DUMP_VARS(is_undirected));
+    Graph empty_graph;
+    empty_graph.Build();
+    GraphSymmetryFinder symmetry_finder(empty_graph, is_undirected);
+
+    EXPECT_TRUE(symmetry_finder.IsGraphAutomorphism(DynamicPermutation(0)));
+
+    std::vector<int> node_equivalence_classes_io;
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
+    std::vector<int> factorized_automorphism_group_size;
+    CHECK_OK(symmetry_finder.FindSymmetries(
+        &node_equivalence_classes_io, &generators,
+        &factorized_automorphism_group_size));
+    EXPECT_THAT(node_equivalence_classes_io, IsEmpty());
+    EXPECT_THAT(generators, IsEmpty());
+    EXPECT_THAT(factorized_automorphism_group_size, IsEmpty());
+  }
+}
+
+TEST(GraphSymmetryFinderTest, EmptyGraphAndDoNothing) {
+  Graph empty_graph;
+  empty_graph.Build();
+  GraphSymmetryFinder symmetry_finder(empty_graph, /*is_undirected=*/true);
 }
 
 class IsGraphAutomorphismTest : public testing::Test {
@@ -307,7 +328,7 @@ class FindSymmetriesTest : public ::testing::Test {
     std::vector<int> node_equivalence_classes(graph.num_nodes(), 0);
     std::vector<int> orbit_sizes;
     TimeLimit time_limit(kDefaultTimeLimitSeconds);
-    ASSERT_OK(symmetry_finder.FindSymmetries(
+    CHECK_OK(symmetry_finder.FindSymmetries(
         &node_equivalence_classes, &generators, &orbit_sizes, &time_limit));
     std::vector<std::string> permutations_str;
     for (const std::unique_ptr<SparsePermutation>& permutation : generators) {
@@ -663,277 +684,6 @@ TEST_F(FindSymmetriesTest, InwardGrid) {
   }
 }
 
-// TODO(user): unit test the early abortions caused by the time limit.
-
-class BigGraphFindSymmetriesTest
-    : public ::testing::TestWithParam</*graph name*/ std::string> {};
-
-#ifdef NDEBUG  // opt mode
-INSTANTIATE_TEST_CASE_P(
-    RealGraph, BigGraphFindSymmetriesTest,
-    ::testing::Values(
-        // Some SAT graphs from the DAC'08 paper.
-        "2pipe", "3pipe", "4pipe", "5pipe", "6pipe", "7pipe",
-        // Graphs associated to some US state; from the DAC'08 paper.
-        "DE", "ME", "IL", "CA",
-        // Very sparse graphs. They are all 2-colored except "internet".
-        "internet", "adaptec1", "adaptec2", "adaptec3", "adaptec4", "bigblue1",
-        "bigblue2", "bigblue3", "bigblue4",
-        // SAT graphs from the pigeonhole problem. For those, it is important
-        // to reduce the support size.
-        "sat_hole002", "sat_hole010", "sat_hole010_shuffled",
-        "sat_hole020_shuffled", "sat_hole030", "sat_hole030_shuffled",
-        "sat_hole050"));
-// TODO(user): add the other test graphs when the code is fast enough.
-// See  for the latest timings.
-#else   // non-opt mode
-INSTANTIATE_TEST_SUITE_P(RealGraph, BigGraphFindSymmetriesTest,
-                         ::testing::Values("2pipe", "3pipe", "sat_hole002",
-                                           "sat_hole010",
-                                           "sat_hole010_shuffled",
-                                           "sat_hole020_shuffled"));
-#endif  // NDEBUG
-
-TEST_P(BigGraphFindSymmetriesTest, VerifyAutomorphismGroupSize) {
-  const std::string graph_name = GetParam();
-  LOG(INFO) << "Graph: " << graph_name;
-  const char kTestDataDir[] = "ortools/algorithms/testdata";
-  const char kSaucyBenchmarksDir[] = "operations_research_saucy_benchmarks";
-
-  // Parse the CSV benchmark result file to look up the expected characteristics
-  // of the graphs that we'll be looking at.
-  int num_nodes = -1;
-  int num_edges = -1;
-  // The size of the automorphism group can be huge, and overflow (by far) an
-  // extended double; so we parse its mantissa and its exponent separately. We
-  // even support double exponents -- like a googolplex: 1(1e100).
-  int dig0_size = -1;
-  int64_t frac_size = -1;
-  double exp_size = -1;
-  int num_generators = -1;
-  double avg_support_size = -1.0;
-  int num_refines = -1;
-  double time_seconds = -1.0;
-  int num_refines_saucy = -1;
-  double time_seconds_saucy = -1.0;
-  {
-    const std::string csv_filename =
-        file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestDataDir,
-                       "graph_benchmark_results.csv");
-    std::string csv_contents;
-    ASSERT_OK(file::GetContents(csv_filename, &csv_contents, file::Defaults()))
-        << csv_filename;
-    std::vector<std::string> csv_lines = absl::StrSplit(csv_contents, '\n');
-    bool found = false;
-    for (const std::string& csv_line : csv_lines) {
-      if (absl::StartsWith(csv_line, graph_name + ",")) {
-        ASSERT_GE(
-            sscanf(
-                csv_line.c_str(),
-                (graph_name + ",%d,%d,%d.%" SCNd64 "e%lf,%d,%lf,%d,%lf,%d,%lf")
-                    .c_str(),
-                &num_nodes, &num_edges, &dig0_size, &frac_size, &exp_size,
-                &num_generators, &avg_support_size, &num_refines, &time_seconds,
-                &num_refines_saucy, &time_seconds_saucy),
-            9)
-            << csv_line;
-        found = true;
-        break;
-      }
-    }
-    ASSERT_TRUE(found) << "Graph '" << graph_name << "' not found in "
-                       << csv_filename;
-  }
-
-  // Load the graph.
-  const std::string filename = file::JoinPath(
-      absl::GetFlag(FLAGS_test_srcdir),
-      absl::StartsWith(graph_name, "sat_") ? kTestDataDir : kSaucyBenchmarksDir,
-      graph_name + ".g");
-  std::vector<int> num_nodes_per_color;
-  absl::StatusOr<Graph*> error_or_graph =
-      ReadGraphFile<Graph>(filename, /*directed=*/false, &num_nodes_per_color);
-  ASSERT_OK(error_or_graph.status());
-  std::unique_ptr<Graph> graph(error_or_graph.value());
-  // TODO(user): merge this code with the one in the _main.cc.
-  std::vector<int> node_equivalence_classes;
-  for (int color = 0; color < num_nodes_per_color.size(); ++color) {
-    node_equivalence_classes.insert(node_equivalence_classes.end(),
-                                    num_nodes_per_color[color], color);
-  }
-  LOG(INFO) << "Found " << num_nodes_per_color.size() << " colors!";
-
-  // Verify that it matches the benchmark's announced size.
-  ASSERT_EQ(num_nodes, graph->num_nodes());
-  int num_self_edges = 0;
-  for (Graph::NodeIndex node : graph->AllNodes()) {
-    for (Graph::ArcIndex arc : graph->OutgoingArcs(node)) {
-      if (graph->Head(arc) == node) ++num_self_edges;
-    }
-  }
-  if (num_self_edges > 0) {
-    LOG(INFO) << "Found " << num_self_edges << " self-edges.";
-  }
-  ASSERT_EQ(num_edges * 2 - num_self_edges, graph->num_arcs());
-
-  // Compute the automorphism group.
-  ASSERT_TRUE(GraphIsSymmetric(*graph));  // By construction.
-  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
-  std::vector<std::unique_ptr<SparsePermutation>> generators;
-  std::vector<int> factorized_automorphism_group_size;
-  const absl::Time time0 = absl::Now();
-  ASSERT_OK(
-      symmetry_finder.FindSymmetries(&node_equivalence_classes, &generators,
-                                     &factorized_automorphism_group_size));
-  const double time_spent = absl::ToDoubleSeconds(absl::Now() - time0);
-  LOG(INFO) << "Time: " << time_spent << "s (ref: " << time_seconds << ").";
-  // NOTE(user): we no longer log time_seconds_saucy, because:
-  // - It's misleading: the "ref" results are actually those from the SAUCY team
-  //   after an improvement they made: the times we used to label as "saucy"
-  //   were the times they got before that.
-  // - We've reached the performance of the "ref", and no longer need to compare
-  //   against the old, inferior results.
-
-  // Verify the size of the automorphism group.
-  double log10_of_permutation_group_size = 0.0;
-  for (const int orbit_size : factorized_automorphism_group_size) {
-    log10_of_permutation_group_size += log10(orbit_size);
-  }
-  const int64_t floor_log10 =
-      static_cast<int64_t>(floor(log10_of_permutation_group_size));
-  LOG(INFO) << "|Aut(G)| = "
-            << exp10(log10_of_permutation_group_size - floor_log10) << "e"
-            << floor_log10;
-
-  // Parse the expected group size. Unfortunately it's a bit convoluted.
-  double expected_log10_of_permutation_group_size = -1;
-  if (dig0_size < 0) {
-    // We don't know the expected group size. So we don't expect anything.
-  } else if (frac_size <= 0) {
-    // The expected group size is known, but with low precision: we just have
-    // the exponent. So we also round our computed size down, for comparison
-    // purposes.
-    ASSERT_EQ(1, dig0_size);
-    log10_of_permutation_group_size = floor_log10;
-    expected_log10_of_permutation_group_size = exp_size;
-  } else {
-    // The conversion of the two integers (integer part and fractional part) to
-    // a mantissa is a bit tedious. Note that 1+floor(log10(x)) is the number of
-    // digits of x.
-    expected_log10_of_permutation_group_size =
-        exp_size +
-        log10(dig0_size + frac_size / exp10(1.0 + floor(log10(frac_size))));
-  }
-  if (expected_log10_of_permutation_group_size >= 0) {
-    // The error we allow is quite large. Either our accounting isn't great, or
-    // the benchmark result's precision isn't; but either way it's good enough
-    // to get a pretty good precision [0.1^10 < 2; so we can't be missing
-    // a generator if our log10(sizes) agree within 0.1].
-    EXPECT_NEAR(expected_log10_of_permutation_group_size,
-                log10_of_permutation_group_size, 1e-1)
-        << absl::StrJoin(factorized_automorphism_group_size, " x ");
-  }
-
-  // The rest can't be verified, but is an informative comparison to look
-  // at, in terms of performance of the algorithm.
-  LOG(INFO) << "Number of generators: " << generators.size()
-            << " (ref: " << num_generators << ").";
-
-  double sum_support_sizes = 0.0;
-  for (const std::unique_ptr<SparsePermutation>& perm : generators) {
-    sum_support_sizes += perm->Support().size();
-  }
-  LOG(INFO) << "Average support size: " << sum_support_sizes / generators.size()
-            << " (ref: " << avg_support_size << ").";
-
-  // TODO(user): also output the number of Refine() operations.
-};
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, EmptyGraphs) {
-  Graph g1;
-  Graph g2;
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_ISOMORPHIC);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, NotSameNumberOfNodes) {
-  Graph g1;
-  g1.AddArc(0, 1);
-  g1.AddArc(1, 2);
-  g1.Build();
-  Graph g2;
-  g2.AddArc(0, 1);
-  g2.AddArc(1, 0);
-  g2.Build();
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_NOT_ISOMORPHIC);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, NotSameNumberOfArcs) {
-  Graph g1;
-  g1.AddArc(0, 1);
-  g1.AddArc(1, 2);
-  g1.Build();
-  Graph g2;
-  g2.AddArc(0, 1);
-  g2.AddArc(1, 0);
-  g2.AddArc(1, 2);
-  g2.Build();
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_NOT_ISOMORPHIC);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, OneSymmetricTheOtherNot) {
-  Graph g1;
-  g1.AddArc(0, 1);
-  g1.AddArc(0, 0);
-  g1.Build();
-  Graph g2;
-  g2.AddArc(0, 1);
-  g2.AddArc(1, 0);
-  g2.Build();
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_NOT_ISOMORPHIC);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, DisconnectedGraphs) {
-  Graph g;
-  g.AddArc(1, 2);
-  g.AddArc(0, 0);
-  g.Build();
-  EXPECT_EQ(SimpleConnectedGraphsAreIsomorphic(g, g, absl::InfiniteDuration()),
-            GRAPH_ISOMORHPISM_SOME_GRAPH_IS_DISCONNECTED);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, GraphsWithMultiArcs) {
-  Graph g;
-  g.AddArc(0, 1);
-  g.AddArc(0, 1);
-  g.Build();
-  EXPECT_EQ(SimpleConnectedGraphsAreIsomorphic(g, g, absl::InfiniteDuration()),
-            GRAPH_ISOMORPHISM_SOME_GRAPH_HAS_MULTI_ARCS);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, GraphsWithSelfArcs) {
-  Graph g1;
-  g1.AddArc(0, 1);
-  g1.AddArc(2, 2);
-  g1.AddArc(2, 0);
-  g1.Build();
-  Graph g2;
-  g2.AddArc(0, 0);
-  g2.AddArc(1, 2);
-  g2.AddArc(0, 1);
-  g2.Build();
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_ISOMORPHIC);
-}
-
 void AddReverseArcs(Graph* graph) {
   const int num_arcs = graph->num_arcs();
   for (int a = 0; a < num_arcs; ++a) {
@@ -946,152 +696,11 @@ void AddReverseArcsAndFinalize(Graph* graph) {
   graph->Build();
 }
 
-std::unique_ptr<Graph> RandomlyPermutedGraph(const Graph& graph,
-                                             absl::BitGenRef gen) {
-  std::vector<int> new_indices(graph.num_nodes(), -1);
-  std::iota(new_indices.begin(), new_indices.end(), 0);
-  std::shuffle(new_indices.begin(), new_indices.end(), gen);
-  auto new_graph = std::make_unique<Graph>(graph.num_nodes(), graph.num_arcs());
-  for (int a = 0; a < graph.num_arcs(); ++a) {
-    new_graph->AddArc(new_indices[graph.Tail(a)], new_indices[graph.Head(a)]);
-  }
-  new_graph->Build();
-  return new_graph;
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest, NonTrivialNodeDifference) {
-  // Graphs (writing the node degrees instead of the node indices; node are
-  // then numbered like the US reading order, left to right and top to bottom).
-  //
-  // 1                  1--2
-  //  \                     \
-  //   3--2--2--1   VS       3--2--1
-  //  /                     /
-  // 1                     1
-  Graph g1;
-  g1.AddArc(0, 1);
-  g1.AddArc(1, 2);
-  g1.AddArc(2, 3);
-  g1.AddArc(3, 4);
-  g1.AddArc(5, 1);
-  AddReverseArcsAndFinalize(&g1);
-  Graph g2;
-  g2.AddArc(0, 1);
-  g2.AddArc(1, 2);
-  g2.AddArc(2, 3);
-  g2.AddArc(3, 4);
-  g2.AddArc(5, 2);
-  AddReverseArcsAndFinalize(&g2);
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_NOT_ISOMORPHIC);
-}
-
 void SetGraphEdges(const std::vector<std::pair<int, int>>& edges,
                    Graph* graph) {
   DCHECK_EQ(graph->num_arcs(), 0);
   for (const auto [from, to] : edges) graph->AddArc(from, to);
   AddReverseArcsAndFinalize(graph);
-}
-
-// The Petersen graph (left) has a 'sibling' that's not isomorphic, where the
-// inner "star" is a pentagon. See: http://en.wikipedia.org/wiki/Petersen_graph.
-//
-//    .---------5---------.             .---------5---------.
-//   /          |          \           /          |          \
-//  /           0           \         /         .-0-.         \
-// 9--------4--/-\--1--------6   VS  9--------4´     `1--------6
-//  \        \/   \/        /         \      /         \      /
-//   \       /\   /\       /           \     |         |     /
-//    \     /  `.ˊ  \     /             \    |         |    /
-//     \   3---ˊ `---2   /               \   3---------2   /
-//      \ /           \ /                 \ /           \ /
-//       8-------------7                   8-------------7
-std::vector<std::pair<int, int>> PetersenSiblingGraphEdges() {
-  return {
-      {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 0},  // Inner pentagon
-      {5, 6}, {6, 7}, {7, 8}, {8, 9}, {9, 5},  // Outer pentagon
-      {0, 5}, {1, 6}, {2, 7}, {3, 8}, {4, 9},  // Rays between the two
-  };
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicTest,
-     PetersenGraphAndNonIsomorphicSibling) {
-  Graph g1;
-  SetGraphEdges(PetersenGraphEdges(), &g1);
-  Graph g2;
-  SetGraphEdges(PetersenSiblingGraphEdges(), &g2);
-
-  EXPECT_EQ(
-      SimpleConnectedGraphsAreIsomorphic(g1, g2, absl::InfiniteDuration()),
-      GRAPHS_ARE_NOT_ISOMORPHIC);
-
-  // Both g1 and g2 should be isomorphic to a random permutation of themselves.
-  auto random = std::mt19937(1234);
-  std::unique_ptr<Graph> permuted_g1 = RandomlyPermutedGraph(g1, random);
-  std::unique_ptr<Graph> permuted_g2 = RandomlyPermutedGraph(g2, random);
-  EXPECT_EQ(SimpleConnectedGraphsAreIsomorphic(g1, *permuted_g1,
-                                               absl::InfiniteDuration()),
-            GRAPHS_ARE_ISOMORPHIC);
-  EXPECT_EQ(SimpleConnectedGraphsAreIsomorphic(g2, *permuted_g2,
-                                               absl::InfiniteDuration()),
-            GRAPHS_ARE_ISOMORPHIC);
-}
-
-TEST(SimpleConnectedGraphsAreIsomorphicAndComputeGraphFingerprintTest,
-     RandomizedStressTestWithIsomorphicGraphs) {
-  auto random = std::mt19937(1234);
-  const int num_tests = DEBUG_MODE ? 10000 : 50000;
-  for (int test = 0; test < num_tests;) {
-    // Generate a "pure" simple random graph:
-    // https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model
-    const int num_nodes = absl::LogUniform(random, 3, 8);
-    const double avg_degree = 3 * absl::Exponential<double>(random);
-    const bool symmetric = absl::Bernoulli(random, 1.0 / 2);
-    const int num_arcs = static_cast<int>(num_nodes * avg_degree);
-    if (num_arcs > num_nodes * (num_nodes - 1)) continue;
-    const int num_edges = symmetric ? num_arcs / 2 : num_arcs;
-    SCOPED_TRACE(absl::StrCat("Nodes: ", num_nodes, ", Edges: ", num_edges,
-                              ", symmetric:", (symmetric ? "Yes" : "No")));
-    std::unique_ptr<Graph> graph = util::GenerateRandomDirectedSimpleGraph(
-        num_nodes, num_arcs, /*finalized=*/false, random);
-    if (!util::GraphIsWeaklyConnected(*graph)) {
-      continue;
-    } else {
-      test++;
-    }
-    if (symmetric) {
-      AddReverseArcsAndFinalize(graph.get());
-      graph = util::RemoveSelfArcsAndDuplicateArcs(*graph);
-    } else {
-      // Optionally add self arcs.
-      if (absl::Bernoulli(random, 1.0 / 2)) {
-        std::vector<int> all_nodes(num_nodes, -1);
-        std::iota(all_nodes.begin(), all_nodes.end(), 0);
-        std::shuffle(all_nodes.begin(), all_nodes.end(), random);
-        const int num_self_arcs = absl::Uniform(random, 0, num_nodes + 1);
-        for (int a = 0; a < num_self_arcs; ++a) {
-          const int node = all_nodes[a];
-          graph->AddArc(node, node);
-        }
-      }
-      graph->Build();
-    }
-    std::unique_ptr<Graph> permuted_graph =
-        RandomlyPermutedGraph(*graph, random);
-    // Abort on the first failure: if the code is broken and they all fail, it
-    // would generate a lot of output and make debugging harder.
-    ASSERT_EQ(SimpleConnectedGraphsAreIsomorphic(*graph, *permuted_graph,
-                                                 absl::InfiniteDuration()),
-              GRAPHS_ARE_ISOMORPHIC);
-    ASSERT_EQ(ComputeGraphFingerprint(*graph),
-              ComputeGraphFingerprint(*permuted_graph))
-        << "Graph:\n"
-        << util::GraphToString(*graph, util::PRINT_GRAPH_ADJACENCY_LISTS_SORTED)
-        << "\nPermuted Graph:\n"
-        << util::GraphToString(*permuted_graph,
-                               util::PRINT_GRAPH_ADJACENCY_LISTS_SORTED);
-  }
 }
 
 TEST(CountTrianglesTest, EmptyGraph) {
@@ -1196,105 +805,6 @@ TEST(LocalBfsTest, SimpleExample) {
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(visited, UnorderedElementsAre(3, 0, 1, 4, 2, 5));
   EXPECT_THAT(num_within_radius, ElementsAre(1, 4, 6));
-}
-
-TEST(ComputeGraphFingerprintTest, QuasiIsomorphicGraphs) {
-  Graph g1;
-  SetGraphEdges(PetersenGraphEdges(), &g1);
-  Graph g2;
-  SetGraphEdges(PetersenSiblingGraphEdges(), &g2);
-
-  for (int effort = 0; effort < 30; ++effort) {
-    SCOPED_TRACE(absl::StrCat("effort: ", effort));
-    if (effort < kGraphFingerprintExtraRefineThreshold) {
-      ASSERT_EQ(ComputeGraphFingerprint(g1, effort),
-                ComputeGraphFingerprint(g2, effort));
-    } else {
-      // The refine heuristics kick in and can disambiguate the two graphs.
-      ASSERT_NE(ComputeGraphFingerprint(g1, effort),
-                ComputeGraphFingerprint(g2, effort));
-    }
-  }
-}
-
-TEST(ComputeGraphFingerprintTest, CollisionImpliesIsomorphismInPractice) {
-  // We generate a bunch of small graphs and verify that if they do have the
-  // same fingerprint, they are in fact isomorphic.
-  std::mt19937 random(1234);
-  constexpr int kNumGraphs = DEBUG_MODE ? 50'000 : 200'000;
-  std::vector<std::unique_ptr<Graph>> graphs;
-  absl::flat_hash_map<absl::uint128, int> fprint_to_index;
-  int num_disconnected_graphs = 0;
-  std::map<int, int> num_nodes_to_num_collisions;
-  int num_symmetric_collisions = 0;
-  int num_asymmetric_collisions = 0;
-  int num_distinct_collisions_non_isomorphic = 0;
-  absl::flat_hash_set<int> collision_indices;
-  while (graphs.size() < kNumGraphs) {
-    const int num_nodes = absl::Uniform<int>(random, 6, 16);
-    const bool symmetric = absl::Bernoulli(random, 0.5);
-    const int max_num_edges = num_nodes * (num_nodes - 1) / 2;
-    const int num_arcs_or_edges = absl::Uniform<int>(
-        absl::IntervalClosed, random, num_nodes - 1, max_num_edges);
-    graphs.push_back(
-        symmetric
-            ? util::GenerateRandomUndirectedSimpleGraph(
-                  num_nodes, num_arcs_or_edges, /*finalized=*/true, random)
-            : util::GenerateRandomDirectedSimpleGraph(
-                  num_nodes, num_arcs_or_edges, /*finalized=*/true, random));
-    if (!util::GraphIsWeaklyConnected(*graphs.back())) {
-      graphs.pop_back();
-      ++num_disconnected_graphs;
-      continue;
-    }
-    const int cur_index = graphs.size() - 1;
-    const int index = gtl::LookupOrInsert(
-        &fprint_to_index,
-        ComputeGraphFingerprint(*graphs.back(),
-                                kGraphFingerprintExtraRefineThreshold),
-        cur_index);
-    if (index != cur_index) {
-      if (symmetric) {
-        ++num_symmetric_collisions;
-      } else {
-        ++num_asymmetric_collisions;
-      }
-      ++num_nodes_to_num_collisions[num_nodes];
-      VLOG(1) << "Collision: "
-              << DUMP_VARS(num_nodes, num_arcs_or_edges, symmetric);
-      const GraphIsomorphismDiagnosis diagnosis =
-          SimpleConnectedGraphsAreIsomorphic(*graphs[index], *graphs[cur_index],
-                                             absl::InfiniteDuration());
-      if (diagnosis != GRAPHS_ARE_ISOMORPHIC) {
-        ASSERT_EQ(diagnosis, GRAPHS_ARE_NOT_ISOMORPHIC);
-        collision_indices.insert(cur_index);
-        if (collision_indices.insert(index).second) {
-          ++num_distinct_collisions_non_isomorphic;
-          LOG(INFO) << "#" << index << ":\n"
-                    << util::GraphToString(
-                           *graphs[index],
-                           util::PRINT_GRAPH_ADJACENCY_LISTS_SORTED)
-                    << "\n#" << cur_index << ":\n"
-                    << util::GraphToString(
-                           *graphs[cur_index],
-                           util::PRINT_GRAPH_ADJACENCY_LISTS_SORTED);
-        }
-      }
-    }
-  }
-
-  // A run on 2022-01-20 printed:
-  // kNumGraphs = 200000, num_distinct_collisions_non_isomorphic = 24,
-  // num_disconnected_graphs = 25001, num_nodes_to_num_collisions = [
-  // {6, 10950}, {7, 9452}, {8, 6084}, {9, 3474}, {10, 2499}, {11, 1955},
-  // {12, 1569}, {13, 1238}, {14, 1086}, {15, 944}]
-  LOG(INFO) << DUMP_VARS(kNumGraphs, num_distinct_collisions_non_isomorphic,
-                         num_disconnected_graphs, num_nodes_to_num_collisions);
-  EXPECT_LE(num_distinct_collisions_non_isomorphic, kNumGraphs / 5000);
-  EXPECT_GE(num_symmetric_collisions, kNumGraphs / 10);
-  EXPECT_GE(num_asymmetric_collisions, 30);
-  // Verify that we did generate enough graph diversity.
-  EXPECT_GE(fprint_to_index.size(), kNumGraphs / 2);
 }
 
 }  // namespace

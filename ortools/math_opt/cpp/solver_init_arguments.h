@@ -27,20 +27,18 @@ namespace operations_research::math_opt {
 // Arguments passed to Solve() and IncrementalSolver::New() to control the
 // instantiation of the solver.
 //
-// For convenience, constructors with streamable or/and non-streamable arguments
-// are provided. The non-streamable arguments are cloned so any change made
-// after passing them to this class are ignored.
-//
 // Usage with streamable arguments:
 //
 //   Solve(model, SOLVER_TYPE_GUROBI, /*solver_args=*/{},
-//         SolverInitArguments({
-//           .gurobi = StreamableGurobiInitArguments{
-//             .isv_key = GurobiISVKey{
-//               .name = "some name",
-//               .application_name = "some app name",
-//               .expiration = -1,
-//               .key = "random",
+//         SolverInitArguments{
+//           .streamable = {
+//             .gurobi = StreamableGurobiInitArguments{
+//               .isv_key = GurobiISVKey{
+//                 .name = "some name",
+//                 .application_name = "some app name",
+//                 .expiration = -1,
+//                 .key = "random",
+//               }
 //             }
 //           }
 //         });
@@ -51,46 +49,24 @@ namespace operations_research::math_opt {
 //   gurobi_args.primary_env = primary_env.get();
 //
 //   Solve(model, SOLVER_TYPE_GUROBI, /*solver_args=*/{},
-//         SolverInitArguments(gurobi_args));
+//         SolverInitArguments{.non_streamable = gurobi_args});
 //
 struct SolverInitArguments {
-  SolverInitArguments() = default;
-
-  // Initializes this class with the provided streamable arguments.
-  explicit SolverInitArguments(StreamableSolverInitArguments streamable);
-
-  // Initializes this class with a clone of the provided non-streamable
-  // arguments.
-  //
-  // Note that since this constructors calls Clone() to initialize the
-  // non_streamable_solver_init_arguments field, changes made after calling it
-  // to the input non_streamable are ignored.
-  explicit SolverInitArguments(
-      const NonStreamableSolverInitArguments& non_streamable);
-
-  // Initializes this class with both the provided streamable arguments and a
-  // clone of the non-streamable ones.
-  SolverInitArguments(StreamableSolverInitArguments streamable,
-                      const NonStreamableSolverInitArguments& non_streamable);
-
-  // Initializes this class as a copy of the provided arguments. The
-  // non_streamable field is cloned if not nullptr.
-  SolverInitArguments(const SolverInitArguments& other);
-
-  // Sets this class as a copy of the provided arguments. The non_streamable
-  // field is cloned if not nullptr.
-  SolverInitArguments& operator=(const SolverInitArguments& other);
-
-  SolverInitArguments(SolverInitArguments&&) = default;
-  SolverInitArguments& operator=(SolverInitArguments&&) = default;
-
+  // Solver initialization parameters that can be streamed to be exchanged with
+  // another process.
   StreamableSolverInitArguments streamable;
 
-  // This should either be the solver specific class or nullptr.
+  // Solver specific initialization parameters that can't be streamed. This
+  // should either be the solver specific class or be unset.
   //
   // Solvers will fail (by returning an absl::Status) if called with arguments
   // for another solver.
-  std::unique_ptr<const NonStreamableSolverInitArguments> non_streamable;
+  NonStreamableSolverInitArgumentsValue non_streamable;
+
+  // If true, the names of variables and constraints are discarded before
+  // sending them to the solver. This is particularly useful for models that
+  // need to be serialized and are near the two gigabyte limit in proto form.
+  bool remove_names = false;
 };
 
 }  // namespace operations_research::math_opt

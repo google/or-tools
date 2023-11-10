@@ -28,6 +28,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -58,9 +59,11 @@ int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 }
 
 void ClearSubsolversThatAreDone(
+    const std::vector<int>& num_in_flight_per_subsolvers,
     std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i] == nullptr) continue;
+    if (num_in_flight_per_subsolvers[i] > 0) continue;
     if (subsolvers[i]->IsDone()) {
       // We can free the memory used by this solver for good.
       VLOG(1) << "Deleting " << subsolvers[i]->name();
@@ -82,13 +85,18 @@ void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
 void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   int64_t task_id = 0;
   std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
+  std::vector<int> num_in_flight_per_subsolvers(subsolvers.size(), 0);
   while (true) {
     SynchronizeAll(subsolvers);
-    ClearSubsolversThatAreDone(subsolvers);
+    ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
     if (best == -1) break;
     num_generated_tasks[best]++;
+
+    WallTimer timer;
+    timer.Start();
     subsolvers[best]->GenerateTask(task_id++)();
+    subsolvers[best]->AddTaskDuration(timer.Get());
   }
 }
 
@@ -118,6 +126,7 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
 
   int64_t task_id = 0;
   std::vector<int64_t> num_generated_tasks(subsolvers.size(), 0);
+  std::vector<int> num_in_flight_per_subsolvers(subsolvers.size(), 0);
   std::vector<std::function<void()>> to_run;
   std::vector<int> indices;
   std::vector<double> timing;
@@ -126,7 +135,7 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   pool.StartWorkers();
   while (true) {
     SynchronizeAll(subsolvers);
-    ClearSubsolversThatAreDone(subsolvers);
+    ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
 
     // We first generate all task to run in this batch.
     // Note that we can't start the task right away since if a task finish
@@ -136,6 +145,7 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     for (int t = 0; t < batch_size; ++t) {
       const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
       if (best == -1) break;
+      num_in_flight_per_subsolvers[best]++;
       num_generated_tasks[best]++;
       to_run.push_back(subsolvers[best]->GenerateTask(task_id++));
       indices.push_back(best);
@@ -161,6 +171,7 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     blocking_counter.Wait();
 
     // Update times.
+    num_in_flight_per_subsolvers.assign(subsolvers.size(), 0);
     for (int i = 0; i < to_run.size(); ++i) {
       subsolvers[indices[i]]->AddTaskDuration(timing[i]);
     }
@@ -174,10 +185,12 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     return SequentialLoop(subsolvers);
   }
 
-  // The mutex guards num_in_flight. This is used to detect when the search is
-  // done.
+  // The mutex guards num_in_flight and num_in_flight_per_subsolvers.
+  // This is used to detect when the search is done.
   absl::Mutex mutex;
   int num_in_flight = 0;  // Guarded by `mutex`.
+  std::vector<int> num_in_flight_per_subsolvers(subsolvers.size(), 0);
+
   // Predicate to be used with absl::Condition to detect that num_in_flight <
   // num_threads. Must only be called while locking `mutex`.
   const auto num_in_flight_lt_num_threads = [&num_in_flight, num_threads]() {
@@ -223,7 +236,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       // We need to do that while holding the lock since substask below might
       // be currently updating the time via AddTaskDuration().
       const absl::MutexLock mutex_lock(&mutex);
-      ClearSubsolversThatAreDone(subsolvers);
+      ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
     }
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
     if (best == -1) {
@@ -242,20 +255,22 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     {
       absl::MutexLock mutex_lock(&mutex);
       num_in_flight++;
+      num_in_flight_per_subsolvers[best]++;
     }
     std::function<void()> task = subsolvers[best]->GenerateTask(task_id++);
     const std::string name = subsolvers[best]->name();
     pool.Schedule([task = std::move(task), name, best, &subsolvers, &mutex,
-                   &num_in_flight]() {
+                   &num_in_flight, &num_in_flight_per_subsolvers]() {
       WallTimer timer;
       timer.Start();
       task();
 
       const absl::MutexLock mutex_lock(&mutex);
+      DCHECK(subsolvers[best] != nullptr);
+      DCHECK_GT(num_in_flight_per_subsolvers[best], 0);
+      num_in_flight_per_subsolvers[best]--;
       VLOG(1) << name << " done in " << timer.Get() << "s.";
-      if (subsolvers[best] != nullptr) {
-        subsolvers[best]->AddTaskDuration(timer.Get());
-      }
+      subsolvers[best]->AddTaskDuration(timer.Get());
       num_in_flight--;
     });
   }

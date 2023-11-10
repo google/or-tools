@@ -199,7 +199,7 @@ void EncodingNode::ApplyWeightUpperBound(Coefficient gap, SatSolver* solver) {
       std::max(0, (weight_lb_ - lb_) + static_cast<int>(num_allowed.value()));
   if (size() <= new_size) return;
   for (int i = new_size; i < size(); ++i) {
-    solver->AddUnitClause(literal(i).Negated());
+    if (!solver->AddUnitClause(literal(i).Negated())) return;
   }
   literals_.resize(new_size);
   ub_ = lb_ + new_size;
@@ -208,7 +208,7 @@ void EncodingNode::ApplyWeightUpperBound(Coefficient gap, SatSolver* solver) {
 void EncodingNode::TransformToBoolean(SatSolver* solver) {
   if (size() > 1) {
     for (int i = 1; i < size(); ++i) {
-      solver->AddUnitClause(literal(i).Negated());
+      if (!solver->AddUnitClause(literal(i).Negated())) return;
     }
     literals_.resize(1);
     ub_ = lb_ + 1;
@@ -220,7 +220,7 @@ void EncodingNode::TransformToBoolean(SatSolver* solver) {
   // TODO(user): Avoid creating a Boolean just to fix it!
   IncreaseNodeSize(this, solver);
   CHECK_EQ(size(), 2);
-  solver->AddUnitClause(literal(1).Negated());
+  if (!solver->AddUnitClause(literal(1).Negated())) return;
   literals_.resize(1);
   ub_ = lb_ + 1;
 }
@@ -362,7 +362,7 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
     {
       const int ib = target - (a->lb() - 1);
       if ((ib - 1) == b->lb() - 1) {
-        solver->AddUnitClause(n->GreaterThan(target));
+        if (!solver->AddUnitClause(n->GreaterThan(target))) return;
       }
       if ((ib - 1) >= b->lb() && (ib - 1) < b->current_ub()) {
         solver->AddBinaryClause(n->GreaterThan(target),
@@ -378,7 +378,7 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
                                 b->GreaterThan(ib));
       }
       if (ib == b->ub()) {
-        solver->AddUnitClause(n->GreaterThan(target).Negated());
+        if (!solver->AddUnitClause(n->GreaterThan(target).Negated())) return;
       }
     }
   }
@@ -399,7 +399,7 @@ EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
       solver->AddBinaryClause(n.literal(ia), a->literal(ia).Negated());
     } else {
       // Fix the variable to false because of the given upper_bound.
-      solver->AddUnitClause(a->literal(ia).Negated());
+      if (!solver->AddUnitClause(a->literal(ia).Negated())) return n;
     }
   }
   for (int ib = 0; ib < b->size(); ++ib) {
@@ -411,7 +411,7 @@ EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
       solver->AddBinaryClause(n.literal(ib), b->literal(ib).Negated());
     } else {
       // Fix the variable to false because of the given upper_bound.
-      solver->AddUnitClause(b->literal(ib).Negated());
+      if (!solver->AddUnitClause(b->literal(ib).Negated())) return n;
     }
   }
   for (int ia = 0; ia < a->size(); ++ia) {
@@ -669,7 +669,8 @@ bool ObjectiveEncoder::ProcessCore(const std::vector<Literal>& core,
     // number of Booleans needed and has a good positive impact.
     std::vector<int> buffer;
     std::vector<absl::Span<const Literal>> decomposition;
-    if (bool_nodes.size() < 300 && bool_nodes.size() > 1) {
+    if (params_.core_minimization_level() > 1 && bool_nodes.size() < 300 &&
+        bool_nodes.size() > 1) {
       const auto& assignment = sat_solver_->Assignment();
       const int size = bool_nodes.size();
       std::vector<std::vector<int>> graph(size);

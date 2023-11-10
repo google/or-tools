@@ -212,9 +212,9 @@ function build_python() {
   command -v swig | xargs echo "swig: " | tee -a build.log
 
   if [[ ${PLATFORM} == "arm64" ]]; then
-    local -r PY=(3.8 3.9 3.10 3.11)
+    local -r PY=(3.8 3.9 3.10 3.11 3.12)
   else
-    local -r PY=(3.8 3.9 3.10 3.11)
+    local -r PY=(3.8 3.9 3.10 3.11 3.12)
   fi
 
   for PY_VERSION in "${PY[@]}"; do
@@ -229,9 +229,9 @@ function build_python() {
     echo "check python3..."
     command -v python3 | xargs echo "python3: " | tee -a build.log
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
-    "python${PY_VERSION}" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+    "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
-    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy-protobuf virtualenv
+    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf virtualenv
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log

@@ -27,7 +27,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/filelineiter.h"
@@ -148,6 +147,10 @@ class SatCnfReader {
   explicit SatCnfReader(bool wcnf_use_strong_slack = true)
       : interpret_cnf_as_max_sat_(false),
         wcnf_use_strong_slack_(wcnf_use_strong_slack) {}
+
+  // This type is neither copyable nor movable.
+  SatCnfReader(const SatCnfReader&) = delete;
+  SatCnfReader& operator=(const SatCnfReader&) = delete;
 
   // If called with true, then a cnf file will be converted to the max-sat
   // problem: Try to minimize the number of unsatisfiable clauses.
@@ -384,8 +387,6 @@ class SatCnfReader {
   int num_added_clauses_;
 
   std::vector<int> tmp_clause_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };
 
 }  // namespace sat

@@ -6,18 +6,12 @@ ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers zlib-dev
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel6
 
-# Install OpenJDK17
-# note: default-jvm will now point to java-17-openjdk
-RUN apk add --no-cache openjdk17 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
-# Remove infinite loop since jre point to the current directory
-# otherwise bazel issue an error and stop...
-RUN rm /usr/lib/jvm/default-jvm/jre
-
 ENV JAVA_HOME=/usr/lib/jvm/default-jvm
 ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Install Python
-RUN apk add --no-cache python3-dev py3-pip
+RUN apk add --no-cache python3-dev py3-pip \
+ py3-setuptools py3-wheel
 
 FROM env AS devel
 WORKDIR /home/project
@@ -25,17 +19,23 @@ COPY . .
 
 FROM devel AS build
 RUN bazel version
+
+# --javabase=@local_jdk_11//:jdk \
+# --host_javabase=@local_jdk_11//:jdk \
+
+# --javabase=@bazel_tools//tools/jdk:local_jdk11 \
+# --host_javabase=@bazel_tools//tools/jdk:local_jdk11 \
 RUN bazel build \
- --host_javabase=@local_jdk//:jdk \
  -c opt \
- --action_env=BAZEL_CXXOPTS="-std=c++17" \
+ --java_language_version=11 \
+ --java_runtime_version=local_jdk11 \
+ --tool_java_runtime_version=local_jdk11 \
  --subcommands=true \
- ortools/... examples/...
+ //ortools/... //examples/...
 
 FROM build AS test
 RUN bazel test \
  --host_javabase=@local_jdk//:jdk \
  -c opt \
- --action_env=BAZEL_CXXOPTS="-std=c++17" \
  --test_output=errors \
- ortools/... examples/...
+ //ortools/... //examples/...

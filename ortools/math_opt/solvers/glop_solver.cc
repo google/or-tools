@@ -17,10 +17,8 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -71,8 +69,6 @@ namespace math_opt {
 
 namespace {
 
-constexpr double kInf = std::numeric_limits<double>::infinity();
-
 constexpr SupportedProblemStructures kGlopSupportedStructures = {};
 
 absl::string_view SafeName(const VariablesProto& variables, int index) {
@@ -91,42 +87,65 @@ absl::string_view SafeName(const LinearConstraintsProto& linear_constraints,
 }
 
 absl::StatusOr<TerminationProto> BuildTermination(
-    const glop::ProblemStatus status,
-    const SolveInterrupter* const interrupter) {
+    const glop::ProblemStatus status, const SolveInterrupter* const interrupter,
+    const bool is_maximize, const double objective_value) {
   switch (status) {
     case glop::ProblemStatus::OPTIMAL:
-      return TerminateForReason(TERMINATION_REASON_OPTIMAL);
+      return OptimalTerminationProto(objective_value, objective_value);
     case glop::ProblemStatus::PRIMAL_INFEASIBLE:
+      return InfeasibleTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED);
     case glop::ProblemStatus::DUAL_UNBOUNDED:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE);
+      return InfeasibleTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_FEASIBLE);
     case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      return TerminateForReason(TERMINATION_REASON_UNBOUNDED);
+      return UnboundedTerminationProto(is_maximize);
     case glop::ProblemStatus::DUAL_INFEASIBLE:
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_INFEASIBLE);
     case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:
-      return TerminateForReason(TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED);
+      return InfeasibleOrUnboundedTerminationProto(
+          is_maximize,
+          /*dual_feasibility_status=*/FEASIBILITY_STATUS_UNDETERMINED);
     case glop::ProblemStatus::INIT:
+      // Glop may flip the `interrupt_solve` atomic when it is terminated for a
+      // reason other than interruption so we should ignore its value. Instead
+      // we use the interrupter.
+      // A primal feasible solution is only returned for PRIMAL_FEASIBLE (see
+      // comments in FillSolution).
+      return NoSolutionFoundTerminationProto(
+          is_maximize, interrupter != nullptr && interrupter->IsInterrupted()
+                           ? LIMIT_INTERRUPTED
+                           : LIMIT_UNDETERMINED);
     case glop::ProblemStatus::DUAL_FEASIBLE:
       // Glop may flip the `interrupt_solve` atomic when it is terminated for a
       // reason other than interruption so we should ignore its value. Instead
       // we use the interrupter.
       // A primal feasible solution is only returned for PRIMAL_FEASIBLE (see
       // comments in FillSolution).
-      return NoSolutionFoundTermination(interrupter != nullptr &&
-                                                interrupter->IsInterrupted()
-                                            ? LIMIT_INTERRUPTED
-                                            : LIMIT_UNDETERMINED);
+      return NoSolutionFoundTerminationProto(
+          is_maximize,
+          interrupter != nullptr && interrupter->IsInterrupted()
+              ? LIMIT_INTERRUPTED
+              : LIMIT_UNDETERMINED,
+          objective_value);
     case glop::ProblemStatus::PRIMAL_FEASIBLE:
       // Glop may flip the `interrupt_solve` atomic when it is terminated for a
       // reason other than interruption so we should ignore its value. Instead
       // we use the interrupter.
       // A primal feasible solution is only returned for PRIMAL_FEASIBLE (see
       // comments in FillSolution).
-      return FeasibleTermination(interrupter != nullptr &&
-                                         interrupter->IsInterrupted()
-                                     ? LIMIT_INTERRUPTED
-                                     : LIMIT_UNDETERMINED);
+      return FeasibleTerminationProto(
+          is_maximize,
+          interrupter != nullptr && interrupter->IsInterrupted()
+              ? LIMIT_INTERRUPTED
+              : LIMIT_UNDETERMINED,
+          objective_value);
     case glop::ProblemStatus::IMPRECISE:
-      return TerminateForReason(TERMINATION_REASON_IMPRECISE);
+      return TerminateForReason(is_maximize, TERMINATION_REASON_IMPRECISE);
     case glop::ProblemStatus::ABNORMAL:
     case glop::ProblemStatus::INVALID_PROBLEM:
       return absl::InternalError(
@@ -594,7 +613,7 @@ InvertedBounds GlopSolver::ListInvertedBounds() const {
 void GlopSolver::FillSolution(const glop::ProblemStatus status,
                               const ModelSolveParametersProto& model_parameters,
                               SolveResultProto& solve_result) {
-  // Meaningfull solutions are available if optimality is proven in
+  // Meaningful solutions are available if optimality is proven in
   // preprocessing or after 1 simplex iteration.
   // TODO(b/195295177): Discuss what to do with glop::ProblemStatus::IMPRECISE
   // looks like it may be set also when rays are imprecise.
@@ -627,8 +646,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
   } else if (status == glop::ProblemStatus::PRIMAL_FEASIBLE) {
     // Solve reached phase II of primal simplex and current basis is not
     // optimal. Hence basis is primal feasible, but cannot be dual feasible.
-    // Dual solution could still be feasible as noted in
-    // go/mathopt-basis-advanced#dualfeasibility
+    // Dual solution could still be feasible.
     primal_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
     dual_solution->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
     basis->set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
@@ -636,8 +654,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
     // Solve reached phase II of dual simplex and current basis is not optimal.
     // Hence basis is dual feasible, but cannot be primal feasible. In addition,
     // glop applies dual feasibility correction in dual simplex so feasibility
-    // of the dual solution matches dual feasibility of the basis (i.e the issue
-    // described in go/mathopt-basis-advanced#dualfeasibility cannot happen).
+    // of the dual solution matches dual feasibility of the basis.
     // TODO(b/195295177): confirm with fdid
     primal_solution->set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
     dual_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
@@ -647,9 +664,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
     if (lp_solver_.GetParameters().use_dual_simplex()) {
       // Phase I did not finish so basis is not dual feasible. In addition,
       // glop applies dual feasibility correction so feasibility of the dual
-      // solution matches dual feasibility of the basis (i.e the issue described
-      // in go/mathopt-basis-advanced#dualfeasibility cannot happen).
-      // TODO(b/195295177): confirm with fdid
+      // solution matches dual feasibility of the basis.
       primal_solution->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
       dual_solution->set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
       basis->set_basic_dual_feasibility(SOLUTION_STATUS_INFEASIBLE);
@@ -664,8 +679,7 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
   // Fill in objective values
   primal_solution->set_objective_value(lp_solver_.GetObjectiveValue());
   if (basis->basic_dual_feasibility() == SOLUTION_STATUS_FEASIBLE) {
-    // Primal and dual objectives are the same for a dual feasible basis
-    // see go/mathopt-basis-advanced#cs-obj-dual-feasible-dual-feasible-basis
+    // Primal and dual objectives are the same for a dual feasible basis.
     dual_solution->set_objective_value(primal_solution->objective_value());
   }
 
@@ -708,76 +722,8 @@ void GlopSolver::FillSolution(const glop::ProblemStatus status,
   }
 }
 
-absl::Status GlopSolver::FillSolveStats(const glop::ProblemStatus status,
-                                        const absl::Duration solve_time,
+absl::Status GlopSolver::FillSolveStats(const absl::Duration solve_time,
                                         SolveStatsProto& solve_stats) {
-  const bool is_maximize = linear_program_.IsMaximizationProblem();
-
-  // Set default status and bounds.
-  solve_stats.mutable_problem_status()->set_primal_status(
-      FEASIBILITY_STATUS_UNDETERMINED);
-  solve_stats.set_best_primal_bound(is_maximize ? -kInf : kInf);
-  solve_stats.mutable_problem_status()->set_dual_status(
-      FEASIBILITY_STATUS_UNDETERMINED);
-  solve_stats.set_best_dual_bound(is_maximize ? kInf : -kInf);
-
-  // Update status and bounds as appropriate.
-  switch (status) {
-    case glop::ProblemStatus::OPTIMAL:
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.mutable_problem_status()->set_dual_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.set_best_primal_bound(lp_solver_.GetObjectiveValue());
-      solve_stats.set_best_dual_bound(lp_solver_.GetObjectiveValue());
-      break;
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_INFEASIBLE);
-      break;
-    case glop::ProblemStatus::DUAL_UNBOUNDED:
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_INFEASIBLE);
-      solve_stats.mutable_problem_status()->set_dual_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.set_best_dual_bound(is_maximize ? -kInf : kInf);
-      break;
-    case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.mutable_problem_status()->set_dual_status(
-          FEASIBILITY_STATUS_INFEASIBLE);
-      solve_stats.set_best_primal_bound(is_maximize ? kInf : -kInf);
-      break;
-    case glop::ProblemStatus::DUAL_INFEASIBLE:
-      solve_stats.mutable_problem_status()->set_dual_status(
-          FEASIBILITY_STATUS_INFEASIBLE);
-      break;
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:
-      solve_stats.mutable_problem_status()->set_primal_or_dual_infeasible(true);
-      break;
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
-      solve_stats.mutable_problem_status()->set_primal_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.set_best_primal_bound(lp_solver_.GetObjectiveValue());
-      break;
-    case glop::ProblemStatus::DUAL_FEASIBLE:
-      solve_stats.mutable_problem_status()->set_dual_status(
-          FEASIBILITY_STATUS_FEASIBLE);
-      solve_stats.set_best_dual_bound(lp_solver_.GetObjectiveValue());
-      break;
-    case glop::ProblemStatus::INIT:
-    case glop::ProblemStatus::IMPRECISE:
-      // TODO(b/195295177): Discuss what to do with
-      // glop::ProblemStatus::IMPRECISE
-      break;
-    case glop::ProblemStatus::ABNORMAL:
-    case glop::ProblemStatus::INVALID_PROBLEM:
-      return absl::InternalError(
-          absl::StrCat("Unexpected GLOP termination reason: ",
-                       glop::GetProblemStatusString(status)));
-  }
-
   // Fill remaining stats
   solve_stats.set_simplex_iterations(lp_solver_.GetNumberOfSimplexIterations());
   RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
@@ -793,10 +739,12 @@ absl::StatusOr<SolveResultProto> GlopSolver::MakeSolveResult(
     const absl::Duration solve_time) {
   SolveResultProto solve_result;
   ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
-                   BuildTermination(status, interrupter));
+                   BuildTermination(status, interrupter,
+                                    linear_program_.IsMaximizationProblem(),
+                                    lp_solver_.GetObjectiveValue()));
   FillSolution(status, model_parameters, solve_result);
   RETURN_IF_ERROR(
-      FillSolveStats(status, solve_time, *solve_result.mutable_solve_stats()));
+      FillSolveStats(solve_time, *solve_result.mutable_solve_stats()));
   return solve_result;
 }
 
@@ -821,7 +769,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
-    const CallbackRegistrationProto& callback_registration, const Callback cb,
+    const CallbackRegistrationProto& callback_registration, const Callback,
     SolveInterrupter* const interrupter) {
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
@@ -884,7 +832,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
 }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
-    const ModelProto& model, const InitArgs& init_args) {
+    const ModelProto& model, const InitArgs&) {
   RETURN_IF_ERROR(ModelIsSupported(model, kGlopSupportedStructures, "Glop"));
   auto solver = absl::WrapUnique(new GlopSolver);
   // By default Glop CHECKs that bounds are always consistent (lb < ub); thus it
@@ -938,9 +886,9 @@ absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
   return true;
 }
 
-absl::StatusOr<InfeasibleSubsystemResultProto> GlopSolver::InfeasibleSubsystem(
-    const SolveParametersProto& parameters, MessageCallback message_cb,
-    SolveInterrupter* interrupter) {
+absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
+GlopSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
+                                       MessageCallback, SolveInterrupter*) {
   return absl::UnimplementedError(
       "GLOP does not implement a method to compute an infeasible subsystem");
 }

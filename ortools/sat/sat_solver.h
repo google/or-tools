@@ -33,10 +33,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -64,6 +63,11 @@ class SatSolver {
  public:
   SatSolver();
   explicit SatSolver(Model* model);
+
+  // This type is neither copyable nor movable.
+  SatSolver(const SatSolver&) = delete;
+  SatSolver& operator=(const SatSolver&) = delete;
+
   ~SatSolver();
 
   // TODO(user): Remove. This is temporary for accessing the model deep within
@@ -99,7 +103,7 @@ class SatSolver {
   // solve a subproblem where some variables are fixed. Note that it is more
   // efficient to add such unit clause before all the others.
   // Returns false if the problem is detected to be UNSAT.
-  bool AddUnitClause(Literal true_literal);
+  ABSL_MUST_USE_RESULT bool AddUnitClause(Literal true_literal);
 
   // Same as AddProblemClause() below, but for small clauses.
   bool AddBinaryClause(Literal a, Literal b);
@@ -307,11 +311,11 @@ class SatSolver {
   // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
   // reached or the model was proven UNSAT. Returns IsModelUnsat().
-  bool FinishPropagation();
+  ABSL_MUST_USE_RESULT bool FinishPropagation();
 
   // Like Backtrack(0) but make sure the propagation is finished and return
   // false if unsat was detected. This also removes any assumptions level.
-  bool ResetToLevelZero();
+  ABSL_MUST_USE_RESULT bool ResetToLevelZero();
 
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
@@ -439,7 +443,7 @@ class SatSolver {
 
   // Performs propagation of the recently enqueued elements.
   // Mainly visible for testing.
-  bool Propagate();
+  ABSL_MUST_USE_RESULT bool Propagate();
 
   // This must be called at level zero. It will spend the given num decision and
   // use propagation to try to minimize some clauses from the database.
@@ -472,15 +476,15 @@ class SatSolver {
   // Hack to allow to temporarily disable logging if it is enabled.
   SolverLogger* mutable_logger() { return logger_; }
 
- private:
-  // Calls Propagate() and returns true if no conflict occurred. Otherwise,
-  // learns the conflict, backtracks, enqueues the consequence of the learned
-  // conflict and returns false.
+  // Processes the current conflict from trail->FailingClause().
   //
-  // When handling assumptions, this might return false without backtracking
-  // in case of ASSUMPTIONS_UNSAT.
-  bool PropagateAndStopAfterOneConflictResolution();
+  // This learns the conflict, backtracks, enqueues the consequence of the
+  // learned conflict and return. When handling assumptions, this might return
+  // false without backtracking in case of ASSUMPTIONS_UNSAT. This is only
+  // exposed to allow processing a conflict detected outside normal propagation.
+  void ProcessCurrentConflict();
 
+ private:
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
 
@@ -874,8 +878,6 @@ class SatSolver {
 
   std::function<void(Literal, Literal)> shared_binary_clauses_callback_ =
       nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 
 // Tries to minimize the given UNSAT core with a really simple heuristic.

@@ -1,8 +1,11 @@
 FROM ortools/cmake:opensuse_swig AS env
 ENV PATH=/root/.local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y python3 python3-pip python3-devel \
+&& zypper install -y python311 python311-devel \
+ python311-pip python311-wheel python311-virtualenv \
 && zypper clean -a
+RUN python3.11 -m pip install --break-system-packages \
+ absl-py mypy mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project
@@ -19,7 +22,7 @@ RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
 FROM env AS install_env
 WORKDIR /home/sample
 COPY --from=build /home/project/build/python/dist/*.whl .
-RUN python3 -m pip install *.whl
+RUN python3 -m pip install --break-system-packages *.whl
 
 FROM install_env AS install_devel
 COPY cmake/samples/python .

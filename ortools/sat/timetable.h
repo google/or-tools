@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -113,6 +112,10 @@ class TimeTablingPerTask : public PropagatorInterface {
                      SchedulingConstraintHelper* helper,
                      SchedulingDemandHelper* demands, Model* model);
 
+  // This type is neither copyable nor movable.
+  TimeTablingPerTask(const TimeTablingPerTask&) = delete;
+  TimeTablingPerTask& operator=(const TimeTablingPerTask&) = delete;
+
   bool Propagate() final;
 
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -175,9 +178,8 @@ class TimeTablingPerTask : public PropagatorInterface {
   }
 
   // Returns true if the tasks is present and has a mantatory part.
-  bool IsInProfile(int t) const {
-    return positions_in_profile_tasks_[t] < num_profile_tasks_;
-  }
+  // This is only valid after BuildProfile() has been called.
+  bool IsInProfile(int t) const { return cached_demands_min_[t] > 0; }
 
   // Number of tasks.
   const int num_tasks_;
@@ -195,18 +197,18 @@ class TimeTablingPerTask : public PropagatorInterface {
 
   // Reversible set (with random access) of tasks to consider for building the
   // profile. The set contains the tasks in the [0, num_profile_tasks_) prefix
-  // of profile_tasks_. The positions of a task in profile_tasks_ is contained
-  // in positions_in_profile_tasks_.
+  // of profile_tasks_.
   std::vector<int> profile_tasks_;
-  std::vector<int> positions_in_profile_tasks_;
   int num_profile_tasks_;
+
+  // Only task with mandatory part will have their demand cached.
+  // Others will have zero here.
+  std::vector<IntegerValue> cached_demands_min_;
 
   // Statically computed.
   // This allow to simplify the profile for common usage.
   bool has_demand_equal_to_capacity_ = false;
   IntegerValue initial_max_demand_;
-
-  DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };
 
 }  // namespace sat

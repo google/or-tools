@@ -59,7 +59,7 @@ RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
 # Install Python
 RUN zypper install -y python311-devel python311-pip \
 && zypper clean -a
-RUN python3.11 -m pip install absl-py mypy-protobuf
+RUN python3.11 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##

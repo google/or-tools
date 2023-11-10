@@ -35,7 +35,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 56
+// Next ID: 58
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -473,6 +473,9 @@ message RoutingSearchParameters {
   // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
   // parameters which will be used.
   sat.SatParameters sat_parameters = 48;
+  // If use_cp_sat or use_generalized_cp_sat is true, will report intermediate
+  // solutions found by CP-SAT to solution listeners.
+  bool report_intermediate_cp_sat_solutions = 56;
   // If model.Size() is less than the threshold and that no solution has been
   // found, attempt a pass with CP-SAT.
   int32 fallback_to_cp_sat_size_threshold = 52;
@@ -504,6 +507,13 @@ message RoutingSearchParameters {
   // Limit to the time spent in the completion search for each local search
   // neighbor.
   google.protobuf.Duration lns_time_limit = 10;
+  // Ratio of the overall time limit spent in a secondary LS phase with only
+  // intra-route and insertion operators, meant to "cleanup" the current
+  // solution before stopping the search.
+  // TODO(user): Since these operators are very fast, add a parameter to cap
+  // the max time allocated for this second phase (e.g.
+  // Duration max_secondary_ls_time_limit).
+  double secondary_ls_time_limit_ratio = 57;
 
   // Parameters required for the improvement search limit.
   message ImprovementSearchLimitParameters {

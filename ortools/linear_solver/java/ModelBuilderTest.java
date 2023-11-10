@@ -27,9 +27,28 @@ public final class ModelBuilderTest {
   }
 
   @Test
-  public void runMinimalLinearExample_ok() {
+  public void testEnforcedLinearApi() {
     ModelBuilder model = new ModelBuilder();
-    model.setName("minimal_linear_example");
+    model.setName("minimal enforced linear test");
+    double infinity = Double.POSITIVE_INFINITY;
+    Variable x = model.newNumVar(0.0, infinity, "x");
+    Variable y = model.newNumVar(0.0, infinity, "y");
+    Variable z = model.newBoolVar("z");
+
+    assertThat(model.numVariables()).isEqualTo(3);
+
+    EnforcedLinearConstraint c0 = model.addEnforcedGreaterOrEqual(
+        LinearExpr.newBuilder().add(x).addTerm(y, 2.0), 10.0, z, false);
+    assertThat(c0.getLowerBound()).isEqualTo(10.0);
+    assertThat(c0.getIndicatorVariable().getIndex()).isEqualTo(z.getIndex());
+    assertThat(c0.getIndicatorValue()).isFalse();
+  }
+
+  @Test
+  public void runMinimalLinearExample_ok() {
+    final String name = "minimal_linear_example";
+    ModelBuilder model = new ModelBuilder();
+    model.setName(name);
     double infinity = Double.POSITIVE_INFINITY;
     Variable x1 = model.newNumVar(0.0, infinity, "x1");
     Variable x2 = model.newNumVar(0.0, infinity, "x2");
@@ -88,8 +107,8 @@ public final class ModelBuilderTest {
     assertThat(solver.getActivity(c1)).isWithin(1e-5).of(600.0);
     assertThat(solver.getActivity(c2)).isWithin(1e-5).of(200.0);
 
-    assertThat(model.exportToLpString(false)).contains("minimal_linear_example");
-    assertThat(model.exportToMpsString(false)).contains("minimal_linear_example");
+    assertThat(model.exportToLpString(false)).contains(name);
+    assertThat(model.exportToMpsString(false)).contains(name);
   }
 
   @Test

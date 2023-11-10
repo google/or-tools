@@ -24,11 +24,6 @@
 //      mathopt_solve --input_file model.pb --solve_parameters 'threads: 4'
 //  * Specify the file format:
 //      mathopt_solve --input_file model --format=mathopt
-// MOE: begin_strip
-//  * Solve a MIPLIB problem:
-//      mathopt_solve --input_file
-//      /google/src/head/depot/operations_research_data/MIP_MIPLIB/miplib2017/10teams.mps.gz
-// MOE: end_strip
 #include <iostream>
 #include <memory>
 #include <optional>

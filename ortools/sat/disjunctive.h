@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "ortools/base/macros.h"
@@ -36,17 +37,13 @@ namespace sat {
 //
 // TODO(user): This is not completely true for empty intervals (start == end).
 // Make sure such intervals are ignored by the constraint.
-std::function<void(Model*)> Disjunctive(
-    const std::vector<IntervalVariable>& intervals);
+void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
+                    Model* model);
 
 // Creates Boolean variables for all the possible precedences of the form (task
 // i is before task j) and forces that, for each couple of task (i,j), either i
 // is before j or j is before i. Do not create any other propagators.
 void AddDisjunctiveWithBooleanPrecedencesOnly(
-    const std::vector<IntervalVariable>& intervals, Model* model);
-
-// Same as Disjunctive() + DisjunctiveWithBooleanPrecedencesOnly().
-void AddDisjunctiveWithBooleanPrecedences(
     const std::vector<IntervalVariable>& intervals, Model* model);
 
 // Helper class to compute the end-min of a set of tasks given their start-min
@@ -135,23 +132,25 @@ class TaskSet {
 class DisjunctiveOverloadChecker : public PropagatorInterface {
  public:
   explicit DisjunctiveOverloadChecker(SchedulingConstraintHelper* helper)
-      : helper_(helper) {
-    // Resize this once and for all.
-    task_to_event_.resize(helper_->NumTasks());
-  }
+      : helper_(helper),
+        window_(new TaskTime[helper->NumTasks()]),
+        task_to_event_(new int[helper->NumTasks()]) {}
+
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue global_window_end);
+  bool PropagateSubwindow(int relevat_size, IntegerValue global_window_end);
 
   SchedulingConstraintHelper* helper_;
 
-  std::vector<TaskTime> window_;
+  // Size assigned at construction, stay fixed afterwards.
+  std::unique_ptr<TaskTime[]> window_;
+  std::unique_ptr<int[]> task_to_event_;
+
   std::vector<TaskTime> task_by_increasing_end_max_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
-  std::vector<int> task_to_event_;
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {

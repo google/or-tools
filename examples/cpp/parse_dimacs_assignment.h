@@ -21,15 +21,15 @@
 
 #include <algorithm>
 #include <cinttypes>
-#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/filelineiter.h"
@@ -161,18 +161,15 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
   }
   NodeIndex tail;
   NodeIndex head;
-  // We don't use int64_t/CostValue here because of go/int64_t-cleanup.
-  int64_t cost;
+  CostValue cost;
   if (sscanf(line.c_str(), "%*c%d%d%" SCNd64, &tail, &head, &cost) != 3) {
     state_.bad = true;
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new std::string(line));
   }
-  const CostValue cost_value{cost};
   ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
-  assignment_->SetArcCost(arc, absl::GetFlag(FLAGS_assignment_maximize_cost)
-                                   ? -cost_value
-                                   : cost_value);
+  assignment_->SetArcCost(
+      arc, absl::GetFlag(FLAGS_assignment_maximize_cost) ? -cost : cost);
 }
 
 // Parameters out of style-guide order because this function is used

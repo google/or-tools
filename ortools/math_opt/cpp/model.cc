@@ -271,7 +271,9 @@ void Model::AddToObjective(Objective objective,
   }
 }
 
-ModelProto Model::ExportModel() const { return storage()->ExportModel(); }
+ModelProto Model::ExportModel(const bool remove_names) const {
+  return storage()->ExportModel(remove_names);
+}
 
 std::unique_ptr<UpdateTracker> Model::NewUpdateTracker() {
   return std::make_unique<UpdateTracker>(storage_);

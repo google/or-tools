@@ -1,36 +1,35 @@
+# ref: https://github.com/actions/runner-images
 name: amd64 Docker CMake
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   cmake:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
         lang: [cpp, python, dotnet, java]
       fail-fast: false
-    env:
-      DISTRO: ${{ matrix.distro }}
-      LANG: ${{ matrix.lang }}
+    name: ${{ matrix.distro }} • CMake • ${{ matrix.lang }}
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Build base image
-      run: make --directory=cmake ${DISTRO}_base
-    - name: Build env image
-      run: make --directory=cmake ${DISTRO}_${LANG}_env
-    - name: Build devel image
-      run: make --directory=cmake ${DISTRO}_${LANG}_devel
-    - name: Build project
-      run: make --directory=cmake ${DISTRO}_${LANG}_build
-    - name: Test project
-      run: make --directory=cmake ${DISTRO}_${LANG}_test
+      - uses: actions/checkout@v4
+      - name: Build base image
+        run: make --directory=cmake ${{ matrix.distro }}_base
+      - name: Build env image
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_env
+      - name: Build devel image
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_devel
+      - name: Build project
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_build
+      - name: Test project
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_test
 
-    - name: Build Install env image
-      run: make --directory=cmake ${DISTRO}_${LANG}_install_env
-    - name: Build Install devel image
-      run: make --directory=cmake ${DISTRO}_${LANG}_install_devel
-    - name: Build Install
-      run: make --directory=cmake ${DISTRO}_${LANG}_install_build
-    - name: Test Install
-      run: make --directory=cmake ${DISTRO}_${LANG}_install_test
+      - name: Build install env image
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_install_env
+      - name: Build install devel image
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_install_devel
+      - name: Build install project
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_install_build
+      - name: Test install project
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}_install_test

@@ -3,17 +3,21 @@ ENV PATH=/root/.local/bin:$PATH
 RUN pacman -Syu --noconfirm pybind11
 RUN pacman -Syu --noconfirm python \
  python-setuptools python-wheel python-virtualenv \
- python-pip python-protobuf
-RUN python -m pip install mypy_protobuf
+ python-pip python-protobuf python-numpy python-pandas
+RUN python -m pip install --break-system-package \
+ absl-py mypy mypy-protobuf
 
 FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
+# Archlinux do not provide pybind11 protobuf package
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
- -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=OFF \
- -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+ -DBUILD_pybind11_protobuf=ON \
+ -DUSE_COINOR=ON -DUSE_GLPK=ON -DUSE_SCIP=ON \
+ -DBUILD_PYTHON=ON \
+ -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

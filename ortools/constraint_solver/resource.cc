@@ -33,12 +33,12 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
@@ -961,6 +961,11 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         mirror_not_last_(s, intervals, true, strict),
         strict_(strict) {}
 
+  // This type is neither copyable nor movable.
+  FullDisjunctiveConstraint(const FullDisjunctiveConstraint&) = delete;
+  FullDisjunctiveConstraint& operator=(const FullDisjunctiveConstraint&) =
+      delete;
+
   ~FullDisjunctiveConstraint() override {}
 
   void Post() override {
@@ -1184,7 +1189,6 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   std::vector<IntervalVar*> performed_;
   std::vector<IntervalVar*> optional_;
   const bool strict_;
-  DISALLOW_COPY_AND_ASSIGN(FullDisjunctiveConstraint);
 };
 
 // =====================================================================
@@ -1259,6 +1263,10 @@ class DualCapacityThetaTree
         capacity_max_(-1),
         residual_capacity_(-1) {}
 
+  // This type is neither copyable nor movable.
+  DualCapacityThetaTree(const DualCapacityThetaTree&) = delete;
+  DualCapacityThetaTree& operator=(const DualCapacityThetaTree&) = delete;
+
   virtual ~DualCapacityThetaTree() {}
 
   void Init(int64_t capacity_max, int64_t residual_capacity) {
@@ -1282,7 +1290,6 @@ class DualCapacityThetaTree
  private:
   int64_t capacity_max_;
   int64_t residual_capacity_;
-  DISALLOW_COPY_AND_ASSIGN(DualCapacityThetaTree);
 };
 
 const int64_t DualCapacityThetaTree::kNotInitialized = -1LL;
@@ -1379,6 +1386,10 @@ class UpdatesForADemand {
   explicit UpdatesForADemand(int size)
       : updates_(size, 0), up_to_date_(false) {}
 
+  // This type is neither copyable nor movable.
+  UpdatesForADemand(const UpdatesForADemand&) = delete;
+  UpdatesForADemand& operator=(const UpdatesForADemand&) = delete;
+
   int64_t Update(int index) { return updates_[index]; }
   void Reset() { up_to_date_ = false; }
   void SetUpdate(int index, int64_t update) {
@@ -1392,7 +1403,6 @@ class UpdatesForADemand {
  private:
   std::vector<int64_t> updates_;
   bool up_to_date_;
-  DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
 // One-sided cumulative edge finder.
@@ -1410,6 +1420,10 @@ class EdgeFinder : public Constraint {
         lt_tree_(tasks.size(), capacity_->Max()),
         dual_capacity_tree_(tasks.size()),
         has_zero_demand_tasks_(true) {}
+
+  // This type is neither copyable nor movable.
+  EdgeFinder(const EdgeFinder&) = delete;
+  EdgeFinder& operator=(const EdgeFinder&) = delete;
 
   ~EdgeFinder() override {
     gtl::STLDeleteElements(&tasks_);
@@ -1664,8 +1678,6 @@ class EdgeFinder : public Constraint {
 
   // Has one task a demand min == 0
   Rev<bool> has_zero_demand_tasks_;
-
-  DISALLOW_COPY_AND_ASSIGN(EdgeFinder);
 };
 
 // A point in time where the usage profile changes.
@@ -1723,6 +1735,10 @@ class CumulativeTimeTable : public Constraint {
     profile_non_unique_time_.reserve(profile_max_size);
     profile_unique_time_.reserve(profile_max_size);
   }
+
+  // This type is neither copyable nor movable.
+  CumulativeTimeTable(const CumulativeTimeTable&) = delete;
+  CumulativeTimeTable& operator=(const CumulativeTimeTable&) = delete;
 
   ~CumulativeTimeTable() override { gtl::STLDeleteElements(&by_start_min_); }
 
@@ -1891,8 +1907,6 @@ class CumulativeTimeTable : public Constraint {
   Profile profile_non_unique_time_;
   std::vector<Task*> by_start_min_;
   IntVar* const capacity_;
-
-  DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
 };
 
 // Cumulative idempotent Time-Table.
@@ -2179,7 +2193,7 @@ class CumulativeConstraint : public Constraint {
   CumulativeConstraint(Solver* const s,
                        const std::vector<IntervalVar*>& intervals,
                        const std::vector<int64_t>& demands,
-                       IntVar* const capacity, const std::string& name)
+                       IntVar* const capacity, absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2189,6 +2203,10 @@ class CumulativeConstraint : public Constraint {
       tasks_.push_back(CumulativeTask(intervals[i], demands[i]));
     }
   }
+
+  // This type is neither copyable nor movable.
+  CumulativeConstraint(const CumulativeConstraint&) = delete;
+  CumulativeConstraint& operator=(const CumulativeConstraint&) = delete;
 
   void Post() override {
     // For the cumulative constraint, there are many propagators, and they
@@ -2363,8 +2381,6 @@ class CumulativeConstraint : public Constraint {
   const std::vector<IntervalVar*> intervals_;
   // Array of demands for the visitor.
   const std::vector<int64_t> demands_;
-
-  DISALLOW_COPY_AND_ASSIGN(CumulativeConstraint);
 };
 
 class VariableDemandCumulativeConstraint : public Constraint {
@@ -2373,7 +2389,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
                                      const std::vector<IntervalVar*>& intervals,
                                      const std::vector<IntVar*>& demands,
                                      IntVar* const capacity,
-                                     const std::string& name)
+                                     absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2383,6 +2399,12 @@ class VariableDemandCumulativeConstraint : public Constraint {
       tasks_.push_back(VariableCumulativeTask(intervals[i], demands[i]));
     }
   }
+
+  // This type is neither copyable nor movable.
+  VariableDemandCumulativeConstraint(
+      const VariableDemandCumulativeConstraint&) = delete;
+  VariableDemandCumulativeConstraint& operator=(
+      const VariableDemandCumulativeConstraint&) = delete;
 
   void Post() override {
     // For the cumulative constraint, there are many propagators, and they
@@ -2551,8 +2573,6 @@ class VariableDemandCumulativeConstraint : public Constraint {
   const std::vector<IntervalVar*> intervals_;
   // Array of demands for the visitor.
   const std::vector<IntVar*> demands_;
-
-  DISALLOW_COPY_AND_ASSIGN(VariableDemandCumulativeConstraint);
 };
 }  // namespace
 

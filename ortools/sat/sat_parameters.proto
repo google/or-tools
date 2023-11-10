@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 256
+// NEXT TAG: 269
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -380,12 +380,6 @@ message SatParameters {
   // log_to_stdout, log_to_response, ...) will do anything.
   optional bool log_search_progress = 41 [default = false];
 
-  // Indicates how much logging should wait before logging periodic search
-  // information from specialized workers (lb_tree_search, probing).
-  // A value < 0 will disable periodic logs.
-  optional double log_frequency_in_seconds = 212 [default = -1];
-  optional double model_reduction_log_frequency_in_seconds = 218 [default = 5];
-
   // Whether the solver should display per sub-solver search statistics.
   // This is only useful is log_search_progress is set to true, and if the
   // number of search workers is > 1. Note that in all case we display a bit
@@ -573,11 +567,7 @@ message SatParameters {
   optional int32 num_workers = 206 [default = 0];
   optional int32 num_search_workers = 100 [default = 0];
 
-  // If there is an objective and we are not in interleave mode, we will reserve
-  // at least this number of worker for LNS thread.
-  //
-  // TODO(user): Also define like for subsolvers the list of "active" type of
-  // neighborhood used.
+  // Obsolete parameter. No-op.
   optional int32 min_num_lns_workers = 211 [default = 2];
 
   // In multi-thread, the solver can be mainly seen as a portfolio of solvers
@@ -588,7 +578,6 @@ message SatParameters {
   // left empty) that looks like:
   // - default_lp           (linearization_level:1)
   // - fixed                (only if fixed search specified or scheduling)
-  // - less_encoding        (only if no objective)
   // - no_lp                (linearization_level:0)
   // - max_lp               (linearization_level:2)
   // - pseudo_costs         (only if objective, change search heuristic)
@@ -623,6 +612,9 @@ message SatParameters {
   // specified field will "overwrite" the ones of the base parameter. It is also
   // possible to overwrite the default names above.
   repeated SatParameters subsolver_params = 210;
+
+  // TODO(user): Also define like for subsolvers the list of "active"
+  // type of neighborhood used.
 
   // Experimental. If this is true, then we interleave all our major search
   // strategy and distribute the work amongst num_workers.
@@ -668,8 +660,11 @@ message SatParameters {
   // otherwise.
   optional bool use_optimization_hints = 35 [default = true];
 
-  // Whether we use a simple heuristic to try to minimize an UNSAT core.
-  optional bool minimize_core = 50 [default = true];
+  // If positive, we spend some effort on each core:
+  // - At level 1, we use a simple heuristic to try to minimize an UNSAT core.
+  // - At level 2, we use propagation to minimize the core but also identify
+  //   literal in at most one relationship in this core.
+  optional int32 core_minimization_level = 50 [default = 2];
 
   // Whether we try to find more independent cores for a given set of
   // assumptions in the core based max-SAT algorithms.
@@ -748,6 +743,15 @@ message SatParameters {
   // Enable stronger and more expensive propagation on no_overlap constraint.
   optional bool use_strong_propagation_in_disjunctive = 230 [default = false];
 
+  // Whether we try to branch on decision "interval A before interval B" rather
+  // than on intervals bounds. This usually works better, but slow down a bit
+  // the time to find the first solution.
+  //
+  // These parameters are still EXPERIMENTAL, the result should be correct, but
+  // it some corner cases, they can cause some failing CHECK in the solver.
+  optional bool use_dynamic_precedence_in_disjunctive = 263 [default = false];
+  optional bool use_dynamic_precedence_in_cumulative = 268 [default = false];
+
   // When this is true, the cumulative constraint is reinforced with overload
   // checking, i.e., an additional level of reasoning based on energy. This
   // additional level supplements the default level of reasoning as well as
@@ -765,6 +769,11 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_timetable_edge_finding_in_cumulative = 79 [default = false];
+
+  // Max number of intervals for the timetable_edge_finding algorithm to
+  // propagate. A value of 0 disables the constraint.
+  optional int32 max_num_intervals_for_timetable_edge_finding = 260
+      [default = 100];
 
   // If true, detect and create constraint for integer variable that are "after"
   // a set of intervals in the same cumulative constraint.
@@ -939,8 +948,7 @@ message SatParameters {
     // field.
     FIXED_SEARCH = 1;
 
-    // If used, the solver will use various generic heuristics in turn.
-    // This is not often used, prefer just using multi thread.
+    // Simple portfolio search used by LNS workers.
     PORTFOLIO_SEARCH = 2;
 
     // If used, the solver will use heuristics from the LP relaxation. This
@@ -967,6 +975,9 @@ message SatParameters {
     // search tree according to the specified fixed search strategy, but will
     // complete it using the default automatic search.
     PARTIAL_FIXED_SEARCH = 7;
+
+    // Randomized search. Used to increase entropy in the search.
+    RANDOMIZED_SEARCH = 8;
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
@@ -1075,24 +1086,23 @@ message SatParameters {
   // Parameters for an heuristic similar to the one described in the paper:
   // "Feasibility Jump: an LP-free Lagrangian MIP heuristic", Bjørnar
   // Luteberget, Giorgio Sartor, 2023, Mathematical Programming Computation.
-  //
-  // The test_feasibility_jump is used to only enable this for benchmarking.
+  optional bool use_feasibility_jump = 265 [default = true];
+
+  // Disable every other type of subsolver, setting this turns CP-SAT into a
+  // pure local-search solver.
   optional bool test_feasibility_jump = 240 [default = false];
 
-  // Max number of values scanned when scanning the domain of a variable.
-  // This number is checked to be >= 2 and <= 1e9.
-  optional int64 feasibility_jump_max_num_values_scanned = 245 [default = 4096];
+  // On each restart, we randomly choose if we use decay (with this parameter)
+  // or no decay.
+  optional double feasibility_jump_decay = 242 [default = 0.95];
 
-  // Feasibility jump focuses on the linear model, then switches to the full
-  // model when a linear feasible assignment is found. In the second phase, this
-  // parameters favors moves that keep the linear assignment feasible over move
-  // that will break it.
-  optional bool feasibility_jump_protect_linear_feasibility = 246
-      [default = true];
+  // How much do we linearize the problem in the local search code.
+  optional int32 feasibility_jump_linearization_level = 257 [default = 2];
 
-  // The following feasibility_jump parameters are meant to be used by the
-  // solver on the different workers that use feasibility_jump.
-  optional double feasibility_jump_decay = 242 [default = 1.0];
+  // This is a factor that directly influence the work before each restart.
+  // Setting this to zero disable restart, and increasing it lead to longer
+  // restarts.
+  optional int32 feasibility_jump_restart_factor = 258 [default = 1];
 
   // Probability for a variable to have a non default value upon restarts or
   // perturbations.
@@ -1109,6 +1119,11 @@ message SatParameters {
   // current solution. This parameter selects the first option.
   optional bool feasibility_jump_enable_restarts = 250 [default = true];
 
+  // Maximum size of no_overlap or no_overlap_2d constraint for a quadratic
+  // expansion.
+  optional int32 feasibility_jump_max_expanded_constraint_size = 264
+      [default = 100];
+
   // This will create incomplete subsolvers (that are not LNS subsolvers)
   // that use the feasibility jump code to find improving solution, treating
   // the objective improvement as a hard constraint.
@@ -1116,6 +1131,10 @@ message SatParameters {
 
   // How long violation_ls should wait before perturbating a solution.
   optional int32 violation_ls_perturbation_period = 249 [default = 100];
+
+  // Probability of using compound move search each restart.
+  // TODO(user): Add reference to paper when published.
+  optional double violation_ls_compound_move_probability = 259 [default = 0.5];
 
   // Enables experimental workstealing-like shared tree search.
   // If non-zero, start this many complete worker threads to explore a shared
@@ -1267,14 +1286,14 @@ message SatParameters {
   // Randomize fixed search.
   optional bool randomize_search = 103 [default = false];
 
-  // Search randomization will collect equivalent 'max valued' variables, and
-  // pick one randomly. For instance, if the variable strategy is CHOOSE_FIRST,
-  // all unassigned variables are equivalent. If the variable strategy is
-  // CHOOSE_LOWEST_MIN, and `lm` is the current lowest min of all unassigned
-  // variables, then the set of max valued variables will be all unassigned
-  // variables where
-  //    lm <= variable min <= lm + search_randomization_tolerance
-  optional int64 search_randomization_tolerance = 104 [default = 0];
+  // Search randomization will collect the top
+  // 'search_random_variable_pool_size' valued variables, and pick one randomly.
+  // The value of the variable is specific to each strategy.
+  optional int64 search_random_variable_pool_size = 104 [default = 0];
+
+  // Experimental code: specify if the objective pushes all tasks toward the
+  // start of the schedule.
+  optional bool push_all_tasks_toward_start = 262 [default = false];
 
   // If true, we automatically detect variables whose constraint are always
   // enforced by the same literal and we mark them as optional. This allows
@@ -1316,6 +1335,14 @@ message SatParameters {
   // time to do such polish step.
   optional bool polish_lp_solution = 175 [default = false];
 
+  // The internal LP tolerances used by CP-SAT. These applies to the internal
+  // and scaled problem. If the domains of your variables are large it might be
+  // good to use lower tolerances. If your problem is binary with low
+  // coefficients, it might be good to use higher ones to speed-up the lp
+  // solves.
+  optional double lp_primal_tolerance = 266 [default = 1e-7];
+  optional double lp_dual_tolerance = 267 [default = 1e-7];
+
   // Temporary flag util the feature is more mature. This convert intervals to
   // the newer proto format that support affine start/var/end instead of just
   // variables.
@@ -1329,6 +1356,11 @@ message SatParameters {
 
   // Experimental. Use new code to propagate linear constraint.
   optional bool new_linear_propagation = 224 [default = false];
+
+  // Linear constraints that are not pseudo-Boolean and that are longer than
+  // this size will be split into sqrt(size) intermediate sums in order to have
+  // faster propation in the CP engine.
+  optional int32 linear_split_size = 256 [default = 100];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
@@ -1427,4 +1459,10 @@ message SatParameters {
   // Any value in the input mip with a magnitude lower than this will be set to
   // zero. This is to avoid some issue in LP presolving.
   optional double mip_drop_tolerance = 232 [default = 1e-16];
+
+  // When solving a MIP, we do some basic floating point presolving before
+  // scaling the problem to integer to be handled by CP-SAT. This control how
+  // much of that presolve we do. It can help to better scale floating point
+  // model, but it is not always behaving nicely.
+  optional int32 mip_presolve_level = 261 [default = 2];
 }

@@ -1,35 +1,8 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
-
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Boolean logic recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
-
-
-<!--ts-->
-* [Boolean logic recipes for the CP-SAT solver.](#boolean-logic-recipes-for-the-cp-sat-solver)
-   * [Introduction](#introduction)
-   * [Boolean variables and literals](#boolean-variables-and-literals)
-      * [Python code](#python-code)
-      * [C++ code](#c-code)
-      * [Java code](#java-code)
-      * [C# code](#c-code-1)
-   * [Boolean constraints](#boolean-constraints)
-      * [Python code](#python-code-1)
-      * [C++ code](#c-code-2)
-      * [Java code](#java-code-1)
-      * [C# code](#c-code-3)
-   * [Reified constraints](#reified-constraints)
-      * [Python code](#python-code-2)
-      * [C++ code](#c-code-4)
-      * [Java code](#java-code-2)
-      * [C# code](#c-code-5)
-   * [Product of two Boolean Variables](#product-of-two-boolean-variables)
-      * [Python code](#python-code-3)
-
-<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-
-<!--te-->
 
 ## Introduction
 

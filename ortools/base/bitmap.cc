@@ -13,9 +13,7 @@
 
 #include "ortools/base/bitmap.h"
 
-#include <algorithm>
-
-#include "ortools/base/integral_types.h"
+#include <cstdint>
 
 namespace operations_research {
 

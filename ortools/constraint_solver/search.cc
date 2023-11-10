@@ -24,6 +24,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -36,6 +40,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
 ABSL_FLAG(bool, cp_use_sparse_gls_penalties, false,
@@ -209,7 +215,7 @@ void SearchLog::NoMoreSolutions() {
   OutputLine(buffer);
 }
 
-void SearchLog::ApplyDecision(Decision* const decision) {
+void SearchLog::ApplyDecision(Decision* const) {
   Maintain();
   const int64_t b = solver()->branches();
   if (b % period_ == 0 && b > 0) {
@@ -697,7 +703,7 @@ TryDecision::TryDecision(TryDecisionBuilder* const try_builder)
 
 TryDecision::~TryDecision() {}
 
-void TryDecision::Apply(Solver* const solver) {}
+void TryDecision::Apply(Solver* const) {}
 
 void TryDecision::Refute(Solver* const solver) {
   try_builder_->AdvanceToNextBuilder(solver);
@@ -838,7 +844,7 @@ class BaseVariableAssignmentSelector : public BaseObject {
 
 // ----- Choose first unbound --
 
-int64_t ChooseFirstUnbound(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseFirstUnbound(Solver*, const std::vector<IntVar*>& vars,
                            int64_t first_unbound, int64_t last_unbound) {
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     if (!vars[i]->Bound()) {
@@ -850,7 +856,7 @@ int64_t ChooseFirstUnbound(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Min Size Lowest Min -----
 
-int64_t ChooseMinSizeLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseMinSizeLowestMin(Solver*, const std::vector<IntVar*>& vars,
                                int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = std::numeric_limits<uint64_t>::max();
   int64_t best_min = std::numeric_limits<int64_t>::max();
@@ -871,8 +877,7 @@ int64_t ChooseMinSizeLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Min Size Highest Min -----
 
-int64_t ChooseMinSizeHighestMin(Solver* solver,
-                                const std::vector<IntVar*>& vars,
+int64_t ChooseMinSizeHighestMin(Solver*, const std::vector<IntVar*>& vars,
                                 int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = std::numeric_limits<uint64_t>::max();
   int64_t best_min = std::numeric_limits<int64_t>::min();
@@ -893,7 +898,7 @@ int64_t ChooseMinSizeHighestMin(Solver* solver,
 
 // ----- Choose Min Size Lowest Max -----
 
-int64_t ChooseMinSizeLowestMax(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseMinSizeLowestMax(Solver*, const std::vector<IntVar*>& vars,
                                int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = std::numeric_limits<uint64_t>::max();
   int64_t best_max = std::numeric_limits<int64_t>::max();
@@ -914,8 +919,7 @@ int64_t ChooseMinSizeLowestMax(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Min Size Highest Max -----
 
-int64_t ChooseMinSizeHighestMax(Solver* solver,
-                                const std::vector<IntVar*>& vars,
+int64_t ChooseMinSizeHighestMax(Solver*, const std::vector<IntVar*>& vars,
                                 int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = std::numeric_limits<uint64_t>::max();
   int64_t best_max = std::numeric_limits<int64_t>::min();
@@ -936,7 +940,7 @@ int64_t ChooseMinSizeHighestMax(Solver* solver,
 
 // ----- Choose Lowest Min --
 
-int64_t ChooseLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseLowestMin(Solver*, const std::vector<IntVar*>& vars,
                         int64_t first_unbound, int64_t last_unbound) {
   int64_t best_min = std::numeric_limits<int64_t>::max();
   int64_t best_index = -1;
@@ -954,7 +958,7 @@ int64_t ChooseLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Highest Max -----
 
-int64_t ChooseHighestMax(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseHighestMax(Solver*, const std::vector<IntVar*>& vars,
                          int64_t first_unbound, int64_t last_unbound) {
   int64_t best_max = std::numeric_limits<int64_t>::min();
   int64_t best_index = -1;
@@ -972,7 +976,7 @@ int64_t ChooseHighestMax(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Lowest Size --
 
-int64_t ChooseMinSize(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseMinSize(Solver*, const std::vector<IntVar*>& vars,
                       int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = std::numeric_limits<uint64_t>::max();
   int64_t best_index = -1;
@@ -990,7 +994,7 @@ int64_t ChooseMinSize(Solver* solver, const std::vector<IntVar*>& vars,
 
 // ----- Choose Highest Size -----
 
-int64_t ChooseMaxSize(Solver* solver, const std::vector<IntVar*>& vars,
+int64_t ChooseMaxSize(Solver*, const std::vector<IntVar*>& vars,
                       int64_t first_unbound, int64_t last_unbound) {
   uint64_t best_size = 0;
   int64_t best_index = -1;
@@ -1034,7 +1038,7 @@ class HighestRegretSelectorOnMin : public BaseObject {
   std::vector<IntVarIterator*> iterators_;
 };
 
-int64_t HighestRegretSelectorOnMin::Choose(Solver* const s,
+int64_t HighestRegretSelectorOnMin::Choose(Solver* const,
                                            const std::vector<IntVar*>& vars,
                                            int64_t first_unbound,
                                            int64_t last_unbound) {
@@ -1083,7 +1087,7 @@ class CheapestVarSelector : public BaseObject {
   std::function<int64_t(int64_t)> var_evaluator_;
 };
 
-int64_t CheapestVarSelector::Choose(Solver* const s,
+int64_t CheapestVarSelector::Choose(Solver* const,
                                     const std::vector<IntVar*>& vars,
                                     int64_t first_unbound,
                                     int64_t last_unbound) {
@@ -1108,8 +1112,7 @@ class PathSelector : public BaseObject {
  public:
   PathSelector() : first_(std::numeric_limits<int64_t>::max()) {}
   ~PathSelector() override{};
-  int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
-                 int64_t first_unbound, int64_t last_unbound);
+  int64_t Choose(Solver* s, const std::vector<IntVar*>& vars);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
 
  private:
@@ -1119,8 +1122,8 @@ class PathSelector : public BaseObject {
   Rev<int64_t> first_;
 };
 
-int64_t PathSelector::Choose(Solver* const s, const std::vector<IntVar*>& vars,
-                             int64_t first_unbound, int64_t last_unbound) {
+int64_t PathSelector::Choose(Solver* const s,
+                             const std::vector<IntVar*>& vars) {
   int64_t index = first_.Value();
   if (!UpdateIndex(vars, &index)) {
     return -1;
@@ -1197,15 +1200,15 @@ bool PathSelector::FindPathStart(const std::vector<IntVar*>& vars,
 
 // ----- Select min -----
 
-int64_t SelectMinValue(const IntVar* v, int64_t id) { return v->Min(); }
+int64_t SelectMinValue(const IntVar* v, int64_t) { return v->Min(); }
 
 // ----- Select max -----
 
-int64_t SelectMaxValue(const IntVar* v, int64_t id) { return v->Max(); }
+int64_t SelectMaxValue(const IntVar* v, int64_t) { return v->Max(); }
 
 // ----- Select random -----
 
-int64_t SelectRandomValue(const IntVar* v, int64_t id) {
+int64_t SelectRandomValue(const IntVar* v, int64_t) {
   const uint64_t span = v->Max() - v->Min() + 1;
   if (span > absl::GetFlag(FLAGS_cp_large_domain_no_splitting_limit)) {
     // Do not create holes in large domains.
@@ -1248,7 +1251,7 @@ int64_t SelectRandomValue(const IntVar* v, int64_t id) {
 
 // ----- Select center -----
 
-int64_t SelectCenterValue(const IntVar* v, int64_t id) {
+int64_t SelectCenterValue(const IntVar* v, int64_t) {
   const int64_t vmin = v->Min();
   const int64_t vmax = v->Max();
   if (vmax - vmin > absl::GetFlag(FLAGS_cp_large_domain_no_splitting_limit)) {
@@ -1273,7 +1276,7 @@ int64_t SelectCenterValue(const IntVar* v, int64_t id) {
 
 // ----- Select center -----
 
-int64_t SelectSplitValue(const IntVar* v, int64_t id) {
+int64_t SelectSplitValue(const IntVar* v, int64_t) {
   const int64_t vmin = v->Min();
   const int64_t vmax = v->Max();
   const uint64_t delta = vmax - vmin;
@@ -1444,7 +1447,7 @@ DynamicEvaluatorSelector::DynamicEvaluatorSelector(
       first_(-1),
       tie_breaker_(std::move(tie_breaker)) {}
 
-int64_t DynamicEvaluatorSelector::SelectValue(const IntVar* var, int64_t id) {
+int64_t DynamicEvaluatorSelector::SelectValue(const IntVar*, int64_t) {
   return cache_[first_].value;
 }
 
@@ -1530,7 +1533,7 @@ StaticEvaluatorSelector::StaticEvaluatorSelector(
       comp_(evaluator),
       first_(-1) {}
 
-int64_t StaticEvaluatorSelector::SelectValue(const IntVar* var, int64_t id) {
+int64_t StaticEvaluatorSelector::SelectValue(const IntVar*, int64_t) {
   return elements_[first_].value;
 }
 
@@ -1600,9 +1603,9 @@ std::string AssignOneVariableValue::DebugString() const {
                          value_, var_->DebugString(), value_);
 }
 
-void AssignOneVariableValue::Apply(Solver* const s) { var_->SetValue(value_); }
+void AssignOneVariableValue::Apply(Solver* const) { var_->SetValue(value_); }
 
-void AssignOneVariableValue::Refute(Solver* const s) {
+void AssignOneVariableValue::Refute(Solver* const) {
   var_->RemoveValue(value_);
 }
 }  // namespace
@@ -1638,7 +1641,7 @@ std::string AssignOneVariableValueOrFail::DebugString() const {
   return absl::StrFormat("[%s == %d] or fail", var_->DebugString(), value_);
 }
 
-void AssignOneVariableValueOrFail::Apply(Solver* const s) {
+void AssignOneVariableValueOrFail::Apply(Solver* const) {
   var_->SetValue(value_);
 }
 
@@ -1658,8 +1661,8 @@ class AssignOneVariableValueDoNothing : public Decision {
   AssignOneVariableValueDoNothing(IntVar* const v, int64_t value)
       : var_(v), value_(value) {}
   ~AssignOneVariableValueDoNothing() override {}
-  void Apply(Solver* const s) override { var_->SetValue(value_); }
-  void Refute(Solver* const s) override {}
+  void Apply(Solver* const) override { var_->SetValue(value_); }
+  void Refute(Solver* const) override {}
   std::string DebugString() const override {
     return absl::StrFormat("[%s == %d] or []", var_->DebugString(), value_);
   }
@@ -1711,7 +1714,7 @@ std::string SplitOneVariable::DebugString() const {
   }
 }
 
-void SplitOneVariable::Apply(Solver* const s) {
+void SplitOneVariable::Apply(Solver* const) {
   if (start_with_lower_half_) {
     var_->SetMax(value_);
   } else {
@@ -1719,7 +1722,7 @@ void SplitOneVariable::Apply(Solver* const s) {
   }
 }
 
-void SplitOneVariable::Refute(Solver* const s) {
+void SplitOneVariable::Refute(Solver* const) {
   if (start_with_lower_half_) {
     var_->SetMin(value_ + 1);
   } else {
@@ -1805,7 +1808,7 @@ std::string AssignVariablesValues::DebugString() const {
   return out;
 }
 
-void AssignVariablesValues::Apply(Solver* const s) {
+void AssignVariablesValues::Apply(Solver* const) {
   if (vars_.empty()) return;
   vars_[0]->FreezeQueue();
   for (int i = 0; i < vars_.size(); ++i) {
@@ -1918,10 +1921,8 @@ class BaseAssignVariables : public DecisionBuilder {
       }
       case Solver::CHOOSE_PATH: {
         PathSelector* const selector = s->RevAlloc(new PathSelector());
-        return [selector](Solver* solver, const std::vector<IntVar*>& vars,
-                          int first_unbound, int last_unbound) {
-          return selector->Choose(solver, vars, first_unbound, last_unbound);
-        };
+        return [selector](Solver* solver, const std::vector<IntVar*>& vars, int,
+                          int) { return selector->Choose(solver, vars); };
       }
       default:
         LOG(FATAL) << "Unknown int var strategy " << str;
@@ -1930,7 +1931,7 @@ class BaseAssignVariables : public DecisionBuilder {
   }
 
   static Solver::VariableValueSelector MakeValueSelector(
-      Solver* const s, Solver::IntValueStrategy val_str) {
+      Solver* const, Solver::IntValueStrategy val_str) {
     switch (val_str) {
       case Solver::INT_VALUE_DEFAULT:
       case Solver::INT_VALUE_SIMPLE:
@@ -2450,7 +2451,13 @@ Assignment* SolutionCollector::solution(int n) const {
   return solution_data_[n].solution;
 }
 
+Assignment* SolutionCollector::last_solution_or_null() const {
+  return solution_data_.empty() ? nullptr : solution_data_.back().solution;
+}
+
 int SolutionCollector::solution_count() const { return solution_data_.size(); }
+
+bool SolutionCollector::has_solution() const { return !solution_data_.empty(); }
 
 int64_t SolutionCollector::wall_time(int n) const {
   check_index(n);
@@ -2755,7 +2762,7 @@ class NBestValueSolutionCollector : public SolutionCollector {
   void Install() override;
   std::string DebugString() const override;
 
- public:
+ private:
   void Clear();
 
   const std::vector<bool> maximize_;
@@ -2992,6 +2999,46 @@ bool ObjectiveMonitor::AtSolution() {
   return true;
 }
 
+bool ObjectiveMonitor::AcceptDelta(Assignment* delta, Assignment*) {
+  if (delta == nullptr) return true;
+  const bool delta_has_objective = delta->HasObjective();
+  if (!delta_has_objective) {
+    delta->AddObjectives(objective_vars());
+  }
+  const Assignment* const local_search_state =
+      solver()->GetOrCreateLocalSearchState();
+  for (int i = 0; i < Size(); ++i) {
+    if (delta->ObjectiveFromIndex(i) == ObjectiveVar(i)) {
+      if (Maximize(i)) {
+        int64_t obj_min = ObjectiveVar(i)->Min();
+        if (delta_has_objective) {
+          obj_min = std::max(obj_min, delta->ObjectiveMinFromIndex(i));
+        }
+        if (solver()->UseFastLocalSearch() &&
+            i < local_search_state->NumObjectives()) {
+          obj_min = std::max(
+              obj_min,
+              CapAdd(local_search_state->ObjectiveMinFromIndex(i), Step(i)));
+        }
+        delta->SetObjectiveMinFromIndex(i, obj_min);
+      } else {
+        int64_t obj_max = ObjectiveVar(i)->Max();
+        if (delta_has_objective) {
+          obj_max = std::min(obj_max, delta->ObjectiveMaxFromIndex(i));
+        }
+        if (solver()->UseFastLocalSearch() &&
+            i < local_search_state->NumObjectives()) {
+          obj_max = std::min(
+              obj_max,
+              CapSub(local_search_state->ObjectiveMaxFromIndex(i), Step(i)));
+        }
+        delta->SetObjectiveMaxFromIndex(i, obj_max);
+      }
+    }
+  }
+  return true;
+}
+
 void ObjectiveMonitor::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitExtension(ModelVisitor::kObjectiveExtension);
   visitor->VisitIntegerArrayArgument(ModelVisitor::kStepArgument, steps_);
@@ -3024,7 +3071,7 @@ OptimizeVar::OptimizeVar(Solver* solver, const std::vector<bool>& maximize,
                          std::vector<IntVar*> vars, std::vector<int64_t> steps)
     : ObjectiveMonitor(solver, maximize, std::move(vars), std::move(steps)) {}
 
-void OptimizeVar::BeginNextDecision(DecisionBuilder* db) {
+void OptimizeVar::BeginNextDecision(DecisionBuilder*) {
   if (solver()->SearchDepth() == 0) {  // after a restart.
     ApplyBound();
   }
@@ -3037,7 +3084,7 @@ void OptimizeVar::ApplyBound() {
   }
 }
 
-void OptimizeVar::RefuteDecision(Decision* d) { ApplyBound(); }
+void OptimizeVar::RefuteDecision(Decision*) { ApplyBound(); }
 
 bool OptimizeVar::AcceptSolution() {
   if (!found_initial_solution_) {
@@ -3058,45 +3105,6 @@ bool OptimizeVar::AcceptSolution() {
 bool OptimizeVar::AtSolution() {
   DCHECK(AcceptSolution());
   return ObjectiveMonitor::AtSolution();
-}
-
-bool OptimizeVar::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  if (delta != nullptr) {
-    const bool delta_has_objective = delta->HasObjective();
-    if (!delta_has_objective) {
-      delta->AddObjectives(objective_vars());
-    }
-    const Assignment* const local_search_state =
-        solver()->GetOrCreateLocalSearchState();
-    for (int i = 0; i < Size(); ++i) {
-      if (delta->ObjectiveFromIndex(i) == ObjectiveVar(i)) {
-        if (Maximize(i)) {
-          int64_t obj_min = ObjectiveVar(i)->Min();
-          if (delta_has_objective) {
-            obj_min = std::max(obj_min, delta->ObjectiveMinFromIndex(i));
-          }
-          if (i < local_search_state->NumObjectives()) {
-            obj_min = std::max(
-                obj_min,
-                CapAdd(local_search_state->ObjectiveMinFromIndex(i), Step(i)));
-          }
-          delta->SetObjectiveMinFromIndex(i, obj_min);
-        } else {
-          int64_t obj_max = ObjectiveVar(i)->Max();
-          if (delta_has_objective) {
-            obj_max = std::min(obj_max, delta->ObjectiveMaxFromIndex(i));
-          }
-          if (i < local_search_state->NumObjectives()) {
-            obj_max = std::min(
-                obj_max,
-                CapSub(local_search_state->ObjectiveMaxFromIndex(i), Step(i)));
-          }
-          delta->SetObjectiveMaxFromIndex(i, obj_max);
-        }
-      }
-    }
-  }
-  return true;
 }
 
 std::string OptimizeVar::Name() const { return "objective"; }
@@ -3207,7 +3215,6 @@ class Metaheuristic : public ObjectiveMonitor {
 
   void EnterSearch() override;
   void RefuteDecision(Decision* d) override;
-  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
 };
 
 Metaheuristic::Metaheuristic(Solver* solver, const std::vector<bool>& maximize,
@@ -3223,34 +3230,13 @@ void Metaheuristic::EnterSearch() {
   solver()->SetUseFastLocalSearch(false);
 }
 
-void Metaheuristic::RefuteDecision(Decision* d) {
+void Metaheuristic::RefuteDecision(Decision*) {
   for (int i = 0; i < Size(); ++i) {
     const int64_t objective_value = MinimizationVar(i)->Min();
     if (objective_value > BestInternalValue(i)) break;
     if (objective_value <= CapSub(BestInternalValue(i), Step(i))) return;
   }
   solver()->Fail();
-}
-
-bool Metaheuristic::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  if (delta != nullptr) {
-    if (!delta->HasObjective()) {
-      delta->AddObjectives(objective_vars());
-    }
-    for (int i = 0; i < Size(); ++i) {
-      IntVar* const original_objective = ObjectiveVar(i);
-      if (delta->ObjectiveFromIndex(i) == original_objective) {
-        if (Maximize(i)) {
-          delta->SetObjectiveMin(
-              std::max(original_objective->Min(), delta->ObjectiveMin()));
-        } else {
-          delta->SetObjectiveMax(
-              std::min(original_objective->Max(), delta->ObjectiveMax()));
-        }
-      }
-    }
-  }
-  return true;
 }
 
 // ---------- Tabu Search ----------
@@ -3313,6 +3299,7 @@ TabuSearch::TabuSearch(Solver* solver, const std::vector<bool>& maximize,
 
 void TabuSearch::EnterSearch() {
   Metaheuristic::EnterSearch();
+  solver()->SetUseFastLocalSearch(true);
   stamp_ = 0;
 }
 
@@ -3410,6 +3397,7 @@ bool TabuSearch::AtSolution() {
 }
 
 bool TabuSearch::LocalOptimum() {
+  solver()->SetUseFastLocalSearch(false);
   AgeLists();
   for (int i = 0; i < Size(); ++i) {
     SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
@@ -3918,6 +3906,7 @@ bool GuidedLocalSearch<P>::AtSolution() {
 template <typename P>
 void GuidedLocalSearch<P>::EnterSearch() {
   Metaheuristic::EnterSearch();
+  solver()->SetUseFastLocalSearch(true);
   penalized_objective_ = nullptr;
   ResetPenalties();
 }
@@ -3969,6 +3958,7 @@ bool GuidedLocalSearch<P>::AcceptDelta(Assignment* delta,
 // utility(var, value) = cost(var, value) / (1 + penalty(var, value))
 template <typename P>
 bool GuidedLocalSearch<P>::LocalOptimum() {
+  solver()->SetUseFastLocalSearch(false);
   std::vector<double> utilities(num_vars_);
   double max_utility = -std::numeric_limits<double>::infinity();
   for (int var = 0; var < num_vars_; ++var) {
@@ -4257,12 +4247,12 @@ void SearchLimit::EnterSearch() {
   Init();
 }
 
-void SearchLimit::BeginNextDecision(DecisionBuilder* const b) {
+void SearchLimit::BeginNextDecision(DecisionBuilder* const) {
   PeriodicCheck();
   TopPeriodicCheck();
 }
 
-void SearchLimit::RefuteDecision(Decision* const d) {
+void SearchLimit::RefuteDecision(Decision* const) {
   PeriodicCheck();
   TopPeriodicCheck();
 }
@@ -4375,6 +4365,7 @@ void RegularLimit::ExitSearch() {
 
 void RegularLimit::UpdateLimits(absl::Duration time, int64_t branches,
                                 int64_t failures, int64_t solutions) {
+  Init();
   duration_limit_ = time;
   branches_ = branches;
   failures_ = failures;
@@ -4536,8 +4527,9 @@ void ImprovementSearchLimit::Install() {
 }
 
 void ImprovementSearchLimit::Init() {
-  for (int i = 0; i < best_objectives_.size(); ++i) {
+  for (int i = 0; i < objective_vars_.size(); ++i) {
     best_objectives_[i] = std::numeric_limits<double>::infinity();
+    improvements_[i].clear();
     thresholds_[i] = std::numeric_limits<double>::infinity();
   }
   objective_updated_ = false;
@@ -4568,7 +4560,7 @@ SearchLimit* ImprovementSearchLimit::MakeClone() const {
       improvement_rate_solutions_distance_));
 }
 
-bool ImprovementSearchLimit::CheckWithOffset(absl::Duration offset) {
+bool ImprovementSearchLimit::CheckWithOffset(absl::Duration) {
   if (!objective_updated_) {
     return false;
   }
@@ -4700,7 +4692,7 @@ class ORLimit : public SearchLimit {
     limit_2_->Init();
   }
 
-  void Copy(const SearchLimit* const limit) override {
+  void Copy(const SearchLimit* const) override {
     LOG(FATAL) << "Not implemented.";
   }
 
@@ -4757,7 +4749,7 @@ class CustomLimit : public SearchLimit {
 CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
     : SearchLimit(s), limiter_(std::move(limiter)) {}
 
-bool CustomLimit::CheckWithOffset(absl::Duration offset) {
+bool CustomLimit::CheckWithOffset(absl::Duration) {
   // TODO(user): Consider the offset in limiter_.
   if (limiter_) return limiter_();
   return false;
@@ -5123,7 +5115,7 @@ class SymmetryManager : public SearchMonitor {
 
   ~SymmetryManager() override {}
 
-  void EndNextDecision(DecisionBuilder* const db, Decision* const d) override {
+  void EndNextDecision(DecisionBuilder* const, Decision* const d) override {
     if (d) {
       for (int i = 0; i < visitors_.size(); ++i) {
         const void* const last = clauses_[i].Last();

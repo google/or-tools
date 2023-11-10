@@ -15,9 +15,11 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
+
 namespace util {
 
-bool IsSubsetOf0N(const std::vector<int>& v, int n) {
+bool IsSubsetOf0N(absl::Span<const int> v, int n) {
   std::vector<bool> mask(n, false);
   for (const int i : v) {
     if (i < 0 || i >= n || mask[i]) return false;

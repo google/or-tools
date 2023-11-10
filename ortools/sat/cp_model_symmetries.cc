@@ -45,6 +45,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry_util.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -492,8 +493,9 @@ void FindCpModelSymmetries(
       problem, &equivalence_classes, logger));
   if (graph == nullptr) return;
 
-  SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ", graph->num_nodes(),
-             " nodes and ", graph->num_arcs(), " arcs.");
+  SOLVER_LOG(logger, "[Symmetry] Graph for symmetry has ",
+             FormatCounter(graph->num_nodes()), " nodes and ",
+             FormatCounter(graph->num_arcs()), " arcs.");
   if (graph->num_nodes() == 0) return;
 
   if (params.symmetry_level() < 3 && graph->num_nodes() > 1e6 &&
@@ -553,11 +555,11 @@ void FindCpModelSymmetries(
     }
   }
   generators->resize(num_generators);
-  average_support_size /= num_generators;
   SOLVER_LOG(logger, "[Symmetry] Symmetry computation done. time: ",
              time_limit->GetElapsedTime(),
              " dtime: ", time_limit->GetElapsedDeterministicTime());
   if (num_generators > 0) {
+    average_support_size /= num_generators;
     SOLVER_LOG(logger, "[Symmetry] #generators: ", num_generators,
                ", average support size: ", average_support_size);
     if (num_duplicate_constraints > 0) {
@@ -1179,6 +1181,14 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const int num_cols = orbitope[0].size();
     for (int i = 0; i + 1 < num_cols; ++i) {
       // Add orbitope[0][i] >= orbitope[0][i+1].
+      if (context->CanBeUsedAsLiteral(orbitope[0][i]) &&
+          context->CanBeUsedAsLiteral(orbitope[0][i + 1])) {
+        context->AddImplication(orbitope[0][i + 1], orbitope[0][i]);
+        context->UpdateRuleStats(
+            "symmetry: added symmetry breaking implication");
+        continue;
+      }
+
       ConstraintProto* ct = context->working_model->add_constraints();
       ct->mutable_linear()->add_coeffs(1);
       ct->mutable_linear()->add_vars(orbitope[0][i]);

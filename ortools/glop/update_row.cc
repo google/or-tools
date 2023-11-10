@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
@@ -123,7 +124,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
           unit_row_left_inverse_filtered_non_zeros_.front());
       num_operations_ += num_row_wise_entries.value();
       IF_STATS_ENABLED(stats_.update_row_density.Add(
-          static_cast<double>(non_zero_position_list_.size()) /
+          static_cast<double>(num_non_zeros_) /
           static_cast<double>(matrix_.num_cols().value())));
       return;
     }
@@ -161,7 +162,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
         matrix_.num_cols().value();
   }
   IF_STATS_ENABLED(stats_.update_row_density.Add(
-      static_cast<double>(non_zero_position_list_.size()) /
+      static_cast<double>(num_non_zeros_) /
       static_cast<double>(matrix_.num_cols().value())));
 }
 
@@ -183,8 +184,8 @@ void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow& lhs,
 
 const DenseRow& UpdateRow::GetCoefficients() const { return coefficient_; }
 
-const ColIndexVector& UpdateRow::GetNonZeroPositions() const {
-  return non_zero_position_list_;
+absl::Span<const ColIndex> UpdateRow::GetNonZeroPositions() const {
+  return absl::MakeSpan(non_zero_position_list_.data(), num_non_zeros_);
 }
 
 void UpdateRow::SetParameters(const GlopParameters& parameters) {
@@ -198,7 +199,7 @@ void UpdateRow::ComputeUpdatesRowWise() {
   coefficient_.AssignToZero(matrix_.num_cols());
   const auto output_coeffs = coefficient_.view();
   const auto view = transposed_matrix_.view();
-  for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
+  for (const ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : view.Column(col)) {
       const ColIndex pos = RowToColIndex(view.EntryRow(i));
@@ -206,13 +207,15 @@ void UpdateRow::ComputeUpdatesRowWise() {
     }
   }
 
-  non_zero_position_list_.clear();
+  non_zero_position_list_.resize(matrix_.num_cols().value());
+  auto* non_zeros = non_zero_position_list_.data();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     if (std::abs(output_coeffs[col]) > drop_tolerance) {
-      non_zero_position_list_.push_back(col);
+      *non_zeros++ = col;
     }
   }
+  num_non_zeros_ = non_zeros - non_zero_position_list_.data();
 }
 
 // This is optimized for the case when the total number of entries is smaller
@@ -225,12 +228,13 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
 
   const auto output_coeffs = coefficient_.view();
   const auto view = transposed_matrix_.view();
-  for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
+  const auto nz_set = non_zero_position_set_.const_view();
+  for (const ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : view.Column(col)) {
       const ColIndex pos = RowToColIndex(view.EntryRow(i));
       const Fractional v = multiplier * view.EntryCoefficient(i);
-      if (!non_zero_position_set_.IsSet(pos)) {
+      if (!nz_set[pos]) {
         // Note that we could create the non_zero_position_list_ here, but we
         // prefer to keep the non-zero positions sorted, so using the bitset is
         // a good alternative. Of course if the solution is really really
@@ -245,7 +249,8 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
 
   // Only keep in non_zero_position_set_ the relevant positions.
   non_zero_position_set_.Intersection(variables_info_.GetIsRelevantBitRow());
-  non_zero_position_list_.clear();
+  non_zero_position_list_.resize(matrix_.num_cols().value());
+  auto* non_zeros = non_zero_position_list_.data();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : non_zero_position_set_) {
     // TODO(user): Since the solution is really sparse, maybe storing the
@@ -253,14 +258,16 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
     // them as they are. Note however that we will iterate only twice on the
     // update row coefficients during an iteration.
     if (std::abs(output_coeffs[col]) > drop_tolerance) {
-      non_zero_position_list_.push_back(col);
+      *non_zeros++ = col;
     }
   }
+  num_non_zeros_ = non_zeros - non_zero_position_list_.data();
 }
 
 void UpdateRow::ComputeUpdatesForSingleRow(ColIndex row_as_col) {
   coefficient_.resize(matrix_.num_cols(), 0.0);
-  non_zero_position_list_.clear();
+  non_zero_position_list_.resize(matrix_.num_cols().value());
+  auto* non_zeros = non_zero_position_list_.data();
 
   const DenseBitRow& is_relevant = variables_info_.GetIsRelevantBitRow();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
@@ -274,16 +281,18 @@ void UpdateRow::ComputeUpdatesForSingleRow(ColIndex row_as_col) {
     const Fractional v = multiplier * view.EntryCoefficient(i);
     if (std::abs(v) > drop_tolerance) {
       output_coeffs[pos] = v;
-      non_zero_position_list_.push_back(pos);
+      *non_zeros++ = pos;
     }
   }
+  num_non_zeros_ = non_zeros - non_zero_position_list_.data();
 }
 
 void UpdateRow::ComputeUpdatesColumnWise() {
   SCOPED_TIME_STAT(&stats_);
 
   coefficient_.resize(matrix_.num_cols(), 0.0);
-  non_zero_position_list_.clear();
+  non_zero_position_list_.resize(matrix_.num_cols().value());
+  auto* non_zeros = non_zero_position_list_.data();
 
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   const auto output_coeffs = coefficient_.view();
@@ -299,10 +308,11 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     // tolerance here because even if we introduce some precision issues, the
     // quantities updated by this update row will eventually be recomputed.
     if (std::abs(coeff) > drop_tolerance) {
-      non_zero_position_list_.push_back(col);
+      *non_zeros++ = col;
       output_coeffs[col] = coeff;
     }
   }
+  num_non_zeros_ = non_zeros - non_zero_position_list_.data();
 }
 
 // Note that we use the same algo as ComputeUpdatesColumnWise() here. The

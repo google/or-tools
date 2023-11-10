@@ -319,6 +319,11 @@ class StrictITIVector : public absl::StrongVector<IntType, T> {
   ConstView const_view() const { return ConstView(ParentType::data(), size()); }
   ConstView view() const { return const_view(); }
 
+  StrictITIVector& operator=(ConstView data) {
+    ParentType::assign(data.begin(), data.end());
+    return *this;
+  }
+
   // Since calls to resize() must use a default value, we introduce a new
   // function for convenience to reduce the size of a vector.
   void resize_down(IntType size) {

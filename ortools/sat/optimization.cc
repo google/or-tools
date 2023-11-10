@@ -166,7 +166,7 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
             << core->size();
   }
 
-  solver->ResetToLevelZero();
+  (void)solver->ResetToLevelZero();
   solver->mutable_logger()->EnableLogging(old_log_state);
 }
 
@@ -182,10 +182,15 @@ bool ProbeLiteral(Literal assumption, SatSolver* solver) {
   // TODO(user): Still use it if the problem is Boolean only.
   const auto status = solver->ResetAndSolveWithGivenAssumptions(
       {assumption}, /*max_number_of_conflicts=*/1'000);
-  solver->ResetToLevelZero();
+  if (!solver->ResetToLevelZero()) return false;
   if (status == SatSolver::ASSUMPTIONS_UNSAT) {
-    solver->AddUnitClause(assumption.Negated());
-    solver->Propagate();
+    if (!solver->AddUnitClause(assumption.Negated())) {
+      return false;
+    }
+    if (!solver->Propagate()) {
+      solver->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
 
   solver->mutable_logger()->EnableLogging(old_log_state);
@@ -374,7 +379,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
         ResetAndSolveIntegerProblem(assumptions, model);
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
-    if (sat_solver->parameters().minimize_core()) {
+    if (sat_solver->parameters().core_minimization_level() > 0) {
       MinimizeCoreWithPropagation(limit, sat_solver, &core);
     }
     if (core.size() == 1) {
@@ -755,8 +760,7 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("bool_core num_cores:%d [%s] assumptions:%u "
-                          "depth:%d fixed_bools:%d/%d",
+          absl::StrFormat("bool_core (num_cores=%d [%s] a=%u d=%d fixed=%d/%d)",
                           iter, previous_core_info, encoder.nodes().size(),
                           max_depth, num_fixed, num_bools),
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
@@ -822,10 +826,13 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
 
     // We have a new core.
     std::vector<Literal> core = sat_solver_->GetLastIncompatibleDecisions();
-    if (parameters_->minimize_core()) {
+    if (parameters_->core_minimization_level() > 0) {
       MinimizeCoreWithPropagation(time_limit_, sat_solver_, &core);
+    }
+    if (parameters_->core_minimization_level() > 1) {
       MinimizeCoreWithSearch(time_limit_, sat_solver_, &core);
     }
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     FilterAssignedLiteral(sat_solver_->Assignment(), &core);
     if (core.empty()) return SatSolver::INFEASIBLE;
 
@@ -920,7 +927,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     // For now we know the input only has positive weight, but it is easy to
     // adapt if needed.
     CHECK_GT(coeff, 0);
-    weights[lit.Index()] = coeff;
+    weights[lit] = coeff;
 
     candidates.push_back(lit.Negated());
     is_candidate[lit.NegatedIndex()] = true;
@@ -937,7 +944,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     if (implications_->WorkDone() > 1e8) continue;
 
     // We never put weight on both a literal and its negation.
-    CHECK_EQ(weights[root.Index()], 0);
+    CHECK_EQ(weights[root], 0);
 
     // Note that for this to be as exhaustive as possible, the probing needs
     // to have added binary clauses corresponding to lvl0 propagation.
@@ -963,10 +970,10 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
     overall_lb_increase += lb_increase;
 
     for (const Literal lit : at_most_one) {
-      is_candidate[lit.Index()] = false;
+      is_candidate[lit] = false;
       const Coefficient new_weight = max_coeff - weights[lit.NegatedIndex()];
-      CHECK_EQ(weights[lit.Index()], 0);
-      weights[lit.Index()] = new_weight;
+      CHECK_EQ(weights[lit], 0);
+      weights[lit] = new_weight;
       weights[lit.NegatedIndex()] = 0;
       if (new_weight > 0) {
         // TODO(user): While we autorize this to be in future at most one, it
@@ -990,8 +997,8 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   if (overall_lb_increase > 0) {
     // Report new bounds right away with extra information.
     model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-        absl::StrFormat("am1_presolve num_literals:%d num_am1:%d "
-                        "increase:%lld work_done:%lld",
+        absl::StrFormat("am1_presolve (num_literals=%d num_am1=%d "
+                        "increase=%lld work_done=%lld)",
                         (int)candidates.size(), num_at_most_ones,
                         overall_lb_increase.value(), implications_->WorkDone()),
         IntegerValue(offset->value()),
@@ -1002,13 +1009,13 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   literals->clear();
   coefficients->clear();
   for (const Literal root : candidates) {
-    if (weights[root.Index()] > 0) {
+    if (weights[root] > 0) {
       CHECK_EQ(weights[root.NegatedIndex()], 0);
       literals->push_back(root);
-      coefficients->push_back(weights[root.Index()]);
+      coefficients->push_back(weights[root]);
     }
     if (weights[root.NegatedIndex()] > 0) {
-      CHECK_EQ(weights[root.Index()], 0);
+      CHECK_EQ(weights[root], 0);
       literals->push_back(root.Negated());
       coefficients->push_back(weights[root.NegatedIndex()]);
     }
@@ -1191,7 +1198,7 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
       //
       // TODO(user): We can probably be smarter about the cost of the
       // assumptions though.
-      literal_to_term_index[assumptions.back().Index()] = term_indices[i];
+      literal_to_term_index[assumptions.back()] = term_indices[i];
     }
 
     // Solve under the assumptions.

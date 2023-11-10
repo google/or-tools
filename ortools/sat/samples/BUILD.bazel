@@ -33,11 +33,13 @@ code_sample_py(name = "boolean_product_sample_sat")
 
 code_sample_cc_py(name = "channeling_sample_sat")
 
-code_sample_cc_py(name = "copy_model_sample_sat")
+code_sample_cc_py(name = "clone_model_sample_sat")
 
 code_sample_cc_py(name = "cp_is_fun_sat")
 
 code_sample_cc_py(name = "cp_sat_example")
+
+code_sample_py(name = "cumulative_variable_profile_sample_sat")
 
 code_sample_cc_py(name = "earliness_tardiness_cost_sample_sat")
 
@@ -62,6 +64,8 @@ code_sample_cc_py(name = "no_overlap_sample_sat")
 code_sample_py(name = "overlapping_intervals_sample_sat")
 
 code_sample_cc_py(name = "rabbits_and_pheasants_sat")
+
+code_sample_py(name = "ranking_circuit_sample_sat")
 
 code_sample_cc_py(name = "ranking_sample_sat")
 
@@ -100,6 +104,8 @@ code_sample_java(name = "BinPackingProblemSat")
 code_sample_java(name = "BoolOrSampleSat")
 
 code_sample_java(name = "ChannelingSampleSat")
+
+code_sample_java(name = "CloneModelSampleSat")
 
 code_sample_java(name = "CpIsFunSat")
 

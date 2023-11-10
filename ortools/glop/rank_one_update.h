@@ -138,6 +138,11 @@ class RankOneUpdateFactorization {
   // that switch between a sparse/dense version.
   RankOneUpdateFactorization() : hypersparse_ratio_(0.05) {}
 
+  // This type is neither copyable nor movable.
+  RankOneUpdateFactorization(const RankOneUpdateFactorization&) = delete;
+  RankOneUpdateFactorization& operator=(const RankOneUpdateFactorization&) =
+      delete;
+
   // This is currently only visible for testing.
   void set_hypersparse_ratio(double value) { hypersparse_ratio_ = value; }
 
@@ -242,7 +247,6 @@ class RankOneUpdateFactorization {
   double hypersparse_ratio_;
   EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;
-  DISALLOW_COPY_AND_ASSIGN(RankOneUpdateFactorization);
 };
 
 }  // namespace glop

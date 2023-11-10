@@ -51,6 +51,10 @@ class InitialBasis {
                const DenseRow& upper_bound,
                const VariableTypeRow& variable_type);
 
+  // This type is neither copyable nor movable.
+  InitialBasis(const InitialBasis&) = delete;
+  InitialBasis& operator=(const InitialBasis&) = delete;
+
   // Completes the entries of the given basis that are equal to kInvalidCol with
   // one of the first num_cols columns of A using Bixby's algorithm.
   //
@@ -127,8 +131,6 @@ class InitialBasis {
   const DenseRow& lower_bound_;
   const DenseRow& upper_bound_;
   const VariableTypeRow& variable_type_;
-
-  DISALLOW_COPY_AND_ASSIGN(InitialBasis);
 };
 
 }  // namespace glop

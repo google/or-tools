@@ -158,6 +158,12 @@ bool SatSolver::SetModelUnsat() {
 
 bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
   if (model_is_unsat_) return false;
+
+  // Let filter clauses if we are at level zero
+  if (trail_->CurrentDecisionLevel() == 0) {
+    return AddProblemClause(literals, /*is_safe=*/false);
+  }
+
   const int index = trail_->Index();
   if (literals.empty()) return SetModelUnsat();
   if (literals.size() == 1) return AddUnitClause(literals[0]);
@@ -165,8 +171,7 @@ bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
     // TODO(user): We generate in some corner cases clauses with
     // literals[0].Variable() == literals[1].Variable(). Avoid doing that and
     // adding such binary clauses to the graph?
-    if (!binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
-                                                                literals[1])) {
+    if (!binary_implication_graph_->AddBinaryClause(literals[0], literals[1])) {
       CHECK_EQ(CurrentDecisionLevel(), 0);
       return SetModelUnsat();
     }
@@ -204,15 +209,18 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
 bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
                                  bool is_safe) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
 
   // Filter already assigned literals.
-  literals_scratchpad_.clear();
-  for (const Literal l : literals) {
-    if (trail_->Assignment().LiteralIsTrue(l)) return true;
-    if (trail_->Assignment().LiteralIsFalse(l)) continue;
-    literals_scratchpad_.push_back(l);
+  if (CurrentDecisionLevel() == 0) {
+    literals_scratchpad_.clear();
+    for (const Literal l : literals) {
+      if (trail_->Assignment().LiteralIsTrue(l)) return true;
+      if (trail_->Assignment().LiteralIsFalse(l)) continue;
+      literals_scratchpad_.push_back(l);
+    }
+  } else {
+    literals_scratchpad_.assign(literals.begin(), literals.end());
   }
 
   if (!is_safe) {
@@ -224,7 +232,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
     }
   }
 
-  AddProblemClauseInternal(literals_scratchpad_);
+  if (!AddProblemClauseInternal(literals_scratchpad_)) return false;
 
   // Tricky: The PropagationIsDone() condition shouldn't change anything for a
   // pure SAT problem, however in the CP-SAT context, calling Propagate() can
@@ -238,8 +246,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
 
 bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
-  if (DEBUG_MODE) {
-    CHECK_EQ(CurrentDecisionLevel(), 0);
+  if (DEBUG_MODE && CurrentDecisionLevel() == 0) {
     for (const Literal l : literals) {
       CHECK(!trail_->Assignment().LiteralIsAssigned(l));
     }
@@ -420,8 +427,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (shared_binary_clauses_callback_ != nullptr) {
       shared_binary_clauses_callback_(literals[0], literals[1]);
     }
-    CHECK(binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
-                                                                 literals[1]));
+    CHECK(binary_implication_graph_->AddBinaryClause(literals[0], literals[1]));
     return /*lbd=*/2;
   }
 
@@ -502,7 +508,10 @@ void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
     shared_binary_clauses_callback_(a, b);
   }
 
-  binary_implication_graph_->AddBinaryClause(a, b);
+  if (!binary_implication_graph_->AddBinaryClause(a, b)) {
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    SetModelUnsat();
+  }
 }
 
 bool SatSolver::ClauseIsValidUnderDebugAssignment(
@@ -572,19 +581,29 @@ bool SatSolver::RestoreSolverToAssumptionLevel() {
 
 bool SatSolver::FinishPropagation() {
   if (model_is_unsat_) return false;
+  int num_loop = 0;
   while (true) {
     const int old_decision_level = current_decision_level_;
-    if (!PropagateAndStopAfterOneConflictResolution()) {
+    if (!Propagate()) {
+      ProcessCurrentConflict();
       if (model_is_unsat_) return false;
       if (current_decision_level_ == old_decision_level) {
         CHECK(!assumptions_.empty());
         return false;
       }
+
+      if (++num_loop % 16 == 0 && time_limit_->LimitReached()) {
+        // TODO(user): Exiting like this might cause issue since the propagation
+        // is not "finished" but some code might assume it is. However since we
+        // already might repropagate in the LP constraint, most of the code
+        // should support "not finished propagation".
+        return true;
+      }
       continue;
     }
     break;
   }
-  CHECK(PropagationIsDone());
+  DCHECK(PropagationIsDone());
   return true;
 }
 
@@ -664,10 +683,9 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   return (status == SatSolver::FEASIBLE);
 }
 
-bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
+void SatSolver::ProcessCurrentConflict() {
   SCOPED_TIME_STAT(&stats_);
-  if (Propagate()) return true;
-  if (model_is_unsat_) return false;
+  if (model_is_unsat_) return;
 
   ++counters_.num_failures;
   const int conflict_trail_index = trail_->Index();
@@ -685,7 +703,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     // it reduces to only one literal in which case we can just fix it.
     const int highest_level =
         DecisionLevel((*trail_)[max_trail_index].Variable());
-    if (highest_level == 1) return false;
+    if (highest_level == 1) return;
   }
 
   ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
@@ -693,7 +711,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                           &subsumed_clauses_);
 
   // An empty conflict means that the problem is UNSAT.
-  if (learned_conflict_.empty()) return SetModelUnsat();
+  if (learned_conflict_.empty()) return (void)SetModelUnsat();
   DCHECK(IsConflictValid(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
@@ -771,7 +789,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     int pb_backjump_level;
     ComputePBConflict(max_trail_index, initial_slack, &pb_conflict_,
                       &pb_backjump_level);
-    if (pb_backjump_level == -1) return SetModelUnsat();
+    if (pb_backjump_level == -1) return (void)SetModelUnsat();
 
     // Convert the conflict into the vector<LiteralWithCoeff> form.
     std::vector<LiteralWithCoeff> cst;
@@ -799,7 +817,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                                                   trail_));
       CHECK_GT(trail_->Index(), last_decision_or_backtrack_trail_index_);
       counters_.num_learned_pb_literals += cst.size();
-      return false;
+      return;
     }
 
     // Continue with the normal clause flow, but use the PB conflict clause
@@ -923,7 +941,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       learned_conflict_, is_redundant);
   restart_->OnConflict(conflict_trail_index, conflict_decision_level,
                        conflict_lbd);
-  return false;
 }
 
 SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
@@ -1208,7 +1225,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->size();
       trail_->EnqueueWithUnitReason(candidate[0]);
-      FinishPropagation();
+      return (void)FinishPropagation();
     }
     return;
   }
@@ -1223,8 +1240,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     // This is needed in the corner case where this was the first binary clause
     // of the problem so that PropagationIsDone() returns true on the newly
     // created BinaryImplicationGraph.
-    FinishPropagation();
-    return;
+    return (void)FinishPropagation();
   }
 
   counters_.minimization_num_removed_literals +=
@@ -1322,8 +1338,9 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
     }
 
     const int old_level = current_decision_level_;
-    if (!PropagateAndStopAfterOneConflictResolution()) {
+    if (!Propagate()) {
       // A conflict occurred, continue the loop.
+      ProcessCurrentConflict();
       if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
       if (old_level == current_decision_level_) {
         CHECK(!assumptions_.empty());
@@ -1748,6 +1765,7 @@ bool SatSolver::PropagationIsDone() const {
 // part or the full integer part...
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK(!ModelIsUnsat());
 
   // Because we might potentially iterate often on this list below, we remove
   // empty propagators.
@@ -2674,8 +2692,7 @@ std::string SatStatusString(SatSolver::Status status) {
 
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   std::vector<Literal> result;
-
-  solver->ResetToLevelZero();
+  if (!solver->ResetToLevelZero()) return;
   for (const Literal lit : *core) {
     if (solver->Assignment().LiteralIsTrue(lit)) continue;
     result.push_back(lit);

@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <deque>
 #include <utility>
 #include <vector>
 
@@ -91,6 +92,8 @@ class CpModelPresolver {
   CpSolverStatus InfeasibleStatus();
 
   // Runs the inner loop of the presolver.
+  bool ProcessChangedVariables(std::vector<bool>* in_queue,
+                               std::deque<int>* queue);
   void PresolveToFixPoint();
 
   // Runs the probing.
@@ -112,10 +115,11 @@ class CpModelPresolver {
   bool PresolveElement(ConstraintProto* ct);
   bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
-  bool PresolveIntMod(ConstraintProto* ct);
+  bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
+  bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
@@ -190,6 +194,9 @@ class CpModelPresolver {
   // with duplicate linear expressions.
   void DetectDuplicateConstraints();
 
+  // Detects variable that must take different values.
+  void DetectDifferentVariables();
+
   // Detects if a linear constraint is "included" in another one, and do
   // related presolve.
   void DetectDominatedLinearConstraints();
@@ -210,7 +217,8 @@ class CpModelPresolver {
                            bool* stop_processing_superset);
 
   // Run SAT specific presolve code.
-  void PresolvePureSatPart();
+  // Returns false on UNSAT.
+  bool PresolvePureSatPart();
 
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
@@ -228,7 +236,7 @@ class CpModelPresolver {
   void TransformIntoMaxCliques();
 
   // Converts bool_or and at_most_one of size 2 to bool_and.
-  void ExtractBoolAnd();
+  void ConvertToBoolAnd();
 
   // Try to reformulate the objective in term of "base" variables. This is
   // mainly useful for core based approach where having more terms in the
@@ -243,6 +251,7 @@ class CpModelPresolver {
   // merge this with what ExpandObjective() is doing.
   void ShiftObjectiveWithExactlyOnes();
 
+  void MaybeTransferLinear1ToAnotherVariable(int var);
   void ProcessVariableOnlyUsedInEncoding(int var);
   void TryToSimplifyDomain(int var);
 
@@ -262,6 +271,7 @@ class CpModelPresolver {
   // expression. We have two slightly different heuristic.
   //
   // TODO(user): consolidate them.
+  void FindAlmostIdenticalLinearConstraints();
   void FindBigHorizontalLinearOverlap();
   void FindBigVerticalLinearOverlap();
 
@@ -291,6 +301,7 @@ class CpModelPresolver {
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
   SolverLogger* logger_;
+  TimeLimit* time_limit_;
 
   // Used by CanonicalizeLinearExpressionInternal().
   std::vector<std::pair<int, int64_t>> tmp_terms_;
@@ -306,6 +317,18 @@ class CpModelPresolver {
   ConstraintProto temp_ct_;
 
   // Use by TryToReduceCoefficientsOfLinearConstraint().
+  struct RdEntry {
+    int64_t magnitude;
+    int64_t max_variation;
+    int index;
+  };
+  std::vector<RdEntry> rd_entries_;
+  std::vector<int> rd_vars_;
+  std::vector<int64_t> rd_coeffs_;
+  std::vector<int64_t> rd_magnitudes_;
+  std::vector<int64_t> rd_lbs_;
+  std::vector<int64_t> rd_ubs_;
+  std::vector<int64_t> rd_divisors_;
   MaxBoundedSubsetSum lb_feasible_;
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;
@@ -347,16 +370,22 @@ class ModelCopy {
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
-  bool CreateUnsatModel();
+  // The arguments are used to log which constraint caused unsat.
+  bool CreateUnsatModel(int c, const ConstraintProto& ct);
 
-  void CopyEnforcementLiterals(const ConstraintProto& orig,
-                               ConstraintProto* dest);
-  bool OneEnforcementLiteralIsFalse(const ConstraintProto& ct) const;
+  // Returns false if the constraint is never enforced and can be skipped.
+  bool PrepareEnforcementCopy(const ConstraintProto& ct);
+  bool PrepareEnforcementCopyWithDup(const ConstraintProto& ct);
+  void FinishEnforcementCopy(ConstraintProto* ct);
 
   // All these functions return false if the constraint is found infeasible.
   bool CopyBoolOr(const ConstraintProto& ct);
   bool CopyBoolOrWithDupSupport(const ConstraintProto& ct);
+  bool FinishBoolOrCopy();
+
   bool CopyBoolAnd(const ConstraintProto& ct);
+  bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
+
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
@@ -370,17 +399,18 @@ class ModelCopy {
   void CopyAndMapCumulative(const ConstraintProto& ct);
 
   PresolveContext* context_;
-  int64_t skipped_non_zero_ = 0;
 
   // Temp vectors.
   std::vector<int> non_fixed_variables_;
   std::vector<int64_t> non_fixed_coefficients_;
   absl::flat_hash_map<int, int> interval_mapping_;
   int starting_constraint_index_ = 0;
+
   std::vector<int> temp_enforcement_literals_;
+  absl::flat_hash_set<int> temp_enforcement_literals_set_;
 
   std::vector<int> temp_literals_;
-  absl::flat_hash_set<int> tmp_literals_set_;
+  absl::flat_hash_set<int> temp_literals_set_;
 };
 
 // Copy in_model to the model in the presolve context.

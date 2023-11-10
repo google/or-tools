@@ -306,6 +306,7 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_submatrix",
         "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/solvers/glpk:gap",
         "//ortools/math_opt/solvers/glpk:glpk_sparse_vector",
         "//ortools/math_opt/solvers/glpk:rays",
         "//ortools/math_opt/validators:callback_validator",

@@ -128,6 +128,7 @@ rm.exe -rf temp_dotnet
 echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
+set Platform=any
 cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
@@ -262,7 +263,7 @@ echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
 
-REM PYTHON 3.8, 3.9, 3.10, 3.11
+REM PYTHON 3.8, 3.9, 3.10, 3.11, 3.12
 :BUILD_PYTHON
 title Build Python
 set HASH=
@@ -272,12 +273,12 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-for %%v in (8 9 10 11) do (
+for %%v in (8 9 10 11 12) do (
   title Build Python 3.%%v
   :: Check Python
   which.exe C:\python3%%v-64\python.exe || exit 1
   echo C:\python3%%v-64\python.exe: FOUND | tee.exe -a build.log
-  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy-protobuf
+  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf
   set PATH+=;%userprofile%\appdata\roaming\python\python3%%v\Scripts"
   set PATH+=;C:\python3%%v-64\Scripts"
 
@@ -312,7 +313,7 @@ del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
 del /s /f /q temp_java
 rmdir /s /q temp_java
-for %%v in (8 9 10 11) do (
+for %%v in (8 9 10 11 12) do (
   del /s /f /q temp_python3%%v
   rmdir /s /q temp_python3%%v
 )

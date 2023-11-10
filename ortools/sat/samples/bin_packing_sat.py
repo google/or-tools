@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple bin packing problem using a MIP solver."""
+"""Solve a simple bin packing problem using CP-SAT."""
 # [START program]
 # [START import]
 import io
@@ -25,7 +25,7 @@ from ortools.sat.python import cp_model
 
 # [START program_part1]
 # [START data_model]
-def create_data_model():
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create the data for the example."""
 
     items_str = """
@@ -105,13 +105,13 @@ def main():
     # [END objective]
 
     # [START solve]
-    # Create the solver with the CP-SAT backend, and solve the model.
+    # Create the solver and solve the model.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
     # [END solve]
 
     # [START print_solution]
-    if status == cp_model.OPTIMAL:
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print(f"Number of bins used = {solver.ObjectiveValue()}")
 
         x_values = solver.BooleanValues(x)
@@ -129,8 +129,10 @@ def main():
         print(f"Total packed weight: {items.weight.sum()}")
         print()
         print(f"Time = {solver.WallTime()} seconds")
+    elif status == cp_model.INFEASIBLE:
+        print("No solution found")
     else:
-        print("The problem does not have an optimal solution.")
+        print("Something is wrong, check the status and the log of the solve")
     # [END print_solution]
 
 

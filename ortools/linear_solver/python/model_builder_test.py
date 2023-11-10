@@ -48,7 +48,7 @@ class ModelBuilderTest(absltest.TestCase):
     # pylint: disable=too-many-statements
     def run_minimal_linear_example(self, solver_name):
         """Minimal Linear Example."""
-        model = mb.ModelBuilder()
+        model = mb.Model()
         model.name = "minimal_linear_example"
         x1 = model.new_num_var(0.0, math.inf, "x1")
         x2 = model.new_num_var(0.0, math.inf, "x2")
@@ -73,7 +73,7 @@ class ModelBuilderTest(absltest.TestCase):
         c2 = model.add(2.0 * x1 + 2.0 * x2 + 6.0 * x3 <= 300.0)
         self.assertEqual(-math.inf, c2.lower_bound)
 
-        solver = mb.ModelSolver(solver_name)
+        solver = mb.Solver(solver_name)
         if not solver.solver_is_supported():
             print(f"Solver {solver_name} is not supported")
             return
@@ -161,14 +161,14 @@ BOUNDS
  UP BOUND   X_ONE        4
 ENDATA
 """
-        model = mb.ModelBuilder()
+        model = mb.Model()
         self.assertTrue(model.import_from_mps_string(mps_data))
         self.assertEqual(model.name, "SupportedMaximizationProblem")
 
     def test_import_from_mps_file(self):
         path = os.path.dirname(__file__)
         mps_path = f"{path}/../testdata/maximization.mps"
-        model = mb.ModelBuilder()
+        model = mb.Model()
         self.assertTrue(model.import_from_mps_file(mps_path))
         self.assertEqual(model.name, "SupportedMaximizationProblem")
 
@@ -181,7 +181,7 @@ ENDATA
       4 y + b2 - 3 b3 <= 2;
       constraint_num2: -4 b1 + b2 - 3 z <= -2;
 """
-        model = mb.ModelBuilder()
+        model = mb.Model()
         self.assertTrue(model.import_from_lp_string(lp_data))
         self.assertEqual(6, model.num_variables)
         self.assertEqual(3, model.num_constraints)
@@ -192,7 +192,7 @@ ENDATA
     def test_import_from_lp_file(self):
         path = os.path.dirname(__file__)
         lp_path = f"{path}/../testdata/small_model.lp"
-        model = mb.ModelBuilder()
+        model = mb.Model()
         self.assertTrue(model.import_from_lp_file(lp_path))
         self.assertEqual(6, model.num_variables)
         self.assertEqual(3, model.num_constraints)
@@ -201,7 +201,7 @@ ENDATA
         self.assertEqual("x", model.var_from_index(0).name)
 
     def test_class_api(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(1, 10, "y")
         z = model.new_int_var(2, 10, "z")
@@ -283,7 +283,7 @@ ENDATA
         )
 
     def test_variables(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")
         self.assertEqual(0, x.index)
         self.assertEqual(0.0, x.lower_bound)
@@ -310,17 +310,17 @@ ENDATA
         self.assertNotIn(y, var_set)
 
     def test_duplicate_variables(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")
         y = model.new_int_var(0.0, 4.0, "y")
         z = model.new_int_var(0.0, 4.0, "z")
         model.add(x + 2 * y == x - z)
         model.minimize(x + y + z)
-        solver = mb.ModelSolver("sat")
+        solver = mb.Solver("sat")
         self.assertEqual(mb.SolveStatus.OPTIMAL, solver.solve(model))
 
     def test_add_term(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")
         y = model.new_int_var(0.0, 4.0, "y")
         z = model.new_int_var(0.0, 4.0, "z")
@@ -353,7 +353,7 @@ ENDATA
 
         bundle_start_idx = len(standalone_features)
         # Model
-        model = mb.ModelBuilder()
+        model = mb.Model()
         y = {}
         v = {}
         for i in range(total_number_of_choices):
@@ -373,12 +373,12 @@ ENDATA
                     )
                 )
 
-        solver = mb.ModelSolver("sat")
+        solver = mb.Solver("sat")
         status = solver.solve(model)
         self.assertEqual(mb.SolveStatus.OPTIMAL, status)
 
     def test_vareqvar(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")
         y = model.new_int_var(0.0, 4.0, "y")
         ct = x == y
@@ -387,7 +387,7 @@ ENDATA
 
     def test_create_false_ct(self):
         # Create the model.
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_num_var(0.0, math.inf, "x")
 
         ct = model.add(False)
@@ -396,13 +396,13 @@ ENDATA
 
         model.maximize(x)
 
-        solver = mb.ModelSolver("glop")
+        solver = mb.Solver("glop")
         status = solver.solve(model)
         self.assertEqual(status, mb.SolveStatus.INFEASIBLE)
 
     def test_create_true_ct(self):
         # Create the model.
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_num_var(0.0, 5.0, "x")
 
         ct = model.add(True)
@@ -412,7 +412,7 @@ ENDATA
 
         model.maximize(x)
 
-        solver = mb.ModelSolver("glop")
+        solver = mb.Solver("glop")
         status = solver.solve(model)
 
         self.assertEqual(status, mb.SolveStatus.OPTIMAL)
@@ -422,13 +422,13 @@ ENDATA
 
 class InternalHelperTest(absltest.TestCase):
     def test_anonymous_variables(self):
-        helper = mb.ModelBuilder().helper
+        helper = mb.Model().helper
         index = helper.add_var()
         variable = mb.Variable(helper, index, None, None, None)
         self.assertEqual(variable.name, f"variable#{index}")
 
     def test_anonymous_constraints(self):
-        helper = mb.ModelBuilder().helper
+        helper = mb.Model().helper
         index = helper.add_linear_constraint()
         constraint = mb.LinearConstraint(helper, index)
         self.assertEqual(constraint.name, f"linear_constraint#{index}")
@@ -437,7 +437,7 @@ class InternalHelperTest(absltest.TestCase):
 class LinearBaseTest(parameterized.TestCase):
     def setUp(self):
         super().setUp()
-        simple_model = mb.ModelBuilder()
+        simple_model = mb.Model()
         self.x = simple_model.new_var_series(
             name="x", index=pd.Index(range(3), name="i")
         )
@@ -625,13 +625,13 @@ class LinearBaseErrorsTest(absltest.TestCase):
 
     def test_division_by_zero(self):
         with self.assertRaises(ZeroDivisionError):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             x = model.new_var_series(name="x", index=pd.Index(range(1)))
             print(x / 0)
 
     def test_boolean_expression(self):
         with self.assertRaisesRegex(NotImplementedError, r"Cannot use a LinearExpr"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             x = model.new_var_series(name="x", index=pd.Index(range(1)))
             bool(x.sum())
 
@@ -639,7 +639,7 @@ class LinearBaseErrorsTest(absltest.TestCase):
 class BoundedLinearBaseTest(parameterized.TestCase):
     def setUp(self):
         super().setUp()
-        simple_model = mb.ModelBuilder()
+        simple_model = mb.Model()
         self.x = simple_model.new_var_series(
             name="x", index=pd.Index(range(3), name="i")
         )
@@ -732,7 +732,7 @@ class BoundedLinearBaseTest(parameterized.TestCase):
 class BoundedLinearBaseErrorsTest(absltest.TestCase):
     def test_bounded_linear_expression_as_bool(self):
         with self.assertRaisesRegex(NotImplementedError, "Boolean value"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             x = model.new_var_series(name="x", index=pd.Index(range(1)))
             bool(mb.BoundedLinearExpression(x, 0, 1))
 
@@ -740,22 +740,22 @@ class BoundedLinearBaseErrorsTest(absltest.TestCase):
 class ModelBuilderErrorsTest(absltest.TestCase):
     def test_new_var_series_errors(self):
         with self.assertRaisesRegex(TypeError, r"Non-index object"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(name="", index=pd.DataFrame())
         with self.assertRaisesRegex(TypeError, r"invalid type"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(name="x", index=pd.Index([0]), lower_bounds="0")
         with self.assertRaisesRegex(TypeError, r"invalid type"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(name="x", index=pd.Index([0]), upper_bounds="0")
         with self.assertRaisesRegex(TypeError, r"invalid type"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(name="x", index=pd.Index([0]), is_integral="True")
         with self.assertRaisesRegex(ValueError, r"not a valid identifier"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(name="", index=pd.Index([0]))
         with self.assertRaisesRegex(ValueError, r"is greater than"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(
                 name="x",
                 index=pd.Index([0]),
@@ -763,7 +763,7 @@ class ModelBuilderErrorsTest(absltest.TestCase):
                 upper_bounds=0.1,
             )
         with self.assertRaisesRegex(ValueError, r"is greater than"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(
                 name="x",
                 index=pd.Index([0]),
@@ -772,27 +772,27 @@ class ModelBuilderErrorsTest(absltest.TestCase):
                 is_integral=True,
             )
         with self.assertRaisesRegex(ValueError, r"index does not match"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(
                 name="x", index=pd.Index([0]), lower_bounds=pd.Series([1, 2])
             )
         with self.assertRaisesRegex(ValueError, r"index does not match"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(
                 name="x", index=pd.Index([0]), upper_bounds=pd.Series([1, 2])
             )
         with self.assertRaisesRegex(ValueError, r"index does not match"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.new_var_series(
                 name="x", index=pd.Index([0]), is_integral=pd.Series([False, True])
             )
 
     def test_add_linear_constraints_errors(self):
         with self.assertRaisesRegex(TypeError, r"Not supported"):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.add("True", name="c")
         with self.assertRaisesRegex(TypeError, r"invalid type="):
-            model = mb.ModelBuilder()
+            model = mb.Model()
             model.add(pd.Series(["T"]), name="c")
 
 
@@ -880,7 +880,7 @@ class ModelBuilderVariablesTest(parameterized.TestCase):
         index=_variable_indices, bounds=_bounds, is_integer=_is_integer
     )
     def test_new_var_series(self, index, bounds, is_integer):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         variables = model.new_var_series(
             name="test_variable",
             index=index,
@@ -898,7 +898,7 @@ class ModelBuilderVariablesTest(parameterized.TestCase):
     )
     def test_get_variable_lower_bounds(self, index, bounds, is_integer):
         lower_bound, upper_bound = bounds(index)
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(
             name="x",
             index=index,
@@ -939,7 +939,7 @@ class ModelBuilderVariablesTest(parameterized.TestCase):
     )
     def test_get_variable_upper_bounds(self, index, bounds, is_integer):
         lower_bound, upper_bound = bounds(index)
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(
             name="x",
             index=index,
@@ -1307,7 +1307,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
     ]
 
     def create_test_model(self, name, bounded_exprs):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(
             name="x",
             index=pd.Index(range(3), name="i"),
@@ -1346,7 +1346,7 @@ class ModelBuilderLinearConstraintsTest(parameterized.TestCase):
         self.assertLen(linear_constraints, constraint_count)
 
     def test_get_linear_constraints_empty(self):
-        linear_constraints = mb.ModelBuilder().get_linear_constraints()
+        linear_constraints = mb.Model().get_linear_constraints()
         self.assertIsInstance(linear_constraints, pd.Index)
         self.assertEmpty(linear_constraints)
 
@@ -1493,7 +1493,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         variable_indices: pd.Index,
         is_maximize: bool,
     ):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
         objective_expression = mb._as_flat_linear_expression(expression(x, y))
@@ -1507,7 +1507,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         )
 
     def test_set_new_objective(self):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(name="x", index=pd.Index(range(3)))
         old_objective_expression = 1
         new_objective_expression = mb._as_flat_linear_expression(x.sum() - 2.3)
@@ -1535,7 +1535,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         expression: Callable[[pd.Series, pd.Series], mb.LinearExprT],
         variable_indices: pd.Index,
     ):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
         objective_expression = mb._as_flat_linear_expression(expression(x, y))
@@ -1554,7 +1554,7 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
         expression: Callable[[pd.Series, pd.Series], float],
         variable_indices: pd.Index,
     ):
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(name="x", index=variable_indices)
         y = model.new_var_series(name="y", index=variable_indices)
         objective_expression = mb._as_flat_linear_expression(expression(x, y))
@@ -1604,7 +1604,7 @@ class ModelBuilderProtoTest(absltest.TestCase):
     """,
             expected,
         )
-        model = mb.ModelBuilder()
+        model = mb.Model()
         model.name = "test_name"
         x = model.new_var_series("x", pd.Index(range(2)), 0, 1000)
         model.add(ct=x.apply(lambda expr: expr <= 10), name="Ct")
@@ -1690,7 +1690,7 @@ class SolverTest(parameterized.TestCase):
         Returns:
           mb.ModelBuilder: The resulting problem.
         """
-        model = mb.ModelBuilder()
+        model = mb.Model()
         # Variable(s)
         x = model.new_var_series(
             name="x",
@@ -1742,7 +1742,7 @@ class SolverTest(parameterized.TestCase):
             is_maximize=is_maximize,
             objective_expression=objective_expression,
         )
-        model_solver = mb.ModelSolver(solver["name"])
+        model_solver = mb.Solver(solver["name"])
         if not model_solver.solver_is_supported():
             print(f'Solver {solver["name"]} is not supported')
             return
@@ -1811,7 +1811,7 @@ class SolverTest(parameterized.TestCase):
             is_maximize=is_maximize,
             objective_expression=objective_expression,
         )
-        model_solver = mb.ModelSolver(solver["name"])
+        model_solver = mb.Solver(solver["name"])
         if not model_solver.solver_is_supported():
             print(f'Solver {solver["name"]} is not supported')
             return
@@ -1889,7 +1889,7 @@ class SolverTest(parameterized.TestCase):
             is_maximize=is_maximize,
             objective_expression=objective_expression,
         )
-        model_solver = mb.ModelSolver(solver["name"])
+        model_solver = mb.Solver(solver["name"])
         if not model_solver.solver_is_supported():
             print(f'Solver {solver["name"]} is not supported')
             return
@@ -1922,7 +1922,7 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         #      x1,   x2,   x3 >= 0
         # Values = (2,0,1)
         # Reduced Costs = (0,-3,0)
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_var_series(
             "x", pd.Index(range(3)), lower_bounds=0, is_integral=True
         )
@@ -1932,7 +1932,7 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         model.add(x.dot([4, 1, 2]) <= 11)
         model.add(x.dot([3, 4, 2]) <= 8)
         self.assertLen(model.get_linear_constraints(), 3)
-        solver = mb.ModelSolver("glop")
+        solver = mb.Solver("glop")
         test_red_cost = solver.reduced_costs(model.get_variables())
         test_dual_values = solver.dual_values(model.get_variables())
         self.assertLen(test_red_cost, 3)
@@ -1973,7 +1973,7 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         # s.t: Every vertex must be assigned exactly one color
         #      if two vertices are adjacent they cannot have the same color
 
-        model = mb.ModelBuilder()
+        model = mb.Model()
         num_colors = 3
         num_nodes = 4
         x = model.new_var_series(
@@ -2004,7 +2004,7 @@ class ModelBuilderExamplesTest(absltest.TestCase):
             model.add(x[0, j] + x[1, j] <= 1)
             model.add(x[0, j] + x[2, j] <= 1)
             model.add(x[1, j] + x[3, j] <= 1)
-        solver = mb.ModelSolver("sat")
+        solver = mb.Solver("sat")
         run = solver.solve(model)
         self.assertEqual(run, mb.SolveStatus.OPTIMAL)
         self.assertEqual(solver.objective_value, 2)
@@ -2019,13 +2019,13 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         # Item x3: Weight = 30, Value = 120
         # Max: 60x1 + 100x2 + 120x3
         # s.t: 10x1 +  20x2 +  30x3  <= 50
-        model = mb.ModelBuilder()
+        model = mb.Model()
         x = model.new_bool_var_series("x", pd.Index(range(3)))
         self.assertLen(model.get_variables(), 3)
         model.maximize(x.dot([60, 100, 120]))
         model.add(x.dot([10, 20, 30]) <= 50)
         self.assertLen(model.get_linear_constraints(), 1)
-        solver = mb.ModelSolver("sat")
+        solver = mb.Solver("sat")
         run = solver.solve(model)
         self.assertEqual(run, mb.SolveStatus.OPTIMAL)
         i = solver.values(model.get_variables())
@@ -2059,7 +2059,7 @@ class ModelBuilderExamplesTest(absltest.TestCase):
         #      flow[(1,5)] + flow[(2,5)] + flow[(3,5)] = X[(5,7)]
         #      flow[(2,6)] = flow[(6,7)]
 
-        model = mb.ModelBuilder()
+        model = mb.Model()
         nodes = [1, 2, 3, 4, 5, 6]
         edge_capacities = pd.Series(
             {
@@ -2097,10 +2097,20 @@ class ModelBuilderExamplesTest(absltest.TestCase):
                 flow_var.xs(node, level=0).sum() == flow_var.xs(node, level=1).sum(),
                 name="flow_conservation",
             )
-        solver = mb.ModelSolver("sat")
+        solver = mb.Solver("sat")
         run = solver.solve(model)
         self.assertEqual(run, mb.SolveStatus.OPTIMAL)
         self.assertEqual(solver.objective_value, 6)
+
+    def test_add_enforced(self):
+        model = mb.Model()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_bool_var("z")
+        ct = model.add_enforced(x + 2 * y >= 10, z, False)
+        self.assertEqual(ct.lower_bound, 10.0)
+        self.assertEqual(z.index, ct.indicator_variable.index)
+        self.assertFalse(ct.indicator_value)
 
 
 if __name__ == "__main__":

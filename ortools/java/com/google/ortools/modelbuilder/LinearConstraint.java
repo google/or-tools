@@ -20,6 +20,11 @@ public class LinearConstraint {
     this.index = helper.addLinearConstraint();
   }
 
+  LinearConstraint(ModelBuilderHelper helper, int index) {
+    this.helper = helper;
+    this.index = index;
+  }
+
   /** Returns the index of the constraint in the model. */
   public int getIndex() {
     return index;
@@ -30,39 +35,49 @@ public class LinearConstraint {
     return helper;
   }
 
-  /** Returns the lower bound of the variable. */
+  /** Returns the lower bound of the constraint. */
   public double getLowerBound() {
     return helper.getConstraintLowerBound(index);
   }
 
-  /** Returns the lower bound of the variable. */
+  /** Returns the lower bound of the constraint. */
   public void setLowerBound(double lb) {
     helper.setConstraintLowerBound(index, lb);
   }
 
-  /** Returns the upper bound of the variable. */
+  /** Returns the upper bound of the constraint. */
   public double getUpperBound() {
     return helper.getConstraintUpperBound(index);
   }
 
-  /** Returns the upper bound of the variable. */
+  /** Returns the upper bound of the constraint. */
   public void setUpperBound(double ub) {
     helper.setConstraintUpperBound(index, ub);
   }
 
-  /** Returns the name of the variable given upon creation. */
+  /** Returns the name of the constraint given upon creation. */
   public String getName() {
     return helper.getConstraintName(index);
   }
 
-  // Sets the name of the variable. */
+  /** Sets the name of the constraint. */
   public void setName(String name) {
     helper.setConstraintName(index, name);
   }
 
-  // Adds var * coeff to the constraint.
-  public void addTerm(Variable var, double coeff) {
-    helper.addConstraintTerm(index, var.getIndex(), coeff);
+  /** Adds var * coeff to the constraint. */
+  public void addTerm(Variable v, double coeff) {
+    helper.addConstraintTerm(index, v.getIndex(), coeff);
+  }
+
+  /** Sets the coefficient of v to coeff, adding or removing a term if needed. */
+  public void setCoefficient(Variable v, double coeff) {
+    helper.setConstraintCoefficient(index, v.getIndex(), coeff);
+  }
+
+  /** Clear all terms. */
+  public void clearTerms() {
+    helper.clearConstraintTerms(index);
   }
 
   /** Inline setter */

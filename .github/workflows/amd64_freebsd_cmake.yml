@@ -1,12 +1,12 @@
 name: amd64 FreeBSD CMake
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
+# Only macos runner provide virtualisation with vagrant/virtualbox installed.
+# ref: https://github.com/actions/runner-images/tree/main/images/macos
+# ref: https://app.vagrantup.com/generic/boxes/freebsd13
 jobs:
-  # Only macos runner provide virtualisation with vagrant/virtualbox installed.
-  FreeBSD:
-    runs-on: macos-10.15
-    continue-on-error: ${{ matrix.allow_failure }}
+  vagrant:
     strategy:
       fail-fast: false
       matrix:
@@ -15,19 +15,18 @@ jobs:
         allow_failure: [false]
         include:
         - distro: freebsd
-          lang: java
-          allow_failure: true
-        - distro: freebsd
           lang: dotnet
           allow_failure: true
-    env:
-      DISTRO: ${{ matrix.distro }}
-      LANG: ${{ matrix.lang }}
+        - distro: freebsd
+          lang: java
+          allow_failure: true
+    name: FreeBSD • CMake • ${{ matrix.lang }}
+    runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: vagrant version
-      run: Vagrant --version
-    - name: VirtualBox version
-      run: virtualbox -h
-    - name: Build
-      run: make --directory=cmake ${DISTRO}_${LANG}
+      - uses: actions/checkout@v4
+      - name: vagrant version
+        run: Vagrant --version
+      - name: VirtualBox version
+        run: virtualbox -h
+      - name: Build
+        run: make --directory=cmake ${{ matrix.distro }}_${{ matrix.lang }}

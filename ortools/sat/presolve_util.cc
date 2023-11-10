@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,16 +28,39 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
+
+PresolveTimer::~PresolveTimer() {
+  time_limit_->AdvanceDeterministicTime(work_);
+
+  std::string counter_string;
+  for (const auto& [counter_name, count] : counters_) {
+    absl::StrAppend(&counter_string, " #", counter_name, "=",
+                    FormatCounter(count));
+  }
+
+  // We use absl::Seconds() to get a nicer display.
+  SOLVER_LOG(logger_, absl::StrFormat("  %.2es", timer_.Get()),
+             absl::StrFormat("  %.2ed", work_),
+             (WorkLimitIsReached() ? " *" : "  "),
+             absl::StrCat("[", name_, "]"), counter_string, " ",
+             absl::StrJoin(extra_infos_, " "));
+}
 
 void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
   CHECK_GE(var, 0);
@@ -122,112 +147,111 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
 }
 
 namespace {
-// Helper method for variable substitution. Returns the coefficient of 'var' in
-// 'proto' and copies other terms in 'terms'.
-template <typename ProtoWithVarsAndCoeffs>
-int64_t GetVarCoeffAndCopyOtherTerms(
-    const int var, const ProtoWithVarsAndCoeffs& proto,
-    std::vector<std::pair<int, int64_t>>* terms) {
-  int64_t var_coeff = 0;
-  const int size = proto.vars().size();
-  for (int i = 0; i < size; ++i) {
-    int ref = proto.vars(i);
-    int64_t coeff = proto.coeffs(i);
-    if (!RefIsPositive(ref)) {
-      ref = NegatedRef(ref);
-      coeff = -coeff;
-    }
 
-    if (ref == var) {
-      // If var appear multiple time, we add its coefficient.
-      var_coeff += coeff;
-      continue;
-    } else {
-      terms->push_back({ref, coeff});
-    }
-  }
-  return var_coeff;
-}
-
-// Helper method for variable substituion. Sorts and merges the terms in 'terms'
-// and adds them to 'proto'.
-template <typename ProtoWithVarsAndCoeffs>
-void SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms,
-                       ProtoWithVarsAndCoeffs* proto) {
-  proto->clear_vars();
-  proto->clear_coeffs();
+// Helper method for variable substitution.
+// Sorts and merges the terms in 'terms'.
+// Returns false on overflow.
+bool SortAndMergeTerms(std::vector<std::pair<int, int64_t>>* terms) {
   std::sort(terms->begin(), terms->end());
+
+  int new_size = 0;
   int current_var = 0;
   int64_t current_coeff = 0;
   for (const auto& entry : *terms) {
-    CHECK(RefIsPositive(entry.first));
+    DCHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
-      current_coeff += entry.second;
+      current_coeff = CapAdd(current_coeff, entry.second);
+      if (AtMinOrMaxInt64(current_coeff)) return false;
     } else {
       if (current_coeff != 0) {
-        proto->add_vars(current_var);
-        proto->add_coeffs(current_coeff);
+        (*terms)[new_size++] = {current_var, current_coeff};
       }
       current_var = entry.first;
       current_coeff = entry.second;
     }
   }
   if (current_coeff != 0) {
-    proto->add_vars(current_var);
-    proto->add_coeffs(current_coeff);
+    (*terms)[new_size++] = {current_var, current_coeff};
   }
+  terms->resize(new_size);
+  return true;
 }
 
-// Adds all the terms from the var definition constraint with given var
-// coefficient.
-void AddTermsFromVarDefinition(const int var, const int64_t var_coeff,
-                               const ConstraintProto& definition,
-                               std::vector<std::pair<int, int64_t>>* terms) {
-  const int definition_size = definition.linear().vars().size();
-  for (int i = 0; i < definition_size; ++i) {
-    int ref = definition.linear().vars(i);
-    int64_t coeff = definition.linear().coeffs(i);
-    if (!RefIsPositive(ref)) {
-      ref = NegatedRef(ref);
-      coeff = -coeff;
-    }
-
-    if (ref == var) {
-      continue;
-    } else {
-      terms->push_back({ref, -coeff * var_coeff});
-    }
-  }
-}
 }  // namespace
+
+bool AddLinearConstraintMultiple(int64_t factor, const ConstraintProto& to_add,
+                                 ConstraintProto* to_modify) {
+  if (factor == 0) return true;
+  DCHECK_EQ(to_add.constraint_case(), ConstraintProto::kLinear);
+  DCHECK_EQ(to_modify->constraint_case(), ConstraintProto::kLinear);
+
+  // Copy to_modify terms.
+  std::vector<std::pair<int, int64_t>> terms;
+  LinearConstraintProto* out = to_modify->mutable_linear();
+  const int initial_size = out->vars().size();
+  for (int i = 0; i < initial_size; ++i) {
+    const int var = out->vars(i);
+    const int64_t coeff = out->coeffs(i);
+    if (!RefIsPositive(var)) return false;
+    terms.push_back({var, coeff});
+  }
+
+  // Add factor * to_add and check first kind of overflow.
+  const int to_add_size = to_add.linear().vars().size();
+  for (int i = 0; i < to_add_size; ++i) {
+    const int var = to_add.linear().vars(i);
+    const int64_t coeff = to_add.linear().coeffs(i);
+    if (!RefIsPositive(var)) return false;
+    terms.push_back({var, CapProd(coeff, factor)});
+    if (AtMinOrMaxInt64(terms.back().second)) return false;
+  }
+
+  // Merge terms, return false if we get an overflow here.
+  if (!SortAndMergeTerms(&terms)) return false;
+
+  // Copy terms.
+  out->clear_vars();
+  out->clear_coeffs();
+  for (const auto [var, coeff] : terms) {
+    out->add_vars(var);
+    out->add_coeffs(coeff);
+  }
+
+  // Write new rhs. We want to be exact during the multiplication. Note that in
+  // practice this domain is fixed, so this will always be the case.
+  bool exact = false;
+  Domain offset = ReadDomainFromProto(to_add.linear());
+  offset = offset.MultiplicationBy(factor, &exact);
+  CHECK(exact);
+
+  const Domain rhs = ReadDomainFromProto(*out);
+  FillDomainInProto(rhs.AdditionWith(offset), out);
+  return true;
+}
 
 bool SubstituteVariable(int var, int64_t var_coeff_in_definition,
                         const ConstraintProto& definition,
                         ConstraintProto* ct) {
   CHECK(RefIsPositive(var));
-  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
 
-  // Copy all the terms (except the one referring to var).
-  std::vector<std::pair<int, int64_t>> terms;
-  int64_t var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
+  // Get the coefficient of var in the constraint.
+  // We assume positive reference here (it should always be the case now).
+  // If we don't find var, we abort.
+  int64_t var_coeff = 0;
+  const int initial_ct_size = ct->linear().vars().size();
+  for (int i = 0; i < initial_ct_size; ++i) {
+    const int ref = ct->linear().vars(i);
+    if (!RefIsPositive(ref)) return false;
+    if (ref == var) {
+      // If var appear multiple time, we add all its coefficients.
+      var_coeff += ct->linear().coeffs(i);
+    }
+  }
   if (var_coeff == 0) return false;
 
-  if (var_coeff_in_definition < 0) var_coeff *= -1;
-
-  AddTermsFromVarDefinition(var, var_coeff, definition, &terms);
-
-  // The substitution is correct only if we don't loose information here.
-  // But for a constant definition rhs that is always the case.
-  bool exact = false;
-  Domain offset = ReadDomainFromProto(definition.linear());
-  offset = offset.MultiplicationBy(-var_coeff, &exact);
-  CHECK(exact);
-
-  const Domain rhs = ReadDomainFromProto(ct->linear());
-  FillDomainInProto(rhs.AdditionWith(offset), ct->mutable_linear());
-
-  SortAndMergeTerms(&terms, ct->mutable_linear());
-  return true;
+  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
+  const int64_t factor = var_coeff_in_definition > 0 ? -var_coeff : var_coeff;
+  return AddLinearConstraintMultiple(factor, definition, ct);
 }
 
 void ActivityBoundHelper::ClearAtMostOnes() {
@@ -428,28 +452,9 @@ ActivityBoundHelper::PartitionLiteralsIntoAmo(absl::Span<const int> literals) {
   }
 
   // We have the partition, lets construct the spans now.
-  part_starts_.assign(num_parts, 0);
-  part_sizes_.assign(num_parts, 0);
-  part_ends_.assign(num_parts, 0);
-  for (int i = 0; i < num_literals; ++i) {
-    DCHECK_GE(partition_[i], 0);
-    DCHECK_LT(partition_[i], num_parts);
-    part_sizes_[partition_[i]]++;
-  }
-  for (int p = 1; p < num_parts; ++p) {
-    part_starts_[p] = part_ends_[p] = part_sizes_[p - 1] + part_starts_[p - 1];
-  }
-  reordered_literals_.resize(num_literals);
-  for (int i = 0; i < num_literals; ++i) {
-    const int p = partition_[i];
-    reordered_literals_[part_ends_[p]++] = literals[i];
-  }
-  std::vector<absl::Span<const int>> result;
-  for (int p = 0; p < num_parts; ++p) {
-    result.push_back(
-        absl::MakeSpan(&reordered_literals_[part_starts_[p]], part_sizes_[p]));
-  }
-  return result;
+  part_to_literals_.ResetFromFlatMapping(partition_, literals);
+  DCHECK_EQ(part_to_literals_.size(), num_parts);
+  return part_to_literals_.AsVectorOfSpan();
 }
 
 bool ActivityBoundHelper::IsAmo(absl::Span<const int> literals) {
@@ -612,6 +617,59 @@ uint64_t ClauseWithOneMissingHasher::HashOfNegatedLiterals(
     hash ^= literal_to_hash_[index];
   }
   return hash;
+}
+
+bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
+                                const LinearConstraintProto& lin2, int* var1,
+                                int64_t* coeff1, int* var2, int64_t* coeff2) {
+  const int size = lin1.vars().size();
+  CHECK_EQ(size, lin2.vars().size());
+  *coeff1 = 0;
+  *coeff2 = 0;
+  int i = 0;
+  int j = 0;
+  while (i < size || j < size) {
+    // Note that we can't have both undefined or the loop would have exited.
+    const int v1 = i < size ? lin1.vars(i) : std::numeric_limits<int>::max();
+    const int v2 = j < size ? lin2.vars(j) : std::numeric_limits<int>::max();
+
+    // Same term, continue.
+    if (v1 == v2 && lin1.coeffs(i) == lin2.coeffs(j)) {
+      ++i;
+      ++j;
+      continue;
+    }
+
+    // We have a diff.
+    // term i not in lin2.
+    if (v1 < v2) {
+      if (*coeff1 != 0) return false;  // Returns if second diff.
+      *var1 = v1;
+      *coeff1 = lin1.coeffs(i);
+      ++i;
+      continue;
+    }
+
+    // term j not in lin1.
+    if (v1 > v2) {
+      if (*coeff2 != 0) return false;  // Returns if second diff.
+      *var2 = v2;
+      *coeff2 = lin2.coeffs(j);
+      ++j;
+      continue;
+    }
+
+    // Coeff differ. Returns if we had a diff previously.
+    if (*coeff1 != 0 || *coeff2 != 0) return false;
+    *var1 = v1;
+    *var2 = v2;
+    *coeff1 = lin1.coeffs(i);
+    *coeff2 = lin2.coeffs(j);
+    ++i;
+    ++j;
+  }
+
+  return *coeff1 != 0 && *coeff2 != 0;
 }
 
 }  // namespace sat

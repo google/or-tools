@@ -60,6 +60,13 @@ class SimpleLinearSumAssignment {
   // New node indices will be created lazily by AddArcWithCost().
   SimpleLinearSumAssignment();
 
+#ifndef SWIG
+  // This type is neither copyable nor movable.
+  SimpleLinearSumAssignment(const SimpleLinearSumAssignment&) = delete;
+  SimpleLinearSumAssignment& operator=(const SimpleLinearSumAssignment&) =
+      delete;
+#endif
+
   // Adds an arc from a left node to a right node with a given cost.
   // * Node indices must be non-negative (>= 0). For a perfect
   //   matching to exist on n nodes, the values taken by "left_node"
@@ -122,7 +129,6 @@ class SimpleLinearSumAssignment {
   std::vector<CostValue> arc_cost_;
   std::vector<ArcIndex> assignment_arcs_;
   CostValue optimal_cost_;
-  DISALLOW_COPY_AND_ASSIGN(SimpleLinearSumAssignment);
 };
 
 }  // namespace operations_research

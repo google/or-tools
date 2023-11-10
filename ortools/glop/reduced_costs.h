@@ -58,6 +58,10 @@ class ReducedCosts {
                const BasisFactorization& basis_factorization,
                absl::BitGenRef random);
 
+  // This type is neither copyable nor movable.
+  ReducedCosts(const ReducedCosts&) = delete;
+  ReducedCosts& operator=(const ReducedCosts&) = delete;
+
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
   bool NeedsBasisRefactorization() const;
@@ -163,12 +167,12 @@ class ReducedCosts {
   // for non-basic columns, this is the classic reduced cost. If it is false,
   // then this is defined only for the columns in
   // variables_info_.GetIsRelevantBitRow().
-  const DenseRow& GetReducedCosts();
+  DenseRow::ConstView GetReducedCosts();
 
   // Same as GetReducedCosts() but trigger a recomputation if not already done
   // to have access to the reduced costs on all positions, not just the relevant
   // one.
-  const DenseRow& GetFullReducedCosts();
+  DenseRow::ConstView GetFullReducedCosts();
 
   // Returns the dual values associated to the current basis.
   const DenseColumn& GetDualValues();
@@ -286,8 +290,6 @@ class ReducedCosts {
   std::vector<bool*> watchers_;
 
   double deterministic_time_ = 0.0;
-
-  DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
 };
 
 // Maintains the list of dual infeasible positions and their associated prices.

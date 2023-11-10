@@ -52,6 +52,14 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
   return ct.enforcement_literal(0);
 }
 
+// Returns the gcd of the given LinearExpressionProto.
+// Specifying the second argument will take the gcd with it.
+int64_t LinearExpressionGcd(const LinearExpressionProto& expr, int64_t gcd = 0);
+
+// Divide the expression in place by 'divisor'.
+// It will DCHECK that 'divisor' divides all constants.
+void DivideLinearExpression(int64_t divisor, LinearExpressionProto* expr);
+
 // Fills the target as negated ref.
 void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
                                   LinearExpressionProto* output_negated_expr);
@@ -223,6 +231,7 @@ constexpr uint64_t kDefaultFingerprintSeed = 0xa5b85c5e198ed849;
 template <class T>
 inline uint64_t FingerprintRepeatedField(
     const google::protobuf::RepeatedField<T>& sequence, uint64_t seed) {
+  if (sequence.empty()) return seed;
   return fasthash64(reinterpret_cast<const char*>(sequence.data()),
                     sequence.size() * sizeof(T), seed);
 }
@@ -267,7 +276,8 @@ bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
 #if defined(__PORTABLE_PLATFORM__)
   return false;
 #else   // !defined(__PORTABLE_PLATFORM__)
-  if (absl::EndsWith(filename, "txt")) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, "textproto")) {
     std::string proto_string;
     google::protobuf::TextFormat::Printer printer;
     SetupTextFormatPrinter(&printer);
