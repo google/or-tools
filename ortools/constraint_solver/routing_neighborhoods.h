@@ -24,6 +24,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 
@@ -124,14 +125,15 @@ class SwapActiveToShortestPathOperator : public PathOperator {
   }
 
  private:
-  void UpdateShortestPath(int source, int sink,
-                          const std::vector<int>& alternative_chain);
+  const std::vector<int64_t>& GetShortestPath(
+      int source, int sink, const std::vector<int>& alternative_chain);
 
   RoutingTransitCallback2 arc_evaluator_;
   const std::vector<std::vector<int64_t>> alternative_sets_;
   std::vector<int> to_alternative_set_;
   std::vector<int64_t> path_predecessor_;
   std::vector<int64_t> path_;
+  SparseBitset<int64_t> touched_;
 };
 
 /// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
