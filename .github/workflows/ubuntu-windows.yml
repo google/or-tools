@@ -171,7 +171,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         run: |
-          python -m pip install xpress==9.0.0
+          python -m pip install "xpress>=9.0,<9.1"
           XPRESS_DIR=${{ env.pythonLocation }}/lib/python${{ matrix.python-version }}/site-packages/xpress
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR/license/community-xpauth.xpr" >> $GITHUB_ENV
@@ -182,8 +182,9 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         shell: bash
         run: |
-          python -m pip install --no-cache-dir xpress==9.0.0
+          python -m pip install --no-cache-dir "xpress>=9.0,<9.1"
           XPRESS_DIR="${{ env.pythonLocation }}\Lib\site-packages\xpress"
+          cp -r $XPRESS_DIR/lib $XPRESS_DIR/bin
           echo "XPRESSDIR=$XPRESS_DIR" >> $GITHUB_ENV
           echo "XPAUTH_PATH=$XPRESS_DIR\license\community-xpauth.xpr" >> $GITHUB_ENV
 
@@ -201,7 +202,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         shell: bash
         run: |
-          echo "${{ env.XPAUTH_PATH }}" >> $GITHUB_PATH
+          echo "${{ env.XPRESSDIR }}/bin" >> $GITHUB_PATH
           echo "${{ env.SIRIUS }}" >> $GITHUB_PATH
 
       - name: Configure OR-Tools
