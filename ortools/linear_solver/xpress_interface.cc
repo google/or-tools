@@ -732,8 +732,7 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
       mLp(nullptr),
       mMip(mip),
       supportIncrementalExtraction(false),
-      slowUpdates(static_cast<SlowUpdates>(SlowSetObjectiveCoefficient |
-                                           SlowClearObjective)),
+      slowUpdates(SlowClearObjective),
       mapStringControls_(getMapStringControls()),
       mapDoubleControls_(getMapDoubleControls()),
       mapIntegerControls_(getMapIntControls()),
