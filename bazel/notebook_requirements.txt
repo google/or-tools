@@ -228,7 +228,7 @@ prompt-toolkit==3.0.39
     # via
     #   ipython
     #   jupyter-console
-protobuf==4.24.4
+protobuf==4.25.0
     # via
     #   -r bazel/notebook_requirements.in
     #   mypy-protobuf

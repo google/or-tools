@@ -84,15 +84,15 @@ new_git_repository(
 ## Re2
 git_repository(
     name = "com_google_re2",
-    tag = "2023-09-01",
+    tag = "2023-11-01",
     remote = "https://github.com/google/re2.git",
 )
 
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20230802.0",
-    patches = ["//patches:abseil-cpp-20230802.0.patch"],
+    tag = "20230802.1",
+    patches = ["//patches:abseil-cpp-20230802.1.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
@@ -100,8 +100,8 @@ git_repository(
 ## Protobuf
 git_repository(
     name = "com_google_protobuf",
-    tag = "v24.4",
-    patches = ["//patches:protobuf-v24.4.patch"],
+    tag = "v25.0",
+    patches = ["//patches:protobuf-v25.0.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )

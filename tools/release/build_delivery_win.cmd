@@ -128,6 +128,7 @@ rm.exe -rf temp_dotnet
 echo DONE | tee.exe -a build.log
 
 echo Build dotnet: ... | tee.exe -a build.log
+set Platform=any
 cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON -DUSE_DOTNET_462=ON
 cmake --build temp_dotnet --config Release -j8 -v
 echo DONE | tee.exe -a build.log
