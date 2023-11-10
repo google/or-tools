@@ -204,6 +204,7 @@ cc_library(
         "linear_solver_callback.h",
         "scip_callback.h",
         "scip_helper_macros.h",
+        "MPSWriteError.h",
     ] + select({
         ":use_glop": ["glop_utils.h"],
         "//conditions:default": [],
