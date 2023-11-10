@@ -30,6 +30,11 @@ namespace operations_research {
       return cols;
     }
 
+    std::string getRowName(int n) {
+      EXPECT_LT(n, getNumConstraints());
+      return getName(n, XPRS_NAMES_ROW);
+    }
+
     double getLb(int n) {
       EXPECT_LT(n, getNumVariables());
       double lb;
@@ -42,6 +47,11 @@ namespace operations_research {
       double ub;
       EXPECT_STATUS(XPRSgetub(prob(), &ub, n, n));
       return ub;
+    }
+
+    std::string getColName(int n) {
+      EXPECT_LT(n, getNumVariables());
+      return getName(n, XPRS_NAMES_COLUMN);
     }
 
     char getVariableType(int n) {
@@ -132,6 +142,23 @@ namespace operations_research {
       return (XPRSprob)solver_->underlying_solver();
     }
 
+    std::string getName(int n, int type) {
+      int namelength;
+      EXPECT_STATUS(XPRSgetintattrib(prob(), XPRS_NAMELENGTH, &namelength));
+
+      std::string name;
+      name.resize(8 * namelength + 1);
+      EXPECT_STATUS(XPRSgetnames(prob(), type, name.data(), n, n));
+
+      name.erase(std::find_if(name.rbegin(), name.rend(),
+                              [](unsigned char ch) {
+                                return !std::isspace(ch) && ch != '\0';
+                              })
+                     .base(),
+                 name.end());
+
+      return name;
+    }
   };
 
 #define UNITTEST_INIT_MIP() \
@@ -254,7 +281,22 @@ namespace operations_research {
     EXPECT_EQ(getter.getNumVariables(), 502);
   }
   
+  TEST(XpressInterface, VariablesName) {
+    UNITTEST_INIT_MIP();
+    solver.MakeRowConstraint(-solver.infinity(), 0);
 
+    std::string pi("Pi");
+    std::string secondVar("Name");
+    MPVariable* x1 = solver.MakeNumVar(-1., 5.1, pi);
+    MPVariable* x2 = solver.MakeNumVar(3.14, 5.1, secondVar);
+
+    // Extracting row & column names requires writing an MPS first
+    std::string tmpName = std::string(std::tmpnam(nullptr)) + ".mps";
+    solver.Write(tmpName);
+
+    EXPECT_EQ(getter.getColName(0), pi);
+    EXPECT_EQ(getter.getColName(1), secondVar);
+  }
 
   TEST(XpressInterface, NumConstraints) {
     UNITTEST_INIT_MIP();
@@ -263,6 +305,22 @@ namespace operations_research {
     solver.MakeRowConstraint(12.1, 1000.0);
     solver.Solve();
     EXPECT_EQ(getter.getNumConstraints(), 3);
+  }
+
+  TEST(XpressInterface, ConstraintName) {
+    UNITTEST_INIT_MIP();
+
+    std::string phi("Phi");
+    std::string otherCnt("constraintName");
+    solver.MakeRowConstraint(100.0, 100.0, phi);
+    solver.MakeRowConstraint(-solver.infinity(), 13.1, otherCnt);
+
+    // Extracting row & column names requires writing an MPS first
+    std::string tmpName = std::string(std::tmpnam(nullptr)) + ".mps";
+    solver.Write(tmpName);
+
+    EXPECT_EQ(getter.getRowName(0), phi);
+    EXPECT_EQ(getter.getRowName(1), otherCnt);
   }
 
   TEST(XpressInterface, Reset) {
