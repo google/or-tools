@@ -130,7 +130,8 @@ SwapActiveToShortestPathOperator::SwapActiveToShortestPathOperator(
       arc_evaluator_(std::move(arc_evaluator)),
       alternative_sets_(std::move(alternative_sets)),
       to_alternative_set_(vars.size(), -1),
-      path_predecessor_(vars.size(), -1) {
+      path_predecessor_(vars.size(), -1),
+      touched_(vars.size()) {
   for (int i = 0; i < alternative_sets_.size(); ++i) {
     for (int j : alternative_sets_[i]) {
       if (j < to_alternative_set_.size()) to_alternative_set_[j] = i;
@@ -149,10 +150,10 @@ bool SwapActiveToShortestPathOperator::MakeNeighbor() {
     next = Next(next);
   }
   if (alternatives.empty()) return false;
+  const int sink = next;
   next = OldNext(before_chain);
   bool swap_done = false;
-  UpdateShortestPath(before_chain, next, alternatives);
-  for (int64_t node : path_) {
+  for (int64_t node : GetShortestPath(before_chain, sink, alternatives)) {
     if (node != next) {
       SwapActiveAndInactive(next, node);
       swap_done = true;
@@ -162,10 +163,10 @@ bool SwapActiveToShortestPathOperator::MakeNeighbor() {
   return swap_done;
 }
 
-void SwapActiveToShortestPathOperator::UpdateShortestPath(
+const std::vector<int64_t>& SwapActiveToShortestPathOperator::GetShortestPath(
     int source, int sink, const std::vector<int>& alternative_chain) {
   path_.clear();
-  if (alternative_chain.empty()) return;
+  if (alternative_chain.empty()) return path_;
   // Initializing values at the first "layer" after the source (from source to
   // all alternatives at rank 0).
   const std::vector<int64_t>& first_alternative_set =
@@ -219,12 +220,20 @@ void SwapActiveToShortestPathOperator::UpdateShortestPath(
       predecessor = last_alternative_set[alternative];
     }
   }
-  if (predecessor == -1) return;
+  if (predecessor == -1) return path_;
   // Build the path from predecessors on the shortest path.
   path_.resize(alternative_chain.size(), predecessor);
+  touched_.SparseClearAll();
+  touched_.Set(predecessor);
   for (int rank = alternative_chain.size() - 2; rank >= 0; --rank) {
     path_[rank] = path_predecessor_[path_[rank + 1]];
+    if (touched_[path_[rank]]) {
+      path_.clear();
+      return path_;
+    }
+    touched_.Set(path_[rank]);
   }
+  return path_;
 }
 
 MakePairActiveOperator::MakePairActiveOperator(

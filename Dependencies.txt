@@ -1,11 +1,11 @@
-Protobuf=v24.4
-abseil-cpp=20230802.0
+Protobuf=v25.0
+abseil-cpp=20230802.1
 Cbc=2.10.7
 Cgl=0.60.5
 Clp=1.17.7
 Osi=0.108.7
 CoinUtils=2.11.6
 Eigen=3.4.0
-Re2=2023-09-01
+Re2=2023-11-01
 HiGHS=v1.6.0
 Scip=v804

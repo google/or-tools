@@ -3970,7 +3970,11 @@ void RoutingModel::CreateNeighborhoodOperators(
       CreateCPOperator<ExtendedSwapActiveOperator>();
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
   for (const RoutingModel::Disjunction& disjunction : disjunctions_) {
-    alternative_sets.push_back(disjunction.indices);
+    // Only add disjunctions of cardinality 1, as
+    // SwapActiveToShortestPathOperator only supports DAGs.
+    if (disjunction.value.max_cardinality == 1) {
+      alternative_sets.push_back(disjunction.indices);
+    }
   }
   local_search_operators_[SHORTEST_PATH_SWAP_ACTIVE] =
       CreateOperator<SwapActiveToShortestPathOperator>(

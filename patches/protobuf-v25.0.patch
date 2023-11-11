@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index ac0d03c3a..ac8aee8a7 100644
+index f78fccc27..f830c8258 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -41,7 +41,7 @@ else (BUILD_SHARED_LIBS)
@@ -69,3 +69,16 @@ index 422754a1a..ea91898d5 100644
  target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})
  protobuf_configure_target(libprotobuf)
  if(protobuf_BUILD_SHARED_LIBS)
+diff --git a/src/google/protobuf/map_field.h b/src/google/protobuf/map_field.h
+index 8aa9e45fe..8388f8a2e 100644
+--- a/src/google/protobuf/map_field.h
++++ b/src/google/protobuf/map_field.h
+@@ -678,7 +678,7 @@ class MapField final : public TypeDefinedMapFieldBase<Key, T> {
+ template <typename Derived, typename Key, typename T,
+           WireFormatLite::FieldType kKeyFieldType_,
+           WireFormatLite::FieldType kValueFieldType_>
+-constexpr MapFieldBase::VTable
++PROTOBUF_CONSTINIT const MapFieldBase::VTable
+     MapField<Derived, Key, T, kKeyFieldType_, kValueFieldType_>::kVTable =
+         MapField::template MakeVTable<MapField>();
+ 

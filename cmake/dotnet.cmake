@@ -318,9 +318,9 @@ add_custom_command(
 add_custom_command(
   OUTPUT ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
   COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-    ${DOTNET_EXECUTABLE} build --nologo -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
+    ${DOTNET_EXECUTABLE} build --nologo -c Release -p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-    ${DOTNET_EXECUTABLE} pack --nologo -c Release ${DOTNET_NATIVE_PROJECT}.csproj
+    ${DOTNET_EXECUTABLE} pack --nologo -c Release -p:Platform=${DOTNET_PLATFORM} ${DOTNET_NATIVE_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_NATIVE_PROJECT_DIR}/timestamp
   DEPENDS
     ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props
@@ -344,11 +344,13 @@ add_custom_target(dotnet_native_package
 ##  .Net Package  ##
 ####################
 if(UNIVERSAL_DOTNET_PACKAGE)
+  set(DOTNET_META_PLATFORM any)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}-full.csproj.in
     ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
     @ONLY)
 else()
+  set(DOTNET_META_PLATFORM ${DOTNET_PLATFORM})
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/dotnet/${DOTNET_PROJECT}-local.csproj.in
     ${DOTNET_PROJECT_DIR}/${DOTNET_PROJECT}.csproj.in
@@ -365,9 +367,9 @@ add_custom_command(
 add_custom_command(
   OUTPUT ${DOTNET_PROJECT_DIR}/timestamp
   COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-    ${DOTNET_EXECUTABLE} build --nologo -c Release /p:Platform=${DOTNET_PLATFORM} ${DOTNET_PROJECT}.csproj
+    ${DOTNET_EXECUTABLE} build --nologo -c Release -p:Platform=${DOTNET_META_PLATFORM} ${DOTNET_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-    ${DOTNET_EXECUTABLE} pack --nologo -c Release ${DOTNET_PROJECT}.csproj
+    ${DOTNET_EXECUTABLE} pack --nologo -c Release -p:Platform=${DOTNET_META_PLATFORM} ${DOTNET_PROJECT}.csproj
   COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_PROJECT_DIR}/timestamp
   DEPENDS
     ${PROJECT_BINARY_DIR}/dotnet/or-tools.snk
