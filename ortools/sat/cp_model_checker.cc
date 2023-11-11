@@ -1358,30 +1358,34 @@ class ConstraintChecker {
 
   bool CumulativeConstraintIsFeasible(const CpModelProto& model,
                                       const ConstraintProto& ct) {
-    // TODO(user): Improve complexity for large durations.
     const int64_t capacity = LinearExpressionValue(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
-    absl::flat_hash_map<int64_t, int64_t> usage;
+    std::vector<std::pair<int64_t, int64_t>> events;
     for (int i = 0; i < num_intervals; ++i) {
       const ConstraintProto& interval_constraint =
           model.constraints(ct.cumulative().intervals(i));
-      if (ConstraintIsEnforced(interval_constraint)) {
-        const IntervalConstraintProto& interval =
-            interval_constraint.interval();
-        const int64_t start = IntervalStart(interval);
-        const int64_t duration = IntervalSize(interval);
-        const int64_t demand =
-            LinearExpressionValue(ct.cumulative().demands(i));
-        for (int64_t t = start; t < start + duration; ++t) {
-          usage[t] += demand;
-          if (usage[t] > capacity) {
-            VLOG(1) << "time: " << t << " usage: " << usage[t]
-                    << " capa: " << capacity;
-            return false;
-          }
-        }
+      if (!ConstraintIsEnforced(interval_constraint)) continue;
+      const int64_t start = IntervalStart(interval_constraint.interval());
+      const int64_t duration = IntervalSize(interval_constraint.interval());
+      const int64_t demand = LinearExpressionValue(ct.cumulative().demands(i));
+      if (duration == 0 || demand == 0) continue;
+      events.emplace_back(start, demand);
+      events.emplace_back(start + duration, -demand);
+    }
+    if (events.empty()) return true;
+
+    std::sort(events.begin(), events.end());
+
+    int64_t current_load = 0;
+    for (const auto& [time, delta] : events) {
+      current_load += delta;
+      if (current_load > capacity) {
+        VLOG(1) << "Cumulative constraint: load: " << current_load
+                << " capacity: " << capacity << " time: " << time;
+        return false;
       }
     }
+    DCHECK_EQ(current_load, 0);
     return true;
   }
 
