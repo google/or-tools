@@ -50,7 +50,8 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
     }
   }
   if (solver == nullptr) {
-       LOG(FATAL) << "Xpress solver is not available";
+       LOG(WARNING) << "Xpress solver is not available";
+       return;
   }
   // Use the solver
   /*

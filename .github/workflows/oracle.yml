@@ -113,7 +113,6 @@ jobs:
             -DBUILD_JAVA=${{ matrix.cmake.java }} \
             -DBUILD_DOTNET=${{ matrix.cmake.dotnet }} \
             -DBUILD_EXAMPLES=ON \
-            -DBUILD_XPRESS_TEST_AND_EXAMPLES=ON \
             -DBUILD_DEPS=ON \
             -DCMAKE_INSTALL_PREFIX="build/install" \
             -DBUILD_SAMPLES=OFF \

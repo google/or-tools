@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <fstream>
 #include <locale>
 
@@ -652,14 +653,17 @@ TEST(XpressInterface, Write) {
   obj->SetCoefficient(x1, 1);
   obj->SetCoefficient(x2, 2);
 
-  std::string tmpName = std::string(std::tmpnam(nullptr)) + ".mps";
+  const std::filesystem::path temporary_working_dir =
+      std::filesystem::temp_directory_path() / "temporary_working_dir";
+  std::filesystem::create_directories(temporary_working_dir);
+
+  std::string tmpName = temporary_working_dir / "dummy.mps";
   solver.Write(tmpName);
 
   std::ifstream tmpFile(tmpName);
   std::stringstream tmpBuffer;
   tmpBuffer << tmpFile.rdbuf();
-  tmpFile.close();
-  std::remove(tmpName.c_str());
+  std::filesystem::remove_all(temporary_working_dir);
 
   EXPECT_EQ(tmpBuffer.str(), R"(NAME          newProb
 OBJSENSE  MAXIMIZE
@@ -1305,5 +1309,12 @@ int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
   absl::SetFlag(&FLAGS_logtostderr, 1);
   testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
+  if (solver == nullptr) {
+    LOG(ERROR) << "Xpress solver is not available";
+    return EXIT_SUCCESS;
+  }
+  else{
+    return RUN_ALL_TESTS();
+  }
 }

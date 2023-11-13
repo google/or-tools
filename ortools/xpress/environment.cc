@@ -340,7 +340,7 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
   }
 }
 void log_full_license_error(int code, const std::string& xpress_lib_dir) {
-  LOG(ERROR) << "XpressInterface: Xpress found at " << xpress_lib_dir
+  LOG(WARNING) << "XpressInterface: Xpress found at " << xpress_lib_dir
              << "\n";
   char errmsg[256];
   XPRSgetlicerrmsg(errmsg, 256);
