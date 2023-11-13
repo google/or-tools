@@ -25,8 +25,6 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
-#include "ortools/linear_solver/MPSWriteError.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/xpress/environment.h"
 
@@ -2093,7 +2091,7 @@ void XpressInterface::Write(const std::string& filename) {
   VLOG(1) << "Writing Xpress MPS \"" << filename << "\".";
   const int status = XPRSwriteprob(mLp, filename.c_str(), "");
   if (status) {
-    throw MPSWriteError("Failed to write MPS.");
+    LOG(ERROR) << "Xpress: Failed to write MPS! ";
   }
 }
 

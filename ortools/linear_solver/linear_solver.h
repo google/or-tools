@@ -1663,7 +1663,7 @@ class MPSolverInterface {
   }
 
   // Writes the model using the solver internal write function.  Currently only
-  // available for GurobiInterface.
+  // available for GurobiInterface and XpressInterface.
   virtual void Write(const std::string& filename);
 
   // ----- Model modifications and extraction -----
