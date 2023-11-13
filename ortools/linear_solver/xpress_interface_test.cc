@@ -657,7 +657,7 @@ TEST(XpressInterface, Write) {
       std::filesystem::temp_directory_path() / "temporary_working_dir";
   std::filesystem::create_directories(temporary_working_dir);
 
-  std::string tmpName = temporary_working_dir / "dummy.mps";
+  std::string tmpName = (temporary_working_dir / "dummy.mps").string();
   solver.Write(tmpName);
 
   std::ifstream tmpFile(tmpName);
