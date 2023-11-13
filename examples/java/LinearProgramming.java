@@ -116,5 +116,7 @@ public class LinearProgramming {
     runLinearProgrammingExample("GLOP", true);
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP", false);
+    System.out.println("---- Linear programming example with XPRESS ----");
+    runLinearProgrammingExample("XPRESS", false);
   }
 }

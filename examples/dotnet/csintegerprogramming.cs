@@ -117,6 +117,8 @@ public class CsIntegerProgramming
         RunIntegerProgrammingExample("SAT");
         Console.WriteLine("---- Linear programming example with GUROBI ----");
         RunIntegerProgrammingExample("GUROBI");
+        Console.WriteLine("---- Linear programming example with XPRESS ----");
+        RunIntegerProgrammingExample("XPRESS");
         Console.WriteLine("---- Integer programming example (Natural API) with GLPK ----");
         RunIntegerProgrammingExampleNaturalApi("GLPK");
         Console.WriteLine("---- Linear programming example (Natural API) with CBC ----");
@@ -127,5 +129,7 @@ public class CsIntegerProgramming
         RunIntegerProgrammingExampleNaturalApi("SAT");
         Console.WriteLine("---- Linear programming example (Natural API) with GUROBI ----");
         RunIntegerProgrammingExampleNaturalApi("GUROBI");
+        Console.WriteLine("---- Linear programming example (Natural API) with XPRESS ----");
+        RunIntegerProgrammingExampleNaturalApi("XPRESS");
     }
 }
