@@ -360,12 +360,6 @@ class XpressInterface : public MPSolverInterface {
   void SetStartingLpBasis(
       const std::vector<MPSolver::BasisStatus>& /*variable_statuses*/,
       const std::vector<MPSolver::BasisStatus>& /*constraint_statuses*/) override;
-  void SetStartingLpBasisInt(
-      const std::vector<int>& variable_statuses,
-      const std::vector<int>& constraint_statuses) override;
-
-  void GetFinalLpBasisInt(std::vector<int>& variable_statuses,
-                          std::vector<int>& constraint_statuses) override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
@@ -1766,39 +1760,6 @@ void XpressInterface::SetStartingLpBasis(
   initCstat_ = initCstat;
   initRstat_ = initRstat;
   // shouldn't we call XPRSloadbasis(mLp, initRstat_.data(), initCstat_.data()) ?
-}
-
-// Convert statuses for later use (Solve)
-void XpressInterface::SetStartingLpBasisInt(
-    const std::vector<int>& variable_statuses,
-    const std::vector<int>& constraint_statuses) {
-  if (mMip) {
-    LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
-    return;
-  }
-  // Column = variable
-  initCstat_ = variable_statuses;
-  // Row = constraint
-  initRstat_ = constraint_statuses;
-}
-
-void XpressInterface::GetFinalLpBasisInt(
-    std::vector<int>& variable_statuses,
-    std::vector<int>& constraint_statuses) {
-  if (mMip) {
-    LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
-    return;
-  }
-
-  const int rows = getnumrows(mLp);
-  const int cols = getnumcols(mLp);
-  // 1. Resize vectors if needed
-  variable_statuses.resize(cols);
-  constraint_statuses.resize(rows);
-
-  // 2. Extract basis
-  CHECK_STATUS(
-      XPRSgetbasis(mLp, constraint_statuses.data(), variable_statuses.data()));
 }
 
 bool XpressInterface::readParameters(std::istream& is, char sep) {
