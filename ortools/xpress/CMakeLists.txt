@@ -18,5 +18,4 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto
-  $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
+  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
