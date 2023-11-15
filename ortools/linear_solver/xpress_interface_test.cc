@@ -663,6 +663,7 @@ TEST(XpressInterface, Write) {
   std::ifstream tmpFile(tmpName);
   std::stringstream tmpBuffer;
   tmpBuffer << tmpFile.rdbuf();
+  tmpFile.close();
   std::filesystem::remove_all(temporary_working_dir);
 
   EXPECT_EQ(tmpBuffer.str(), R"(NAME          newProb
