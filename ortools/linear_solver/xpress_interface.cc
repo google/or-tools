@@ -1756,8 +1756,8 @@ void XpressInterface::SetStartingLpBasis(
   for (const MPSolver::BasisStatus& status : variable_statuses) {
     initial_variables_basis_status_.push_back(MPSolverToXpressBasisStatus(status));
   }
-  initial_constraint_basis_status_.reserve(constraint_statuses.size());
   initial_constraint_basis_status_.clear();
+  initial_constraint_basis_status_.reserve(constraint_statuses.size());
   for (const MPSolver::BasisStatus& status : constraint_statuses) {
     initial_constraint_basis_status_.push_back(MPSolverToXpressBasisStatus(status));
   }
