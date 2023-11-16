@@ -418,9 +418,6 @@ class XpressInterface : public MPSolverInterface {
   // SetHint()
   void AddSolutionHintToOptimizer();
 
-  // Transform XPRESS basis status to MPSolver basis status.
-  static MPSolver::BasisStatus XpressToMPSolverBasisStatus(int xpress_basis_status);
-
   bool readParameters(std::istream& is, char sep);
 
  private:
@@ -480,11 +477,12 @@ class XpressInterface : public MPSolverInterface {
   MPCallback* callback_ = nullptr;
 };
 
-// Transform XPRESS basis status to MPSolver basis status.
-static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
 // Transform MPSolver basis status to XPRESS status
 static int MPSolverToXpressBasisStatus(
     MPSolver::BasisStatus mpsolver_basis_status);
+// Transform XPRESS basis status to MPSolver basis status.
+static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
+    int xpress_basis_status);
 
 static std::map<std::string, int>& getMapStringControls() {
   static std::map<std::string, int> mapControls = {
@@ -1242,7 +1240,7 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressInterface::XpressToMPSolverBasisStatus(
+static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
     int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
@@ -1259,7 +1257,7 @@ MPSolver::BasisStatus XpressInterface::XpressToMPSolverBasisStatus(
   }
 }
 
-int MPSolverToXpressBasisStatus(MPSolver::BasisStatus mpsolver_basis_status) {
+static int MPSolverToXpressBasisStatus(MPSolver::BasisStatus mpsolver_basis_status) {
   switch (mpsolver_basis_status) {
     case MPSolver::AT_LOWER_BOUND:
       return XPRS_AT_LOWER;
@@ -2076,7 +2074,7 @@ void XpressInterface::Write(const std::string& filename) {
   VLOG(1) << "Writing Xpress MPS \"" << filename << "\".";
   const int status = XPRSwriteprob(mLp, filename.c_str(), "");
   if (status) {
-    LOG(ERROR) << "Xpress: Failed to write MPS! ExtractModel";
+    LOG(ERROR) << "Xpress: Failed to write MPS!";
   }
 }
 
