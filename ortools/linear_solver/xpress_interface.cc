@@ -1912,16 +1912,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   int xpress_stat = 0;
   if (mMip) {
-    if (this->maximize_)
-      status = XPRSmaxim(mLp, "g");
-    else
-      status = XPRSminim(mLp, "g");
+    status = XPRSmipoptimize(mLp,"");
     XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpress_stat);
   } else {
-    if (this->maximize_)
-      status = XPRSmaxim(mLp, "");
-    else
-      status = XPRSminim(mLp, "");
+    status = XPRSlpoptimize(mLp,"");
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpress_stat);
   }
 

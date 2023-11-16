@@ -92,8 +92,8 @@ std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowty
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p, int priority)> XPRSaddcbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p)> XPRSremovecbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage = nullptr;
-std::function<int(XPRSprob prob, const char* flags)> XPRSminim = nullptr;
-std::function<int(XPRSprob prob, const char* flags)> XPRSmaxim = nullptr;
+std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
+std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
 
 absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
@@ -156,8 +156,9 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbintsol, "XPRSaddcbintsol");
   xpress_dynamic_library->GetFunction(&XPRSremovecbintsol, "XPRSremovecbintsol");
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
-  xpress_dynamic_library->GetFunction(&XPRSminim, "XPRSminim");
-  xpress_dynamic_library->GetFunction(&XPRSmaxim, "XPRSmaxim");
+  xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
+  xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
+
 
   auto notFound = xpress_dynamic_library->FunctionsNotFound();
   if (!notFound.empty()) {
