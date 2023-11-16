@@ -20,8 +20,8 @@ from ortools.sat.python import cp_model
 
 def LiteralSampleSat():
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    not_x = x.Not()
+    x = model.new_bool_var("x")
+    not_x = x.negated()
     print(x)
     print(not_x)
 

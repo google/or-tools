@@ -42,21 +42,21 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar(f"shift_n{n}_d{d}_s{s}")
+                shifts[(n, d, s)] = model.new_bool_var(f"shift_n{n}_d{d}_s{s}")
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in the schedule period.
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
-            model.AddExactlyOne(shifts[(n, d, s)] for n in all_nurses)
+            model.add_exactly_one(shifts[(n, d, s)] for n in all_nurses)
     # [END exactly_one_nurse]
 
     # Each nurse works at most one shift per day.
     # [START at_most_one_shift]
     for n in all_nurses:
         for d in all_days:
-            model.AddAtMostOne(shifts[(n, d, s)] for s in all_shifts)
+            model.add_at_most_one(shifts[(n, d, s)] for s in all_shifts)
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]
@@ -74,8 +74,8 @@ def main():
         for d in all_days:
             for s in all_shifts:
                 shifts_worked.append(shifts[(n, d, s)])
-        model.Add(min_shifts_per_nurse <= sum(shifts_worked))
-        model.Add(sum(shifts_worked) <= max_shifts_per_nurse)
+        model.add(min_shifts_per_nurse <= sum(shifts_worked))
+        model.add(sum(shifts_worked) <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # Creates the solver and solve.
@@ -107,16 +107,16 @@ def main():
                 for n in range(self._num_nurses):
                     is_working = False
                     for s in range(self._num_shifts):
-                        if self.Value(self._shifts[(n, d, s)]):
+                        if self.value(self._shifts[(n, d, s)]):
                             is_working = True
                             print(f"  Nurse {n} works shift {s}")
                     if not is_working:
                         print(f"  Nurse {n} does not work")
             if self._solution_count >= self._solution_limit:
                 print(f"Stop search after {self._solution_limit} solutions")
-                self.StopSearch()
+                self.stop_search()
 
-        def solution_count(self):
+        def solutionCount(self):
             return self._solution_count
 
     # Display the first five solutions.
@@ -127,16 +127,16 @@ def main():
     # [END solution_printer]
 
     # [START solve]
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
     # [END solve]
 
     # Statistics.
     # [START statistics]
     print("\nStatistics")
-    print(f"  - conflicts      : {solver.NumConflicts()}")
-    print(f"  - branches       : {solver.NumBranches()}")
-    print(f"  - wall time      : {solver.WallTime()} s")
-    print(f"  - solutions found: {solution_printer.solution_count()}")
+    print(f"  - conflicts      : {solver.num_conflicts}")
+    print(f"  - branches       : {solver.num_branches}")
+    print(f"  - wall time      : {solver.wall_time} s")
+    print(f"  - solutions found: {solution_printer.solutionCount()}")
     # [END statistics]
 
 

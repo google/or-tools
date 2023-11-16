@@ -1199,7 +1199,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   DCHECK(InvariantsAreOk());
 
   // TODO(user): We could just do it directly though.
-  int num_fixed_during_scc = 0;
   const int32_t size(implications_.size());
   std::vector<std::vector<int32_t>> scc;
   double dtime = 0.0;
@@ -1213,7 +1212,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (const Literal l : graph.to_fix_) {
       if (assignment.LiteralIsFalse(l)) return false;
       if (assignment.LiteralIsTrue(l)) continue;
-      ++num_fixed_during_scc;
       if (!FixLiteral(l)) return false;
     }
   }
@@ -1252,7 +1250,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           const Literal to_fix = all_true ? l : l.Negated();
           if (assignment.LiteralIsFalse(to_fix)) return false;
           if (assignment.LiteralIsTrue(to_fix)) continue;
-          ++num_fixed_during_scc;
           if (!FixLiteral(l)) return false;
         }
 
@@ -1355,9 +1352,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   }
 
   time_limit_->AdvanceDeterministicTime(dtime);
-  if (num_fixed_during_scc > 0) {
-    RemoveFixedVariables();
-  }
+  const int num_fixed_during_scc =
+      trail_->Index() - num_processed_fixed_variables_;
+  RemoveFixedVariables();
   DCHECK(InvariantsAreOk());
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "

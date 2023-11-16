@@ -48,7 +48,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         """Called after each new solution found."""
         print(
             "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, self.WallTime(), self.ObjectiveValue())
+            % (self.__solution_count, self.wall_time, self.objective_value)
         )
         self.__solution_count += 1
 
@@ -433,34 +433,34 @@ def single_machine_scheduling():
             % (job_id, release_date, duration, due_date)
         )
         name_suffix = "_%i" % job_id
-        start = model.NewIntVar(release_date, due_date, "s" + name_suffix)
-        end = model.NewIntVar(release_date, due_date, "e" + name_suffix)
-        interval = model.NewIntervalVar(start, duration, end, "i" + name_suffix)
+        start = model.new_int_var(release_date, due_date, "s" + name_suffix)
+        end = model.new_int_var(release_date, due_date, "e" + name_suffix)
+        interval = model.new_interval_var(start, duration, end, "i" + name_suffix)
         starts.append(start)
         ends.append(end)
         intervals.append(interval)
 
     # No overlap constraint.
-    model.AddNoOverlap(intervals)
+    model.add_no_overlap(intervals)
 
     # ----------------------------------------------------------------------------
     # Transition times using a circuit constraint.
     arcs = []
     for i in all_jobs:
         # Initial arc from the dummy node (0) to a task.
-        start_lit = model.NewBoolVar("")
+        start_lit = model.new_bool_var("")
         arcs.append((0, i + 1, start_lit))
         # If this task is the first, set to minimum starting time.
         min_start_time = max(release_dates[i], setup_times[0][i])
-        model.Add(starts[i] == min_start_time).OnlyEnforceIf(start_lit)
+        model.add(starts[i] == min_start_time).only_enforce_if(start_lit)
         # Final arc from an arc to the dummy node.
-        arcs.append((i + 1, 0, model.NewBoolVar("")))
+        arcs.append((i + 1, 0, model.new_bool_var("")))
 
         for j in all_jobs:
             if i == j:
                 continue
 
-            lit = model.NewBoolVar("%i follows %i" % (j, i))
+            lit = model.new_bool_var("%i follows %i" % (j, i))
             arcs.append((i + 1, j + 1, lit))
 
             # We add the reified precedence to link the literal with the times of the
@@ -468,27 +468,27 @@ def single_machine_scheduling():
             # If release_dates[j] == 0, we can strenghten this precedence into an
             # equality as we are minimizing the makespan.
             if release_dates[j] == 0:
-                model.Add(starts[j] == ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(
+                model.add(starts[j] == ends[i] + setup_times[i + 1][j]).only_enforce_if(
                     lit
                 )
             else:
-                model.Add(starts[j] >= ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(
+                model.add(starts[j] >= ends[i] + setup_times[i + 1][j]).only_enforce_if(
                     lit
                 )
 
-    model.AddCircuit(arcs)
+    model.add_circuit(arcs)
 
     # ----------------------------------------------------------------------------
     # Precedences.
     for before, after in precedences:
         print("job %i is after job %i" % (after, before))
-        model.Add(ends[before] <= starts[after])
+        model.add(ends[before] <= starts[after])
 
     # ----------------------------------------------------------------------------
     # Objective.
-    makespan = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(makespan, ends)
-    model.Minimize(makespan)
+    makespan = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(makespan, ends)
+    model.minimize(makespan)
 
     # ----------------------------------------------------------------------------
     # Write problem to file.
@@ -503,11 +503,11 @@ def single_machine_scheduling():
     if parameters:
         text_format.Parse(parameters, solver.parameters)
     solution_printer = SolutionPrinter()
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
     for job_id in all_jobs:
         print(
             "job %i starts at %i end ends at %i"
-            % (job_id, solver.Value(starts[job_id]), solver.Value(ends[job_id]))
+            % (job_id, solver.value(starts[job_id]), solver.value(ends[job_id]))
         )
 
 

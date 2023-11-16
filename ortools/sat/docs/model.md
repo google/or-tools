@@ -85,26 +85,26 @@ def SolutionHintingSampleSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Solution hinting: x <- 1, y <- 2
-    model.AddHint(x, 1)
-    model.AddHint(y, 2)
+    model.add_hint(x, 1)
+    model.add_hint(y, 2)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
 SolutionHintingSampleSat()
@@ -318,34 +318,34 @@ def CloneModelSampleSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the original model: {}".format(solver.objective_value))
 
-    # Clone the model.
-    copy = model.Clone()
+    # Clones the model.
+    copy = model.clone()
 
-    copy_x = copy.GetIntVarFromProtoIndex(x.Index())
-    copy_y = copy.GetIntVarFromProtoIndex(y.Index())
+    copy_x = copy.get_int_var_from_proto_index(x.index)
+    copy_y = copy.get_int_var_from_proto_index(y.index)
 
-    copy.Add(copy_x + copy_y <= 1)
+    copy.add(copy_x + copy_y <= 1)
 
-    status = solver.Solve(copy)
+    status = solver.solve(copy)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the modified model: {}".format(solver.objective_value))
 
 
 CloneModelSampleSat()

@@ -446,8 +446,9 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
   }
   modified_domains.Set(var);
   if (domains[var].IsEmpty()) {
-    is_unsat_ = true;
-    return false;
+    return NotifyThatModelIsUnsat(
+        absl::StrCat("var #", ref, " as empty domain after intersecting with ",
+                     domain.ToString()));
   }
 
   // Propagate the domain of the representative right away.
@@ -467,8 +468,9 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
     if (domain.Contains(expr.offset())) {
       return true;
     } else {
-      is_unsat_ = true;
-      return false;
+      return NotifyThatModelIsUnsat(absl::StrCat(
+          expr.ShortDebugString(), " as empty domain after intersecting with ",
+          domain.ToString()));
     }
   }
   if (expr.vars().size() == 1) {  // Affine

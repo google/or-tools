@@ -29,34 +29,34 @@ def main():
     # Creates the variables.
     # [START variables]
     var_upper_bound = max(50, 45, 37)
-    x = model.NewIntVar(0, var_upper_bound, "x")
-    y = model.NewIntVar(0, var_upper_bound, "y")
-    z = model.NewIntVar(0, var_upper_bound, "z")
+    x = model.new_int_var(0, var_upper_bound, "x")
+    y = model.new_int_var(0, var_upper_bound, "y")
+    z = model.new_int_var(0, var_upper_bound, "z")
     # [END variables]
 
     # Creates the constraints.
     # [START constraints]
-    model.Add(2 * x + 7 * y + 3 * z <= 50)
-    model.Add(3 * x - 5 * y + 7 * z <= 45)
-    model.Add(5 * x + 2 * y - 6 * z <= 37)
+    model.add(2 * x + 7 * y + 3 * z <= 50)
+    model.add(3 * x - 5 * y + 7 * z <= 45)
+    model.add(5 * x + 2 * y - 6 * z <= 37)
     # [END constraints]
 
     # [START objective]
-    model.Maximize(2 * x + 2 * y + 3 * z)
+    model.maximize(2 * x + 2 * y + 3 * z)
     # [END objective]
 
     # Creates a solver and solves the model.
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Maximum of objective function: {solver.ObjectiveValue()}\n")
-        print(f"x = {solver.Value(x)}")
-        print(f"y = {solver.Value(y)}")
-        print(f"z = {solver.Value(z)}")
+        print(f"Maximum of objective function: {solver.objective_value}\n")
+        print(f"x = {solver.value(x)}")
+        print(f"y = {solver.value(y)}")
+        print(f"z = {solver.value(z)}")
     else:
         print("No solution found.")
     # [END print_solution]
@@ -64,10 +64,10 @@ def main():
     # Statistics.
     # [START statistics]
     print("\nStatistics")
-    print(f"  status   : {solver.StatusName(status)}")
-    print(f"  conflicts: {solver.NumConflicts()}")
-    print(f"  branches : {solver.NumBranches()}")
-    print(f"  wall time: {solver.WallTime()} s")
+    print(f"  status   : {solver.status_name(status)}")
+    print(f"  conflicts: {solver.num_conflicts}")
+    print(f"  branches : {solver.num_branches}")
+    print(f"  wall time: {solver.wall_time} s")
     # [END statistics]
 
 

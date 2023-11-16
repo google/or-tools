@@ -60,26 +60,26 @@ def rank_tasks_with_circuit(
     arcs: List[cp_model.ArcT] = []
     for i in all_tasks:
         # if node i is first.
-        start_lit = model.NewBoolVar(f"start_{i}")
+        start_lit = model.new_bool_var(f"start_{i}")
         arcs.append((0, i + 1, start_lit))
-        model.Add(ranks[i] == 0).OnlyEnforceIf(start_lit)
+        model.add(ranks[i] == 0).only_enforce_if(start_lit)
 
         # As there are no other constraints on the problem, we can add this
         # redundant constraint.
-        model.Add(starts[i] == 0).OnlyEnforceIf(start_lit)
+        model.add(starts[i] == 0).only_enforce_if(start_lit)
 
         # if node i is last.
-        end_lit = model.NewBoolVar(f"end_{i}")
+        end_lit = model.new_bool_var(f"end_{i}")
         arcs.append((i + 1, 0, end_lit))
 
         for j in all_tasks:
             if i == j:
-                arcs.append((i + 1, i + 1, presences[i].Not()))
-                model.Add(ranks[i] == -1).OnlyEnforceIf(presences[i].Not())
+                arcs.append((i + 1, i + 1, presences[i].negated()))
+                model.add(ranks[i] == -1).only_enforce_if(presences[i].negated())
             else:
-                literal = model.NewBoolVar(f"arc_{i}_to_{j}")
+                literal = model.new_bool_var(f"arc_{i}_to_{j}")
                 arcs.append((i + 1, j + 1, literal))
-                model.Add(ranks[j] == ranks[i] + 1).OnlyEnforceIf(literal)
+                model.add(ranks[j] == ranks[i] + 1).only_enforce_if(literal)
 
                 # To perform the transitive reduction from precedences to successors,
                 # we need to tie the starts of the tasks with 'literal'.
@@ -88,17 +88,19 @@ def rank_tasks_with_circuit(
                 #
                 # Note that we could use this literal to penalize the transition, add an
                 # extra delay to the precedence.
-                model.Add(starts[j] >= starts[i] + durations[i]).OnlyEnforceIf(literal)
+                model.add(starts[j] >= starts[i] + durations[i]).only_enforce_if(
+                    literal
+                )
 
     # Manage the empty circuit
-    empty = model.NewBoolVar("empty")
+    empty = model.new_bool_var("empty")
     arcs.append((0, 0, empty))
 
     for i in all_tasks:
-        model.AddImplication(empty, presences[i].Not())
+        model.add_implication(empty, presences[i].negated())
 
     # Add the circuit constraint.
-    model.AddCircuit(arcs)
+    model.add_circuit(arcs)
 
 
 def ranking_sample_sat():
@@ -117,14 +119,14 @@ def ranking_sample_sat():
 
     # Creates intervals, half of them are optional.
     for t in all_tasks:
-        start = model.NewIntVar(0, horizon, f"start[{t}]")
+        start = model.new_int_var(0, horizon, f"start[{t}]")
         duration = t + 1
-        presence = model.NewBoolVar(f"presence[{t}]")
-        interval = model.NewOptionalFixedSizeIntervalVar(
+        presence = model.new_bool_var(f"presence[{t}]")
+        interval = model.new_optional_fixed_size_interval_var(
             start, duration, presence, f"opt_interval[{t}]"
         )
         if t < num_tasks // 2:
-            model.Add(presence == 1)
+            model.add(presence == 1)
 
         starts.append(start)
         durations.append(duration)
@@ -132,45 +134,44 @@ def ranking_sample_sat():
         presences.append(presence)
 
         # Ranks = -1 if and only if the tasks is not performed.
-        ranks.append(model.NewIntVar(-1, num_tasks - 1, f"rank[{t}]"))
+        ranks.append(model.new_int_var(-1, num_tasks - 1, f"rank[{t}]"))
 
     # Adds NoOverlap constraint.
-    model.AddNoOverlap(intervals)
+    model.add_no_overlap(intervals)
 
     # Adds ranking constraint.
     rank_tasks_with_circuit(model, starts, durations, presences, ranks)
 
     # Adds a constraint on ranks.
-    model.Add(ranks[0] < ranks[1])
+    model.add(ranks[0] < ranks[1])
 
     # Creates makespan variable.
-    makespan = model.NewIntVar(0, horizon, "makespan")
+    makespan = model.new_int_var(0, horizon, "makespan")
     for t in all_tasks:
-        model.Add(starts[t] + durations[t] <= makespan).OnlyEnforceIf(presences[t])
+        model.add(starts[t] + durations[t] <= makespan).only_enforce_if(presences[t])
 
     # Minimizes makespan - fixed gain per tasks performed.
     # As the fixed cost is less that the duration of the last interval,
     # the solver will not perform the last interval.
-    model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
+    model.minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
 
     # Solves the model model.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
         # Prints out the makespan and the start times and ranks of all tasks.
-        print(f"Optimal cost: {solver.ObjectiveValue()}")
-        print(f"Makespan: {solver.Value(makespan)}")
+        print(f"Optimal cost: {solver.objective_value}")
+        print(f"Makespan: {solver.value(makespan)}")
         for t in all_tasks:
-            if solver.Value(presences[t]):
+            if solver.value(presences[t]):
                 print(
-                    f"Task {t} starts at {solver.Value(starts[t])} "
-                    f"with rank {solver.Value(ranks[t])}"
+                    f"Task {t} starts at {solver.value(starts[t])} "
+                    f"with rank {solver.value(ranks[t])}"
                 )
             else:
                 print(
-                    f"Task {t} in not performed "
-                    f"and ranked at {solver.Value(ranks[t])}"
+                    f"Task {t} in not performed and ranked at {solver.value(ranks[t])}"
                 )
     else:
         print(f"Solver exited with nonoptimal status: {status}")

@@ -41,13 +41,13 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         """Called at each new solution."""
         print(
             "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, self.WallTime(), self.ObjectiveValue())
+            % (self.__solution_count, self.wall_time, self.objective_value)
         )
         self.__solution_count += 1
 
 
 def flexible_jobshop():
-    """Solve a small flexible jobshop problem."""
+    """solve a small flexible jobshop problem."""
     # Data part.
     jobs = [  # task = (processing_time, machine_id)
         [  # Job 0
@@ -113,12 +113,12 @@ def flexible_jobshop():
 
             # Create main interval for the task.
             suffix_name = "_j%i_t%i" % (job_id, task_id)
-            start = model.NewIntVar(0, horizon, "start" + suffix_name)
-            duration = model.NewIntVar(
+            start = model.new_int_var(0, horizon, "start" + suffix_name)
+            duration = model.new_int_var(
                 min_duration, max_duration, "duration" + suffix_name
             )
-            end = model.NewIntVar(0, horizon, "end" + suffix_name)
-            interval = model.NewIntervalVar(
+            end = model.new_int_var(0, horizon, "end" + suffix_name)
+            interval = model.new_interval_var(
                 start, duration, end, "interval" + suffix_name
             )
 
@@ -127,7 +127,7 @@ def flexible_jobshop():
 
             # Add precedence with previous task in the same job.
             if previous_end is not None:
-                model.Add(start >= previous_end)
+                model.add(start >= previous_end)
             previous_end = end
 
             # Create alternative intervals.
@@ -135,19 +135,19 @@ def flexible_jobshop():
                 l_presences = []
                 for alt_id in all_alternatives:
                     alt_suffix = "_j%i_t%i_a%i" % (job_id, task_id, alt_id)
-                    l_presence = model.NewBoolVar("presence" + alt_suffix)
-                    l_start = model.NewIntVar(0, horizon, "start" + alt_suffix)
+                    l_presence = model.new_bool_var("presence" + alt_suffix)
+                    l_start = model.new_int_var(0, horizon, "start" + alt_suffix)
                     l_duration = task[alt_id][0]
-                    l_end = model.NewIntVar(0, horizon, "end" + alt_suffix)
-                    l_interval = model.NewOptionalIntervalVar(
+                    l_end = model.new_int_var(0, horizon, "end" + alt_suffix)
+                    l_interval = model.new_optional_interval_var(
                         l_start, l_duration, l_end, l_presence, "interval" + alt_suffix
                     )
                     l_presences.append(l_presence)
 
                     # Link the primary/global variables with the local ones.
-                    model.Add(start == l_start).OnlyEnforceIf(l_presence)
-                    model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
-                    model.Add(end == l_end).OnlyEnforceIf(l_presence)
+                    model.add(start == l_start).only_enforce_if(l_presence)
+                    model.add(duration == l_duration).only_enforce_if(l_presence)
+                    model.add(end == l_end).only_enforce_if(l_presence)
 
                     # Add the local interval to the right machine.
                     intervals_per_resources[task[alt_id][1]].append(l_interval)
@@ -156,10 +156,10 @@ def flexible_jobshop():
                     presences[(job_id, task_id, alt_id)] = l_presence
 
                 # Select exactly one presence variable.
-                model.AddExactlyOne(l_presences)
+                model.add_exactly_one(l_presences)
             else:
                 intervals_per_resources[task[0][1]].append(interval)
-                presences[(job_id, task_id, 0)] = model.NewConstant(1)
+                presences[(job_id, task_id, 0)] = model.new_constant(1)
 
         job_ends.append(previous_end)
 
@@ -167,28 +167,28 @@ def flexible_jobshop():
     for machine_id in all_machines:
         intervals = intervals_per_resources[machine_id]
         if len(intervals) > 1:
-            model.AddNoOverlap(intervals)
+            model.add_no_overlap(intervals)
 
     # Makespan objective
-    makespan = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(makespan, job_ends)
-    model.Minimize(makespan)
+    makespan = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(makespan, job_ends)
+    model.minimize(makespan)
 
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     # Print final solution.
     for job_id in all_jobs:
         print("Job %i:" % job_id)
         for task_id in range(len(jobs[job_id])):
-            start_value = solver.Value(starts[(job_id, task_id)])
+            start_value = solver.value(starts[(job_id, task_id)])
             machine = -1
             duration = -1
             selected = -1
             for alt_id in range(len(jobs[job_id][task_id])):
-                if solver.Value(presences[(job_id, task_id, alt_id)]):
+                if solver.value(presences[(job_id, task_id, alt_id)]):
                     duration = jobs[job_id][task_id][alt_id][0]
                     machine = jobs[job_id][task_id][alt_id][1]
                     selected = alt_id
@@ -197,12 +197,12 @@ def flexible_jobshop():
                 % (job_id, task_id, start_value, selected, machine, duration)
             )
 
-    print("Solve status: %s" % solver.StatusName(status))
-    print("Optimal objective value: %i" % solver.ObjectiveValue())
+    print("solve status: %s" % solver.status_name(status))
+    print("Optimal objective value: %i" % solver.objective_value)
     print("Statistics")
-    print("  - conflicts : %i" % solver.NumConflicts())
-    print("  - branches  : %i" % solver.NumBranches())
-    print("  - wall time : %f s" % solver.WallTime())
+    print("  - conflicts : %i" % solver.num_conflicts)
+    print("  - branches  : %i" % solver.num_branches)
+    print("  - wall time : %f s" % solver.wall_time)
 
 
 flexible_jobshop()

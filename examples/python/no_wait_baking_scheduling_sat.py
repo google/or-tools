@@ -232,68 +232,68 @@ def solve_with_cp_sat(recipes, resources, orders):
 
                 start = None
                 if previous_end is None:
-                    start = model.NewIntVar(start_work, horizon, f"start{suffix}")
+                    start = model.new_int_var(start_work, horizon, f"start{suffix}")
                     orders_sequence_of_events[order_id].append(
                         (start, f"start{suffix}")
                     )
                 else:
                     start = previous_end
 
-                size = model.NewIntVar(
+                size = model.new_int_var(
                     task.min_duration, task.max_duration, f"size{suffix}"
                 )
                 end = None
                 if task == recipe.tasks[-1]:
                     # The order must end after the due_date. Ideally, exactly at the
                     # due_date.
-                    tardiness = model.NewIntVar(0, horizon - due_date, f"end{suffix}")
+                    tardiness = model.new_int_var(0, horizon - due_date, f"end{suffix}")
                     end = tardiness + due_date
 
                     # Store the end_var for the objective.
                     tardiness_vars.append(tardiness)
                 else:
-                    end = model.NewIntVar(start_work, horizon, f"end{suffix}")
+                    end = model.new_int_var(start_work, horizon, f"end{suffix}")
                 orders_sequence_of_events[order_id].append((end, f"end{suffix}"))
                 previous_end = end
 
                 # Per resource copy.
                 presence_literals = []
                 for resource in resource_list_by_skill_name[skill_name]:
-                    presence = model.NewBoolVar(f"presence{suffix}_{resource.name}")
-                    copy = model.NewOptionalIntervalVar(
+                    presence = model.new_bool_var(f"presence{suffix}_{resource.name}")
+                    copy = model.new_optional_interval_var(
                         start, size, end, presence, f"interval{suffix}_{resource.name}"
                     )
                     interval_list_by_resource_name[resource.name].append(copy)
                     presence_literals.append(presence)
 
                 # Only one copy will be performed.
-                model.AddExactlyOne(presence_literals)
+                model.add_exactly_one(presence_literals)
 
     # Create resource constraints.
     for resource in resources:
         intervals = interval_list_by_resource_name[resource.name]
         if resource.capacity == 1:
-            model.AddNoOverlap(intervals)
+            model.add_no_overlap(intervals)
         else:
-            model.AddCumulative(intervals, [1] * len(intervals), resource.capacity)
+            model.add_cumulative(intervals, [1] * len(intervals), resource.capacity)
 
     # The objective is to minimize the sum of the tardiness values of each jobs.
     # The tardiness is difference between the end time of an order and its
     # due date.
-    model.Minimize(sum(tardiness_vars))
+    model.minimize(sum(tardiness_vars))
 
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         for order_id in sorted_orders:
             print(f"{order_id}:")
             for time_expr, event_id in orders_sequence_of_events[order_id]:
-                time = solver.Value(time_expr)
+                time = solver.value(time_expr)
                 print(f"  {event_id} at {time // 60}:{time % 60:02}")
 
 

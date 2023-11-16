@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple assignment problem with CP-SAT."""
+"""Solves a simple assignment problem with CP-SAT."""
+
 # [START program]
 # [START import]
 import io
@@ -60,36 +61,36 @@ def main():
 
     # Variables
     # [START variables]
-    x = model.NewBoolVarSeries(name="x", index=data.index)
+    x = model.new_bool_var_series(name="x", index=data.index)
     # [END variables]
 
     # Constraints
     # [START constraints]
     # Each worker is assigned to at most one task.
     for unused_name, tasks in data.groupby("worker"):
-        model.AddAtMostOne(x[tasks.index])
+        model.add_at_most_one(x[tasks.index])
 
     # Each task is assigned to exactly one worker.
     for unused_name, workers in data.groupby("task"):
-        model.AddExactlyOne(x[workers.index])
+        model.add_exactly_one(x[workers.index])
     # [END constraints]
 
     # Objective
     # [START objective]
-    model.Minimize(data.cost.dot(x))
+    model.minimize(data.cost.dot(x))
     # [END objective]
 
     # Solve
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # Print solution.
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Total cost = {solver.ObjectiveValue()}\n")
-        selected = data.loc[solver.BooleanValues(x).loc[lambda x: x].index]
+        print(f"Total cost = {solver.objective_value}\n")
+        selected = data.loc[solver.boolean_values(x).loc[lambda x: x].index]
         for unused_index, row in selected.iterrows():
             print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
     elif status == cp_model.INFEASIBLE:

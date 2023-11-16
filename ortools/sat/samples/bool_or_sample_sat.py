@@ -21,10 +21,10 @@ from ortools.sat.python import cp_model
 def BoolOrSampleSat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
 
-    model.AddBoolOr([x, y.Not()])
+    model.add_bool_or([x, y.negated()])
 
 
 BoolOrSampleSat()

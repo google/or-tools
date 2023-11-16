@@ -15,7 +15,7 @@
 """Non linear example.
 
 Finds a rectangle with maximum available area for given perimeter using
-AddMultiplicationEquality().
+add_multiplication_equality().
 """
 
 from ortools.sat.python import cp_model
@@ -27,23 +27,23 @@ def non_linear_sat():
 
     model = cp_model.CpModel()
 
-    x = model.NewIntVar(0, perimeter, "x")
-    y = model.NewIntVar(0, perimeter, "y")
-    model.Add(2 * (x + y) == perimeter)
+    x = model.new_int_var(0, perimeter, "x")
+    y = model.new_int_var(0, perimeter, "y")
+    model.add(2 * (x + y) == perimeter)
 
-    area = model.NewIntVar(0, perimeter * perimeter, "s")
-    model.AddMultiplicationEquality(area, x, y)
+    area = model.new_int_var(0, perimeter * perimeter, "s")
+    model.add_multiplication_equality(area, x, y)
 
-    model.Maximize(area)
+    model.maximize(area)
 
     solver = cp_model.CpSolver()
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"x = {solver.Value(x)}")
-        print(f"y = {solver.Value(y)}")
-        print(f"s = {solver.Value(area)}")
+        print(f"x = {solver.value(x)}")
+        print(f"y = {solver.value(y)}")
+        print(f"s = {solver.value(area)}")
     else:
         print("No solution found.")
 

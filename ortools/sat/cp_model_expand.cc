@@ -29,11 +29,13 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -573,14 +575,34 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
     if (var_domain.IsFixed()) {
       context->AddImplyInDomain(index_lit, target_ref, var_domain);
     } else {
+      // We make sure we only use positive ref.
+      //
+      // TODO(user): Get rid of this code once we accept affine in element
+      // constraint.
       ConstraintProto* const ct = context->working_model->add_constraints();
       ct->add_enforcement_literal(index_lit);
-      ct->mutable_linear()->add_vars(var);
-      ct->mutable_linear()->add_coeffs(1);
-      ct->mutable_linear()->add_vars(target_ref);
-      ct->mutable_linear()->add_coeffs(-1);
+      if (RefIsPositive(var)) {
+        ct->mutable_linear()->add_vars(var);
+        ct->mutable_linear()->add_coeffs(1);
+      } else {
+        ct->mutable_linear()->add_vars(NegatedRef(var));
+        ct->mutable_linear()->add_coeffs(-1);
+      }
+      if (RefIsPositive(target_ref)) {
+        ct->mutable_linear()->add_vars(target_ref);
+        ct->mutable_linear()->add_coeffs(-1);
+      } else {
+        ct->mutable_linear()->add_vars(NegatedRef(target_ref));
+        ct->mutable_linear()->add_coeffs(1);
+      }
       ct->mutable_linear()->add_domain(0);
       ct->mutable_linear()->add_domain(0);
+
+      // Note that this should have been checked at model validation.
+      DCHECK(!PossibleIntegerOverflow(*context->working_model,
+                                      ct->mutable_linear()->vars(),
+                                      ct->mutable_linear()->coeffs()))
+          << google::protobuf::ShortFormat(*ct);
     }
   }
 

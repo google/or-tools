@@ -14,12 +14,13 @@
 
 """Solves the Hidato problem with the CP-SAT solver."""
 
+from typing import Union
 from absl import app
 from ortools.sat.colab import visualization
 from ortools.sat.python import cp_model
 
 
-def build_pairs(rows, cols):
+def build_pairs(rows: int, cols: int) -> list[tuple[int, int]]:
     """Build closeness pairs for consecutive numbers.
 
     Build set of allowed pairs such that two consecutive numbers touch
@@ -48,7 +49,7 @@ def build_pairs(rows, cols):
     return result
 
 
-def print_solution(positions, rows, cols):
+def print_solution(positions: list[int], rows: int, cols: int):
     """Print a current solution."""
     # Create empty board.
     board = []
@@ -63,7 +64,7 @@ def print_solution(positions, rows, cols):
     print_matrix(board)
 
 
-def print_matrix(game):
+def print_matrix(game: list[list[int]]) -> None:
     """Pretty print of a matrix."""
     rows = len(game)
     cols = len(game[0])
@@ -77,7 +78,7 @@ def print_matrix(game):
         print(line)
 
 
-def build_puzzle(problem):
+def build_puzzle(problem: int) -> Union[None, list[list[int]]]:
     """Build the problem from its index."""
     #
     # models, a 0 indicates an open cell which number is not yet known.
@@ -146,8 +147,8 @@ def build_puzzle(problem):
     return puzzle
 
 
-def solve_hidato(puzzle, index):
-    """Solve the given hidato table."""
+def solve_hidato(puzzle: list[list[int]], index: int):
+    """solve the given hidato table."""
     # Create the model.
     model = cp_model.CpModel()
 
@@ -161,58 +162,58 @@ def solve_hidato(puzzle, index):
         print_matrix(puzzle)
 
     #
-    # declare variables
+    # Declare variables.
     #
-    positions = [model.NewIntVar(0, r * c - 1, "p[%i]" % i) for i in range(r * c)]
+    positions = [model.new_int_var(0, r * c - 1, "p[%i]" % i) for i in range(r * c)]
 
     #
-    # constraints
+    # Constraints.
     #
-    model.AddAllDifferent(positions)
+    model.add_all_different(positions)
 
     #
-    # Fill in the clues
+    # Fill in the clues.
     #
     for i in range(r):
         for j in range(c):
             if puzzle[i][j] > 0:
-                model.Add(positions[puzzle[i][j] - 1] == i * c + j)
+                model.add(positions[puzzle[i][j] - 1] == i * c + j)
 
     # Consecutive numbers much touch each other in the grid.
     # We use an allowed assignment constraint to model it.
     close_tuples = build_pairs(r, c)
     for k in range(0, r * c - 1):
-        model.AddAllowedAssignments([positions[k], positions[k + 1]], close_tuples)
+        model.add_allowed_assignments([positions[k], positions[k + 1]], close_tuples)
 
     #
-    # solution and search
+    # Solution and search.
     #
 
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
         if visualization.RunFromIPython():
             output = visualization.SvgWrapper(10, r, 40.0)
             for i, var in enumerate(positions):
-                val = solver.Value(var)
+                val = solver.value(var)
                 x = val % c
                 y = val // c
                 color = "white" if puzzle[y][x] == 0 else "lightgreen"
                 output.AddRectangle(x, r - y - 1, 1, 1, color, "black", str(i + 1))
 
-            output.AddTitle("Puzzle %i solved in %f s" % (index, solver.WallTime()))
+            output.AddTitle("Puzzle %i solved in %f s" % (index, solver.wall_time))
             output.Display()
         else:
             print_solution(
-                [solver.Value(x) for x in positions],
+                [solver.value(x) for x in positions],
                 r,
                 c,
             )
             print("Statistics")
-            print("  - conflicts : %i" % solver.NumConflicts())
-            print("  - branches  : %i" % solver.NumBranches())
-            print("  - wall time : %f s" % solver.WallTime())
+            print("  - conflicts : %i" % solver.num_conflicts)
+            print("  - branches  : %i" % solver.num_branches)
+            print("  - wall time : %f s" % solver.wall_time)
 
 
 def main(_):

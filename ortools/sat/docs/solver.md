@@ -24,11 +24,11 @@ def SolveWithTimeLimitSampleSat():
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
     # Adds an all-different constraint.
-    model.Add(x != y)
+    model.add(x != y)
 
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
@@ -36,12 +36,12 @@ def SolveWithTimeLimitSampleSat():
     # Sets a time limit of 10 seconds.
     solver.parameters.max_time_in_seconds = 10.0
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print(f"x = {solver.Value(x)}")
-        print(f"y = {solver.Value(y)}")
-        print(f"z = {solver.Value(z)}")
+        print(f"x = {solver.value(x)}")
+        print(f"y = {solver.value(y)}")
+        print(f"z = {solver.value(z)}")
 
 
 SolveWithTimeLimitSampleSat()
@@ -207,20 +207,21 @@ from ortools.sat.python import cp_model
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         print(f"Solution {self.__solution_count}")
-        print(f"  objective value = {self.ObjectiveValue()}")
+        print(f"  objective value = {self.objective_value}")
         for v in self.__variables:
-            print(f"  {v}={self.Value(v)}", end=" ")
+            print(f"  {v}={self.value(v)}", end=" ")
         print()
         self.__solution_count += 1
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
@@ -231,22 +232,22 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
 SolveAndPrintIntermediateSolutionsSampleSat()
@@ -469,18 +470,19 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
@@ -491,12 +493,12 @@ def SearchForAllSolutionsSampleSat():
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Create the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -504,10 +506,10 @@ def SearchForAllSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
 SearchForAllSolutionsSampleSat()
@@ -725,22 +727,23 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables, limit):
+    def __init__(self, variables: list[cp_model.IntVar], limit: int):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
         self.__solution_limit = limit
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
         if self.__solution_count >= self.__solution_limit:
             print(f"Stop search after {self.__solution_limit} solutions")
-            self.StopSearch()
+            self.stop_search()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
@@ -750,9 +753,9 @@ def StopAfterNSolutionsSampleSat():
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -760,10 +763,10 @@ def StopAfterNSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
-    assert solution_printer.solution_count() == 5
+    status = solver.solve(model, solution_printer)
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
+    assert solution_printer.solution_count == 5
 
 
 StopAfterNSolutionsSampleSat()

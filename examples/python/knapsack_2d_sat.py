@@ -29,6 +29,7 @@ from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
 
+
 _OUTPUT_PROTO = flags.DEFINE_string(
     "output_proto", "", "Output file to write the cp_model proto to."
 )
@@ -42,7 +43,7 @@ _MODEL = flags.DEFINE_string(
 )
 
 
-def build_data():
+def build_data() -> tuple[pd.Series, int, int]:
     """Build the data frame."""
     data = """
     item         width    height available    value    color
@@ -70,8 +71,8 @@ def build_data():
     return (data, max_height, max_width)
 
 
-def solve_with_duplicate_items(data, max_height, max_width):
-    """Solve the problem by building 2 items (rotated or not) for each item."""
+def solve_with_duplicate_items(data: pd.Series, max_height: int, max_width: int):
+    """solve the problem by building 2 items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
     data_widths = data["width"].to_numpy()
     data_heights = data["height"].to_numpy()
@@ -105,41 +106,47 @@ def solve_with_duplicate_items(data, max_height, max_width):
 
     for i in range(num_items):
         ## Is the item used?
-        is_used.append(model.NewBoolVar(f"is_used{i}"))
+        is_used.append(model.new_bool_var(f"is_used{i}"))
 
         ## Item coordinates.
-        x_starts.append(model.NewIntVar(0, max_width, f"x_start{i}"))
-        x_ends.append(model.NewIntVar(0, max_width, f"x_end{i}"))
-        y_starts.append(model.NewIntVar(0, max_height, f"y_start{i}"))
-        y_ends.append(model.NewIntVar(0, max_height, f"y_end{i}"))
+        x_starts.append(model.new_int_var(0, max_width, f"x_start{i}"))
+        x_ends.append(model.new_int_var(0, max_width, f"x_end{i}"))
+        y_starts.append(model.new_int_var(0, max_height, f"y_start{i}"))
+        y_ends.append(model.new_int_var(0, max_height, f"y_end{i}"))
 
         ## Interval variables.
         x_intervals.append(
-            model.NewIntervalVar(
-                x_starts[i], item_widths[i] * is_used[i], x_ends[i], f"x_interval{i}"
+            model.new_interval_var(
+                x_starts[i],
+                item_widths[i] * is_used[i],
+                x_ends[i],
+                f"x_interval{i}",
             )
         )
         y_intervals.append(
-            model.NewIntervalVar(
-                y_starts[i], item_heights[i] * is_used[i], y_ends[i], f"y_interval{i}"
+            model.new_interval_var(
+                y_starts[i],
+                item_heights[i] * is_used[i],
+                y_ends[i],
+                f"y_interval{i}",
             )
         )
 
         # Unused boxes are fixed at (0.0).
-        model.Add(x_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
-        model.Add(y_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
+        model.add(x_starts[i] == 0).only_enforce_if(is_used[i].negated())
+        model.add(y_starts[i] == 0).only_enforce_if(is_used[i].negated())
 
     # Constraints.
 
     ## Only one of non-rotated/rotated pair can be used.
     for i in range(num_data_items):
-        model.Add(is_used[i] + is_used[i + num_data_items] <= 1)
+        model.add(is_used[i] + is_used[i + num_data_items] <= 1)
 
     ## 2D no overlap.
-    model.AddNoOverlap2D(x_intervals, y_intervals)
+    model.add_no_overlap_2d(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
+    model.maximize(cp_model.LinearExpr.weighted_sum(is_used, item_values))
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
@@ -152,27 +159,29 @@ def solve_with_duplicate_items(data, max_height, max_width):
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     # Report solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
+        used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {
-                "x_start": [solver.Value(x_starts[i]) for i in used],
-                "y_start": [solver.Value(y_starts[i]) for i in used],
+                "x_start": [solver.value(x_starts[i]) for i in used],
+                "y_start": [solver.value(y_starts[i]) for i in used],
                 "item_width": [item_widths[i] for i in used],
                 "item_height": [item_heights[i] for i in used],
-                "x_end": [solver.Value(x_ends[i]) for i in used],
-                "y_end": [solver.Value(y_ends[i]) for i in used],
+                "x_end": [solver.value(x_ends[i]) for i in used],
+                "y_end": [solver.value(y_ends[i]) for i in used],
                 "item_value": [item_values[i] for i in used],
             }
         )
         print(data)
 
 
-def solve_with_duplicate_optional_items(data, max_height, max_width):
-    """Solve the problem by building 2 optional items (rotated or not) for each item."""
+def solve_with_duplicate_optional_items(
+    data: pd.Series, max_height: int, max_width: int
+):
+    """solve the problem by building 2 optional items (rotated or not) for each item."""
     # Derived data (expanded to individual items).
     data_widths = data["width"].to_numpy()
     data_heights = data["height"].to_numpy()
@@ -204,42 +213,42 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
 
     for i in range(num_items):
         ## Is the item used?
-        is_used.append(model.NewBoolVar(f"is_used{i}"))
+        is_used.append(model.new_bool_var(f"is_used{i}"))
 
         ## Item coordinates.
         x_starts.append(
-            model.NewIntVar(0, max_width - int(item_widths[i]), f"x_start{i}")
+            model.new_int_var(0, max_width - int(item_widths[i]), f"x_start{i}")
         )
         y_starts.append(
-            model.NewIntVar(0, max_height - int(item_heights[i]), f"y_start{i}")
+            model.new_int_var(0, max_height - int(item_heights[i]), f"y_start{i}")
         )
 
         ## Interval variables.
         x_intervals.append(
-            model.NewOptionalFixedSizeIntervalVar(
+            model.new_optional_fixed_size_interval_var(
                 x_starts[i], item_widths[i], is_used[i], f"x_interval{i}"
             )
         )
         y_intervals.append(
-            model.NewOptionalFixedSizeIntervalVar(
+            model.new_optional_fixed_size_interval_var(
                 y_starts[i], item_heights[i], is_used[i], f"y_interval{i}"
             )
         )
         # Unused boxes are fixed at (0.0).
-        model.Add(x_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
-        model.Add(y_starts[i] == 0).OnlyEnforceIf(is_used[i].Not())
+        model.add(x_starts[i] == 0).only_enforce_if(is_used[i].negated())
+        model.add(y_starts[i] == 0).only_enforce_if(is_used[i].negated())
 
     # Constraints.
 
     ## Only one of non-rotated/rotated pair can be used.
     for i in range(num_data_items):
-        model.Add(is_used[i] + is_used[i + num_data_items] <= 1)
+        model.add(is_used[i] + is_used[i + num_data_items] <= 1)
 
     ## 2D no overlap.
-    model.AddNoOverlap2D(x_intervals, y_intervals)
+    model.add_no_overlap_2d(x_intervals, y_intervals)
 
     ## Objective.
-    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
+    model.maximize(cp_model.LinearExpr.weighted_sum(is_used, item_values))
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
@@ -247,32 +256,32 @@ def solve_with_duplicate_optional_items(data, max_height, max_width):
         with open(_OUTPUT_PROTO.value, "w") as text_file:
             text_file.write(str(model))
 
-    # Solve model.
+    # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     # Report solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
+        used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {
-                "x_start": [solver.Value(x_starts[i]) for i in used],
-                "y_start": [solver.Value(y_starts[i]) for i in used],
+                "x_start": [solver.value(x_starts[i]) for i in used],
+                "y_start": [solver.value(y_starts[i]) for i in used],
                 "item_width": [item_widths[i] for i in used],
                 "item_height": [item_heights[i] for i in used],
-                "x_end": [solver.Value(x_starts[i]) + item_widths[i] for i in used],
-                "y_end": [solver.Value(y_starts[i]) + item_heights[i] for i in used],
+                "x_end": [solver.value(x_starts[i]) + item_widths[i] for i in used],
+                "y_end": [solver.value(y_starts[i]) + item_heights[i] for i in used],
                 "item_value": [item_values[i] for i in used],
             }
         )
         print(data)
 
 
-def solve_with_rotations(data, max_height, max_width):
-    """Solve the problem by rotating items."""
+def solve_with_rotations(data: pd.Series, max_height: int, max_width: int):
+    """solve the problem by rotating items."""
     # Derived data (expanded to individual items).
     data_widths = data["width"].to_numpy()
     data_heights = data["height"].to_numpy()
@@ -301,25 +310,29 @@ def solve_with_rotations(data, max_height, max_width):
     for i in range(num_items):
         sizes = [0, int(item_widths[i]), int(item_heights[i])]
         # X coordinates.
-        x_starts.append(model.NewIntVar(0, max_width, f"x_start{i}"))
+        x_starts.append(model.new_int_var(0, max_width, f"x_start{i}"))
         x_sizes.append(
-            model.NewIntVarFromDomain(cp_model.Domain.FromValues(sizes), f"x_size{i}")
+            model.new_int_var_from_domain(
+                cp_model.Domain.FromValues(sizes), f"x_size{i}"
+            )
         )
-        x_ends.append(model.NewIntVar(0, max_width, f"x_end{i}"))
+        x_ends.append(model.new_int_var(0, max_width, f"x_end{i}"))
 
         # Y coordinates.
-        y_starts.append(model.NewIntVar(0, max_height, f"y_start{i}"))
+        y_starts.append(model.new_int_var(0, max_height, f"y_start{i}"))
         y_sizes.append(
-            model.NewIntVarFromDomain(cp_model.Domain.FromValues(sizes), f"y_size{i}")
+            model.new_int_var_from_domain(
+                cp_model.Domain.FromValues(sizes), f"y_size{i}"
+            )
         )
-        y_ends.append(model.NewIntVar(0, max_height, f"y_end{i}"))
+        y_ends.append(model.new_int_var(0, max_height, f"y_end{i}"))
 
         ## Interval variables
         x_intervals.append(
-            model.NewIntervalVar(x_starts[i], x_sizes[i], x_ends[i], f"x_interval{i}")
+            model.new_interval_var(x_starts[i], x_sizes[i], x_ends[i], f"x_interval{i}")
         )
         y_intervals.append(
-            model.NewIntervalVar(y_starts[i], y_sizes[i], y_ends[i], f"y_interval{i}")
+            model.new_interval_var(y_starts[i], y_sizes[i], y_ends[i], f"y_interval{i}")
         )
 
     # is_used[i] == True if and only if item i is selected.
@@ -329,34 +342,34 @@ def solve_with_rotations(data, max_height, max_width):
 
     ## for each item, decide is unselected, no_rotation, rotated.
     for i in range(num_items):
-        not_selected = model.NewBoolVar(f"not_selected_{i}")
-        no_rotation = model.NewBoolVar(f"no_rotation_{i}")
-        rotated = model.NewBoolVar(f"rotated_{i}")
+        not_selected = model.new_bool_var(f"not_selected_{i}")
+        no_rotation = model.new_bool_var(f"no_rotation_{i}")
+        rotated = model.new_bool_var(f"rotated_{i}")
 
         ### Exactly one state must be chosen.
-        model.AddExactlyOne(not_selected, no_rotation, rotated)
+        model.add_exactly_one(not_selected, no_rotation, rotated)
 
         ### Define height and width according to the state.
         dim1 = item_widths[i]
         dim2 = item_heights[i]
         # Unused boxes are fixed at (0.0).
-        model.Add(x_sizes[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(y_sizes[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(x_starts[i] == 0).OnlyEnforceIf(not_selected)
-        model.Add(y_starts[i] == 0).OnlyEnforceIf(not_selected)
+        model.add(x_sizes[i] == 0).only_enforce_if(not_selected)
+        model.add(y_sizes[i] == 0).only_enforce_if(not_selected)
+        model.add(x_starts[i] == 0).only_enforce_if(not_selected)
+        model.add(y_starts[i] == 0).only_enforce_if(not_selected)
         # Sizes are fixed by the rotation.
-        model.Add(x_sizes[i] == dim1).OnlyEnforceIf(no_rotation)
-        model.Add(y_sizes[i] == dim2).OnlyEnforceIf(no_rotation)
-        model.Add(x_sizes[i] == dim2).OnlyEnforceIf(rotated)
-        model.Add(y_sizes[i] == dim1).OnlyEnforceIf(rotated)
+        model.add(x_sizes[i] == dim1).only_enforce_if(no_rotation)
+        model.add(y_sizes[i] == dim2).only_enforce_if(no_rotation)
+        model.add(x_sizes[i] == dim2).only_enforce_if(rotated)
+        model.add(y_sizes[i] == dim1).only_enforce_if(rotated)
 
-        is_used.append(not_selected.Not())
+        is_used.append(not_selected.negated())
 
     ## 2D no overlap.
-    model.AddNoOverlap2D(x_intervals, y_intervals)
+    model.add_no_overlap_2d(x_intervals, y_intervals)
 
     # Objective.
-    model.Maximize(cp_model.LinearExpr.WeightedSum(is_used, item_values))
+    model.maximize(cp_model.LinearExpr.weighted_sum(is_used, item_values))
 
     # Output proto to file.
     if _OUTPUT_PROTO.value:
@@ -364,24 +377,24 @@ def solve_with_rotations(data, max_height, max_width):
         with open(_OUTPUT_PROTO.value, "w") as text_file:
             text_file.write(str(model))
 
-    # Solve model.
+    # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     # Report solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        used = {i for i in range(num_items) if solver.BooleanValue(is_used[i])}
+        used = {i for i in range(num_items) if solver.boolean_value(is_used[i])}
         data = pd.DataFrame(
             {
-                "x_start": [solver.Value(x_starts[i]) for i in used],
-                "y_start": [solver.Value(y_starts[i]) for i in used],
-                "item_width": [solver.Value(x_sizes[i]) for i in used],
-                "item_height": [solver.Value(y_sizes[i]) for i in used],
-                "x_end": [solver.Value(x_ends[i]) for i in used],
-                "y_end": [solver.Value(y_ends[i]) for i in used],
+                "x_start": [solver.value(x_starts[i]) for i in used],
+                "y_start": [solver.value(y_starts[i]) for i in used],
+                "item_width": [solver.value(x_sizes[i]) for i in used],
+                "item_height": [solver.value(y_sizes[i]) for i in used],
+                "x_end": [solver.value(x_ends[i]) for i in used],
+                "y_end": [solver.value(y_ends[i]) for i in used],
                 "item_value": [item_values[i] for i in used],
             }
         )
@@ -389,7 +402,7 @@ def solve_with_rotations(data, max_height, max_width):
 
 
 def main(_):
-    """Solve the problem with all models."""
+    """solve the problem with all models."""
     data, max_height, max_width = build_data()
     if _MODEL.value == "duplicate":
         solve_with_duplicate_items(data, max_height, max_width)

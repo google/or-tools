@@ -246,12 +246,12 @@ def task_allocation_sat():
     assign = {}
     for task in all_tasks:
         for slot in all_slots:
-            assign[(task, slot)] = model.NewBoolVar("x[%i][%i]" % (task, slot))
-    count = model.NewIntVar(0, nslots, "count")
-    slot_used = [model.NewBoolVar("slot_used[%i]" % s) for s in all_slots]
+            assign[(task, slot)] = model.new_bool_var("x[%i][%i]" % (task, slot))
+    count = model.new_int_var(0, nslots, "count")
+    slot_used = [model.new_bool_var("slot_used[%i]" % s) for s in all_slots]
 
     for task in all_tasks:
-        model.Add(
+        model.add(
             sum(
                 assign[(task, slot)] for slot in all_slots if available[task][slot] == 1
             )
@@ -259,38 +259,40 @@ def task_allocation_sat():
         )
 
     for slot in all_slots:
-        model.Add(
+        model.add(
             sum(
                 assign[(task, slot)] for task in all_tasks if available[task][slot] == 1
             )
             <= capacity
         )
-        model.AddBoolOr(
+        model.add_bool_or(
             [assign[(task, slot)] for task in all_tasks if available[task][slot] == 1]
-        ).OnlyEnforceIf(slot_used[slot])
+        ).only_enforce_if(slot_used[slot])
         for task in all_tasks:
             if available[task][slot] == 1:
-                model.AddImplication(slot_used[slot].Not(), assign[(task, slot)].Not())
+                model.add_implication(
+                    slot_used[slot].negated(), assign[(task, slot)].negated()
+                )
             else:
-                model.Add(assign[(task, slot)] == 0)
+                model.add(assign[(task, slot)] == 0)
 
-    model.Add(count == sum(slot_used))
+    model.add(count == sum(slot_used))
     # Redundant constraint. This instance is easier if we add this constraint.
-    # model.Add(count >= (nslots + capacity - 1) // capacity)
+    # model.add(count >= (nslots + capacity - 1) // capacity)
 
-    model.Minimize(count)
+    model.minimize(count)
 
     # Create a solver and solve the problem.
     solver = cp_model.CpSolver()
     # Uses the portfolion of heuristics.
     solver.parameters.log_search_progress = True
     solver.parameters.num_search_workers = 16
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     print("Statistics")
-    print("  - status =", solver.StatusName(status))
-    print("  - optimal solution =", solver.ObjectiveValue())
-    print("  - wall time : %f s" % solver.WallTime())
+    print("  - status =", solver.status_name(status))
+    print("  - optimal solution =", solver.objective_value)
+    print("  - wall time : %f s" % solver.wall_time)
 
 
 def main(argv: Sequence[str]) -> None:

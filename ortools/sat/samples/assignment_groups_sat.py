@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # [START program]
-"""Solve assignment problem for given group of workers."""
+"""Solves an assignment problem for given group of workers."""
 # [START import]
 from ortools.sat.python import cp_model
 # [END import]
@@ -77,34 +77,34 @@ def main():
     x = {}
     for worker in range(num_workers):
         for task in range(num_tasks):
-            x[worker, task] = model.NewBoolVar(f"x[{worker},{task}]")
+            x[worker, task] = model.new_bool_var(f"x[{worker},{task}]")
     # [END variables]
 
     # Constraints
     # [START constraints]
     # Each worker is assigned to at most one task.
     for worker in range(num_workers):
-        model.AddAtMostOne(x[worker, task] for task in range(num_tasks))
+        model.add_at_most_one(x[worker, task] for task in range(num_tasks))
 
     # Each task is assigned to exactly one worker.
     for task in range(num_tasks):
-        model.AddExactlyOne(x[worker, task] for worker in range(num_workers))
+        model.add_exactly_one(x[worker, task] for worker in range(num_workers))
     # [END constraints]
 
     # [START assignments]
     # Create variables for each worker, indicating whether they work on some task.
     work = {}
     for worker in range(num_workers):
-        work[worker] = model.NewBoolVar(f"work[{worker}]")
+        work[worker] = model.new_bool_var(f"work[{worker}]")
 
     for worker in range(num_workers):
         for task in range(num_tasks):
-            model.Add(work[worker] == sum(x[worker, task] for task in range(num_tasks)))
+            model.add(work[worker] == sum(x[worker, task] for task in range(num_tasks)))
 
     # Define the allowed groups of worders
-    model.AddAllowedAssignments([work[0], work[1], work[2], work[3]], group1)
-    model.AddAllowedAssignments([work[4], work[5], work[6], work[7]], group2)
-    model.AddAllowedAssignments([work[8], work[9], work[10], work[11]], group3)
+    model.add_allowed_assignments([work[0], work[1], work[2], work[3]], group1)
+    model.add_allowed_assignments([work[4], work[5], work[6], work[7]], group2)
+    model.add_allowed_assignments([work[8], work[9], work[10], work[11]], group3)
     # [END assignments]
 
     # Objective
@@ -113,22 +113,22 @@ def main():
     for worker in range(num_workers):
         for task in range(num_tasks):
             objective_terms.append(costs[worker][task] * x[worker, task])
-    model.Minimize(sum(objective_terms))
+    model.minimize(sum(objective_terms))
     # [END objective]
 
     # Solve
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # Print solution.
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Total cost = {solver.ObjectiveValue()}\n")
+        print(f"Total cost = {solver.objective_value}\n")
         for worker in range(num_workers):
             for task in range(num_tasks):
-                if solver.BooleanValue(x[worker, task]):
+                if solver.boolean_value(x[worker, task]):
                     print(
                         f"Worker {worker} assigned to task {task}."
                         + f" Cost = {costs[worker][task]}"

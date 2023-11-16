@@ -29,7 +29,7 @@ from ortools.sat.colab import visualization
 from ortools.sat.python import cp_model
 
 
-def jobshop_ft06():
+def jobshop_ft06() -> None:
     """Solves the ft06 jobshop."""
     # Creates the solver.
     model = cp_model.CpModel()
@@ -66,10 +66,10 @@ def jobshop_ft06():
     all_tasks = {}
     for i in all_jobs:
         for j in all_machines:
-            start_var = model.NewIntVar(0, horizon, "start_%i_%i" % (i, j))
+            start_var = model.new_int_var(0, horizon, "start_%i_%i" % (i, j))
             duration = durations[i][j]
-            end_var = model.NewIntVar(0, horizon, "end_%i_%i" % (i, j))
-            interval_var = model.NewIntervalVar(
+            end_var = model.new_int_var(0, horizon, "end_%i_%i" % (i, j))
+            interval_var = model.new_interval_var(
                 start_var, duration, end_var, "interval_%i_%i" % (i, j)
             )
             all_tasks[(i, j)] = task_type(
@@ -85,35 +85,35 @@ def jobshop_ft06():
                 if machines[j][k] == i:
                     machines_jobs.append(all_tasks[(j, k)].interval)
         machine_to_jobs[i] = machines_jobs
-        model.AddNoOverlap(machines_jobs)
+        model.add_no_overlap(machines_jobs)
 
     # Precedences inside a job.
     for i in all_jobs:
         for j in range(0, machines_count - 1):
-            model.Add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
+            model.add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
 
     # Makespan objective.
-    obj_var = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(
+    obj_var = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(
         obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs]
     )
-    model.Minimize(obj_var)
+    model.minimize(obj_var)
 
-    # Solve model.
+    # Solve the model.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
-    # Output solution.
+    # Output the solution.
     if status == cp_model.OPTIMAL:
         if visualization.RunFromIPython():
             starts = [
-                [solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+                [solver.value(all_tasks[(i, j)][0]) for j in all_machines]
                 for i in all_jobs
             ]
             visualization.DisplayJobshop(starts, durations, machines, "FT06")
         else:
-            print("Optimal makespan: %i" % solver.ObjectiveValue())
+            print("Optimal makespan: %i" % solver.objective_value)
 
 
 jobshop_ft06()

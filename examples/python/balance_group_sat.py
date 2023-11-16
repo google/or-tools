@@ -41,14 +41,14 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print("Solution %i" % self.__solution_count)
         self.__solution_count += 1
 
-        print("  objective value = %i" % self.ObjectiveValue())
+        print("  objective value = %i" % self.objective_value)
         groups = {}
         sums = {}
         for g in self.__all_groups:
             groups[g] = []
             sums[g] = 0
             for item in self.__all_items:
-                if self.BooleanValue(self.__item_in_group[(item, g)]):
+                if self.boolean_value(self.__item_in_group[(item, g)]):
                     groups[g].append(item)
                     sums[g] += self.__values[item]
 
@@ -77,7 +77,7 @@ def main(argv: Sequence[str]) -> None:
     all_items = range(num_items)
     all_colors = range(num_colors)
 
-    # Values for each items.
+    # values for each items.
     values = [1 + i + (i * i // 200) for i in all_items]
     # Color for each item (simple modulo).
     colors = [i % num_colors for i in all_items]
@@ -108,26 +108,26 @@ def main(argv: Sequence[str]) -> None:
     item_in_group = {}
     for i in all_items:
         for g in all_groups:
-            item_in_group[(i, g)] = model.NewBoolVar("item %d in group %d" % (i, g))
+            item_in_group[(i, g)] = model.new_bool_var("item %d in group %d" % (i, g))
 
     # Each group must have the same size.
     for g in all_groups:
-        model.Add(sum(item_in_group[(i, g)] for i in all_items) == num_items_per_group)
+        model.add(sum(item_in_group[(i, g)] for i in all_items) == num_items_per_group)
 
     # One item must belong to exactly one group.
     for i in all_items:
-        model.Add(sum(item_in_group[(i, g)] for g in all_groups) == 1)
+        model.add(sum(item_in_group[(i, g)] for g in all_groups) == 1)
 
     # The deviation of the sum of each items in a group against the average.
-    e = model.NewIntVar(0, 550, "epsilon")
+    e = model.new_int_var(0, 550, "epsilon")
 
     # Constrain the sum of values in one group around the average sum per group.
     for g in all_groups:
-        model.Add(
+        model.add(
             sum(item_in_group[(i, g)] * values[i] for i in all_items)
             <= average_sum_per_group + e
         )
-        model.Add(
+        model.add(
             sum(item_in_group[(i, g)] * values[i] for i in all_items)
             >= average_sum_per_group - e
         )
@@ -136,24 +136,24 @@ def main(argv: Sequence[str]) -> None:
     color_in_group = {}
     for g in all_groups:
         for c in all_colors:
-            color_in_group[(c, g)] = model.NewBoolVar(
+            color_in_group[(c, g)] = model.new_bool_var(
                 "color %d is in group %d" % (c, g)
             )
 
     # Item is in a group implies its color is in that group.
     for i in all_items:
         for g in all_groups:
-            model.AddImplication(item_in_group[(i, g)], color_in_group[(colors[i], g)])
+            model.add_implication(item_in_group[(i, g)], color_in_group[(colors[i], g)])
 
     # If a color is in a group, it must contains at least
     # min_items_of_same_color_per_group items from that color.
     for c in all_colors:
         for g in all_groups:
             literal = color_in_group[(c, g)]
-            model.Add(
+            model.add(
                 sum(item_in_group[(i, g)] for i in items_per_color[c])
                 >= min_items_of_same_color_per_group
-            ).OnlyEnforceIf(literal)
+            ).only_enforce_if(literal)
 
     # Compute the maximum number of colors in a group.
     max_color = num_items_per_group // min_items_of_same_color_per_group
@@ -161,10 +161,10 @@ def main(argv: Sequence[str]) -> None:
     # Redundant constraint, it helps with solving time.
     if max_color < num_colors:
         for g in all_groups:
-            model.Add(sum(color_in_group[(c, g)] for c in all_colors) <= max_color)
+            model.add(sum(color_in_group[(c, g)] for c in all_colors) <= max_color)
 
-    # Minimize epsilon
-    model.Minimize(e)
+    # minimize epsilon
+    model.minimize(e)
 
     solver = cp_model.CpSolver()
     # solver.parameters.log_search_progress = True
@@ -172,14 +172,14 @@ def main(argv: Sequence[str]) -> None:
     solution_printer = SolutionPrinter(
         values, colors, all_groups, all_items, item_in_group
     )
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal epsilon: %i" % solver.ObjectiveValue())
+        print("Optimal epsilon: %i" % solver.objective_value)
         print("Statistics")
-        print("  - conflicts : %i" % solver.NumConflicts())
-        print("  - branches  : %i" % solver.NumBranches())
-        print("  - wall time : %f s" % solver.WallTime())
+        print("  - conflicts : %i" % solver.num_conflicts)
+        print("  - branches  : %i" % solver.num_branches)
+        print("  - wall time : %f s" % solver.wall_time)
     else:
         print("No solution found")
 

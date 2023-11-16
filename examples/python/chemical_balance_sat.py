@@ -70,37 +70,40 @@ def chemical_balance():
         for s in all_sets
     ]
 
-    set_vars = [model.NewIntVar(0, max_set[s], f"set_{s}") for s in all_sets]
+    set_vars = [model.new_int_var(0, max_set[s], f"set_{s}") for s in all_sets]
 
-    epsilon = model.NewIntVar(0, 10000000, "epsilon")
+    epsilon = model.new_int_var(0, 10000000, "epsilon")
 
     for p in all_products:
-        model.Add(
+        model.add(
             sum(int(chemical_set[s][p + 1] * 10) * set_vars[s] for s in all_sets)
             <= int(max_quantities[p][1] * 10000)
         )
-        model.Add(
+        model.add(
             sum(int(chemical_set[s][p + 1] * 10) * set_vars[s] for s in all_sets)
             >= int(max_quantities[p][1] * 10000) - epsilon
         )
 
-    model.Minimize(epsilon)
+    model.minimize(epsilon)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    print(f"Status = {solver.StatusName(status)}")
+    status = solver.solve(model)
+    print(f"Status = {solver.status_name(status)}")
     # The objective value of the solution.
-    print(f"Optimal objective value = {solver.ObjectiveValue() / 10000.0}")
+    print(f"Optimal objective value = {solver.objective_value / 10000.0}")
 
     for s in all_sets:
-        print(f"  {chemical_set[s][0]} = {solver.Value(set_vars[s]) / 1000.0}", end=" ")
+        print(
+            f"  {chemical_set[s][0]} = {solver.value(set_vars[s]) / 1000.0}",
+            end=" ",
+        )
         print()
     for p in all_products:
         name = max_quantities[p][0]
         max_quantity = max_quantities[p][1]
         quantity = sum(
-            solver.Value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
+            solver.value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
             for s in all_sets
         )
         print(f"{name}: {quantity} out of {max_quantity}")

@@ -22,18 +22,19 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
         # [END print_solution]
 
@@ -48,14 +49,14 @@ def SearchForAllSolutionsSampleSat():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
     # [END variables]
 
     # Create the constraints.
     # [START constraints]
-    model.Add(x != y)
+    model.add(x != y)
     # [END constraints]
 
     # Create a solver and solve.
@@ -65,11 +66,11 @@ def SearchForAllSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
     # [END solve]
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
 SearchForAllSolutionsSampleSat()

@@ -1595,6 +1595,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
 bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
+  // TODO(user): Presolve f(X) = g(X) % fixed_mod.
   const LinearExpressionProto target = ct->int_mod().target();
   const LinearExpressionProto expr = ct->int_mod().exprs(0);
   const LinearExpressionProto mod = ct->int_mod().exprs(1);
@@ -1668,7 +1669,8 @@ bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   // expr.vars(0) is large, the implied domain is not too complex.
   if (target.vars().size() == 1 && expr.vars().size() == 1 &&
       context_->DomainOf(expr.vars(0)).Size() < 100 && context_->IsFixed(mod) &&
-      context_->VariableIsUniqueAndRemovable(target.vars(0))) {
+      context_->VariableIsUniqueAndRemovable(target.vars(0)) &&
+      target.vars(0) != expr.vars(0)) {
     const int64_t fixed_mod = context_->FixedValue(mod);
     std::vector<int64_t> values;
     const Domain dom = context_->DomainOf(target.vars(0));
@@ -5144,6 +5146,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
           if (!MarkConstraintAsFalse(interval_ct)) {
             return false;
           }
+          context_->UpdateConstraintVariableUsage(interval_index);
           context_->UpdateRuleStats(
               "no_overlap: unperform duplicate non zero-sized intervals");
           // We can remove the interval from the no_overlap.
@@ -6980,11 +6983,16 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // removing variable from the objective if they can be set to their "low"
   // objective value, and also removing enforcement literal that can be set to
   // false and don't appear elsewhere.
+  int num_in_extra_constraints = 0;
   std::vector<bool> can_be_removed(num_variables, false);
   for (int i = 0; i < num_variables; ++i) {
     const int var = new_to_old_index[i];
     if (context_->VarToConstraints(var).empty()) {
       can_be_removed[i] = true;
+    } else {
+      // That might correspond to the objective or a variable with an affine
+      // relation that is still in the model.
+      ++num_in_extra_constraints;
     }
   }
 
@@ -7011,7 +7019,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
   if (!context_->params().debug_postsolve_with_full_solver() &&
       num_ignored_variables == 0 && num_ignored_constraints == 0 &&
-      !context_->working_model->has_objective()) {
+      num_in_extra_constraints == 0) {
     // Some problems are formulated in such a way that our SAT heuristics
     // simply works without conflict. Get them out of the way first because it
     // is possible that the presolve lose this "lucky" ordering. This is in
@@ -9065,7 +9073,7 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
 
 // TODO(user): Also substitute if this appear in the objective?
 // TODO(user): In some case we only need common_part <= new_var.
-void CpModelPresolver::RemoveCommonPart(
+bool CpModelPresolver::RemoveCommonPart(
     const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
     const std::vector<std::pair<int, int64_t>>& block) {
   int new_var;
@@ -9138,6 +9146,14 @@ void CpModelPresolver::RemoveCommonPart(
     new_linear->add_coeffs(-1);
     new_linear->add_domain(0);
     new_linear->add_domain(0);
+    if (PossibleIntegerOverflow(*context_->working_model, new_linear->vars(),
+                                new_linear->coeffs())) {
+      context_->UpdateRuleStats(
+          "TODO linear matrix: possible overflow in common part!");
+      context_->working_model->mutable_constraints()->RemoveLast();
+      return false;
+    }
+
     context_->UpdateNewConstraintsVariableUsage();
   }
 
@@ -9182,6 +9198,7 @@ void CpModelPresolver::RemoveCommonPart(
     }
     context_->UpdateConstraintVariableUsage(c);
   }
+  return true;
 }
 
 namespace {
@@ -9330,10 +9347,10 @@ void CpModelPresolver::FindBigVerticalLinearOverlap() {
     }
 
     // Introduce new_var = common_part and perform the substitution.
+    if (!RemoveCommonPart(coeff_map, block)) continue;
     ++num_blocks;
     nz_reduction += saved_nz;
     context_->UpdateRuleStats("linear matrix: common vertical rectangle");
-    RemoveCommonPart(coeff_map, block);
   }
 
   timer.AddCounter("blocks", num_blocks);
@@ -9463,8 +9480,6 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
     // Introduce a new variable = common_part.
     // Use it in all linear constraint.
     if (block.size() > 1) {
-      context_->UpdateRuleStats("linear matrix: common horizontal rectangle");
-
       // Try to extend with exact matches that were skipped.
       const int match_size = var_to_coeff_non_zeros.size();
       for (const auto [index, old_match_size] : old_matches) {
@@ -9490,13 +9505,15 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap() {
 
       // TODO(user): avoid creating the map? this is not visible in profile
       // though since we only do it when a reduction is performed.
-      ++num_blocks;
       absl::flat_hash_map<int, int64_t> coeff_map;
       for (const int var : var_to_coeff_non_zeros) {
         coeff_map[var] = var_to_coeff[var];
       }
+      if (!RemoveCommonPart(coeff_map, block)) continue;
+
+      ++num_blocks;
       nz_reduction += ComputeNonZeroReduction(block.size(), coeff_map.size());
-      RemoveCommonPart(coeff_map, block);
+      context_->UpdateRuleStats("linear matrix: common horizontal rectangle");
       for (const int i : used_sorted_linear) sorted_linear[i] = -1;
     }
   }
@@ -11742,7 +11759,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     if (context_->params().cp_model_use_sat_presolve()) {
       if (!time_limit_->LimitReached()) {
         if (!PresolvePureSatPart()) {
-          (void)context_->NotifyThatModelIsUnsat("UNSAT during SAT presolve");
+          (void)context_->NotifyThatModelIsUnsat(
+              "Proven Infeasible during SAT presolve");
           return InfeasibleStatus();
         }
       }

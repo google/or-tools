@@ -273,6 +273,14 @@ void FeasibilityJumpSolver::ResetCurrentSolution() {
       }
     }
   }
+
+  // Overwrite with the (partial) hint on the first batch.
+  if (num_batches_ == 0 && linear_model_->model_proto().has_solution_hint()) {
+    const auto& hint = linear_model_->model_proto().solution_hint();
+    for (int i = 0; i < hint.vars().size(); ++i) {
+      solution[hint.vars(i)] = hint.values(i);
+    }
+  }
 }
 
 void FeasibilityJumpSolver::PerturbateCurrentSolution() {
@@ -348,7 +356,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // In incomplete mode, query the starting solution for the shared response
     // manager.
-    if (type() == SubSolver::INCOMPLETE) {
+    if (type() == SubSolver::INCOMPLETE) {  // violation_ls.
       // Choose a base solution for this neighborhood.
       const SharedSolutionRepository<int64_t>& repo =
           shared_response_->SolutionsRepository();
@@ -375,7 +383,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         should_recompute_violations = true;
         reset_weights = true;
       }
-    } else {
+    } else {  // feasibility_jump.
       // Restart?  Note that we always "restart" the first time.
       const double dtime = evaluator_->DeterministicTime();
       if (dtime >= dtime_restart_threshold_ &&

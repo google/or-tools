@@ -20,7 +20,7 @@ def main(_):
 
     # Create solver.
     solver = model_builder.ModelSolver(_SOLVER.value)
-    if not solver:
+    if not solver.solver_is_supported():
         print(f'Cannot create solver with name \'{_SOLVER.value}\'')
         return
 

@@ -52,21 +52,21 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar(f"shift_n{n}_d{d}_s{s}")
+                shifts[(n, d, s)] = model.new_bool_var(f"shift_n{n}_d{d}_s{s}")
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in .
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
-            model.AddExactlyOne(shifts[(n, d, s)] for n in all_nurses)
+            model.add_exactly_one(shifts[(n, d, s)] for n in all_nurses)
     # [END exactly_one_nurse]
 
     # Each nurse works at most one shift per day.
     # [START at_most_one_shift]
     for n in all_nurses:
         for d in all_days:
-            model.AddAtMostOne(shifts[(n, d, s)] for s in all_shifts)
+            model.add_at_most_one(shifts[(n, d, s)] for s in all_shifts)
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]
@@ -84,13 +84,12 @@ def main():
         for d in all_days:
             for s in all_shifts:
                 num_shifts_worked += shifts[(n, d, s)]
-        model.Add(min_shifts_per_nurse <= num_shifts_worked)
-        model.Add(num_shifts_worked <= max_shifts_per_nurse)
+        model.add(min_shifts_per_nurse <= num_shifts_worked)
+        model.add(num_shifts_worked <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # [START objective]
-    # pylint: disable=g-complex-comprehension
-    model.Maximize(
+    model.maximize(
         sum(
             shift_requests[n][d][s] * shifts[(n, d, s)]
             for n in all_nurses
@@ -103,7 +102,7 @@ def main():
     # Creates the solver and solve.
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
@@ -113,14 +112,14 @@ def main():
             print("Day", d)
             for n in all_nurses:
                 for s in all_shifts:
-                    if solver.Value(shifts[(n, d, s)]) == 1:
+                    if solver.value(shifts[(n, d, s)]) == 1:
                         if shift_requests[n][d][s] == 1:
                             print("Nurse", n, "works shift", s, "(requested).")
                         else:
                             print("Nurse", n, "works shift", s, "(not requested).")
             print()
         print(
-            f"Number of shift requests met = {solver.ObjectiveValue()}",
+            f"Number of shift requests met = {solver.objective_value}",
             f"(out of {num_nurses * min_shifts_per_nurse})",
         )
     else:
@@ -130,9 +129,9 @@ def main():
     # Statistics.
     # [START statistics]
     print("\nStatistics")
-    print(f"  - conflicts: {solver.NumConflicts()}")
-    print(f"  - branches : {solver.NumBranches()}")
-    print(f"  - wall time: {solver.WallTime()}s")
+    print(f"  - conflicts: {solver.num_conflicts}")
+    print(f"  - branches : {solver.num_branches}")
+    print(f"  - wall time: {solver.wall_time}s")
     # [END statistics]
 
 
