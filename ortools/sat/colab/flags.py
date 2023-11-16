@@ -13,9 +13,11 @@
 
 """Collection of helpers to manage absl flags in colab."""
 
+
 class NotebookStringFlag:
     """Stub for absl flag to be used within a jupyter notebook."""
-    def __init__(self, name:str, value:str, doc:str):
+
+    def __init__(self, name: str, value: str, doc: str):
         self.__name = name
         self.__value = value
         self.__doc__ = doc
@@ -31,13 +33,14 @@ class NotebookStringFlag:
         return self.__name
 
 
-def define_string(name:str, value:str, doc:str):
+def define_string(name: str, value: str, doc: str):
     return NotebookStringFlag(name, value, doc)
 
 
 class NotebookIntFlag:
     """Stub for absl flag to be used within a jupyter notebook."""
-    def __init__(self, name:str, value:int, doc:str):
+
+    def __init__(self, name: str, value: int, doc: str):
         self.__name = name
         self.__value = value
         self.__doc__ = doc
@@ -53,13 +56,14 @@ class NotebookIntFlag:
         return self.__name
 
 
-def define_integer(name:str, value:int, doc:str):
-    return NotebookIntFlag(name, value, doc)    
+def define_integer(name: str, value: int, doc: str):
+    return NotebookIntFlag(name, value, doc)
 
 
 class NotebookFloatFlag:
     """Stub for absl flag to be used within a jupyter notebook."""
-    def __init__(self, name:str, value:float, doc:str):
+
+    def __init__(self, name: str, value: float, doc: str):
         self.__name = name
         self.__value = value
         self.__doc__ = doc
@@ -75,13 +79,14 @@ class NotebookFloatFlag:
         return self.__name
 
 
-def define_float(name:str, value:bool, doc:str):
-    return NotebookFloatFlag(name, value, doc)    
+def define_float(name: str, value: bool, doc: str):
+    return NotebookFloatFlag(name, value, doc)
 
 
 class NotebookBoolFlag:
     """Stub for absl flag to be used within a jupyter notebook."""
-    def __init__(self, name:str, value:bool, doc:str):
+
+    def __init__(self, name: str, value: bool, doc: str):
         self.__name = name
         self.__value = value
         self.__doc__ = doc
@@ -96,6 +101,6 @@ class NotebookBoolFlag:
         """Returns the name of the parameter."""
         return self.__name
 
-def define_bool(name:str, value:bool, doc:str):
-    return NotebookBoolFlag(name, value, doc)    
 
+def define_bool(name: str, value: bool, doc: str):
+    return NotebookBoolFlag(name, value, doc)
