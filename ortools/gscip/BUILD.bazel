@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -24,6 +25,11 @@ proto_library(
 
 cc_proto_library(
     name = "gscip_cc_proto",
+    deps = [":gscip_proto"],
+)
+
+py_proto_library(
+    name = "gscip_proto_py_pb2",
     deps = [":gscip_proto"],
 )
 

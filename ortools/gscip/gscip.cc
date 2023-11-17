@@ -1001,6 +1001,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
     stats->set_total_lp_iterations(SCIPgetNLPIterations(scip_));
     stats->set_primal_simplex_iterations(SCIPgetNPrimalLPIterations(scip_));
     stats->set_dual_simplex_iterations(SCIPgetNDualLPIterations(scip_));
+    stats->set_barrier_iterations(SCIPgetNBarrierLPIterations(scip_));
     stats->set_deterministic_time(SCIPgetDeterministicTime(scip_));
   }
   result.gscip_output.set_status(ConvertStatus(SCIPgetStatus(scip_)));
