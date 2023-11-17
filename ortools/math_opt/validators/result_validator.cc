@@ -13,6 +13,8 @@
 
 #include "ortools/math_opt/validators/result_validator.h"
 
+#include <limits>
+
 #include "absl/status/status.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/status_builder.h"
@@ -30,7 +32,7 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
-// constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 bool HasPrimalFeasibleSolution(const SolutionProto& solution) {
   return solution.has_primal_solution() &&
@@ -112,6 +114,58 @@ absl::Status RequireNoPrimalFeasibleSolution(const SolveResultProto& result) {
 
   return absl::OkStatus();
 }
+
+bool FirstPrimalObjectiveIsStrictlyBetter(const double first_objective,
+                                          const double second_objective,
+                                          const bool maximize) {
+  if (maximize) {
+    return first_objective > second_objective;
+  }
+  return first_objective < second_objective;
+}
+
+bool FirstDualObjectiveIsStrictlyBetter(const double first_objective,
+                                        const double second_objective,
+                                        const bool maximize) {
+  if (maximize) {
+    return second_objective > first_objective;
+  }
+  return second_objective < first_objective;
+}
+
+double GetBestPrimalObjective(
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool maximize) {
+  double best_objective = maximize ? -kInf : kInf;
+  for (int i = 0; i < solutions.size(); ++i) {
+    if (HasPrimalFeasibleSolution(solutions[i])) {
+      const double primal_objective =
+          solutions[i].primal_solution().objective_value();
+      if (FirstPrimalObjectiveIsStrictlyBetter(primal_objective, best_objective,
+                                               maximize)) {
+        best_objective = primal_objective;
+      }
+    }
+  }
+  return best_objective;
+}
+
+double GetBestDualObjective(
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool maximize) {
+  double best_objective = maximize ? kInf : -kInf;
+  for (int i = 0; i < solutions.size(); ++i) {
+    if (HasDualFeasibleSolution(solutions[i])) {
+      const DualSolutionProto& dual_solution = solutions[i].dual_solution();
+      if (dual_solution.has_objective_value() &&
+          FirstDualObjectiveIsStrictlyBetter(dual_solution.objective_value(),
+                                             best_objective, maximize)) {
+        best_objective = dual_solution.objective_value();
+      }
+    }
+  }
+  return best_objective;
+}
 }  // namespace
 
 absl::Status CheckHasPrimalSolution(const SolveResultProto& result) {
@@ -123,28 +177,48 @@ absl::Status CheckHasPrimalSolution(const SolveResultProto& result) {
   return absl::OkStatus();
 }
 
-absl::Status CheckPrimalSolutionAndStatusConsistency(
+absl::Status CheckPrimalSolutionAndTerminationConsistency(
     const TerminationProto& termination,
-    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool maximize) {
+  if (!HasPrimalFeasibleSolution(solutions)) {
+    return absl::OkStatus();
+  }
   if (termination.problem_status().primal_status() !=
-          FEASIBILITY_STATUS_FEASIBLE &&
-      HasPrimalFeasibleSolution(solutions)) {
+      FEASIBILITY_STATUS_FEASIBLE) {
     return absl::InvalidArgumentError(
         "primal feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
         "primal feasible solution is returned.");
+  }
+  const double best_objective = GetBestPrimalObjective(solutions, maximize);
+  const double primal_bound = termination.objective_bounds().primal_bound();
+  if (FirstPrimalObjectiveIsStrictlyBetter(best_objective, primal_bound,
+                                           maximize)) {
+    return util::InvalidArgumentErrorBuilder()
+           << "best primal feasible solution objective = " << best_objective
+           << " is better than primal_bound = " << primal_bound;
   }
   return absl::OkStatus();
 }
 
 absl::Status CheckDualSolutionAndStatusConsistency(
     const TerminationProto& termination,
-    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions) {
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool maximize) {
   if (termination.problem_status().dual_status() !=
           FEASIBILITY_STATUS_FEASIBLE &&
       HasDualFeasibleSolution(solutions)) {
     return absl::InvalidArgumentError(
         "dual feasibility status is not FEASIBILITY_STATUS_FEASIBLE, but "
         "dual feasible solution is returned.");
+  }
+  const double best_objective = GetBestDualObjective(solutions, maximize);
+  const double dual_bound = termination.objective_bounds().dual_bound();
+  if (FirstDualObjectiveIsStrictlyBetter(best_objective, dual_bound,
+                                         maximize)) {
+    return util::InvalidArgumentErrorBuilder()
+           << "best dual feasible solution objective = " << best_objective
+           << " is better than dual_bound = " << dual_bound;
   }
   return absl::OkStatus();
 }
@@ -232,10 +306,10 @@ absl::Status ValidateResult(const SolveResultProto& result,
         << ProtoEnumToString(termination.reason());
   }
 
-  RETURN_IF_ERROR(CheckPrimalSolutionAndStatusConsistency(result.termination(),
-                                                          result.solutions()));
-  RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(result.termination(),
-                                                        result.solutions()));
+  RETURN_IF_ERROR(CheckPrimalSolutionAndTerminationConsistency(
+      result.termination(), result.solutions(), model_summary.maximize));
+  RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(
+      result.termination(), result.solutions(), model_summary.maximize));
 
   if (result.primal_rays_size() > 0 &&
       termination.problem_status().dual_status() ==

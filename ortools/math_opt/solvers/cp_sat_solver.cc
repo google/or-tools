@@ -39,6 +39,7 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -242,7 +243,7 @@ std::vector<std::string> SetSolveParameters(
   }
 
   request.set_solver_specific_parameters(
-      EncodeSatParametersAsString(sat_parameters));
+      EncodeParametersAsString(sat_parameters));
   return warnings;
 }
 
@@ -304,6 +305,9 @@ absl::StatusOr<TerminationProto> GetTermination(
       return absl::InternalError(
           absl::StrCat("cp-sat solver returned MODEL_INVALID, details: ",
                        response.status_str()));
+    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+      return util::InvalidArgumentErrorBuilder()
+             << "invalid cp-sat parameters: " << response.status_str();
     default:
       return absl::InternalError(
           absl::StrCat("unexpected solve status: ", response.status()));
@@ -437,9 +441,8 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   // CP-SAT returns "infeasible" for inverted bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
-  ASSIGN_OR_RETURN(const MPSolutionResponse response,
-                   SatSolveProto(std::move(req), &interrupt_solve,
-                                 logging_callback, solution_callback));
+  const MPSolutionResponse response = SatSolveProto(
+      std::move(req), &interrupt_solve, logging_callback, solution_callback);
   RETURN_IF_ERROR(callback_error) << "error in callback";
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    GetTermination(local_interrupter.IsInterrupted(),

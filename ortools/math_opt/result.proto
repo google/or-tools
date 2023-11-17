@@ -20,6 +20,7 @@ import "google/protobuf/duration.proto";
 import "ortools/pdlp/solve_log.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solution.proto";
+import "ortools/math_opt/solvers/osqp.proto";
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
@@ -79,62 +80,17 @@ message SolveStatsProto {
   // Solver::Solve(). Note: this does not include work done building the model.
   google.protobuf.Duration solve_time = 1;
 
-  // Solver claims the optimal value is equal or better (smaller for
-  // minimization and larger for maximization) than best_primal_bound up to the
-  // solvers primal feasibility tolerance (see warning below):
-  //   * best_primal_bound is trivial (+inf for minimization and -inf
-  //     maximization) when the solver does not claim to have such bound.
-  //   * best_primal_bound can be closer to the optimal value than the objective
-  //     of the best primal feasible solution. In particular, best_primal_bound
-  //     may be non-trivial even when no primal feasible solutions are returned.
-  // Warning: The precise claim is that there exists a primal solution that:
-  //  * is numerically feasible (i.e. feasible up to the solvers tolerance), and
-  //  * has an objective value best_primal_bound.
-  // This numerically feasible solution could be slightly infeasible, in which
-  // case best_primal_bound could be strictly better than the optimal value.
-  // Translating a primal feasibility tolerance to a tolerance on
-  // best_primal_bound is non-trivial, specially when the feasibility tolerance
-  // is relatively large (e.g. when solving with PDLP).
-  double best_primal_bound = 2;
+  // Deprecated in favor of ObjectiveBoundsProto.primal_bound found in
+  // TerminationProto.
+  double best_primal_bound = 2 [deprecated = true];
 
-  // Solver claims the optimal value is equal or worse (larger for
-  // minimization and smaller for maximization) than best_dual_bound up to the
-  // solvers dual feasibility tolerance (see warning below):
-  //   * best_dual_bound is trivial (-inf for minimization and +inf
-  //     maximization) when the solver does not claim to have such bound.
-  //     Similarly to best_primal_bound, this may happen for some solvers even
-  //     when returning optimal. MIP solvers will typically report a bound even
-  //     if it is imprecise.
-  //   * for continuous problems best_dual_bound can be closer to the optimal
-  //     value than the objective of the best dual feasible solution. For MIP
-  //     one of the first non-trivial values for best_dual_bound is often the
-  //     optimal value of the LP relaxation of the MIP.
-  //   * best_dual_bound should be better (smaller for minimization and larger
-  //     for maximization) than best_primal_bound up to the solvers tolerances
-  //     (see warning below).
-  // Warning:
-  //  * For continuous problems, the precise claim is that there exists a
-  //    dual solution that:
-  //      * is numerically feasible (i.e. feasible up to the solvers tolerance),
-  //        and
-  //      * has an objective value best_dual_bound.
-  //    This numerically feasible solution could be slightly infeasible, in
-  //    which case best_dual_bound could be strictly worse than the optimal
-  //    value and best_primal_bound. Similar to the primal case, translating a
-  //    dual feasibility tolerance to a tolerance on best_dual_bound is
-  //    non-trivial, specially when the feasibility tolerance is relatively
-  //    large. However, some solvers provide a corrected version of
-  //    best_dual_bound that can be numerically safer. This corrected version
-  //    can be accessed through the solver's specific output (e.g. for PDLP,
-  //    pdlp_output.convergence_information.corrected_dual_objective).
-  //  * For MIP solvers, best_dual_bound may be associated to a dual solution
-  //    for some continuous relaxation (e.g. LP relaxation), but it is often a
-  //    complex consequence of the solvers execution and is typically more
-  //    imprecise than the bounds reported by LP solvers.
-  double best_dual_bound = 3;
+  // Deprecated in favor of ObjectiveBoundsProto.dual_bound found in
+  // TerminationProto.
+  double best_dual_bound = 3 [deprecated = true];
 
-  // Feasibility statuses for primal and dual problems.
-  ProblemStatusProto problem_status = 4;
+  // The presence of problem_status in SolverStatsProto is deprecated in favor
+  // of the same ProblemStatusProto message found in TerminationProto.
+  ProblemStatusProto problem_status = 4 [deprecated = true];
 
   int64 simplex_iterations = 5;
 
@@ -353,9 +309,9 @@ message SolveResultProto {
     pdlp.ConvergenceInformation convergence_information = 1;
   }
 
-  reserved 8;
   oneof solver_specific_output {
     GScipOutput gscip_output = 7;
+    OsqpOutput osqp_output = 8;
     PdlpOutput pdlp_output = 9;
   }
 

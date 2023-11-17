@@ -195,8 +195,12 @@ TerminationProto OptimalTerminationProto(double finite_primal_objective,
 // Returns a TERMINATION_REASON_INFEASIBLE termination with
 // FEASIBILITY_STATUS_INFEASIBLE primal status and the provided dual status.
 //
-// It sets a trivial primal bound and a trivial dual bound based on the provided
-// dual status.
+// It sets a trivial primal bound and a dual bound based on the provided dual
+// status, which should be FEASIBILITY_STATUS_FEASIBLE or
+// FEASIBILITY_STATUS_UNDETERMINED. If the dual status is
+// FEASIBILITY_STATUS_UNDETERMINED, then the dual bound will be trivial and if
+// the dual status is FEASIBILITY_STATUS_FEASIBLE, then the dual bound will be
+// equal to the primal bound.
 //
 // The convention for infeasible MIPs is that dual_feasibility_status is
 // feasible (There always exist a dual feasible convex relaxation of an
@@ -205,7 +209,9 @@ TerminationProto OptimalTerminationProto(double finite_primal_objective,
 // dual_feasibility_status must not be FEASIBILITY_STATUS_UNSPECIFIED for a
 // valid TerminationProto to be returned.
 TerminationProto InfeasibleTerminationProto(
-    bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
+    bool is_maximize,
+    FeasibilityStatusProto dual_feasibility_status =
+        FEASIBILITY_STATUS_UNDETERMINED,
     absl::string_view detail = {});
 
 // Returns a TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED termination with
@@ -218,7 +224,9 @@ TerminationProto InfeasibleTerminationProto(
 // dual_feasibility_status must be infeasible or undetermined for a valid
 // TerminationProto to be returned.
 TerminationProto InfeasibleOrUnboundedTerminationProto(
-    bool is_maximize, FeasibilityStatusProto dual_feasibility_status,
+    bool is_maximize,
+    FeasibilityStatusProto dual_feasibility_status =
+        FEASIBILITY_STATUS_UNDETERMINED,
     absl::string_view detail = {});
 
 // Returns a TERMINATION_REASON_UNBOUNDED termination with a

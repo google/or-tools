@@ -47,7 +47,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 absl::Status IsEventRegistered(
     const CallbackEventProto event,
     const CallbackRegistrationProto& callback_registration) {
-  // Unfortunatelly the range iterator return ints and not CallbackEventProtos.
+  // Unfortunately the range iterator return ints and not CallbackEventProtos.
   const int num_events = callback_registration.request_registration_size();
   for (int k = 0; k < num_events; ++k) {
     if (callback_registration.request_registration(k) == event) {
@@ -113,7 +113,7 @@ absl::Status ValidateCallbackRegistration(
   RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_node_filter(), model_summary.variables))
       << "invalid CallbackRegistrationProto.mip_node_filter";
-  // Unfortunatelly the range iterator return ints and not CallbackEventProtos.
+  // Unfortunately the range iterator return ints and not CallbackEventProtos.
   const int num_events = callback_registration.request_registration_size();
   bool can_add_lazy_constraints = false;
   bool can_add_cuts = false;

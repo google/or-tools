@@ -11,7 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(
+    default_visibility = [
+        "//ortools/math_opt:__subpackages__",
+    ],
+)
 
 cc_library(
     name = "g_gurobi",
@@ -20,6 +24,10 @@ cc_library(
     ],
     hdrs = [
         "g_gurobi.h",
+    ],
+    visibility = [
+        "//ortools/gurobi:__subpackages__",
+        "//ortools/math_opt:__subpackages__",
     ],
     deps = [
         "//ortools/base",

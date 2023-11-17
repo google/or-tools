@@ -14,19 +14,22 @@
 #include "ortools/math_opt/storage/objective_storage.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
-#include "google/protobuf/map.h"
+#include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/storage/sorted.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 

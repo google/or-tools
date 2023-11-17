@@ -22,7 +22,6 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/linear_expression_data.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
-#include "ortools/math_opt/storage/sorted.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {

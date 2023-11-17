@@ -11,7 +11,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+cc_library(
+    name = "general_constraint_to_mip",
+    srcs = ["general_constraint_to_mip.cc"],
+    hdrs = ["general_constraint_to_mip.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_expr_util",
+        "//ortools/math_opt/cpp:math_opt",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "linear_expr_util",
+    srcs = ["linear_expr_util.cc"],
+    hdrs = ["linear_expr_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/math_opt/cpp:math_opt",
+        "@com_google_absl//absl/algorithm:container",
+    ],
+)
 
 cc_library(
     name = "solution_feasibility_checker",
@@ -32,11 +54,18 @@ cc_library(
 )
 
 cc_library(
-    name = "linear_expr_util",
-    srcs = ["linear_expr_util.cc"],
-    hdrs = ["linear_expr_util.h"],
+    name = "solution_improvement",
+    srcs = ["solution_improvement.cc"],
+    hdrs = ["solution_improvement.h"],
+    visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/cpp:math_opt",
-        "@com_google_absl//absl/algorithm:container",
+        "//ortools/math_opt/validators:model_validator",
+        "//ortools/util:fp_roundtrip_conv",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )

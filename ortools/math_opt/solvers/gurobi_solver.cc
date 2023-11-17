@@ -40,6 +40,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -52,6 +53,7 @@
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -578,13 +580,8 @@ GurobiSolver::SosConstraintData::DependentElements() const {
 }
 
 absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
-    const int gurobi_status, const SolutionClaims solution_claims) {
-  ASSIGN_OR_RETURN(const double best_primal_bound,
-                   GetBestPrimalBound(
-                       /*has_primal_feasible_solution=*/solution_claims
-                           .primal_feasible_solution_exists));
-
-  ASSIGN_OR_RETURN(double best_dual_bound, GetBestDualBound());
+    const int gurobi_status, const SolutionClaims solution_claims,
+    const double best_primal_bound, const double best_dual_bound) {
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   switch (gurobi_status) {
     case GRB_OPTIMAL:
@@ -875,6 +872,8 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
   ASSIGN_OR_RETURN(const int grb_termination,
                    gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   SolutionClaims solution_claims;
+  ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
+                   GetSolutions(model_parameters));
   if (grb_termination == GRB_CUTOFF) {
     // Cutoff will not be triggered by bounds e.g. for LP dual feasible
     // solutions. In particular, if the problem is both primal and dual
@@ -882,23 +881,27 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     //
     // TODO(b/272268188): test that this has no bad interactions with primal +
     // dual infeasible problems.
-    solution_claims = {.primal_feasible_solution_exists = false,
-                       .dual_feasible_solution_exists = true};
-  } else {
-    ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
-                     GetSolutions(model_parameters));
-    solution_claims = solution_and_claims.solution_claims;
-
-    // TODO(b/195295177): Add tests for rays in unbounded MIPs
-    RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
-
-    for (SolutionProto& solution : solution_and_claims.solutions) {
-      *result.add_solutions() = std::move(solution);
-    }
+    solution_and_claims.solutions.clear();
+    solution_and_claims.solution_claims.primal_feasible_solution_exists = false;
+    solution_and_claims.solution_claims.dual_feasible_solution_exists = true;
   }
+  ASSIGN_OR_RETURN(const double best_primal_bound,
+                   GetBestPrimalBound(solution_and_claims.solutions));
+  ASSIGN_OR_RETURN(const double best_dual_bound,
+                   GetBestDualBound(solution_and_claims.solutions));
+  solution_claims = solution_and_claims.solution_claims;
 
-  ASSIGN_OR_RETURN(*result.mutable_termination(),
-                   ConvertTerminationReason(grb_termination, solution_claims));
+  RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
+
+  for (SolutionProto& solution : solution_and_claims.solutions) {
+    *result.add_solutions() = std::move(solution);
+  }
+  // }
+
+  ASSIGN_OR_RETURN(
+      *result.mutable_termination(),
+      ConvertTerminationReason(grb_termination, solution_claims,
+                               best_primal_bound, best_dual_bound));
 
   ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
   return std::move(result);
@@ -1133,6 +1136,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
   }
   std::vector<SolutionProto> solutions;
   solutions.reserve(num_solutions);
+
   for (int i = 0; i < num_solutions; ++i) {
     RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, i));
 
@@ -1167,7 +1171,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
   ASSIGN_OR_RETURN(const int grb_termination,
                    gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   // Set solution claims
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
+  ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
   // Note: here the existence of a dual solution refers to a dual solution to
   // some convex relaxation of the MIP. This convex relaxation can likely be
   // interpreted as an LP between the LP relaxation of the MIP and the convex
@@ -1294,30 +1298,48 @@ absl::StatusOr<double> GurobiSolver::GetPrimalSolutionQuality() const {
 }
 
 absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
-    const bool has_primal_feasible_solution) {
+    const std::vector<SolutionProto>& solutions) const {
+  // We avoid using GRB_DBL_ATTR_OBJVAL because it may be incorrect on early
+  // termination and for infeasible solutions (as of Gurobi 9.0.1).
+  // Note that for (primal) unbounded problems the primal_bound is correctly
+  // filled by ConvertTerminationReason() possibly overriding the value
+  // returned by GetBestPrimalBound().
   ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
-  // We need has_primal_feasible_solution because GRB_DBL_ATTR_OBJVAL may be
-  // available and finite for primal infeasible solutions.
-  if (has_primal_feasible_solution &&
-      gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJVAL)) {
-    // TODO(b/290359402): Discuss if this should be removed. Unlike the dual
-    // case below, it appears infesible models do not return GRB_DBL_ATTR_OBJVAL
-    // equal to GRB_INFINITY (GRB_DBL_ATTR_OBJVAL is just unavailable). Hence,
-    // this may not be needed and may not be consistent (e.g. we should explore
-    // whether GRB_DBL_ATTR_OBJVAL = GRB_INFINITY may happen for a primal
-    // feasible solution, in which the conversion of +/-GRB_INFINITY to +/-kInf
-    // would not be consistent). Note that unlike the dual case removing this
-    // does not break any test.
-    ASSIGN_OR_RETURN(const double obj_val,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
-    if (std::abs(obj_val) < GRB_INFINITY) {
-      return obj_val;
+  double best_objective_value = is_maximize ? -kInf : kInf;
+  for (const SolutionProto& solution : solutions) {
+    if (solution.has_primal_solution() &&
+        solution.primal_solution().feasibility_status() ==
+            SOLUTION_STATUS_FEASIBLE) {
+      const double sol_val = solution.primal_solution().objective_value();
+      best_objective_value = is_maximize
+                                 ? std::max(best_objective_value, sol_val)
+                                 : std::min(best_objective_value, sol_val);
     }
   }
-  return is_maximize ? -kInf : kInf;
+  return best_objective_value;
 }
 
-absl::StatusOr<double> GurobiSolver::GetBestDualBound() {
+absl::StatusOr<double> GurobiSolver::GetBestDualBound(
+    const std::vector<SolutionProto>& solutions) const {
+  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  // GetGurobiBestDualBound() returns the correct bound for problems without
+  // dual solutions (e.g. MIP).
+  ASSIGN_OR_RETURN(double best_dual_bound, GetGurobiBestDualBound());
+  // However, GetGurobiBestDualBound() may be incorrect for QP problems.
+  for (const SolutionProto& solution : solutions) {
+    if (solution.has_dual_solution() &&
+        solution.dual_solution().feasibility_status() ==
+            SOLUTION_STATUS_FEASIBLE &&
+        solution.dual_solution().has_objective_value()) {
+      const double sol_val = solution.dual_solution().objective_value();
+      best_dual_bound = is_maximize ? std::min(best_dual_bound, sol_val)
+                                    : std::max(best_dual_bound, sol_val);
+    }
+  }
+  return best_dual_bound;
+}
+
+absl::StatusOr<double> GurobiSolver::GetGurobiBestDualBound() const {
   // As of v9.0.2, on multi objective models Gurobi incorrectly reports that
   // ObjBound is available. We work around this by adding a check if we are in
   // multi objective mode.
@@ -1444,7 +1466,7 @@ GurobiSolver::GetLpDualSolutionIfAvailable(
   // Note: GRB_DBL_ATTR_OBJBOUND can sometimes provide the objective value of a
   // sub-optimal dual feasible solution.
   // Here we only use it to possibly update dual_feasible_solution_exists.
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
+  ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
   if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
     dual_feasible_solution_exists = true;
   } else if (grb_termination == GRB_OPTIMAL) {
@@ -1618,8 +1640,9 @@ absl::Status GurobiSolver::AddMultiObjectives(
       GRB_INT_ATTR_MODELSENSE, is_maximize ? GRB_MAXIMIZE : GRB_MINIMIZE));
   RETURN_IF_ERROR(AddNewMultiObjective(
       primary_objective, /*objective_id=*/std::nullopt, is_maximize));
-  for (const auto& [id, objective] : auxiliary_objectives) {
-    RETURN_IF_ERROR(AddNewMultiObjective(objective, id, is_maximize));
+  for (const int64_t id : SortedMapKeys(auxiliary_objectives)) {
+    RETURN_IF_ERROR(
+        AddNewMultiObjective(auxiliary_objectives.at(id), id, is_maximize));
   }
   return absl::OkStatus();
 }
@@ -2797,6 +2820,38 @@ bool GurobiSolver::is_multi_objective_mode() const {
   return !multi_objectives_map_.empty();
 }
 
+absl::Status GurobiSolver::SetMultiObjectiveTolerances(
+    const ModelSolveParametersProto& model_parameters) {
+  const auto set_tolerances =
+      [&](const GurobiMultiObjectiveIndex index,
+          const ObjectiveParametersProto& objective_parameters)
+      -> absl::Status {
+    RETURN_IF_ERROR(gurobi_->SetIntParam("ObjNumber", index));
+    if (objective_parameters.has_objective_degradation_absolute_tolerance()) {
+      RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
+          "ObjNAbsTol",
+          objective_parameters.objective_degradation_absolute_tolerance()));
+    }
+    if (objective_parameters.has_objective_degradation_relative_tolerance()) {
+      RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
+          "ObjNRelTol",
+          objective_parameters.objective_degradation_relative_tolerance()));
+    }
+    return absl::OkStatus();
+  };
+  if (model_parameters.has_primary_objective_parameters()) {
+    RETURN_IF_ERROR(
+        set_tolerances(multi_objectives_map_.at(std::nullopt),
+                       model_parameters.primary_objective_parameters()));
+  }
+  for (const auto& [id, objective_parameters] :
+       model_parameters.auxiliary_objective_parameters()) {
+    RETURN_IF_ERROR(
+        set_tolerances(multi_objectives_map_.at(id), objective_parameters));
+  }
+  return absl::OkStatus();
+}
+
 absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
@@ -2874,6 +2929,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   RETURN_IF_ERROR(
       UpdateInt32ListAttribute(model_parameters.branching_priorities(),
                                GRB_INT_ATTR_BRANCHPRIORITY, variables_map_));
+  RETURN_IF_ERROR(SetMultiObjectiveTolerances(model_parameters));
 
   // Here we register the callback when we either have a user callback or a
   // local interrupter. The rationale for doing so when we have only an

@@ -35,12 +35,14 @@ absl::Status ValidateResult(const SolveResultProto& result,
 
 // Returns absl::Ok only if a primal feasible solution is available.
 absl::Status CheckHasPrimalSolution(const SolveResultProto& result);
-absl::Status CheckPrimalSolutionAndStatusConsistency(
+absl::Status CheckPrimalSolutionAndTerminationConsistency(
     const TerminationProto& termination,
-    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions);
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    bool maximize);
 absl::Status CheckDualSolutionAndStatusConsistency(
     const TerminationProto& termination,
-    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions);
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    bool maximize);
 
 }  // namespace math_opt
 }  // namespace operations_research

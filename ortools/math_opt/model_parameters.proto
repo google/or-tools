@@ -58,6 +58,39 @@ message SolutionHintProto {
   SparseDoubleVectorProto dual_values = 2;
 }
 
+// Parameters for an individual objective in a multi-objective model.
+message ObjectiveParametersProto {
+  // Optional objective degradation absolute tolerance. For a hierarchical
+  // multi-objective solver, each objective fⁱ is processed in priority order:
+  // the solver determines the optimal objective value Γⁱ, if it exists, subject
+  // to all constraints in the model and the additional constraints that
+  // fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+  // considered to be "within tolerances" for this objective fᵏ if
+  // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_absolute_tolerance`.
+  //
+  // See also `objective_degradation_relative_tolerance`; if both parameters are
+  // set for a given objective, the solver need only satisfy one to be
+  // considered "within tolerances".
+  //
+  //  If set, must be nonnegative.
+  optional double objective_degradation_absolute_tolerance = 7;
+
+  // Optional objective degradation relative tolerance. For a hierarchical
+  // multi-objective solver, each objective fⁱ is processed in priority order:
+  // the solver determines the optimal objective value Γⁱ, if it exists, subject
+  // to all constraints in the model and the additional constraints that
+  // fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+  // considered to be "within tolerances" for this objective fᵏ if
+  // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_relative_tolerance` * |Γᵏ|.
+  //
+  // See also `objective_degradation_absolute_tolerance`; if both parameters are
+  // set for a given objective, the solver need only satisfy one to be
+  // considered "within tolerances".
+  //
+  //  If set, must be nonnegative.
+  optional double objective_degradation_relative_tolerance = 8;
+}
+
 // TODO(b/183628247): follow naming convention in fields below.
 // Parameters to control a single solve that are specific to the input model
 // (see SolveParametersProto for model independent parameters).
@@ -103,4 +136,14 @@ message ModelSolveParametersProto {
   //  * branching_priorities.values must be finite.
   //  * branching_priorities.ids must be elements of VariablesProto.ids.
   SparseInt32VectorProto branching_priorities = 6;
+
+  // Optional parameters for the primary objective in a multi-objective model.
+  ObjectiveParametersProto primary_objective_parameters = 7;
+
+  // Optional parameters for the auxiliary objectives in a multi-objective
+  // model.
+  //
+  // Requirements:
+  //  * Map keys must also be map keys of ModelProto.auxiliary_objectives.
+  map<int64, ObjectiveParametersProto> auxiliary_objective_parameters = 8;
 }

@@ -13,7 +13,9 @@
 
 # External users should depend only on ":math_opt" and include
 # "math_opt.h". Hence other libraries are private.
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/constraints:__subpackages__",
+])
 
 cc_library(
     name = "math_opt",
@@ -52,12 +54,15 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "//ortools/math_opt/validators:ids_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
@@ -112,6 +117,21 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "objective",
+    srcs = ["objective.cc"],
+    hdrs = ["objective.h"],
+    deps = [
+        ":key_types",
+        ":variable_and_expressions",
+        "//ortools/base:intops",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
@@ -175,10 +195,13 @@ cc_library(
         "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:status_macros",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
@@ -400,6 +423,7 @@ cc_library(
     name = "statistics",
     srcs = ["statistics.cc"],
     hdrs = ["statistics.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":model",
         "//ortools/math_opt/storage:model_storage",
@@ -416,21 +440,6 @@ cc_library(
     name = "update_result",
     hdrs = ["update_result.h"],
     deps = ["//ortools/math_opt:model_update_cc_proto"],
-)
-
-cc_library(
-    name = "objective",
-    srcs = ["objective.cc"],
-    hdrs = ["objective.h"],
-    deps = [
-        ":key_types",
-        ":variable_and_expressions",
-        "//ortools/base:intops",
-        "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:model_storage_types",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-    ],
 )
 
 cc_library(

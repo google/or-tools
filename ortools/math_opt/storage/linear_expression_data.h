@@ -14,12 +14,9 @@
 #ifndef OR_TOOLS_MATH_OPT_STORAGE_LINEAR_EXPRESSION_DATA_H_
 #define OR_TOOLS_MATH_OPT_STORAGE_LINEAR_EXPRESSION_DATA_H_
 
-#include <cstdint>
-
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/storage/sorted.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {

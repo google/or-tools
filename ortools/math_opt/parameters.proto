@@ -22,6 +22,7 @@ import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solvers/glpk.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
+import "ortools/math_opt/solvers/osqp.proto";
 import "ortools/sat/sat_parameters.proto";
 
 option java_package = "com.google.ortools.mathopt";
@@ -73,7 +74,11 @@ enum SolverTypeProto {
   // for details.
   SOLVER_TYPE_GLPK = 6;
 
-  reserved 7;
+  // The Operator Splitting Quadratic Program (OSQP) solver (third party).
+  //
+  // Supports continuous problems with linear constraints and linear or convex
+  // quadratic objectives. Uses a first-order method.
+  SOLVER_TYPE_OSQP = 7;
 
   // The Embedded Conic Solver (ECOS) (third party).
   //
@@ -89,6 +94,12 @@ enum SolverTypeProto {
   //
   // Supports LP and MIP problems (convex QPs are unimplemented).
   SOLVER_TYPE_HIGHS = 10;
+
+  // MathOpt's reference implementation of a MIP solver.
+  //
+  // Slow/not recommended for production. Not an LP solver (no dual information
+  // returned).
+  SOLVER_TYPE_SANTORINI = 11;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -337,7 +348,15 @@ message SolveParametersProto {
 
   reserved 16;
 
-  reserved 19;
+  // Users should prefer the generic MathOpt parameters over OSQP-level
+  // parameters, when available:
+  //   * Prefer SolveParametersProto.enable_output to OsqpSettingsProto.verbose.
+  //   * Prefer SolveParametersProto.time_limit to OsqpSettingsProto.time_limit.
+  //   * Prefer SolveParametersProto.iteration_limit to
+  //     OsqpSettingsProto.iteration_limit.
+  //   * If a less granular configuration is acceptable, prefer
+  //     SolveParametersProto.scaling to OsqpSettingsProto.
+  OsqpSettingsProto osqp = 19;
 
   GlpkParametersProto glpk = 26;
 

@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Some tools to interact with MathOpt.
+
 package(default_visibility = ["//visibility:private"])
 
 cc_binary(
@@ -25,7 +27,6 @@ cc_binary(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/cpp:statistics",
         "//ortools/math_opt/io:names_removal",
-        "//ortools/math_opt/io:proto_converter",
         "//ortools/math_opt/labs:solution_feasibility_checker",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
@@ -34,11 +35,11 @@ cc_binary(
         "//ortools/math_opt/solvers:gurobi_solver",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -54,7 +55,6 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
 )

@@ -17,6 +17,7 @@ cc_library(
     name = "math_opt_proto_utils",
     srcs = ["math_opt_proto_utils.cc"],
     hdrs = ["math_opt_proto_utils.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":sparse_vector_view",
         "//ortools/base",
@@ -150,6 +151,7 @@ cc_library(
 
 cc_library(
     name = "non_streamable_solver_init_arguments",
+    srcs = ["non_streamable_solver_init_arguments.cc"],
     hdrs = ["non_streamable_solver_init_arguments.h"],
     deps = ["//ortools/math_opt:parameters_cc_proto"],
 )
@@ -229,5 +231,16 @@ cc_library(
         "//ortools/math_opt:result_cc_proto",
         "//ortools/util:fp_roundtrip_conv",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "sorted",
+    hdrs = ["sorted.h"],
+    deps = [
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_protobuf//:protobuf",
     ],
 )

@@ -1,0 +1,106 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+// This proto mirrors the fields of OsqpSettings in
+// osqp_cpp/include/osqp++.h, which in turn (nearly) mirrors the
+// fields of OSQPSettings in osqp/include/types.h. See also
+// https://osqp.org/docs/interfaces/solver_settings.html for documentation and
+// default values. This proto must be kept in sync with logic in osqp_solver.cc.
+// LINT.IfChange
+message OsqpSettingsProto {
+  // ADMM rho step. Must be > 0.
+  optional double rho = 1;
+
+  // ADMM sigma step. Must be > 0.
+  optional double sigma = 2;
+
+  // Number of heuristic scaling iterations. Must be >= 0.
+  optional int64 scaling = 3;
+
+  // Is rho step size adaptive?
+  optional bool adaptive_rho = 4;
+
+  // Number of iterations between rho adaptations; if 0, then automatically
+  // selected. Must be >= 0.
+  optional int64 adaptive_rho_interval = 5;
+
+  // Tolerance X for adapting rho: The new value must be X times larger or 1/X
+  // times smaller than the current value. Must be >= 1.
+  optional double adaptive_rho_tolerance = 6;
+
+  // In automatic mode (adaptive_rho_interval = 0), what fraction of setup time
+  // is spent on selecting rho. Must be >= 0.
+  optional double adaptive_rho_fraction = 7;
+
+  // Maximum number of iterations. Must be > 0.
+  optional int64 max_iter = 8;
+
+  // Absolute error tolerance for convergence. Must be >= 0.
+  optional double eps_abs = 9;
+
+  // Relative error tolerance for convergence. Must be >= 0.
+  optional double eps_rel = 10;
+
+  // Absolute error tolerance for primal infeasibility. Must be >= 0.
+  optional double eps_prim_inf = 11;
+
+  // Relative error tolerance for dual infeasibility. Must be >= 0.
+  optional double eps_dual_inf = 12;
+
+  // ADMM overrelaxation parameter. Must be > 0 and < 2.
+  optional double alpha = 13;
+
+  // Polishing regularization parameter. Must be > 0.
+  optional double delta = 14;
+
+  // Perform polishing?
+  optional bool polish = 15;
+
+  // Number of refinement iterations in polishing. Must be > 0.
+  optional int64 polish_refine_iter = 16;
+
+  // Print solver output?
+  optional bool verbose = 17;
+
+  // Use scaled termination criteria?
+  optional bool scaled_termination = 18;
+
+  // Interval for checking termination. If 0 or unset, termination checking is
+  // disabled. Must be >= 0.
+  optional int64 check_termination = 19;
+
+  // Perform warm starting?.
+  optional bool warm_start = 20;
+
+  // Run time limit in seconds. If 0 or unset, then no time limit. Must be >= 0.
+  optional double time_limit = 21;
+}
+// LINT.ThenChange(osqp_solver.cc:merge_from_proto,
+// osqp_solver.cc:must_initialize, osqp_solver.cc:solve,
+// osqp_solver.cc:try_overwrite_with_current_values,
+// //depot/osqp_cpp/include/osqp++.h:osqp_settings,
+// //depot/osqp_cpp/src/osqp++.cc:settings_translation)
+
+// Solver-specific output for OSQP.
+message OsqpOutput {
+  // Field is true if the underlying OSQP++ object was initialized for the
+  // current solve, and false if the object was instead used incrementally. In
+  // more detail, this tracks: was osqp::OsqpSolver::Init called on the
+  // operations_research::math_opt::OsqpSolver::solver_ field at any point
+  // during the solve process?
+  bool initialized_underlying_solver = 1;
+}
