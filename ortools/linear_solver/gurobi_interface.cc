@@ -47,6 +47,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -65,6 +66,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
+#include "ortools/gurobi/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
@@ -1221,6 +1223,12 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
       GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRECRUSH, gurobi_precrush));
   CheckedGurobiCall(GRBsetintparam(
       GRBgetenv(model_), GRB_INT_PAR_LAZYCONSTRAINTS, gurobi_lazy_constraint));
+
+  // Logs all parameters not at default values in the model environment.
+  if (!quiet()) {
+    std::cout << GurobiParamInfoForLogging(GRBgetenv(model_),
+                                           /*one_liner_output=*/true);
+  }
 
   // Solve
   timer.Restart();

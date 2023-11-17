@@ -27,14 +27,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/sat_solver_utils.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -51,19 +50,6 @@
 namespace operations_research {
 
 namespace {
-
-#if defined(PROTOBUF_INTERNAL_IMPL)
-using google::protobuf::Message;
-#else
-using google::protobuf::Message;
-#endif
-
-// Proto-lite disables some features of protos and messages inherit from
-// MessageLite directly instead of inheriting from Message (which is itself a
-// specialization of MessageLite).
-// See https://protobuf.dev/reference/cpp/cpp-generated/#message for details.
-constexpr bool kProtoLiteSatParameters =
-    !std::is_base_of<Message, sat::SatParameters>::value;
 
 MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
                                                 bool has_objective) {
@@ -116,10 +102,9 @@ MPSolutionResponse InfeasibleResponse(SolverLogger& logger,
   return response;
 }
 
-MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
+MPSolutionResponse InvalidModelResponse(SolverLogger& logger,
                                         std::string message) {
-  SOLVER_LOG(&logger, "Invalid model/parameters in sat_solve_proto.\n",
-             message);
+  SOLVER_LOG(&logger, "Invalid model in sat_solve_proto.\n", message);
 
   // This is needed for our benchmark scripts.
   if (logger.LoggingIsEnabled()) {
@@ -134,35 +119,32 @@ MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
   return response;
 }
 
+MPSolutionResponse InvalidParametersResponse(SolverLogger& logger,
+                                             std::string message) {
+  SOLVER_LOG(&logger, "Invalid parameters in sat_solve_proto.\n", message);
+
+  // This is needed for our benchmark scripts.
+  if (logger.LoggingIsEnabled()) {
+    sat::CpSolverResponse cp_response;
+    cp_response.set_status(sat::CpSolverStatus::MODEL_INVALID);
+    SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
+  }
+
+  MPSolutionResponse response;
+  response.set_status(
+      MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+  response.set_status_str(message);
+  return response;
+}
+
 }  // namespace
 
-absl::StatusOr<MPSolutionResponse> SatSolveProto(
+MPSolutionResponse SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve,
     std::function<void(const std::string&)> logging_callback,
     std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
   params.set_log_search_progress(request.enable_internal_solver_output());
-  // Set it now so that it can be overwritten by the solver specific parameters.
-  if (request.has_solver_specific_parameters()) {
-    // See EncodeSatParametersAsString() documentation.
-    if (kProtoLiteSatParameters) {
-      if (!params.MergeFromString(request.solver_specific_parameters())) {
-        return absl::InvalidArgumentError(
-            "solver_specific_parameters is not a valid binary stream of the "
-            "SatParameters proto");
-      }
-    } else {
-      if (!ProtobufTextFormatMergeFromString(
-              request.solver_specific_parameters(), &params)) {
-        return absl::InvalidArgumentError(
-            "solver_specific_parameters is not a valid textual representation "
-            "of the SatParameters proto");
-      }
-    }
-  }
-  if (request.has_solver_time_limit_seconds()) {
-    params.set_max_time_in_seconds(request.solver_time_limit_seconds());
-  }
 
   // TODO(user): We do not support all the parameters here. In particular the
   // logs before the solver is called will not be appended to the response. Fix
@@ -176,6 +158,46 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   }
   logger.EnableLogging(params.log_search_progress());
   logger.SetLogToStdOut(params.log_to_stdout());
+
+  // Set it now so that it can be overwritten by the solver specific parameters.
+  if (request.has_solver_specific_parameters()) {
+    // See EncodeSatParametersAsString() documentation.
+    if constexpr (!std::is_base_of<Message, sat::SatParameters>::value) {
+      if (!params.MergeFromString(request.solver_specific_parameters())) {
+        return InvalidParametersResponse(
+            logger,
+            "solver_specific_parameters is not a valid binary stream of the "
+            "SatParameters proto");
+      }
+    } else {
+      if (!ProtobufTextFormatMergeFromString(
+              request.solver_specific_parameters(), &params)) {
+        return InvalidParametersResponse(
+            logger,
+            "solver_specific_parameters is not a valid textual representation "
+            "of the SatParameters proto");
+      }
+    }
+  }
+
+  // Validate parameters.
+  {
+    const std::string error = sat::ValidateParameters(params);
+    if (!error.empty()) {
+      return InvalidParametersResponse(
+          logger, absl::StrCat("Invalid CP-SAT parameters: ", error));
+    }
+  }
+
+  // Reconfigure the logger in case the solver_specific_parameters overwrite its
+  // configuration. Note that the invalid parameter message will be logged
+  // before that though according to request.enable_internal_solver_output().
+  logger.EnableLogging(params.log_search_progress());
+  logger.SetLogToStdOut(params.log_to_stdout());
+
+  if (request.has_solver_time_limit_seconds()) {
+    params.set_max_time_in_seconds(request.solver_time_limit_seconds());
+  }
 
   // Model validation and delta handling.
   MPSolutionResponse response;
@@ -200,15 +222,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   MPModelProto* const mp_model = request.mutable_model();
   if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
                                                    &logger)) {
-    return ModelInvalidResponse(logger, "Extra CP-SAT validation failed.");
-  }
-
-  {
-    const std::string error = sat::ValidateParameters(params);
-    if (!error.empty()) {
-      return ModelInvalidResponse(
-          logger, absl::StrCat("Invalid CP-SAT parameters: ", error));
-    }
+    return InvalidModelResponse(logger, "Extra CP-SAT validation failed.");
   }
 
   // This is good to do before any presolve.
@@ -236,7 +250,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
         return InfeasibleResponse(
             logger, "Problem proven infeasible during MIP presolve");
       case glop::ProblemStatus::INVALID_PROBLEM:
-        return ModelInvalidResponse(
+        return InvalidModelResponse(
             logger, "Problem detected invalid during MIP presolve");
       default:
         // TODO(user): We put the INFEASIBLE_OR_UNBOUNBED case here since there
@@ -293,7 +307,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
       }
     }
     if (!all_integer) {
-      return ModelInvalidResponse(
+      return InvalidModelResponse(
           logger,
           "The model contains non-integer variables but the parameter "
           "'only_solve_ip' was set. Change this parameter if you "
@@ -305,7 +319,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   sat::CpModelProto cp_model;
   if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model,
                                          &logger)) {
-    return ModelInvalidResponse(logger,
+    return InvalidModelResponse(logger,
                                 "Failed to convert model into CP-SAT model");
   }
   DCHECK_EQ(cp_model.variables().size(), var_scaling.size());
@@ -431,19 +445,6 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
               }
             });
   return response;
-}
-
-std::string EncodeSatParametersAsString(const sat::SatParameters& parameters) {
-  if (kProtoLiteSatParameters) {
-    // Here we use SerializeToString() instead of SerializeAsString() since the
-    // later ignores errors and returns an empty string instead (which can be a
-    // valid value when no fields are set).
-    std::string bytes;
-    CHECK(parameters.SerializeToString(&bytes));
-    return bytes;
-  }
-
-  return ProtobufShortDebugString(parameters);
 }
 
 std::string SatSolverVersion() { return sat::CpSatSolverVersion(); }

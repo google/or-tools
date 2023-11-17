@@ -11,26 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GLOP_PROTO_SOLVER_H_
+#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GLOP_PROTO_SOLVER_H_
 
 #include <atomic>
 #include <functional>
 #include <string>
 
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/logging.h"
 
 namespace operations_research {
 
-// Solve the input MIP model with the SAT solver.
+// Solve the input LP model with the GLOP solver.
 //
 // If possible, std::move the request into this function call to avoid a copy.
 //
 // If you need to change the solver parameters, please use the
-// EncodeSatParametersAsString() function below to set the request's
-// solver_specific_parameters field.
+// EncodeParametersAsString() function to set the solver_specific_parameters
+// field.
 //
 // The optional interrupt_solve can be used to interrupt the solve early. It
 // must only be set to true, never reset to false. It is also used internally by
@@ -38,25 +37,19 @@ namespace operations_research {
 // consequence the caller should ignore the stored value and should not use the
 // same atomic for different concurrent calls.
 //
-// The optional logging_callback will be called when the SAT parameter
+// The optional logging_callback will be called when the GLOP parameter
 // log_search_progress is set to true. Passing a callback will disable the
-// default logging to INFO. Note though that by default the SAT parameter
+// default logging to INFO. Note though that by default the GLOP parameter
 // log_to_stdout is true so even with a callback, the logs will appear on stdout
 // too unless log_to_stdout is set to false. The enable_internal_solver_output
-// in the request will act as the SAT parameter log_search_progress.
-//
-// The optional solution_callback will be called on each intermediate solution
-// found by the solver. The solver may call solution_callback from multiple
-// threads, but it will ensure that at most one thread executes
-// solution_callback at a time.
-MPSolutionResponse SatSolveProto(
+// in the request will act as the GLOP parameter log_search_progress.
+MPSolutionResponse GlopSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
-    std::function<void(const std::string&)> logging_callback = nullptr,
-    std::function<void(const MPSolution&)> solution_callback = nullptr);
+    std::function<void(const std::string&)> logging_callback = nullptr);
 
-// Returns a string that describes the version of the CP-SAT solver.
-std::string SatSolverVersion();
+// Returns a string that describes the version of the GLOP solver.
+std::string GlopSolverVersion();
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GLOP_PROTO_SOLVER_H_

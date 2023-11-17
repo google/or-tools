@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """MIP example that uses a variable array."""
+
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -145,7 +146,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   result_status_ = GlopToMPSolverResultStatus(status);
   objective_value_ = lp_solver_.GetObjectiveValue();
 
-  const size_t num_vars = solver_->variables_.size();
+  const int num_vars = solver_->variables_.size();
   column_status_.resize(num_vars, MPSolver::FREE);
   for (int var_id = 0; var_id < num_vars; ++var_id) {
     MPVariable* const var = solver_->variables_[var_id];
@@ -164,7 +165,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
     column_status_.at(var_id) = GlopToMPSolverVariableStatus(variable_status);
   }
 
-  const size_t num_constraints = solver_->constraints_.size();
+  const int num_constraints = solver_->constraints_.size();
   row_status_.resize(num_constraints, MPSolver::FREE);
   for (int ct_id = 0; ct_id < num_constraints; ++ct_id) {
     MPConstraint* const ct = solver_->constraints_[ct_id];

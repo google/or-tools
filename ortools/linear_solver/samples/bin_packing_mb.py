@@ -25,7 +25,7 @@ from ortools.linear_solver.python import model_builder
 
 # [START program_part1]
 # [START data_model]
-def create_data_model():
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create the data for the example."""
 
     items_str = """
