@@ -204,6 +204,16 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   // Make an internal copy of the problem for the preprocessing.
   current_linear_program_.PopulateFromLinearProgram(lp);
 
+  // Remove small entries even if presolve is off. This is mainly here to
+  // avoid floating point underflow. Keeping them can break many invariant like
+  // a * b == 0 iff a == 0 or b == 0.
+  //
+  // Note that our presolve/scaling can potentially create smaller entries than
+  // this, but the scale should stay reasonable.
+  //
+  // TODO(user): If speed matter, we could do that as we copy the program.
+  current_linear_program_.RemoveNearZeroEntries(parameters_.drop_magnitude());
+
   // Preprocess.
   MainLpPreprocessor preprocessor(&parameters_);
   preprocessor.SetLogger(&logger_);
