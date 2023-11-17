@@ -14,13 +14,14 @@
 #if defined(__GNUC__) && defined(__linux__)
 #include <unistd.h>
 #endif
-#if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
+#if defined(__APPLE__) && defined(__GNUC__)  // MacOS
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #elif defined(__FreeBSD__)  // FreeBSD
 #include <sys/resource.h>
 #include <sys/time.h>
-#elif defined(_MSC_VER)  // WINDOWS
+// Windows
+#elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 // clang-format off
 #include <windows.h>
 #include <psapi.h>
@@ -34,7 +35,7 @@
 namespace operations_research {
 // GetProcessMemoryUsage
 
-#if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
+#if defined(__APPLE__) && defined(__GNUC__)  // MacOS
 int64_t GetProcessMemoryUsage() {
   task_t task = MACH_PORT_NULL;
   struct task_basic_info t_info;
@@ -48,7 +49,7 @@ int64_t GetProcessMemoryUsage() {
   return resident_memory;
 }
 #elif defined(__GNUC__) && !defined(__FreeBSD__) && \
-    !defined(__EMSCRIPTEN__)  // LINUX
+    !defined(__EMSCRIPTEN__) && !defined(_WIN32)  // Linux
 int64_t GetProcessMemoryUsage() {
   unsigned size = 0;
   char buf[30];
@@ -60,14 +61,15 @@ int64_t GetProcessMemoryUsage() {
   fclose(pf);
   return int64_t{1024} * size;
 }
-#elif defined(__FreeBSD__)    // FreeBSD
+#elif defined(__FreeBSD__)                        // FreeBSD
 int64_t GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
   getrusage(who, &rusage);
   return (int64_t)(int64_t{1024} * rusage.ru_maxrss);
 }
-#elif defined(_MSC_VER)       // WINDOWS
+//                               Windows
+#elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 int64_t GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
@@ -82,7 +84,7 @@ int64_t GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else                         // Unknown, returning 0.
+#else  // Unknown, returning 0.
 int64_t GetProcessMemoryUsage() { return 0; }
 #endif
 

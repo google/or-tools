@@ -23,6 +23,8 @@
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN  // disables several conflicting macros
 #include <windows.h>
+#elif defined(__MINGW32__) || defined(__MINGW64__)
+#include <windows.h>
 #elif defined(__GNUC__)
 #include <dlfcn.h>
 #endif
@@ -36,7 +38,7 @@ class DynamicLibrary {
       return;
     }
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     FreeLibrary(static_cast<HINSTANCE>(library_handle_));
 #elif defined(__GNUC__)
     dlclose(library_handle_);
@@ -45,7 +47,7 @@ class DynamicLibrary {
 
   bool TryToLoad(const std::string& library_name) {
     library_name_ = std::string(library_name);
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     library_handle_ = static_cast<void*>(LoadLibraryA(library_name.c_str()));
 #elif defined(__GNUC__)
     library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
@@ -57,15 +59,15 @@ class DynamicLibrary {
 
   template <typename T>
   std::function<T> GetFunction(const char* function_name) {
-    const void* function_address =
-#if defined(_MSC_VER)
-        static_cast<void*>(GetProcAddress(
-            static_cast<HINSTANCE>(library_handle_), function_name));
-#else
-        dlsym(library_handle_, function_name);
-#endif
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+    // On Windows, avoid casting to void*: not supported by MinGW.
+    FARPROC function_address =
+        GetProcAddress(static_cast<HINSTANCE>(library_handle_), function_name);
+#else   // Not Windows.
+    const void* function_address = dlsym(library_handle_, function_name);
+#endif  // MinGW.
 
-    CHECK(function_address != nullptr)
+    CHECK(function_address)
         << "Error: could not find function " << std::string(function_name)
         << " in " << library_name_;
 
@@ -97,11 +99,21 @@ class DynamicLibrary {
 
   template <typename Ret, typename... Args>
   struct TypeParser<Ret(Args...)> {
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+    // Windows: take a FARPROC as argument.
+    static std::function<Ret(Args...)> CreateFunction(
+        const FARPROC function_address) {
+      return std::function<Ret(Args...)>(
+          reinterpret_cast<Ret (*)(Args...)>(function_address));
+    }
+#else
+    // Not Windows: take a void* as argument.
     static std::function<Ret(Args...)> CreateFunction(
         const void* function_address) {
       return std::function<Ret(Args...)>(reinterpret_cast<Ret (*)(Args...)>(
           const_cast<void*>(function_address)));
     }
+#endif
   };
 };
 
