@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_binary(
     name = "basic_example",
@@ -46,6 +46,20 @@ cc_binary(
 cc_binary(
     name = "linear_programming",
     srcs = ["linear_programming.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "advanced_linear_programming",
+    srcs = ["advanced_linear_programming.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -174,16 +188,15 @@ cc_binary(
 )
 
 cc_binary(
-    name = "advanced_linear_programming",
-    srcs = ["advanced_linear_programming.cc"],
+    name = "graph_coloring",
+    srcs = ["graph_coloring.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
     ],
 )
 
@@ -205,14 +218,12 @@ cc_binary(
 )
 
 cc_binary(
-    name = "graph_coloring",
-    srcs = ["graph_coloring.cc"],
+    name = "area_socp",
+    srcs = ["area_socp.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solvers:cp_sat_solver",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
     ],
 )
