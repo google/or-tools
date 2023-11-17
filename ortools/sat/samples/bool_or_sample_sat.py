@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def BoolOrSampleSat():
+def bool_or_sample_sat():
     model = cp_model.CpModel()
 
     x = model.new_bool_var("x")
@@ -27,4 +27,4 @@ def BoolOrSampleSat():
     model.add_bool_or([x, y.negated()])
 
 
-BoolOrSampleSat()
+bool_or_sample_sat()

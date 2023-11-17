@@ -27,7 +27,7 @@ negation of `x`.
 from ortools.sat.python import cp_model
 
 
-def LiteralSampleSat():
+def literal_sample_sat():
     model = cp_model.CpModel()
     x = model.new_bool_var("x")
     not_x = x.negated()
@@ -35,7 +35,7 @@ def LiteralSampleSat():
     print(not_x)
 
 
-LiteralSampleSat()
+literal_sample_sat()
 ```
 
 ### C++ code
@@ -128,7 +128,7 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 from ortools.sat.python import cp_model
 
 
-def BoolOrSampleSat():
+def bool_or_sample_sat():
     model = cp_model.CpModel()
 
     x = model.new_bool_var("x")
@@ -137,7 +137,7 @@ def BoolOrSampleSat():
     model.add_bool_or([x, y.negated()])
 
 
-BoolOrSampleSat()
+bool_or_sample_sat()
 ```
 
 ### C++ code
@@ -237,7 +237,7 @@ then is written as Or(not b, x) and Or(not b, not y).
 from ortools.sat.python import cp_model
 
 
-def ReifiedSampleSat():
+def reified_sample_sat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
@@ -257,7 +257,7 @@ def ReifiedSampleSat():
     model.add_bool_or(b.negated(), y.negated())
 
 
-ReifiedSampleSat()
+reified_sample_sat()
 ```
 
 ### C++ code
@@ -401,7 +401,7 @@ code samples output this truth table:
 from ortools.sat.python import cp_model
 
 
-def BooleanProductSampleSat():
+def boolean_product_sample_sat():
     """Encoding of the product of two Boolean variables.
 
     p == x * y, which is the same as p <=> x and y
@@ -425,5 +425,5 @@ def BooleanProductSampleSat():
     solver.solve(model, solution_printer)
 
 
-BooleanProductSampleSat()
+boolean_product_sample_sat()
 ```

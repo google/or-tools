@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def OptionalIntervalSampleSat():
+def optional_interval_sample_sat():
     """Showcases how to build optional interval variables."""
     model = cp_model.CpModel()
     horizon = 100
@@ -47,4 +47,4 @@ def OptionalIntervalSampleSat():
     print(f"fixed_interval = {repr(fixed_interval)}")
 
 
-OptionalIntervalSampleSat()
+optional_interval_sample_sat()

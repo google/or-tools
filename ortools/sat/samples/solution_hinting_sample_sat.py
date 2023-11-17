@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def SolutionHintingSampleSat():
+def solution_hinting_sample_sat():
     """Showcases solution hinting."""
     # Creates the model.
     # [START model]
@@ -57,5 +57,5 @@ def SolutionHintingSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolutionHintingSampleSat()
+solution_hinting_sample_sat()
 # [END program]

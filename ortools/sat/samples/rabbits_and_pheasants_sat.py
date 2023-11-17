@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def RabbitsAndPheasantsSat():
+def rabbits_and_pheasants_sat():
     """Solves the rabbits + pheasants problem."""
     model = cp_model.CpModel()
 
@@ -37,4 +37,4 @@ def RabbitsAndPheasantsSat():
         print(f"{solver.value(r)} rabbits and {solver.value(p)} pheasants")
 
 
-RabbitsAndPheasantsSat()
+rabbits_and_pheasants_sat()

@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def NoOverlapSampleSat():
+def no_overlap_sample_sat():
     """No overlap sample with fixed activities."""
     model = cp_model.CpModel()
     horizon = 21  # 3 weeks.
@@ -66,4 +66,4 @@ def NoOverlapSampleSat():
         print(f"Solver exited with nonoptimal status: {status}")
 
 
-NoOverlapSampleSat()
+no_overlap_sample_sat()

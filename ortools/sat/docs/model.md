@@ -78,7 +78,7 @@ Some remarks:
 from ortools.sat.python import cp_model
 
 
-def SolutionHintingSampleSat():
+def solution_hinting_sample_sat():
     """Showcases solution hinting."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -107,7 +107,7 @@ def SolutionHintingSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolutionHintingSampleSat()
+solution_hinting_sample_sat()
 ```
 
 ### C++ code
@@ -311,7 +311,7 @@ illustrated in the following examples.
 from ortools.sat.python import cp_model
 
 
-def CloneModelSampleSat():
+def clone_model_sample_sat():
     """Showcases cloning a model."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -348,7 +348,7 @@ def CloneModelSampleSat():
         print("Optimal value of the modified model: {}".format(solver.objective_value))
 
 
-CloneModelSampleSat()
+clone_model_sample_sat()
 ```
 
 ### C++ code

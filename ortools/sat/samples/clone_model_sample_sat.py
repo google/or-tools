@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def CloneModelSampleSat():
+def clone_model_sample_sat():
     """Showcases cloning a model."""
     # Creates the model.
     # [START model]
@@ -67,5 +67,5 @@ def CloneModelSampleSat():
         print("Optimal value of the modified model: {}".format(solver.objective_value))
 
 
-CloneModelSampleSat()
+clone_model_sample_sat()
 # [END program]

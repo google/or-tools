@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def BinpackingProblemSat():
+def binpacking_problem_sat():
     """Solves a bin-packing problem using the CP-SAT solver."""
     # Data.
     bin_capacity = 100
@@ -77,4 +77,4 @@ def BinpackingProblemSat():
     print(f"  - wall time : {solver.wall_time}s")
 
 
-BinpackingProblemSat()
+binpacking_problem_sat()

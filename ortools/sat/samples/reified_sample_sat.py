@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def ReifiedSampleSat():
+def reified_sample_sat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
@@ -37,4 +37,4 @@ def ReifiedSampleSat():
     model.add_bool_or(b.negated(), y.negated())
 
 
-ReifiedSampleSat()
+reified_sample_sat()

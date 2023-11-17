@@ -39,7 +39,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         # [END print_solution]
 
 
-def SearchForAllSolutionsSampleSat():
+def search_for_all_solutions_sample_sat():
     """Showcases calling the solver to search for all solutions."""
     # Creates the model.
     # [START model]
@@ -73,5 +73,5 @@ def SearchForAllSolutionsSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SearchForAllSolutionsSampleSat()
+search_for_all_solutions_sample_sat()
 # [END program]

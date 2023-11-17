@@ -48,7 +48,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def ChannelingSampleSat():
+def channeling_sample_sat():
     """Demonstrates how to link integer constraints together."""
 
     # Create the CP-SAT model.
@@ -87,7 +87,7 @@ def ChannelingSampleSat():
     solver.solve(model, solution_printer)
 
 
-ChannelingSampleSat()
+channeling_sample_sat()
 ```
 
 ### C++ code
@@ -339,7 +339,7 @@ variables together:
 from ortools.sat.python import cp_model
 
 
-def BinpackingProblemSat():
+def binpacking_problem_sat():
     """Solves a bin-packing problem using the CP-SAT solver."""
     # Data.
     bin_capacity = 100
@@ -398,7 +398,7 @@ def BinpackingProblemSat():
     print(f"  - wall time : {solver.wall_time}s")
 
 
-BinpackingProblemSat()
+binpacking_problem_sat()
 ```
 
 ### C++ code
