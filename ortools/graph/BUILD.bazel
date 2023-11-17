@@ -120,7 +120,6 @@ cc_library(
     hdrs = ["cliques.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:hash",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/util:time_limit",

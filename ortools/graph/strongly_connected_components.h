@@ -46,8 +46,8 @@
 #include <limits>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
+#include "absl/log/check.h"
+#include "absl/types/span.h"
 
 // Finds the strongly connected components of a directed graph. It is templated
 // so it can be used in many contexts. See the simple example above for the
@@ -70,8 +70,8 @@
 // - Its memory usage is also bounded by O(nodes + edges) but in practice it
 //   uses less than the input graph.
 template <typename NodeIndex, typename Graph, typename SccOutput>
-void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph& graph, SccOutput* components);
+void FindStronglyConnectedComponents(NodeIndex num_nodes, const Graph& graph,
+                                     SccOutput* components);
 
 // A simple custom output class that just counts the number of SCC. Not
 // allocating many vectors can save both space and speed if your graph is large.
@@ -88,6 +88,7 @@ struct SccCounterOutput {
   // This is just here so this class can transparently replace a code that
   // use vector<vector<int>> as an SccOutput, and get its size with size().
   int size() const { return number_of_components; }
+  void clear() { number_of_components = 0; }
 };
 
 // This implementation is slightly different than a classical iterative version
@@ -112,6 +113,9 @@ class StronglyConnectedComponentsFinder {
     node_index_.assign(num_nodes, 0);
     node_to_process_.clear();
 
+    // Caching the pointer to this vector.data() avoid re-fetching it and help.
+    absl::Span<NodeIndex> node_index = absl::MakeSpan(node_index_);
+
     // Optimization. This will always be equal to scc_start_index_.back() except
     // when scc_stack_ is empty, in which case its value does not matter.
     NodeIndex current_scc_start = 0;
@@ -119,23 +123,23 @@ class StronglyConnectedComponentsFinder {
     // Loop over all the nodes not yet settled and start a DFS from each of
     // them.
     for (NodeIndex base_node = 0; base_node < num_nodes; ++base_node) {
-      if (node_index_[base_node] != 0) continue;
+      if (node_index[base_node] != 0) continue;
       DCHECK_EQ(0, node_to_process_.size());
       node_to_process_.push_back(base_node);
       do {
         const NodeIndex node = node_to_process_.back();
-        const NodeIndex index = node_index_[node];
+        const NodeIndex index = node_index[node];
         if (index == 0) {
           // We continue the dfs from this node and set its 1-based index.
           scc_stack_.push_back(node);
           current_scc_start = scc_stack_.size();
-          node_index_[node] = current_scc_start;
+          node_index[node] = current_scc_start;
           scc_start_index_.push_back(current_scc_start);
 
           // Enqueue all its adjacent nodes.
           NodeIndex min_head_index = kSettledIndex;
           for (const NodeIndex head : graph[node]) {
-            const NodeIndex head_index = node_index_[head];
+            const NodeIndex head_index = node_index[head];
             if (head_index == 0) {
               node_to_process_.push_back(head);
             } else {
@@ -159,7 +163,7 @@ class StronglyConnectedComponentsFinder {
             components->emplace_back(&scc_stack_[current_scc_start - 1],
                                      &scc_stack_[0] + scc_stack_.size());
             for (int i = current_scc_start - 1; i < scc_stack_.size(); ++i) {
-              node_index_[scc_stack_[i]] = kSettledIndex;
+              node_index[scc_stack_[i]] = kSettledIndex;
             }
             scc_stack_.resize(current_scc_start - 1);
             scc_start_index_.pop_back();

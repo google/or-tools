@@ -20,13 +20,15 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/check.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
-#include "ortools/util/zvector.h"
+#include "ortools/graph/ebert_graph.h"
 
 namespace operations_research {
 
@@ -66,7 +68,7 @@ class PathContainerImpl {
   // from 'to' to itself is composed of the arc ('to, 'to'), which might not be
   // the case if either this arc doesn't exist or if the length of this arc is
   // greater than the distance of an alternate path.
-  // If nodes are not connected, returns StarGraph::kNilNode.
+  // If nodes are not connected, returns kNilNode.
   virtual NodeIndex GetPenultimateNodeInPath(NodeIndex from,
                                              NodeIndex to) const = 0;
 
@@ -77,7 +79,7 @@ class PathContainerImpl {
   // Adds a path tree rooted at node 'from', and to a set of implicit
   // destinations:
   // - predecessor_in_path_tree[node] is the predecessor of node 'node' in the
-  //   path from 'from' to 'node', or StarGraph::kNilNode if there is no
+  //   path from 'from' to 'node', or kNilNode if there is no
   //   predecessor (i.e. if 'node' is not in the path tree);
   // - distance_to_destination[i] is the distance from 'from' to the i-th
   //   destination (see Initialize()).
@@ -226,16 +228,26 @@ class DistanceContainer : public PathContainerImpl {
   }
   NodeIndex GetPenultimateNodeInPath(NodeIndex from,
                                      NodeIndex to) const override {
+    (void)from;
+    (void)to;
+
     LOG(FATAL) << "Path not stored.";
     return StarGraph::kNilNode;
   }
   void GetPath(NodeIndex from, NodeIndex to,
                std::vector<NodeIndex>* path) const override {
+    (void)from;
+    (void)to;
+    (void)path;
+
     LOG(FATAL) << "Path not stored.";
   }
   void StoreSingleSourcePaths(
       NodeIndex from, const std::vector<NodeIndex>& predecessor_in_path_tree,
       const std::vector<PathDistance>& distance_to_destination) override {
+    // DistanceContainer only stores distances and not predecessors.
+    (void)predecessor_in_path_tree;
+
     distances_[reverse_sources_[from]] = distance_to_destination;
   }
 
@@ -362,83 +374,6 @@ static_assert(sizeof(NodeEntry) == 16, "node_entry_class_is_not_well_packed");
 // TODO(user): Investigate alternate implementation which wouldn't use
 // AdjustablePriorityQueue.
 template <class GraphType>
-void ComputeOneToManyInternal(const GraphType* const graph,
-                              const ZVector<PathDistance>* const arc_lengths,
-                              NodeIndex source,
-                              const std::vector<NodeIndex>* const destinations,
-                              PathContainerImpl* const paths) {
-  CHECK(graph != nullptr);
-  CHECK(arc_lengths != nullptr);
-  CHECK(destinations != nullptr);
-  CHECK(paths != nullptr);
-  const int num_nodes = graph->num_nodes();
-  std::vector<NodeIndex> predecessor(num_nodes, GraphType::kNilNode);
-  AdjustablePriorityQueue<NodeEntry> priority_queue;
-  std::vector<NodeEntry> entries(num_nodes);
-  for (typename GraphType::NodeIterator iterator(*graph); iterator.Ok();
-       iterator.Next()) {
-    entries[iterator.Index()].set_node(iterator.Index());
-  }
-  // Marking destination node. This is an optimization stopping the search
-  // when all destinations have been reached.
-  for (int i = 0; i < destinations->size(); ++i) {
-    entries[(*destinations)[i]].set_is_destination(true);
-  }
-  // In this implementation the distance of a node to itself isn't necessarily
-  // 0.
-  // So we push successors of source in the queue instead of the source
-  // directly which will avoid marking the source.
-  for (typename GraphType::OutgoingArcIterator iterator(*graph, source);
-       iterator.Ok(); iterator.Next()) {
-    const ArcIndex arc = iterator.Index();
-    const NodeIndex next = graph->Head(arc);
-    if (InsertOrUpdateEntry(arc_lengths->Value(arc), &entries[next],
-                            &priority_queue)) {
-      predecessor[next] = source;
-    }
-  }
-  int destinations_remaining = destinations->size();
-  while (!priority_queue.IsEmpty()) {
-    NodeEntry* current = priority_queue.Top();
-    const NodeIndex current_node = current->node();
-    priority_queue.Pop();
-    current->set_settled(true);
-    if (current->is_destination()) {
-      destinations_remaining--;
-      if (destinations_remaining == 0) {
-        break;
-      }
-    }
-    const PathDistance current_distance = current->distance();
-    for (typename GraphType::OutgoingArcIterator iterator(*graph, current_node);
-         iterator.Ok(); iterator.Next()) {
-      const ArcIndex arc = iterator.Index();
-      const NodeIndex next = graph->Head(arc);
-      NodeEntry* const entry = &entries[next];
-      if (!entry->settled()) {
-        DCHECK_GE(current_distance, 0);
-        const PathDistance arc_length = arc_lengths->Value(arc);
-        DCHECK_LE(current_distance, kDisconnectedPathDistance - arc_length);
-        if (InsertOrUpdateEntry(current_distance + arc_length, entry,
-                                &priority_queue)) {
-          predecessor[next] = current_node;
-        }
-      }
-    }
-  }
-  const int destinations_size = destinations->size();
-  std::vector<PathDistance> distances(destinations_size,
-                                      kDisconnectedPathDistance);
-  for (int i = 0; i < destinations_size; ++i) {
-    NodeIndex node = destinations->at(i);
-    if (entries[node].settled()) {
-      distances[i] = entries[node].distance();
-    }
-  }
-  paths->StoreSingleSourcePaths(source, predecessor, distances);
-}
-
-template <class GraphType>
 void ComputeOneToManyInternalOnGraph(
     const GraphType* const graph,
     const std::vector<PathDistance>* const arc_lengths,
@@ -550,64 +485,6 @@ void PathContainer::BuildInMemoryCompactPathContainer(
   CHECK(path_container != nullptr);
   path_container->container_ = std::make_unique<InMemoryCompactPathContainer>();
 }
-
-template <class GraphType>
-void ComputeManyToManyShortestPathsWithMultipleThreadsInternal(
-    const GraphType& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* const paths) {
-  if (graph.num_nodes() > 0) {
-    CHECK_EQ(graph.num_arcs(),
-             1 + arc_lengths.max_index() - arc_lengths.min_index())
-        << "Number of arcs in graph must match arc length vector size";
-    // Removing duplicate sources to allow mutex-free implementation (and it's
-    // more efficient); same with destinations for efficiency reasons.
-    std::vector<NodeIndex> unique_sources = sources;
-    gtl::STLSortAndRemoveDuplicates(&unique_sources);
-    std::vector<NodeIndex> unique_destinations = destinations;
-    gtl::STLSortAndRemoveDuplicates(&unique_destinations);
-    WallTimer timer;
-    timer.Start();
-    PathContainerImpl* container = paths->GetImplementation();
-    container->Initialize(unique_sources, unique_destinations,
-                          graph.num_nodes());
-    {
-      std::unique_ptr<ThreadPool> pool(
-          new ThreadPool("OR_Dijkstra", num_threads));
-      pool->StartWorkers();
-      for (int i = 0; i < unique_sources.size(); ++i) {
-        pool->Schedule(absl::bind_front(&ComputeOneToManyInternal<GraphType>,
-                                        &graph, &arc_lengths, unique_sources[i],
-                                        &unique_destinations, container));
-      }
-    }
-    container->Finalize();
-    VLOG(2) << "Elapsed time to compute shortest paths: " << timer.Get() << "s";
-  }
-}
-
-template <>
-void ComputeManyToManyShortestPathsWithMultipleThreads(
-    const StarGraph& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* const paths) {
-  ComputeManyToManyShortestPathsWithMultipleThreadsInternal(
-      graph, arc_lengths, sources, destinations, num_threads, paths);
-}
-
-template <>
-void ComputeManyToManyShortestPathsWithMultipleThreads(
-    const ForwardStarGraph& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* const paths) {
-  ComputeManyToManyShortestPathsWithMultipleThreadsInternal(
-      graph, arc_lengths, sources, destinations, num_threads, paths);
-}
-
-// Version on BaseGraph sub-classes.
 
 template <class GraphType>
 void ComputeManyToManyShortestPathsWithMultipleThreadsInternal(

@@ -33,8 +33,8 @@
 // computations (cf. PathContainer).
 //
 // Usage example computing all-pair shortest paths on a graph:
-//     StarGraph graph(...,...);
-//     ZVector<uint32_t> arc_lengths(...,...);
+//     StaticGraph graph(...,...);
+//     std::vector<uint32_t> arc_lengths(...,...);
 //     ... populate graph and arc lengths ...
 //     PathContainer container;
 //     PathContainer::BuildInMemoryCompactPathContainer(&container);
@@ -44,8 +44,8 @@
 //                                                     &container);
 //
 // Usage example computing shortest paths between a subset of graph nodes:
-//     StarGraph graph(...,...);
-//     ZVector<uint32_t> arc_lengths(...,...);
+//     StaticGraph graph(...,...);
+//     std::vector<uint32_t> arc_lengths(...,...);
 //     ... populate graph and arc lengths ...
 //     vector<NodeIndex> sources;
 //     vector<NodeIndex> sinks;
@@ -67,8 +67,8 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/zvector.h"
@@ -78,9 +78,6 @@ namespace operations_research {
 // Storing distances on 32 bits to limit memory consumption of distance
 // matrices. If distances don't fit on 32 bits, scaling and losing a bit of
 // precision should be acceptable in practice.
-template <class T>
-class ZVector;
-
 typedef uint32_t PathDistance;
 
 const PathDistance kDisconnectedPathDistance =
@@ -189,17 +186,6 @@ void GetGraphNodesFromGraph(const GraphType& graph,
 // Computes shortest paths from the node 'source' to all nodes in the graph.
 template <class GraphType>
 void ComputeOneToAllShortestPaths(const GraphType& graph,
-                                  const ZVector<PathDistance>& arc_lengths,
-                                  NodeIndex source,
-                                  PathContainer* const path_container) {
-  std::vector<NodeIndex> all_nodes;
-  GetGraphNodes<GraphType>(graph, &all_nodes);
-  ComputeOneToManyShortestPaths(graph, arc_lengths, source, all_nodes,
-                                path_container);
-}
-
-template <class GraphType>
-void ComputeOneToAllShortestPaths(const GraphType& graph,
                                   const std::vector<PathDistance>& arc_lengths,
                                   typename GraphType::NodeIndex source,
                                   PathContainer* const path_container) {
@@ -211,17 +197,6 @@ void ComputeOneToAllShortestPaths(const GraphType& graph,
 
 // Computes shortest paths from the node 'source' to nodes in 'destinations'.
 template <class GraphType>
-void ComputeOneToManyShortestPaths(const GraphType& graph,
-                                   const ZVector<PathDistance>& arc_lengths,
-                                   NodeIndex source,
-                                   const std::vector<NodeIndex>& destinations,
-                                   PathContainer* const path_container) {
-  std::vector<NodeIndex> sources(1, source);
-  ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, sources, destinations, 1, path_container);
-}
-
-template <class GraphType>
 void ComputeOneToManyShortestPaths(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
     typename GraphType::NodeIndex source,
@@ -232,19 +207,35 @@ void ComputeOneToManyShortestPaths(
       graph, arc_lengths, sources, destinations, 1, path_container);
 }
 
-// Computes shortest paths from the nodes in 'sources' to all nodes in the
-// graph.
+// Computes the shortest path from the node 'source' to the node 'destination'
+// and returns that path as a vector of nodes. If there is no path from 'source'
+// to 'destination', the returned vector is empty.
+//
+// To get distance information, use ComputeOneToManyShortestPaths with a single
+// destination and a `PathContainer` built with `BuildPathDistanceContainer` (if
+// you just need the distance) or `BuildInMemoryCompactPathContainer`
+// (otherwise).
 template <class GraphType>
-void ComputeManyToAllShortestPathsWithMultipleThreads(
-    const GraphType& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources, int num_threads,
-    PathContainer* const path_container) {
-  std::vector<NodeIndex> all_nodes;
-  GetGraphNodes<GraphType>(graph, &all_nodes);
+std::vector<typename GraphType::NodeIndex> ComputeOneToOneShortestPath(
+    const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
+    typename GraphType::NodeIndex source,
+    typename GraphType::NodeIndex destination) {
+  std::vector<typename GraphType::NodeIndex> sources(1, source);
+  std::vector<typename GraphType::NodeIndex> destinations(1, destination);
+
+  PathContainer path_container;
+  PathContainer::BuildInMemoryCompactPathContainer(&path_container);
+
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, sources, all_nodes, num_threads, path_container);
+      graph, arc_lengths, sources, destinations, 1, &path_container);
+
+  std::vector<typename GraphType::NodeIndex> path;
+  path_container.GetPath(source, destination, &path);
+  return path;
 }
 
+// Computes shortest paths from the nodes in 'sources' to all nodes in the
+// graph.
 template <class GraphType>
 void ComputeManyToAllShortestPathsWithMultipleThreads(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
@@ -260,48 +251,21 @@ void ComputeManyToAllShortestPathsWithMultipleThreads(
 // 'destinations'.
 template <class GraphType>
 void ComputeManyToManyShortestPathsWithMultipleThreads(
-    const GraphType& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* const path_container) {
-  LOG(DFATAL) << "Graph type not supported";
-}
-
-template <class GraphType>
-void ComputeManyToManyShortestPathsWithMultipleThreads(
     const GraphType& graph, const std::vector<PathDistance>& arc_lengths,
     const std::vector<typename GraphType::NodeIndex>& sources,
     const std::vector<typename GraphType::NodeIndex>& destinations,
     int num_threads, PathContainer* const path_container) {
+  (void)graph;
+  (void)arc_lengths;
+  (void)sources;
+  (void)destinations;
+  (void)num_threads;
+  (void)path_container;
+
   LOG(DFATAL) << "Graph type not supported";
 }
 
 // Specialization for supported graph classes.
-
-template <>
-void ComputeManyToManyShortestPathsWithMultipleThreads(
-    const StarGraph& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* path_container);
-
-template <>
-void ComputeManyToManyShortestPathsWithMultipleThreads(
-    const ForwardStarGraph& graph, const ZVector<PathDistance>& arc_lengths,
-    const std::vector<NodeIndex>& sources,
-    const std::vector<NodeIndex>& destinations, int num_threads,
-    PathContainer* path_container);
-
-// Computes shortest paths between all nodes of the graph.
-template <class GraphType>
-void ComputeAllToAllShortestPathsWithMultipleThreads(
-    const GraphType& graph, const ZVector<PathDistance>& arc_lengths,
-    int num_threads, PathContainer* const path_container) {
-  std::vector<NodeIndex> all_nodes;
-  GetGraphNodes<GraphType>(graph, &all_nodes);
-  ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, arc_lengths, all_nodes, all_nodes, num_threads, path_container);
-}
 
 using ::util::ListGraph;
 template <>
