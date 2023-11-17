@@ -115,7 +115,7 @@ cc_library(
     defines = ["USE_SCIP"],
     deps = [
         "//ortools/base",
-	"//ortools/base:cleanup",
+        "//ortools/base:cleanup",
         "//ortools/base:timer",
         "//ortools/gscip:legacy_scip_params",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -140,7 +140,7 @@ cc_library(
     hdrs = ["gurobi_proto_solver.h"],
     deps = [
         "//ortools/base:cleanup",
-	"//ortools/base:timer",
+        "//ortools/base:timer",
         "//ortools/gurobi:environment",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
@@ -163,9 +163,9 @@ cc_library(
     srcs = ["highs_proto_solver.cc"],
     hdrs = ["highs_proto_solver.h"],
     deps = [
-        "@com_google_absl//absl/status:statusor",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
