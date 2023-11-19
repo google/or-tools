@@ -83,3 +83,13 @@ py_test(
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
+
+py_binary(
+    name = "solve_model",
+    srcs = ["solve_model.py"],
+    deps = [
+        ":model_builder",
+        requirement("absl-py"),
+        "//ortools/linear_solver:linear_solver_py_pb2",
+    ],
+)

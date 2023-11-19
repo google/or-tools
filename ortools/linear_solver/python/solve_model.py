@@ -26,15 +26,21 @@ _SOLVER = flags.DEFINE_string("solver", "sat", "Solver type to solve the model w
 
 
 def main(argv: Sequence[str]) -> None:
+    """Load a model and solves it."""
     if len(argv) > 1:
         raise app.UsageError("Too many command-line arguments.")
 
     model = model_builder.ModelBuilder()
 
     # Load MPS file.
-    if not model.import_from_mps_file(_INPUT.value):
-        print(f"Cannot import MPS file: '{_INPUT.value}'")
+    if _INPUT.value.endswith(".mps"):
+        if not model.import_from_mps_file(_INPUT.value):
+            print(f"Cannot import MPS file: '{_INPUT.value}'")
+            return
+    elif not model.import_from_proto_file(_INPUT.value):
+        print(f"Cannot import Proto file: '{_INPUT.value}'")
         return
+
 
     # Create solver.
     solver = model_builder.ModelSolver(_SOLVER.value)

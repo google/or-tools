@@ -61,10 +61,20 @@ std::string ModelBuilderHelper::ExportToLpString(
 }
 
 bool ModelBuilderHelper::WriteModelToFile(const std::string& filename) {
-  if (absl::EndsWith(filename, "txt")) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, ".textproto")) {
     return file::SetTextProto(filename, model_, file::Defaults()).ok();
   } else {
     return file::SetBinaryProto(filename, model_, file::Defaults()).ok();
+  }
+}
+
+bool ModelBuilderHelper::LoadModelFromFile(const std::string& filename) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, ".textproto")) {
+    return file::GetTextProto(filename, &model_, file::Defaults()).ok();
+  } else {
+    return file::GetBinaryProto(filename, &model_, file::Defaults()).ok();
   }
 }
 

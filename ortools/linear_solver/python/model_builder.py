@@ -1537,16 +1537,28 @@ class Model:
         return mbh.to_mpmodel_proto(self.__helper)
 
     def import_from_mps_string(self, mps_string: str) -> bool:
+        """Loads the a model from an MPS string."""
         return self.__helper.import_from_mps_string(mps_string)
 
     def import_from_mps_file(self, mps_file: str) -> bool:
+        """Loads the a model from an MPS file."""
         return self.__helper.import_from_mps_file(mps_file)
 
     def import_from_lp_string(self, lp_string: str) -> bool:
+        """Loads the a model from an LP string."""
         return self.__helper.import_from_lp_string(lp_string)
 
     def import_from_lp_file(self, lp_file: str) -> bool:
+        """Loads the a model from an LP file."""
         return self.__helper.import_from_lp_file(lp_file)
+
+    def import_from_proto_file(self, proto_file: str) -> bool:
+        """Loads the a model from an proto file."""
+        return self.__helper.load_model_from_file(proto_file)
+
+    def export_to_proto_file(self, proto_file: str) -> bool:
+        """Write a model to a proto file."""
+        return self.__helper.write_model_to_file(proto_file)
 
     # Model getters and Setters
 
