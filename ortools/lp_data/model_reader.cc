@@ -29,8 +29,8 @@ bool LoadMPModelProtoFromModelOrRequest(const std::string& input_file_path,
                                         MPModelProto* model) {
   MPModelProto model_proto;
   MPModelRequest request_proto;
-  ReadFileToProto(input_file_path, &model_proto);
-  ReadFileToProto(input_file_path, &request_proto);
+  ReadFileToProto(input_file_path, &model_proto).IgnoreError();
+  ReadFileToProto(input_file_path, &request_proto).IgnoreError();
   // If the input proto is in binary format, both ReadFileToProto could return
   // true. Instead use the actual number of variables found to test the
   // correct format of the input.

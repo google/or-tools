@@ -578,12 +578,19 @@ class MPSolver {
    * from `MPSolver::Solve()` which by default sets the feasibility tolerance
    * and the gap limit (as of 2020/02/11, to 1e-7 and 0.0001, respectively).
    */
+#if !defined(SWIG)
+  ABSL_DEPRECATED("Prefer SolveMPModel() from solve_mp_model.h.")
+#endif  // !defined(SWIG)
   static void SolveWithProto(const MPModelRequest& model_request,
                              MPSolutionResponse* response,
                              // `interrupt` is non-const because the internal
                              // solver may set it to true itself, in some cases.
                              std::atomic<bool>* interrupt = nullptr);
 
+#if !defined(SWIG)
+  ABSL_DEPRECATED(
+      "Prefer SolverTypeSupportsInterruption() from solve_mp_model.h.")
+#endif  // !defined(SWIG)
   static bool SolverTypeSupportsInterruption(
       const MPModelRequest::SolverType solver) {
     // Interruption requires that MPSolver::InterruptSolve is supported for the

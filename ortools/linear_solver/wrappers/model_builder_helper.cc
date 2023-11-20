@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -60,21 +61,25 @@ std::string ModelBuilderHelper::ExportToLpString(
       .value_or("");
 }
 
-bool ModelBuilderHelper::WriteModelToFile(const std::string& filename) {
-  if (absl::EndsWith(filename, "txt") ||
-      absl::EndsWith(filename, ".textproto")) {
+bool ModelBuilderHelper::ReadModelFromProtoFile(const std::string& filename) {
+  if (file::GetTextProto(filename, &model_, file::Defaults()).ok() ||
+      file::GetBinaryProto(filename, &model_, file::Defaults()).ok()) {
+    return true;
+  }
+  MPModelRequest request;
+  if (file::GetTextProto(filename, &request, file::Defaults()).ok() ||
+      file::GetBinaryProto(filename, &request, file::Defaults()).ok()) {
+    model_ = request.model();
+    return true;
+  }
+  return false;
+}
+
+bool ModelBuilderHelper::WriteModelToProtoFile(const std::string& filename) {
+  if (absl::EndsWith(filename, "txt")) {
     return file::SetTextProto(filename, model_, file::Defaults()).ok();
   } else {
     return file::SetBinaryProto(filename, model_, file::Defaults()).ok();
-  }
-}
-
-bool ModelBuilderHelper::LoadModelFromFile(const std::string& filename) {
-  if (absl::EndsWith(filename, "txt") ||
-      absl::EndsWith(filename, ".textproto")) {
-    return file::GetTextProto(filename, &model_, file::Defaults()).ok();
-  } else {
-    return file::GetBinaryProto(filename, &model_, file::Defaults()).ok();
   }
 }
 

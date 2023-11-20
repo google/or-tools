@@ -1460,11 +1460,11 @@ class Model:
 
     # Objective.
     def minimize(self, linear_expr: LinearExprT) -> None:
-        """Minimize the given objective."""
+        """Minimizes the given objective."""
         self.__optimize(linear_expr, False)
 
     def maximize(self, linear_expr: LinearExprT) -> None:
-        """Maximize the given objective."""
+        """Maximizes the given objective."""
         self.__optimize(linear_expr, True)
 
     def __optimize(self, linear_expr: LinearExprT, maximize: bool) -> None:
@@ -1507,11 +1507,11 @@ class Model:
 
     # Hints.
     def clear_hints(self):
-        """Clear all solution hints."""
+        """Clears all solution hints."""
         self.__helper.clear_hints()
 
     def add_hint(self, var: Variable, value: NumberT) -> None:
-        """Add var == value as a hint to the model.
+        """Adds var == value as a hint to the model.
 
         Args:
           var: The variable of the hint
@@ -1537,28 +1537,28 @@ class Model:
         return mbh.to_mpmodel_proto(self.__helper)
 
     def import_from_mps_string(self, mps_string: str) -> bool:
-        """Loads the a model from an MPS string."""
+        """Reads a model from a MPS string."""
         return self.__helper.import_from_mps_string(mps_string)
 
     def import_from_mps_file(self, mps_file: str) -> bool:
-        """Loads the a model from an MPS file."""
+        """Reads a model from a .mps file."""
         return self.__helper.import_from_mps_file(mps_file)
 
     def import_from_lp_string(self, lp_string: str) -> bool:
-        """Loads the a model from an LP string."""
+        """Reads a model from a LP string."""
         return self.__helper.import_from_lp_string(lp_string)
 
     def import_from_lp_file(self, lp_file: str) -> bool:
-        """Loads the a model from an LP file."""
+        """Reads a model from a .lp file."""
         return self.__helper.import_from_lp_file(lp_file)
 
     def import_from_proto_file(self, proto_file: str) -> bool:
-        """Loads the a model from an proto file."""
-        return self.__helper.load_model_from_file(proto_file)
+        """Reads a model from a proto file."""
+        return self.__helper.read_model_from_proto_file(proto_file)
 
     def export_to_proto_file(self, proto_file: str) -> bool:
-        """Write a model to a proto file."""
-        return self.__helper.write_model_to_file(proto_file)
+        """Writes a model to a proto file."""
+        return self.__helper.write_model_to_proto_file(proto_file)
 
     # Model getters and Setters
 

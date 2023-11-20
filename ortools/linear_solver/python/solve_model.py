@@ -32,7 +32,7 @@ def main(argv: Sequence[str]) -> None:
 
     model = model_builder.ModelBuilder()
 
-    # Load MPS file.
+    # Load MPS or proto file.
     if _INPUT.value.endswith(".mps"):
         if not model.import_from_mps_file(_INPUT.value):
             print(f"Cannot import MPS file: '{_INPUT.value}'")
@@ -40,7 +40,6 @@ def main(argv: Sequence[str]) -> None:
     elif not model.import_from_proto_file(_INPUT.value):
         print(f"Cannot import Proto file: '{_INPUT.value}'")
         return
-
 
     # Create solver.
     solver = model_builder.ModelSolver(_SOLVER.value)

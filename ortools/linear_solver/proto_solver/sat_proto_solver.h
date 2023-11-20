@@ -19,7 +19,6 @@
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -29,7 +28,7 @@ namespace operations_research {
 // If possible, std::move the request into this function call to avoid a copy.
 //
 // If you need to change the solver parameters, please use the
-// EncodeSatParametersAsString() function below to set the request's
+// EncodeParametersAsString() function to set the request's
 // solver_specific_parameters field.
 //
 // The optional interrupt_solve can be used to interrupt the solve early. It

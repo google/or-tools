@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
@@ -51,12 +52,12 @@ int main(int argc, char** argv) {
   operations_research::MPModelProto model_proto;
   if (absl::GetFlag(FLAGS_input_is_mp_model_request)) {
     operations_research::MPModelRequest request_proto;
-    CHECK(operations_research::ReadFileToProto(absl::GetFlag(FLAGS_input),
-                                               &request_proto));
+    CHECK_OK(operations_research::ReadFileToProto(absl::GetFlag(FLAGS_input),
+                                                  &request_proto));
     model_proto.Swap(request_proto.mutable_model());
   } else {
-    CHECK(operations_research::ReadFileToProto(absl::GetFlag(FLAGS_input),
-                                               &model_proto));
+    CHECK_OK(operations_research::ReadFileToProto(absl::GetFlag(FLAGS_input),
+                                                  &model_proto));
   }
   std::string output_contents;
   operations_research::MPModelExportOptions options;

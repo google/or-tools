@@ -146,8 +146,8 @@ MPModelRequest ReadMipModel(const std::string& input) {
     QCHECK_OK(glop::MPSReader().ParseFile(input, &model_proto))
         << "Error while parsing the mps file '" << input << "'.";
   } else {
-    ReadFileToProto(input, &model_proto);
-    ReadFileToProto(input, &request_proto);
+    ReadFileToProto(input, &model_proto).IgnoreError();
+    ReadFileToProto(input, &request_proto).IgnoreError();
   }
   // If the input is a proto in binary format, both ReadFileToProto could
   // return true. Instead use the actual number of variables found to test the
@@ -326,13 +326,13 @@ void Run() {
 
   // If requested, save the model and/or request to file.
   if (!absl::GetFlag(FLAGS_dump_model).empty()) {
-    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_model),
-                           request_proto.model(), write_format,
-                           absl::GetFlag(FLAGS_dump_gzip)));
+    CHECK_OK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_model),
+                              request_proto.model(), write_format,
+                              absl::GetFlag(FLAGS_dump_gzip)));
   }
   if (!absl::GetFlag(FLAGS_dump_request).empty()) {
-    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_request), request_proto,
-                           write_format, absl::GetFlag(FLAGS_dump_gzip)));
+    CHECK_OK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_request), request_proto,
+                              write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
 
   absl::PrintF(
@@ -377,8 +377,8 @@ void Run() {
                                file::Defaults()));
   }
   if (!absl::GetFlag(FLAGS_dump_response).empty() && has_solution) {
-    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_response), response,
-                           write_format, absl::GetFlag(FLAGS_dump_gzip)));
+    CHECK_OK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_response), response,
+                              write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
   if (!absl::GetFlag(FLAGS_output_csv).empty() && has_solution) {
     std::string csv_file;

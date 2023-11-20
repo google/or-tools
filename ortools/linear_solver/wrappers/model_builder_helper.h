@@ -50,8 +50,8 @@ class ModelBuilderHelper {
                                     options = MPModelExportOptions());
   std::string ExportToLpString(const operations_research::MPModelExportOptions&
                                    options = MPModelExportOptions());
-  bool WriteModelToFile(const std::string& filename);
-  bool LoadModelFromFile(const std::string& filename);
+  bool ReadModelFromProtoFile(const std::string& filename);
+  bool WriteModelToProtoFile(const std::string& filename);
 
   bool ImportFromMpsString(const std::string& mps_string);
   bool ImportFromMpsFile(const std::string& mps_file);

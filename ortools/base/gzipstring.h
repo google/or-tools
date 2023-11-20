@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #include "zlib.h"
 
-bool GunzipString(const std::string& str, std::string* out) {
+bool GunzipString(absl::string_view str, std::string* out) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;

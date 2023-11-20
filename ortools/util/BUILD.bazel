@@ -295,6 +295,7 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "//ortools/base",
+        "//ortools/base:dump_vars",
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:recordio",

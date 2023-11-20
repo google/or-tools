@@ -98,7 +98,7 @@ bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
     }
   } else {
     LOG(INFO) << "Reading a CpModelProto.";
-    *cp_model = ReadFileToProtoOrDie<CpModelProto>(filename);
+    CHECK_OK(ReadFileToProto(filename, cp_model));
   }
   if (cp_model->name().empty()) {
     cp_model->set_name(ExtractName(filename));

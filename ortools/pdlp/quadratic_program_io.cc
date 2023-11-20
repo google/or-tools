@@ -69,7 +69,8 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
 QuadraticProgram ReadMPModelProtoFileOrDie(
     const std::string& mpmodel_proto_file, bool include_names) {
   MPModelProto lp_proto;
-  QCHECK(ReadFileToProto(mpmodel_proto_file, &lp_proto)) << mpmodel_proto_file;
+  QCHECK_OK(ReadFileToProto(mpmodel_proto_file, &lp_proto))
+      << mpmodel_proto_file;
   auto result = QpFromMpModelProto(lp_proto, /*relax_integer_variables=*/true,
                                    include_names);
   QCHECK_OK(result);

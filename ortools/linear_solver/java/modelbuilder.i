@@ -174,7 +174,8 @@ class GlobalRefGuard {
 %rename (numConstraints) operations_research::ModelBuilderHelper::num_constraints;
 %rename (getName) operations_research::ModelBuilderHelper::name;
 %rename (setName) operations_research::ModelBuilderHelper::SetName;
-%rename (writeModelToFile) operations_research::ModelBuilderHelper::WriteModelToFile;
+%rename (readModelFromProtoFile) operations_research::ModelBuilderHelper::ReadModelFromProtoFile;
+%rename (writeModelToProtoFile) operations_research::ModelBuilderHelper::WriteModelToProtoFile;
 %rename (importFromMpsString) operations_research::ModelBuilderHelper::ImportFromMpsString;
 %rename (importFromMpsFile) operations_research::ModelBuilderHelper::ImportFromMpsFile;
 %rename (importFromLpString) operations_research::ModelBuilderHelper::ImportFromLpString;

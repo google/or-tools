@@ -376,7 +376,17 @@ public class Model
     ///@return true if the model was correctly written.
     public bool ExportToFile(String file)
     {
-        return helper_.WriteModelToFile(file);
+        return helper_.WriteModelToProtoFile(file);
+    }
+
+    /// <summary>
+    /// load the model as a protocol buffer from 'file'.
+    /// </summary>
+    /// @param file file to read the model from.
+    ///@return true if the model was correctly loaded.
+    public bool ImportFromFile(String file)
+    {
+        return helper_.ReadModelFromProtoFile(file);
     }
 
     public String ExportToMpsString(bool obfuscate)
