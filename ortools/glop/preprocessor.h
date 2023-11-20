@@ -787,31 +787,6 @@ class EmptyConstraintPreprocessor : public Preprocessor {
 };
 
 // --------------------------------------------------------
-// RemoveNearZeroEntriesPreprocessor
-// --------------------------------------------------------
-// Removes matrix entries that have only a negligible impact on the solution.
-// Using the variable bounds, we derive a maximum possible impact, and remove
-// the entries whose impact is under a given tolerance.
-//
-// TODO(user): This preprocessor doesn't work well on badly scaled problems. In
-// particular, it will set the objective to zero if all the objective
-// coefficients are small! Run it after ScalingPreprocessor or fix the code.
-class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
- public:
-  explicit RemoveNearZeroEntriesPreprocessor(const GlopParameters* parameters)
-      : Preprocessor(parameters) {}
-  RemoveNearZeroEntriesPreprocessor(const RemoveNearZeroEntriesPreprocessor&) =
-      delete;
-  RemoveNearZeroEntriesPreprocessor& operator=(
-      const RemoveNearZeroEntriesPreprocessor&) = delete;
-  ~RemoveNearZeroEntriesPreprocessor() final = default;
-  bool Run(LinearProgram* lp) final;
-  void RecoverSolution(ProblemSolution* solution) const final;
-
- private:
-};
-
-// --------------------------------------------------------
 // SingletonColumnSignPreprocessor
 // --------------------------------------------------------
 // Make sure that the only coefficient of all singleton columns (i.e. column

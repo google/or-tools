@@ -24,7 +24,7 @@ package operations_research.glop;
 option java_package = "com.google.ortools.glop";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Glop";
-// next id = 70
+// next id = 72
 message GlopParameters {
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
@@ -478,7 +478,13 @@ message GlopParameters {
   // shouldn't use super large values in an LP. With the default threshold, even
   // evaluating large constraint with variables at their bound shouldn't cause
   // any overflow.
-  optional double max_valid_magnitude = 199 [default = 1e30];
+  optional double max_valid_magnitude = 70 [default = 1e30];
+
+  // Value in the input LP lower than this will be ignored. This is similar to
+  // drop_tolerance but more aggressive as this is used before scaling. This is
+  // mainly here to avoid underflow and have simpler invariant in the code, like
+  // a * b == 0 iff a or b is zero and things like this.
+  optional double drop_magnitude = 71 [default = 1e-30];
 
   // On some problem like stp3d or pds-100 this makes a huge difference in
   // speed and number of iterations of the dual simplex.

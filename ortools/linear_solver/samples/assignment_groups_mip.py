@@ -109,39 +109,39 @@ def main():
 
     # Group1
     constraint_g1 = solver.Constraint(1, 1)
-    for i in range(len(group1)):
+    for index, _ in enumerate(group1):
         # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
         # p is True if a AND b, False otherwise
         constraint = solver.Constraint(0, 1)
-        constraint.SetCoefficient(work[group1[i][0]], 1)
-        constraint.SetCoefficient(work[group1[i][1]], 1)
-        p = solver.BoolVar(f"g1_p{i}")
+        constraint.SetCoefficient(work[group1[index][0]], 1)
+        constraint.SetCoefficient(work[group1[index][1]], 1)
+        p = solver.BoolVar(f"g1_p{index}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g1.SetCoefficient(p, 1)
 
     # Group2
     constraint_g2 = solver.Constraint(1, 1)
-    for i in range(len(group2)):
+    for index, _ in enumerate(group2):
         # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
         # p is True if a AND b, False otherwise
         constraint = solver.Constraint(0, 1)
-        constraint.SetCoefficient(work[group2[i][0]], 1)
-        constraint.SetCoefficient(work[group2[i][1]], 1)
-        p = solver.BoolVar(f"g2_p{i}")
+        constraint.SetCoefficient(work[group2[index][0]], 1)
+        constraint.SetCoefficient(work[group2[index][1]], 1)
+        p = solver.BoolVar(f"g2_p{index}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g2.SetCoefficient(p, 1)
 
     # Group3
     constraint_g3 = solver.Constraint(1, 1)
-    for i in range(len(group3)):
+    for index, _ in enumerate(group3):
         # a*b can be transformed into 0 <= a + b - 2*p <= 1 with p in [0,1]
         # p is True if a AND b, False otherwise
         constraint = solver.Constraint(0, 1)
-        constraint.SetCoefficient(work[group3[i][0]], 1)
-        constraint.SetCoefficient(work[group3[i][1]], 1)
-        p = solver.BoolVar(f"g3_p{i}")
+        constraint.SetCoefficient(work[group3[index][0]], 1)
+        constraint.SetCoefficient(work[group3[index][1]], 1)
+        p = solver.BoolVar(f"g3_p{index}")
         constraint.SetCoefficient(p, -2)
 
         constraint_g3.SetCoefficient(p, 1)

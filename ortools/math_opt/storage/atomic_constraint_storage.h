@@ -25,9 +25,9 @@
 #include "google/protobuf/map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/storage/model_storage_types.h"
 #include "ortools/math_opt/storage/range.h"
-#include "ortools/math_opt/storage/sorted.h"
 
 namespace operations_research::math_opt {
 
@@ -36,7 +36,7 @@ namespace operations_research::math_opt {
 //
 // The constraints are "atomic" in the sense that they can be added or deleted
 // individually, but direct data updates (e.g., to coefficients) are not
-// permitted. Note that they are strictly immutable, though, as variable
+// permitted. Note that they are not strictly immutable, though, as variable
 // deletions may have side effects (e.g., a constraint considers a deleted
 // variable as implicitly fixed to zero).
 //
@@ -49,7 +49,7 @@ namespace operations_research::math_opt {
 // constraint in memory. It must satisfy a duck-typed interface:
 //  * A `IdType` alias to the (strong int) ID type for the constraint class.
 //  * A `ProtoType` alias to the proto message for a single constraint.
-//  * A `UpdatesProtoType` alias to the proto message for updates for the given
+//  * An `UpdatesProtoType` alias to the proto message for updates for the given
 //    constraint type, as represented by two fields:
 //      - repeated int64_t deleted_constraint_ids
 //      - Map<int64_t, ProtoType> new_constraints

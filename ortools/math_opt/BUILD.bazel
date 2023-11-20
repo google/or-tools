@@ -11,9 +11,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
+
+# Features that are new or under construction have restricted access, contact
+# math-opt-dev@ if you want try using these with submitted code.
+package_group(
+    name = "math_opt_allow_list",
+    packages = [
+        "//ortools/...",
+    ],
+)
 
 proto_library(
     name = "callback_proto",
@@ -26,10 +36,14 @@ proto_library(
 
 cc_proto_library(
     name = "callback_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":callback_proto",
     ],
+)
+
+py_proto_library(
+    name = "callback_py_pb2",
+    deps = [":callback_proto"],
 )
 
 proto_library(
@@ -42,10 +56,14 @@ proto_library(
 
 cc_proto_library(
     name = "model_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":model_proto",
     ],
+)
+
+py_proto_library(
+    name = "model_py_pb2",
+    deps = [":model_proto"],
 )
 
 proto_library(
@@ -59,10 +77,14 @@ proto_library(
 
 cc_proto_library(
     name = "model_parameters_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":model_parameters_proto",
     ],
+)
+
+py_proto_library(
+    name = "model_parameters_py_pb2",
+    deps = [":model_parameters_proto"],
 )
 
 proto_library(
@@ -76,10 +98,14 @@ proto_library(
 
 cc_proto_library(
     name = "model_update_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":model_update_proto",
     ],
+)
+
+py_proto_library(
+    name = "model_update_py_pb2",
+    deps = [":model_update_proto"],
 )
 
 proto_library(
@@ -91,6 +117,7 @@ proto_library(
         "//ortools/math_opt/solvers:glpk_proto",
         "//ortools/math_opt/solvers:gurobi_proto",
         "//ortools/math_opt/solvers:highs_proto",
+        "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/sat:sat_parameters_proto",
         "@com_google_protobuf//:duration_proto",
     ],
@@ -98,10 +125,14 @@ proto_library(
 
 cc_proto_library(
     name = "parameters_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":parameters_proto",
     ],
+)
+
+py_proto_library(
+    name = "parameters_py_pb2",
+    deps = [":parameters_proto"],
 )
 
 proto_library(
@@ -110,6 +141,7 @@ proto_library(
     deps = [
         ":solution_proto",
         "//ortools/gscip:gscip_proto",
+        "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/pdlp:solve_log_proto",
         "@com_google_protobuf//:duration_proto",
     ],
@@ -117,10 +149,14 @@ proto_library(
 
 cc_proto_library(
     name = "result_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":result_proto",
     ],
+)
+
+py_proto_library(
+    name = "result_py_pb2",
+    deps = [":result_proto"],
 )
 
 proto_library(
@@ -133,10 +169,14 @@ proto_library(
 
 cc_proto_library(
     name = "solution_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":solution_proto",
     ],
+)
+
+py_proto_library(
+    name = "solution_py_pb2",
+    deps = [":solution_proto"],
 )
 
 proto_library(
@@ -146,19 +186,32 @@ proto_library(
 
 cc_proto_library(
     name = "sparse_containers_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [
         ":sparse_containers_proto",
     ],
 )
 
-cc_proto_library(
-    name = "infeasible_subsystem_cc_proto",
-    deps = [":infeasible_subsystem_proto"],
+py_proto_library(
+    name = "sparse_containers_py_pb2",
+    deps = [":sparse_containers_proto"],
 )
 
 proto_library(
     name = "infeasible_subsystem_proto",
     srcs = ["infeasible_subsystem.proto"],
-    deps = [":result_proto"],
+    deps = [
+        ":result_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "infeasible_subsystem_cc_proto",
+    deps = [
+        ":infeasible_subsystem_proto",
+    ],
+)
+
+py_proto_library(
+    name = "infeasible_subsystem_py_pb2",
+    deps = [":infeasible_subsystem_proto"],
 )

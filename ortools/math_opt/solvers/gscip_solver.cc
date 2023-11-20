@@ -37,6 +37,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -817,12 +818,39 @@ std::string JoinDetails(absl::string_view gscip_detail,
   return absl::StrCat(gscip_detail, "; ", math_opt_detail);
 }
 
+double GetBestPrimalObjective(
+    const double gscip_best_objective,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool is_maximize) {
+  double result = gscip_best_objective;
+  for (const auto& solution : solutions) {
+    if (solution.has_primal_solution() &&
+        solution.primal_solution().feasibility_status() ==
+            SOLUTION_STATUS_FEASIBLE) {
+      result =
+          is_maximize
+              ? std::max(result, solution.primal_solution().objective_value())
+              : std::min(result, solution.primal_solution().objective_value());
+    }
+  }
+  return result;
+}
+
 absl::StatusOr<TerminationProto> ConvertTerminationReason(
-    const bool is_maximize, const GScipOutput::Status gscip_status,
-    absl::string_view gscip_status_detail, const GScipSolvingStats& gscip_stats,
-    const bool has_feasible_solution, const bool had_cutoff) {
+    const GScipResult& gscip_result, const bool is_maximize,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool had_cutoff) {
+  const bool has_feasible_solution = !solutions.empty();
+  const GScipOutput::Status gscip_status = gscip_result.gscip_output.status();
+  absl::string_view gscip_status_detail =
+      gscip_result.gscip_output.status_detail();
+  const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
+  // SCIP may return primal solutions that are slightly better than
+  // gscip_stats.best_objective().
+  const double best_primal_objective = GetBestPrimalObjective(
+      gscip_stats.best_objective(), solutions, is_maximize);
   const std::optional<double> optional_finite_primal_objective =
-      has_feasible_solution ? std::make_optional(gscip_stats.best_objective())
+      has_feasible_solution ? std::make_optional(best_primal_objective)
                             : std::nullopt;
   // For SCIP, the only indicator for the existence of a dual feasible solution
   // is a finite dual bound.
@@ -881,12 +909,12 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
                       "underlying gSCIP status: RESTART_LIMIT"));
     case GScipOutput::OPTIMAL:
       return OptimalTerminationProto(
-          /*finite_primal_objective=*/gscip_stats.best_objective(),
+          /*finite_primal_objective=*/best_primal_objective,
           /*dual_objective=*/gscip_stats.best_bound(),
           JoinDetails(gscip_status_detail, "underlying gSCIP status: OPTIMAL"));
     case GScipOutput::GAP_LIMIT:
       return OptimalTerminationProto(
-          /*finite_primal_objective=*/gscip_stats.best_objective(),
+          /*finite_primal_objective=*/best_primal_objective,
           /*dual_objective=*/gscip_stats.best_bound(),
           JoinDetails(gscip_status_detail,
                       "underlying gSCIP status: GAP_LIMIT"));
@@ -991,22 +1019,17 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
                                gscip_result.primal_ray,
                                model_parameters.variable_values_filter());
   }
-  const bool has_feasible_solution = solve_result.solutions_size() > 0;
-  ASSIGN_OR_RETURN(
-      *solve_result.mutable_termination(),
-      ConvertTerminationReason(is_maximize, gscip_result.gscip_output.status(),
-                               gscip_result.gscip_output.status_detail(),
-                               gscip_result.gscip_output.stats(),
-                               /*has_feasible_solution=*/has_feasible_solution,
-                               /*had_cutoff=*/cutoff.has_value()));
+  ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
+                   ConvertTerminationReason(gscip_result, is_maximize,
+                                            solve_result.solutions(),
+                                            /*had_cutoff=*/cutoff.has_value()));
   SolveStatsProto* const common_stats = solve_result.mutable_solve_stats();
   const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
 
   common_stats->set_node_count(gscip_stats.node_count());
   common_stats->set_simplex_iterations(gscip_stats.primal_simplex_iterations() +
                                        gscip_stats.dual_simplex_iterations());
-  common_stats->set_barrier_iterations(gscip_stats.total_lp_iterations() -
-                                       common_stats->simplex_iterations());
+  common_stats->set_barrier_iterations(gscip_stats.barrier_iterations());
   *solve_result.mutable_gscip_output() = std::move(gscip_result.gscip_output);
   return solve_result;
 }

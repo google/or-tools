@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 
+#include <cstdint>
 #include <initializer_list>
 #include <optional>
 #include <vector>
@@ -145,6 +146,44 @@ struct ModelSolveParameters {
   // branched on first. Variables for which priorities are not set get the
   // solver's default priority (usually zero).
   VariableMap<int32_t> branching_priorities;
+
+  // Parameters for an individual objective in a multi-objective model.
+  struct ObjectiveParameters {
+    // Optional objective degradation absolute tolerance. For a hierarchical
+    // multi-objective solver, each objective fⁱ is processed in priority order:
+    // the solver determines the optimal objective value Γⁱ, if it exists,
+    // subject to all constraints in the model and the additional constraints
+    // that fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+    // considered to be "within tolerances" for this objective fᵏ if
+    // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_absolute_tolerance`.
+    //
+    // See also `objective_degradation_relative_tolerance`; if both parameters
+    // are set for a given objective, the solver need only satisfy one to be
+    // considered "within tolerances".
+    //
+    //  If set, must be nonnegative.
+    std::optional<double> objective_degradation_absolute_tolerance;
+
+    // Optional objective degradation relative tolerance. For a hierarchical
+    // multi-objective solver, each objective fⁱ is processed in priority order:
+    // the solver determines the optimal objective value Γⁱ, if it exists,
+    // subject to all constraints in the model and the additional constraints
+    // that fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+    // considered to be "within tolerances" for this objective fᵏ if
+    // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_relative_tolerance` * |Γᵏ|.
+    //
+    // See also `objective_degradation_absolute_tolerance`; if both parameters
+    // are set for a given objective, the solver need only satisfy one to be
+    // considered "within tolerances".
+    //
+    //  If set, must be nonnegative.
+    std::optional<double> objective_degradation_relative_tolerance;
+
+    // Returns the proto equivalent of this object.
+    ObjectiveParametersProto Proto() const;
+  };
+  // Parameters for individual objectives in a multi-objective model.
+  ObjectiveMap<ObjectiveParameters> objective_parameters;
 
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).

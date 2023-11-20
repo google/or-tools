@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def SolveWithTimeLimitSampleSat():
+def solve_with_time_limit_sample_sat():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -44,5 +44,5 @@ def SolveWithTimeLimitSampleSat():
         print(f"z = {solver.value(z)}")
 
 
-SolveWithTimeLimitSampleSat()
+solve_with_time_limit_sample_sat()
 # [END program]

@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def BooleanProductSampleSat():
+def boolean_product_sample_sat():
     """Encoding of the product of two Boolean variables.
 
     p == x * y, which is the same as p <=> x and y
@@ -42,4 +42,4 @@ def BooleanProductSampleSat():
     solver.solve(model, solution_printer)
 
 
-BooleanProductSampleSat()
+boolean_product_sample_sat()

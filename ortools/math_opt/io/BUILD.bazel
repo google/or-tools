@@ -11,17 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "proto_converter",
     srcs = ["proto_converter.cc"],
     hdrs = ["proto_converter.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_macros",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",

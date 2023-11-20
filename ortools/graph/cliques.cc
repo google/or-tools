@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "ortools/base/hash.h"
 
 namespace operations_research {
 namespace {

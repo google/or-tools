@@ -19,7 +19,9 @@
 #include <optional>
 #include <utility>
 
-#include "google/protobuf/message.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "google/protobuf/repeated_field.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"
@@ -108,6 +110,20 @@ ModelSolveParameters::SolutionHint::FromProto(
   };
 }
 
+ObjectiveParametersProto ModelSolveParameters::ObjectiveParameters::Proto()
+    const {
+  ObjectiveParametersProto params;
+  if (objective_degradation_absolute_tolerance) {
+    params.set_objective_degradation_absolute_tolerance(
+        *objective_degradation_absolute_tolerance);
+  }
+  if (objective_degradation_relative_tolerance) {
+    params.set_objective_degradation_relative_tolerance(
+        *objective_degradation_relative_tolerance);
+  }
+  return params;
+}
+
 ModelSolveParametersProto ModelSolveParameters::Proto() const {
   ModelSolveParametersProto ret;
   *ret.mutable_variable_values_filter() = variable_values_filter.Proto();
@@ -158,6 +174,14 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
     for (const Variable& key : SortedKeys(branching_priorities)) {
       variable_ids->Add(key.id());
       variable_values->Add(branching_priorities.at(key));
+    }
+  }
+  for (const auto& [objective, params] : objective_parameters) {
+    if (objective.id()) {
+      (*ret.mutable_auxiliary_objective_parameters())[*objective.id()] =
+          params.Proto();
+    } else {
+      *ret.mutable_primary_objective_parameters() = params.Proto();
     }
   }
   return ret;

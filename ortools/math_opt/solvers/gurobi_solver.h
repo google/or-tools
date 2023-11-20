@@ -199,8 +199,12 @@ class GurobiSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
-  absl::StatusOr<double> GetBestDualBound();
-  absl::StatusOr<double> GetBestPrimalBound(bool has_primal_feasible_solution);
+  absl::StatusOr<double> GetGurobiBestDualBound() const;
+  absl::StatusOr<double> GetBestDualBound(
+      const std::vector<SolutionProto>& solutions) const;
+  absl::StatusOr<double> GetBestPrimalBound(
+      const std::vector<SolutionProto>& solutions) const;
+
   bool PrimalSolutionQualityAvailable() const;
   absl::StatusOr<double> GetPrimalSolutionQuality() const;
 
@@ -226,7 +230,8 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<bool> IsMaximize() const;
 
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
-      int gurobi_status, SolutionClaims solution_claims);
+      int gurobi_status, SolutionClaims solution_claims,
+      double best_primal_bound, double best_dual_bound);
 
   // Returns solution information appropriate and available for an LP (linear
   // constraints + linear objective, only).
@@ -374,10 +379,11 @@ class GurobiSolver : public SolverInterface {
   // `.constraint_index` is set and refers to the Gurobi linear constraint index
   // for a slack constraint just added to the model such that:
   // `expression` == `.variable_index`.
-  // TODO(b/267310257): Use this for linear constraint slacks, and maybe move it
-  // up the stack to a bridge.
   absl::StatusOr<VariableEqualToExpression>
   CreateSlackVariableEqualToExpression(const LinearExpressionProto& expression);
+
+  absl::Status SetMultiObjectiveTolerances(
+      const ModelSolveParametersProto& model_parameters);
 
   const std::unique_ptr<Gurobi> gurobi_;
 

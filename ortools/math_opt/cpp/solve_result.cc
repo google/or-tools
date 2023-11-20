@@ -13,6 +13,8 @@
 
 #include "ortools/math_opt/cpp/solve_result.h"
 
+#include <initializer_list>
+#include <limits>
 #include <optional>
 #include <ostream>
 #include <sstream>
@@ -20,7 +22,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
@@ -28,16 +33,84 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/status_macros.h"
 
-namespace operations_research {
-namespace math_opt {
+namespace operations_research::math_opt {
+namespace {
+constexpr double kInf = std::numeric_limits<double>::infinity();
+}  // namespace
+
+ObjectiveBoundsProto ObjectiveBounds::Proto() const {
+  ObjectiveBoundsProto proto;
+  proto.set_primal_bound(primal_bound);
+  proto.set_dual_bound(dual_bound);
+  return proto;
+}
+
+ObjectiveBounds ObjectiveBounds::FromProto(
+    const ObjectiveBoundsProto& objective_bounds_proto) {
+  ObjectiveBounds result;
+  result.primal_bound = objective_bounds_proto.primal_bound();
+  result.dual_bound = objective_bounds_proto.dual_bound();
+  return result;
+}
+
+std::ostream& operator<<(std::ostream& ostr,
+                         const ObjectiveBounds& objective_bounds) {
+  ostr << "{primal_bound: "
+       << RoundTripDoubleFormat(objective_bounds.primal_bound);
+  ostr << ", dual_bound: "
+       << RoundTripDoubleFormat(objective_bounds.dual_bound);
+  ostr << "}";
+  return ostr;
+}
+
+std::string ObjectiveBounds::ToString() const {
+  std::ostringstream stream;
+  stream << *this;
+  return stream.str();
+}
+
+ObjectiveBounds ObjectiveBounds::MakeTrivial(const bool is_maximize) {
+  const double primal_bound = is_maximize ? -kInf : kInf;
+  const double dual_bound = -primal_bound;
+  return ObjectiveBounds{.primal_bound = primal_bound,
+                         .dual_bound = dual_bound};
+}
+ObjectiveBounds ObjectiveBounds::MaximizeMakeTrivial() {
+  return ObjectiveBounds::MakeTrivial(true);
+}
+ObjectiveBounds ObjectiveBounds::MinimizeMakeTrivial() {
+  return ObjectiveBounds::MakeTrivial(false);
+}
+
+ObjectiveBounds ObjectiveBounds::MakeUnbounded(const bool is_maximize) {
+  const double primal_bound = is_maximize ? kInf : -kInf;
+  const double dual_bound = primal_bound;
+  return ObjectiveBounds{.primal_bound = primal_bound,
+                         .dual_bound = dual_bound};
+}
+
+ObjectiveBounds ObjectiveBounds::MinimizeMakeUnbounded() {
+  return ObjectiveBounds::MakeUnbounded(/*is_maximize=*/false);
+}
+
+ObjectiveBounds ObjectiveBounds::MaximizeMakeUnbounded() {
+  return ObjectiveBounds::MakeUnbounded(/*is_maximize=*/true);
+}
+
+ObjectiveBounds ObjectiveBounds::MakeOptimal(double objective_value) {
+  return ObjectiveBounds{.primal_bound = objective_value,
+                         .dual_bound = objective_value};
+}
 
 std::optional<absl::string_view> Enum<FeasibilityStatus>::ToOptString(
     FeasibilityStatus value) {
@@ -140,20 +213,101 @@ absl::Span<const Limit> Enum<Limit>::AllValues() {
   return absl::MakeConstSpan(kLimitValues);
 }
 
-Termination::Termination(const TerminationReason reason, std::string detail)
-    : reason(reason), detail(std::move(detail)) {}
+Termination::Termination(const bool is_maximize, const TerminationReason reason,
+                         std::string detail)
+    : reason(reason),
+      detail(std::move(detail)),
+      objective_bounds(ObjectiveBounds::MakeTrivial(is_maximize)) {}
 
-Termination Termination::Feasible(const Limit limit, const std::string detail) {
-  Termination termination(TerminationReason::kFeasible, detail);
+Termination Termination::Optimal(const double primal_objective_value,
+                                 const double dual_objective_value,
+                                 const std::string detail) {
+  Termination termination(/*is_maximize=*/false, TerminationReason::kOptimal,
+                          detail);
+  termination.objective_bounds.primal_bound = primal_objective_value;
+  termination.objective_bounds.dual_bound = dual_objective_value;
+  termination.problem_status.primal_status = FeasibilityStatus::kFeasible;
+  termination.problem_status.dual_status = FeasibilityStatus::kFeasible;
+  return termination;
+}
+
+Termination Termination::Optimal(const double objective_value,
+                                 const std::string detail) {
+  return Optimal(objective_value, objective_value, detail);
+}
+
+Termination Termination::Infeasible(const bool is_maximize,
+                                    FeasibilityStatus dual_feasibility_status,
+                                    const std::string detail) {
+  Termination termination(is_maximize, TerminationReason::kInfeasible, detail);
+  if (dual_feasibility_status == FeasibilityStatus::kFeasible) {
+    termination.objective_bounds.dual_bound =
+        termination.objective_bounds.primal_bound;
+  }
+  termination.problem_status.primal_status = FeasibilityStatus::kInfeasible;
+  termination.problem_status.dual_status = dual_feasibility_status;
+  return termination;
+}
+
+Termination Termination::InfeasibleOrUnbounded(
+    const bool is_maximize, const FeasibilityStatus dual_feasibility_status,
+    const std::string detail) {
+  Termination termination(is_maximize,
+                          TerminationReason::kInfeasibleOrUnbounded, detail);
+  termination.problem_status.primal_status = FeasibilityStatus::kUndetermined;
+  termination.problem_status.dual_status = dual_feasibility_status;
+  if (dual_feasibility_status == FeasibilityStatus::kUndetermined) {
+    termination.problem_status.primal_or_dual_infeasible = true;
+  }
+  return termination;
+}
+
+Termination Termination::Unbounded(const bool is_maximize,
+                                   const std::string detail) {
+  Termination termination(is_maximize, TerminationReason::kUnbounded, detail);
+  termination.objective_bounds = ObjectiveBounds::MakeUnbounded(is_maximize);
+  termination.problem_status.primal_status = FeasibilityStatus::kFeasible;
+  termination.problem_status.dual_status = FeasibilityStatus::kInfeasible;
+  return termination;
+}
+
+Termination Termination::NoSolutionFound(
+    const bool is_maximize, Limit limit,
+    const std::optional<double> optional_dual_objective,
+    const std::string detail) {
+  Termination termination(is_maximize, TerminationReason::kNoSolutionFound,
+                          detail);
+  termination.problem_status.primal_status = FeasibilityStatus::kUndetermined;
+  termination.problem_status.dual_status = FeasibilityStatus::kUndetermined;
+  if (optional_dual_objective.has_value()) {
+    termination.objective_bounds.dual_bound = *optional_dual_objective;
+    termination.problem_status.dual_status = FeasibilityStatus::kFeasible;
+  }
   termination.limit = limit;
   return termination;
 }
 
-Termination Termination::NoSolutionFound(const Limit limit,
-                                         const std::string detail) {
-  Termination termination(TerminationReason::kNoSolutionFound, detail);
+Termination Termination::Feasible(
+    const bool is_maximize, const Limit limit,
+    const double finite_primal_objective,
+    const std::optional<double> optional_dual_objective,
+    const std::string detail) {
+  Termination termination(is_maximize, TerminationReason::kFeasible, detail);
+  termination.problem_status.primal_status = FeasibilityStatus::kFeasible;
+  termination.objective_bounds.primal_bound = finite_primal_objective;
+  termination.problem_status.dual_status = FeasibilityStatus::kUndetermined;
+  if (optional_dual_objective.has_value()) {
+    termination.objective_bounds.dual_bound = *optional_dual_objective;
+    termination.problem_status.dual_status = FeasibilityStatus::kFeasible;
+  }
   termination.limit = limit;
   return termination;
+}
+
+Termination Termination::Cutoff(const bool is_maximize,
+                                const std::string detail) {
+  return NoSolutionFound(is_maximize, Limit::kCutoff,
+                         /*optional_dual_objective=*/std::nullopt, detail);
 }
 
 TerminationProto Termination::Proto() const {
@@ -161,6 +315,8 @@ TerminationProto Termination::Proto() const {
   proto.set_reason(EnumToProto(reason));
   proto.set_limit(EnumToProto(limit));
   proto.set_detail(detail);
+  *proto.mutable_problem_status() = problem_status.Proto();
+  *proto.mutable_objective_bounds() = objective_bounds.Proto();
   return proto;
 }
 
@@ -207,8 +363,15 @@ absl::StatusOr<Termination> Termination::FromProto(
   if (!reason.has_value()) {
     return absl::InvalidArgumentError("reason must be specified");
   }
-  Termination result(*reason, termination_proto.detail());
+  Termination result(/*is_maximize=*/false, *reason,
+                     termination_proto.detail());
   result.limit = EnumFromProto(termination_proto.limit());
+  OR_ASSIGN_OR_RETURN3(
+      result.problem_status,
+      ProblemStatus::FromProto(termination_proto.problem_status()),
+      _ << "invalid problem_status");
+  result.objective_bounds =
+      ObjectiveBounds::FromProto(termination_proto.objective_bounds());
   return result;
 }
 
@@ -218,9 +381,10 @@ std::ostream& operator<<(std::ostream& ostr, const Termination& termination) {
     ostr << ", limit: " << *termination.limit;
   }
   if (!termination.detail.empty()) {
-    // TODO(b/200835670): quote detail and escape it properly.
-    ostr << ", detail: " << termination.detail;
+    ostr << ", detail: " << '"' << absl::CEscape(termination.detail) << '"';
   }
+  ostr << ", problem_status: " << termination.problem_status;
+  ostr << ", objective_bounds: " << termination.objective_bounds;
   ostr << "}";
   return ostr;
 }
@@ -278,9 +442,6 @@ absl::StatusOr<SolveStatsProto> SolveStats::Proto() const {
   RETURN_IF_ERROR(
       util_time::EncodeGoogleApiProto(solve_time, proto.mutable_solve_time()))
       << "invalid solve_time (value must be finite)";
-  proto.set_best_primal_bound(best_primal_bound);
-  proto.set_best_dual_bound(best_dual_bound);
-  *proto.mutable_problem_status() = problem_status.Proto();
   proto.set_simplex_iterations(simplex_iterations);
   proto.set_barrier_iterations(barrier_iterations);
   proto.set_first_order_iterations(first_order_iterations);
@@ -295,12 +456,6 @@ absl::StatusOr<SolveStats> SolveStats::FromProto(
       result.solve_time,
       util_time::DecodeGoogleApiProto(solve_stats_proto.solve_time()),
       _ << "invalid solve_time");
-  result.best_primal_bound = solve_stats_proto.best_primal_bound();
-  result.best_dual_bound = solve_stats_proto.best_dual_bound();
-  OR_ASSIGN_OR_RETURN3(
-      result.problem_status,
-      ProblemStatus::FromProto(solve_stats_proto.problem_status()),
-      _ << "invalid problem_status");
   result.simplex_iterations = solve_stats_proto.simplex_iterations();
   result.barrier_iterations = solve_stats_proto.barrier_iterations();
   result.first_order_iterations = solve_stats_proto.first_order_iterations();
@@ -310,11 +465,6 @@ absl::StatusOr<SolveStats> SolveStats::FromProto(
 
 std::ostream& operator<<(std::ostream& ostr, const SolveStats& solve_stats) {
   ostr << "{solve_time: " << solve_stats.solve_time;
-  ostr << ", best_primal_bound: "
-       << RoundTripDoubleFormat(solve_stats.best_primal_bound);
-  ostr << ", best_dual_bound: "
-       << RoundTripDoubleFormat(solve_stats.best_dual_bound);
-  ostr << ", problem_status: " << solve_stats.problem_status;
   ostr << ", simplex_iterations: " << solve_stats.simplex_iterations;
   ostr << ", barrier_iterations: " << solve_stats.barrier_iterations;
   ostr << ", first_order_iterations: " << solve_stats.first_order_iterations;
@@ -362,12 +512,31 @@ absl::StatusOr<SolveResultProto> SolveResult::Proto() const {
   }
   return result;
 }
+namespace {
+TerminationProto UpgradedTerminationProtoForStatsMigration(
+    const SolveResultProto& solve_result_proto) {
+  TerminationProto termination;
+  termination.set_reason(solve_result_proto.termination().reason());
+  termination.set_limit(solve_result_proto.termination().limit());
+  termination.set_detail(solve_result_proto.termination().detail());
+  *termination.mutable_problem_status() = GetProblemStatus(solve_result_proto);
+  *termination.mutable_objective_bounds() =
+      GetObjectiveBounds(solve_result_proto);
+  return termination;
+}
 
+}  // namespace
 absl::StatusOr<SolveResult> SolveResult::FromProto(
     const ModelStorage* model, const SolveResultProto& solve_result_proto) {
-  OR_ASSIGN_OR_RETURN3(auto termination,
-                       Termination::FromProto(solve_result_proto.termination()),
-                       _ << "invalid termination");
+  OR_ASSIGN_OR_RETURN3(
+      auto termination,
+      Termination::FromProto(
+          // TODO(b/290091715): Remove once solve_stats proto no longer has
+          // best_primal/dual_bound/problem_status and
+          // problem_status/objective_bounds are guaranteed to be present in
+          // termination proto.
+          UpgradedTerminationProtoForStatsMigration(solve_result_proto)),
+      _ << "invalid termination");
   SolveResult result(std::move(termination));
   OR_ASSIGN_OR_RETURN3(result.solve_stats,
                        SolveStats::FromProto(solve_result_proto.solve_stats()),
@@ -421,7 +590,15 @@ const PrimalSolution& SolveResult::best_primal_solution() const {
 }
 
 double SolveResult::best_objective_bound() const {
-  return solve_stats.best_dual_bound;
+  return termination.objective_bounds.dual_bound;
+}
+
+double SolveResult::primal_bound() const {
+  return termination.objective_bounds.primal_bound;
+}
+
+double SolveResult::dual_bound() const {
+  return termination.objective_bounds.dual_bound;
 }
 
 double SolveResult::objective_value() const {
@@ -435,9 +612,9 @@ double SolveResult::objective_value(const Objective objective) const {
 }
 
 bool SolveResult::bounded() const {
-  return solve_stats.problem_status.primal_status ==
+  return termination.problem_status.primal_status ==
              FeasibilityStatus::kFeasible &&
-         solve_stats.problem_status.dual_status == FeasibilityStatus::kFeasible;
+         termination.problem_status.dual_status == FeasibilityStatus::kFeasible;
 }
 
 const VariableMap<double>& SolveResult::variable_values() const {
@@ -521,5 +698,4 @@ std::ostream& operator<<(std::ostream& out, const SolveResult& result) {
   return out;
 }
 
-}  // namespace math_opt
-}  // namespace operations_research
+}  // namespace operations_research::math_opt

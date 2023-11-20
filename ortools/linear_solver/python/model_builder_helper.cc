@@ -177,6 +177,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
            arg("options") = MPModelExportOptions())
       .def("write_model_to_file", &ModelBuilderHelper::WriteModelToFile,
            arg("filename"))
+      .def("load_model_from_file", &ModelBuilderHelper::LoadModelFromFile,
+           arg("filename"))
       .def("import_from_mps_string", &ModelBuilderHelper::ImportFromMpsString,
            arg("mps_string"))
       .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,

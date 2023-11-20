@@ -13,16 +13,15 @@
 
 #include "ortools/math_opt/constraints/indicator/storage.h"
 
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/math_opt/storage/sorted.h"
 #include "ortools/math_opt/storage/sparse_coefficient_map.h"
 
 namespace operations_research::math_opt {

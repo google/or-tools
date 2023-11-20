@@ -30,7 +30,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def OverlappingIntervals():
+def overlapping_interval_sample_sat():
     """Create the overlapping Boolean variables and enumerate all states."""
     model = cp_model.CpModel()
 
@@ -93,4 +93,4 @@ def OverlappingIntervals():
     solver.solve(model, solution_printer)
 
 
-OverlappingIntervals()
+overlapping_interval_sample_sat()

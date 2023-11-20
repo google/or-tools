@@ -562,6 +562,9 @@ class LinearProgram {
     return &constraint_upper_bounds_;
   }
 
+  // Removes objective and coefficient with magnitude <= threshold.
+  void RemoveNearZeroEntries(Fractional threshold);
+
  private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.

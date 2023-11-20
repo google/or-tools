@@ -13,6 +13,10 @@
 
 #include "ortools/lp_data/proto_utils.h"
 
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
+
 namespace operations_research {
 namespace glop {
 

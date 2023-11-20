@@ -198,6 +198,18 @@ std::function<int(GRBenv* env, const char* paramname, double* valueP)>
     GRBgetdblparam = nullptr;
 std::function<int(GRBenv* env, const char* paramname, char* valueP)>
     GRBgetstrparam = nullptr;
+std::function<int(GRBenv* env, const char* paramname, int* valueP, int* minP,
+                  int* maxP, int* defP)>
+    GRBgetintparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname, double* valueP,
+                  double* minP, double* maxP, double* defP)>
+    GRBgetdblparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname, char* valueP, char* defP)>
+    GRBgetstrparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname)> GRBgetparamtype =
+    nullptr;
+std::function<int(GRBenv* env, int i, char** paramnameP)> GRBgetparamname =
+    nullptr;
 std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetparam = nullptr;
 std::function<int(GRBenv* env, const char* paramname, int value)>
@@ -208,6 +220,8 @@ std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetstrparam = nullptr;
 std::function<int(GRBenv* env)> GRBresetparams = nullptr;
 std::function<int(GRBenv* dest, GRBenv* src)> GRBcopyparams = nullptr;
+std::function<int(GRBenv* env)> GRBgetnumparams = nullptr;
+std::function<int(GRBenv** envP)> GRBemptyenv = nullptr;
 std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
 std::function<void(GRBenv* env)> GRBfreeenv = nullptr;
@@ -309,6 +323,16 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBresetparams, "GRBresetparams");
   gurobi_dynamic_library->GetFunction(&GRBcopyparams, "GRBcopyparams");
   gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
+  gurobi_dynamic_library->GetFunction(&GRBemptyenv, "GRBemptyenv");
+  gurobi_dynamic_library->GetFunction(&GRBgetnumparams, "GRBgetnumparams");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamname, "GRBgetparamname");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamtype, "GRBgetparamtype");
+  gurobi_dynamic_library->GetFunction(&GRBgetintparaminfo,
+                                      "GRBgetintparaminfo");
+  gurobi_dynamic_library->GetFunction(&GRBgetdblparaminfo,
+                                      "GRBgetdblparaminfo");
+  gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
+                                      "GRBgetstrparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
   gurobi_dynamic_library->GetFunction(&GRBgeterrormsg, "GRBgeterrormsg");

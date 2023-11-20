@@ -3479,9 +3479,11 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
             raise RuntimeError("solve() has not been called.")
         return self.Response()
 
-    # PeP8 compatibility
+    # Compatibility with pre PEP8
+    # pylint: disable=invalid-name
     Value = value
     BooleanValue = boolean_value
+    # pylint: enable=invalid-name
 
 
 class ObjectiveSolutionPrinter(CpSolverSolutionCallback):

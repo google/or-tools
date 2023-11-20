@@ -18,7 +18,7 @@
 from ortools.sat.python import cp_model
 
 
-def IntervalSampleSat():
+def interval_sample_sat():
     """Showcases how to build interval variables."""
     model = cp_model.CpModel()
     horizon = 100
@@ -43,4 +43,4 @@ def IntervalSampleSat():
     print(f"fixed_interval = {repr(fixed_interval)}")
 
 
-IntervalSampleSat()
+interval_sample_sat()

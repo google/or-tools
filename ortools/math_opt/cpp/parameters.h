@@ -96,6 +96,12 @@ enum class SolverType {
   //
   // Supports LP and MIP problems (convex QPs are unimplemented).
   kHighs = SOLVER_TYPE_HIGHS,
+
+  // MathOpt's reference implementation of a MIP solver.
+  //
+  // Slow/not recommended for production. Not an LP solver (no dual information
+  // returned).
+  kSantorini = SOLVER_TYPE_SANTORINI,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);

@@ -30,7 +30,6 @@ def create_data_model():
     data["bins"] = data["items"]
     data["bin_capacity"] = 100
     return data
-
 # [END data_model]
 
 

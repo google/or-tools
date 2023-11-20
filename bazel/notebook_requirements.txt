@@ -65,6 +65,8 @@ idna==3.4
     #   anyio
     #   jsonschema
     #   requests
+immutabledict==3.0.0
+    # via -r bazel/notebook_requirements.in
 ipykernel==6.25.2
     # via
     #   jupyter

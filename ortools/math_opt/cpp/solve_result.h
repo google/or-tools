@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "ortools/gscip/gscip.pb.h"
@@ -55,14 +56,16 @@ MATH_OPT_DEFINE_ENUM(FeasibilityStatus, FEASIBILITY_STATUS_UNSPECIFIED);
 // Feasibility status of the primal problem and its dual (or the dual of a
 // continuous relaxation) as claimed by the solver. The solver is not required
 // to return a certificate for the claim (e.g. the solver may claim primal
-// feasibility without returning a primal feasible solutuion). This combined
+// feasibility without returning a primal feasible solution). This combined
 // status gives a comprehensive description of a solver's claims about
 // feasibility and unboundedness of the solved problem. For instance,
+//
 //   * a feasible status for primal and dual problems indicates the primal is
 //     feasible and bounded and likely has an optimal solution (guaranteed for
 //     problems without non-linear constraints).
 //   * a primal feasible and a dual infeasible status indicates the primal
 //     problem is unbounded (i.e. has arbitrarily good solutions).
+//
 // Note that a dual infeasible status by itself (i.e. accompanied by an
 // undetermined primal status) does not imply the primal problem is unbounded as
 // we could have both problems be infeasible. Also, while a primal and dual
@@ -98,66 +101,6 @@ struct SolveStats {
   // Solver::Solve(). Note: this does not include work done building the model.
   absl::Duration solve_time = absl::ZeroDuration();
 
-  // TODO(b/195295177): Update to add clearer contracts once PDLP's bounds
-  // contract is clarified.
-
-  // Solver claims the optimal value is equal or better (smaller for
-  // minimization and larger for maximization) than best_primal_bound up to the
-  // solvers primal feasibility tolerance (see warning below):
-  //   * best_primal_bound is trivial (+inf for minimization and -inf
-  //     maximization) when the solver does not claim to have such bound.
-  //   * best_primal_bound can be closer to the optimal value than the objective
-  //     of the best primal feasible solution. In particular, best_primal_bound
-  //     may be non-trivial even when no primal feasible solutions are returned.
-  // Warning: The precise claim is that there exists a primal solution that:
-  //  * is numerically feasible (i.e. feasible up to the solvers tolerance), and
-  //  * has an objective value best_primal_bound.
-  // This numerically feasible solution could be slightly infeasible, in which
-  // case best_primal_bound could be strictly better than the optimal value.
-  // Translating a primal feasibility tolerance to a tolerance on
-  // best_primal_bound is non-trivial, specially when the feasibility tolerance
-  // is relatively large (e.g. when solving with PDLP).
-  double best_primal_bound = 0.0;
-
-  // Solver claims the optimal value is equal or worse (larger for
-  // minimization and smaller for maximization) than best_dual_bound up to the
-  // solvers dual feasibility tolerance (see warning below):
-  //   * best_dual_bound is trivial (-inf for minimization and +inf
-  //     maximization) when the solver does not claim to have such bound.
-  //     Similarly to best_primal_bound, this may happen for some solvers even
-  //     when returning optimal. MIP solvers will typically report a bound even
-  //     if it is imprecise.
-  //   * for continuous problems best_dual_bound can be closer to the optimal
-  //     value than the objective of the best dual feasible solution. For MIP
-  //     one of the first non-trivial values for best_dual_bound is often the
-  //     optimal value of the LP relaxation of the MIP.
-  //   * best_dual_bound should be better (smaller for minimization and larger
-  //     for maximization) than best_primal_bound up to the solvers tolerances
-  //     (see warning below).
-  // Warning:
-  //  * For continuous problems, the precise claim is that there exists a
-  //    dual solution that:
-  //      * is numerically feasible (i.e. feasible up to the solvers tolerance),
-  //        and
-  //      * has an objective value best_dual_bound.
-  //    This numerically feasible solution could be slightly infeasible, in
-  //    which case best_dual_bound could be strictly worse than the optimal
-  //    value and best_primal_bound. Similar to the primal case, translating a
-  //    dual feasibility tolerance to a tolerance on best_dual_bound is
-  //    non-trivial, specially when the feasibility tolerance is relatively
-  //    large. However, some solvers provide a corrected version of
-  //    best_dual_bound that can be numerically safer. This corrected version
-  //    can be accessed through the solver's specific output (e.g. for PDLP,
-  //    pdlp_output.convergence_information.corrected_dual_objective).
-  //  * For MIP solvers, best_dual_bound may be associated to a dual solution
-  //    for some continuous relaxation (e.g. LP relaxation), but it is often a
-  //    complex consequence of the solvers execution and is typically more
-  //    imprecise than the bounds reported by LP solvers.
-  double best_dual_bound = 0.0;
-
-  // Feasibility statuses for primal and dual problems.
-  ProblemStatus problem_status;
-
   int simplex_iterations = 0;
 
   int barrier_iterations = 0;
@@ -190,7 +133,7 @@ enum class TerminationReason {
   kUnbounded = TERMINATION_REASON_UNBOUNDED,
 
   // The primal problem is either infeasible or unbounded. More details on the
-  // problem status may be available in solve_stats.problem_status. Note that
+  // problem status may be available in termination.problem_status. Note that
   // Gurobi's unbounded status may be mapped here.
   kInfeasibleOrUnbounded = TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED,
 
@@ -282,11 +225,74 @@ enum class Limit {
 
 MATH_OPT_DEFINE_ENUM(Limit, LIMIT_UNSPECIFIED);
 
+// Bounds on the optimal objective value.
+struct ObjectiveBounds {
+  // Solver claims there exists a primal solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // primal_bound.
+  //
+  // The optimal value is equal or better (smaller for min objectives and larger
+  // for max objectives) than primal_bound, but only up to solver-tolerances.
+  double primal_bound = 0.0;
+
+  // Solver claims there exists a dual solution that is numerically feasible
+  // (i.e. feasible up to the solvers tolerance), and whose objective value is
+  // dual_bound.
+  //
+  // For MIP solvers, the associated dual problem may be some continuous
+  // relaxation (e.g. LP relaxation), but it is often an implicitly defined
+  // problem that is a complex consequence of the solvers execution. For both
+  // continuous and MIP solvers, the optimal value is equal or worse (larger for
+  // min objective and smaller for max objectives) than dual_bound, but only up
+  // to solver-tolerances. Some continuous solvers provide a numerically safer
+  // dual bound through solver's specific output (e.g. for PDLP,
+  // pdlp_output.convergence_information.corrected_dual_objective).
+  double dual_bound = 0.0;
+
+  // Returns trivial bounds.
+  //
+  // Trivial bounds are:
+  // * for a maximization:
+  //   - primal_bound = -inf
+  //   - dual_bound   = +inf
+  // * for a minimization:
+  //   - primal_bound = +inf
+  //   - dual_bound   = -inf
+  static ObjectiveBounds MakeTrivial(bool is_maximize);
+  static ObjectiveBounds MaximizeMakeTrivial();
+  static ObjectiveBounds MinimizeMakeTrivial();
+
+  // Returns unbounded bounds.
+  //
+  // Unbounded bounds are:
+  // * for a maximization:
+  //   - primal_bound = dual_bound = +inf
+  // * for a minimization:
+  //   - primal_bound = dual_bound = -inf
+  static ObjectiveBounds MakeUnbounded(bool is_maximize);
+  static ObjectiveBounds MinimizeMakeUnbounded();
+  static ObjectiveBounds MaximizeMakeUnbounded();
+
+  // Sets both bounds to objective_value.
+  static ObjectiveBounds MakeOptimal(double objective_value);
+
+  static ObjectiveBounds FromProto(
+      const ObjectiveBoundsProto& objective_bounds_proto);
+  ObjectiveBoundsProto Proto() const;
+  std::string ToString() const;
+};
+
+std::ostream& operator<<(std::ostream& ostr,
+                         const ObjectiveBounds& objective_bounds);
+
 // All information regarding why a call to Solve() terminated.
 struct Termination {
-  // When the reason is kFeasible or kNoSolutionFound, please use the static
-  // functions Feasible and NoSolutionFound.
-  explicit Termination(TerminationReason reason, std::string detail = {});
+  // Returns a Termination with the provided reason and details along with
+  // trivial bounds and kUndetermined statuses.
+  // A variety of static factory functions are provided below for common
+  // Termination conditions, generally prefer these if applicable.
+  Termination(bool is_maximize, TerminationReason reason,
+              std::string detail = {});
 
   // Additional information in `limit` when value is kFeasible or
   // kNoSolutionFound, see `limit` for details.
@@ -303,6 +309,12 @@ struct Termination {
   // Not all solvers can always determine the limit which caused termination,
   // Limit::kUndetermined is used when the cause cannot be determined.
   std::string detail;
+
+  // Feasibility statuses for primal and dual problems.
+  ProblemStatus problem_status;
+
+  // Bounds on the optimal objective value.
+  ObjectiveBounds objective_bounds;
 
   // Returns true if a limit was reached (i.e. if reason is kFeasible or
   // kNoSolutionFound, and limit is not empty).
@@ -329,11 +341,91 @@ struct Termination {
   absl::Status ReasonIsAnyOf(
       std::initializer_list<TerminationReason> reasons) const;
 
-  // Sets the reason to kFeasible
-  static Termination Feasible(Limit limit, std::string detail = {});
+  // Returns termination with reason kOptimal, the provided objective for both
+  // primal and dual bounds, and kFeasible primal and dual statuses.
+  static Termination Optimal(double objective_value, std::string detail = {});
 
-  // Sets the reason to kNoSolutionFound
-  static Termination NoSolutionFound(Limit limit, std::string detail = {});
+  // Returns termination with reason kOptimal, the provided objective bounds and
+  // kFeasible primal and dual statuses.
+  static Termination Optimal(double primal_objective_value,
+                             double dual_objective_value,
+                             std::string detail = {});
+
+  // Returns a termination with reason kInfeasible, primal status kInfeasible
+  // and the provided dual status.
+  //
+  // It sets a trivial primal bound and a dual bound based on the provided dual
+  // status, which should be kFeasible or kUndetermined. If the dual status is
+  // kUndetermined, then the dual bound will be trivial and if the dual status
+  // is kFeasible, then the dual bound will be equal to the primal bound.
+  //
+  // The convention for infeasible MIPs is that dual_feasibility_status is
+  // feasible (There always exist a dual feasible convex relaxation of an
+  // infeasible MIP).
+  static Termination Infeasible(bool is_maximize,
+                                FeasibilityStatus dual_feasibility_status =
+                                    FeasibilityStatus::kUndetermined,
+                                std::string detail = {});
+
+  // Returns a termination with reason kInfeasibleOrUnbounded, primal status
+  // kUndetermined, the provided dual status (which should be kUndetermined or
+  // kInfeasible) and trivial bounds.
+  //
+  // primal_or_dual_infeasible is set if dual_feasibility_status is
+  // kUndetermined.
+  static Termination InfeasibleOrUnbounded(
+      bool is_maximize,
+      FeasibilityStatus dual_feasibility_status =
+          FeasibilityStatus::kUndetermined,
+      std::string detail = {});
+
+  // Returns a termination with reason kUnbounded, primal status kFeasible,
+  // dual status kInfeasible and unbounded bounds.
+  static Termination Unbounded(bool is_maximize, std::string detail = {});
+
+  // Returns a termination with reason kNoSolutionFound and primal status
+  // kUndetermined.
+  //
+  // Assumes dual solution exists iff optional_dual_objective is set even if
+  // infinite (some solvers return feasible dual solutions without an objective
+  // value). optional_dual_objective should not be set when limit is
+  // kCutoff for a valid TerminationProto to be returned (use LimitCutoff()
+  // below instead).
+  //
+  // It sets a trivial primal bound. The dual bound is either set to the
+  // optional_dual_objective if set, else to a trivial value.
+  //
+  // TODO(b/290359402): Consider improving to require a finite dual bound when
+  // dual feasible solutions are returned.
+  static Termination NoSolutionFound(
+      bool is_maximize, Limit limit,
+      std::optional<double> optional_dual_objective = std::nullopt,
+      std::string detail = {});
+
+  // Returns a termination with reason kFeasible and primal status kFeasible.
+  // The dual status depends on optional_dual_objective.
+  //
+  // finite_primal_objective should be finite and limit should not be
+  // kCutoff for a valid TerminationProto to be returned (use LimitCutoff()
+  // below instead).
+  //
+  // Assumes dual solution exists iff optional_dual_objective is set even if
+  // infinite (some solvers return feasible dual solutions without an objective
+  // value). If set the dual status is set to kFeasible, else
+  // it is kUndetermined.
+  //
+  // It sets the primal bound based on the primal objective. The dual bound is
+  // either set to the optional_dual_objective if set, else to a trivial value.
+  //
+  // TODO(b/290359402): Consider improving to require a finite dual bound when
+  // dual feasible solutions are returned.
+  static Termination Feasible(
+      bool is_maximize, Limit limit, double finite_primal_objective,
+      std::optional<double> optional_dual_objective = std::nullopt,
+      std::string detail = {});
+
+  // Calls NoSolutionFound() with LIMIT_CUTOFF LIMIT.
+  static Termination Cutoff(bool is_maximize, std::string detail = {});
 
   // Will return an error if termination_proto.reason is UNSPECIFIED.
   static absl::StatusOr<Termination> FromProto(
@@ -420,6 +512,16 @@ struct SolveResult {
 
   absl::Duration solve_time() const { return solve_stats.solve_time; }
 
+  // A primal bound on the optimal objective value as described in
+  // ObjectiveBounds. Will return a valid (possibly infinite) bound even if
+  // no primal feasible solutions are available.
+  double primal_bound() const;
+
+  // A dual bound on the optimal objective value as described in
+  // ObjectiveBounds. Will return a valid (possibly infinite) bound even if
+  // no dual feasible solutions are available.
+  double dual_bound() const;
+
   // Indicates if at least one primal feasible solution is available.
   //
   // For SolveResults generated by calling Solver::Solve(), when
@@ -435,10 +537,20 @@ struct SolveResult {
 
   // The objective value of the best primal feasible solution. Will CHECK fail
   // if there are no primal feasible solutions.
+  //
+  // primal_bound() above is guaranteed to be at least as good (larger or equal
+  // for max problems and smaller or equal for min problems) as
+  // objective_value() and will never CHECK fail, so it may be preferable in
+  // some cases. Note that primal_bound() could be better than objective_value()
+  // even for optimal terminations, but on such optimal termination, both should
+  // satisfy the optimality tolerances.
   double objective_value() const;
   double objective_value(Objective objective) const;
 
   // A bound on the best possible objective value.
+  //
+  // best_objective_bound() is always equal to dual_bound(), so they can be
+  // used interchangeably.
   double best_objective_bound() const;
 
   // The variable values from the best primal feasible solution. Will CHECK fail

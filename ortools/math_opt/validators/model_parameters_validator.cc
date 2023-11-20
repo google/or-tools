@@ -14,8 +14,8 @@
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 
 #include "absl/status/status.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/types.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -62,6 +62,24 @@ absl::Status ValidateBranchingPriorities(
   return absl::OkStatus();
 }
 
+absl::Status ValidateObjectiveParameters(
+    const ObjectiveParametersProto& parameters) {
+  if (parameters.objective_degradation_absolute_tolerance() < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "ObjectiveParametersProto.objective_degradation_absolute_"
+              "tolerance = "
+           << parameters.objective_degradation_absolute_tolerance() << " < 0";
+  }
+
+  if (parameters.objective_degradation_relative_tolerance() < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "ObjectiveParametersProto.objective_degradation_relative_"
+              "tolerance = "
+           << parameters.objective_degradation_relative_tolerance() << " < 0";
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
@@ -100,6 +118,21 @@ absl::Status ValidateModelSolveParameters(
   }
   RETURN_IF_ERROR(ValidateBranchingPriorities(parameters.branching_priorities(),
                                               model_summary));
+  RETURN_IF_ERROR(
+      ValidateObjectiveParameters(parameters.primary_objective_parameters()))
+      << "invalid primary_objective_parameters";
+  for (const auto& [objective, params] :
+       parameters.auxiliary_objective_parameters()) {
+    if (!model_summary.auxiliary_objectives.HasId(objective)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Entry in auxiliary_objective_parameters for unknown "
+                "objective: "
+             << objective;
+    }
+    RETURN_IF_ERROR(ValidateObjectiveParameters(params))
+        << "invalid auxiliary_objective_parameters entry for objective: "
+        << objective;
+  }
   return absl::OkStatus();
 }
 

@@ -90,7 +90,8 @@ def main():
             for i in data["all_items"]:
                 if x[i, b].solution_value() > 0:
                     print(
-                        f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}"
+                        f"Item {i} weight: {data['weights'][i]} value:"
+                        f" {data['values'][i]}"
                     )
                     bin_weight += data["weights"][i]
                     bin_value += data["values"][i]

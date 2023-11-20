@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -84,7 +84,7 @@ config_setting(
 
 bool_flag(
     name = "with_highs",
-    build_setting_default = True,
+    build_setting_default = False,
 )
 
 config_setting(
@@ -251,7 +251,12 @@ cc_library(
         "//ortools/base:timer",
         "//ortools/gurobi:environment",
         "//ortools/xpress:environment",
-        "//ortools/linear_solver/proto_solver",
+        "//ortools/gurobi:gurobi_util",
+        "//ortools/linear_solver/proto_solver:glop_proto_solver",
+        "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
+        "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
+        "//ortools/linear_solver/proto_solver:sat_proto_solver",
+        "//ortools/linear_solver/proto_solver:scip_proto_solver",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",

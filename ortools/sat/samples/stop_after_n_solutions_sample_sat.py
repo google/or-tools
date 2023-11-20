@@ -41,7 +41,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def StopAfterNSolutionsSampleSat():
+def stop_after_n_solutions_sample_sat():
     """Showcases calling the solver to search for small number of solutions."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -63,5 +63,5 @@ def StopAfterNSolutionsSampleSat():
     assert solution_printer.solution_count == 5
 
 
-StopAfterNSolutionsSampleSat()
+stop_after_n_solutions_sample_sat()
 # [END program]

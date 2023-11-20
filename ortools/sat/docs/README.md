@@ -33,7 +33,7 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 from ortools.sat.python import cp_model
 
 
-def SimpleSatProgram():
+def simple_sat_program():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -59,7 +59,7 @@ def SimpleSatProgram():
         print("No solution found.")
 
 
-SimpleSatProgram()
+simple_sat_program()
 ```
 
 ### C++ code samples

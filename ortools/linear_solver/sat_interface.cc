@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -130,14 +131,11 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   MPModelRequest request;
   solver_->ExportModelToProto(request.mutable_model());
-  request.set_solver_specific_parameters(
-      EncodeSatParametersAsString(parameters_));
+  request.set_solver_specific_parameters(EncodeParametersAsString(parameters_));
   request.set_enable_internal_solver_output(!quiet_);
-  const absl::StatusOr<MPSolutionResponse> status_or =
-      SatSolveProto(std::move(request), &interrupt_solve_);
 
-  if (!status_or.ok()) return MPSolver::ABNORMAL;
-  const MPSolutionResponse& response = status_or.value();
+  const MPSolutionResponse response =
+      SatSolveProto(std::move(request), &interrupt_solve_);
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -156,22 +154,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
 std::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
     const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  absl::StatusOr<MPSolutionResponse> status_or =
-      SatSolveProto(request, interrupt);
-  if (status_or.ok()) return std::move(status_or).value();
-  if (request.enable_internal_solver_output()) {
-    LOG(INFO) << "Failed SAT solve: " << status_or.status();
-  }
-  MPSolutionResponse response;
-  // As of 2021-08, the sole non-OK status returned by SatSolveProto is an
-  // INVALID_ARGUMENT error caused by invalid solver parameters.
-  // TODO(user): Move that conversion to SatSolveProto, which should always
-  // return a MPSolutionResponse, even for errors.
-  response.set_status(absl::IsInvalidArgument(status_or.status())
-                          ? MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS
-                          : MPSOLVER_ABNORMAL);
-  response.set_status_str(status_or.status().ToString());
-  return response;
+  return SatSolveProto(request, interrupt);
 }
 
 bool SatInterface::InterruptSolve() {

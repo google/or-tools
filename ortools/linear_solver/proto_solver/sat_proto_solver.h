@@ -18,7 +18,6 @@
 #include <functional>
 #include <string>
 
-#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
@@ -50,26 +49,10 @@ namespace operations_research {
 // found by the solver. The solver may call solution_callback from multiple
 // threads, but it will ensure that at most one thread executes
 // solution_callback at a time.
-absl::StatusOr<MPSolutionResponse> SatSolveProto(
+MPSolutionResponse SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const std::string&)> logging_callback = nullptr,
     std::function<void(const MPSolution&)> solution_callback = nullptr);
-
-// Returns a string that should be used in MPModelRequest's
-// solver_specific_parameters field to encode the SAT parameters.
-//
-// The returned string's content depends on the version of the proto library
-// that is linked in the binary.
-//
-// By default it will contain the textual representation of the input proto.
-// But when the proto-lite is used, it will contain the binary stream of the
-// proto instead since it is not possible to build the textual representation in
-// that case.
-//
-// The SatSolveProto() function will test if the proto-lite is used and expect a
-// binary stream when it is the case. So in order for your code to be portable,
-// you should always use this function to set the specific parameters.
-std::string EncodeSatParametersAsString(const sat::SatParameters& parameters);
 
 // Returns a string that describes the version of the CP-SAT solver.
 std::string SatSolverVersion();

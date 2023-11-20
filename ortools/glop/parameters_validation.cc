@@ -13,6 +13,7 @@
 
 #include "ortools/glop/parameters_validation.h"
 
+#include <cmath>
 #include <string>
 
 #include "absl/strings/str_cat.h"
@@ -77,7 +78,16 @@ std::string ValidateParameters(const GlopParameters& params) {
   TEST_NON_NEGATIVE(initial_condition_number_threshold);
   TEST_NON_NEGATIVE(max_deterministic_time);
   TEST_NON_NEGATIVE(max_time_in_seconds);
-  TEST_NON_NEGATIVE(max_valid_magnitude);
+
+  TEST_FINITE_AND_NON_NEGATIVE(max_valid_magnitude);
+  if (params.max_valid_magnitude() > 1e100) {
+    return "max_valid_magnitude must be <= 1e100";
+  }
+
+  TEST_FINITE_AND_NON_NEGATIVE(drop_magnitude);
+  if (params.drop_magnitude() < 1e-100) {
+    return "drop magnitude must be finite and >= 1e-100";
+  }
 
   TEST_INTEGER_NON_NEGATIVE(basis_refactorization_period);
   TEST_INTEGER_NON_NEGATIVE(devex_weights_reset_period);

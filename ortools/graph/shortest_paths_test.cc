@@ -18,8 +18,10 @@
 #include <vector>
 
 #include "absl/base/macros.h"
+#include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "gtest/gtest.h"
+#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/util/zvector.h"
 
@@ -119,100 +121,6 @@ void CheckPathDataFromGraph(const GraphType& graph,
 
 template <class GraphType>
 void TestShortestPathsFromGraph(const GraphType& graph,
-                                const ZVector<PathDistance>& lengths,
-                                const NodeIndex expected_paths[],
-                                const PathDistance expected_distances[]) {
-  const int kThreads = 10;
-  const NodeIndex source = typename GraphType::NodeIterator(graph).Index();
-  std::vector<NodeIndex> some_nodes;
-  int index = 0;
-  std::mt19937 randomizer(12345);
-  for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
-       iterator.Next()) {
-    if (absl::Bernoulli(randomizer, 1.0 / 2)) {
-      some_nodes.push_back(iterator.Index());
-    }
-    ++index;
-  }
-  // All-pair shortest paths.
-  {
-    BUILD_CONTAINERS();
-    ComputeAllToAllShortestPathsWithMultipleThreads(graph, lengths, kThreads,
-                                                    &container);
-    ComputeAllToAllShortestPathsWithMultipleThreads(graph, lengths, kThreads,
-                                                    &distance_container);
-    CheckPathData(graph, container, distance_container, expected_paths,
-                  expected_distances);
-  }
-  // One-to-all shortest paths.
-  {
-    BUILD_CONTAINERS();
-    ComputeOneToAllShortestPaths(graph, lengths, source, &container);
-    ComputeOneToAllShortestPaths(graph, lengths, source, &distance_container);
-    CheckPathDataRow(graph, container, distance_container, expected_paths,
-                     expected_distances, source);
-  }
-  // Many-to-all shortest paths.
-  {
-    BUILD_CONTAINERS();
-    ComputeManyToAllShortestPathsWithMultipleThreads(graph, lengths, some_nodes,
-                                                     kThreads, &container);
-    ComputeManyToAllShortestPathsWithMultipleThreads(
-        graph, lengths, some_nodes, kThreads, &distance_container);
-    for (int i = 0; i < some_nodes.size(); ++i) {
-      CheckPathDataRow(graph, container, distance_container, expected_paths,
-                       expected_distances, some_nodes[i]);
-    }
-  }
-  // Many-to-all shortest paths with duplicates.
-  {
-    BUILD_CONTAINERS();
-    std::vector<NodeIndex> sources(3, source);
-    ComputeManyToAllShortestPathsWithMultipleThreads(graph, lengths, sources,
-                                                     kThreads, &container);
-    ComputeManyToAllShortestPathsWithMultipleThreads(
-        graph, lengths, sources, kThreads, &distance_container);
-    for (int i = 0; i < sources.size(); ++i) {
-      CheckPathDataRow(graph, container, distance_container, expected_paths,
-                       expected_distances, sources[i]);
-    }
-  }
-  // One-to-many shortest paths.
-  {
-    BUILD_CONTAINERS();
-    ComputeOneToManyShortestPaths(graph, lengths, source, some_nodes,
-                                  &container);
-    ComputeOneToManyShortestPaths(graph, lengths, source, some_nodes,
-                                  &distance_container);
-    index = source * graph.num_nodes();
-    for (int i = 0; i < some_nodes.size(); ++i) {
-      CheckPathDataPair(container, distance_container,
-                        expected_distances[index + some_nodes[i]],
-                        expected_paths[index + some_nodes[i]], source,
-                        some_nodes[i]);
-    }
-  }
-  // Many-to-many shortest paths.
-  {
-    BUILD_CONTAINERS();
-    ComputeManyToManyShortestPathsWithMultipleThreads(
-        graph, lengths, some_nodes, some_nodes, kThreads, &container);
-    ComputeManyToManyShortestPathsWithMultipleThreads(
-        graph, lengths, some_nodes, some_nodes, kThreads, &distance_container);
-    for (int i = 0; i < some_nodes.size(); ++i) {
-      index = some_nodes[i] * graph.num_nodes();
-      for (int j = 0; j < some_nodes.size(); ++j) {
-        CheckPathDataPair(container, distance_container,
-                          expected_distances[index + some_nodes[j]],
-                          expected_paths[index + some_nodes[j]], some_nodes[i],
-                          some_nodes[j]);
-      }
-    }
-  }
-}
-
-template <class GraphType>
-void TestShortestPathsFromGraph(const GraphType& graph,
                                 const std::vector<PathDistance>& lengths,
                                 const NodeIndex expected_paths[],
                                 const PathDistance expected_distances[]) {
@@ -307,20 +215,6 @@ void TestShortestPathsFromGraph(const GraphType& graph,
 #undef BUILD_CONTAINERS
 
 template <class GraphType>
-void TestShortestPaths(int num_nodes, int num_arcs, const NodeIndex arcs[][2],
-                       const PathDistance arc_lengths[],
-                       const NodeIndex expected_paths[],
-                       const PathDistance expected_distances[]) {
-  GraphType graph(num_nodes, num_arcs);
-  ZVector<PathDistance> lengths(0, num_arcs - 1);
-  for (int i = 0; i < num_arcs; ++i) {
-    lengths[graph.AddArc(arcs[i][0], arcs[i][1])] = arc_lengths[i];
-  }
-  TestShortestPathsFromGraph(graph, lengths, expected_paths,
-                             expected_distances);
-}
-
-template <class GraphType>
 void TestShortestPathsFromGraph(
     int num_nodes, int num_arcs, const typename GraphType::NodeIndex arcs[][2],
     const PathDistance arc_lengths[],
@@ -369,15 +263,6 @@ TYPED_TEST_SUITE(GraphShortestPathsDeathTest,
 TYPED_TEST_SUITE(GraphShortestPathsTest, GraphTypesForShortestPathsTesting);
 
 // Test on an empty graph.
-TYPED_TEST(ShortestPathsDeathTest, ShortestPathsEmptyGraph) {
-  const int kExpectedPaths[] = {};
-  const PathDistance kExpectedDistances[] = {};
-  TypeParam graph;
-  ZVector<PathDistance> lengths;
-  TestShortestPathsFromGraph(graph, lengths, kExpectedPaths,
-                             kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsEmptyGraph) {
   const int kExpectedPaths[] = {};
   const PathDistance kExpectedDistances[] = {};
@@ -388,27 +273,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsEmptyGraph) {
 }
 
 // Test on a disconnected graph (set of nodes pointing to themselves).
-TYPED_TEST(ShortestPathsDeathTest, ShortestPathsAllDisconnected) {
-  const NodeIndex kUnconnected = TypeParam::kNilNode;
-  const int kNodes = 3;
-  const NodeIndex kArcs[][2] = {{0, 0}, {1, 1}, {2, 2}};
-  const PathDistance kArcLengths[] = {0, 0, 0};
-  const int kExpectedPaths[] = {0, kUnconnected, kUnconnected, kUnconnected,
-                                1, kUnconnected, kUnconnected, kUnconnected,
-                                2};
-  const PathDistance kExpectedDistances[] = {0,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             0,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             0};
-  TestShortestPaths<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths), kArcs,
-                               kArcLengths, kExpectedPaths, kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsAllDisconnected) {
   const typename TypeParam::NodeIndex kUnconnected = -1;
   const int kNodes = 3;
@@ -440,21 +304,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPathsAllDisconnected) {
 // |               ||          |
 //  ---------------  ----------
 //
-TYPED_TEST(ShortestPathsDeathTest, ShortestPaths1) {
-  const int kNodes = 6;
-  const NodeIndex kArcs[][2] = {{0, 2}, {0, 3}, {1, 4}, {2, 4},
-                                {3, 5}, {4, 5}, {5, 0}, {5, 1}};
-  const PathDistance kArcLengths[] = {1, 4, 1, 1, 1, 1, 1, 3};
-  const int kExpectedPaths[] = {5, 5, 0, 0, 2, 4, 5, 5, 0, 0, 1, 4,
-                                5, 5, 0, 0, 2, 4, 5, 5, 0, 0, 2, 3,
-                                5, 5, 0, 0, 2, 4, 5, 5, 0, 0, 2, 4};
-  const PathDistance kExpectedDistances[] = {
-      4, 6, 1, 4, 2, 3, 3, 5, 4, 7, 1, 2, 3, 5, 4, 7, 1, 2,
-      2, 4, 3, 6, 4, 1, 2, 4, 3, 6, 4, 1, 1, 3, 2, 5, 3, 4};
-  TestShortestPaths<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths), kArcs,
-                               kArcLengths, kExpectedPaths, kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPaths1) {
   const int kNodes = 6;
   const typename TypeParam::NodeIndex kArcs[][2] = {
@@ -482,18 +331,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPaths1) {
 //    |                      |
 //    |          1           |
 //     ----------------------
-TYPED_TEST(ShortestPathsDeathTest, ShortestPaths2) {
-  const int kNodes = 4;
-  const NodeIndex kArcs[][2] = {{0, 1}, {0, 0}, {0, 2}, {1, 2},
-                                {1, 3}, {2, 3}, {3, 0}};
-  const PathDistance kArcLengths[] = {1, 0, 3, 1, 4, 1, 1};
-  const int kExpectedPaths[] = {0, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2};
-  const PathDistance kExpectedDistances[] = {0, 1, 2, 3, 3, 4, 1, 2,
-                                             2, 3, 4, 1, 1, 2, 3, 4};
-  TestShortestPaths<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths), kArcs,
-                               kArcLengths, kExpectedPaths, kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, ShortestPaths2) {
   const int kNodes = 4;
   const typename TypeParam::NodeIndex kArcs[][2] = {
@@ -505,19 +342,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, ShortestPaths2) {
   TestShortestPathsFromGraph<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths),
                                         kArcs, kArcLengths, kExpectedPaths,
                                         kExpectedDistances);
-}
-
-TYPED_TEST(ShortestPathsDeathTest, MismatchedData) {
-  TypeParam graph(2, 2);
-  graph.AddArc(0, 1);
-  graph.AddArc(1, 0);
-  ZVector<PathDistance> lengths(0, 0);
-  lengths[0] = 0;
-  PathContainer container;
-  PathContainer::BuildInMemoryCompactPathContainer(&container);
-  EXPECT_DEATH(ComputeAllToAllShortestPathsWithMultipleThreads(graph, lengths,
-                                                               1, &container),
-               "Number of arcs in graph must match arc length vector size");
 }
 
 TYPED_TEST(GraphShortestPathsDeathTest, MismatchedData) {
@@ -533,24 +357,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, MismatchedData) {
 }
 
 // Test the case where some sources are not strongly connected to themselves.
-TYPED_TEST(ShortestPathsDeathTest, SourceNotConnectedToItself) {
-  const int kNodes = 3;
-  const NodeIndex kArcs[][2] = {{1, 2}, {2, 2}};
-  const PathDistance kArcLengths[] = {1, 0};
-  const int kExpectedPaths[] = {-1, -1, -1, -1, -1, 1, -1, -1, 2};
-  const PathDistance kExpectedDistances[] = {kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             1,
-                                             kDisconnectedPathDistance,
-                                             kDisconnectedPathDistance,
-                                             0};
-  TestShortestPaths<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths), kArcs,
-                               kArcLengths, kExpectedPaths, kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, SourceNotConnectedToItself) {
   const int kNodes = 3;
   const typename TypeParam::NodeIndex kArcs[][2] = {{1, 2}, {2, 2}};
@@ -572,18 +378,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, SourceNotConnectedToItself) {
 
 // Test the case where the graph is a multigraph, a graph with parallel arcs
 // (arcs which have the same end nodes).
-TYPED_TEST(ShortestPathsDeathTest, Multigraph) {
-  const int kNodes = 4;
-  const NodeIndex kArcs[][2] = {{0, 1}, {0, 1}, {0, 2}, {0, 2}, {1, 3},
-                                {2, 3}, {1, 3}, {2, 3}, {3, 0}};
-  const PathDistance kArcLengths[] = {2, 1, 1, 2, 2, 2, 1, 1, 1};
-  const int kExpectedPaths[] = {3, 0, 0, 2, 3, 0, 0, 1, 3, 0, 0, 2, 3, 0, 0, 2};
-  const PathDistance kExpectedDistances[] = {3, 1, 1, 2, 2, 3, 3, 1,
-                                             2, 3, 3, 1, 1, 2, 2, 3};
-  TestShortestPaths<TypeParam>(kNodes, ABSL_ARRAYSIZE(kArcLengths), kArcs,
-                               kArcLengths, kExpectedPaths, kExpectedDistances);
-}
-
 TYPED_TEST(GraphShortestPathsDeathTest, Multigraph) {
   const int kNodes = 4;
   const typename TypeParam::NodeIndex kArcs[][2] = {
@@ -600,68 +394,6 @@ TYPED_TEST(GraphShortestPathsDeathTest, Multigraph) {
 // Large test on a random strongly connected graph with 10,000,000 nodes and
 // 50,000,000 arcs.
 // Shortest paths are computed between 10 randomly chosen nodes.
-TYPED_TEST(ShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
-  const int kSize = 10000000;
-  const int kDegree = 4;
-  const int max_distance = 50;
-  const PathDistance kConnectionArcLength = 300;
-  std::mt19937 randomizer(12345);
-  TypeParam graph(kSize, kSize + kSize * kDegree);
-  ZVector<PathDistance> lengths(0, kSize + (kSize * kDegree) - 1);
-  for (int i = 0; i < kSize; ++i) {
-    const NodeIndex tail(absl::Uniform(randomizer, 0, kSize));
-    for (int j = 0; j < kDegree; ++j) {
-      const NodeIndex head(absl::Uniform(randomizer, 0, kSize));
-      const PathDistance length =
-          1 + absl::Uniform(randomizer, 0, max_distance);
-      lengths.Set(graph.AddArc(tail, head), length);
-    }
-  }
-  for (typename TypeParam::NodeIterator iterator(graph); iterator.Ok();) {
-    const NodeIndex node_index = iterator.Index();
-    iterator.Next();
-    if (iterator.Ok()) {
-      const NodeIndex next_node_index = iterator.Index();
-      lengths.Set(graph.AddArc(node_index, next_node_index),
-                  kConnectionArcLength);
-    } else {
-      const NodeIndex first_node_index =
-          typename TypeParam::NodeIterator(graph).Index();
-      lengths.Set(graph.AddArc(node_index, first_node_index),
-                  kConnectionArcLength);
-    }
-  }
-  std::vector<ConnectedComponent> components;
-  FindStronglyConnectedComponents(graph, &components);
-  CHECK_EQ(1, components.size());
-  CHECK_EQ(kSize, components[0].size());
-  const int kSourceSize = 10;
-  const int source_size = std::min(graph.num_nodes(), kSourceSize);
-  std::vector<NodeIndex> sources(source_size, 0);
-  for (int i = 0; i < source_size; ++i) {
-    sources[i] = absl::Uniform(randomizer, 0, graph.num_nodes());
-  }
-  const int kThreads = 10;
-  PathContainer container;
-  PathContainer::BuildInMemoryCompactPathContainer(&container);
-  ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, lengths, sources, sources, kThreads, &container);
-  PathContainer distance_container;
-  PathContainer::BuildPathDistanceContainer(&distance_container);
-  ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, lengths, sources, sources, kThreads, &distance_container);
-  for (int tail = 0; tail < sources.size(); ++tail) {
-    for (int head = 0; head < sources.size(); ++head) {
-      EXPECT_NE(TypeParam::kNilNode, container.GetPenultimateNodeInPath(
-                                         sources[tail], sources[head]));
-      EXPECT_NE(kDisconnectedPathDistance,
-                container.GetDistance(sources[tail], sources[head]));
-      EXPECT_NE(kDisconnectedPathDistance,
-                distance_container.GetDistance(sources[tail], sources[head]));
-    }
-  }
-}
-
 TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
   const int kSize = 10000000;
   const int kDegree = 4;

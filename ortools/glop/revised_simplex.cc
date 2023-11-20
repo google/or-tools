@@ -2777,6 +2777,9 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
   }
 
   while (true) {
+    AdvanceDeterministicTime(time_limit);
+    if (time_limit->LimitReached()) break;
+
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
     IF_STATS_ENABLED(
@@ -2889,11 +2892,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
     // case at the beginning of the algorithm.
-    AdvanceDeterministicTime(time_limit);
-    if (num_iterations_ == parameters_.max_number_of_iterations() ||
-        time_limit->LimitReached()) {
-      break;
-    }
+    if (num_iterations_ == parameters_.max_number_of_iterations()) break;
 
     Fractional step_length;
     RowIndex leaving_row;
@@ -3081,6 +3080,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   ColIndex entering_col;
 
   while (true) {
+    AdvanceDeterministicTime(time_limit);
+    if (time_limit->LimitReached()) break;
+
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
     IF_STATS_ENABLED(
@@ -3306,9 +3308,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
     // case at the beginning of the algorithm.
-    AdvanceDeterministicTime(time_limit);
-    if (num_iterations_ == parameters_.max_number_of_iterations() ||
-        time_limit->LimitReached()) {
+    if (num_iterations_ == parameters_.max_number_of_iterations()) {
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
       return Status::OK();
     }

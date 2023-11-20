@@ -32,7 +32,7 @@ Creating these intervals is illustrated in the following code snippets.
 from ortools.sat.python import cp_model
 
 
-def IntervalSampleSat():
+def interval_sample_sat():
     """Showcases how to build interval variables."""
     model = cp_model.CpModel()
     horizon = 100
@@ -57,7 +57,7 @@ def IntervalSampleSat():
     print(f"fixed_interval = {repr(fixed_interval)}")
 
 
-IntervalSampleSat()
+interval_sample_sat()
 ```
 
 ### C++ code
@@ -201,7 +201,7 @@ understand these presence literals, and correctly ignore inactive intervals.
 from ortools.sat.python import cp_model
 
 
-def OptionalIntervalSampleSat():
+def optional_interval_sample_sat():
     """Showcases how to build optional interval variables."""
     model = cp_model.CpModel()
     horizon = 100
@@ -231,7 +231,7 @@ def OptionalIntervalSampleSat():
     print(f"fixed_interval = {repr(fixed_interval)}")
 
 
-OptionalIntervalSampleSat()
+optional_interval_sample_sat()
 ```
 
 ### C++ code
@@ -379,7 +379,7 @@ weekends, making the final day as early as possible.
 from ortools.sat.python import cp_model
 
 
-def NoOverlapSampleSat():
+def no_overlap_sample_sat():
     """No overlap sample with fixed activities."""
     model = cp_model.CpModel()
     horizon = 21  # 3 weeks.
@@ -428,7 +428,7 @@ def NoOverlapSampleSat():
         print(f"Solver exited with nonoptimal status: {status}")
 
 
-NoOverlapSampleSat()
+no_overlap_sample_sat()
 ```
 
 ### C++ code
@@ -829,7 +829,7 @@ number of other intervals that precede it.
 from ortools.sat.python import cp_model
 
 
-def RankTasks(
+def rank_tasks(
     model: cp_model.CpModel,
     starts: list[cp_model.IntVar],
     presences: list[cp_model.IntVar],
@@ -898,7 +898,7 @@ def RankTasks(
         model.add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def RankingSampleSat():
+def ranking_sample_sat():
     """Ranks tasks in a NoOverlap constraint."""
 
     model = cp_model.CpModel()
@@ -937,7 +937,7 @@ def RankingSampleSat():
     model.add_no_overlap(intervals)
 
     # Adds ranking constraint.
-    RankTasks(model, starts, presences, ranks)
+    rank_tasks(model, starts, presences, ranks)
 
     # Adds a constraint on ranks.
     model.add(ranks[0] < ranks[1])
@@ -974,7 +974,7 @@ def RankingSampleSat():
         print(f"Solver exited with nonoptimal status: {status}")
 
 
-RankingSampleSat()
+ranking_sample_sat()
 ```
 
 ### C++ code
@@ -1684,7 +1684,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def SchedulingWithCalendarSampleSat():
+def scheduling_with_calendar_sample_sat():
     """Interval spanning across a lunch break."""
     model = cp_model.CpModel()
 
@@ -1731,7 +1731,7 @@ def SchedulingWithCalendarSampleSat():
     solver.solve(model, solution_printer)
 
 
-SchedulingWithCalendarSampleSat()
+scheduling_with_calendar_sample_sat()
 ```
 
 ## Detecting if two intervals overlap.
@@ -1789,7 +1789,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def OverlappingIntervals():
+def overlapping_interval_sample_sat():
     """Create the overlapping Boolean variables and enumerate all states."""
     model = cp_model.CpModel()
 
@@ -1852,7 +1852,7 @@ def OverlappingIntervals():
     solver.solve(model, solution_printer)
 
 
-OverlappingIntervals()
+overlapping_interval_sample_sat()
 ```
 
 ## Transitions in a disjunctive resource

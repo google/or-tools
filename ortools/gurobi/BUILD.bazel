@@ -34,3 +34,14 @@ cc_library(
         "@com_google_absl//absl/types:optional",
     ],
 )
+
+cc_library(
+    name = "gurobi_util",
+    srcs = ["gurobi_util.cc"],
+    hdrs = ["gurobi_util.h"],
+    deps = [
+        ":environment",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)

@@ -1549,6 +1549,29 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
   return true;
 }
 
+void LinearProgram::RemoveNearZeroEntries(Fractional threshold) {
+  int64_t num_removed_objective_entries = 0;
+  int64_t num_removed_matrix_entries = 0;
+  for (ColIndex col(0); col < matrix_.num_cols(); ++col) {
+    const int64_t old_size = matrix_.column(col).num_entries().value();
+    matrix_.mutable_column(col)->RemoveNearZeroEntries(threshold);
+    num_removed_matrix_entries +=
+        old_size - matrix_.column(col).num_entries().value();
+    if (std::abs(objective_coefficients_[col]) <= threshold) {
+      objective_coefficients_[col] = 0.0;
+      ++num_removed_objective_entries;
+    }
+  }
+  if (num_removed_matrix_entries > 0) {
+    transpose_matrix_is_consistent_ = false;
+    VLOG(1) << "Removed " << num_removed_matrix_entries << " matrix entries.";
+  }
+  if (num_removed_objective_entries > 0) {
+    VLOG(1) << "Removed " << num_removed_objective_entries
+            << " objective coefficients.";
+  }
+}
+
 // --------------------------------------------------------
 // ProblemSolution
 // --------------------------------------------------------

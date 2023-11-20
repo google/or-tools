@@ -1,0 +1,190 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+
+# External users should depend only on ":mathopt" and import "mathopt".
+# Hence other libraries are private.
+package(default_visibility = ["//visibility:private"])
+
+py_library(
+    name = "mathopt",
+    srcs = ["mathopt.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":callback",
+        ":compute_infeasible_subsystem_result",
+        ":hash_model_storage",
+        ":message_callback",
+        ":model",
+        ":model_parameters",
+        ":model_storage",
+        ":parameters",
+        ":result",
+        ":solution",
+        ":solve",
+        ":sparse_containers",
+    ],
+)
+
+py_library(
+    name = "model_storage",
+    srcs = ["model_storage.py"],
+    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    deps = [
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+    ],
+)
+
+py_library(
+    name = "hash_model_storage",
+    srcs = ["hash_model_storage.py"],
+    deps = [
+        ":model_storage",
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+    ],
+)
+
+py_library(
+    name = "model",
+    srcs = ["model.py"],
+    deps = [
+        ":hash_model_storage",
+        ":model_storage",
+        requirement("immutabledict"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+    ],
+)
+
+py_library(
+    name = "sparse_containers",
+    srcs = ["sparse_containers.py"],
+    deps = [
+        ":model",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+    ],
+)
+
+py_library(
+    name = "solution",
+    srcs = ["solution.py"],
+    deps = [
+        ":model",
+        ":sparse_containers",
+        "//ortools/math_opt:solution_py_pb2",
+    ],
+)
+
+py_library(
+    name = "result",
+    srcs = ["result.py"],
+    deps = [
+        ":model",
+        ":solution",
+        "//ortools/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt:result_py_pb2",
+        "//ortools/math_opt/solvers:osqp_py_pb2",
+    ],
+)
+
+py_library(
+    name = "parameters",
+    srcs = ["parameters.py"],
+    deps = [
+        "//ortools/glop:parameters_py_pb2",
+        "//ortools/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/solvers:glpk_py_pb2",
+        "//ortools/math_opt/solvers:gurobi_py_pb2",
+        "//ortools/math_opt/solvers:highs_py_pb2",
+        "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/pdlp:solvers_py_pb2",
+        "//ortools/sat:sat_parameters_py_pb2",
+    ],
+)
+
+py_library(
+    name = "model_parameters",
+    srcs = ["model_parameters.py"],
+    deps = [
+        ":model",
+        ":solution",
+        ":sparse_containers",
+        "//ortools/math_opt:model_parameters_py_pb2",
+    ],
+)
+
+py_library(
+    name = "callback",
+    srcs = ["callback.py"],
+    deps = [
+        ":model",
+        ":sparse_containers",
+        "//ortools/math_opt:callback_py_pb2",
+    ],
+)
+
+py_library(
+    name = "compute_infeasible_subsystem_result",
+    srcs = ["compute_infeasible_subsystem_result.py"],
+    deps = [
+        ":model",
+        ":result",
+        requirement("immutabledict"),
+        "//ortools/math_opt:infeasible_subsystem_py_pb2",
+    ],
+)
+
+py_library(
+    name = "solve",
+    srcs = ["solve.py"],
+    deps = [
+        ":callback",
+        ":compute_infeasible_subsystem_result",
+        ":message_callback",
+        ":model",
+        ":model_parameters",
+        ":parameters",
+        ":result",
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/core/python:solver",
+    ],
+)
+
+py_library(
+    name = "message_callback",
+    srcs = ["message_callback.py"],
+    srcs_version = "PY3",
+    deps = [requirement("absl-py")],
+)
+
+py_library(
+    name = "statistics",
+    srcs = ["statistics.py"],
+    deps = [":model"],
+)
+
+py_library(
+    name = "normalize",
+    srcs = ["normalize.py"],
+    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    deps = [
+#        "@com_google_protobuf//protobuf:duration_py_pb2",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)

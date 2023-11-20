@@ -14,18 +14,34 @@
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
-    name = "validator",
-    srcs = ["validator.cc"],
-    hdrs = ["validator.h"],
+    name = "sos1_constraint",
+    srcs = ["sos1_constraint.cc"],
+    hdrs = ["sos1_constraint.h"],
     deps = [
-        "//ortools/base:status_macros",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/core:model_summary",
-        "//ortools/math_opt/validators:linear_expression_validator",
-        "//ortools/math_opt/validators:scalar_validator",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
+        ":util",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "sos2_constraint",
+    srcs = ["sos2_constraint.cc"],
+    hdrs = ["sos2_constraint.h"],
+    deps = [
+        ":util",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -55,33 +71,17 @@ cc_library(
 )
 
 cc_library(
-    name = "sos1_constraint",
-    srcs = ["sos1_constraint.cc"],
-    hdrs = ["sos1_constraint.h"],
+    name = "validator",
+    srcs = ["validator.cc"],
+    hdrs = ["validator.h"],
     deps = [
-        ":util",
-        "//ortools/base:intops",
-        "//ortools/math_opt/constraints/util:model_util",
-        "//ortools/math_opt/cpp:variable_and_expressions",
-        "//ortools/math_opt/storage:linear_expression_data",
-        "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "sos2_constraint",
-    srcs = ["sos2_constraint.cc"],
-    hdrs = ["sos2_constraint.h"],
-    deps = [
-        ":util",
-        "//ortools/base:intops",
-        "//ortools/math_opt/constraints/util:model_util",
-        "//ortools/math_opt/cpp:variable_and_expressions",
-        "//ortools/math_opt/storage:linear_expression_data",
-        "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "//ortools/math_opt/validators:linear_expression_validator",
+        "//ortools/math_opt/validators:scalar_validator",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
     ],
 )

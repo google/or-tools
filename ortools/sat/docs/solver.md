@@ -18,7 +18,7 @@ solver. The most useful one is the time limit.
 from ortools.sat.python import cp_model
 
 
-def SolveWithTimeLimitSampleSat():
+def solve_with_time_limit_sample_sat():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -44,7 +44,7 @@ def SolveWithTimeLimitSampleSat():
         print(f"z = {solver.value(z)}")
 
 
-SolveWithTimeLimitSampleSat()
+solve_with_time_limit_sample_sat()
 ```
 
 ### Specifying the time limit in C++
@@ -225,7 +225,7 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def SolveAndPrintIntermediateSolutionsSampleSat():
+def solve_and_print_intermediate_solutions_sample_sat():
     """Showcases printing intermediate solutions found during search."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -250,7 +250,7 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolveAndPrintIntermediateSolutionsSampleSat()
+solve_and_print_intermediate_solutions_sample_sat()
 ```
 
 ### C++ code
@@ -486,7 +486,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def SearchForAllSolutionsSampleSat():
+def search_for_all_solutions_sample_sat():
     """Showcases calling the solver to search for all solutions."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -512,7 +512,7 @@ def SearchForAllSolutionsSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SearchForAllSolutionsSampleSat()
+search_for_all_solutions_sample_sat()
 ```
 
 ### C++ code
@@ -747,7 +747,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def StopAfterNSolutionsSampleSat():
+def stop_after_n_solutions_sample_sat():
     """Showcases calling the solver to search for small number of solutions."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -769,7 +769,7 @@ def StopAfterNSolutionsSampleSat():
     assert solution_printer.solution_count == 5
 
 
-StopAfterNSolutionsSampleSat()
+stop_after_n_solutions_sample_sat()
 ```
 
 ### C++ code

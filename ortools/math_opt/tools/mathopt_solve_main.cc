@@ -33,14 +33,14 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -50,7 +50,6 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/statistics.h"
 #include "ortools/math_opt/io/names_removal.h"
-#include "ortools/math_opt/io/proto_converter.h"
 #include "ortools/math_opt/labs/solution_feasibility_checker.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/tools/file_format_flags.h"
@@ -96,6 +95,9 @@ ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
                   operations_research::math_opt::AllSolversRegistry::Instance()
                       ->RegisteredSolvers(),
                   ", ", SolverTypeProtoFormatter())));
+ABSL_FLAG(bool, remote, false,
+          "solve by RPC instead of locally, using ~twice the time limit as the "
+          "RPC deadline, requires a time limit is set, see --time_limit");
 ABSL_FLAG(operations_research::math_opt::SolveParameters, solve_parameters, {},
           "SolveParameters in text-proto format. Note that the time limit is "
           "overridden by the --time_limit flag.");
@@ -148,52 +150,12 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
   }
 }
 
-// Prints the summary of the solve result.
-//
-// If feasibility_check_tolerances is not nullopt then a check of feasibility of
-// solution is done with the provided tolerances.
-absl::Status PrintSummary(const Model& model, const SolveResult& result,
-                          const std::optional<FeasibilityCheckerOptions>
-                              feasibility_check_tolerances) {
-  std::cout << "Solve finished:\n"
-            << "  termination: " << result.termination << "\n"
-            << "  solve time: " << result.solve_stats.solve_time
-            << "\n  best primal bound: " << result.solve_stats.best_primal_bound
-            << "\n  best dual bound: " << result.solve_stats.best_dual_bound
-            << std::endl;
-  if (result.solutions.empty()) {
-    std::cout << "  no solution" << std::endl;
-  }
-  for (int i = 0; i < result.solutions.size(); ++i) {
-    const Solution& solution = result.solutions[i];
-    std::cout << "  solution #" << (i + 1) << " objective: ";
-    if (solution.primal_solution.has_value()) {
-      std::cout << solution.primal_solution->objective_value;
-      if (feasibility_check_tolerances.has_value()) {
-        OR_ASSIGN_OR_RETURN3(
-            const ModelSubset broken_constraints,
-            CheckPrimalSolutionFeasibility(
-                model, solution.primal_solution->variable_values,
-                *feasibility_check_tolerances),
-            _ << "failed to check the primal solution feasibility of solution #"
-              << (i + 1));
-        if (!broken_constraints.empty()) {
-          std::cout << " (numerically infeasible: " << broken_constraints
-                    << ')';
-        } else {
-          std::cout << " (numerically feasible)";
-        }
-      }
-    } else {
-      std::cout << "n/a";
-    }
-    std::cout << std::endl;
-  }
+struct ModelAndHint {
+  std::unique_ptr<Model> model;
+  std::optional<ModelSolveParameters::SolutionHint> hint;
+};
 
-  return absl::OkStatus();
-}
-
-absl::Status RunSolver() {
+absl::StatusOr<ModelAndHint> ParseModelAndHint() {
   const std::string input_file_path = absl::GetFlag(FLAGS_input_file);
   if (input_file_path.empty()) {
     LOG(QFATAL) << "The flag --input_file is mandatory.";
@@ -239,7 +201,7 @@ absl::Status RunSolver() {
   }
 
   // Parse the problem and the updates.
-  ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
+  ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
                    Model::FromModelProto(model_proto));
   for (int u = 0; u < model_updates.size(); ++u) {
     const ModelUpdateProto& update = model_updates[u];
@@ -251,48 +213,126 @@ absl::Status RunSolver() {
       model->set_continuous(v);
     }
   }
+  ModelAndHint result = {.model = std::move(model)};
+  if (optional_hint.has_value()) {
+    OR_ASSIGN_OR_RETURN3(ModelSolveParameters::SolutionHint hint,
+                         ModelSolveParameters::SolutionHint::FromProto(
+                             *result.model, optional_hint.value()),
+                         _ << "invalid solution hint");
+    result.hint = std::move(hint);
+  }
+  return std::move(result);
+}
+
+// Prints the summary of the solve result.
+//
+// If feasibility_check_tolerances is not nullopt then a check of feasibility of
+// solution is done with the provided tolerances.
+absl::Status PrintSummary(const Model& model, const SolveResult& result,
+                          const std::optional<FeasibilityCheckerOptions>
+                              feasibility_check_tolerances) {
+  std::cout << "Solve finished:\n"
+            << "  termination: " << result.termination << "\n"
+            << "  solve time: " << result.solve_stats.solve_time
+            << "\n  best primal bound: "
+            << result.termination.objective_bounds.primal_bound
+            << "\n  best dual bound: "
+            << result.termination.objective_bounds.dual_bound << std::endl;
+  if (result.solutions.empty()) {
+    std::cout << "  no solution" << std::endl;
+  }
+  for (int i = 0; i < result.solutions.size(); ++i) {
+    const Solution& solution = result.solutions[i];
+    std::cout << "  solution #" << (i + 1) << " objective: ";
+    if (solution.primal_solution.has_value()) {
+      std::cout << solution.primal_solution->objective_value;
+      if (feasibility_check_tolerances.has_value()) {
+        OR_ASSIGN_OR_RETURN3(
+            const ModelSubset broken_constraints,
+            CheckPrimalSolutionFeasibility(
+                model, solution.primal_solution->variable_values,
+                *feasibility_check_tolerances),
+            _ << "failed to check the primal solution feasibility of solution #"
+              << (i + 1));
+        if (!broken_constraints.empty()) {
+          std::cout << " (numerically infeasible: " << broken_constraints
+                    << ')';
+        } else {
+          std::cout << " (numerically feasible)";
+        }
+      }
+    } else {
+      std::cout << "n/a";
+    }
+    std::cout << std::endl;
+  }
+
+  return absl::OkStatus();
+}
+
+absl::StatusOr<SolveResult> LocalOrRemoteSolve(
+    const Model& model, const SolverType solver_type,
+    const SolveParameters& params, const ModelSolveParameters& model_params,
+    MessageCallback msg_cb) {
+  if (absl::GetFlag(FLAGS_remote)) {
+    return absl::UnimplementedError("remote not yet supported.");
+  } else {
+    return Solve(model, solver_type,
+                 {.parameters = params,
+                  .model_parameters = model_params,
+                  .message_callback = std::move(msg_cb)});
+  }
+}
+
+absl::Status RunSolver() {
+  if (absl::GetFlag(FLAGS_remote) &&
+      absl::GetFlag(FLAGS_time_limit) == absl::InfiniteDuration()) {
+    return absl::InvalidArgumentError(
+        "a finite time limit is required when solving remotely, e.g. "
+        "--time_limit=5m");
+  }
+  ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
 
   if (absl::GetFlag(FLAGS_ranges)) {
     std::cout << "Ranges of finite non-zero values in the model:\n"
-              << ComputeModelRanges(*model) << std::endl;
+              << ComputeModelRanges(*model_and_hint.model) << std::endl;
   }
 
   // Optionally prints the problem.
   if (absl::GetFlag(FLAGS_print_model)) {
-    std::cout << *model;
+    std::cout << *model_and_hint.model;
     std::cout.flush();
   }
 
   // Solve the problem.
-  SolveParameters solve_parameters = absl::GetFlag(FLAGS_solve_parameters);
-  solve_parameters.time_limit = absl::GetFlag(FLAGS_time_limit);
-  SolveArguments solve_args = {.parameters = solve_parameters};
-  if (optional_hint.has_value()) {
-    OR_ASSIGN_OR_RETURN3(ModelSolveParameters::SolutionHint hint,
-                         ModelSolveParameters::SolutionHint::FromProto(
-                             *model, optional_hint.value()),
-                         _ << "invalid solution hint");
-    solve_args.model_parameters.solution_hints.push_back(std::move(hint));
+  SolveParameters solve_params = absl::GetFlag(FLAGS_solve_parameters);
+  solve_params.time_limit = absl::GetFlag(FLAGS_time_limit);
+  ModelSolveParameters model_params;
+  if (model_and_hint.hint.has_value()) {
+    model_params.solution_hints.push_back(*model_and_hint.hint);
     std::cout << "Using the solution hint from the MPModelProto." << std::endl;
   }
+  MessageCallback message_cb;
   if (absl::GetFlag(FLAGS_solver_logs)) {
-    solve_args.message_callback = PrinterMessageCallback(std::cout, "logs| ");
+    message_cb = PrinterMessageCallback(std::cout, "logs| ");
   }
   OR_ASSIGN_OR_RETURN3(
       const SolveResult result,
-      Solve(*model, absl::GetFlag(FLAGS_solver_type), solve_args),
+      LocalOrRemoteSolve(*model_and_hint.model,
+                         absl::GetFlag(FLAGS_solver_type), solve_params,
+                         model_params, std::move(message_cb)),
       _ << "the solver failed");
 
-  const FeasibilityCheckerOptions feasiblity_checker_options = {
+  const FeasibilityCheckerOptions feasibility_checker_options = {
       .absolute_constraint_tolerance =
           absl::GetFlag(FLAGS_absolute_constraint_tolerance),
       .integrality_tolerance = absl::GetFlag(FLAGS_integrality_tolerance),
       .nonzero_tolerance = absl::GetFlag(FLAGS_nonzero_tolerance),
   };
   RETURN_IF_ERROR(
-      PrintSummary(*model, result,
+      PrintSummary(*model_and_hint.model, result,
                    absl::GetFlag(FLAGS_check_solutions)
-                       ? std::make_optional(feasiblity_checker_options)
+                       ? std::make_optional(feasibility_checker_options)
                        : std::nullopt));
 
   return absl::OkStatus();

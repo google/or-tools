@@ -42,7 +42,7 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         # [END print_solution]
 
 
-def SolveAndPrintIntermediateSolutionsSampleSat():
+def solve_and_print_intermediate_solutions_sample_sat():
     """Showcases printing intermediate solutions found during search."""
     # Creates the model.
     # [START model]
@@ -77,5 +77,5 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
     print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolveAndPrintIntermediateSolutionsSampleSat()
+solve_and_print_intermediate_solutions_sample_sat()
 # [END program]

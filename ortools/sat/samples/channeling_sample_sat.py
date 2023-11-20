@@ -31,7 +31,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def ChannelingSampleSat():
+def channeling_sample_sat():
     """Demonstrates how to link integer constraints together."""
 
     # Create the CP-SAT model.
@@ -70,4 +70,4 @@ def ChannelingSampleSat():
     solver.solve(model, solution_printer)
 
 
-ChannelingSampleSat()
+channeling_sample_sat()

@@ -115,14 +115,14 @@ protobuf_deps()
 ## Solvers
 http_archive(
     name = "glpk",
-    build_file = "//bazel:glpk.BUILD",
+    build_file = "//bazel:glpk.BUILD.bazel",
     sha256 = "4a1013eebb50f728fc601bdd833b0b2870333c3b3e5a816eeba921d95bec6f15",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-5.0.tar.gz",
 )
 
 http_archive(
     name = "bliss",
-    build_file = "//bazel:bliss.BUILD",
+    build_file = "//bazel:bliss.BUILD.bazel",
     patches = ["//bazel:bliss-0.73.patch"],
     sha256 = "f57bf32804140cad58b1240b804e0dbd68f7e6bf67eba8e0c0fa3a62fd7f0f84",
     url = "https://github.com/google/or-tools/releases/download/v9.0/bliss-0.73.zip",
@@ -131,7 +131,7 @@ http_archive(
 
 new_git_repository(
     name = "scip",
-    build_file = "//bazel:scip.BUILD",
+    build_file = "//bazel:scip.BUILD.bazel",
     patches = ["//bazel:scip.patch"],
     patch_args = ["-p1"],
     tag = "v804",
@@ -166,7 +166,7 @@ git_repository(
 # pcre source code repository
 new_git_repository(
     name = "pcre2",
-    build_file = "//bazel:pcre2.BUILD",
+    build_file = "//bazel:pcre2.BUILD.bazel",
     tag = "pcre2-10.42",
     remote = "https://github.com/PCRE2Project/pcre2.git",
 )
@@ -180,11 +180,11 @@ new_git_repository(
 #   edit .gitignore and remove parser.h, parser.c, and swigwarn.swg
 #   git add Source/CParse/parser.h Source/CParse/parser.c Lib/swigwarn.swg
 #   git diff --staged Lib Source/CParse > <path to>swig.patch
-# Edit swig.BUILD:
+# Edit swig.BUILD.bazel:
 #   edit version
 new_git_repository(
     name = "swig",
-    build_file = "//bazel:swig.BUILD",
+    build_file = "//bazel:swig.BUILD.bazel",
     patches = ["//bazel:swig.patch"],
     patch_args = ["-p1"],
     tag = "v4.1.1",
@@ -217,6 +217,18 @@ load("@ortools_notebook_deps//:requirements.bzl",
      install_notebook_deps="install_deps")
 install_notebook_deps()
 
+# Absl python library
+http_archive(
+    name = "com_google_absl_py",
+    repo_mapping = {"@six_archive": "@six"},
+    sha256 = "0be59b82d65dfa1f995365dcfea2cc57989297b065fda696ef13f30fcc6c8e5b",
+    strip_prefix = "abseil-py-pypi-v0.15.0",
+    urls = [
+        "https://github.com/abseil/abseil-py/archive/refs/tags/pypi-v0.15.0.tar.gz",
+    ],
+)
+
+## `pybind11_bazel`
 git_repository(
     name = "pybind11_bazel",
     commit = "fc56ce8a8b51e3dd941139d329b63ccfea1d304b",
@@ -238,6 +250,12 @@ new_git_repository(
     #tag = "v2.10.3",
     commit = "5baa2dc9d93e3b608cde86dfa4b8c63aeab4ac78",
     remote = "https://github.com/pybind/pybind11_protobuf.git",
+)
+
+new_git_repository(
+    name = "pybind11_abseil",
+    remote = "https://github.com/pybind/pybind11_abseil.git",
+    commit = "2c4932ed6f6204f1656e245838f4f5eae69d2e29"
 )
 
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")

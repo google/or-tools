@@ -13,64 +13,159 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# This works on a fixed set of solvers.
-# By default SCIP, GUROBI, PDLP, and CP-SAT interface are included.
 cc_library(
-    name = "proto_solver",
-    srcs = [
-        "gurobi_proto_solver.cc",
-        "highs_proto_solver.cc",
-        "pdlp_proto_solver.cc",
-        "sat_proto_solver.cc",
-        "sat_solver_utils.cc",
-        "scip_proto_solver.cc",
-    ],
-    hdrs = [
-        "gurobi_proto_solver.h",
-        "highs_proto_solver.h",
-        "pdlp_proto_solver.h",
-        "sat_proto_solver.h",
-        "sat_solver_utils.h",
-        "scip_proto_solver.h",
-    ],
-    copts = [
-        "-DUSE_PDLP",
-        "-DUSE_SCIP",
-        "-DUSE_HIGHS",
-    ],
+    name = "proto_utils",
+    hdrs = ["proto_utils.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:accurate_sum",
-        "//ortools/base:dynamic_library",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "//ortools/base:status_macros",
-        "//ortools/base:stl_util",
-        "//ortools/base:timer",
-        "//ortools/bop:bop_parameters_cc_proto",
-        "//ortools/bop:integral_solver",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/log:check",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "glop_proto_solver",
+    srcs = ["glop_proto_solver.cc"],
+    hdrs = ["glop_proto_solver.h"],
+    deps = [
+        ":proto_utils",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
-        "//ortools/gscip:legacy_scip_params",
-        "//ortools/gurobi:environment",
+        "//ortools/glop:parameters_validation",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver:model_validator",
-        "//ortools/linear_solver:scip_with_glop",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/port:proto_utils",
+        "//ortools/util:logging",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "pdlp_proto_solver",
+    srcs = ["pdlp_proto_solver.cc"],
+    hdrs = ["pdlp_proto_solver.h"],
+    deps = [
+        "//ortools/base:logging",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/pdlp:iteration_stats",
         "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
         "//ortools/pdlp:solve_log_cc_proto",
         "//ortools/pdlp:solvers_cc_proto",
-        "//ortools/port:file",
+        "//ortools/port:proto_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "sat_solver_utils",
+    srcs = ["sat_solver_utils.cc"],
+    hdrs = ["sat_solver_utils.h"],
+    deps = [
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/glop:preprocessor",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/util:logging",
+        "@com_google_absl//absl/memory",
+    ],
+)
+
+cc_library(
+    name = "sat_proto_solver",
+    srcs = ["sat_proto_solver.cc"],
+    hdrs = ["sat_proto_solver.h"],
+    deps = [
+        ":proto_utils",
+        ":sat_solver_utils",
+        "//ortools/glop:preprocessor",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:lp_utils",
-        "//ortools/util:fp_utils",
+        "//ortools/sat:model",
+        "//ortools/sat:parameters_validation",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:logging",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "scip_proto_solver",
+    srcs = ["scip_proto_solver.cc"],
+    hdrs = ["scip_proto_solver.h"],
+    defines = ["USE_SCIP"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:cleanup",
+        "//ortools/base:timer",
+        "//ortools/gscip:legacy_scip_params",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/linear_solver:scip_helper_macros",
         "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@scip//:libscip",
+    ],
+)
+
+cc_library(
+    name = "gurobi_proto_solver",
+    srcs = ["gurobi_proto_solver.cc"],
+    hdrs = ["gurobi_proto_solver.h"],
+    deps = [
+        "//ortools/base:cleanup",
+        "//ortools/base:timer",
+        "//ortools/gurobi:environment",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "highs_proto_solver",
+    srcs = ["highs_proto_solver.cc"],
+    hdrs = ["highs_proto_solver.h"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status:statusor",
     ],
 )

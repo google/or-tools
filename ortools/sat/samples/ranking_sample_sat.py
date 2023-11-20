@@ -17,7 +17,7 @@
 from ortools.sat.python import cp_model
 
 
-def RankTasks(
+def rank_tasks(
     model: cp_model.CpModel,
     starts: list[cp_model.IntVar],
     presences: list[cp_model.IntVar],
@@ -86,7 +86,7 @@ def RankTasks(
         model.add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def RankingSampleSat():
+def ranking_sample_sat():
     """Ranks tasks in a NoOverlap constraint."""
 
     model = cp_model.CpModel()
@@ -125,7 +125,7 @@ def RankingSampleSat():
     model.add_no_overlap(intervals)
 
     # Adds ranking constraint.
-    RankTasks(model, starts, presences, ranks)
+    rank_tasks(model, starts, presences, ranks)
 
     # Adds a constraint on ranks.
     model.add(ranks[0] < ranks[1])
@@ -162,4 +162,4 @@ def RankingSampleSat():
         print(f"Solver exited with nonoptimal status: {status}")
 
 
-RankingSampleSat()
+ranking_sample_sat()

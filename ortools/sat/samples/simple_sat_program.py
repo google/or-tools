@@ -19,7 +19,7 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def SimpleSatProgram():
+def simple_sat_program():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     # [START model]
@@ -55,5 +55,5 @@ def SimpleSatProgram():
     # [END print_solution]
 
 
-SimpleSatProgram()
+simple_sat_program()
 # [END program]

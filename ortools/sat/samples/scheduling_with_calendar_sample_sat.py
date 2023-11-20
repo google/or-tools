@@ -30,7 +30,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print()
 
 
-def SchedulingWithCalendarSampleSat():
+def scheduling_with_calendar_sample_sat():
     """Interval spanning across a lunch break."""
     model = cp_model.CpModel()
 
@@ -77,4 +77,4 @@ def SchedulingWithCalendarSampleSat():
     solver.solve(model, solution_printer)
 
 
-SchedulingWithCalendarSampleSat()
+scheduling_with_calendar_sample_sat()

@@ -195,7 +195,6 @@ cc_library(
         ":solution_validator",
         ":sparse_vector_validator",
         "//ortools/base:status_macros",
-        "//ortools/base:types",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
@@ -235,6 +234,20 @@ cc_library(
 )
 
 cc_library(
+    name = "bounds_and_status_validator",
+    srcs = ["bounds_and_status_validator.cc"],
+    hdrs = ["bounds_and_status_validator.h"],
+    deps = [
+        ":scalar_validator",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "termination_validator",
     srcs = ["termination_validator.cc"],
     hdrs = ["termination_validator.h"],
@@ -244,20 +257,6 @@ cc_library(
         "//ortools/math_opt:result_cc_proto",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "bounds_and_status_validator",
-    srcs = ["bounds_and_status_validator.cc"],
-    hdrs = ["bounds_and_status_validator.h"],
-    deps = [
-        ":scalar_validator",
-        "//ortools/base:status_macros",
-        "//ortools/math_opt:result_cc_proto",
-        "//ortools/port:proto_utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],

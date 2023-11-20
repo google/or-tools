@@ -27,6 +27,8 @@
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/model_exporter.h"
+#include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
@@ -59,10 +61,20 @@ std::string ModelBuilderHelper::ExportToLpString(
 }
 
 bool ModelBuilderHelper::WriteModelToFile(const std::string& filename) {
-  if (absl::EndsWith(filename, "txt")) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, ".textproto")) {
     return file::SetTextProto(filename, model_, file::Defaults()).ok();
   } else {
     return file::SetBinaryProto(filename, model_, file::Defaults()).ok();
+  }
+}
+
+bool ModelBuilderHelper::LoadModelFromFile(const std::string& filename) {
+  if (absl::EndsWith(filename, "txt") ||
+      absl::EndsWith(filename, ".textproto")) {
+    return file::GetTextProto(filename, &model_, file::Defaults()).ok();
+  } else {
+    return file::GetBinaryProto(filename, &model_, file::Defaults()).ok();
   }
 }
 
@@ -537,18 +549,12 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
   }
   switch (solver_type_.value()) {
     case MPModelRequest::GLOP_LINEAR_PROGRAMMING: {
-      // TODO(user): Enable log_callback support.
-      MPSolutionResponse temp;
-      MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
-      response_ = std::move(temp);
+      response_ = GlopSolveProto(request, &interrupt_solve_, log_callback_);
       break;
     }
     case MPModelRequest::SAT_INTEGER_PROGRAMMING: {
-      const auto temp =
+      response_ =
           SatSolveProto(request, &interrupt_solve_, log_callback_, nullptr);
-      if (temp.ok()) {
-        response_ = std::move(temp.value());
-      }
       break;
     }
 #if defined(USE_SCIP)

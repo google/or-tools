@@ -131,10 +131,16 @@ message GScipSolvingStats {
   // Returns +inf for maximization and -inf for minimization if no bound was
   // found. Equivalent to SCIPgetDualBound().
   double best_bound = 2;
+  // nprimallpiterations in SCIP. The number of primal simplex LP iterations.
   int64 primal_simplex_iterations = 3;
+  // nduallpiterations in SCIP. The number of dual simplex LP iterations.
   int64 dual_simplex_iterations = 4;
-  // nlp_iterations in SCIP. The total number of LP steps taken, i.e. primal
-  // simplex iterations + dual simplex iterations + barrier iterations.
+  // nbarrierlpiterations. The number of barrier LP iterations.
+  int64 barrier_iterations = 10;
+  // nlp_iterations in SCIP. The total number of LP steps taken. Note that this
+  // number be at least (and often strictly greater than)
+  // primal_simplex_iterations + dual simplex iterations + barrier iterations,
+  // as it includes other types of iterations (e.g. see ndivinglpiterations).
   int64 total_lp_iterations = 5;
   // NTotalNodes in SCIP.
   // This is the total number of nodes used in the solve, potentially across
