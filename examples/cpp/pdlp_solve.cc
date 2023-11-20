@@ -69,7 +69,7 @@ void WriteSolveLog(const std::string& solve_log_file, const SolveLog& log) {
                << solve_log_file << ". Expected .textproto, .pb, or .json";
   }
   QCHECK(WriteProtoToFile(solve_log_file, log, write_format, /*gzipped=*/false,
-                          /*append_extension_to_file_name=*/false));
+                          /*append_extension_to_file_name=*/false).ok());
 }
 
 void Solve(const std::string& input, const std::string& params_str,

@@ -1,0 +1,22 @@
+diff --git a/src/lpi/lpi_glop.cpp b/src/lpi/lpi_glop.cpp
+index 2471778a8f..17fd1e8c34 100644
+--- a/src/lpi/lpi_glop.cpp
++++ b/src/lpi/lpi_glop.cpp
+@@ -3190,7 +3190,7 @@ SCIP_RETCODE SCIPlpiReadLP(
+ 
+    const std::string filespec(fname);
+    MPModelProto proto;
+-   if ( ! ReadFileToProto(filespec, &proto) )
++   if ( ! ReadFileToProto(filespec, &proto).ok() )
+    {
+       SCIPerrorMessage("Could not read <%s>\n", fname);
+       return SCIP_READERROR;
+@@ -3214,7 +3214,7 @@ SCIP_RETCODE SCIPlpiWriteLP(
+    MPModelProto proto;
+    LinearProgramToMPModelProto(*lpi->linear_program, &proto);
+    const std::string filespec(fname);
+-   if ( ! WriteProtoToFile(filespec, proto, operations_research::ProtoWriteFormat::kProtoText, true) )
++   if ( ! WriteProtoToFile(filespec, proto, operations_research::ProtoWriteFormat::kProtoText, true).ok() )
+    {
+       SCIPerrorMessage("Could not write <%s>\n", fname);
+       return SCIP_READERROR;
