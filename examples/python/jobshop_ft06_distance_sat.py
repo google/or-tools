@@ -31,7 +31,7 @@ import collections
 from ortools.sat.python import cp_model
 
 
-def distance_between_jobs(x, y):
+def distance_between_jobs(x: int, y: int) -> int:
     """Returns the distance between tasks of job x and tasks of job y."""
     return abs(x - y)
 
@@ -73,10 +73,10 @@ def jobshop_ft06_distance():
     all_tasks = {}
     for i in all_jobs:
         for j in all_machines:
-            start_var = model.NewIntVar(0, horizon, "start_%i_%i" % (i, j))
+            start_var = model.new_int_var(0, horizon, "start_%i_%i" % (i, j))
             duration = durations[i][j]
-            end_var = model.NewIntVar(0, horizon, "end_%i_%i" % (i, j))
-            interval_var = model.NewIntervalVar(
+            end_var = model.new_int_var(0, horizon, "end_%i_%i" % (i, j))
+            interval_var = model.new_interval_var(
                 start_var, duration, end_var, "interval_%i_%i" % (i, j)
             )
             all_tasks[(i, j)] = task_type(
@@ -96,51 +96,51 @@ def jobshop_ft06_distance():
                     job_indices.append(j)
                     job_starts.append(all_tasks[(j, k)].start)
                     job_ends.append(all_tasks[(j, k)].end)
-        model.AddNoOverlap(job_intervals)
+        model.add_no_overlap(job_intervals)
 
         arcs = []
         for j1 in range(len(job_intervals)):
             # Initial arc from the dummy node (0) to a task.
-            start_lit = model.NewBoolVar("%i is first job" % j1)
+            start_lit = model.new_bool_var("%i is first job" % j1)
             arcs.append((0, j1 + 1, start_lit))
             # Final arc from an arc to the dummy node.
-            arcs.append((j1 + 1, 0, model.NewBoolVar("%i is last job" % j1)))
+            arcs.append((j1 + 1, 0, model.new_bool_var("%i is last job" % j1)))
 
             for j2 in range(len(job_intervals)):
                 if j1 == j2:
                     continue
 
-                lit = model.NewBoolVar("%i follows %i" % (j2, j1))
+                lit = model.new_bool_var("%i follows %i" % (j2, j1))
                 arcs.append((j1 + 1, j2 + 1, lit))
 
                 # We add the reified precedence to link the literal with the
                 # times of the two tasks.
                 min_distance = distance_between_jobs(j1, j2)
-                model.Add(job_starts[j2] >= job_ends[j1] + min_distance).OnlyEnforceIf(
-                    lit
-                )
+                model.add(
+                    job_starts[j2] >= job_ends[j1] + min_distance
+                ).only_enforce_if(lit)
 
-        model.AddCircuit(arcs)
+        model.add_circuit(arcs)
 
     # Precedences inside a job.
     for i in all_jobs:
         for j in range(0, machines_count - 1):
-            model.Add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
+            model.add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
 
     # Makespan objective.
-    obj_var = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(
+    obj_var = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(
         obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs]
     )
-    model.Minimize(obj_var)
+    model.minimize(obj_var)
 
     # Solve model.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     # Output solution.
     if status == cp_model.OPTIMAL:
-        print("Optimal makespan: %i" % solver.ObjectiveValue())
+        print("Optimal makespan: %i" % solver.objective_value)
 
 
 jobshop_ft06_distance()

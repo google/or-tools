@@ -21,19 +21,14 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
-        self.__solution_count = 0
 
-    def on_solution_callback(self):
-        self.__solution_count += 1
+    def on_solution_callback(self) -> None:
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
-
-    def solution_count(self):
-        return self.__solution_count
 
 
 def earliness_tardiness_cost_sample_sat():
@@ -48,7 +43,7 @@ def earliness_tardiness_cost_sample_sat():
     model = cp_model.CpModel()
 
     # Declare our primary variable.
-    x = model.NewIntVar(0, 20, "x")
+    x = model.new_int_var(0, 20, "x")
 
     # Create the expression variable and implement the piecewise linear function.
     #
@@ -57,24 +52,24 @@ def earliness_tardiness_cost_sample_sat():
     #   ed    ld
     #
     large_constant = 1000
-    expr = model.NewIntVar(0, large_constant, "expr")
+    expr = model.new_int_var(0, large_constant, "expr")
 
     # First segment.
-    s1 = model.NewIntVar(-large_constant, large_constant, "s1")
-    model.Add(s1 == earliness_cost * (earliness_date - x))
+    s1 = model.new_int_var(-large_constant, large_constant, "s1")
+    model.add(s1 == earliness_cost * (earliness_date - x))
 
     # Second segment.
     s2 = 0
 
     # Third segment.
-    s3 = model.NewIntVar(-large_constant, large_constant, "s3")
-    model.Add(s3 == lateness_cost * (x - lateness_date))
+    s3 = model.new_int_var(-large_constant, large_constant, "s3")
+    model.add(s3 == lateness_cost * (x - lateness_date))
 
     # Link together expr and x through s1, s2, and s3.
-    model.AddMaxEquality(expr, [s1, s2, s3])
+    model.add_max_equality(expr, [s1, s2, s3])
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
@@ -86,7 +81,7 @@ def earliness_tardiness_cost_sample_sat():
 
     # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 earliness_tardiness_cost_sample_sat()

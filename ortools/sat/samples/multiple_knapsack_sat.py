@@ -43,18 +43,18 @@ def main():
     x = {}
     for i in data["all_items"]:
         for b in data["all_bins"]:
-            x[i, b] = model.NewBoolVar(f"x_{i}_{b}")
+            x[i, b] = model.new_bool_var(f"x_{i}_{b}")
     # [END variables]
 
     # Constraints.
     # [START constraints]
     # Each item is assigned to at most one bin.
     for i in data["all_items"]:
-        model.AddAtMostOne(x[i, b] for b in data["all_bins"])
+        model.add_at_most_one(x[i, b] for b in data["all_bins"])
 
     # The amount packed in each bin cannot exceed its capacity.
     for b in data["all_bins"]:
-        model.Add(
+        model.add(
             sum(x[i, b] * data["weights"][i] for i in data["all_items"])
             <= data["bin_capacities"][b]
         )
@@ -62,31 +62,31 @@ def main():
 
     # Objective.
     # [START objective]
-    # Maximize total value of packed items.
+    # maximize total value of packed items.
     objective = []
     for i in data["all_items"]:
         for b in data["all_bins"]:
-            objective.append(cp_model.LinearExpr.Term(x[i, b], data["values"][i]))
-    model.Maximize(cp_model.LinearExpr.Sum(objective))
+            objective.append(cp_model.LinearExpr.term(x[i, b], data["values"][i]))
+    model.maximize(cp_model.LinearExpr.sum(objective))
     # [END objective]
 
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
     if status == cp_model.OPTIMAL:
-        print(f"Total packed value: {solver.ObjectiveValue()}")
+        print(f"Total packed value: {solver.objective_value}")
         total_weight = 0
         for b in data["all_bins"]:
             print(f"Bin {b}")
             bin_weight = 0
             bin_value = 0
             for i in data["all_items"]:
-                if solver.Value(x[i, b]) > 0:
+                if solver.value(x[i, b]) > 0:
                     print(
-                        f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}"
+                        f"Item:{i} weight:{data['weights'][i]} value:{data['values'][i]}"
                     )
                     bin_weight += data["weights"][i]
                     bin_value += data["values"][i]

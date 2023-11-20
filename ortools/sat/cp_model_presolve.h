@@ -263,7 +263,13 @@ class CpModelPresolver {
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the
   // substitution.
-  void RemoveCommonPart(
+  //
+  // Returns false if the substitution cannot be performed because the equation
+  // common_part = new_variable is a linear equation with potential overflow.
+  //
+  // TODO(user): I would be great to change the overflow precondition so that
+  // this cannot happen by maybe taking the rhs into account?
+  bool RemoveCommonPart(
       const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
       const std::vector<std::pair<int, int64_t>>& block);
 

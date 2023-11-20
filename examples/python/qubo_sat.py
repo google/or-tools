@@ -653,14 +653,14 @@ RAW_DATA = [
 
 
 def solve_qubo():
-    """Solve the Qubo problem."""
+    """solve the Qubo problem."""
 
-    # Constraint programming engine
+    # Build the model.
     model = cp_model.CpModel()
 
     num_vars = len(RAW_DATA)
     all_vars = range(num_vars)
-    variables = [model.NewBoolVar("x_%i" % i) for i in all_vars]
+    variables = [model.new_bool_var("x_%i" % i) for i in all_vars]
 
     obj_vars = []
     obj_coeffs = []
@@ -672,10 +672,10 @@ def solve_qubo():
             if coeff == 0.0:
                 continue
             x_j = variables[j]
-            var = model.NewBoolVar("")
-            model.AddBoolOr([x_i.Not(), x_j.Not(), var])
-            model.AddImplication(var, x_i)
-            model.AddImplication(var, x_j)
+            var = model.new_bool_var("")
+            model.add_bool_or([x_i.negated(), x_j.negated(), var])
+            model.add_implication(var, x_i)
+            model.add_implication(var, x_j)
             obj_vars.append(var)
             obj_coeffs.append(coeff)
 
@@ -685,14 +685,14 @@ def solve_qubo():
             obj_vars.append(variables[i])
             obj_coeffs.append(self_coeff)
 
-    model.Minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     ### Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 16
     solver.parameters.log_search_progress = True
     solver.parameters.max_time_in_seconds = 30
-    solver.Solve(model)
+    solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:

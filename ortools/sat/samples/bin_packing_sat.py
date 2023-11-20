@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple bin packing problem using CP-SAT."""
+"""Solves a simple bin packing problem using CP-SAT."""
+
 # [START program]
 # [START import]
 import io
@@ -78,22 +79,22 @@ def main():
     items_x_bins = pd.MultiIndex.from_product(
         [items.index, bins.index], names=["item", "bin"]
     )
-    x = model.NewBoolVarSeries(name="x", index=items_x_bins)
+    x = model.new_bool_var_series(name="x", index=items_x_bins)
 
     # y[j] = 1 if bin j is used.
-    y = model.NewBoolVarSeries(name="y", index=bins.index)
+    y = model.new_bool_var_series(name="y", index=bins.index)
     # [END variables]
 
     # [START constraints]
     # Constraints
     # Each item must be in exactly one bin.
     for unused_name, all_copies in x.groupby("item"):
-        model.AddExactlyOne(x[all_copies.index])
+        model.add_exactly_one(x[all_copies.index])
 
     # The amount packed in each bin cannot exceed its capacity.
     for selected_bin in bins.index:
         items_in_bin = x.xs(selected_bin, level="bin")
-        model.Add(
+        model.add(
             items_in_bin.dot(items.weight)
             <= bins.loc[selected_bin].capacity * y[selected_bin]
         )
@@ -101,21 +102,21 @@ def main():
 
     # [START objective]
     # Objective: minimize the number of bins used.
-    model.Minimize(y.sum())
+    model.minimize(y.sum())
     # [END objective]
 
     # [START solve]
     # Create the solver and solve the model.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Number of bins used = {solver.ObjectiveValue()}")
+        print(f"Number of bins used = {solver.objective_value}")
 
-        x_values = solver.BooleanValues(x)
-        y_values = solver.BooleanValues(y)
+        x_values = solver.boolean_values(x)
+        y_values = solver.boolean_values(y)
         active_bins = y_values.loc[lambda x: x].index
 
         for b in active_bins:
@@ -128,7 +129,7 @@ def main():
 
         print(f"Total packed weight: {items.weight.sum()}")
         print()
-        print(f"Time = {solver.WallTime()} seconds")
+        print(f"Time = {solver.wall_time} seconds")
     elif status == cp_model.INFEASIBLE:
         print("No solution found")
     else:

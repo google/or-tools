@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -915,7 +916,10 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
   // We might also create an intermediate variable to represent the sum.
-  if (sum_min < std::numeric_limits<int64_t>::min() / 2) return true;
+  //
+  // Note that it is important to be symmetric here, as we do not want expr to
+  // pass but not -expr!
+  if (sum_min < -std::numeric_limits<int64_t>::max() / 2) return true;
   if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
   return false;
 }
@@ -1376,6 +1380,7 @@ class ConstraintChecker {
 
     std::sort(events.begin(), events.end());
 
+    // This works because we will process negative demands first.
     int64_t current_load = 0;
     for (const auto& [time, delta] : events) {
       current_load += delta;

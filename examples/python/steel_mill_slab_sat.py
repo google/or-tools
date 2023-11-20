@@ -131,22 +131,22 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         """Called on each new solution."""
         current_time = time.time()
-        objective = sum(self.Value(l) for l in self.__loss)
+        objective = sum(self.value(l) for l in self.__loss)
         print(
             "Solution %i, time = %f s, objective = %i"
             % (self.__solution_count, current_time - self.__start_time, objective)
         )
         self.__solution_count += 1
         orders_in_slab = [
-            [o for o in self.__all_orders if self.Value(self.__assign[o][s])]
+            [o for o in self.__all_orders if self.value(self.__assign[o][s])]
             for s in self.__all_slabs
         ]
         for s in self.__all_slabs:
             if orders_in_slab[s]:
                 line = "  - slab %i, load = %i, loss = %i, orders = [" % (
                     s,
-                    self.Value(self.__load[s]),
-                    self.Value(self.__loss[s]),
+                    self.value(self.__load[s]),
+                    self.value(self.__loss[s]),
                 )
                 for o in orders_in_slab[s]:
                     line += "#%i(w%i, c%i) " % (
@@ -193,44 +193,48 @@ def steel_mill_slab(problem, break_symmetries):
     # Create the model and the decision variables.
     model = cp_model.CpModel()
     assign = [
-        [model.NewBoolVar("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
+        [model.new_bool_var("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
         for o in all_orders
     ]
-    loads = [model.NewIntVar(0, max_capacity, "load_of_slab_%i" % s) for s in all_slabs]
+    loads = [
+        model.new_int_var(0, max_capacity, "load_of_slab_%i" % s) for s in all_slabs
+    ]
     color_is_in_slab = [
-        [model.NewBoolVar("color_%i_in_slab_%i" % (c + 1, s)) for c in all_colors]
+        [model.new_bool_var("color_%i_in_slab_%i" % (c + 1, s)) for c in all_colors]
         for s in all_slabs
     ]
 
     # Compute load of all slabs.
     for s in all_slabs:
-        model.Add(sum(assign[o][s] * widths[o] for o in all_orders) == loads[s])
+        model.add(sum(assign[o][s] * widths[o] for o in all_orders) == loads[s])
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.AddExactlyOne(assign[o])
+        model.add_exactly_one(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
-    model.Add(sum(loads) == sum(widths))
+    model.add(sum(loads) == sum(widths))
 
     # Link present_colors and assign.
     for c in all_colors:
         for s in all_slabs:
             for o in orders_per_color[c]:
-                model.AddImplication(assign[o][s], color_is_in_slab[s][c])
-                model.AddImplication(color_is_in_slab[s][c].Not(), assign[o][s].Not())
+                model.add_implication(assign[o][s], color_is_in_slab[s][c])
+                model.add_implication(
+                    color_is_in_slab[s][c].negated(), assign[o][s].negated()
+                )
 
     # At most two colors per slab.
     for s in all_slabs:
-        model.Add(sum(color_is_in_slab[s]) <= 2)
+        model.add(sum(color_is_in_slab[s]) <= 2)
 
     # Project previous constraint on unique_color_orders
     for s in all_slabs:
-        model.Add(sum(assign[o][s] for o in unique_color_orders) <= 2)
+        model.add(sum(assign[o][s] for o in unique_color_orders) <= 2)
 
     # Symmetry breaking.
     for s in range(num_slabs - 1):
-        model.Add(loads[s] >= loads[s + 1])
+        model.add(loads[s] >= loads[s + 1])
 
     # Collect equivalent orders.
     width_to_unique_color_order = {}
@@ -271,38 +275,38 @@ def steel_mill_slab(problem, break_symmetries):
         positions = {}
         for p in ordered_equivalent_orders:
             if p[0] not in positions:
-                positions[p[0]] = model.NewIntVar(
+                positions[p[0]] = model.new_int_var(
                     0, num_slabs - 1, "position_of_slab_%i" % p[0]
                 )
-                model.AddMapDomain(positions[p[0]], assign[p[0]])
+                model.add_map_domain(positions[p[0]], assign[p[0]])
             if p[1] not in positions:
-                positions[p[1]] = model.NewIntVar(
+                positions[p[1]] = model.new_int_var(
                     0, num_slabs - 1, "position_of_slab_%i" % p[1]
                 )
-                model.AddMapDomain(positions[p[1]], assign[p[1]])
+                model.add_map_domain(positions[p[1]], assign[p[1]])
             # Finally add the symmetry breaking constraint.
-            model.Add(positions[p[0]] <= positions[p[1]])
+            model.add(positions[p[0]] <= positions[p[1]])
 
     # Objective.
-    obj = model.NewIntVar(0, num_slabs * max_loss, "obj")
-    losses = [model.NewIntVar(0, max_loss, "loss_%i" % s) for s in all_slabs]
+    obj = model.new_int_var(0, num_slabs * max_loss, "obj")
+    losses = [model.new_int_var(0, max_loss, "loss_%i" % s) for s in all_slabs]
     for s in all_slabs:
-        model.AddElement(loads[s], loss_array, losses[s])
-    model.Add(obj == sum(losses))
-    model.Minimize(obj)
+        model.add_element(loads[s], loss_array, losses[s])
+    model.add(obj == sum(losses))
+    model.minimize(obj)
 
     ### Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     objective_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.Solve(model, objective_printer)
+    status = solver.solve(model, objective_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print(
             "Loss = %i, time = %f s, %i conflicts"
-            % (solver.ObjectiveValue(), solver.WallTime(), solver.NumConflicts())
+            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
         )
     else:
         print("No solution")
@@ -381,11 +385,11 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     # Create the model and the decision variables.
     model = cp_model.CpModel()
     assign = [
-        [model.NewBoolVar("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
+        [model.new_bool_var("assign_%i_to_slab_%i" % (o, s)) for s in all_slabs]
         for o in all_orders
     ]
-    loads = [model.NewIntVar(0, max_capacity, "load_%i" % s) for s in all_slabs]
-    losses = [model.NewIntVar(0, max_loss, "loss_%i" % s) for s in all_slabs]
+    loads = [model.new_int_var(0, max_capacity, "load_%i" % s) for s in all_slabs]
+    losses = [model.new_int_var(0, max_loss, "loss_%i" % s) for s in all_slabs]
 
     unsorted_valid_slabs = collect_valid_slabs_dp(
         capacities, colors, widths, loss_array
@@ -394,20 +398,20 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
     valid_slabs = sorted(unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
 
     for s in all_slabs:
-        model.AddAllowedAssignments(
+        model.add_allowed_assignments(
             [assign[o][s] for o in all_orders] + [losses[s], loads[s]], valid_slabs
         )
 
     # Orders are assigned to one slab.
     for o in all_orders:
-        model.AddExactlyOne(assign[o])
+        model.add_exactly_one(assign[o])
 
     # Redundant constraint (sum of loads == sum of widths).
-    model.Add(sum(loads) == sum(widths))
+    model.add(sum(loads) == sum(widths))
 
     # Symmetry breaking.
     for s in range(num_slabs - 1):
-        model.Add(loads[s] >= loads[s + 1])
+        model.add(loads[s] >= loads[s + 1])
 
     # Collect equivalent orders.
     if break_symmetries:
@@ -453,20 +457,20 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
             positions = {}
             for p in ordered_equivalent_orders:
                 if p[0] not in positions:
-                    positions[p[0]] = model.NewIntVar(
+                    positions[p[0]] = model.new_int_var(
                         0, num_slabs - 1, "position_of_slab_%i" % p[0]
                     )
-                    model.AddMapDomain(positions[p[0]], assign[p[0]])
+                    model.add_map_domain(positions[p[0]], assign[p[0]])
                 if p[1] not in positions:
-                    positions[p[1]] = model.NewIntVar(
+                    positions[p[1]] = model.new_int_var(
                         0, num_slabs - 1, "position_of_slab_%i" % p[1]
                     )
-                    model.AddMapDomain(positions[p[1]], assign[p[1]])
+                    model.add_map_domain(positions[p[1]], assign[p[1]])
                     # Finally add the symmetry breaking constraint.
-                model.Add(positions[p[0]] <= positions[p[1]])
+                model.add(positions[p[0]] <= positions[p[1]])
 
     # Objective.
-    model.Minimize(sum(losses))
+    model.minimize(sum(losses))
 
     print("Model created")
 
@@ -476,13 +480,13 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries):
         text_format.Parse(_PARAMS.value, solver.parameters)
 
     solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads, losses)
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     ### Output the solution.
     if status == cp_model.OPTIMAL:
         print(
             "Loss = %i, time = %.2f s, %i conflicts"
-            % (solver.ObjectiveValue(), solver.WallTime(), solver.NumConflicts())
+            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
         )
     else:
         print("No solution")
@@ -522,21 +526,21 @@ def steel_mill_slab_with_column_generation(problem):
 
     # create model and decision variables.
     model = cp_model.CpModel()
-    selected = [model.NewBoolVar("selected_%i" % i) for i in all_valid_slabs]
+    selected = [model.new_bool_var("selected_%i" % i) for i in all_valid_slabs]
 
     for order_id in all_orders:
-        model.Add(
+        model.add(
             sum(selected[i] for i, slab in enumerate(valid_slabs) if slab[order_id])
             == 1
         )
 
     # Redundant constraint (sum of loads == sum of widths).
-    model.Add(
+    model.add(
         sum(selected[i] * valid_slabs[i][-1] for i in all_valid_slabs) == sum(widths)
     )
 
     # Objective.
-    model.Minimize(sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
+    model.minimize(sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
 
     print("Model created")
 
@@ -545,13 +549,13 @@ def steel_mill_slab_with_column_generation(problem):
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     ### Output the solution.
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print(
             "Loss = %i, time = %.2f s, %i conflicts"
-            % (solver.ObjectiveValue(), solver.WallTime(), solver.NumConflicts())
+            % (solver.objective_value, solver.wall_time, solver.num_conflicts)
         )
     else:
         print("No solution")

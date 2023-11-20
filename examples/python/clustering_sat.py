@@ -83,14 +83,14 @@ def clustering_sat():
     obj_coeffs = []
     for n1 in range(num_nodes - 1):
         for n2 in range(n1 + 1, num_nodes):
-            same = model.NewBoolVar("neighbors_%i_%i" % (n1, n2))
+            same = model.new_bool_var("neighbors_%i_%i" % (n1, n2))
             neighbors[n1, n2] = same
             obj_vars.append(same)
             obj_coeffs.append(distance_matrix[n1][n2] + distance_matrix[n2][n1])
 
     # Number of neighborss:
     for n in range(num_nodes):
-        model.Add(
+        model.add(
             sum(neighbors[m, n] for m in range(n))
             + sum(neighbors[n, m] for m in range(n + 1, num_nodes))
             == group_size - 1
@@ -100,23 +100,23 @@ def clustering_sat():
     for n1 in range(num_nodes - 2):
         for n2 in range(n1 + 1, num_nodes - 1):
             for n3 in range(n2 + 1, num_nodes):
-                model.Add(
+                model.add(
                     neighbors[n1, n3] + neighbors[n2, n3] + neighbors[n1, n2] != 2
                 )
 
     # Redundant constraints on total sum of neighborss.
-    model.Add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
+    model.add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
 
     # Minimize weighted sum of arcs.
-    model.Minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
     solver.parameters.num_search_workers = 8
 
-    status = solver.Solve(model)
-    print(solver.ResponseStats())
+    status = solver.solve(model)
+    print(solver.response_stats())
 
     if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
         visited = set()
@@ -126,7 +126,7 @@ def clustering_sat():
                     visited.add(n)
                     output = str(n)
                     for o in range(n + 1, num_nodes):
-                        if solver.BooleanValue(neighbors[n, o]):
+                        if solver.boolean_value(neighbors[n, o]):
                             visited.add(o)
                             output += " " + str(o)
                     print("Group", g, ":", output)

@@ -182,6 +182,8 @@ ABSL_FLAG(
 
 ABSL_FLAG(bool, cp_model_ignore_objective, false,
           "If true, ignore the objective.");
+ABSL_FLAG(bool, cp_model_ignore_hints, false,
+          "If true, ignore any supplied hints.");
 ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 
 namespace operations_research {
@@ -3865,6 +3867,9 @@ void TestSolutionHintForFeasibility(const CpModelProto& model_proto,
   // TODO(user): If the hint specifies all non-fixed variables we could also
   // do the check.
   if (model_proto.solution_hint().vars_size() != model_proto.variables_size()) {
+    SOLVER_LOG(logger, "The solution hint is incomplete: ",
+               model_proto.solution_hint().vars_size(), " out of ",
+               model_proto.variables_size(), " variables hinted.");
     return;
   }
 
@@ -4132,6 +4137,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(logger, "Ignoring objective");
     context->working_model->clear_objective();
     context->working_model->clear_floating_point_objective();
+  }
+
+  if (absl::GetFlag(FLAGS_cp_model_ignore_hints) &&
+      context->working_model->has_solution_hint()) {
+    SOLVER_LOG(logger, "Ignoring solution hint");
+    context->working_model->clear_solution_hint();
   }
 
   // Checks for hints early in case they are forced to be hard constraints.

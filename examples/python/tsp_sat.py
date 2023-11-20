@@ -82,17 +82,17 @@ def main():
             if i == j:
                 continue
 
-            lit = model.NewBoolVar("%i follows %i" % (j, i))
+            lit = model.new_bool_var("%i follows %i" % (j, i))
             arcs.append((i, j, lit))
             arc_literals[i, j] = lit
 
             obj_vars.append(lit)
             obj_coeffs.append(DISTANCE_MATRIX[i][j])
 
-    model.AddCircuit(arcs)
+    model.add_circuit(arcs)
 
     # Minimize weighted sum of arcs. Because this s
-    model.Minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
@@ -100,8 +100,8 @@ def main():
     # To benefit from the linearization of the circuit constraint.
     solver.parameters.linearization_level = 2
 
-    solver.Solve(model)
-    print(solver.ResponseStats())
+    solver.solve(model)
+    print(solver.response_stats())
 
     current_node = 0
     str_route = "%i" % current_node
@@ -111,7 +111,7 @@ def main():
         for i in all_nodes:
             if i == current_node:
                 continue
-            if solver.BooleanValue(arc_literals[current_node, i]):
+            if solver.boolean_value(arc_literals[current_node, i]):
                 str_route += " -> %i" % i
                 route_distance += DISTANCE_MATRIX[current_node][i]
                 current_node = i

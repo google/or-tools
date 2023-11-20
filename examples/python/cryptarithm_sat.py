@@ -20,58 +20,58 @@ from ortools.sat.python import cp_model
 
 
 def send_more_money():
-    """Solve the cryptarithmic puzzle SEND+MORE=MONEY."""
+    """solve the cryptarithmic puzzle SEND+MORE=MONEY."""
     model = cp_model.CpModel()
 
     # Create variables.
     # Since s is a leading digit, it can't be 0.
-    s = model.NewIntVar(1, 9, "s")
-    e = model.NewIntVar(0, 9, "e")
-    n = model.NewIntVar(0, 9, "n")
-    d = model.NewIntVar(0, 9, "d")
+    s = model.new_int_var(1, 9, "s")
+    e = model.new_int_var(0, 9, "e")
+    n = model.new_int_var(0, 9, "n")
+    d = model.new_int_var(0, 9, "d")
     # Since m is a leading digit, it can't be 0.
-    m = model.NewIntVar(1, 9, "m")
-    o = model.NewIntVar(0, 9, "o")
-    r = model.NewIntVar(0, 9, "r")
-    y = model.NewIntVar(0, 9, "y")
+    m = model.new_int_var(1, 9, "m")
+    o = model.new_int_var(0, 9, "o")
+    r = model.new_int_var(0, 9, "r")
+    y = model.new_int_var(0, 9, "y")
 
     # Create carry variables. c0 is true if the first column of addends carries
     # a 1, c2 is true if the second column carries a 1, and so on.
-    c0 = model.NewBoolVar("c0")
-    c1 = model.NewBoolVar("c1")
-    c2 = model.NewBoolVar("c2")
-    c3 = model.NewBoolVar("c3")
+    c0 = model.new_bool_var("c0")
+    c1 = model.new_bool_var("c1")
+    c2 = model.new_bool_var("c2")
+    c3 = model.new_bool_var("c3")
 
     # Force all letters to take on different values.
-    model.AddAllDifferent(s, e, n, d, m, o, r, y)
+    model.add_all_different(s, e, n, d, m, o, r, y)
 
     # Column 0:
-    model.Add(c0 == m)
+    model.add(c0 == m)
 
     # Column 1:
-    model.Add(c1 + s + m == o + 10 * c0)
+    model.add(c1 + s + m == o + 10 * c0)
 
     # Column 2:
-    model.Add(c2 + e + o == n + 10 * c1)
+    model.add(c2 + e + o == n + 10 * c1)
 
     # Column 3:
-    model.Add(c3 + n + r == e + 10 * c2)
+    model.add(c3 + n + r == e + 10 * c2)
 
     # Column 4:
-    model.Add(d + e == y + 10 * c3)
+    model.add(d + e == y + 10 * c3)
 
-    # Solve model.
+    # solve model.
     solver = cp_model.CpSolver()
-    if solver.Solve(model) == cp_model.OPTIMAL:
+    if solver.solve(model) == cp_model.OPTIMAL:
         print("Optimal solution found!")
-    print("s:", solver.Value(s))
-    print("e:", solver.Value(e))
-    print("n:", solver.Value(n))
-    print("d:", solver.Value(d))
-    print("m:", solver.Value(m))
-    print("o:", solver.Value(o))
-    print("r:", solver.Value(r))
-    print("y:", solver.Value(y))
+    print("s:", solver.value(s))
+    print("e:", solver.value(e))
+    print("n:", solver.value(n))
+    print("d:", solver.value(d))
+    print("m:", solver.value(m))
+    print("o:", solver.value(o))
+    print("r:", solver.value(r))
+    print("y:", solver.value(y))
 
 
 def main(_):

@@ -358,8 +358,8 @@ class XpressInterface : public MPSolverInterface {
   bool IsMIP() const override { return mMip; }
 
   void SetStartingLpBasis(
-      const std::vector<MPSolver::BasisStatus>& /*variable_statuses*/,
-      const std::vector<MPSolver::BasisStatus>& /*constraint_statuses*/) override;
+      const std::vector<MPSolver::BasisStatus>& variable_statuses,
+      const std::vector<MPSolver::BasisStatus>& constraint_statuses) override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
@@ -1742,6 +1742,15 @@ void XpressInterface::SetLpAlgorithm(int value) {
     CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_DEFAULTALG, alg));
   }
 }
+std::vector<int> XpressBasisStatusesFrom(
+    const std::vector<MPSolver::BasisStatus>& statuses) {
+  std::vector<int> result;
+  result.reserve(statuses.size());
+  std::transform(statuses.cbegin(), statuses.cend(), result.begin(),
+                 MPSolverToXpressBasisStatus);
+  return result;
+}
+
 void XpressInterface::SetStartingLpBasis(
     const std::vector<MPSolver::BasisStatus>& variable_statuses,
     const std::vector<MPSolver::BasisStatus>& constraint_statuses){
@@ -1749,16 +1758,8 @@ void XpressInterface::SetStartingLpBasis(
     LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
     return;
   }
-  initial_variables_basis_status_.clear();
-  initial_variables_basis_status_.reserve(variable_statuses.size());
-  for (const MPSolver::BasisStatus& status : variable_statuses) {
-    initial_variables_basis_status_.push_back(MPSolverToXpressBasisStatus(status));
-  }
-  initial_constraint_basis_status_.clear();
-  initial_constraint_basis_status_.reserve(constraint_statuses.size());
-  for (const MPSolver::BasisStatus& status : constraint_statuses) {
-    initial_constraint_basis_status_.push_back(MPSolverToXpressBasisStatus(status));
-  }
+  initial_variables_basis_status_ = XpressBasisStatusesFrom(variable_statuses);
+  initial_constraint_basis_status_ = XpressBasisStatusesFrom(constraint_statuses);
 }
 
 bool XpressInterface::readParameters(std::istream& is, char sep) {

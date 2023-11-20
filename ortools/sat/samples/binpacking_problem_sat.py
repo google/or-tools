@@ -38,43 +38,43 @@ def BinpackingProblemSat():
     for i in all_items:
         num_copies = items[i][1]
         for b in all_bins:
-            x[(i, b)] = model.NewIntVar(0, num_copies, f"x[{i},{b}]")
+            x[(i, b)] = model.new_int_var(0, num_copies, f"x[{i},{b}]")
 
     # Load variables.
-    load = [model.NewIntVar(0, bin_capacity, f"load[{b}]") for b in all_bins]
+    load = [model.new_int_var(0, bin_capacity, f"load[{b}]") for b in all_bins]
 
     # Slack variables.
-    slacks = [model.NewBoolVar(f"slack[{b}]") for b in all_bins]
+    slacks = [model.new_bool_var(f"slack[{b}]") for b in all_bins]
 
     # Links load and x.
     for b in all_bins:
-        model.Add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
+        model.add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
 
     # Place all items.
     for i in all_items:
-        model.Add(sum(x[(i, b)] for b in all_bins) == items[i][1])
+        model.add(sum(x[(i, b)] for b in all_bins) == items[i][1])
 
     # Links load and slack through an equivalence relation.
     safe_capacity = bin_capacity - slack_capacity
     for b in all_bins:
         # slack[b] => load[b] <= safe_capacity.
-        model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b])
+        model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
         # not(slack[b]) => load[b] > safe_capacity.
-        model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not())
+        model.add(load[b] > safe_capacity).only_enforce_if(slacks[b].negated())
 
     # Maximize sum of slacks.
-    model.Maximize(sum(slacks))
+    model.maximize(sum(slacks))
 
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    print(f"Solve status: {solver.StatusName(status)}")
+    status = solver.solve(model)
+    print(f"solve status: {solver.status_name(status)}")
     if status == cp_model.OPTIMAL:
-        print(f"Optimal objective value: {solver.ObjectiveValue()}")
+        print(f"Optimal objective value: {solver.objective_value}")
     print("Statistics")
-    print(f"  - conflicts : {solver.NumConflicts()}")
-    print(f"  - branches  : {solver.NumBranches()}")
-    print(f"  - wall time : {solver.WallTime()}s")
+    print(f"  - conflicts : {solver.num_conflicts}")
+    print(f"  - branches  : {solver.num_branches}")
+    print(f"  - wall time : {solver.wall_time}s")
 
 
 BinpackingProblemSat()

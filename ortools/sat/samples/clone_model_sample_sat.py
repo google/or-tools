@@ -28,43 +28,43 @@ def CloneModelSampleSat():
     # Creates the variables.
     # [START variables]
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
     # [END variables]
 
     # Creates the constraints.
     # [START constraints]
-    model.Add(x != y)
+    model.add(x != y)
     # [END constraints]
 
     # [START objective]
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
     # [END objective]
 
     # Creates a solver and solves.
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the original model: {}".format(solver.objective_value))
 
-    # Clone the model.
+    # Clones the model.
     # [START clone]
-    copy = model.Clone()
+    copy = model.clone()
 
-    copy_x = copy.GetIntVarFromProtoIndex(x.Index())
-    copy_y = copy.GetIntVarFromProtoIndex(y.Index())
+    copy_x = copy.get_int_var_from_proto_index(x.index)
+    copy_y = copy.get_int_var_from_proto_index(y.index)
 
-    copy.Add(copy_x + copy_y <= 1)
+    copy.add(copy_x + copy_y <= 1)
     # [END clone]
 
-    status = solver.Solve(copy)
+    status = solver.solve(copy)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the modified model: {}".format(solver.objective_value))
 
 
 CloneModelSampleSat()

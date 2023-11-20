@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a simple scheduling problem with a variable work load."""
+"""Solves a simple scheduling problem with a variable work load."""
+
 # [START program]
 # [START import]
 import io
@@ -107,12 +108,12 @@ def main():
     # [START program_part2]
     # [START variables]
     # Variables
-    starts = model.NewIntVarSeries(
+    starts = model.new_int_var_series(
         name="starts", lower_bounds=0, upper_bounds=horizon, index=tasks_df.index
     )
-    performed = model.NewBoolVarSeries(name="performed", index=tasks_df.index)
+    performed = model.new_bool_var_series(name="performed", index=tasks_df.index)
 
-    intervals = model.NewOptionalFixedSizeIntervalVarSeries(
+    intervals = model.new_optional_fixed_size_interval_var_series(
         name="intervals",
         index=tasks_df.index,
         starts=starts,
@@ -124,7 +125,7 @@ def main():
     # [START constraints]
     # Set up the profile. We use fixed (intervals, demands) to fill in the space
     # between the actual load profile and the max capacity.
-    time_period_intervals = model.NewFixedSizeIntervalVarSeries(
+    time_period_intervals = model.new_fixed_size_interval_var_series(
         name="time_period_intervals",
         index=capacity_df.index,
         starts=capacity_df.start_hour * minutes_per_period,
@@ -133,7 +134,7 @@ def main():
     time_period_heights = max_capacity - capacity_df.capacity
 
     # Cumulative constraint.
-    model.AddCumulative(
+    model.add_cumulative(
         intervals.to_list() + time_period_intervals.to_list(),
         tasks_df.load.to_list() + time_period_heights.to_list(),
         max_capacity,
@@ -144,7 +145,7 @@ def main():
     # Objective: maximize the value of performed intervals.
     # 1 is the max priority.
     max_priority = max(tasks_df.priority)
-    model.Maximize(sum(performed * (max_priority + 1 - tasks_df.priority)))
+    model.maximize(sum(performed * (max_priority + 1 - tasks_df.priority)))
     # [END objective]
 
     # [START solve]
@@ -153,13 +154,13 @@ def main():
     solver.parameters.log_search_progress = True
     solver.parameters.num_workers = 8
     solver.parameters.max_time_in_seconds = 30.0
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        start_values = solver.Values(starts)
-        performed_values = solver.BooleanValues(performed)
+        start_values = solver.values(starts)
+        performed_values = solver.boolean_values(performed)
         for task in tasks_df.index:
             if performed_values[task]:
                 print(f"task {task} starts at {start_values[task]}")

@@ -21,20 +21,20 @@ def RabbitsAndPheasantsSat():
     """Solves the rabbits + pheasants problem."""
     model = cp_model.CpModel()
 
-    r = model.NewIntVar(0, 100, "r")
-    p = model.NewIntVar(0, 100, "p")
+    r = model.new_int_var(0, 100, "r")
+    p = model.new_int_var(0, 100, "p")
 
     # 20 heads.
-    model.Add(r + p == 20)
+    model.add(r + p == 20)
     # 56 legs.
-    model.Add(4 * r + 2 * p == 56)
+    model.add(4 * r + 2 * p == 56)
 
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print(f"{solver.Value(r)} rabbits and {solver.Value(p)} pheasants")
+        print(f"{solver.value(r)} rabbits and {solver.value(p)} pheasants")
 
 
 RabbitsAndPheasantsSat()

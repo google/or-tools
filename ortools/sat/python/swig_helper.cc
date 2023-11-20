@@ -28,7 +28,9 @@
 #include "absl/strings/string_view.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "pybind11/cast.h"
 #include "pybind11/functional.h"
+#include "pybind11/gil.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11_protobuf/native_proto_caster.h"
@@ -86,27 +88,28 @@ PYBIND11_MODULE(swig_helper, m) {
 
   pybind11::class_<SolveWrapper>(m, "SolveWrapper")
       .def(pybind11::init<>())
-      .def("AddLogCallback", &SolveWrapper::AddLogCallback, arg("log_callback"))
-      .def("AddSolutionCallback", &SolveWrapper::AddSolutionCallback,
+      .def("add_log_callback", &SolveWrapper::AddLogCallback,
+           arg("log_callback"))
+      .def("add_solution_callback", &SolveWrapper::AddSolutionCallback,
            arg("callback"))
-      .def("ClearSolutionCallback", &SolveWrapper::ClearSolutionCallback)
-      .def("SetParameters", &SolveWrapper::SetParameters, arg("parameters"))
-      .def("Solve",
+      .def("clear_solution_callback", &SolveWrapper::ClearSolutionCallback)
+      .def("set_parameters", &SolveWrapper::SetParameters, arg("parameters"))
+      .def("solve",
            [](SolveWrapper* solve_wrapper,
               const CpModelProto& model_proto) -> CpSolverResponse {
              ::pybind11::gil_scoped_release release;
              return solve_wrapper->Solve(model_proto);
            })
-      .def("StopSearch", &SolveWrapper::StopSearch);
+      .def("stop_search", &SolveWrapper::StopSearch);
 
   pybind11::class_<CpSatHelper>(m, "CpSatHelper")
-      .def_static("ModelStats", &CpSatHelper::ModelStats, arg("model_proto"))
-      .def_static("SolverResponseStats", &CpSatHelper::SolverResponseStats,
+      .def_static("model_stats", &CpSatHelper::ModelStats, arg("model_proto"))
+      .def_static("solver_response_stats", &CpSatHelper::SolverResponseStats,
                   arg("response"))
-      .def_static("ValidateModel", &CpSatHelper::ValidateModel,
+      .def_static("validate_model", &CpSatHelper::ValidateModel,
                   arg("model_proto"))
-      .def_static("VariableDomain", &CpSatHelper::VariableDomain,
+      .def_static("variable_domain", &CpSatHelper::VariableDomain,
                   arg("variable_proto"))
-      .def_static("WriteModelToFile", &CpSatHelper::WriteModelToFile,
+      .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
                   arg("model_proto"), arg("filename"));
 }

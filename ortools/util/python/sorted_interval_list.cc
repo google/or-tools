@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "ortools/util/python/sorted_interval_list_doc.h"
+#include "pybind11/cast.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -24,6 +25,39 @@ using ::pybind11::arg;
 
 PYBIND11_MODULE(sorted_interval_list, m) {
   pybind11::class_<Domain>(m, "Domain", DOC(operations_research, Domain))
+      .def_static("all_values", &Domain::AllValues,
+                  DOC(operations_research, Domain, AllValues))
+      .def_static("from_values", &Domain::FromValues,
+                  DOC(operations_research, Domain, FromValues), arg("values"))
+      .def_static("from_intervals", &Domain::FromVectorIntervals,
+                  DOC(operations_research, Domain, FromVectorIntervals),
+                  arg("intervals"))
+      .def_static("from_flat_intervals", &Domain::FromFlatIntervals,
+                  DOC(operations_research, Domain, FromFlatIntervals),
+                  arg("flat_intervals"))
+      .def(pybind11::init<int64_t, int64_t>(),
+           DOC(operations_research, Domain, Domain))
+      .def("addition_with", &Domain::AdditionWith,
+           DOC(operations_research, Domain, AdditionWith), arg("domain"))
+      .def("complement", &Domain::Complement,
+           DOC(operations_research, Domain, Complement))
+      .def("contains", &Domain::Contains,
+           DOC(operations_research, Domain, Contains), arg("value"))
+      .def("flattened_intervals", &Domain::FlattenedIntervals,
+           DOC(operations_research, Domain, FlattenedIntervals))
+      .def("intersection_with", &Domain::IntersectionWith,
+           DOC(operations_research, Domain, IntersectionWith), arg("domain"))
+      .def("is_empty", &Domain::IsEmpty,
+           DOC(operations_research, Domain, IsEmpty))
+      .def("size", &Domain::Size, DOC(operations_research, Domain, Size))
+      .def("max", &Domain::Max, DOC(operations_research, Domain, Max))
+      .def("min", &Domain::Min, DOC(operations_research, Domain, Min))
+      .def("negation", &Domain::Negation,
+           DOC(operations_research, Domain, Negation))
+      .def("union_with", &Domain::UnionWith,
+           DOC(operations_research, Domain, UnionWith), arg("domain"))
+      .def("__str__", &Domain::ToString)
+      // Compatibility with pre PEP8 APIs.
       .def_static("AllValues", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))
       .def_static("FromValues", &Domain::FromValues,
@@ -34,26 +68,6 @@ PYBIND11_MODULE(sorted_interval_list, m) {
       .def_static("FromFlatIntervals", &Domain::FromFlatIntervals,
                   DOC(operations_research, Domain, FromFlatIntervals),
                   arg("flat_intervals"))
-      .def(pybind11::init<int64_t, int64_t>(),
-           DOC(operations_research, Domain, Domain))
-      .def("AdditionWith", &Domain::AdditionWith,
-           DOC(operations_research, Domain, AdditionWith), arg("domain"))
-      .def("Complement", &Domain::Complement,
-           DOC(operations_research, Domain, Complement))
-      .def("Contains", &Domain::Contains,
-           DOC(operations_research, Domain, Contains), arg("value"))
       .def("FlattenedIntervals", &Domain::FlattenedIntervals,
-           DOC(operations_research, Domain, FlattenedIntervals))
-      .def("IntersectionWith", &Domain::IntersectionWith,
-           DOC(operations_research, Domain, IntersectionWith), arg("domain"))
-      .def("IsEmpty", &Domain::IsEmpty,
-           DOC(operations_research, Domain, IsEmpty))
-      .def("Size", &Domain::Size, DOC(operations_research, Domain, Size))
-      .def("Max", &Domain::Max, DOC(operations_research, Domain, Max))
-      .def("Min", &Domain::Min, DOC(operations_research, Domain, Min))
-      .def("Negation", &Domain::Negation,
-           DOC(operations_research, Domain, Negation))
-      .def("UnionWith", &Domain::UnionWith,
-           DOC(operations_research, Domain, UnionWith), arg("domain"))
-      .def("__str__", &Domain::ToString);
+           DOC(operations_research, Domain, FlattenedIntervals));
 }

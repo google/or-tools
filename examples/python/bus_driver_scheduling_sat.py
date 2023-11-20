@@ -1708,7 +1708,7 @@ SAMPLE_SHIFTS_LARGE = [
 ]  # yapf:disable
 
 
-def bus_driver_scheduling(minimize_drivers, max_num_drivers):
+def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
     """Optimize the bus driver scheduling problem.
 
     This model has two modes.
@@ -1806,14 +1806,14 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
 
     for d in range(num_drivers):
         start_times.append(
-            model.NewIntVar(min_start_time - setup_time, max_end_time, "start_%i" % d)
+            model.new_int_var(min_start_time - setup_time, max_end_time, "start_%i" % d)
         )
         end_times.append(
-            model.NewIntVar(min_start_time, max_end_time + cleanup_time, "end_%i" % d)
+            model.new_int_var(min_start_time, max_end_time + cleanup_time, "end_%i" % d)
         )
-        driving_times.append(model.NewIntVar(0, max_driving_time, "driving_%i" % d))
+        driving_times.append(model.new_int_var(0, max_driving_time, "driving_%i" % d))
         working_times.append(
-            model.NewIntVar(0, max_working_time, "working_times_%i" % d)
+            model.new_int_var(0, max_working_time, "working_times_%i" % d)
         )
 
         incoming_literals = collections.defaultdict(list)
@@ -1824,13 +1824,13 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         # Create all the shift variables before iterating on the transitions
         # between these shifts.
         for s in range(num_shifts):
-            total_driving[d, s] = model.NewIntVar(
+            total_driving[d, s] = model.new_int_var(
                 0, max_driving_time, "dr_%i_%i" % (d, s)
             )
-            no_break_driving[d, s] = model.NewIntVar(
+            no_break_driving[d, s] = model.new_int_var(
                 0, max_driving_time_without_pauses, "mdr_%i_%i" % (d, s)
             )
-            performed[d, s] = model.NewBoolVar("performed_%i_%i" % (d, s))
+            performed[d, s] = model.new_bool_var("performed_%i_%i" % (d, s))
 
         for s in range(num_shifts):
             shift = shifts[s]
@@ -1839,42 +1839,48 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             # Arc from source to shift.
             #    - set the start time of the driver
             #    - increase driving time and driving time since break
-            source_lit = model.NewBoolVar("%i from source to %i" % (d, s))
+            source_lit = model.new_bool_var("%i from source to %i" % (d, s))
             outgoing_source_literals.append(source_lit)
             incoming_literals[s].append(source_lit)
             shared_incoming_literals[s].append(source_lit)
-            model.Add(start_times[d] == shift[3] - setup_time).OnlyEnforceIf(source_lit)
-            model.Add(total_driving[d, s] == duration).OnlyEnforceIf(source_lit)
-            model.Add(no_break_driving[d, s] == duration).OnlyEnforceIf(source_lit)
+            model.add(start_times[d] == shift[3] - setup_time).only_enforce_if(
+                source_lit
+            )
+            model.add(total_driving[d, s] == duration).only_enforce_if(source_lit)
+            model.add(no_break_driving[d, s] == duration).only_enforce_if(source_lit)
             starting_shifts[d, s] = source_lit
 
             # Arc from shift to sink
             #    - set the end time of the driver
             #    - set the driving times of the driver
-            sink_lit = model.NewBoolVar("%i from %i to sink" % (d, s))
+            sink_lit = model.new_bool_var("%i from %i to sink" % (d, s))
             outgoing_literals[s].append(sink_lit)
             shared_outgoing_literals[s].append(sink_lit)
             incoming_sink_literals.append(sink_lit)
-            model.Add(end_times[d] == shift[4] + cleanup_time).OnlyEnforceIf(sink_lit)
-            model.Add(driving_times[d] == total_driving[d, s]).OnlyEnforceIf(sink_lit)
+            model.add(end_times[d] == shift[4] + cleanup_time).only_enforce_if(sink_lit)
+            model.add(driving_times[d] == total_driving[d, s]).only_enforce_if(sink_lit)
 
             # Node not performed
             #    - set both driving times to 0
             #    - add a looping arc on the node
-            model.Add(total_driving[d, s] == 0).OnlyEnforceIf(performed[d, s].Not())
-            model.Add(no_break_driving[d, s] == 0).OnlyEnforceIf(performed[d, s].Not())
-            incoming_literals[s].append(performed[d, s].Not())
-            outgoing_literals[s].append(performed[d, s].Not())
-            # Not adding to the shared lists, because, globally, each node will have
-            # one incoming literal, and one outgoing literal.
+            model.add(total_driving[d, s] == 0).only_enforce_if(
+                performed[d, s].negated()
+            )
+            model.add(no_break_driving[d, s] == 0).only_enforce_if(
+                performed[d, s].negated()
+            )
+            incoming_literals[s].append(performed[d, s].negated())
+            outgoing_literals[s].append(performed[d, s].negated())
+            # negated adding to the shared lists, because, globally, each node will
+            # have one incoming literal, and one outgoing literal.
 
             # Node performed:
             #    - add upper bound on start_time
             #    - add lower bound on end_times
-            model.Add(start_times[d] <= shift[3] - setup_time).OnlyEnforceIf(
+            model.add(start_times[d] <= shift[3] - setup_time).only_enforce_if(
                 performed[d, s]
             )
-            model.Add(end_times[d] >= shift[4] + cleanup_time).OnlyEnforceIf(
+            model.add(end_times[d] >= shift[4] + cleanup_time).only_enforce_if(
                 performed[d, s]
             )
 
@@ -1883,22 +1889,22 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 delay = other[3] - shift[4]
                 if delay < min_delay_between_shifts:
                     continue
-                lit = model.NewBoolVar("%i from %i to %i" % (d, s, o))
+                lit = model.new_bool_var("%i from %i to %i" % (d, s, o))
 
                 # Increase driving time
-                model.Add(
+                model.add(
                     total_driving[d, o] == total_driving[d, s] + other[5]
-                ).OnlyEnforceIf(lit)
+                ).only_enforce_if(lit)
 
                 # Increase no_break_driving or reset it to 0 depending on the delay
                 if delay >= min_pause_after_4h:
-                    model.Add(no_break_driving[d, o] == other[5]).OnlyEnforceIf(lit)
+                    model.add(no_break_driving[d, o] == other[5]).only_enforce_if(lit)
                 else:
-                    model.Add(
+                    model.add(
                         no_break_driving[d, o] == no_break_driving[d, s] + other[5]
-                    ).OnlyEnforceIf(lit)
+                    ).only_enforce_if(lit)
 
-                # Add arc
+                # add arc
                 outgoing_literals[s].append(lit)
                 shared_outgoing_literals[s].append(lit)
                 incoming_literals[o].append(lit)
@@ -1908,68 +1914,72 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 delay_literals.append(lit)
                 delay_weights.append(delay)
 
-        model.Add(working_times[d] == end_times[d] - start_times[d])
+        model.add(working_times[d] == end_times[d] - start_times[d])
 
         if minimize_drivers:
             # Driver is not working.
-            working = model.NewBoolVar("working_%i" % d)
-            model.Add(start_times[d] == min_start_time).OnlyEnforceIf(working.Not())
-            model.Add(end_times[d] == min_start_time).OnlyEnforceIf(working.Not())
-            model.Add(driving_times[d] == 0).OnlyEnforceIf(working.Not())
+            working = model.new_bool_var("working_%i" % d)
+            model.add(start_times[d] == min_start_time).only_enforce_if(
+                working.negated()
+            )
+            model.add(end_times[d] == min_start_time).only_enforce_if(working.negated())
+            model.add(driving_times[d] == 0).only_enforce_if(working.negated())
             working_drivers.append(working)
-            outgoing_source_literals.append(working.Not())
-            incoming_sink_literals.append(working.Not())
+            outgoing_source_literals.append(working.negated())
+            incoming_sink_literals.append(working.negated())
             # Conditional working time constraints
-            model.Add(working_times[d] >= min_working_time).OnlyEnforceIf(working)
-            model.Add(working_times[d] == 0).OnlyEnforceIf(working.Not())
+            model.add(working_times[d] >= min_working_time).only_enforce_if(working)
+            model.add(working_times[d] == 0).only_enforce_if(working.negated())
         else:
             # Working time constraints
-            model.Add(working_times[d] >= min_working_time)
+            model.add(working_times[d] >= min_working_time)
 
         # Create circuit constraint.
-        model.AddExactlyOne(outgoing_source_literals)
+        model.add_exactly_one(outgoing_source_literals)
         for s in range(num_shifts):
-            model.AddExactlyOne(outgoing_literals[s])
-            model.AddExactlyOne(incoming_literals[s])
-        model.AddExactlyOne(incoming_sink_literals)
+            model.add_exactly_one(outgoing_literals[s])
+            model.add_exactly_one(incoming_literals[s])
+        model.add_exactly_one(incoming_sink_literals)
 
     # Each shift is covered.
     for s in range(num_shifts):
-        model.AddExactlyOne(performed[d, s] for d in range(num_drivers))
+        model.add_exactly_one(performed[d, s] for d in range(num_drivers))
         # Globally, each node has one incoming and one outgoing literal
-        model.AddExactlyOne(shared_incoming_literals[s])
-        model.AddExactlyOne(shared_outgoing_literals[s])
+        model.add_exactly_one(shared_incoming_literals[s])
+        model.add_exactly_one(shared_outgoing_literals[s])
 
     # Symmetry breaking
 
     # The first 3 shifts must be performed by 3 different drivers.
     # Let's assign them to the first 3 drivers in sequence
-    model.Add(starting_shifts[0, 0] == 1)
-    model.Add(starting_shifts[1, 1] == 1)
-    model.Add(starting_shifts[2, 2] == 1)
+    model.add(starting_shifts[0, 0] == 1)
+    model.add(starting_shifts[1, 1] == 1)
+    model.add(starting_shifts[2, 2] == 1)
 
     if minimize_drivers:
         # Push non working drivers to the end
         for d in range(num_drivers - 1):
-            model.AddImplication(working_drivers[d].Not(), working_drivers[d + 1].Not())
+            model.add_implication(
+                working_drivers[d].negated(), working_drivers[d + 1].negated()
+            )
 
     # Redundant constraints: sum of driving times = sum of shift driving times
-    model.Add(cp_model.LinearExpr.Sum(driving_times) == total_driving_time)
+    model.add(cp_model.LinearExpr.sum(driving_times) == total_driving_time)
     if not minimize_drivers:
-        model.Add(
-            cp_model.LinearExpr.Sum(working_times)
+        model.add(
+            cp_model.LinearExpr.sum(working_times)
             == total_driving_time
             + num_drivers * (setup_time + cleanup_time)
-            + cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights)
+            + cp_model.LinearExpr.weighted_sum(delay_literals, delay_weights)
         )
 
     if minimize_drivers:
-        # Minimize the number of working drivers
-        model.Minimize(cp_model.LinearExpr.Sum(working_drivers))
+        # minimize the number of working drivers
+        model.minimize(cp_model.LinearExpr.sum(working_drivers))
     else:
-        # Minimize the sum of delays between tasks, which in turns minimize the
+        # minimize the sum of delays between tasks, which in turns minimize the
         # sum of working times as the total driving time is fixed
-        model.Minimize(cp_model.LinearExpr.WeightedSum(delay_literals, delay_weights))
+        model.minimize(cp_model.LinearExpr.weighted_sum(delay_literals, delay_weights))
 
     if not minimize_drivers and _OUTPUT_PROTO.value:
         print("Writing proto to %s" % _OUTPUT_PROTO.value)
@@ -1981,41 +1991,41 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:
         return -1
 
     # Display solution
     if minimize_drivers:
-        max_num_drivers = int(solver.ObjectiveValue())
+        max_num_drivers = int(solver.objective_value)
         print("minimal number of drivers =", max_num_drivers)
         return max_num_drivers
 
     for d in range(num_drivers):
         print("Driver %i: " % (d + 1))
-        print("  total driving time =", solver.Value(driving_times[d]))
+        print("  total driving time =", solver.value(driving_times[d]))
         print(
             "  working time =",
-            solver.Value(working_times[d]) + setup_time + cleanup_time,
+            solver.value(working_times[d]) + setup_time + cleanup_time,
         )
 
         first = True
         for s in range(num_shifts):
             shift = shifts[s]
 
-            if not solver.BooleanValue(performed[d, s]):
+            if not solver.boolean_value(performed[d, s]):
                 continue
 
             # Hack to detect if the waiting time between the last shift and
             # this one exceeds 30 minutes. For this, we look at the
             # no_break_driving which was reinitialized in that case.
-            if solver.Value(no_break_driving[d, s]) == shift[5] and not first:
+            if solver.value(no_break_driving[d, s]) == shift[5] and not first:
                 print("    **break**")
             print("    shift ", shift[0], ":", shift[1], "-", shift[2])
             first = False
 
-    return int(solver.ObjectiveValue())
+    return int(solver.objective_value)
 
 
 def main(_):

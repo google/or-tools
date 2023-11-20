@@ -70,7 +70,7 @@ function publish_delivery() {
 
   # Publish delivery
   echo -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/publish.log"
-  docker buildx build \
+  docker buildx build --platform linux/arm64 \
     --tag "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" \
     --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
     --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Maximize the minimum of pairwise distances between n robots in a square space."""
+"""maximize the minimum of pairwise distances between n robots in a square space."""
 
 import math
 from typing import Sequence
@@ -38,8 +38,8 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     model = cp_model.CpModel()
 
     # Create the list of coordinates (x, y) for each robot.
-    x = [model.NewIntVar(1, room_size, f"x_{i}") for i in range(num_robots)]
-    y = [model.NewIntVar(1, room_size, f"y_{i}") for i in range(num_robots)]
+    x = [model.new_int_var(1, room_size, f"x_{i}") for i in range(num_robots)]
+    y = [model.new_int_var(1, room_size, f"y_{i}") for i in range(num_robots)]
 
     # The specification of the problem is to maximize the minimum euclidian
     # distance between any two robots. Unfortunately, the euclidian distance
@@ -58,7 +58,7 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     #   forall i:
     #     scaled_min_square_distance <= scaling * (x_diff_sq[i] + y_diff_sq[i])
     scaling = 1000
-    scaled_min_square_distance = model.NewIntVar(
+    scaled_min_square_distance = model.new_int_var(
         0, 2 * scaling * room_size**2, "scaled_min_square_distance"
     )
 
@@ -67,45 +67,45 @@ def spread_robots(num_robots: int, room_size: int, params: str):
     for i in range(num_robots - 1):
         for j in range(i + 1, num_robots):
             # Compute the distance on each dimension between robot i and robot j.
-            x_diff = model.NewIntVar(-room_size, room_size, f"x_diff{i}")
-            y_diff = model.NewIntVar(-room_size, room_size, f"y_diff{i}")
-            model.Add(x_diff == x[i] - x[j])
-            model.Add(y_diff == y[i] - y[j])
+            x_diff = model.new_int_var(-room_size, room_size, f"x_diff{i}")
+            y_diff = model.new_int_var(-room_size, room_size, f"y_diff{i}")
+            model.add(x_diff == x[i] - x[j])
+            model.add(y_diff == y[i] - y[j])
 
             # Compute the square of the previous differences.
-            x_diff_sq = model.NewIntVar(0, room_size**2, f"x_diff_sq{i}")
-            y_diff_sq = model.NewIntVar(0, room_size**2, f"y_diff_sq{i}")
-            model.AddMultiplicationEquality(x_diff_sq, x_diff, x_diff)
-            model.AddMultiplicationEquality(y_diff_sq, y_diff, y_diff)
+            x_diff_sq = model.new_int_var(0, room_size**2, f"x_diff_sq{i}")
+            y_diff_sq = model.new_int_var(0, room_size**2, f"y_diff_sq{i}")
+            model.add_multiplication_equality(x_diff_sq, x_diff, x_diff)
+            model.add_multiplication_equality(y_diff_sq, y_diff, y_diff)
 
             # We just need to be <= to the scaled square distance as we are
             # maximizing the min distance, which is equivalent as maximizing the min
             # square distance.
-            model.Add(scaled_min_square_distance <= scaling * (x_diff_sq + y_diff_sq))
+            model.add(scaled_min_square_distance <= scaling * (x_diff_sq + y_diff_sq))
 
     # Naive symmetry breaking.
     for i in range(1, num_robots):
-        model.Add(x[0] <= x[i])
-        model.Add(y[0] <= y[i])
+        model.add(x[0] <= x[i])
+        model.add(y[0] <= y[i])
 
     # Objective
-    model.Maximize(scaled_min_square_distance)
+    model.maximize(scaled_min_square_distance)
 
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
     if params:
         text_format.Parse(params, solver.parameters)
     solver.parameters.log_search_progress = True
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     # Prints the solution.
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print(
             f"Spread {num_robots} with a min pairwise distance of"
-            f" {math.sqrt(solver.ObjectiveValue() / scaling)}"
+            f" {math.sqrt(solver.objective_value / scaling)}"
         )
         for i in range(num_robots):
-            print(f"robot {i}: x={solver.Value(x[i])} y={solver.Value(y[i])}")
+            print(f"robot {i}: x={solver.value(x[i])} y={solver.value(y[i])}")
     else:
         print("No solution found.")
 

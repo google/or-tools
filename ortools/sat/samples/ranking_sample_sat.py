@@ -17,7 +17,12 @@
 from ortools.sat.python import cp_model
 
 
-def RankTasks(model, starts, presences, ranks):
+def RankTasks(
+    model: cp_model.CpModel,
+    starts: list[cp_model.IntVar],
+    presences: list[cp_model.IntVar],
+    ranks: list[cp_model.IntVar],
+):
     """This method adds constraints and variables to links tasks and ranks.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
@@ -41,36 +46,44 @@ def RankTasks(model, starts, presences, ranks):
             if i == j:
                 precedences[(i, j)] = presences[i]
             else:
-                prec = model.NewBoolVar(f"{i} before {j}")
+                prec = model.new_bool_var(f"{i} before {j}")
                 precedences[(i, j)] = prec
-                model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
+                model.add(starts[i] < starts[j]).only_enforce_if(prec)
 
     # Treats optional intervals.
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
             tmp_array = [precedences[(i, j)], precedences[(j, i)]]
-            if not cp_model.ObjectIsATrueLiteral(presences[i]):
-                tmp_array.append(presences[i].Not())
+            if not cp_model.object_is_a_true_literal(presences[i]):
+                tmp_array.append(presences[i].negated())
                 # Makes sure that if i is not performed, all precedences are false.
-                model.AddImplication(presences[i].Not(), precedences[(i, j)].Not())
-                model.AddImplication(presences[i].Not(), precedences[(j, i)].Not())
-            if not cp_model.ObjectIsATrueLiteral(presences[j]):
-                tmp_array.append(presences[j].Not())
+                model.add_implication(
+                    presences[i].negated(), precedences[(i, j)].negated()
+                )
+                model.add_implication(
+                    presences[i].negated(), precedences[(j, i)].negated()
+                )
+            if not cp_model.object_is_a_true_literal(presences[j]):
+                tmp_array.append(presences[j].negated())
                 # Makes sure that if j is not performed, all precedences are false.
-                model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
-                model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
+                model.add_implication(
+                    presences[j].negated(), precedences[(i, j)].negated()
+                )
+                model.add_implication(
+                    presences[j].negated(), precedences[(j, i)].negated()
+                )
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
-            model.AddBoolOr(tmp_array)
+            model.add_bool_or(tmp_array)
             # Redundant constraint: it propagates early that at most one precedence
             # is true.
-            model.AddImplication(precedences[(i, j)], precedences[(j, i)].Not())
-            model.AddImplication(precedences[(j, i)], precedences[(i, j)].Not())
+            model.add_implication(precedences[(i, j)], precedences[(j, i)].negated())
+            model.add_implication(precedences[(j, i)], precedences[(i, j)].negated())
 
     # Links precedences and ranks.
     for i in all_tasks:
-        model.Add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
+        model.add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
 def RankingSampleSat():
@@ -89,15 +102,15 @@ def RankingSampleSat():
 
     # Creates intervals, half of them are optional.
     for t in all_tasks:
-        start = model.NewIntVar(0, horizon, f"start[{t}]")
+        start = model.new_int_var(0, horizon, f"start[{t}]")
         duration = t + 1
-        end = model.NewIntVar(0, horizon, f"end[{t}]")
+        end = model.new_int_var(0, horizon, f"end[{t}]")
         if t < num_tasks // 2:
-            interval = model.NewIntervalVar(start, duration, end, f"interval[{t}]")
+            interval = model.new_interval_var(start, duration, end, f"interval[{t}]")
             presence = True
         else:
-            presence = model.NewBoolVar(f"presence[{t}]")
-            interval = model.NewOptionalIntervalVar(
+            presence = model.new_bool_var(f"presence[{t}]")
+            interval = model.new_optional_interval_var(
                 start, duration, end, presence, f"o_interval[{t}]"
             )
         starts.append(start)
@@ -106,45 +119,44 @@ def RankingSampleSat():
         presences.append(presence)
 
         # Ranks = -1 if and only if the tasks is not performed.
-        ranks.append(model.NewIntVar(-1, num_tasks - 1, f"rank[{t}]"))
+        ranks.append(model.new_int_var(-1, num_tasks - 1, f"rank[{t}]"))
 
     # Adds NoOverlap constraint.
-    model.AddNoOverlap(intervals)
+    model.add_no_overlap(intervals)
 
     # Adds ranking constraint.
     RankTasks(model, starts, presences, ranks)
 
     # Adds a constraint on ranks.
-    model.Add(ranks[0] < ranks[1])
+    model.add(ranks[0] < ranks[1])
 
     # Creates makespan variable.
-    makespan = model.NewIntVar(0, horizon, "makespan")
+    makespan = model.new_int_var(0, horizon, "makespan")
     for t in all_tasks:
-        model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t])
+        model.add(ends[t] <= makespan).only_enforce_if(presences[t])
 
     # Minimizes makespan - fixed gain per tasks performed.
     # As the fixed cost is less that the duration of the last interval,
     # the solver will not perform the last interval.
-    model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
+    model.minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
 
     # Solves the model model.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
         # Prints out the makespan and the start times and ranks of all tasks.
-        print(f"Optimal cost: {solver.ObjectiveValue()}")
-        print(f"Makespan: {solver.Value(makespan)}")
+        print(f"Optimal cost: {solver.objective_value}")
+        print(f"Makespan: {solver.value(makespan)}")
         for t in all_tasks:
-            if solver.Value(presences[t]):
+            if solver.value(presences[t]):
                 print(
-                    f"Task {t} starts at {solver.Value(starts[t])} "
-                    f"with rank {solver.Value(ranks[t])}"
+                    f"Task {t} starts at {solver.value(starts[t])} "
+                    f"with rank {solver.value(ranks[t])}"
                 )
             else:
                 print(
-                    f"Task {t} in not performed "
-                    f"and ranked at {solver.Value(ranks[t])}"
+                    f"Task {t} in not performed and ranked at {solver.value(ranks[t])}"
                 )
     else:
         print(f"Solver exited with nonoptimal status: {status}")

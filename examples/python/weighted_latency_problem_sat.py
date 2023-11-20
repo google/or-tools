@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve a random Weighted Latency problem with the CP-SAT solver."""
+"""solve a random Weighted Latency problem with the CP-SAT solver."""
 
 import random
 from typing import Sequence
@@ -61,10 +61,12 @@ def solve_with_cp_sat(x, y, profits):
 
     # because of the manhattan distance, the sum of distances is bounded by this.
     horizon = _GRID_SIZE.value * 2 * _NUM_NODES.value
-    times = [model.NewIntVar(0, horizon, f"x_{i}") for i in range(_NUM_NODES.value + 1)]
+    times = [
+        model.new_int_var(0, horizon, f"x_{i}") for i in range(_NUM_NODES.value + 1)
+    ]
 
     # Node 0 is the start node.
-    model.Add(times[0] == 0)
+    model.add(times[0] == 0)
 
     # Create the circuit constraint.
     arcs = []
@@ -74,29 +76,29 @@ def solve_with_cp_sat(x, y, profits):
                 continue
             # We use a manhattan distance between nodes.
             distance = abs(x[i] - x[j]) + abs(y[i] - y[j])
-            lit = model.NewBoolVar(f"{i}_to_{j}")
+            lit = model.new_bool_var(f"{i}_to_{j}")
             arcs.append((i, j, lit))
 
-            # Add transitions between nodes.
+            # add transitions between nodes.
             if i == 0:
                 # Initial transition
-                model.Add(times[j] == distance).OnlyEnforceIf(lit)
+                model.add(times[j] == distance).only_enforce_if(lit)
             elif j != 0:
                 # We do not care for the last transition.
-                model.Add(times[j] == times[i] + distance).OnlyEnforceIf(lit)
-    model.AddCircuit(arcs)
+                model.add(times[j] == times[i] + distance).only_enforce_if(lit)
+    model.add_circuit(arcs)
 
-    model.Minimize(cp_model.LinearExpr.WeightedSum(times, profits))
+    model.minimize(cp_model.LinearExpr.weighted_sum(times, profits))
 
     if _PROTO_FILE.value:
-        model.ExportToFile(_PROTO_FILE.value)
+        model.export_to_file(_PROTO_FILE.value)
 
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
-    solver.Solve(model)
+    solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:

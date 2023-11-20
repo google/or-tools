@@ -24,22 +24,22 @@ def BooleanProductSampleSat():
     p == x * y, which is the same as p <=> x and y
     """
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    p = model.NewBoolVar("p")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.AddBoolOr(x.Not(), y.Not(), p)
+    model.add_bool_or(x.negated(), y.negated(), p)
 
     # p implies x and y, expanded into two implications.
-    model.AddImplication(p, x)
-    model.AddImplication(p, y)
+    model.add_implication(p, x)
+    model.add_implication(p, y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
     solver.parameters.enumerate_all_solutions = True
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 BooleanProductSampleSat()

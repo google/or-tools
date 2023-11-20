@@ -48,13 +48,13 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         for i in range(self.__num_vendors):
             print(
                 "  - vendor %i: " % i,
-                self.__possible_schedules[self.Value(self.__selected_schedules[i])],
+                self.__possible_schedules[self.value(self.__selected_schedules[i])],
             )
         print()
 
         for j in range(self.__num_hours):
             print("  - # workers on day%2i: " % j, end=" ")
-            print(self.Value(self.__hours_stat[j]), end=" ")
+            print(self.value(self.__hours_stat[j]), end=" ")
             print()
         print()
 
@@ -101,38 +101,40 @@ def vendor_scheduling_sat():
     all_hours = range(num_hours)
 
     #
-    # declare variables
+    # Declare variables
     #
     x = {}
 
     for v in all_vendors:
         tmp = []
         for h in all_hours:
-            x[v, h] = model.NewIntVar(0, num_work_types, "x[%i,%i]" % (v, h))
+            x[v, h] = model.new_int_var(0, num_work_types, "x[%i,%i]" % (v, h))
             tmp.append(x[v, h])
-        selected_schedule = model.NewIntVar(0, num_possible_schedules - 1, "s[%i]" % v)
-        hours = model.NewIntVar(0, num_hours, "h[%i]" % v)
+        selected_schedule = model.new_int_var(
+            0, num_possible_schedules - 1, "s[%i]" % v
+        )
+        hours = model.new_int_var(0, num_hours, "h[%i]" % v)
         selected_schedules.append(selected_schedule)
         vendors_stat.append(hours)
         tmp.append(selected_schedule)
         tmp.append(hours)
 
-        model.AddAllowedAssignments(tmp, possible_schedules)
+        model.add_allowed_assignments(tmp, possible_schedules)
 
     #
     # Statistics and constraints for each hour
     #
     for h in all_hours:
-        workers = model.NewIntVar(0, 1000, "workers[%i]" % h)
-        model.Add(workers == sum(x[v, h] for v in all_vendors))
+        workers = model.new_int_var(0, 1000, "workers[%i]" % h)
+        model.add(workers == sum(x[v, h] for v in all_vendors))
         hours_stat.append(workers)
-        model.Add(workers * max_traffic_per_vendor >= traffic[h])
+        model.add(workers * max_traffic_per_vendor >= traffic[h])
 
     #
     # Redundant constraint: sort selected_schedules
     #
     for v in range(num_vendors - 1):
-        model.Add(selected_schedules[v] <= selected_schedules[v + 1])
+        model.add(selected_schedules[v] <= selected_schedules[v + 1])
 
     # Solve model.
     solver = cp_model.CpSolver()
@@ -145,13 +147,13 @@ def vendor_scheduling_sat():
         hours_stat,
         min_vendors,
     )
-    status = solver.Solve(model, solution_printer)
-    print("Status = %s" % solver.StatusName(status))
+    status = solver.solve(model, solution_printer)
+    print("Status = %s" % solver.status_name(status))
 
     print("Statistics")
-    print("  - conflicts : %i" % solver.NumConflicts())
-    print("  - branches  : %i" % solver.NumBranches())
-    print("  - wall time : %f s" % solver.WallTime())
+    print("  - conflicts : %i" % solver.num_conflicts)
+    print("  - branches  : %i" % solver.num_branches)
+    print("  - wall time : %f s" % solver.wall_time)
     print("  - number of solutions found: %i" % solution_printer.solution_count())
 
 

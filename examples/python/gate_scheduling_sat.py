@@ -67,66 +67,70 @@ def main(_):
 
     for i in all_jobs:
         # Create main interval.
-        start = model.NewIntVar(0, horizon, "start_%i" % i)
+        start = model.new_int_var(0, horizon, "start_%i" % i)
         duration = jobs[i][0]
-        end = model.NewIntVar(0, horizon, "end_%i" % i)
-        interval = model.NewIntervalVar(start, duration, end, "interval_%i" % i)
+        end = model.new_int_var(0, horizon, "end_%i" % i)
+        interval = model.new_interval_var(start, duration, end, "interval_%i" % i)
         starts.append(start)
         intervals.append(interval)
         ends.append(end)
         demands.append(jobs[i][1])
 
         # Create an optional copy of interval to be executed on machine 0.
-        performed_on_m0 = model.NewBoolVar("perform_%i_on_m0" % i)
+        performed_on_m0 = model.new_bool_var("perform_%i_on_m0" % i)
         performed.append(performed_on_m0)
-        start0 = model.NewIntVar(0, horizon, "start_%i_on_m0" % i)
-        end0 = model.NewIntVar(0, horizon, "end_%i_on_m0" % i)
-        interval0 = model.NewOptionalIntervalVar(
+        start0 = model.new_int_var(0, horizon, "start_%i_on_m0" % i)
+        end0 = model.new_int_var(0, horizon, "end_%i_on_m0" % i)
+        interval0 = model.new_optional_interval_var(
             start0, duration, end0, performed_on_m0, "interval_%i_on_m0" % i
         )
         intervals0.append(interval0)
 
         # Create an optional copy of interval to be executed on machine 1.
-        start1 = model.NewIntVar(0, horizon, "start_%i_on_m1" % i)
-        end1 = model.NewIntVar(0, horizon, "end_%i_on_m1" % i)
-        interval1 = model.NewOptionalIntervalVar(
-            start1, duration, end1, performed_on_m0.Not(), "interval_%i_on_m1" % i
+        start1 = model.new_int_var(0, horizon, "start_%i_on_m1" % i)
+        end1 = model.new_int_var(0, horizon, "end_%i_on_m1" % i)
+        interval1 = model.new_optional_interval_var(
+            start1,
+            duration,
+            end1,
+            performed_on_m0.negated(),
+            "interval_%i_on_m1" % i,
         )
         intervals1.append(interval1)
 
         # We only propagate the constraint if the tasks is performed on the machine.
-        model.Add(start0 == start).OnlyEnforceIf(performed_on_m0)
-        model.Add(start1 == start).OnlyEnforceIf(performed_on_m0.Not())
+        model.add(start0 == start).only_enforce_if(performed_on_m0)
+        model.add(start1 == start).only_enforce_if(performed_on_m0.negated())
 
     # Width constraint (modeled as a cumulative)
-    model.AddCumulative(intervals, demands, max_width)
+    model.add_cumulative(intervals, demands, max_width)
 
     # Choose which machine to perform the jobs on.
-    model.AddNoOverlap(intervals0)
-    model.AddNoOverlap(intervals1)
+    model.add_no_overlap(intervals0)
+    model.add_no_overlap(intervals1)
 
     # Objective variable.
-    makespan = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(makespan, ends)
-    model.Minimize(makespan)
+    makespan = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(makespan, ends)
+    model.minimize(makespan)
 
     # Symmetry breaking.
-    model.Add(performed[0] == 0)
+    model.add(performed[0] == 0)
 
     # Solve model.
     solver = cp_model.CpSolver()
-    solver.Solve(model)
+    solver.solve(model)
 
     # Output solution.
     if visualization.RunFromIPython():
-        output = visualization.SvgWrapper(solver.ObjectiveValue(), max_width, 40.0)
-        output.AddTitle("Makespan = %i" % solver.ObjectiveValue())
+        output = visualization.SvgWrapper(solver.objective_value, max_width, 40.0)
+        output.AddTitle("Makespan = %i" % solver.objective_value)
         color_manager = visualization.ColorManager()
         color_manager.SeedRandomColor(0)
 
         for i in all_jobs:
-            performed_machine = 1 - solver.Value(performed[i])
-            start = solver.Value(starts[i])
+            performed_machine = 1 - solver.value(performed[i])
+            start = solver.value(starts[i])
             d_x = jobs[i][0]
             d_y = jobs[i][1]
             s_y = performed_machine * (max_width - d_y)
@@ -139,17 +143,17 @@ def main(_):
         output.Display()
     else:
         print("Solution")
-        print("  - makespan = %i" % solver.ObjectiveValue())
+        print("  - makespan = %i" % solver.objective_value)
         for i in all_jobs:
-            performed_machine = 1 - solver.Value(performed[i])
-            start = solver.Value(starts[i])
+            performed_machine = 1 - solver.value(performed[i])
+            start = solver.value(starts[i])
             print(
                 "  - Job %i starts at %i on machine %i" % (i, start, performed_machine)
             )
         print("Statistics")
-        print("  - conflicts : %i" % solver.NumConflicts())
-        print("  - branches  : %i" % solver.NumBranches())
-        print("  - wall time : %f s" % solver.WallTime())
+        print("  - conflicts : %i" % solver.num_conflicts)
+        print("  - branches  : %i" % solver.num_branches)
+        print("  - wall time : %f s" % solver.wall_time)
 
 
 if __name__ == "__main__":

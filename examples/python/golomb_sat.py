@@ -38,7 +38,7 @@ _PARAMS = flags.DEFINE_string(
 )
 
 
-def solve_golomb_ruler(order, params):
+def solve_golomb_ruler(order: int, params: str):
     """Solve the Golomb ruler problem."""
     # Create the model.
     model = cp_model.CpModel()
@@ -46,26 +46,26 @@ def solve_golomb_ruler(order, params):
     var_max = order * order
     all_vars = list(range(0, order))
 
-    marks = [model.NewIntVar(0, var_max, f"marks_{i}") for i in all_vars]
+    marks = [model.new_int_var(0, var_max, f"marks_{i}") for i in all_vars]
 
-    model.Add(marks[0] == 0)
+    model.add(marks[0] == 0)
     for i in range(order - 2):
-        model.Add(marks[i + 1] > marks[i])
+        model.add(marks[i + 1] > marks[i])
 
     diffs = []
     for i in range(order - 1):
         for j in range(i + 1, order):
-            diff = model.NewIntVar(0, var_max, f"diff [{j},{i}]")
-            model.Add(diff == marks[j] - marks[i])
+            diff = model.new_int_var(0, var_max, f"diff [{j},{i}]")
+            model.add(diff == marks[j] - marks[i])
             diffs.append(diff)
-    model.AddAllDifferent(diffs)
+    model.add_all_different(diffs)
 
     # symmetry breaking
     if order > 2:
-        model.Add(marks[order - 1] - marks[order - 2] > marks[1] - marks[0])
+        model.add(marks[order - 1] - marks[order - 2] > marks[1] - marks[0])
 
     # Objective
-    model.Minimize(marks[order - 1])
+    model.minimize(marks[order - 1])
 
     # Solve the model.
     solver = cp_model.CpSolver()
@@ -73,21 +73,21 @@ def solve_golomb_ruler(order, params):
         text_format.Parse(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     print(f"Golomb ruler(order={order})")
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     # Print solution.
-    print(f"status: {solver.StatusName(status)}")
+    print(f"status: {solver.status_name(status)}")
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         for idx, var in enumerate(marks):
-            print(f"mark[{idx}]: {solver.Value(var)}")
-        intervals = [solver.Value(diff) for diff in diffs]
+            print(f"mark[{idx}]: {solver.value(var)}")
+        intervals = [solver.value(diff) for diff in diffs]
         intervals.sort()
         print(f"intervals: {intervals}")
 
     print("Statistics:")
-    print(f"- conflicts: {solver.NumConflicts()}")
-    print(f"- branches : {solver.NumBranches()}")
-    print(f"- wall time: {solver.WallTime()}s\n")
+    print(f"- conflicts: {solver.num_conflicts}")
+    print(f"- branches : {solver.num_branches}")
+    print(f"- wall time: {solver.wall_time}s\n")
 
 
 def main(argv: Sequence[str]) -> None:

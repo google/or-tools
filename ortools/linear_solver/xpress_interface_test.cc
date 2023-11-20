@@ -226,6 +226,25 @@ void buildLargeMip(MPSolver& solver, int numVars, int maxTime) {
   solver.EnableOutput();
 }
 
+void buildLargeLp(MPSolver& solver, int numVars) {
+  MPObjective* obj = solver.MutableObjective();
+  obj->SetMaximization();
+  for (int i = 0; i < numVars; ++i) {
+    MPVariable* x = solver.MakeNumVar(-(i * i) % 21,
+                                      (i * i) % 55,
+                                      "x_" + std::to_string(i));
+    obj->SetCoefficient(x, (i * i) % 23);
+    int min = -50;
+    int max = (i * i) % 664 + 55;
+    MPConstraint* c = solver.MakeRowConstraint(min, max);
+    c->SetCoefficient(x, i % 331);
+    for (int j = 0; j < i; ++j) {
+      c->SetCoefficient(solver.variable(j), i + j);
+    }
+  }
+  solver.EnableOutput();
+}
+
 class MyMPCallback : public MPCallback {
  private:
   MPSolver* mpSolver_;
@@ -280,6 +299,34 @@ TEST(XpressInterface, isMIP) {
 TEST(XpressInterface, isLP) {
   UNITTEST_INIT_LP();
   EXPECT_EQ(solver.IsMIP(), false);
+}
+
+TEST(XpressInterface, LpStartingBasis) {
+  UNITTEST_INIT_LP();
+  buildLargeLp(solver, 1000);
+  // First, we record the number of iterations without an initial basis
+  solver.Solve();
+  const auto iterInit = solver.iterations();
+  EXPECT_GE(iterInit, 1000);
+
+  // Here, we retrieve the final basis
+  std::vector<MPSolver::BasisStatus> varStatus, constrStatus;
+  for (auto* var : solver.variables()) {
+    varStatus.push_back(var->basis_status());
+  }
+  for (auto* constr : solver.constraints()) {
+    constrStatus.push_back(constr->basis_status());
+  }
+
+  // Then we slightly modify the problem...
+  MPObjective* obj = solver.MutableObjective();
+  obj->SetCoefficient(solver.variable(1), 100);
+  // Here, we provide the final basis of the previous (similar) problem
+  solver.SetStartingLpBasis(varStatus, constrStatus);
+  solver.Solve();
+  const auto iterWithBasis = solver.iterations();
+  // ...and check that few iterations have been performed
+  EXPECT_LT(iterWithBasis, 10);
 }
 
 TEST(XpressInterface, NumVariables) {
@@ -1307,7 +1354,6 @@ TEST(XpressInterface, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  InitGoogle(argv[0], &argc, &argv, true);
   absl::SetFlag(&FLAGS_logtostderr, 1);
   testing::InitGoogleTest(&argc, argv);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");

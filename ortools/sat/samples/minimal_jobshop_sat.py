@@ -57,9 +57,9 @@ def main():
         for task_id, task in enumerate(job):
             machine, duration = task
             suffix = f"_{job_id}_{task_id}"
-            start_var = model.NewIntVar(0, horizon, "start" + suffix)
-            end_var = model.NewIntVar(0, horizon, "end" + suffix)
-            interval_var = model.NewIntervalVar(
+            start_var = model.new_int_var(0, horizon, "start" + suffix)
+            end_var = model.new_int_var(0, horizon, "end" + suffix)
+            interval_var = model.new_interval_var(
                 start_var, duration, end_var, "interval" + suffix
             )
             all_tasks[job_id, task_id] = task_type(
@@ -71,30 +71,30 @@ def main():
     # [START constraints]
     # Create and add disjunctive constraints.
     for machine in all_machines:
-        model.AddNoOverlap(machine_to_intervals[machine])
+        model.add_no_overlap(machine_to_intervals[machine])
 
     # Precedences inside a job.
     for job_id, job in enumerate(jobs_data):
         for task_id in range(len(job) - 1):
-            model.Add(
+            model.add(
                 all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end
             )
     # [END constraints]
 
     # [START objective]
     # Makespan objective.
-    obj_var = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(
+    obj_var = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(
         obj_var,
         [all_tasks[job_id, len(job) - 1].end for job_id, job in enumerate(jobs_data)],
     )
-    model.Minimize(obj_var)
+    model.minimize(obj_var)
     # [END objective]
 
     # Creates the solver and solve.
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # [START print_solution]
@@ -107,7 +107,7 @@ def main():
                 machine = task[0]
                 assigned_jobs[machine].append(
                     assigned_task_type(
-                        start=solver.Value(all_tasks[job_id, task_id].start),
+                        start=solver.value(all_tasks[job_id, task_id].start),
                         job=job_id,
                         index=task_id,
                         duration=task[1],
@@ -124,13 +124,13 @@ def main():
 
             for assigned_task in assigned_jobs[machine]:
                 name = f"job_{assigned_task.job}_task_{assigned_task.index}"
-                # Add spaces to output to align columns.
+                # add spaces to output to align columns.
                 sol_line_tasks += f"{name:15}"
 
                 start = assigned_task.start
                 duration = assigned_task.duration
                 sol_tmp = f"[{start},{start + duration}]"
-                # Add spaces to output to align columns.
+                # add spaces to output to align columns.
                 sol_line += f"{sol_tmp:15}"
 
             sol_line += "\n"
@@ -139,7 +139,7 @@ def main():
             output += sol_line
 
         # Finally print the solution found.
-        print(f"Optimal Schedule Length: {solver.ObjectiveValue()}")
+        print(f"Optimal Schedule Length: {solver.objective_value}")
         print(output)
     else:
         print("No solution found.")
@@ -148,9 +148,9 @@ def main():
     # Statistics.
     # [START statistics]
     print("\nStatistics")
-    print(f"  - conflicts: {solver.NumConflicts()}")
-    print(f"  - branches : {solver.NumBranches()}")
-    print(f"  - wall time: {solver.WallTime()}s")
+    print(f"  - conflicts: {solver.num_conflicts}")
+    print(f"  - branches : {solver.num_branches}")
+    print(f"  - wall time: {solver.wall_time}s")
     # [END statistics]
 
 

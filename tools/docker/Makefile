@@ -212,7 +212,7 @@ define manylinux_inner =
 .PHONY: python_$1_manylinux_cp$2_$3
 python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manylinux/build-manylinux.sh
 	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} \
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \

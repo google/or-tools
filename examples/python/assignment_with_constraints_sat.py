@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Solve an assignment problem with combination constraints on workers."""
+"""solve an assignment problem with combination constraints on workers."""
 
 from typing import Sequence
 from absl import app
@@ -20,7 +20,7 @@ from ortools.sat.python import cp_model
 
 
 def solve_assignment():
-    """Solve the assignment problem."""
+    """solve the assignment problem."""
     # Data.
     cost = [
         [90, 76, 75, 70, 50, 74],
@@ -73,44 +73,45 @@ def solve_assignment():
     model = cp_model.CpModel()
     # Variables
     selected = [
-        [model.NewBoolVar("x[%i,%i]" % (i, j)) for j in all_tasks] for i in all_workers
+        [model.new_bool_var("x[%i,%i]" % (i, j)) for j in all_tasks]
+        for i in all_workers
     ]
-    works = [model.NewBoolVar("works[%i]" % i) for i in all_workers]
+    works = [model.new_bool_var("works[%i]" % i) for i in all_workers]
 
     # Constraints
 
     # Link selected and workers.
     for i in range(num_workers):
-        model.AddMaxEquality(works[i], selected[i])
+        model.add_max_equality(works[i], selected[i])
 
     # Each task is assigned to at least one worker.
     for j in all_tasks:
-        model.Add(sum(selected[i][j] for i in all_workers) >= 1)
+        model.add(sum(selected[i][j] for i in all_workers) >= 1)
 
     # Total task size for each worker is at most total_size_max
     for i in all_workers:
-        model.Add(sum(sizes[j] * selected[i][j] for j in all_tasks) <= total_size_max)
+        model.add(sum(sizes[j] * selected[i][j] for j in all_tasks) <= total_size_max)
 
     # Group constraints.
-    model.AddAllowedAssignments([works[0], works[1], works[2], works[3]], group1)
-    model.AddAllowedAssignments([works[4], works[5], works[6], works[7]], group2)
-    model.AddAllowedAssignments([works[8], works[9], works[10], works[11]], group3)
+    model.add_allowed_assignments([works[0], works[1], works[2], works[3]], group1)
+    model.add_allowed_assignments([works[4], works[5], works[6], works[7]], group2)
+    model.add_allowed_assignments([works[8], works[9], works[10], works[11]], group3)
 
     # Objective
-    model.Minimize(
+    model.minimize(
         sum(selected[i][j] * cost[i][j] for j in all_tasks for i in all_workers)
     )
 
     # Solve and output solution.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print("Total cost = %i" % solver.ObjectiveValue())
+        print("Total cost = %i" % solver.objective_value)
         print()
         for i in all_workers:
             for j in all_tasks:
-                if solver.BooleanValue(selected[i][j]):
+                if solver.boolean_value(selected[i][j]):
                     print(
                         "Worker ", i, " assigned to task ", j, "  Cost = ", cost[i][j]
                     )
@@ -118,9 +119,9 @@ def solve_assignment():
         print()
 
     print("Statistics")
-    print("  - conflicts : %i" % solver.NumConflicts())
-    print("  - branches  : %i" % solver.NumBranches())
-    print("  - wall time : %f s" % solver.WallTime())
+    print("  - conflicts : %i" % solver.num_conflicts)
+    print("  - branches  : %i" % solver.num_branches)
+    print("  - wall time : %f s" % solver.wall_time)
 
 
 def main(argv: Sequence[str]) -> None:

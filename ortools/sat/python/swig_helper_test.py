@@ -30,7 +30,7 @@ class Callback(swig_helper.SolutionCallback):
         print("New Solution")
         self.__solution_count += 1
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
 
 
@@ -43,11 +43,11 @@ class SwigHelperTest(absltest.TestCase):
         model = cp_model_pb2.CpModelProto()
         self.assertTrue(text_format.Parse(model_string, model))
 
-        d0 = swig_helper.CpSatHelper.VariableDomain(model.variables[0])
-        d1 = swig_helper.CpSatHelper.VariableDomain(model.variables[1])
+        d0 = swig_helper.CpSatHelper.variable_domain(model.variables[0])
+        d1 = swig_helper.CpSatHelper.variable_domain(model.variables[1])
 
-        self.assertEqual(d0.FlattenedIntervals(), [-10, 10])
-        self.assertEqual(d1.FlattenedIntervals(), [-5, -5, 3, 6])
+        self.assertEqual(d0.flattened_intervals(), [-10, 10])
+        self.assertEqual(d1.flattened_intervals(), [-5, -5, 3, 6])
 
     def testSimpleSolve(self):
         model_string = """
@@ -85,7 +85,7 @@ class SwigHelperTest(absltest.TestCase):
         self.assertTrue(text_format.Parse(model_string, model))
 
         solve_wrapper = swig_helper.SolveWrapper()
-        solution = solve_wrapper.Solve(model)
+        solution = solve_wrapper.solve(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -125,12 +125,11 @@ class SwigHelperTest(absltest.TestCase):
         model = cp_model_pb2.CpModelProto()
         self.assertTrue(text_format.Parse(model_string, model))
 
-        parameters = sat_parameters_pb2.SatParameters()
-        parameters.optimize_with_core = True
+        parameters = sat_parameters_pb2.SatParameters(optimize_with_core=True)
 
         solve_wrapper = swig_helper.SolveWrapper()
-        solve_wrapper.SetParameters(parameters)
-        solution = solve_wrapper.Solve(model)
+        solve_wrapper.set_parameters(parameters)
+        solution = solve_wrapper.solve(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -152,7 +151,7 @@ class SwigHelperTest(absltest.TestCase):
         model.objective.scaling_factor = -1
 
         solve_wrapper = swig_helper.SolveWrapper()
-        solution = solve_wrapper.Solve(model)
+        solution = solve_wrapper.solve(model)
 
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
         self.assertEqual(30.0, solution.objective_value)
@@ -170,13 +169,13 @@ class SwigHelperTest(absltest.TestCase):
 
         solve_wrapper = swig_helper.SolveWrapper()
         callback = Callback()
-        solve_wrapper.AddSolutionCallback(callback)
+        solve_wrapper.add_solution_callback(callback)
         params = sat_parameters_pb2.SatParameters()
         params.enumerate_all_solutions = True
-        solve_wrapper.SetParameters(params)
-        solution = solve_wrapper.Solve(model)
+        solve_wrapper.set_parameters(params)
+        solution = solve_wrapper.solve(model)
 
-        self.assertEqual(5, callback.SolutionCount())
+        self.assertEqual(5, callback.solution_count())
         self.assertEqual(cp_model_pb2.OPTIMAL, solution.status)
 
     def testModelStats(self):
@@ -215,7 +214,7 @@ class SwigHelperTest(absltest.TestCase):
       """
         model = cp_model_pb2.CpModelProto()
         self.assertTrue(text_format.Parse(model_string, model))
-        stats = swig_helper.CpSatHelper.ModelStats(model)
+        stats = swig_helper.CpSatHelper.model_stats(model)
         self.assertTrue(stats)
 
 

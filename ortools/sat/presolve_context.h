@@ -251,7 +251,6 @@ class PresolveContext {
       absl::string_view message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
-    DCHECK(!is_unsat_);
     is_unsat_ = true;
     return false;
   }

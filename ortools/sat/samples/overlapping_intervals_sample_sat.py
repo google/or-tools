@@ -20,19 +20,14 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
-        self.__solution_count = 0
 
-    def on_solution_callback(self):
-        self.__solution_count += 1
+    def on_solution_callback(self) -> None:
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
-
-    def solution_count(self):
-        return self.__solution_count
 
 
 def OverlappingIntervals():
@@ -42,45 +37,47 @@ def OverlappingIntervals():
     horizon = 7
 
     # First interval.
-    start_var_a = model.NewIntVar(0, horizon, "start_a")
+    start_var_a = model.new_int_var(0, horizon, "start_a")
     duration_a = 3
-    end_var_a = model.NewIntVar(0, horizon, "end_a")
-    unused_interval_var_a = model.NewIntervalVar(
+    end_var_a = model.new_int_var(0, horizon, "end_a")
+    unused_interval_var_a = model.new_interval_var(
         start_var_a, duration_a, end_var_a, "interval_a"
     )
 
     # Second interval.
-    start_var_b = model.NewIntVar(0, horizon, "start_b")
+    start_var_b = model.new_int_var(0, horizon, "start_b")
     duration_b = 2
-    end_var_b = model.NewIntVar(0, horizon, "end_b")
-    unused_interval_var_b = model.NewIntervalVar(
+    end_var_b = model.new_int_var(0, horizon, "end_b")
+    unused_interval_var_b = model.new_interval_var(
         start_var_b, duration_b, end_var_b, "interval_b"
     )
 
     # a_after_b Boolean variable.
-    a_after_b = model.NewBoolVar("a_after_b")
-    model.Add(start_var_a >= end_var_b).OnlyEnforceIf(a_after_b)
-    model.Add(start_var_a < end_var_b).OnlyEnforceIf(a_after_b.Not())
+    a_after_b = model.new_bool_var("a_after_b")
+    model.add(start_var_a >= end_var_b).only_enforce_if(a_after_b)
+    model.add(start_var_a < end_var_b).only_enforce_if(a_after_b.negated())
 
     # b_after_a Boolean variable.
-    b_after_a = model.NewBoolVar("b_after_a")
-    model.Add(start_var_b >= end_var_a).OnlyEnforceIf(b_after_a)
-    model.Add(start_var_b < end_var_a).OnlyEnforceIf(b_after_a.Not())
+    b_after_a = model.new_bool_var("b_after_a")
+    model.add(start_var_b >= end_var_a).only_enforce_if(b_after_a)
+    model.add(start_var_b < end_var_a).only_enforce_if(b_after_a.negated())
 
     # Result Boolean variable.
-    a_overlaps_b = model.NewBoolVar("a_overlaps_b")
+    a_overlaps_b = model.new_bool_var("a_overlaps_b")
 
     # Option a: using only clauses
-    model.AddBoolOr(a_after_b, b_after_a, a_overlaps_b)
-    model.AddImplication(a_after_b, a_overlaps_b.Not())
-    model.AddImplication(b_after_a, a_overlaps_b.Not())
+    model.add_bool_or(a_after_b, b_after_a, a_overlaps_b)
+    model.add_implication(a_after_b, a_overlaps_b.negated())
+    model.add_implication(b_after_a, a_overlaps_b.negated())
 
     # Option b: using an exactly one constraint.
-    # model.AddExactlyOne(a_after_b, b_after_a, a_overlaps_b)
+    # model.add_exactly_one(a_after_b, b_after_a, a_overlaps_b)
 
     # Search for start values in increasing order for the two intervals.
-    model.AddDecisionStrategy(
-        [start_var_a, start_var_b], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+    model.add_decision_strategy(
+        [start_var_a, start_var_b],
+        cp_model.CHOOSE_FIRST,
+        cp_model.SELECT_MIN_VALUE,
     )
 
     # Create a solver and solve with a fixed search.
@@ -93,7 +90,7 @@ def OverlappingIntervals():
 
     # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([start_var_a, start_var_b, a_overlaps_b])
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 OverlappingIntervals()

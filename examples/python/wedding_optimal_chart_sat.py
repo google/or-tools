@@ -56,7 +56,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self):
         current_time = time.time()
-        objective = self.ObjectiveValue()
+        objective = self.objective_value
         print(
             "Solution %i, time = %f s, objective = %i"
             % (self.__solution_count, current_time - self.__start_time, objective)
@@ -66,10 +66,10 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
         for t in range(self.__num_tables):
             print("Table %d: " % t)
             for g in range(self.__num_guests):
-                if self.Value(self.__seats[(t, g)]):
+                if self.value(self.__seats[(t, g)]):
                     print("  " + self.__names[g])
 
-    def num_solutions(self):
+    def num_solutions(self) -> int:
         return self.__solution_count
 
 
@@ -148,12 +148,12 @@ def solve_with_discrete_model():
     seats = {}
     for t in all_tables:
         for g in all_guests:
-            seats[(t, g)] = model.NewBoolVar("guest %i seats on table %i" % (g, t))
+            seats[(t, g)] = model.new_bool_var("guest %i seats on table %i" % (g, t))
 
     colocated = {}
     for g1 in range(num_guests - 1):
         for g2 in range(g1 + 1, num_guests):
-            colocated[(g1, g2)] = model.NewBoolVar(
+            colocated[(g1, g2)] = model.new_bool_var(
                 "guest %i seats with guest %i" % (g1, g2)
             )
 
@@ -161,12 +161,12 @@ def solve_with_discrete_model():
     for g1 in range(num_guests - 1):
         for g2 in range(g1 + 1, num_guests):
             for t in all_tables:
-                same_table[(g1, g2, t)] = model.NewBoolVar(
+                same_table[(g1, g2, t)] = model.new_bool_var(
                     "guest %i seats with guest %i on table %i" % (g1, g2, t)
                 )
 
     # Objective
-    model.Maximize(
+    model.maximize(
         sum(
             connections[g1][g2] * colocated[g1, g2]
             for g1 in range(num_guests - 1)
@@ -181,35 +181,35 @@ def solve_with_discrete_model():
 
     # Everybody seats at one table.
     for g in all_guests:
-        model.Add(sum(seats[(t, g)] for t in all_tables) == 1)
+        model.add(sum(seats[(t, g)] for t in all_tables) == 1)
 
     # Tables have a max capacity.
     for t in all_tables:
-        model.Add(sum(seats[(t, g)] for g in all_guests) <= table_capacity)
+        model.add(sum(seats[(t, g)] for g in all_guests) <= table_capacity)
 
     # Link colocated with seats
     for g1 in range(num_guests - 1):
         for g2 in range(g1 + 1, num_guests):
             for t in all_tables:
                 # Link same_table and seats.
-                model.AddBoolOr(
+                model.add_bool_or(
                     [
-                        seats[(t, g1)].Not(),
-                        seats[(t, g2)].Not(),
+                        seats[(t, g1)].negated(),
+                        seats[(t, g2)].negated(),
                         same_table[(g1, g2, t)],
                     ]
                 )
-                model.AddImplication(same_table[(g1, g2, t)], seats[(t, g1)])
-                model.AddImplication(same_table[(g1, g2, t)], seats[(t, g2)])
+                model.add_implication(same_table[(g1, g2, t)], seats[(t, g1)])
+                model.add_implication(same_table[(g1, g2, t)], seats[(t, g2)])
 
             # Link colocated and same_table.
-            model.Add(
+            model.add(
                 sum(same_table[(g1, g2, t)] for t in all_tables) == colocated[(g1, g2)]
             )
 
     # Min known neighbors rule.
     for g in all_guests:
-        model.Add(
+        model.add(
             sum(
                 same_table[(g, g2, t)]
                 for g2 in range(g + 1, num_guests)
@@ -226,17 +226,17 @@ def solve_with_discrete_model():
         )
 
     # Symmetry breaking. First guest seats on the first table.
-    model.Add(seats[(0, 0)] == 1)
+    model.add(seats[(0, 0)] == 1)
 
     ### Solve model.
     solver = cp_model.CpSolver()
     solution_printer = WeddingChartPrinter(seats, names, num_tables, num_guests)
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
     print("Statistics")
-    print("  - conflicts    : %i" % solver.NumConflicts())
-    print("  - branches     : %i" % solver.NumBranches())
-    print("  - wall time    : %f s" % solver.WallTime())
+    print("  - conflicts    : %i" % solver.num_conflicts)
+    print("  - branches     : %i" % solver.num_branches)
+    print("  - wall time    : %f s" % solver.wall_time)
     print("  - num solutions: %i" % solution_printer.num_solutions())
 
 

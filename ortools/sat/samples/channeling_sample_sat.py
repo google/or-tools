@@ -21,19 +21,14 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
-        self.__solution_count = 0
 
-    def on_solution_callback(self):
-        self.__solution_count += 1
+    def on_solution_callback(self) -> None:
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
-
-    def solution_count(self):
-        return self.__solution_count
 
 
 def ChannelingSampleSat():
@@ -43,24 +38,24 @@ def ChannelingSampleSat():
     model = cp_model.CpModel()
 
     # Declare our two primary variables.
-    x = model.NewIntVar(0, 10, "x")
-    y = model.NewIntVar(0, 10, "y")
+    x = model.new_int_var(0, 10, "x")
+    y = model.new_int_var(0, 10, "y")
 
     # Declare our intermediate boolean variable.
-    b = model.NewBoolVar("b")
+    b = model.new_bool_var("b")
 
     # Implement b == (x >= 5).
-    model.Add(x >= 5).OnlyEnforceIf(b)
-    model.Add(x < 5).OnlyEnforceIf(b.Not())
+    model.add(x >= 5).only_enforce_if(b)
+    model.add(x < 5).only_enforce_if(b.negated())
 
     # Create our two half-reified constraints.
     # First, b implies (y == 10 - x).
-    model.Add(y == 10 - x).OnlyEnforceIf(b)
+    model.add(y == 10 - x).only_enforce_if(b)
     # Second, not(b) implies y == 0.
-    model.Add(y == 0).OnlyEnforceIf(b.Not())
+    model.add(y == 0).only_enforce_if(b.negated())
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
@@ -72,7 +67,7 @@ def ChannelingSampleSat():
 
     # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([x, y, b])
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 ChannelingSampleSat()

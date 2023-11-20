@@ -29,8 +29,8 @@ from ortools.sat.python import cp_model
 
 def LiteralSampleSat():
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    not_x = x.Not()
+    x = model.new_bool_var("x")
+    not_x = x.negated()
     print(x)
     print(not_x)
 
@@ -131,10 +131,10 @@ from ortools.sat.python import cp_model
 def BoolOrSampleSat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
 
-    model.AddBoolOr([x, y.Not()])
+    model.add_bool_or([x, y.negated()])
 
 
 BoolOrSampleSat()
@@ -241,20 +241,20 @@ def ReifiedSampleSat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    b = model.NewBoolVar("b")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    b = model.new_bool_var("b")
 
     # First version using a half-reified bool and.
-    model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+    model.add_bool_and(x, y.negated()).only_enforce_if(b)
 
     # Second version using implications.
-    model.AddImplication(b, x)
-    model.AddImplication(b, y.Not())
+    model.add_implication(b, x)
+    model.add_implication(b, y.negated())
 
     # Third version using bool or.
-    model.AddBoolOr(b.Not(), x)
-    model.AddBoolOr(b.Not(), y.Not())
+    model.add_bool_or(b.negated(), x)
+    model.add_bool_or(b.negated(), y.negated())
 
 
 ReifiedSampleSat()
@@ -407,22 +407,22 @@ def BooleanProductSampleSat():
     p == x * y, which is the same as p <=> x and y
     """
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    p = model.NewBoolVar("p")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.AddBoolOr(x.Not(), y.Not(), p)
+    model.add_bool_or(x.negated(), y.negated(), p)
 
     # p implies x and y, expanded into two implications.
-    model.AddImplication(p, x)
-    model.AddImplication(p, y)
+    model.add_implication(p, x)
+    model.add_implication(p, y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
     solver.parameters.enumerate_all_solutions = True
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 BooleanProductSampleSat()

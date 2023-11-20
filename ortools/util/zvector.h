@@ -16,18 +16,15 @@
 
 #if (defined(__APPLE__) || defined(__FreeBSD__)) && defined(__GNUC__)
 #include <machine/endian.h>
-#elif !defined(_MSC_VER)
+#elif !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
 #include <endian.h>
 #endif
-#include <climits>
-#include <cstdio>
-#include <limits>
+#include <cstdint>
 #include <memory>
-#include <string>
+#include <string>  // IWYU pragma: keep
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 
 // An array class for storing arrays of integers.
 //

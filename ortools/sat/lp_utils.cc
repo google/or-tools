@@ -816,14 +816,21 @@ double FindBestScalingAndComputeErrors(
   // error of wanted_absolute_activity_precision and still make sure we will
   // have no integer overflow.
   //
+  // Important: the loop is written in such a way that ComputeScalingErrors()
+  // is called on the last factor.
+  //
   // TODO(user): Make this faster.
   double x = std::min(scaling_factor, 1.0);
   for (; x <= scaling_factor; x *= 2) {
     ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
                          relative_coeff_error, scaled_sum_error);
     if (*scaled_sum_error < wanted_absolute_activity_precision * x) break;
+
+    // This could happen if we always have enough precision.
+    if (x == scaling_factor) break;
   }
   scaling_factor = x;
+  DCHECK(std::isfinite(scaling_factor));
 
   // Because we deal with an approximate input, scaling with a power of 2 might
   // not be the best choice. It is also possible user used rational coeff and
@@ -834,6 +841,7 @@ double FindBestScalingAndComputeErrors(
   // Note that if our current precisions is already above the requested one,
   // we choose integer scaling if we get a better precision.
   const double integer_factor = FindFractionalScaling(coefficients, 1e-8);
+  DCHECK(std::isfinite(integer_factor));
   if (integer_factor != 0 && integer_factor < scaling_factor) {
     double local_relative_coeff_error;
     double local_scaled_sum_error;
@@ -850,6 +858,7 @@ double FindBestScalingAndComputeErrors(
     }
   }
 
+  DCHECK(std::isfinite(scaling_factor));
   return scaling_factor;
 }
 

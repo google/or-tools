@@ -184,7 +184,7 @@ def solve_model_greedily(model):
 
 
 def solve_boolean_model(model, hint):
-    """Solve the given model."""
+    """solve the given model."""
 
     print("Solving using the Boolean model")
     # Model data
@@ -207,73 +207,73 @@ def solve_boolean_model(model, hint):
     # Create the variables
     for t in all_tasks:
         for p in all_pods:
-            assign[t, p] = model.NewBoolVar(f"assign_{t}_{p}")
-            possible[t, p] = model.NewBoolVar(f"possible_{t}_{p}")
+            assign[t, p] = model.new_bool_var(f"assign_{t}_{p}")
+            possible[t, p] = model.new_bool_var(f"possible_{t}_{p}")
 
     # active[p] indicates if pod p is active.
-    active = [model.NewBoolVar(f"active_{p}") for p in all_pods]
+    active = [model.new_bool_var(f"active_{p}") for p in all_pods]
 
     # Each task is done on exactly one pod.
     for t in all_tasks:
-        model.AddExactlyOne([assign[t, p] for p in all_pods])
+        model.add_exactly_one([assign[t, p] for p in all_pods])
 
     # Total tasks assigned to one pod cannot exceed cycle time.
     for p in all_pods:
-        model.Add(sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time)
+        model.add(sum(assign[t, p] * durations[t] for t in all_tasks) <= cycle_time)
 
     # Maintain the possible variables:
     #   possible at pod p -> possible at any pod after p
     for t in all_tasks:
         for p in range(num_pods - 1):
-            model.AddImplication(possible[t, p], possible[t, p + 1])
+            model.add_implication(possible[t, p], possible[t, p + 1])
 
     # Link possible and active variables.
     for t in all_tasks:
         for p in all_pods:
-            model.AddImplication(assign[t, p], possible[t, p])
+            model.add_implication(assign[t, p], possible[t, p])
             if p > 1:
-                model.AddImplication(assign[t, p], possible[t, p - 1].Not())
+                model.add_implication(assign[t, p], possible[t, p - 1].negated())
 
     # Precedences.
     for before, after in precedences:
         for p in range(1, num_pods):
-            model.AddImplication(assign[before, p], possible[after, p - 1].Not())
+            model.add_implication(assign[before, p], possible[after, p - 1].negated())
 
     # Link active variables with the assign one.
     for p in all_pods:
         all_assign_vars = [assign[t, p] for t in all_tasks]
         for a in all_assign_vars:
-            model.AddImplication(a, active[p])
-        model.AddBoolOr(all_assign_vars + [active[p].Not()])
+            model.add_implication(a, active[p])
+        model.add_bool_or(all_assign_vars + [active[p].negated()])
 
     # Force pods to be contiguous. This is critical to get good lower bounds
     # on the objective, even if it makes feasibility harder.
     for p in range(1, num_pods):
-        model.AddImplication(active[p - 1].Not(), active[p].Not())
+        model.add_implication(active[p - 1].negated(), active[p].negated())
         for t in all_tasks:
-            model.AddImplication(active[p].Not(), possible[t, p - 1])
+            model.add_implication(active[p].negated(), possible[t, p - 1])
 
     # Objective.
-    model.Minimize(sum(active))
+    model.minimize(sum(active))
 
-    # Add search hinting from the greedy solution.
+    # add search hinting from the greedy solution.
     for t in all_tasks:
-        model.AddHint(assign[t, hint[t]], 1)
+        model.add_hint(assign[t, hint[t]], 1)
 
     if _OUTPUT_PROTO.value:
         print(f"Writing proto to {_OUTPUT_PROTO.value}")
-        model.ExportToFile(_OUTPUT_PROTO.value)
+        model.export_to_file(_OUTPUT_PROTO.value)
 
-    # Solve model.
+    # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
-    solver.Solve(model)
+    solver.solve(model)
 
 
 def solve_scheduling_model(model, hint):
-    """Solve the given model using a cumutive model."""
+    """solve the given model using a cumutive model."""
 
     print("Solving using the scheduling model")
     # Model data
@@ -290,47 +290,49 @@ def solve_scheduling_model(model, hint):
     # pod[t] indicates on which pod the task is performed.
     pods = {}
     for t in all_tasks:
-        pods[t] = model.NewIntVar(0, num_pods - 1, f"pod_{t}")
+        pods[t] = model.new_int_var(0, num_pods - 1, f"pod_{t}")
 
     # Create the variables
     intervals = []
     demands = []
     for t in all_tasks:
-        interval = model.NewFixedSizeIntervalVar(pods[t], 1, "")
+        interval = model.new_fixed_size_interval_var(pods[t], 1, "")
         intervals.append(interval)
         demands.append(durations[t])
 
-    # Add terminating interval as the objective.
-    obj_var = model.NewIntVar(1, num_pods, "obj_var")
-    obj_size = model.NewIntVar(1, num_pods, "obj_duration")
-    obj_interval = model.NewIntervalVar(obj_var, obj_size, num_pods + 1, "obj_interval")
+    # add terminating interval as the objective.
+    obj_var = model.new_int_var(1, num_pods, "obj_var")
+    obj_size = model.new_int_var(1, num_pods, "obj_duration")
+    obj_interval = model.new_interval_var(
+        obj_var, obj_size, num_pods + 1, "obj_interval"
+    )
     intervals.append(obj_interval)
     demands.append(cycle_time)
 
     # Cumulative constraint.
-    model.AddCumulative(intervals, demands, cycle_time)
+    model.add_cumulative(intervals, demands, cycle_time)
 
     # Precedences.
     for before, after in precedences:
-        model.Add(pods[after] >= pods[before])
+        model.add(pods[after] >= pods[before])
 
     # Objective.
-    model.Minimize(obj_var)
+    model.minimize(obj_var)
 
-    # Add search hinting from the greedy solution.
+    # add search hinting from the greedy solution.
     for t in all_tasks:
-        model.AddHint(pods[t], hint[t])
+        model.add_hint(pods[t], hint[t])
 
     if _OUTPUT_PROTO.value:
         print(f"Writing proto to{_OUTPUT_PROTO.value}")
-        model.ExportToFile(_OUTPUT_PROTO.value)
+        model.export_to_file(_OUTPUT_PROTO.value)
 
-    # Solve model.
+    # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
         text_format.Parse(_PARAMS.value, solver.parameters)
     solver.parameters.log_search_progress = True
-    solver.Solve(model)
+    solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:

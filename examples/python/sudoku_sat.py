@@ -42,15 +42,15 @@ def solve_sudoku():
     grid = {}
     for i in line:
         for j in line:
-            grid[(i, j)] = model.NewIntVar(1, line_size, "grid %i %i" % (i, j))
+            grid[(i, j)] = model.new_int_var(1, line_size, "grid %i %i" % (i, j))
 
     # AllDifferent on rows.
     for i in line:
-        model.AddAllDifferent(grid[(i, j)] for j in line)
+        model.add_all_different(grid[(i, j)] for j in line)
 
     # AllDifferent on columns.
     for j in line:
-        model.AddAllDifferent(grid[(i, j)] for i in line)
+        model.add_all_different(grid[(i, j)] for i in line)
 
     # AllDifferent on cells.
     for i in cell:
@@ -60,20 +60,20 @@ def solve_sudoku():
                 for dj in cell:
                     one_cell.append(grid[(i * cell_size + di, j * cell_size + dj)])
 
-            model.AddAllDifferent(one_cell)
+            model.add_all_different(one_cell)
 
     # Initial values.
     for i in line:
         for j in line:
             if initial_grid[i][j]:
-                model.Add(grid[(i, j)] == initial_grid[i][j])
+                model.add(grid[(i, j)] == initial_grid[i][j])
 
-    # Solve and print out the solution.
+    # Solves and prints out the solution.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     if status == cp_model.OPTIMAL:
         for i in line:
-            print([int(solver.Value(grid[(i, j)])) for j in line])
+            print([int(solver.value(grid[(i, j)])) for j in line])
 
 
 solve_sudoku()

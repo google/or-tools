@@ -50,8 +50,8 @@ def add_neighbor(size, x, y, z, dx, dy, dz, model, index_map, position_to_rank, 
     before_rank = position_to_rank[(x, y, z)]
     after_index = index_map[(x + dx, y + dy, z + dz)]
     after_rank = position_to_rank[(x + dx, y + dy, z + dz)]
-    move_literal = model.NewBoolVar("")
-    model.Add(after_rank == before_rank + 1).OnlyEnforceIf(move_literal)
+    move_literal = model.new_bool_var("")
+    model.add(after_rank == before_rank + 1).only_enforce_if(move_literal)
     arcs.append((before_index, after_index, move_literal))
 
 
@@ -79,13 +79,13 @@ def escape_the_maze(params, output_proto):
     position_to_rank = {}
 
     for coord in reverse_map:
-        position_to_rank[coord] = model.NewIntVar(0, counter - 1, f"rank_{coord}")
+        position_to_rank[coord] = model.new_int_var(0, counter - 1, f"rank_{coord}")
 
     # Path constraints.
-    model.Add(position_to_rank[start] == 0)
-    model.Add(position_to_rank[end] == counter - 1)
+    model.add(position_to_rank[start] == 0)
+    model.add(position_to_rank[end] == counter - 1)
     for i in range(len(boxes) - 1):
-        model.Add(position_to_rank[boxes[i]] < position_to_rank[boxes[i + 1]])
+        model.add(position_to_rank[boxes[i]] < position_to_rank[boxes[i + 1]])
 
     # Circuit constraint: visit all blocks exactly once, and maintains the rank
     # of each block.
@@ -116,18 +116,18 @@ def escape_the_maze(params, output_proto):
     arcs.append((index_map[end], index_map[start], True))
 
     # Adds the circuit (hamiltonian path) constraint.
-    model.AddCircuit(arcs)
+    model.add_circuit(arcs)
 
     # Exports the model if required.
     if output_proto:
-        model.ExportToFile(output_proto)
+        model.export_to_file(output_proto)
 
     # Solve model.
     solver = cp_model.CpSolver()
     if params:
         text_format.Parse(params, solver.parameters)
     solver.parameters.log_search_progress = True
-    result = solver.Solve(model)
+    result = solver.solve(model)
 
     # Prints solution.
     if result == cp_model.OPTIMAL:
@@ -136,7 +136,7 @@ def escape_the_maze(params, output_proto):
             for y in range(size):
                 for z in range(size):
                     position = (x, y, z)
-                    rank = solver.Value(position_to_rank[position])
+                    rank = solver.value(position_to_rank[position])
                     msg = f"({x}, {y}, {z})"
                     if position == start:
                         msg += " [start]"

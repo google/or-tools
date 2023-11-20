@@ -20,19 +20,14 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
-        self.__solution_count = 0
 
-    def on_solution_callback(self):
-        self.__solution_count += 1
+    def on_solution_callback(self) -> None:
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
-
-    def solution_count(self):
-        return self.__solution_count
 
 
 def SchedulingWithCalendarSampleSat():
@@ -47,25 +42,27 @@ def SchedulingWithCalendarSampleSat():
     # Because the duration is at least 3 hours, work cannot start after 15h.
     # Because of the break, work cannot start at 13h.
 
-    start = model.NewIntVarFromDomain(
-        cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), "start"
+    start = model.new_int_var_from_domain(
+        cp_model.Domain.from_intervals([(8, 12), (14, 15)]), "start"
     )
-    duration = model.NewIntVar(3, 4, "duration")
-    end = model.NewIntVar(8, 18, "end")
-    unused_interval = model.NewIntervalVar(start, duration, end, "interval")
+    duration = model.new_int_var(3, 4, "duration")
+    end = model.new_int_var(8, 18, "end")
+    unused_interval = model.new_interval_var(start, duration, end, "interval")
 
     # We have 2 states (spanning across lunch or not)
-    across = model.NewBoolVar("across")
-    non_spanning_hours = cp_model.Domain.FromValues([8, 9, 10, 14, 15])
-    model.AddLinearExpressionInDomain(start, non_spanning_hours).OnlyEnforceIf(
-        across.Not()
+    across = model.new_bool_var("across")
+    non_spanning_hours = cp_model.Domain.from_values([8, 9, 10, 14, 15])
+    model.add_linear_expression_in_domain(start, non_spanning_hours).only_enforce_if(
+        across.negated()
     )
-    model.AddLinearConstraint(start, 11, 12).OnlyEnforceIf(across)
-    model.Add(duration == 3).OnlyEnforceIf(across.Not())
-    model.Add(duration == 4).OnlyEnforceIf(across)
+    model.add_linear_constraint(start, 11, 12).only_enforce_if(across)
+    model.add(duration == 3).only_enforce_if(across.negated())
+    model.add(duration == 4).only_enforce_if(across)
 
     # Search for x values in increasing order.
-    model.AddDecisionStrategy([start], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+    model.add_decision_strategy(
+        [start], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+    )
 
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
@@ -77,7 +74,7 @@ def SchedulingWithCalendarSampleSat():
 
     # Search and print all solutions.
     solution_printer = VarArraySolutionPrinter([start, duration, across])
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
 SchedulingWithCalendarSampleSat()

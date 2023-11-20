@@ -21,22 +21,23 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables, limit):
+    def __init__(self, variables: list[cp_model.IntVar], limit: int):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
         self.__solution_limit = limit
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
         if self.__solution_count >= self.__solution_limit:
             print(f"Stop search after {self.__solution_limit} solutions")
-            self.StopSearch()
+            self.stop_search()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
@@ -46,9 +47,9 @@ def StopAfterNSolutionsSampleSat():
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -56,10 +57,10 @@ def StopAfterNSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
-    assert solution_printer.solution_count() == 5
+    status = solver.solve(model, solution_printer)
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
+    assert solution_printer.solution_count == 5
 
 
 StopAfterNSolutionsSampleSat()

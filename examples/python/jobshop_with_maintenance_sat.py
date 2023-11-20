@@ -31,7 +31,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         """Called at each new solution."""
         print(
             "Solution %i, time = %f s, objective = %i"
-            % (self.__solution_count, self.WallTime(), self.ObjectiveValue())
+            % (self.__solution_count, self.wall_time, self.objective_value)
         )
         self.__solution_count += 1
 
@@ -65,13 +65,14 @@ def jobshop_with_maintenance():
     machine_to_intervals = collections.defaultdict(list)
 
     for job_id, job in enumerate(jobs_data):
-        for task_id, task in enumerate(job):
+        for entry in enumerate(job):
+            task_id, task = entry
             machine = task[0]
             duration = task[1]
             suffix = "_%i_%i" % (job_id, task_id)
-            start_var = model.NewIntVar(0, horizon, "start" + suffix)
-            end_var = model.NewIntVar(0, horizon, "end" + suffix)
-            interval_var = model.NewIntervalVar(
+            start_var = model.new_int_var(0, horizon, "start" + suffix)
+            end_var = model.new_int_var(0, horizon, "end" + suffix)
+            interval_var = model.new_interval_var(
                 start_var, duration, end_var, "interval" + suffix
             )
             all_tasks[job_id, task_id] = task_type(
@@ -80,31 +81,31 @@ def jobshop_with_maintenance():
             machine_to_intervals[machine].append(interval_var)
 
     # Add maintenance interval (machine 0 is not available on time {4, 5, 6, 7}).
-    machine_to_intervals[0].append(model.NewIntervalVar(4, 4, 8, "weekend_0"))
+    machine_to_intervals[0].append(model.new_interval_var(4, 4, 8, "weekend_0"))
 
     # Create and add disjunctive constraints.
     for machine in all_machines:
-        model.AddNoOverlap(machine_to_intervals[machine])
+        model.add_no_overlap(machine_to_intervals[machine])
 
     # Precedences inside a job.
     for job_id, job in enumerate(jobs_data):
         for task_id in range(len(job) - 1):
-            model.Add(
+            model.add(
                 all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end
             )
 
     # Makespan objective.
-    obj_var = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(
+    obj_var = model.new_int_var(0, horizon, "makespan")
+    model.add_max_equality(
         obj_var,
         [all_tasks[job_id, len(job) - 1].end for job_id, job in enumerate(jobs_data)],
     )
-    model.Minimize(obj_var)
+    model.minimize(obj_var)
 
     # Solve model.
     solver = cp_model.CpSolver()
     solution_printer = SolutionPrinter()
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
     # Output solution.
     if status == cp_model.OPTIMAL:
@@ -115,7 +116,7 @@ def jobshop_with_maintenance():
                 machine = task[0]
                 assigned_jobs[machine].append(
                     assigned_task_type(
-                        start=solver.Value(all_tasks[job_id, task_id].start),
+                        start=solver.value(all_tasks[job_id, task_id].start),
                         job=job_id,
                         index=task_id,
                         duration=task[1],
@@ -132,13 +133,13 @@ def jobshop_with_maintenance():
 
             for assigned_task in assigned_jobs[machine]:
                 name = "job_%i_%i" % (assigned_task.job, assigned_task.index)
-                # Add spaces to output to align columns.
+                # add spaces to output to align columns.
                 sol_line_tasks += "%-10s" % name
                 start = assigned_task.start
                 duration = assigned_task.duration
 
                 sol_tmp = "[%i,%i]" % (start, start + duration)
-                # Add spaces to output to align columns.
+                # add spaces to output to align columns.
                 sol_line += "%-10s" % sol_tmp
 
             sol_line += "\n"
@@ -147,12 +148,12 @@ def jobshop_with_maintenance():
             output += sol_line
 
         # Finally print the solution found.
-        print("Optimal Schedule Length: %i" % solver.ObjectiveValue())
+        print("Optimal Schedule Length: %i" % solver.objective_value)
         print(output)
         print("Statistics")
-        print("  - conflicts : %i" % solver.NumConflicts())
-        print("  - branches  : %i" % solver.NumBranches())
-        print("  - wall time : %f s" % solver.WallTime())
+        print("  - conflicts : %i" % solver.num_conflicts)
+        print("  - branches  : %i" % solver.num_branches)
+        print("  - wall time : %f s" % solver.wall_time)
 
 
 def main(argv: Sequence[str]) -> None:
