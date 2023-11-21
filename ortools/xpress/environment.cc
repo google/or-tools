@@ -95,7 +95,7 @@ std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void
 std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
 
-absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
+void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   // This was generated with the parse_header_xpress.py script.
   // See the comment at the top of the script.
 
@@ -158,15 +158,6 @@ absl::Status LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
-
-
-  auto notFound = xpress_dynamic_library->FunctionsNotFound();
-  if (!notFound.empty()) {
-    return absl::NotFoundError(absl::StrCat("Could not find the following functions (list may not be exhaustive). [",
-                                            absl::StrJoin(notFound, "', '"),
-                                            "]. Please make sure that your XPRESS install is up-to-date (>= 9.0.0)."));
-  }
-  return absl::OkStatus();
 }
 
 void printXpressBanner(bool error) {
@@ -184,17 +175,18 @@ std::vector<std::string> XpressDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
 
   // Look for libraries pointed by XPRESSDIR first.
-  const char* xpress_home_from_env = getenv("XPRESSDIR");
-  if (xpress_home_from_env != nullptr) {
+  const char* xpressdir_from_env = getenv("XPRESSDIR");
+  if (xpressdir_from_env != nullptr) {
+    LOG(INFO) << "Environment variable XPRESSDIR = " << xpressdir_from_env;
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(
-        absl::StrCat(xpress_home_from_env, "\\bin\\xprs.dll"));
+        absl::StrCat(xpressdir_from_env, "\\bin\\xprs.dll"));
 #elif defined(__APPLE__)  // OS X
     potential_paths.push_back(
-        absl::StrCat(xpress_home_from_env, "/lib/libxprs.dylib"));
+        absl::StrCat(xpressdir_from_env, "/lib/libxprs.dylib"));
 #elif defined(__GNUC__)   // Linux
     potential_paths.push_back(
-        absl::StrCat(xpress_home_from_env, "/lib/libxprs.so"));
+        absl::StrCat(xpressdir_from_env, "/lib/libxprs.so"));
 #else
     LOG(ERROR) << "OS Not recognized by xpress/environment.cc."
                << " You won't be able to use Xpress.";
@@ -244,7 +236,9 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
     }
 
     if (xpress_library.LibraryIsLoaded()) {
-      xpress_load_status = LoadXpressFunctions(&xpress_library);
+      LOG(INFO) << "Loading all Xpress functions";
+      LoadXpressFunctions(&xpress_library);
+      xpress_load_status = absl::OkStatus();
     } else {
       xpress_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Xpress shared library. Looked in: [",
