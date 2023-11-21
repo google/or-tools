@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #include "zlib.h"
 
-bool GunzipString(absl::string_view str, std::string* out) {
+bool GunzipString(const std::string& str, std::string* out) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -60,7 +60,7 @@ bool GunzipString(absl::string_view str, std::string* out) {
   return true;
 }
 
-void GzipString(absl::string_view uncompressed, std::string* compressed) {
+bool GunzipString(absl::string_view uncompressed, std::string* compressed) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -71,7 +71,7 @@ void GzipString(absl::string_view uncompressed, std::string* compressed) {
 
   if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) {
     VLOG(1) << "Cannot initialize zlib compression.";
-    return;
+    return false;
   }
 
   zs.next_in = (Bytef*)uncompressed.data();
@@ -97,6 +97,15 @@ void GzipString(absl::string_view uncompressed, std::string* compressed) {
   if (status != Z_STREAM_END) {  // an error occurred that was not EOF
     VLOG(1) << "Exception during zlib compression: (" << status << ") "
             << zs.msg;
+    return false;
+  }
+  return true;
+}
+
+void GzipString(absl::string_view uncompressed, std::string* compressed) {
+  const bool success = GunzipString(uncompressed, compressed);
+  if (!success) {
+    VLOG(1) << "GzipString was not successful";
   }
 }
 
