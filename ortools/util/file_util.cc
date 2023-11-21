@@ -168,7 +168,8 @@ absl::Status WriteProtoToFile(absl::string_view filename,
       if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
                                                        options)
                .ok()) {
-        return make_error("Printing to stream failed.");
+        LOG(WARNING) << "Printing to stream failed.";
+        return make_error("google::protobuf::util::MessageToJsonString()");
       }
       file_type_suffix = ".json";
       break;
@@ -179,7 +180,8 @@ absl::Status WriteProtoToFile(absl::string_view filename,
       if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
                                                        options)
                .ok()) {
-        return make_error("Printing to stream failed.");
+        LOG(WARNING) << "Printing to stream failed.";
+        return make_error("google::protobuf::util::MessageToJsonString()");
       }
       file_type_suffix = ".json";
       break;
