@@ -532,6 +532,10 @@ void PrimalPrices::UpdateBeforeBasisPivot(ColIndex entering_col,
   // given by the update_row.
   UpdateEnteringCandidates</*from_clean_state=*/false>(
       update_row->GetNonZeroPositions());
+
+  // This should be redundant with the call above, except in degenerate
+  // cases where the update_row has a zero position on the entering col!
+  prices_.Remove(entering_col);
 }
 
 void PrimalPrices::RecomputePriceAt(ColIndex col) {

@@ -177,6 +177,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     SOLVER_LOG(&logger_, "Initial problem: ", lp.GetDimensionString());
     SOLVER_LOG(&logger_, "Objective stats: ", lp.GetObjectiveStatsString());
     SOLVER_LOG(&logger_, "Bounds stats: ", lp.GetBoundsStatsString());
+    SOLVER_LOG(&logger_, "Parameters: ", parameters_.ShortDebugString());
   }
 
   // Check some preconditions.
