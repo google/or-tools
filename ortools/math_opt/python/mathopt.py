@@ -60,6 +60,8 @@ from ortools.math_opt.python.compute_infeasible_subsystem_result import (
 from ortools.math_opt.python.compute_infeasible_subsystem_result import (
     parse_model_subset_bounds,
 )
+from ortools.math_opt.python.expressions import evaluate_expression
+from ortools.math_opt.python.expressions import fast_sum
 from ortools.math_opt.python.hash_model_storage import HashModelStorage
 from ortools.math_opt.python.message_callback import list_message_callback
 from ortools.math_opt.python.message_callback import log_messages

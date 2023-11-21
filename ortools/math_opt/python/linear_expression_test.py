@@ -2738,7 +2738,7 @@ class AstTest(parameterized.TestCase):
 
 # Test behavior of LinearExpression and as_flat_linear_expression that is
 # not covered by other tests.
-class LinearExpressionTest(parameterized.TestCase):
+class LinearExpressionTest(unittest.TestCase):
     def test_init_to_zero(self) -> None:
         expression = model.LinearExpression()
         self.assertEqual(expression.offset, 0.0)
@@ -2764,10 +2764,17 @@ class LinearExpressionTest(parameterized.TestCase):
         self.assertDictEqual(dict(expression.terms), {})
         self.assertEqual(expression.offset, 2.0)
 
+    def test_evaluate(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        y = mod.add_variable()
+        expression = model.LinearExpression(3 * x + y + 2.0)
+        self.assertEqual(expression.evaluate({x: 4.0, y: 3.0}), 17.0)
+
 
 # Test behavior of QuadraticExpression and as_flat_quadratic_expression that is
 # not covered by other tests.
-class QuadraticExpressionTest(parameterized.TestCase):
+class QuadraticExpressionTest(unittest.TestCase):
     def test_terms_read_only(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -2791,6 +2798,14 @@ class QuadraticExpressionTest(parameterized.TestCase):
         self.assertDictEqual(dict(expression.linear_terms), {})
         self.assertDictEqual(dict(expression.quadratic_terms), {})
         self.assertEqual(expression.offset, 2.0)
+
+    def test_evaluate(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        y = mod.add_variable()
+        expression = model.QuadraticExpression(x * x + 2 * x * y + 4 * y + 2.0)
+        # 16 + 24 + 12 + 2 = 54
+        self.assertEqual(expression.evaluate({x: 4.0, y: 3.0}), 54.0)
 
 
 if __name__ == "__main__":

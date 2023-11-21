@@ -20,6 +20,7 @@ from typing import Any, List, Set, Tuple
 
 import unittest
 from ortools.math_opt.python import callback
+from ortools.math_opt.python import expressions
 from ortools.math_opt.python import hash_model_storage
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python import message_callback
@@ -44,6 +45,7 @@ from ortools.math_opt.python import sparse_containers
 #
 _MODULES_TO_CHECK: List[types.ModuleType] = [
     callback,
+    expressions,
     hash_model_storage,
     message_callback,
     model,

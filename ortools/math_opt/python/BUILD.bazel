@@ -25,6 +25,7 @@ py_library(
     deps = [
         ":callback",
         ":compute_infeasible_subsystem_result",
+        ":expressions",
         ":hash_model_storage",
         ":message_callback",
         ":model",
@@ -184,4 +185,12 @@ py_library(
     srcs = ["normalize.py"],
     visibility = ["//ortools/math_opt/python:__subpackages__"],
     deps = ["@com_google_protobuf//:protobuf_python"],
+)
+
+py_library(
+    name = "expressions",
+    srcs = ["expressions.py"],
+    deps = [
+        ":model",
+    ],
 )

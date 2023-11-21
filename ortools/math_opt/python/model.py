@@ -1004,6 +1004,28 @@ class LinearExpression(LinearBase):
     def offset(self) -> float:
         return self._offset
 
+    def evaluate(self, variable_values: Mapping[Variable, float]) -> float:
+        """Returns the value of this expression for given variable values.
+
+        E.g. if this is 3 * x + 4 and variable_values = {x: 2.0}, then
+        evaluate(variable_values) equals 10.0.
+
+        See also mathopt.evaluate_expression(), which works on any type in
+        QuadraticTypes.
+
+        Args:
+          variable_values: Must contain a value for every variable in expression.
+
+        Returns:
+          The value of this expression when replacing variables by their value.
+        """
+        result = self._offset
+        for var, coef in sorted(
+            self._terms.items(), key=lambda var_coef_pair: var_coef_pair[0].id
+        ):
+            result += coef * variable_values[var]
+        return result
+
     def _flatten_once_and_add_to(
         self,
         scale: float,
@@ -1097,6 +1119,39 @@ class QuadraticExpression(QuadraticBase):
     @property
     def offset(self) -> float:
         return self._offset
+
+    def evaluate(self, variable_values: Mapping[Variable, float]) -> float:
+        """Returns the value of this expression for given variable values.
+
+        E.g. if this is 3 * x * x + 4 and variable_values = {x: 2.0}, then
+        evaluate(variable_values) equals 16.0.
+
+        See also mathopt.evaluate_expression(), which works on any type in
+        QuadraticTypes.
+
+        Args:
+          variable_values: Must contain a value for every variable in expression.
+
+        Returns:
+          The value of this expression when replacing variables by their value.
+        """
+        result = self._offset
+        for var, coef in sorted(
+            self._linear_terms.items(),
+            key=lambda var_coef_pair: var_coef_pair[0].id,
+        ):
+            result += coef * variable_values[var]
+        for key, coef in sorted(
+            self._quadratic_terms.items(),
+            key=lambda quad_coef_pair: (
+                quad_coef_pair[0].first_var.id,
+                quad_coef_pair[0].second_var.id,
+            ),
+        ):
+            result += (
+                coef * variable_values[key.first_var] * variable_values[key.second_var]
+            )
+        return result
 
     def _quadratic_flatten_once_and_add_to(
         self,

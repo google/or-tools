@@ -11,14 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_subdirectory(c_api)
-
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
 
 set(NAME ${PROJECT_NAME}_math_opt_core)
 add_library(${NAME} OBJECT ${_SRCS})
-target_sources(${NAME} PRIVATE $<TARGET_OBJECTS:${NAME}_c_api>)
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
