@@ -30,6 +30,16 @@ config_setting(
     constraint_values = ["@platforms//os:windows"],
 )
 
+# Main Target
+cc_library(
+    name = "graphs",
+    hdrs = ["graphs.h"],
+    deps = [
+        ":ebert_graph",
+        ":graph",
+    ],
+)
+
 cc_library(
     name = "graph",
     hdrs = ["graph.h"],
@@ -41,53 +51,15 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "graphs",
-    hdrs = ["graphs.h"],
-    deps = [
-        ":ebert_graph",
-        ":graph",
-    ],
-)
-
-cc_library(
-    name = "util",
-    srcs = ["util.cc"],
-    hdrs = ["util.h"],
-    deps = [
-        ":connected_components",
-        ":graph",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:inlined_vector",
-    ],
-)
-
-cc_library(
-    name = "iterators",
-    hdrs = ["iterators.h"],
-)
-
-cc_library(
-    name = "io",
-    hdrs = ["io.h"],
-    deps = [
-        ":graph",
-        "//ortools/base:numbers",
-        "//ortools/util:filelineiter",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
+# You might want to use "graph" rather than this old, inferior library.
 #cc_library(
 #    name = "digraph",
 #    srcs = ["digraph.cc"],
 #    hdrs = ["digraph.h"],
 #    deps = [
 #        "//ortools/base",
+#        "//ortools/base:types",
+#        "@com_google_absl//absl/synchronization",
 #        "//ortools/base:intops",
 #        "//ortools/base:strong_vector",
 #    ],
@@ -108,8 +80,9 @@ cc_library(
 #    hdrs = ["bidirectional_dijkstra.h"],
 #    deps = [
 #        "//ortools/base",
-#        "//ortools/base:iterator_adaptors",
+#        "@com_google_absl//absl/base:core_headers",
 #        "@com_google_absl//absl/strings",
+#        "@com_google_absl//absl/synchronization",
 #        "//ortools/thread",
 #    ],
 #)
@@ -217,7 +190,6 @@ cc_library(
     name = "perfect_matching",
     srcs = ["perfect_matching.cc"],
     hdrs = ["perfect_matching.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
@@ -229,6 +201,7 @@ cc_library(
     ],
 )
 
+# Flow problem protobuf representation
 proto_library(
     name = "flow_problem_proto",
     srcs = ["flow_problem.proto"],
@@ -239,6 +212,7 @@ cc_proto_library(
     deps = [":flow_problem_proto"],
 )
 
+# Max Flow
 cc_library(
     name = "max_flow",
     srcs = ["max_flow.cc"],
@@ -255,6 +229,7 @@ cc_library(
     ],
 )
 
+# Min Cost Flow
 cc_library(
     name = "min_cost_flow",
     srcs = ["min_cost_flow.cc"],
@@ -280,6 +255,9 @@ cc_library(
     ],
 )
 
+# Linear Assignment wrapper that consumes more memory but presents a
+# simplified interface and no speed degradation from the full-featured
+# linear assignment implementation.
 cc_library(
     name = "assignment",
     srcs = ["assignment.cc"],
@@ -291,6 +269,8 @@ cc_library(
     ],
 )
 
+# Linear Assignment with full-featured interface and efficient
+# implementation.
 cc_library(
     name = "linear_assignment",
     srcs = ["linear_assignment.cc"],
@@ -298,6 +278,7 @@ cc_library(
     deps = [
         ":ebert_graph",
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
         "@com_google_absl//absl/strings",
@@ -367,3 +348,35 @@ cc_library(
 #    srcs = ["hopcroft_karp.c"],
 #    hdrs = ["hopcroft_karp.h"],
 #)
+
+cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["util.h"],
+    deps = [
+        ":connected_components",
+        ":graph",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
+)
+
+cc_library(
+    name = "io",
+    hdrs = ["io.h"],
+    deps = [
+        ":graph",
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
