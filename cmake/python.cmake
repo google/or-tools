@@ -314,6 +314,24 @@ configure_file(
   COPYONLY)
 
 add_custom_command(
+  OUTPUT python/ortools_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
+  # Don't need to copy static lib on Windows.
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
+   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
+   ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
+  MAIN_DEPENDENCY
+    ortools/python/setup.py.in
+  DEPENDS
+    Py${PROJECT_NAME}_proto
+    ${PROJECT_NAMESPACE}::ortools
+  WORKING_DIRECTORY python
+  COMMAND_EXPAND_LISTS)
+
+add_custom_command(
   OUTPUT python/pybind11_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f pybind11_timestamp
   COMMAND ${CMAKE_COMMAND} -E copy
@@ -393,6 +411,7 @@ add_custom_command(
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
+    python/ortools_timestamp
     python/pybind11_timestamp
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
@@ -409,12 +428,6 @@ search_python_module(
 add_custom_command(
   OUTPUT python/dist_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
-  # Don't need to copy static lib on Windows.
-  COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
-   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
-   ${PYTHON_PROJECT}/.libs
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist_timestamp
@@ -422,8 +435,7 @@ add_custom_command(
     ortools/python/setup.py.in
   DEPENDS
     python/setup.py
-    Py${PROJECT_NAME}_proto
-    ${PROJECT_NAMESPACE}::ortools
+    python/ortools_timestamp
     python/pybind11_timestamp
     $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub_timestamp>
   BYPRODUCTS
