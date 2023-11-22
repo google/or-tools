@@ -313,6 +313,53 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
+add_custom_command(
+  OUTPUT python/pybind11_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f pybind11_timestamp
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:init_pybind11> ${PYTHON_PROJECT}/init/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
+  MAIN_DEPENDENCY
+    ortools/python/setup.py.in
+  DEPENDS
+    init_pybind11
+    knapsack_solver_pybind11
+    linear_sum_assignment_pybind11
+    max_flow_pybind11
+    min_cost_flow_pybind11
+    pywrapcp
+    pywraplp
+    model_builder_helper_pybind11
+    pdlp_pybind11
+    swig_helper_pybind11
+    rcpsp_pybind11
+    sorted_interval_list_pybind11
+  WORKING_DIRECTORY python
+  COMMAND_EXPAND_LISTS)
+
+
 # Generate Stub
 if(GENERATE_PYTHON_STUB)
 # Look for required python modules
@@ -328,9 +375,8 @@ find_program(
 )
 
 add_custom_command(
-  OUTPUT python/stub/timestamp
-  COMMAND ${CMAKE_COMMAND} -E remove_directory stub
-  COMMAND ${CMAKE_COMMAND} -E make_directory stub
+  OUTPUT python/stub_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f stub_timestamp
   COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
@@ -343,22 +389,11 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
-  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
-    init_pybind11
-    knapsack_solver_pybind11
-    linear_sum_assignment_pybind11
-    max_flow_pybind11
-    min_cost_flow_pybind11
-    pywrapcp
-    pywraplp
-    model_builder_helper_pybind11
-    pdlp_pybind11
-    swig_helper_pybind11
-    rcpsp_pybind11
-    sorted_interval_list_pybind11
+    python/pybind11_timestamp
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 endif()
@@ -372,47 +407,25 @@ search_python_module(
   PACKAGE wheel)
 
 add_custom_command(
-  OUTPUT python/dist/timestamp
+  OUTPUT python/dist_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
   # Don't need to copy static lib on Windows.
-  COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
-  $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
-  ${PYTHON_PROJECT}/.libs
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:init_pybind11> ${PYTHON_PROJECT}/init/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
+   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
+   ${PYTHON_PROJECT}/.libs
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
-  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
     python/setup.py
     Py${PROJECT_NAME}_proto
     ${PROJECT_NAMESPACE}::ortools
-    init_pybind11
-    knapsack_solver_pybind11
-    linear_sum_assignment_pybind11
-    max_flow_pybind11
-    min_cost_flow_pybind11
-    pywrapcp
-    pywraplp
-    model_builder_helper_pybind11
-    pdlp_pybind11
-    swig_helper_pybind11
-    rcpsp_pybind11
-    sorted_interval_list_pybind11
-    $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub/timestamp>
+    python/pybind11_timestamp
+    $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub_timestamp>
   BYPRODUCTS
     python/${PYTHON_PROJECT}
     python/${PYTHON_PROJECT}.egg-info
@@ -424,7 +437,7 @@ add_custom_command(
 # Main Target
 add_custom_target(python_package ALL
   DEPENDS
-    python/dist/timestamp
+    python/dist_timestamp
   WORKING_DIRECTORY python)
 
 # Install rules
