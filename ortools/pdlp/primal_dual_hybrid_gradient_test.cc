@@ -1870,7 +1870,7 @@ TEST_F(FeasibilityPolishingPrimalTest,
       output.solve_log.iteration_stats_size() - 1);
   EXPECT_GE(total_feasibility_iterations, 1);
   EXPECT_GE(last_stats.iteration_number(), 1);
-  // This checks that `iteration_count()` includes both the main and feasiblity
+  // This checks that `iteration_count()` includes both the main and feasibility
   // iterations, and that `iteration_stats.iteration_number()` does not include
   // work from feasibility iterations.
   EXPECT_EQ(last_stats.iteration_number() + total_feasibility_iterations,
