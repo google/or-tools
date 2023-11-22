@@ -46,7 +46,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """solve the CP+IS+FUN==TRUE cryptarithm."""
     # Constraint programming engine
     # [START model]

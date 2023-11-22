@@ -19,7 +19,7 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def main():
+def main() -> None:
     # This program tries to find an optimal assignment of nurses to shifts
     # (3 shifts per day, for 7 days), subject to some constraints (see below).
     # Each nurse can request to be assigned to specific shifts.

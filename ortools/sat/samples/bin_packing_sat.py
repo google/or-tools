@@ -61,7 +61,7 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     # [END data_model]
 
 
-def main():
+def main() -> None:
     # [START data]
     items, bins = create_data_model()
     # [END data]

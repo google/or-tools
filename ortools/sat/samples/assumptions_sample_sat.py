@@ -19,7 +19,7 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def main():
+def main() -> None:
     """Showcases assumptions."""
     # Creates the model.
     # [START model]

@@ -57,7 +57,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 # [END solution_printer]
 
 
-def main(board_size):
+def main(board_size: int) -> None:
     # Creates the solver.
     # [START model]
     model = cp_model.CpModel()

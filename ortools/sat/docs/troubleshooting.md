@@ -101,7 +101,7 @@ parallelism. Therefore, the number of workers must be set to 1.
 from ortools.sat.python import cp_model
 
 
-def main():
+def main() -> None:
     """Showcases assumptions."""
     # Creates the model.
     model = cp_model.CpModel()

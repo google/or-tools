@@ -24,7 +24,7 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def main():
+def main() -> None:
     # Data
     # [START data_model]
     data_str = """

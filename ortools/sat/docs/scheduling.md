@@ -726,7 +726,7 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     return capacity_df, tasks_df
 
 
-def main():
+def main() -> None:
     """Create the model and solves it."""
     capacity_df, tasks_df = create_data_model()
 
@@ -834,7 +834,7 @@ def rank_tasks(
     starts: list[cp_model.IntVar],
     presences: list[cp_model.IntVar],
     ranks: list[cp_model.IntVar],
-):
+) -> None:
     """This method adds constraints and variables to links tasks and ranks.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
@@ -852,7 +852,7 @@ def rank_tasks(
     all_tasks = range(num_tasks)
 
     # Creates precedence variables between pairs of intervals.
-    precedences = {}
+    precedences: dict[tuple[int, int], cp_model.IntVar] = {}
     for i in all_tasks:
         for j in all_tasks:
             if i == j:
@@ -865,7 +865,10 @@ def rank_tasks(
     # Treats optional intervals.
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
-            tmp_array = [precedences[(i, j)], precedences[(j, i)]]
+            tmp_array: list[cp_model.LiteralT] = [
+                precedences[(i, j)],
+                precedences[(j, i)],
+            ]
             if not cp_model.object_is_a_true_literal(presences[i]):
                 tmp_array.append(presences[i].negated())
                 # Makes sure that if i is not performed, all precedences are false.
@@ -898,7 +901,7 @@ def rank_tasks(
         model.add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def ranking_sample_sat():
+def ranking_sample_sat() -> None:
     """Ranks tasks in a NoOverlap constraint."""
 
     model = cp_model.CpModel()

@@ -20,9 +20,9 @@ from ortools.sat.python import cp_model
 def rank_tasks(
     model: cp_model.CpModel,
     starts: list[cp_model.IntVar],
-    presences: list[cp_model.IntVar],
+    presences: list[cp_model.BoolVarT],
     ranks: list[cp_model.IntVar],
-):
+) -> None:
     """This method adds constraints and variables to links tasks and ranks.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
@@ -32,7 +32,7 @@ def rank_tasks(
     Args:
       model: The CpModel to add the constraints to.
       starts: The array of starts variables of all tasks.
-      presences: The array of presence variables of all tasks.
+      presences: The array of presence variables or constants of all tasks.
       ranks: The array of rank variables of all tasks.
     """
 
@@ -40,7 +40,7 @@ def rank_tasks(
     all_tasks = range(num_tasks)
 
     # Creates precedence variables between pairs of intervals.
-    precedences = {}
+    precedences: dict[tuple[int, int], cp_model.BoolVarT] = {}
     for i in all_tasks:
         for j in all_tasks:
             if i == j:
@@ -53,7 +53,7 @@ def rank_tasks(
     # Treats optional intervals.
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
-            tmp_array: list[cp_model.LiteralT] = [
+            tmp_array: list[cp_model.BoolVarT] = [
                 precedences[(i, j)],
                 precedences[(j, i)],
             ]
@@ -89,7 +89,7 @@ def rank_tasks(
         model.add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def ranking_sample_sat():
+def ranking_sample_sat() -> None:
     """Ranks tasks in a NoOverlap constraint."""
 
     model = cp_model.CpModel()
@@ -100,7 +100,7 @@ def ranking_sample_sat():
     starts = []
     ends = []
     intervals = []
-    presences = []
+    presences: list[cp_model.BoolVarT] = []
     ranks = []
 
     # Creates intervals, half of them are optional.
@@ -110,7 +110,7 @@ def ranking_sample_sat():
         end = model.new_int_var(0, horizon, f"end[{t}]")
         if t < num_tasks // 2:
             interval = model.new_interval_var(start, duration, end, f"interval[{t}]")
-            presence = True
+            presence = model.new_constant(1)
         else:
             presence = model.new_bool_var(f"presence[{t}]")
             interval = model.new_optional_interval_var(

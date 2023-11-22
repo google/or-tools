@@ -56,6 +56,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    NoReturn,
     Optional,
     Sequence,
     Tuple,
@@ -80,48 +81,30 @@ Domain = sorted_interval_list.Domain
 # usual arithmetic operators + - * / and with constant numbers, which makes the
 # python API very intuitive. See../ samples/*.py for examples.
 
-INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
-INT_MAX = 9223372036854775807
-INT32_MAX = 2147483647
-INT32_MIN = -2147483648
+INT_MIN = -(2**63)  # hardcoded to be platform independent.
+INT_MAX = 2**63 - 1
+INT32_MIN = -(2**31)
+INT32_MAX = 2**31 - 1
 
 # CpSolver status (exported to avoid importing cp_model_cp2).
-UNKNOWN: cp_model_pb2.CpSolverStatus = cp_model_pb2.UNKNOWN
-MODEL_INVALID: cp_model_pb2.CpSolverStatus = cp_model_pb2.MODEL_INVALID
-FEASIBLE: cp_model_pb2.CpSolverStatus = cp_model_pb2.FEASIBLE
-INFEASIBLE: cp_model_pb2.CpSolverStatus = cp_model_pb2.INFEASIBLE
-OPTIMAL: cp_model_pb2.CpSolverStatus = cp_model_pb2.OPTIMAL
+UNKNOWN = cp_model_pb2.UNKNOWN
+MODEL_INVALID = cp_model_pb2.MODEL_INVALID
+FEASIBLE = cp_model_pb2.FEASIBLE
+INFEASIBLE = cp_model_pb2.INFEASIBLE
+OPTIMAL = cp_model_pb2.OPTIMAL
 
 # Variable selection strategy
-CHOOSE_FIRST: cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy = (
-    cp_model_pb2.DecisionStrategyProto.CHOOSE_FIRST
-)
-CHOOSE_LOWEST_MIN: (
-    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
-) = cp_model_pb2.DecisionStrategyProto.CHOOSE_LOWEST_MIN
-CHOOSE_HIGHEST_MAX: (
-    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
-) = cp_model_pb2.DecisionStrategyProto.CHOOSE_HIGHEST_MAX
-CHOOSE_MIN_DOMAIN_SIZE: (
-    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
-) = cp_model_pb2.DecisionStrategyProto.CHOOSE_MIN_DOMAIN_SIZE
-CHOOSE_MAX_DOMAIN_SIZE: (
-    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
-) = cp_model_pb2.DecisionStrategyProto.CHOOSE_MAX_DOMAIN_SIZE
+CHOOSE_FIRST = cp_model_pb2.DecisionStrategyProto.CHOOSE_FIRST
+CHOOSE_LOWEST_MIN = cp_model_pb2.DecisionStrategyProto.CHOOSE_LOWEST_MIN
+CHOOSE_HIGHEST_MAX = cp_model_pb2.DecisionStrategyProto.CHOOSE_HIGHEST_MAX
+CHOOSE_MIN_DOMAIN_SIZE = cp_model_pb2.DecisionStrategyProto.CHOOSE_MIN_DOMAIN_SIZE
+CHOOSE_MAX_DOMAIN_SIZE = cp_model_pb2.DecisionStrategyProto.CHOOSE_MAX_DOMAIN_SIZE
 
 # Domain reduction strategy
-SELECT_MIN_VALUE: cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy = (
-    cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
-)
-SELECT_MAX_VALUE: cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy = (
-    cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
-)
-SELECT_LOWER_HALF: (
-    cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy
-) = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
-SELECT_UPPER_HALF: (
-    cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy
-) = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
+SELECT_MIN_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
+SELECT_MAX_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
+SELECT_LOWER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
+SELECT_UPPER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
 
 # Search branching
 AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
@@ -144,6 +127,7 @@ BoolVarT = Union["IntVar", "_NotBooleanVariable"]
 VariableT = Union["IntVar", IntegralT]
 LinearExprT = Union["LinearExpr", "IntVar", IntegralT]
 ObjLinearExprT = Union["LinearExpr", "IntVar", NumberT]
+BoundedLinearExprT = Union["BoundedLinearExpression", bool]
 ArcT = Tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
 
@@ -405,34 +389,34 @@ class LinearExpr:
                     break
         return coeffs, constant, is_integer
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return object.__hash__(self)
 
-    def __abs__(self):
+    def __abs__(self) -> NoReturn:
         raise NotImplementedError(
             "calling abs() on a linear expression is not supported, "
             "please use CpModel.add_abs_equality"
         )
 
-    def __add__(self, arg):
+    def __add__(self, arg) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
-    def __radd__(self, arg):
+    def __radd__(self, arg) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
-    def __sub__(self, arg):
+    def __sub__(self, arg) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, -arg)
 
-    def __rsub__(self, arg):
+    def __rsub__(self, arg) -> LinearExprT:
         return _Sum(-self, arg)
 
-    def __mul__(self, arg):
+    def __mul__(self, arg) -> LinearExprT:
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
@@ -440,7 +424,7 @@ class LinearExpr:
             return 0
         return _ProductCst(self, arg)
 
-    def __rmul__(self, arg):
+    def __rmul__(self, arg) -> LinearExprT:
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
@@ -448,67 +432,67 @@ class LinearExpr:
             return 0
         return _ProductCst(self, arg)
 
-    def __div__(self, _):
+    def __div__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling / on a linear expression is not supported, "
             "please use CpModel.add_division_equality"
         )
 
-    def __truediv__(self, _):
+    def __truediv__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling // on a linear expression is not supported, "
             "please use CpModel.add_division_equality"
         )
 
-    def __mod__(self, _):
+    def __mod__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling %% on a linear expression is not supported, "
             "please use CpModel.add_modulo_equality"
         )
 
-    def __pow__(self, _):
+    def __pow__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling ** on a linear expression is not supported, "
             "please use CpModel.add_multiplication_equality"
         )
 
-    def __lshift__(self, _):
+    def __lshift__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling left shift on a linear expression is not supported"
         )
 
-    def __rshift__(self, _):
+    def __rshift__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling right shift on a linear expression is not supported"
         )
 
-    def __and__(self, _):
+    def __and__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling and on a linear expression is not supported, "
             "please use CpModel.add_bool_and"
         )
 
-    def __or__(self, _):
+    def __or__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling or on a linear expression is not supported, "
             "please use CpModel.add_bool_or"
         )
 
-    def __xor__(self, _):
+    def __xor__(self, _) -> NoReturn:
         raise NotImplementedError(
             "calling xor on a linear expression is not supported, "
             "please use CpModel.add_bool_xor"
         )
 
-    def __neg__(self):
+    def __neg__(self) -> LinearExprT:
         return _ProductCst(self, -1)
 
-    def __bool__(self):
+    def __bool__(self) -> NoReturn:
         raise NotImplementedError(
             "Evaluating a LinearExpr instance as a Boolean is not implemented."
         )
 
-    def __eq__(self, arg):
+    def __eq__(self, arg) -> BoundedLinearExprT:
         if arg is None:
             return False
         if cmh.is_integral(arg):
@@ -517,21 +501,21 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [0, 0])
 
-    def __ge__(self, arg):
+    def __ge__(self, arg) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [arg, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [0, INT_MAX])
 
-    def __le__(self, arg):
+    def __le__(self, arg) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [INT_MIN, arg])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, 0])
 
-    def __lt__(self, arg):
+    def __lt__(self, arg) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             if arg == INT_MIN:
@@ -540,7 +524,7 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
-    def __gt__(self, arg):
+    def __gt__(self, arg) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             if arg == INT_MAX:
@@ -549,7 +533,7 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
-    def __ne__(self, arg):
+    def __ne__(self, arg) -> BoundedLinearExprT:
         if arg is None:
             return True
         if cmh.is_integral(arg):
@@ -904,7 +888,7 @@ class _NotBooleanVariable(LinearExpr):
     def name(self) -> str:
         return "not(%s)" % str(self.__boolvar)
 
-    def __bool__(self) -> bool:
+    def __bool__(self) -> NoReturn:
         raise NotImplementedError(
             "Evaluating a literal as a Boolean value is not implemented."
         )
@@ -964,8 +948,9 @@ class BoundedLinearExpression:
         return self.__bounds
 
     def __bool__(self) -> bool:
-        if isinstance(self.__expr, LinearExpr):
-            coeffs_map, constant = self.__expr.get_integer_var_value_map()
+        expr = self.__expr
+        if isinstance(expr, LinearExpr):
+            coeffs_map, constant = expr.get_integer_var_value_map()
             all_coeffs = set(coeffs_map.values())
             same_var = set([0])
             eq_bounds = [0, 0]
@@ -3181,7 +3166,7 @@ class CpSolver:
         """Returns the indices of the infeasible assumptions."""
         return self._solution.sufficient_assumptions_for_infeasibility
 
-    def status_name(self, status: Optional[cp_model_pb2.CpSolverStatus] = None) -> str:
+    def status_name(self, status: Optional[Any] = None) -> str:
         """Returns the name of the status returned by solve()."""
         if status is None:
             status = self._solution.status
@@ -3245,7 +3230,7 @@ class CpSolver:
     def SolutionInfo(self) -> str:
         return self.solution_info()
 
-    def StatusName(self, status: Optional[cp_model_pb2.CpSolverStatus] = None) -> str:
+    def StatusName(self, status: Optional[Any] = None) -> str:
         return self.status_name(status)
 
     def StopSearch(self) -> None:

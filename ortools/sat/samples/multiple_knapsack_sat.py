@@ -19,18 +19,18 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def main():
+def main() -> None:
     # [START data]
     data = {}
     data["weights"] = [48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36]
     data["values"] = [10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25]
     assert len(data["weights"]) == len(data["values"])
-    data["num_items"] = len(data["weights"])
-    data["all_items"] = range(data["num_items"])
+    num_items = len(data["weights"])
+    all_items = range(num_items)
 
     data["bin_capacities"] = [100, 100, 100, 100, 100]
-    data["num_bins"] = len(data["bin_capacities"])
-    data["all_bins"] = range(data["num_bins"])
+    num_bins = len(data["bin_capacities"])
+    all_bins = range(num_bins)
     # [END data]
 
     # [START model]
@@ -41,21 +41,21 @@ def main():
     # [START variables]
     # x[i, b] = 1 if item i is packed in bin b.
     x = {}
-    for i in data["all_items"]:
-        for b in data["all_bins"]:
+    for i in all_items:
+        for b in all_bins:
             x[i, b] = model.new_bool_var(f"x_{i}_{b}")
     # [END variables]
 
     # Constraints.
     # [START constraints]
     # Each item is assigned to at most one bin.
-    for i in data["all_items"]:
-        model.add_at_most_one(x[i, b] for b in data["all_bins"])
+    for i in all_items:
+        model.add_at_most_one(x[i, b] for b in all_bins)
 
     # The amount packed in each bin cannot exceed its capacity.
-    for b in data["all_bins"]:
+    for b in all_bins:
         model.add(
-            sum(x[i, b] * data["weights"][i] for i in data["all_items"])
+            sum(x[i, b] * data["weights"][i] for i in all_items)
             <= data["bin_capacities"][b]
         )
     # [END constraints]
@@ -64,8 +64,8 @@ def main():
     # [START objective]
     # maximize total value of packed items.
     objective = []
-    for i in data["all_items"]:
-        for b in data["all_bins"]:
+    for i in all_items:
+        for b in all_bins:
             objective.append(cp_model.LinearExpr.term(x[i, b], data["values"][i]))
     model.maximize(cp_model.LinearExpr.sum(objective))
     # [END objective]
@@ -79,11 +79,11 @@ def main():
     if status == cp_model.OPTIMAL:
         print(f"Total packed value: {solver.objective_value}")
         total_weight = 0
-        for b in data["all_bins"]:
+        for b in all_bins:
             print(f"Bin {b}")
             bin_weight = 0
             bin_value = 0
-            for i in data["all_items"]:
+            for i in all_items:
                 if solver.value(x[i, b]) > 0:
                     print(
                         f"Item:{i} weight:{data['weights'][i]} value:{data['values'][i]}"
