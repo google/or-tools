@@ -1271,6 +1271,8 @@ static int MPSolverToXpressBasisStatus(MPSolver::BasisStatus mpsolver_basis_stat
       return XPRS_AT_UPPER;
     case MPSolver::FREE:
       return XPRS_FREE_SUPER;
+    case MPSolver::FIXED_VALUE:
+      return XPRS_BASIC;
     default:
       LOG(DFATAL) << "Unknown MPSolver basis status";
       return XPRS_FREE_SUPER;
