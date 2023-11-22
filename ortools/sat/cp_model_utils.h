@@ -341,6 +341,8 @@ H AbslHashValue(H h, const LinearConstraintProto& m) {
   return h;
 }
 
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_mode, std::string* out);
+
 }  // namespace sat
 }  // namespace operations_research
 

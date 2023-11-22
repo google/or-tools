@@ -37,6 +37,8 @@ class SharedStatTables {
 
   void AddSearchStat(absl::string_view name, Model* model);
 
+  void AddClausesStat(absl::string_view name, Model* model);
+
   void AddLpStat(absl::string_view name, Model* model);
 
   void AddLnsStat(absl::string_view name,
@@ -55,6 +57,7 @@ class SharedStatTables {
 
   std::vector<std::vector<std::string>> timing_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> search_table_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::vector<std::string>> clauses_table_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::vector<std::string>> lp_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> lp_dim_table_ ABSL_GUARDED_BY(mutex_);

@@ -71,8 +71,6 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
-#include "ortools/sat/drat_checker.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
@@ -153,22 +151,8 @@ ABSL_FLAG(std::string, cp_model_params, "",
           "This is interpreted as a text SatParameters proto. The "
           "specified fields will override the normal ones for all solves.");
 
-ABSL_FLAG(std::string, drat_output, "",
-          "If non-empty, a proof in DRAT format will be written to this file. "
-          "This will only be used for pure-SAT problems.");
-
-ABSL_FLAG(bool, drat_check, false,
-          "If true, a proof in DRAT format will be stored in memory and "
-          "checked if the problem is UNSAT. This will only be used for "
-          "pure-SAT problems.");
-
 ABSL_FLAG(bool, debug_model_copy, false,
           "If true, copy the input model as if with no basic presolve");
-
-ABSL_FLAG(double, max_drat_time_in_seconds,
-          std::numeric_limits<double>::infinity(),
-          "Maximum time in seconds to check the DRAT proof. This will only "
-          "be used is the drat_check flag is enabled.");
 
 ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
           "When true, all intermediate solutions found by the solver will be "
@@ -2227,218 +2211,6 @@ void PostsolveResponseWrapper(const SatParameters& params,
   }
 }
 
-// TODO(user): Uniformize this function with the other one.
-CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
-                                   WallTimer* wall_timer, Model* model,
-                                   SolverLogger* logger) {
-  std::unique_ptr<SatSolver> solver(new SatSolver());
-  SatParameters parameters = *model->GetOrCreate<SatParameters>();
-  solver->SetParameters(parameters);
-  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(parameters);
-
-  // Create a DratProofHandler?
-  std::unique_ptr<DratProofHandler> drat_proof_handler;
-#if !defined(__PORTABLE_PLATFORM__)
-  if (!absl::GetFlag(FLAGS_drat_output).empty() ||
-      absl::GetFlag(FLAGS_drat_check)) {
-    if (!absl::GetFlag(FLAGS_drat_output).empty()) {
-      File* output;
-      CHECK_OK(file::Open(absl::GetFlag(FLAGS_drat_output), "w", &output,
-                          file::Defaults()));
-      drat_proof_handler = std::make_unique<DratProofHandler>(
-          /*in_binary_format=*/false, output, absl::GetFlag(FLAGS_drat_check));
-    } else {
-      drat_proof_handler = std::make_unique<DratProofHandler>();
-    }
-    solver->SetDratProofHandler(drat_proof_handler.get());
-  }
-#endif  // __PORTABLE_PLATFORM__
-
-  auto get_literal = [](int ref) {
-    if (ref >= 0) return Literal(BooleanVariable(ref), true);
-    return Literal(BooleanVariable(NegatedRef(ref)), false);
-  };
-
-  std::vector<Literal> temp;
-  const int num_variables = model_proto.variables_size();
-  solver->SetNumVariables(num_variables);
-  if (drat_proof_handler != nullptr) {
-    drat_proof_handler->SetNumVariables(num_variables);
-
-    // We load the model in the drat_proof_handler for the case where we want
-    // to do in-memory checking.
-    for (int ref = 0; ref < num_variables; ++ref) {
-      const Domain domain = ReadDomainFromProto(model_proto.variables(ref));
-      if (domain.IsFixed()) {
-        const Literal ref_literal =
-            domain.Min() == 0 ? get_literal(ref).Negated() : get_literal(ref);
-        drat_proof_handler->AddProblemClause({ref_literal});
-      }
-    }
-    for (const ConstraintProto& ct : model_proto.constraints()) {
-      switch (ct.constraint_case()) {
-        case ConstraintProto::ConstraintCase::kBoolAnd: {
-          if (ct.enforcement_literal_size() == 0) {
-            for (const int ref : ct.bool_and().literals()) {
-              drat_proof_handler->AddProblemClause({get_literal(ref)});
-            }
-          } else {
-            // a => b
-            const Literal not_a =
-                get_literal(ct.enforcement_literal(0)).Negated();
-            for (const int ref : ct.bool_and().literals()) {
-              drat_proof_handler->AddProblemClause({not_a, get_literal(ref)});
-            }
-          }
-          break;
-        }
-        case ConstraintProto::ConstraintCase::kBoolOr:
-          temp.clear();
-          for (const int ref : ct.bool_or().literals()) {
-            temp.push_back(get_literal(ref));
-          }
-          for (const int ref : ct.enforcement_literal()) {
-            temp.push_back(get_literal(ref).Negated());
-          }
-          drat_proof_handler->AddProblemClause(temp);
-          break;
-        default:
-          LOG(FATAL) << "Not supported";
-      }
-    }
-  }
-
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    switch (ct.constraint_case()) {
-      case ConstraintProto::ConstraintCase::kBoolAnd: {
-        if (ct.enforcement_literal_size() == 0) {
-          for (const int ref : ct.bool_and().literals()) {
-            const Literal b = get_literal(ref);
-            // We should report infeasible below.
-            if (!solver->AddUnitClause(b)) continue;
-          }
-        } else {
-          // a => b
-          const Literal not_a =
-              get_literal(ct.enforcement_literal(0)).Negated();
-          for (const int ref : ct.bool_and().literals()) {
-            const Literal b = get_literal(ref);
-            solver->AddProblemClause({not_a, b}, /*is_safe=*/false);
-          }
-        }
-        break;
-      }
-      case ConstraintProto::ConstraintCase::kBoolOr:
-        temp.clear();
-        for (const int ref : ct.bool_or().literals()) {
-          temp.push_back(get_literal(ref));
-        }
-        for (const int ref : ct.enforcement_literal()) {
-          temp.push_back(get_literal(ref).Negated());
-        }
-        solver->AddProblemClause(temp, /*is_safe=*/false);
-        break;
-      default:
-        LOG(FATAL) << "Not supported";
-    }
-  }
-
-  // Deal with fixed variables.
-  for (int ref = 0; ref < num_variables; ++ref) {
-    const Domain domain = ReadDomainFromProto(model_proto.variables(ref));
-    if (domain.Min() == domain.Max()) {
-      const Literal ref_literal =
-          domain.Min() == 0 ? get_literal(ref).Negated() : get_literal(ref);
-      if (!solver->AddUnitClause(ref_literal)) break;
-    }
-  }
-
-  SatSolver::Status status;
-  CpSolverResponse response;
-  if (parameters.cp_model_presolve()) {
-    std::vector<bool> solution;
-    status = SolveWithPresolve(&solver, model->GetOrCreate<TimeLimit>(),
-                               &solution, drat_proof_handler.get(), logger);
-    if (status == SatSolver::FEASIBLE) {
-      response.clear_solution();
-      for (int ref = 0; ref < num_variables; ++ref) {
-        response.add_solution(solution[ref]);
-      }
-    }
-  } else {
-    status = solver->SolveWithTimeLimit(model->GetOrCreate<TimeLimit>());
-    if (status == SatSolver::FEASIBLE) {
-      response.clear_solution();
-      for (int ref = 0; ref < num_variables; ++ref) {
-        response.add_solution(
-            solver->Assignment().LiteralIsTrue(get_literal(ref)) ? 1 : 0);
-      }
-    }
-  }
-
-  // Tricky: the model local time limit is updated by the new functions, but
-  // the old ones update time_limit directly.
-  model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
-      solver->model()->GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
-
-  switch (status) {
-    case SatSolver::LIMIT_REACHED: {
-      response.set_status(CpSolverStatus::UNKNOWN);
-      break;
-    }
-    case SatSolver::FEASIBLE: {
-      CHECK(SolutionIsFeasible(
-          model_proto, std::vector<int64_t>(response.solution().begin(),
-                                            response.solution().end())));
-      response.set_status(CpSolverStatus::OPTIMAL);
-      break;
-    }
-    case SatSolver::INFEASIBLE: {
-      response.set_status(CpSolverStatus::INFEASIBLE);
-      break;
-    }
-    default:
-      LOG(FATAL) << "Unexpected SatSolver::Status " << status;
-  }
-  response.set_num_booleans(solver->NumVariables());
-  response.set_num_branches(solver->num_branches());
-  response.set_num_conflicts(solver->num_failures());
-  response.set_num_binary_propagations(solver->num_propagations());
-  response.set_num_integer_propagations(0);
-  response.set_wall_time(wall_timer->Get());
-  response.set_deterministic_time(
-      model->Get<TimeLimit>()->GetElapsedDeterministicTime());
-
-  if (status == SatSolver::INFEASIBLE && drat_proof_handler != nullptr) {
-    WallTimer drat_timer;
-    drat_timer.Start();
-    DratChecker::Status drat_status = drat_proof_handler->Check(
-        absl::GetFlag(FLAGS_max_drat_time_in_seconds));
-    switch (drat_status) {
-      case DratChecker::UNKNOWN:
-        LOG(INFO) << "DRAT status: UNKNOWN";
-        break;
-      case DratChecker::VALID:
-        LOG(INFO) << "DRAT status: VALID";
-        break;
-      case DratChecker::INVALID:
-        LOG(ERROR) << "DRAT status: INVALID";
-        break;
-      default:
-        // Should not happen.
-        break;
-    }
-    LOG(INFO) << "DRAT wall time: " << drat_timer.Get();
-  } else if (drat_proof_handler != nullptr) {
-    // Always log a DRAT status to make it easier to extract it from a multirun
-    // result with awk.
-    LOG(INFO) << "DRAT status: NA";
-    LOG(INFO) << "DRAT wall time: NA";
-    LOG(INFO) << "DRAT user time: NA";
-  }
-  return response;
-}
-
 #if !defined(__PORTABLE_PLATFORM__)
 
 // Small wrapper containing all the shared classes between our subsolver
@@ -2548,6 +2320,7 @@ class FullProblemSolver : public SubSolver {
     shared_->stat_tables.AddTimingStat(*this);
     shared_->stat_tables.AddLpStat(name(), &local_model_);
     shared_->stat_tables.AddSearchStat(name(), &local_model_);
+    shared_->stat_tables.AddClausesStat(name(), &local_model_);
   }
 
   bool IsDone() override {
@@ -4064,49 +3837,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
 
-  // Special case for pure-sat problem.
-  // TODO(user): improve the normal presolver to do the same thing.
-  // TODO(user): Support solution hint, but then the first TODO will make it
-  // automatic.
-  if (!params.use_sat_inprocessing() && !model_proto.has_objective() &&
-      !model_proto.has_floating_point_objective() &&
-      !model_proto.has_solution_hint() && !params.enumerate_all_solutions() &&
-      !params.use_lns_only() && params.num_workers() <= 1 &&
-      model_proto.assumptions().empty()) {
-    bool is_pure_sat = true;
-    for (const IntegerVariableProto& var : model_proto.variables()) {
-      if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {
-        is_pure_sat = false;
-        break;
-      }
-    }
-    if (is_pure_sat) {
-      for (const ConstraintProto& ct : model_proto.constraints()) {
-        if (ct.constraint_case() != ConstraintProto::kBoolOr &&
-            ct.constraint_case() != ConstraintProto::kBoolAnd) {
-          is_pure_sat = false;
-          break;
-        }
-        if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
-            ct.enforcement_literal().size() > 1) {
-          is_pure_sat = false;
-          break;
-        }
-      }
-    }
-    if (is_pure_sat) {
-      // TODO(user): All this duplication will go away when we are fast enough
-      // on pure-sat model with the CpModel presolve...
-      CpSolverResponse final_response =
-          SolvePureSatModel(model_proto, wall_timer, model, logger);
-      if (params.fill_tightened_domains_in_response()) {
-        *final_response.mutable_tightened_variables() = model_proto.variables();
-      }
-      shared_response_manager->AppendResponseToBeMerged(final_response);
-      return shared_response_manager->GetResponse();
-    }
-  }
-
   // Presolve and expansions.
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
@@ -4403,6 +4133,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (ConvertCpModelProtoToMPModelProto(*new_cp_model_proto, &mip_model)) {
       DumpModelProto(mip_model, "presolved_mp_model");
     }
+
+    // If the model is convertible to a pure SAT one, we dump it too.
+    std::string cnf_string;
+    if (ConvertCpModelProtoToCnf(*new_cp_model_proto, &cnf_string)) {
+      const std::string filename = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_cnf_model.cnf");
+      LOG(INFO) << "Dumping cnf model to '" << filename << "'.";
+      const absl::Status status =
+          file::SetContents(filename, cnf_string, file::Defaults());
+      if (!status.ok()) LOG(ERROR) << status;
+    }
   }
 #endif  // __PORTABLE_PLATFORM__
 
@@ -4518,6 +4259,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       SharedStatTables tables;
       tables.AddLpStat("default", &local_model);
       tables.AddSearchStat("default", &local_model);
+      tables.AddClausesStat("default", &local_model);
       tables.Display(logger);
     }
 

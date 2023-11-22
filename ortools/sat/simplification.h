@@ -436,22 +436,6 @@ void ProbeAndFindEquivalentLiteral(
     absl::StrongVector<LiteralIndex, LiteralIndex>* mapping,
     SolverLogger* = nullptr);
 
-// Given a 'solver' with a problem already loaded, this will try to simplify the
-// problem (i.e. presolve it) before calling solver->Solve(). In the process,
-// because of the way the presolve is implemented, the underlying SatSolver may
-// change (it is why we use this unique_ptr interface). In particular, the final
-// variables and 'solver' state may have nothing to do with the problem
-// originaly present in the solver. That said, if the problem is shown to be
-// SAT, then the returned solution will be in term of the original variables.
-//
-// Note that the full presolve is only executed if the problem is a pure SAT
-// problem with only clauses.
-SatSolver::Status SolveWithPresolve(
-    std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
-    std::vector<bool>* solution /* only filled if SAT */,
-    DratProofHandler* drat_proof_handler /* can be nullptr */,
-    SolverLogger* logger);
-
 }  // namespace sat
 }  // namespace operations_research
 

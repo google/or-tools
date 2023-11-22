@@ -24,12 +24,14 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -874,6 +876,63 @@ void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer) {
                                   new InlineMessagePrinter());
 }
 #endif  // !defined(__PORTABLE_PLATFORM__)
+
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out) {
+  out->clear();
+
+  // We should have no objective, only unassigned Boolean, and only bool_or and
+  // bool_and.
+  if (cp_model.has_objective()) return false;
+  const int num_vars = cp_model.variables().size();
+  for (int v = 0; v < num_vars; ++v) {
+    if (cp_model.variables(v).domain().size() != 2) return false;
+    if (cp_model.variables(v).domain(0) != 0) return false;
+    if (cp_model.variables(v).domain(1) != 1) return false;
+  }
+  int num_clauses = 0;
+  for (const ConstraintProto& ct : cp_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kBoolOr) {
+      ++num_clauses;
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      num_clauses += ct.bool_and().literals().size();
+    } else {
+      return false;
+    }
+  }
+
+  // We can convert.
+  std::string start;
+  absl::StrAppend(out, "p cnf ", num_vars, " ", num_clauses, "\n");
+  for (const ConstraintProto& ct : cp_model.constraints()) {
+    if (ct.constraint_case() == ConstraintProto::kBoolOr) {
+      CHECK(ct.enforcement_literal().empty());
+      for (const int lit : ct.bool_or().literals()) {
+        const int value =
+            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
+                .SignedValue();
+        absl::StrAppend(out, value, " ");
+      }
+      absl::StrAppend(out, "0\n");
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      CHECK(!ct.enforcement_literal().empty());
+      start.clear();
+      for (const int lit : ct.enforcement_literal()) {
+        const int value =
+            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
+                .SignedValue();
+        absl::StrAppend(&start, -value, " ");
+      }
+      for (const int lit : ct.bool_and().literals()) {
+        const int value =
+            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
+                .SignedValue();
+        absl::StrAppend(out, start, value, " 0\n");
+      }
+    }
+  }
+
+  return true;
+}
 
 }  // namespace sat
 }  // namespace operations_research

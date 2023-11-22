@@ -403,6 +403,34 @@ class SatSolver {
   // unit clauses or any other reason that trigger such backtrack.
   int64_t num_restarts() const;
 
+  // Access to all counters.
+  // Tracks various information about the solver progress.
+  struct Counters {
+    int64_t num_branches = 0;
+    int64_t num_failures = 0;
+    int64_t num_restarts = 0;
+
+    // Minimization stats.
+    int64_t num_minimizations = 0;
+    int64_t num_literals_removed = 0;
+
+    // PB constraints.
+    int64_t num_learned_pb_literals = 0;
+
+    // Clause learning /deletion stats.
+    int64_t num_literals_learned = 0;
+    int64_t num_literals_forgotten = 0;
+    int64_t num_subsumed_clauses = 0;
+
+    // TryToMinimizeClause() stats.
+    int64_t minimization_num_clauses = 0;
+    int64_t minimization_num_decisions = 0;
+    int64_t minimization_num_true = 0;
+    int64_t minimization_num_subsumed = 0;
+    int64_t minimization_num_removed_literals = 0;
+  };
+  Counters counters() const { return counters_; }
+
   // A deterministic number that should be correlated with the time spent in
   // the Solve() function. The order of magnitude should be close to the time
   // in seconds.
@@ -714,6 +742,7 @@ class SatSolver {
   // Marks as "non-deletable" all clauses that were used to infer the given
   // variable. The variable must be currently assigned.
   void KeepAllClauseUsedToInfer(BooleanVariable variable);
+  bool SubsumptionIsInteresting(BooleanVariable variable);
 
   // Use propagation to try to minimize the given clause. This is really similar
   // to MinimizeCoreWithPropagation(). It must be called when the current
@@ -783,31 +812,6 @@ class SatSolver {
   // Used in ProcessNewlyFixedVariablesForDratProof().
   int drat_num_processed_fixed_variables_ = 0;
 
-  // Tracks various information about the solver progress.
-  struct Counters {
-    int64_t num_branches = 0;
-    int64_t num_failures = 0;
-    int64_t num_restarts = 0;
-
-    // Minimization stats.
-    int64_t num_minimizations = 0;
-    int64_t num_literals_removed = 0;
-
-    // PB constraints.
-    int64_t num_learned_pb_literals = 0;
-
-    // Clause learning /deletion stats.
-    int64_t num_literals_learned = 0;
-    int64_t num_literals_forgotten = 0;
-    int64_t num_subsumed_clauses = 0;
-
-    // TryToMinimizeClause() stats.
-    int64_t minimization_num_clauses = 0;
-    int64_t minimization_num_decisions = 0;
-    int64_t minimization_num_true = 0;
-    int64_t minimization_num_subsumed = 0;
-    int64_t minimization_num_removed_literals = 0;
-  };
   Counters counters_;
 
   // Solver information.

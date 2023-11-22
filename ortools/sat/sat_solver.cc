@@ -1125,6 +1125,7 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
     const BooleanVariable var = (*trail_)[trail_index].Variable();
     SatClause* clause = ReasonClauseOrNull(var);
     if (clause != nullptr) {
+      // Keep this clause.
       clauses_propagator_->mutable_clauses_info()->erase(clause);
     }
     for (const Literal l : trail_->Reason(var)) {
@@ -1136,6 +1137,47 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
       }
     }
   }
+}
+
+bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable) {
+  // TODO(user): other id should probably be safe as long as we do not delete
+  // the propagators. Note that symmetry is tricky since we would need to keep
+  // the symmetric clause around in KeepAllClauseUsedToInfer().
+  const int binary_id = binary_implication_graph_->PropagatorId();
+  const int clause_id = clauses_propagator_->PropagatorId();
+
+  CHECK(Assignment().VariableIsAssigned(variable));
+  if (trail_->Info(variable).level == 0) return true;
+  int trail_index = trail_->Info(variable).trail_index;
+  std::vector<bool> is_marked(trail_index + 1, false);  // move to local member.
+  is_marked[trail_index] = true;
+  int num = 1;
+  int num_clause_to_mark_as_non_deletable = 0;
+  for (; num > 0 && trail_index >= 0; --trail_index) {
+    if (!is_marked[trail_index]) continue;
+    is_marked[trail_index] = false;
+    --num;
+
+    const BooleanVariable var = (*trail_)[trail_index].Variable();
+    const int type = trail_->AssignmentType(var);
+    if (type != AssignmentType::kSearchDecision && type != binary_id &&
+        type != clause_id) {
+      return false;
+    }
+    SatClause* clause = ReasonClauseOrNull(var);
+    if (clause != nullptr && clauses_propagator_->IsRemovable(clause)) {
+      ++num_clause_to_mark_as_non_deletable;
+    }
+    for (const Literal l : trail_->Reason(var)) {
+      const AssignmentInfo& info = trail_->Info(l.Variable());
+      if (info.level == 0) continue;
+      if (!is_marked[info.trail_index]) {
+        is_marked[info.trail_index] = true;
+        ++num;
+      }
+    }
+  }
+  return num_clause_to_mark_as_non_deletable <= 1;
 }
 
 // TODO(user): this is really an in-processing stuff and should be moved out
@@ -1178,11 +1220,10 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         // know that this clause is subsumed by other clauses in the database,
         // so we can remove it. Note however that we need to make sure we will
         // never remove the clauses that subsumes it later.
-        if (ReasonClauseOrNull(literal.Variable()) != clause) {
+        if (ReasonClauseOrNull(literal.Variable()) != clause &&
+            SubsumptionIsInteresting(literal.Variable())) {
           counters_.minimization_num_subsumed++;
           counters_.minimization_num_removed_literals += clause->size();
-
-          // TODO(user): do not do that if it make us keep too many clauses?
           KeepAllClauseUsedToInfer(literal.Variable());
           Backtrack(0);
           clauses_propagator_->Detach(clause);
@@ -1283,6 +1324,9 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   int64_t next_minimization_num_restart =
       restart_->NumRestarts() +
       parameters_->minimize_with_propagation_restart_period();
+  if (parameters_->minimize_with_propagation_restart_period() < 0) {
+    next_minimization_num_restart = std::numeric_limits<int64_t>::max();
+  }
 
   // Variables used to show the search progress.
   const int64_t kDisplayFrequency = 10000;

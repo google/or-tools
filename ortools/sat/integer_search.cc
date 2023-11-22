@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <random>
 #include <tuple>
 #include <vector>
@@ -1401,6 +1402,17 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
   // how to fix.
   if (!sat_solver_->FinishPropagation()) return sat_solver_->UnsatStatus();
 
+  // Used to trigger clause minimization via propagation.
+  //
+  // TODO(user): integrate this with BeforeTakingDecision() so that shared tree
+  // search worker can also use that.
+  int64_t num_restarts = 0;
+  int64_t next_minimization_num_restart =
+      parameters_.minimize_with_propagation_restart_period();
+  if (next_minimization_num_restart < 0) {
+    next_minimization_num_restart = std::numeric_limits<int64_t>::max();
+  }
+
   // Main search loop.
   const int64_t old_num_conflicts = sat_solver_->num_failures();
   const int64_t conflict_limit = parameters_.max_number_of_conflicts();
@@ -1414,9 +1426,24 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
         return sat_solver_->UnsatStatus();
       }
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
+      ++num_restarts;
     }
 
     if (!BeforeTakingDecision()) return sat_solver_->UnsatStatus();
+
+    // Clause minimization using propagation.
+    if (sat_solver_->CurrentDecisionLevel() == 0 &&
+        num_restarts >= next_minimization_num_restart) {
+      next_minimization_num_restart =
+          num_restarts + parameters_.minimize_with_propagation_restart_period();
+      sat_solver_->MinimizeSomeClauses(
+          parameters_.minimize_with_propagation_num_decisions());
+
+      // Note(user): In some corner cases, the function above might find a
+      // feasible assignment. I think it is okay to ignore this special case
+      // that should only happen on trivial problems and just reset the solver.
+      if (!sat_solver_->ResetToLevelZero()) return sat_solver_->UnsatStatus();
+    }
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {

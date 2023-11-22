@@ -203,7 +203,9 @@ message SatParameters {
   // Changing these parameters or the kind of clause we minimize seems to have
   // a big impact on the overall perf on our benchmarks. So this technique seems
   // definitely useful, but it is hard to tune properly.
-  optional int32 minimize_with_propagation_restart_period = 96 [default = 10];
+  //
+  // A negative period disable the feature.
+  optional int32 minimize_with_propagation_restart_period = 96 [default = -1];
   optional int32 minimize_with_propagation_num_decisions = 97 [default = 1000];
 
   // ==========================================================================
