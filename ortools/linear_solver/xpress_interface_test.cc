@@ -1333,22 +1333,17 @@ TEST(XpressInterface, SetAndResetCallBack) {
 }
 
 TEST(XpressInterface, CallbackThrowsException) {
-  // Test that when the callback throws an exception, it is caught and re-thrown
+  // Test that when the callback throws an exception, it is caught and logged
   UNITTEST_INIT_MIP();
   auto oldMpCallback = buildLargeMipWithCallback(solver, 30, 30);
   auto newMpCallback = new MyMPCallback(&solver, true);
   solver.SetCallback((MPCallback*)newMpCallback);
-  EXPECT_THROW(
-      {
-        try {
-          solver.Solve();
-        } catch (const std::runtime_error& e) {
-          // this tests that it has the correct message
-          EXPECT_STREQ("This is a mocked exception in MyMPCallback", e.what());
-          throw;
-        }
-      },
-      std::runtime_error);
+  testing::internal::CaptureStderr();
+  EXPECT_NO_THROW(solver.Solve());
+  std::string errors = testing::internal::GetCapturedStderr();
+  // Test that StdErr contains the following error message
+  std::string expected_error = "Caught exception during user-defined call-back: This is a mocked exception in MyMPCallback";
+  ASSERT_NE(errors.find(expected_error), std::string::npos);
 }
 
 }  // namespace operations_research

@@ -263,8 +263,8 @@ class MPCallbackWrapper {
   explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
   MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
-  // exceptions thrown in our call-back code  are not caught by XPRESS.
-  // We have to catch them, interrupt XPRESS, and re-throw them after XPRESS is
+  // exceptions thrown in our call-back code are not caught by XPRESS.
+  // We have to catch them, interrupt XPRESS, and log them after XPRESS is
   // effectively interrupted (ie after solve).
   void CatchException(XPRSprob cbprob) {
     exceptions_mutex_.lock();
@@ -272,13 +272,17 @@ class MPCallbackWrapper {
     interruptXPRESS(cbprob, CALLBACK_EXCEPTION);
     exceptions_mutex_.unlock();
   }
-  void RethrowCaughtExceptions() {
+  void LogCaughtExceptions() {
     exceptions_mutex_.lock();
     for (const std::exception_ptr& ex : caught_exceptions_) {
       try {
         std::rethrow_exception(ex);
-      } catch (std::bad_exception const&) {
-        LOG(ERROR) << "Bad exception";
+      } catch (std::exception &ex) {
+        // We don't want the interface to throw exceptions, plus it causes
+        // SWIG issues in Java & Python. Instead, we'll only log them.
+        // (The use cases where the user has to raise an exception inside their
+        // call-back does not seem to be frequent, anyway.)
+        LOG(ERROR) << "Caught exception during user-defined call-back: " << ex.what();
       }
     }
     caught_exceptions_.clear();
@@ -1904,7 +1908,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   }
 
   if (mp_callback_wrapper != nullptr) {
-    mp_callback_wrapper->RethrowCaughtExceptions();
+    mp_callback_wrapper->LogCaughtExceptions();
     delete mp_callback_wrapper;
   }
 
