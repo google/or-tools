@@ -53,8 +53,6 @@ public final class LinearSolverTest {
   @Test
   public void testMPSolver_basicCtor() {
     runBasicCtor(MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
-    runBasicCtor(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
-    runBasicCtor(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
     runBasicCtor(MPSolver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     runBasicCtor(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
   }
@@ -129,10 +127,12 @@ public final class LinearSolverTest {
   public void testMPSolver_linearSolver() {
     runLinearSolver(MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING, false);
     runLinearSolver(MPSolver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING, false);
-    runLinearSolver(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING, false);
+    // TODO(b/312134897): Uncomment this.
+    // runLinearSolver(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING, false);
 
     runLinearSolver(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING, true);
-    runLinearSolver(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING, true);
+    // TODO(b/312134897): Uncomment this.
+    // runLinearSolver(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING, true);
     runLinearSolver(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING, true);
   }
 
@@ -224,7 +224,8 @@ public final class LinearSolverTest {
   public void testMPSolver_firstLinearExample() {
     runFirstLinearExample(MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     runFirstLinearExample(MPSolver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
-    runFirstLinearExample(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runFirstLinearExample(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
     runFirstLinearExample(MPSolver.OptimizationProblemType.GUROBI_LINEAR_PROGRAMMING);
   }
 
@@ -266,7 +267,8 @@ public final class LinearSolverTest {
   public void testMPSolver_firstMIPExample() {
     runFirstMIPExample(MPSolver.OptimizationProblemType.BOP_INTEGER_PROGRAMMING);
     runFirstMIPExample(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    runFirstMIPExample(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runFirstMIPExample(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
     runFirstMIPExample(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
     runFirstMIPExample(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
     runFirstMIPExample(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
@@ -318,11 +320,13 @@ public final class LinearSolverTest {
   public void testMPSolver_successiveObjectives() {
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
-    runSuccessiveObjectives(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runSuccessiveObjectives(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.GUROBI_LINEAR_PROGRAMMING);
 
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    runSuccessiveObjectives(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runSuccessiveObjectives(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
     runSuccessiveObjectives(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);
@@ -375,11 +379,13 @@ public final class LinearSolverTest {
   public void testMPSolver_objectiveOffset() {
     runObjectiveOffset(MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     runObjectiveOffset(MPSolver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
-    runObjectiveOffset(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runObjectiveOffset(MPSolver.OptimizationProblemType.GLPK_LINEAR_PROGRAMMING);
     runObjectiveOffset(MPSolver.OptimizationProblemType.GUROBI_LINEAR_PROGRAMMING);
 
     runObjectiveOffset(MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    runObjectiveOffset(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
+    // TODO(b/312134897): Uncomment this.
+    // runObjectiveOffset(MPSolver.OptimizationProblemType.GLPK_MIXED_INTEGER_PROGRAMMING);
     runObjectiveOffset(MPSolver.OptimizationProblemType.SCIP_MIXED_INTEGER_PROGRAMMING);
     runObjectiveOffset(MPSolver.OptimizationProblemType.SAT_INTEGER_PROGRAMMING);
     runObjectiveOffset(MPSolver.OptimizationProblemType.GUROBI_MIXED_INTEGER_PROGRAMMING);

@@ -1610,6 +1610,39 @@ TEST(PrimalDualHybridGradientTest, DetailedTerminationCriteria) {
               EigenArrayNear<double>({0.0, 1.5, -3.5, 0.0}, 1.0e-4));
 }
 
+// Regression test for b/311455838. Note that this test only fails in debug
+// mode, when an infeasible primal variable (from the iterate differences)
+// violates presolve's assumptions and triggers a DCHECK() failure.
+TEST(PrimalDualHybridGradientTest, IterateDifferenceBoundsInPresolve) {
+  // A trivial (but very badly scaled) LP found by fuzzing.
+  QuadraticProgram lp(2, 1);
+  lp.objective_offset = -3.0e+23;
+  lp.objective_vector =
+      VectorXd{{2.7369110631344083e-48, -3.0517578125211636e-05}};
+  lp.constraint_lower_bounds = VectorXd{{-2.7369110631344083e-48}};
+  lp.constraint_upper_bounds = VectorXd{{0}};
+  lp.variable_lower_bounds = VectorXd{{1.8446744073709552e+21, -1.0}};
+  lp.variable_upper_bounds = VectorXd{{kInfinity, 1.8446744073709552e+21}};
+  lp.constraint_matrix.coeffRef(0, 0) = -2.7369110631344083e-48;
+  lp.constraint_matrix.coeffRef(0, 1) = 1.0;
+  lp.constraint_matrix.makeCompressed();
+
+  PrimalDualHybridGradientParams params;
+  params.mutable_termination_criteria()->set_iteration_limit(40);
+  auto& presolve_options = *params.mutable_presolve_options();
+  presolve_options.set_use_glop(true);
+  presolve_options.mutable_glop_parameters()->set_solve_dual_problem(
+      operations_research::glop::GlopParameters::LET_SOLVER_DECIDE);
+  presolve_options.mutable_glop_parameters()->set_dualizer_threshold(
+      1.3574141825331e-312);
+  params.set_infinite_constraint_bound_threshold(1.34785525461908e-312);
+
+  SolverResult output = PrimalDualHybridGradient(lp, params);
+  EXPECT_THAT(
+      output.solve_log.termination_reason(),
+      AnyOf(TERMINATION_REASON_ITERATION_LIMIT, TERMINATION_REASON_OPTIMAL));
+}
+
 // `FeasibilityPolishingTest` sets `params_` for feasibility polishing, and to
 // avoid PDLP features that disrupt a simple analysis of the performance with
 // and without feasibility polishing (primal weight adjustments, dynamic step

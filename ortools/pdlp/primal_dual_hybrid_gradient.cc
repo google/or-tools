@@ -1459,7 +1459,9 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
                      POINT_TYPE_AVERAGE_ITERATE, last_primal_start_point,
                      last_dual_start_point, stats);
   }
-  if (working_primal_delta != nullptr && working_dual_delta != nullptr) {
+  // Undoing presolve doesn't work for iterate differences.
+  if (!presolve_info_.has_value() && working_primal_delta != nullptr &&
+      working_dual_delta != nullptr) {
     ComputeConvergenceAndInfeasibilityFromWorkingSolution(
         params, *working_primal_delta, *working_dual_delta,
         POINT_TYPE_ITERATE_DIFFERENCE, nullptr,
@@ -1531,6 +1533,9 @@ void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       EpsilonRatio(criteria.eps_optimal_dual_residual_absolute(),
                    criteria.eps_optimal_dual_residual_relative());
   if (presolve_info_.has_value()) {
+    // Undoing presolve doesn't make sense for iterate differences.
+    CHECK_NE(candidate_type, POINT_TYPE_ITERATE_DIFFERENCE);
+
     PrimalAndDualSolution original = RecoverOriginalSolution(
         {.primal_solution = working_primal, .dual_solution = working_dual});
     if (convergence_information != nullptr) {
