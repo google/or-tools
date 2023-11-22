@@ -53,7 +53,10 @@ def rank_tasks(
     # Treats optional intervals.
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
-            tmp_array = [precedences[(i, j)], precedences[(j, i)]]
+            tmp_array: list[cp_model.LiteralT] = [
+                precedences[(i, j)],
+                precedences[(j, i)],
+            ]
             if not cp_model.object_is_a_true_literal(presences[i]):
                 tmp_array.append(presences[i].negated())
                 # Makes sure that if i is not performed, all precedences are false.

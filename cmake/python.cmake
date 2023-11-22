@@ -287,6 +287,11 @@ file(COPY
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 
+# Adds py.typed to make typed packages.
+file(TOUCH ${PYTHON_PROJECT_DIR}/linear_solver/python/py.typed)
+file(TOUCH ${PYTHON_PROJECT_DIR}/sat/py.typed)
+file(TOUCH ${PYTHON_PROJECT_DIR}/sat/python/py.typed)
+
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
 configure_file(

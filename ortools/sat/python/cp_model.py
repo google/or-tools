@@ -51,6 +51,7 @@ import numbers
 import threading
 import time
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -85,24 +86,42 @@ INT32_MAX = 2147483647
 INT32_MIN = -2147483648
 
 # CpSolver status (exported to avoid importing cp_model_cp2).
-UNKNOWN = cp_model_pb2.UNKNOWN
-MODEL_INVALID = cp_model_pb2.MODEL_INVALID
-FEASIBLE = cp_model_pb2.FEASIBLE
-INFEASIBLE = cp_model_pb2.INFEASIBLE
-OPTIMAL = cp_model_pb2.OPTIMAL
+UNKNOWN: cp_model_pb2.CpSolverStatus = cp_model_pb2.UNKNOWN
+MODEL_INVALID: cp_model_pb2.CpSolverStatus = cp_model_pb2.MODEL_INVALID
+FEASIBLE: cp_model_pb2.CpSolverStatus = cp_model_pb2.FEASIBLE
+INFEASIBLE: cp_model_pb2.CpSolverStatus = cp_model_pb2.INFEASIBLE
+OPTIMAL: cp_model_pb2.CpSolverStatus = cp_model_pb2.OPTIMAL
 
 # Variable selection strategy
-CHOOSE_FIRST = cp_model_pb2.DecisionStrategyProto.CHOOSE_FIRST
-CHOOSE_LOWEST_MIN = cp_model_pb2.DecisionStrategyProto.CHOOSE_LOWEST_MIN
-CHOOSE_HIGHEST_MAX = cp_model_pb2.DecisionStrategyProto.CHOOSE_HIGHEST_MAX
-CHOOSE_MIN_DOMAIN_SIZE = cp_model_pb2.DecisionStrategyProto.CHOOSE_MIN_DOMAIN_SIZE
-CHOOSE_MAX_DOMAIN_SIZE = cp_model_pb2.DecisionStrategyProto.CHOOSE_MAX_DOMAIN_SIZE
+CHOOSE_FIRST: cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy = (
+    cp_model_pb2.DecisionStrategyProto.CHOOSE_FIRST
+)
+CHOOSE_LOWEST_MIN: (
+    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
+) = cp_model_pb2.DecisionStrategyProto.CHOOSE_LOWEST_MIN
+CHOOSE_HIGHEST_MAX: (
+    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
+) = cp_model_pb2.DecisionStrategyProto.CHOOSE_HIGHEST_MAX
+CHOOSE_MIN_DOMAIN_SIZE: (
+    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
+) = cp_model_pb2.DecisionStrategyProto.CHOOSE_MIN_DOMAIN_SIZE
+CHOOSE_MAX_DOMAIN_SIZE: (
+    cp_model_pb2.DecisionStrategyProto.VariableSelectionStrategy
+) = cp_model_pb2.DecisionStrategyProto.CHOOSE_MAX_DOMAIN_SIZE
 
 # Domain reduction strategy
-SELECT_MIN_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
-SELECT_MAX_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
-SELECT_LOWER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
-SELECT_UPPER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
+SELECT_MIN_VALUE: cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy = (
+    cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
+)
+SELECT_MAX_VALUE: cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy = (
+    cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
+)
+SELECT_LOWER_HALF: (
+    cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy
+) = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
+SELECT_UPPER_HALF: (
+    cp_model_pb2.DecisionStrategyProto.DomainReductionStrategy
+) = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
 
 # Search branching
 AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
@@ -804,7 +823,7 @@ class IntVar(LinearExpr):
         """Returns the variable protobuf."""
         return self.__var
 
-    def is_equal_to(self, other: ...) -> bool:
+    def is_equal_to(self, other: Any) -> bool:
         """Returns true if self == other in the python sense."""
         if not isinstance(other, IntVar):
             return False
@@ -3162,7 +3181,7 @@ class CpSolver:
         """Returns the indices of the infeasible assumptions."""
         return self._solution.sufficient_assumptions_for_infeasibility
 
-    def status_name(self, status: ... = None) -> str:
+    def status_name(self, status: Optional[cp_model_pb2.CpSolverStatus] = None) -> str:
         """Returns the name of the status returned by solve()."""
         if status is None:
             status = self._solution.status
@@ -3226,7 +3245,7 @@ class CpSolver:
     def SolutionInfo(self) -> str:
         return self.solution_info()
 
-    def StatusName(self, status: ... = None) -> str:
+    def StatusName(self, status: Optional[cp_model_pb2.CpSolverStatus] = None) -> str:
         return self.status_name(status)
 
     def StopSearch(self) -> None:

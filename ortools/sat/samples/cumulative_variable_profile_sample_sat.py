@@ -85,7 +85,7 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     # [END data_model]
 
 
-def main():
+def main() -> None:
     """Create the model and solves it."""
     # [START data]
     capacity_df, tasks_df = create_data_model()

@@ -50,8 +50,14 @@ setup(
     ],
     package_data={
         '@PYTHON_PROJECT@':[$<$<STREQUAL:$<TARGET_PROPERTY:@PROJECT_NAME@,TYPE>,SHARED_LIBRARY>:'.libs/*','../$<TARGET_SONAME_FILE_NAME:@PROJECT_NAME@>'>],
-        '@PYTHON_PROJECT@.init.python':['$<TARGET_FILE_NAME:init_pybind11>', '*.pyi'],
-        '@PYTHON_PROJECT@.algorithms.python':['$<TARGET_FILE_NAME:knapsack_solver_pybind11>', '*.pyi'],
+        '@PYTHON_PROJECT@.init.python':[
+            '$<TARGET_FILE_NAME:init_pybind11>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.algorithms.python':[
+            '$<TARGET_FILE_NAME:knapsack_solver_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.bop':['*.pyi'],
         '@PYTHON_PROJECT@.glop':['*.pyi'],
         '@PYTHON_PROJECT@.graph.python':[
@@ -59,17 +65,40 @@ setup(
             '$<TARGET_FILE_NAME:max_flow_pybind11>',
             '$<TARGET_FILE_NAME:min_cost_flow_pybind11>',
             '*.pyi'],
-        '@PYTHON_PROJECT@.constraint_solver':['$<TARGET_FILE_NAME:pywrapcp>', '*.pyi'],
-        '@PYTHON_PROJECT@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
-        '@PYTHON_PROJECT@.linear_solver.python':['$<TARGET_FILE_NAME:model_builder_helper_pybind11>', '*.pyi'],
+        '@PYTHON_PROJECT@.constraint_solver':[
+            '$<TARGET_FILE_NAME:pywrapcp>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.linear_solver':[
+            '$<TARGET_FILE_NAME:pywraplp>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.linear_solver.python':[
+            '$<TARGET_FILE_NAME:model_builder_helper_pybind11>',
+            '*.pyi',
+            'py.typed'
+        ],
         '@PYTHON_PROJECT@.packing':['*.pyi'],
         '@PYTHON_PROJECT@.pdlp':['*.pyi'],
-        '@PYTHON_PROJECT@.pdlp.python':['$<TARGET_FILE_NAME:pdlp_pybind11>', '*.pyi'],
+        '@PYTHON_PROJECT@.pdlp.python':[
+            '$<TARGET_FILE_NAME:pdlp_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.sat':['*.pyi'],
-        '@PYTHON_PROJECT@.sat.colab':['*.pyi'],
-        '@PYTHON_PROJECT@.sat.python':['$<TARGET_FILE_NAME:swig_helper_pybind11>', '*.pyi'],
-        '@PYTHON_PROJECT@.scheduling.python':['$<TARGET_FILE_NAME:rcpsp_pybind11>', '*.pyi'],
-        '@PYTHON_PROJECT@.util.python':['$<TARGET_FILE_NAME:sorted_interval_list_pybind11>', '*.pyi'],
+        '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
+        '@PYTHON_PROJECT@.sat.python':[
+            '$<TARGET_FILE_NAME:swig_helper_pybind11>',
+            '*.pyi',
+            'py.typed'
+        ],
+        '@PYTHON_PROJECT@.scheduling.python':[
+            '$<TARGET_FILE_NAME:rcpsp_pybind11>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.util.python':[
+            '$<TARGET_FILE_NAME:sorted_interval_list_pybind11>',
+            '*.pyi'
+        ],
     },
     include_package_data=True,
     license='Apache 2.0',
