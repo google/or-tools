@@ -291,6 +291,29 @@ for %%v in (8 9 10 11 12) do (
   cmake --build temp_python3%%v --config Release -j8 -v
   echo DONE | tee.exe -a build.log
 
+  echo Check MYPY files... | tee.exe -a build.log
+    FOR %%m IN (
+      ortools\algorithms\python\knapsack_solver.pyi
+      ortools\constraint_solver\pywrapcp.pyi
+      ortools\graph\python\linear_sum_assignment.pyi
+      ortools\graph\python\max_flow.pyi
+      ortools\graph\python\min_cost_flow.pyi
+      ortools\init\python\init.pyi
+      ortools\linear_solver\python\model_builder_helper.pyi
+      ortools\linear_solver\pywraplp.pyi
+      ortools\pdlp\python\pdlp.pyi
+      ortools\sat\python\swig_helper.pyi
+      ortools\scheduling\python\rcpsp.pyi
+      ortools\util\python\sorted_interval_list.pyi
+    ) DO (
+      IF NOT EXIST temp_python3%%v\python\%%m (
+        echo File %%m missing in python project | tee.exe -a build.log
+        exit /B 1
+      )
+    )
+  echo Check MYPY files...DONE | tee.exe -a build.log
+
+
   REM echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
   REM cmake --build temp_python3%%v --config Release --target RUN_TEST || exit 1
   REM echo DONE | tee.exe -a build.log

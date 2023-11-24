@@ -218,7 +218,10 @@ function build_python() {
     local -r PY=(3.8 3.9 3.10 3.11 3.12)
   fi
 
+  # Check Python env
   for PY_VERSION in "${PY[@]}"; do
+    # Check python interpreter
+    # Need the one form python.org not from homebrew to be compatible with older macOS
     PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
     if [[ ! -d "$PY_PATH" ]]; then
       echo "Error: Python ${PY_VERSION} is not found (${PY_PATH})." | tee -a build.log
@@ -226,9 +229,9 @@ function build_python() {
     fi
     export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
-  # Check Python env
-    echo "check python3..."
-    command -v python3 | xargs echo "python3: " | tee -a build.log
+    # Check Python packages mandatory are available and up to date
+    echo "check python${PY_VERSION}..."
+    command -v python3 | xargs echo "python${PY_VERSION}: " | tee -a build.log
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
     "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
@@ -239,6 +242,22 @@ function build_python() {
     protoc-gen-mypy --version | grep "3\.5\.0"
   done
 
+  declare -a MYPY_FILES=(
+    "ortools/algorithms/python/knapsack_solver.pyi"
+    "ortools/constraint_solver/pywrapcp.pyi"
+    "ortools/graph/python/linear_sum_assignment.pyi"
+    "ortools/graph/python/max_flow.pyi"
+    "ortools/graph/python/min_cost_flow.pyi"
+    "ortools/init/python/init.pyi"
+    "ortools/linear_solver/python/model_builder_helper.pyi"
+    "ortools/linear_solver/pywraplp.pyi"
+    "ortools/pdlp/python/pdlp.pyi"
+    "ortools/sat/python/swig_helper.pyi"
+    "ortools/scheduling/python/rcpsp.pyi"
+    "ortools/util/python/sorted_interval_list.pyi"
+    "ortools/test/test.pyi"
+  )
+
   for PY_VERSION in "${PY[@]}"; do
     PY_PATH="/Library/Frameworks/Python.framework/Versions/${PY_VERSION}"
     if [[ ! -d "$PY_PATH" ]]; then
@@ -247,7 +266,7 @@ function build_python() {
     fi
     export PATH="${HOME}/Library/Python/${PY_VERSION}/bin:${PY_PATH}/bin:${PATH_BCKP}"
 
-  # Clean and build
+    # Clean and build
     echo -n "Cleaning Python ${PY_VERSION}..." | tee -a build.log
     rm -rf "temp_python${PY_VERSION}"
     echo "DONE" | tee -a build.log
@@ -257,6 +276,14 @@ function build_python() {
     echo "DONE" | tee -a build.log
     #cmake --build temp_python${PY_VERSION} --target test
     #echo "cmake test_python${PY_VERSION}: DONE" | tee -a build.log
+
+    # Check mypy files
+    for FILE in "${MYPY_FILES[@]}"; do
+      if [[ ! -f "temp_python${PY_VERSION}/build/python/${FILE}" ]]; then
+        echo "error: ${FILE} missing in the python project" | tee -a build.log
+        exit 2
+      fi
+    done
 
     cp "temp_python${PY_VERSION}"/python/dist/*.whl export/
     pushd export

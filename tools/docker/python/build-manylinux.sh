@@ -95,7 +95,10 @@ function build_wheel() {
     >&2 echo "Can't find project's CMakeLists.txt or cmake"
     exit 2
   fi
-  cmake -S. -B"${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" -DBUILD_TESTING=OFF #--debug-find
+  cmake -S. -B"${BUILD_DIR}" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_DEPS=ON -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$1" \
+    -DBUILD_TESTING=OFF -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF #--debug-find
   cmake --build "${BUILD_DIR}" -v -j4
 
   # Restore environment
@@ -111,6 +114,28 @@ function check_wheel() {
     echo "$0 called with an illegal number of parameters"
     exit 1
   fi
+
+  # Check mypy files
+  declare -a MYPY_FILES=(
+    "ortools/algorithms/python/knapsack_solver.pyi"
+    "ortools/constraint_solver/pywrapcp.pyi"
+    "ortools/graph/python/linear_sum_assignment.pyi"
+    "ortools/graph/python/max_flow.pyi"
+    "ortools/graph/python/min_cost_flow.pyi"
+    "ortools/init/python/init.pyi"
+    "ortools/linear_solver/python/model_builder_helper.pyi"
+    "ortools/linear_solver/pywraplp.pyi"
+    "ortools/pdlp/python/pdlp.pyi"
+    "ortools/sat/python/swig_helper.pyi"
+    "ortools/scheduling/python/rcpsp.pyi"
+    "ortools/util/python/sorted_interval_list.pyi"
+  )
+  for FILE in "${MYPY_FILES[@]}"; do
+    if [[ ! -f "${BUILD_DIR}/python/${FILE}" ]]; then
+      echo "error: ${FILE} missing in the python project"
+      exit 1
+    fi
+  done
 
   # Check all generated wheel packages
   pushd "${BUILD_DIR}/python/dist"
@@ -151,6 +176,20 @@ function test_wheel() {
   echo "WHEEL file: ${WHEEL_FILE}"
   pip install --no-cache-dir "$WHEEL_FILE"
   pip show ortools
+
+  # Python scripts to be used as tests for the installed wheel. This list of files
+  # has been taken from the 'test_python' make target.
+  declare -a TESTS=(
+    "ortools/algorithms/samples/simple_knapsack_program.py"
+    "ortools/graph/samples/simple_max_flow_program.py"
+    "ortools/graph/samples/simple_min_cost_flow_program.py"
+    "ortools/linear_solver/samples/simple_lp_program.py"
+    "ortools/linear_solver/samples/simple_mip_program.py"
+    "ortools/sat/samples/simple_sat_program.py"
+    "ortools/constraint_solver/samples/tsp.py"
+    "ortools/constraint_solver/samples/vrp.py"
+    "ortools/constraint_solver/samples/cvrptw_break.py"
+  )
 
   # Run all the specified test scripts using the current environment.
   local -r ROOT_DIR=$(pwd)
@@ -215,19 +254,6 @@ function main() {
   assert_defined PYTHON_VERSION
 
   # Setup
-  # Python scripts to be used as tests for the installed wheel. This list of files
-  # has been taken from the 'test_python' make target.
-  declare -a TESTS=(
-    "ortools/algorithms/samples/simple_knapsack_program.py"
-    "ortools/graph/samples/simple_max_flow_program.py"
-    "ortools/graph/samples/simple_min_cost_flow_program.py"
-    "ortools/linear_solver/samples/simple_lp_program.py"
-    "ortools/linear_solver/samples/simple_mip_program.py"
-    "ortools/sat/samples/simple_sat_program.py"
-    "ortools/constraint_solver/samples/tsp.py"
-    "ortools/constraint_solver/samples/vrp.py"
-    "ortools/constraint_solver/samples/cvrptw_break.py"
-  )
   declare -a SKIPS=( "pp37-pypy37_pp73" )
 
   case ${1} in
