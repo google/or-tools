@@ -89,13 +89,13 @@ static const char* __doc_operations_research_CppFlags =
 languages.)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_lns =
-    R"doc(DEBUG ONLY: Dump CP-SAT LNS models during solve.
+    R"doc(Dump CP-SAT LNS models during solve. (DEBUG ONLY)
 
 When set to true, solve will dump all lns models proto in text format
 to 'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_models =
-    R"doc(DEBUG ONLY: Dump CP-SAT models during solve.
+    R"doc(Dump CP-SAT models during solve. (DEBUG ONLY)
 
 When set to true, SolveCpModel() will dump its model protos (original
 model, presolved model, mapping model) in text format to 'FLAGS_cp_mod
@@ -106,7 +106,7 @@ static const char* __doc_operations_research_CppFlags_cp_model_dump_prefix =
 models).)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_response =
-    R"doc(DEBUG ONLY: Dump the CP-SAT final response found during solve.
+    R"doc(Dump the CP-SAT final response found during solve. (DEBUG ONLY)
 
 If true, the final response of each solve will be dumped to
 'FLAGS_cp_model_dump_prefix'response.pbtxt.)doc";
