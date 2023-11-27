@@ -995,6 +995,7 @@ EXCLUDE_PATTERNS       = *Test.java \
                          */cpp/* \
                          */csharp/* \
                          */dotnet/* \
+                         */go/* \
                          */python/* \
                          */samples/* \
                          */SWIGTYPE* \
