@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #include "zlib.h"
 
-bool GunzipString(const std::string& str, std::string* out) {
+bool GunzipString(absl::string_view str, std::string* out) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -60,7 +60,7 @@ bool GunzipString(const std::string& str, std::string* out) {
   return true;
 }
 
-bool GunzipString(absl::string_view uncompressed, std::string* compressed) {
+bool GzipString(absl::string_view uncompressed, std::string* compressed) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -100,13 +100,6 @@ bool GunzipString(absl::string_view uncompressed, std::string* compressed) {
     return false;
   }
   return true;
-}
-
-void GzipString(absl::string_view uncompressed, std::string* compressed) {
-  const bool success = GunzipString(uncompressed, compressed);
-  if (!success) {
-    VLOG(1) << "GzipString was not successful";
-  }
 }
 
 #endif  // OR_TOOLS_BASE_GZIPSTRING_H_
