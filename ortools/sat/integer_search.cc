@@ -1634,10 +1634,9 @@ SatSolver::Status ContinuousProber::Probe() {
   if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
   while (!time_limit_->LimitReached()) {
-    // Run sat in-processing to reduce the size of the clause database.
-    if (parameters_.use_sat_inprocessing() &&
-        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
-      return SatSolver::INFEASIBLE;
+    if (parameters_.minimize_with_propagation_restart_period() >= 0) {
+      sat_solver_->MinimizeSomeClauses(
+          parameters_.minimize_with_propagation_num_decisions());
     }
 
     // Probe each Boolean variable at most once per loop.
