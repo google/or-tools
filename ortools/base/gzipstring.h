@@ -31,7 +31,7 @@ bool GunzipString(absl::string_view str, std::string* out) {
     return false;
   }
 
-  zs.next_in = (Bytef*)str.data();
+  zs.next_in = static_cast<Bytef*>(str.data());
   zs.avail_in = str.size();
 
   int status;
