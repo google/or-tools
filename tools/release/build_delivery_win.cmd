@@ -284,7 +284,8 @@ FOR %%v IN (8 9 10 11 12) DO (
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
   echo "C:\python3%%v-64\python.exe: FOUND" | tee.exe -a build.log
-  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf
+  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf protobuf numpy pandas
+
   call :subroutine %%v
 
   echo Cleaning Python 3.%%v... | tee.exe -a build.log
