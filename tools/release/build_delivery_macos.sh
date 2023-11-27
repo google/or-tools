@@ -197,6 +197,7 @@ function build_java() {
 
 # Python 3
 # TODO(user) Use `make --directory tools/docker python` instead
+# shellcheck disable=2317
 function build_python() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/python_build" -; then
     echo "build python up to date!" | tee -a build.log
@@ -231,7 +232,7 @@ function build_python() {
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
     "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
-    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf virtualenv
+    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
@@ -310,6 +311,7 @@ function build_archive() {
 }
 
 # Build Examples
+# shellcheck disable=2317
 function build_examples() {
   if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export/examples_build" -; then
     echo "build examples up to date!" | tee -a build.log
@@ -398,7 +400,6 @@ function main() {
       >&2 echo "Target '${1}' unknown"
       exit 1
   esac
-  exit 0
 }
 
 main "${1:-all}"
