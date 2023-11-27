@@ -398,25 +398,25 @@ class LinearExpr:
             "please use CpModel.add_abs_equality"
         )
 
-    def __add__(self, arg) -> LinearExprT:
+    def __add__(self, arg: LinearExprT) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
-    def __radd__(self, arg) -> LinearExprT:
+    def __radd__(self, arg: LinearExprT) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
-    def __sub__(self, arg) -> LinearExprT:
+    def __sub__(self, arg: LinearExprT) -> LinearExprT:
         if cmh.is_zero(arg):
             return self
         return _Sum(self, -arg)
 
-    def __rsub__(self, arg) -> LinearExprT:
+    def __rsub__(self, arg: LinearExprT) -> LinearExprT:
         return _Sum(-self, arg)
 
-    def __mul__(self, arg) -> LinearExprT:
+    def __mul__(self, arg: LinearExprT) -> LinearExprT:
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
@@ -424,7 +424,7 @@ class LinearExpr:
             return 0
         return _ProductCst(self, arg)
 
-    def __rmul__(self, arg) -> LinearExprT:
+    def __rmul__(self, arg: LinearExprT) -> LinearExprT:
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
@@ -492,7 +492,7 @@ class LinearExpr:
             "Evaluating a LinearExpr instance as a Boolean is not implemented."
         )
 
-    def __eq__(self, arg) -> BoundedLinearExprT:
+    def __eq__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if arg is None:
             return False
         if cmh.is_integral(arg):
@@ -501,21 +501,21 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [0, 0])
 
-    def __ge__(self, arg) -> BoundedLinearExprT:
+    def __ge__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [arg, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [0, INT_MAX])
 
-    def __le__(self, arg) -> BoundedLinearExprT:
+    def __le__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             return BoundedLinearExpression(self, [INT_MIN, arg])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, 0])
 
-    def __lt__(self, arg) -> BoundedLinearExprT:
+    def __lt__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             if arg == INT_MIN:
@@ -524,7 +524,7 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
-    def __gt__(self, arg) -> BoundedLinearExprT:
+    def __gt__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if cmh.is_integral(arg):
             arg = cmh.assert_is_int64(arg)
             if arg == INT_MAX:
@@ -533,7 +533,7 @@ class LinearExpr:
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
-    def __ne__(self, arg) -> BoundedLinearExprT:
+    def __ne__(self, arg: LinearExprT) -> BoundedLinearExprT:
         if arg is None:
             return True
         if cmh.is_integral(arg):
