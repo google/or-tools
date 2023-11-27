@@ -25,6 +25,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
@@ -333,6 +334,26 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
     }
   }
 
+  // If there is just one special edge, and all other node can be ignored, then
+  // the reasonning is wrong too since we can have a 2-cycle. In that case
+  // we enforce the constraint when an extra self-loop literal is at zero.
+  int best_optional_index = -1;
+  if (special_edges.size() == 1) {
+    int num_other_optional = 0;
+    const auto [special_tail, special_head] = *special_edges.begin();
+    for (int i = 0; i < tails_.size(); ++i) {
+      if (tails_[i] != heads_[i]) continue;
+      if (tails_[i] != special_head && tails_[i] != special_tail) {
+        ++num_other_optional;
+        if (best_optional_index == -1 ||
+            literal_lp_values_[i] < literal_lp_values_[best_optional_index]) {
+          best_optional_index = i;
+        }
+      }
+    }
+    if (num_other_optional + 2 < num_nodes_) best_optional_index = -1;
+  }
+
   // Try to generate the cut.
   //
   // We deal with the corner case with duplicate arcs, or just one side of a
@@ -340,6 +361,19 @@ bool OutgoingCutHelper::TryBlossomSubsetCut(
   int num_actual_inverted = 0;
   absl::flat_hash_set<std::pair<int, int>> processed_arcs;
   LinearConstraintBuilder builder(encoder_, IntegerValue(1), kMaxIntegerValue);
+
+  // Add extra self-loop at zero enforcement if needed.
+  // TODO(user): Can we deal with the 2-cycle case in a better way?
+  if (best_optional_index != -1) {
+    absl::StrAppend(&name, "_opt");
+
+    // This is tricky: The normal cut assume x_e <=1, but in case of a single
+    // 2 cycle, x_e can be equal to 2. So we need a coeff of 2 to disable that
+    // cut.
+    CHECK(builder.AddLiteralTerm(literals_[best_optional_index],
+                                 IntegerValue(2)));
+  }
+
   for (int i = 0; i < tails_.size(); ++i) {
     if (tails_[i] == heads_[i]) continue;
     if (in_subset_[tails_[i]] == in_subset_[heads_[i]]) continue;
