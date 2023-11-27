@@ -391,6 +391,7 @@ find_program(
   NAMES stubgen stubgen.exe
   REQUIRED
 )
+message(STATUS "Python: stubgen: ${stubgen_EXECUTABLE}")
 
 add_custom_command(
   OUTPUT python/stub_timestamp
