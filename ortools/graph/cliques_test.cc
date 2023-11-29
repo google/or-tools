@@ -28,7 +28,6 @@
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/base/callback.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/util/time_limit.h"
 #include "util/functional/to_callback.h"
