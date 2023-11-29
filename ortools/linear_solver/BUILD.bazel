@@ -59,6 +59,18 @@ config_setting(
 )
 
 bool_flag(
+    name = "with_cp_sat",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "use_cp_sat",
+    flag_values = {
+        ":with_cp_sat": "true",
+    },
+)
+
+bool_flag(
     name = "with_glop",
     build_setting_default = True,
 )

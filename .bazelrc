@@ -2,6 +2,7 @@
 build --flag_alias=with_bop=//ortools/linear_solver:with_bop
 build --flag_alias=with_cbc=//ortools/linear_solver:with_cbc
 build --flag_alias=with_clp=//ortools/linear_solver:with_clp
+build --flag_alias=with_cp_sat=//ortools/linear_solver:with_cp_sat
 build --flag_alias=with_glop=//ortools/linear_solver:with_glop
 build --flag_alias=with_glpk=//ortools/linear_solver:with_glpk
 build --flag_alias=with_highs=//ortools/linear_solver:with_highs
