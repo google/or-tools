@@ -21,6 +21,10 @@
 %include "stdint.i"
 %include "std_string.i"
 
+// Don't break on ABSL_DEPRECATED macro.
+%define ABSL_DEPRECATED(msg)
+%enddef
+
 #ifdef SWIGPYTHON
 
 #pragma SWIG nowarn=312,451,454,503,362
