@@ -1,3 +1,4 @@
+
 # Linear Programming (LP) and Integer Programming (IP) Solver
 
 Linear optimization problems are common throughout Google, and the Operations
@@ -14,28 +15,26 @@ $$\begin{array}{lll}
 Where $$A\in\mathbb{R}^{m\times n}$$, $$l,u,c\in\mathbb{R}^n$$,
 $$L,U\in\mathbb{R}^m$$, $$n,m\in\mathbb{N}^+$$ and $$I\subseteq\{1,\ldots,n\}$$.
 
-This module provides an unified wrapper (MPSolver) around different linear and
-integer solvers (Glop, Bop, Sat, SCIP, Gurobi etc.).
+This module provides:
+
+*   The `MPModelRequest` Proto API (in `linear_solver.proto`) for modeling an
+    optimization problem.
+*   The function `SolveMPModel()` (in `solve_mp_model.h`) for solving an
+    optimization problem with a solver (Glop, Bop, Sat, SCIP, Gurobi etc.)
+*   `ModelBuilder` (in `model_builder.h`) and similar classes in Python and Java
+    to help construct an `MPModelRequest` (e.g. to provide linear expressions).
+*   `MPSolver` which is no longer in development. `MPSolver` is largely
+    interoperable with the `MPModelRequest` API, although the features supported
+    are not identical.
 
 To begin, skim
 
-*   [linear_solver.h](../linear_solver/linear_solver.h):
-    the point of entry for the MPSolver wrapper that provides a simple and
-    unified interface to several linear programming and mixed integer
-    programming solvers.
-
-*   [linear_solver.cc](../linear_solver/linear_solver.cc):
-    the C++ code of the MPSolver wrapper that is common to all solvers
-    accessible through the wrapper.
-
-## Parameters and Solution
-
-`MPSolver` uses a proto interface `MPModelProto`.
-
-You can find the protocol buffer definition here:
-
 *   [linear_solver.proto](../linear_solver/linear_solver.proto):
-    MPSolver parameters, model and solution messages.
+    Specifically, look at `MPModelProto`. This gives a succinct description of
+    what problems can be solved.
+
+*   [solve_mp_model.h](../linear_solver/solve_mp_model.h):
+    This file contains the key functions to run various solvers.
 
 ## Available solvers
 
