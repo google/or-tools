@@ -134,13 +134,14 @@ SubsetToElementVector SetCoverLedger::ComputeMarginalImpacts(
 }
 
 Cost SetCoverLedger::ComputeCost(const SubsetBoolVector& c) const {
+  DCHECK_EQ(c.size(), model_->num_subsets());
   Cost recomputed_cost = 0;
   const SubsetCostVector& subset_costs = model_->subset_costs();
-  const SubsetIndex num_subsets(model_->num_subsets());
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    if (c[subset]) {
+  for (SubsetIndex subset(0); bool b : c) {
+    if (b) {
       recomputed_cost += subset_costs[subset];
     }
+    ++subset;
   }
   return recomputed_cost;
 }

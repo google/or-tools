@@ -14,9 +14,9 @@
 #include "ortools/algorithms/set_cover_reader.h"
 
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/string_view.h"
@@ -36,8 +36,8 @@ class SetCoverReader {
   int64_t ParseNextInteger();
 
  private:
-  size_t SkipBlanks(size_t pos);
-  size_t SkipNonBlanks(size_t pos);
+  size_t SkipBlanks(size_t pos) const;
+  size_t SkipNonBlanks(size_t pos) const;
   FileLineIterator line_iter_;
   absl::string_view line_;
   int start_pos_;
@@ -52,22 +52,22 @@ SetCoverReader::SetCoverReader(File* file)
   line_ = *line_iter_;
 }
 
-size_t SetCoverReader::SkipBlanks(size_t pos) {
-  size_t size = line_.size();
+size_t SetCoverReader::SkipBlanks(size_t pos) const {
+  const size_t size = line_.size();
   for (; pos < size && std::isspace(line_[pos]); ++pos) {
   }
   return pos;
 }
 
-size_t SetCoverReader::SkipNonBlanks(size_t pos) {
-  size_t size = line_.size();
+size_t SetCoverReader::SkipNonBlanks(size_t pos) const {
+  const size_t size = line_.size();
   for (; pos < size && !std::isspace(line_[pos]); ++pos) {
   }
   return pos;
 }
 
 absl::string_view SetCoverReader::GetNextToken() {
-  size_t size = line_.size();
+  const size_t size = line_.size();
   start_pos_ = SkipBlanks(end_pos_);
   if (start_pos_ >= size) {
     ++line_iter_;
@@ -95,20 +95,16 @@ SetCoverModel ReadBeasleySetCoverProblem(absl::string_view filename) {
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
-  DVLOG(INFO) << "num_rows: " << num_rows;
   const int num_cols(reader.ParseNextInteger());
-  DVLOG(INFO) << "num_cols: " << num_cols;
   model.ReserveNumSubsets(num_cols);
   for (int i = 0; i < num_cols; ++i) {
     const double cost(reader.ParseNextDouble());
-    DVLOG(INFO) << "cost for column: " << i << ": " << cost;
     model.SetSubsetCost(i, cost);
   }
   for (int element(0); element < num_rows; ++element) {
     const EntryIndex row_size(reader.ParseNextInteger());
     for (EntryIndex entry(0); entry < row_size; ++entry) {
       const int subset(reader.ParseNextInteger() - 1);
-      DVLOG(INFO) << "element: " << element << " in is subset: " << subset;
       model.AddElementToSubset(element, subset);
     }
   }
@@ -121,20 +117,15 @@ SetCoverModel ReadRailSetCoverProblem(absl::string_view filename) {
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
-  DVLOG(INFO) << "num_rows: " << num_rows;
   const int num_cols(reader.ParseNextInteger());
   model.ReserveNumSubsets(num_cols);
-  DVLOG(INFO) << "num_cols: " << num_cols;
   for (int i(0); i < num_cols; ++i) {
     const double cost(reader.ParseNextDouble());
-    DVLOG(INFO) << "cost for column: " << i << ": " << cost;
     model.SetSubsetCost(i, cost);
     const int column_size(reader.ParseNextInteger());
-    DVLOG(INFO) << "column_size for column: " << i << ": " << column_size;
     model.ReserveNumElementsInSubset(i, column_size);
     for (EntryIndex entry(0); entry < column_size; ++entry) {
       const int element(reader.ParseNextInteger() - 1);
-      DVLOG(INFO) << "element: " << element << " in is subset: " << i;
       model.AddElementToSubset(element, i);
     }
   }

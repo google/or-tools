@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 
 // Representation class for the weighted set-covering problem.
@@ -57,6 +58,7 @@ DEFINE_STRONG_INDEX_TYPE(EntryIndex);
 // The return type for size() is a simple size_t and not an Index as in
 // StrictITIVector, which makes the code less elegant.
 using SubsetCostVector = glop::StrictITIVector<SubsetIndex, Cost>;
+using ElementCostVector = glop::StrictITIVector<ElementIndex, Cost>;
 using SparseColumn = glop::StrictITIVector<EntryIndex, ElementIndex>;
 using SparseRow = glop::StrictITIVector<EntryIndex, SubsetIndex>;
 
@@ -85,19 +87,30 @@ class SetCoverModel {
   // number of columns.
   SubsetIndex num_subsets() const { return columns_.size(); }
 
-  const SubsetCostVector& subset_costs() { return subset_costs_; }
+  const SubsetCostVector& subset_costs() const { return subset_costs_; }
 
-  const SparseColumnView& columns() { return columns_; }
+  Cost subset_costs(SubsetIndex subset) const { return subset_costs_[subset]; }
 
-  const SparseRowView& rows() {
+  const SparseColumnView& columns() const { return columns_; }
+
+  const SparseColumn& columns(SubsetIndex subset) const {
+    return columns_[subset];
+  }
+
+  const SparseRowView& rows() const {
     DCHECK(row_view_is_valid_);
     return rows_;
+  }
+
+  const SparseRow& rows(ElementIndex element) const {
+    DCHECK(row_view_is_valid_);
+    return rows_[element];
   }
 
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
 
-  // Returns the list of indices for the subsets in the model.
+  // Returns the list of indices for all the subsets in the model.
   std::vector<SubsetIndex> all_subsets() const { return all_subsets_; }
 
   // Adds an empty subset with a cost to the problem. In matrix terms, this

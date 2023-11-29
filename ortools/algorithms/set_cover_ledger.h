@@ -73,7 +73,11 @@ class SetCoverLedger {
   }
 
   // Returns the number of subsets covering each element.
-  SubsetIndex coverage(ElementIndex subset) const { return coverage_[subset]; }
+  SubsetIndex coverage(ElementIndex element) const {
+    return coverage_[element];
+  }
+
+  ElementToSubsetVector coverage() const { return coverage_; }
 
   // Returns whether subset can be removed from the solution.
   bool is_removable(SubsetIndex subset) const { return is_removable_[subset]; }
