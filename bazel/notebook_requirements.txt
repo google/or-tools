@@ -279,7 +279,9 @@ referencing==0.30.2
     #   jsonschema-specifications
     #   jupyter-events
 requests==2.31.0
-    # via jupyterlab-server
+    # via
+    #   -r bazel/notebook_requirements.in
+    #   jupyterlab-server
 rfc3339-validator==0.1.4
     # via
     #   jsonschema
