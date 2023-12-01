@@ -3094,7 +3094,11 @@ bool OptimizeVar::AcceptSolution() {
     // ApplyBound should have been called before. In parallel, this is
     // no longer true. That is why we keep it there, just in case.
     for (int i = 0; i < Size(); ++i) {
-      const int64_t value = MinimizationVar(i)->Value();
+      IntVar* const minimization_var = MinimizationVar(i);
+      // In unchecked mode, variables are unbound and the solution should be
+      // accepted.
+      if (!minimization_var->Bound()) return true;
+      const int64_t value = minimization_var->Value();
       if (value == BestInternalValue(i)) continue;
       return value < BestInternalValue(i);
     }

@@ -57,12 +57,17 @@
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -1586,9 +1591,6 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
-  int next_base_to_increment_;
-  int num_paths_ = 0;
-  std::vector<int64_t> start_to_path_;
 
  private:
   void OnStart() override;
@@ -1611,6 +1613,50 @@ class PathOperator : public IntVarLocalSearchOperator {
   void InitializeAlternatives();
   void Synchronize();
 
+  class ActivePaths {
+   public:
+    explicit ActivePaths(int num_nodes) : start_to_path_(num_nodes, -1) {}
+    void Clear() { is_path_pair_active_.clear(); }
+    template <typename T>
+    void Initialize(T is_start) {
+      if (is_path_pair_active_.empty()) {
+        num_paths_ = 0;
+        absl::c_fill(start_to_path_, -1);
+        for (int i = 0; i < start_to_path_.size(); ++i) {
+          if (is_start(i)) {
+            start_to_path_[i] = num_paths_;
+            ++num_paths_;
+          }
+        }
+        is_path_pair_active_.resize(num_paths_ * num_paths_, true);
+      }
+    }
+    void DeactivatePathPair(int start1, int start2) {
+      is_path_pair_active_[start_to_path_[start1] * num_paths_ +
+                           start_to_path_[start2]] = false;
+    }
+    void ActivatePath(int start) {
+      const int p1 = start_to_path_[start];
+      const int p1_block = num_paths_ * p1;
+      for (int p2 = 0; p2 < num_paths_; ++p2) {
+        is_path_pair_active_[p1_block + p2] = true;
+      }
+      for (int p2_block = 0; p2_block < is_path_pair_active_.size();
+           p2_block += num_paths_) {
+        is_path_pair_active_[p2_block + p1] = true;
+      }
+    }
+    bool IsPathPairActive(int start1, int start2) const {
+      return is_path_pair_active_[start_to_path_[start1] * num_paths_ +
+                                  start_to_path_[start2]];
+    }
+
+   private:
+    int num_paths_ = 0;
+    std::vector<int64_t> start_to_path_;
+    std::vector<bool> is_path_pair_active_;
+  };
+
   std::vector<int> base_nodes_;
   std::vector<int> base_alternatives_;
   std::vector<int> base_sibling_alternatives_;
@@ -1624,10 +1670,11 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
+  int next_base_to_increment_;
   IterationParameters iteration_parameters_;
   bool optimal_paths_enabled_;
   std::vector<int> path_basis_;
-  std::vector<bool> optimal_paths_;
+  ActivePaths active_paths_;
   /// Node alternative data.
 #ifndef SWIG
   std::vector<std::vector<int64_t>> alternative_sets_;
@@ -1667,7 +1714,74 @@ LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
 /// class RelocateAndMakeInactiveOperator;
 
 #if !defined(SWIG)
-// A LocalSearchState is a container for variables with bounds that can be
+// After building a Directed Acyclic Graph, allows to generate sub-DAGs
+// reachable from a node.
+// Workflow:
+// - Call AddArc() repeatedly to add arcs describing a DAG. Nodes are allocated
+//   on the user side, they must be nonnegative, and it is better but not
+//   mandatory for the set of nodes to be dense.
+// - Call BuildGraph(). This precomputes all the information needed to make
+//   subsequent requests for sub-DAGs.
+// - Call ComputeSortedSubDagArcs(node). This returns a view to arcs reachable
+//   from node, in topological order.
+// All arcs must be added before calling BuildGraph(),
+// and ComputeSortedSubDagArcs() can only be called after BuildGraph().
+// If the arcs form a graph that has directed cycles,
+// - in debug mode, BuildGraph() will crash.
+// - otherwise, BuildGraph() will not crash, but ComputeSortedSubDagArcs()
+//   will only return a subset of arcs reachable by the given node.
+class SubDagComputer {
+ public:
+  DEFINE_STRONG_INT_TYPE(ArcId, int);
+  DEFINE_STRONG_INT_TYPE(NodeId, int);
+  SubDagComputer() = default;
+  // Adds an arc between node 'tail' and node 'head'. Nodes must be nonnegative.
+  // Returns the index of the new arc, those are used to identify arcs when
+  // calling ComputeSortedSubDagArcs().
+  ArcId AddArc(NodeId tail, NodeId head) {
+    DCHECK(!graph_was_built_);
+    num_nodes_ = std::max(num_nodes_, std::max(tail.value(), head.value()) + 1);
+    const ArcId arc_id(arcs_.size());
+    arcs_.push_back({.tail = tail, .head = head, .arc_id = arc_id});
+    return arc_id;
+  }
+  // Finishes the construction of the DAG.  'num_nodes' is the number of nodes
+  // in the DAG and must be greater than all node indices passed to AddArc().
+  void BuildGraph(int num_nodes);
+  // Computes the arcs of the sub-DAG reachable from node returns a view of
+  // those arcs in topological order.
+  const std::vector<ArcId>& ComputeSortedSubDagArcs(NodeId node);
+
+ private:
+  // Checks whether the underlying graph has a directed cycle.
+  // Should be called after the graph has been built.
+  bool HasDirectedCycle() const;
+
+  struct Arc {
+    NodeId tail;
+    NodeId head;
+    ArcId arc_id;
+    bool operator<(const Arc& other) const {
+      return std::tie(tail, arc_id) < std::tie(other.tail, other.arc_id);
+    }
+  };
+  int num_nodes_ = 0;
+  std::vector<Arc> arcs_;
+  // Initialized by BuildGraph(), after which the outgoing arcs of node n are
+  // the range from arcs_[arcs_of_node_[n]] included to
+  // arcs_[arcs_of_node_[n+1]] excluded.
+  absl::StrongVector<NodeId, int> arcs_of_node_;
+  // Must be false before BuildGraph() is called, true afterwards.
+  bool graph_was_built_ = false;
+  // Used by ComputeSortedSubDagArcs.
+  absl::StrongVector<NodeId, int> indegree_of_node_;
+  // Used by ComputeSortedSubDagArcs.
+  std::vector<NodeId> nodes_to_visit_;
+  // Used as output, set up as a member to allow reuse.
+  std::vector<ArcId> sorted_arcs_;
+};
+
+// A LocalSearchState is a container for variables with domains that can be
 // relaxed and tightened, saved and restored. It represents the solution state
 // of a local search engine, and allows it to go from solution to solution by
 // relaxing some variables to form a new subproblem, then tightening those
@@ -1681,75 +1795,185 @@ LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
 class LocalSearchState {
  public:
   class Variable;
-  // Adds a variable to this state, return a handler to the new variable.
-  int AddVariable(int64_t initial_min, int64_t initial_max);
-  void ChangeRelaxedVariableBounds(int variable_index, int64_t min,
+  DEFINE_STRONG_INT_TYPE(VariableDomainId, int);
+  DEFINE_STRONG_INT_TYPE(ConstraintId, int);
+  // Adds a variable domain to this state, returns a handler to the new domain.
+  VariableDomainId AddVariableDomain(int64_t relaxed_min, int64_t relaxed_max);
+  void RelaxVariableDomain(VariableDomainId domain_id);
+  bool TightenVariableDomainMin(VariableDomainId domain_id, int64_t value);
+  bool TightenVariableDomainMax(VariableDomainId domain_id, int64_t value);
+  int64_t VariableDomainMin(VariableDomainId domain_id) const;
+  int64_t VariableDomainMax(VariableDomainId domain_id) const;
+  void ChangeRelaxedVariableDomain(VariableDomainId domain_id, int64_t min,
                                    int64_t max);
-  // Makes an object with restricted operations on the variable identified by
-  // variable_index: only Relax, Tighten and read operations are available.
-  Variable MakeVariable(int variable_index);
+  // Propagation of all events.
+  void PropagateRelax(VariableDomainId domain_id);
+  bool PropagateTighten(VariableDomainId domain_id);
+  // Makes a variable, an object with restricted operations on the underlying
+  // domain identified by domain_id: only Relax, Tighten and Min/Max read
+  // operations are available.
+  Variable MakeVariable(VariableDomainId domain_id);
   void Commit();
   void Revert();
   bool StateIsFeasible() const {
-    return state_all_variable_bounds_are_correct_ &&
-           num_committed_empty_domains_ == 0;
+    return state_domains_are_all_nonempty_ && num_committed_empty_domains_ == 0;
   }
+  // Adds a constraint that output = input_offset + sum_i weight_i * input_i.
+  void AddWeightedSumConstraint(
+      const std::vector<VariableDomainId>& input_domain_ids,
+      const std::vector<int64_t>& input_weights, int64_t input_offset,
+      VariableDomainId output_domain_id);
+  // Precomputes which domain change triggers which constraint(s).
+  // Should be run after adding all constraints, before any Relax()/Tighten().
+  void CompileConstraints();
 
  private:
-  struct Bounds {
+  // VariableDomains implement the domain of Variables.
+  // Those are trailed, meaning they are saved on their first modification,
+  // and can be reverted or committed in O(1) per modification.
+  struct VariableDomain {
     int64_t min;
     int64_t max;
   };
-  bool BoundsIntersectionIsEmpty(const Bounds& b1, const Bounds& b2) const {
-    return b1.max < b2.min || b2.max < b1.min;
+  bool IntersectionIsEmpty(const VariableDomain& d1,
+                           const VariableDomain& d2) const {
+    return d1.max < d2.min || d2.max < d1.min;
   }
-
-  void RelaxVariableBounds(int variable_index);
-  bool TightenVariableMin(int variable_index, int64_t value);
-  bool TightenVariableMax(int variable_index, int64_t value);
-  int64_t VariableMin(int variable_index) const;
-  int64_t VariableMax(int variable_index) const;
-
-  // TODO(user): turn these into strong vectors.
-  std::vector<Bounds> relaxed_variable_bounds_;
-  std::vector<Bounds> variable_bounds_;
-  std::vector<std::pair<Bounds, int>> trailed_variable_bounds_;
-  std::vector<bool> variable_is_relaxed_;
-  // True iff all variable have their variable_bounds_ min <= max.
-  bool state_all_variable_bounds_are_correct_ = true;
-  bool state_has_relaxed_variables_ = false;
-  // Number of variables v for which the intersection of
-  // variable_bounds_[v] and relaxed_variable_bounds_[v] is empty.
+  absl::StrongVector<VariableDomainId, VariableDomain> relaxed_domains_;
+  absl::StrongVector<VariableDomainId, VariableDomain> current_domains_;
+  struct TrailedVariableDomain {
+    VariableDomain domain;
+    VariableDomainId domain_id;
+  };
+  std::vector<TrailedVariableDomain> trailed_domains_;
+  absl::StrongVector<VariableDomainId, bool> domain_is_trailed_;
+  // True iff all domains have their min <= max.
+  bool state_domains_are_all_nonempty_ = true;
+  bool state_has_relaxed_domains_ = false;
+  // Number of domains d for which the intersection of
+  // current_domains_[d] and relaxed_domains_[d] is empty.
   int num_committed_empty_domains_ = 0;
   int trailed_num_committed_empty_domains_ = 0;
+
+  // Stores domain-constraint dependencies, allows to generate topological
+  // orderings of dependency arcs reachable from nodes.
+  class DependencyGraph {
+   public:
+    DependencyGraph() {}
+    // There are two kinds of domain-constraint dependencies:
+    // - domain -> constraint when the domain is an input to the constraint.
+    //   Then the label is the index of the domain in the input tuple.
+    // - constraint -> domain when the domain is the output of the constraint.
+    //   Then, the label is -1.
+    struct Dependency {
+      VariableDomainId domain_id;
+      int input_index;
+      ConstraintId constraint_id;
+};
+    // Adds all dependencies domains[i] -> constraint labelled by i.
+    void AddDomainsConstraintDependencies(
+        const std::vector<VariableDomainId>& domain_ids,
+        ConstraintId constraint_id);
+    // Adds a dependency domain -> constraint labelled by -1.
+    void AddConstraintDomainDependency(ConstraintId constraint_id,
+                                       VariableDomainId domain_id);
+    // After all dependencies have been added,
+    // builds the DAG representation that allows to compute sorted dependencies.
+    void BuildDependencyDAG(int num_domains);
+    // Returns a view on the list of arc dependencies reachable by given domain,
+    // in some topological order of the overall DAG. Modifying the graph or
+    // calling ComputeSortedDependencies() again invalidates the view.
+    const std::vector<Dependency>& ComputeSortedDependencies(
+        VariableDomainId domain_id);
+
+   private:
+    using ArcId = SubDagComputer::ArcId;
+    using NodeId = SubDagComputer::NodeId;
+    // Returns dag_node_of_domain_[domain_id] if already defined,
+    // or makes a node for domain_id, possibly extending dag_node_of_domain_.
+    NodeId GetOrCreateNodeOfDomainId(VariableDomainId domain_id);
+    // Returns dag_node_of_constraint_[constraint_id] if already defined,
+    // or makes a node for constraint_id, possibly extending
+    // dag_node_of_constraint_.
+    NodeId GetOrCreateNodeOfConstraintId(ConstraintId constraint_id);
+    // Structure of the expression DAG, used to buffer propagation storage.
+    SubDagComputer dag_;
+    // Maps arcs of dag_ to domain/constraint dependencies.
+    absl::StrongVector<ArcId, Dependency> dependency_of_dag_arc_;
+    // Maps domain ids to dag_ nodes.
+    absl::StrongVector<VariableDomainId, NodeId> dag_node_of_domain_;
+    // Maps constraint ids to dag_ nodes.
+    absl::StrongVector<ConstraintId, NodeId> dag_node_of_constraint_;
+    // Number of nodes currently allocated in dag_.
+    // Reserve node 0 as a default dummy node with no dependencies.
+    int num_dag_nodes_ = 1;
+    // Used as reusable output of ComputeSortedDependencies().
+    std::vector<Dependency> sorted_dependencies_;
+  };
+  DependencyGraph dependency_graph_;
+
+  // Propagation order storage: each domain change triggers constraints.
+  // Each trigger tells a constraint that a domain changed, and identifies
+  // the domain by the index in the list of the constraint's inputs.
+  struct Trigger {
+    ConstraintId constraint_id;
+    int input_index;
+  };
+  // Triggers of all constraints, concatenated.
+  // The triggers of domain i are stored from triggers_of_domain_[i]
+  // to triggers_of_domain_[i+1] excluded.
+  std::vector<Trigger> triggers_;
+  absl::StrongVector<VariableDomainId, int> triggers_of_domain_;
+
+  // Constraints are used to form expressions that make up the objective.
+  // Constraints are directed: they have inputs and an output, moreover the
+  // constraint-domain graph must not have directed cycles.
+  // WeightedSum have constants.size() = inputs.size() + 1, they maintain
+  // output = constants.back() + sum_i inputs[i] * constants[i]
+  enum class ConstraintType { WeightedSum };
+  struct Constraint {
+    std::vector<VariableDomainId> inputs;
+    std::vector<int64_t> constants;
+    VariableDomainId output;
+    ConstraintType type;
+  };
+  absl::StrongVector<ConstraintId, Constraint> constraints_;
+
+  // Helper functions.
+  bool PropagateTightenWeightedSum(ConstraintId constraint);
 };
 
-// A LocalSearchVariable can only be created by a LocalSearchState, then it is
-// meant to be passed by copy. If at some point the duplication of
+// A LocalSearchState Variable can only be created by a LocalSearchState,
+// then it is meant to be passed by copy. If at some point the duplication of
 // LocalSearchState pointers is too expensive, we could switch to index only,
 // and the user would have to know the relevant state. The present setup allows
 // to ensure that variable users will not misuse the state.
 class LocalSearchState::Variable {
  public:
-  int64_t Min() const { return state_->VariableMin(variable_index_); }
-  int64_t Max() const { return state_->VariableMax(variable_index_); }
+  int64_t Min() const { return state_->VariableDomainMin(domain_id_); }
+  int64_t Max() const { return state_->VariableDomainMax(domain_id_); }
   bool SetMin(int64_t new_min) {
-    return state_->TightenVariableMin(variable_index_, new_min);
+    return state_->TightenVariableDomainMin(domain_id_, new_min) &&
+           state_->PropagateTighten(domain_id_);
   }
   bool SetMax(int64_t new_max) {
-    return state_->TightenVariableMax(variable_index_, new_max);
+    return state_->TightenVariableDomainMax(domain_id_, new_max) &&
+           state_->PropagateTighten(domain_id_);
   }
-  void Relax() { state_->RelaxVariableBounds(variable_index_); }
+  void Relax() {
+    state_->RelaxVariableDomain(domain_id_);
+    state_->PropagateRelax(domain_id_);
+  }
 
  private:
   // Only LocalSearchState can construct LocalSearchVariables.
   friend class LocalSearchState;
 
-  Variable(LocalSearchState* state, int variable_index)
-      : state_(state), variable_index_(variable_index) {}
+  Variable(LocalSearchState* state, VariableDomainId domain_id)
+      : state_(state), domain_id_(domain_id) {}
 
   LocalSearchState* const state_;
-  const int variable_index_;
+  const VariableDomainId domain_id_;
 };
 #endif  // !defined(SWIG)
 
@@ -1987,6 +2211,8 @@ class LocalSearchMonitor : public SearchMonitor {
                                  bool neighbor_found) = 0;
   virtual void BeginFiltering(const LocalSearchFilter* filter) = 0;
   virtual void EndFiltering(const LocalSearchFilter* filter, bool reject) = 0;
+
+  virtual bool IsActive() const = 0;
 
   /// Install itself on the solver.
   void Install() override;

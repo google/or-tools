@@ -2875,6 +2875,16 @@ class Solver {
                                         DecisionBuilder* first_solution,
                                         LocalSearchPhaseParameters* parameters);
 
+  /// Experimental: runs a local search on the given initial solution, checking
+  /// the feasibility and the objective value of solutions using the filter
+  /// manager only (solutions are never restored in the CP world). Only greedy
+  /// descent is supported.
+  Assignment* RunUncheckedLocalSearch(
+      const Assignment* initial_solution,
+      LocalSearchFilterManager* filter_manager,
+      LocalSearchOperator* ls_operator,
+      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit);
+
   /// Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
 
@@ -3204,6 +3214,13 @@ class Solver {
     DCHECK_GT(search_size, 1);
     return searches_[search_size - 2];
   }
+
+  template <bool is_profile_active>
+  Assignment* RunUncheckedLocalSearchInternal(
+      const Assignment* initial_solution,
+      LocalSearchFilterManager* filter_manager,
+      LocalSearchOperator* ls_operator,
+      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit);
 
   /// Naming
   std::string GetName(const PropagationBaseObject* object);

@@ -29,7 +29,6 @@
 /// The literature around vehicle routing problems is extremely dense but one
 /// can find some basic introductions in the following links:
 /// - http://en.wikipedia.org/wiki/Travelling_salesman_problem
-/// - http://www.tsp.gatech.edu/history/index.html
 /// - http://en.wikipedia.org/wiki/Vehicle_routing_problem
 ///
 /// The vehicle routing library is a vertical layer above the constraint
@@ -479,7 +478,9 @@ class RoutingModel {
     };
 
     explicit ResourceGroup(const RoutingModel* model)
-        : model_(model), vehicle_requires_resource_(model->vehicles(), false) {}
+        : model_(model),
+          vehicle_requires_resource_(model->vehicles(), false),
+          vehicle_allowed_resources_(model->vehicles()) {}
 
     /// Adds a Resource with the given attributes for the corresponding
     /// dimension. Returns the index of the added resource in resources_.
@@ -498,6 +499,21 @@ class RoutingModel {
       return vehicle_requires_resource_[vehicle];
     }
 
+    void SetAllowedResourcesForVehicle(
+        int vehicle, const std::vector<int>& allowed_resource_indices) {
+      DCHECK(!model_->closed_);
+      DCHECK(vehicle_requires_resource_[vehicle]);
+      DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
+      vehicle_allowed_resources_[vehicle].clear();
+      vehicle_allowed_resources_[vehicle].insert(
+          allowed_resource_indices.begin(), allowed_resource_indices.end());
+    }
+    const absl::flat_hash_set<int>& GetResourcesMarkedAllowedForVehicle(
+        int vehicle) const {
+      DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
+      return vehicle_allowed_resources_[vehicle];
+    }
+
     const std::vector<Resource>& GetResources() const { return resources_; }
     const Resource& GetResource(int resource_index) const {
       DCHECK_LT(resource_index, resources_.size());
@@ -514,6 +530,13 @@ class RoutingModel {
     std::vector<Resource> resources_;
     std::vector<bool> vehicle_requires_resource_;
     std::vector<int> vehicles_requiring_resource_;
+    // For each vehicle, stores the set of allowed resource indices if it's
+    // restricted for that vehicle. If the set is empty for a vehicle, then any
+    // resource from this group can be assigned to it.
+    // TODO(user): Take this into account for vehicle class computations!!
+    // clang-format off
+    std::vector<absl::flat_hash_set<int> > vehicle_allowed_resources_;
+    // clang-format on
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
   };
@@ -703,6 +726,8 @@ class RoutingModel {
   }
   /// Returns dimensions with soft or vehicle span costs.
   std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
+  /// Returns dimensions for which all transit evaluators are unary.
+  std::vector<RoutingDimension*> GetUnaryDimensions() const;
 
   /// Returns the dimensions which have [global|local]_dimension_optimizers_.
   std::vector<const RoutingDimension*> GetDimensionsWithGlobalCumulOptimizers()
@@ -865,7 +890,7 @@ class RoutingModel {
                                   int64_t index);
 
   /// Returns true if a vehicle is allowed to visit a given node.
-  bool IsVehicleAllowedForIndex(int vehicle, int64_t index) {
+  bool IsVehicleAllowedForIndex(int vehicle, int64_t index) const {
     return allowed_vehicles_[index].empty() ||
            allowed_vehicles_[index].find(vehicle) !=
                allowed_vehicles_[index].end();
@@ -1234,6 +1259,14 @@ class RoutingModel {
       const Assignment* assignment,
       const RoutingSearchParameters& search_parameters,
       std::vector<const Assignment*>* solutions = nullptr);
+  /// Improves a given assignment using unchecked local search.
+  /// If check_solution_in_cp is true the final solution will be checked with
+  /// the CP solver.
+  /// As of 11/2023, only works with greedy descent.
+  const Assignment* FastSolveFromAssignmentWithParameters(
+      const Assignment* assignment,
+      const RoutingSearchParameters& search_parameters,
+      bool check_solution_in_cp);
   /// Same as above but will try all assignments in order as first solutions
   /// until one succeeds.
   const Assignment* SolveFromAssignmentsWithParameters(
@@ -1923,6 +1956,13 @@ class RoutingModel {
   /// therefore set to 0.
   void StoreDimensionCumulOptimizers(const RoutingSearchParameters& parameters);
 
+  /// The following method looks at node-to-vehicle assignment feasibility
+  /// based on node transit values on unary dimensions: If the (absolute) value
+  /// of transit for a node is greater than the vehicle capacity on any
+  /// dimension, this node cannot be served by this vehicle and the latter is
+  /// thus removed from allowed_vehicles_[node].
+  void FinalizeAllowedVehicles();
+
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
   /// The following method initializes the vehicle_type_container_:
@@ -2389,6 +2429,8 @@ class RoutingModel {
   std::vector<SearchMonitor*> monitors_;
   std::vector<SearchMonitor*> secondary_ls_monitors_;
   std::vector<SearchMonitor*> at_solution_monitors_;
+  SearchMonitor* metaheuristic_ = nullptr;
+  SearchMonitor* search_log_ = nullptr;
   bool local_optimum_reached_ = false;
   // Best lower bound found during the search.
   int64_t objective_lower_bound_ = kint64min;
@@ -3000,6 +3042,16 @@ class RoutingDimension {
     const int vehicle = model_->GetVehicleOfClass(vehicle_class);
     DCHECK_NE(vehicle, -1);
     return transit_evaluator(vehicle);
+  }
+
+  /// Returns true iff all transit evaluators for this dimension are unary.
+  bool IsUnary() const {
+    for (int evaluator_index : class_evaluators_) {
+      if (model_->UnaryTransitCallbackOrNull(evaluator_index) == nullptr) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Returns the unary callback evaluating the transit value between two node

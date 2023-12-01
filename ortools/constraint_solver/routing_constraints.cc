@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -228,6 +229,16 @@ class ResourceAssignmentConstraint : public Constraint {
       s->AddConstraint(
           s->MakeEquality(model_.VehicleRouteConsideredVar(v),
                           s->MakeIsDifferentCstVar(resource_var, -1)));
+
+      // Reduce domain of resource_var.
+      const absl::flat_hash_set<int>& resources_marked_allowed =
+          resource_group_.GetResourcesMarkedAllowedForVehicle(v);
+      if (!resources_marked_allowed.empty()) {
+        std::vector<int> allowed_resources(resources_marked_allowed.begin(),
+                                           resources_marked_allowed.end());
+        allowed_resources.push_back(-1);
+        s->AddConstraint(s->MakeMemberCt(resource_var, allowed_resources));
+      }
 
       // Add dimension cumul constraints.
       for (const RoutingModel::DimensionIndex dim_index :

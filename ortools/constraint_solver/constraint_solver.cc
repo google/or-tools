@@ -30,20 +30,17 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
-#include "absl/time/clock.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/recordio.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
+#include "zconf.h"
 #include "zlib.h"
 
 // These flags are used to set the fields in the DefaultSolverParameters proto.
@@ -1786,42 +1783,25 @@ bool Solver::CurrentlyInSolve() const {
 }
 
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  return Solve(db, monitors);
+  return Solve(db, std::vector<SearchMonitor*>{m1});
 }
 
-bool Solver::Solve(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
-  return Solve(db, monitors);
-}
+bool Solver::Solve(DecisionBuilder* const db) { return Solve(db, {}); }
 
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
                    SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  return Solve(db, monitors);
+  return Solve(db, {m1, m2});
 }
 
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
                    SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  monitors.push_back(m3);
-  return Solve(db, monitors);
+  return Solve(db, {m1, m2, m3});
 }
 
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
                    SearchMonitor* const m2, SearchMonitor* const m3,
                    SearchMonitor* const m4) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  monitors.push_back(m3);
-  monitors.push_back(m4);
-  return Solve(db, monitors);
+  return Solve(db, {m1, m2, m3, m4});
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
@@ -1835,42 +1815,25 @@ bool Solver::Solve(DecisionBuilder* const db,
 }
 
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  return NewSearch(db, monitors);
+  return NewSearch(db, std::vector<SearchMonitor*>{m1});
 }
 
-void Solver::NewSearch(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
-  return NewSearch(db, monitors);
-}
+void Solver::NewSearch(DecisionBuilder* const db) { return NewSearch(db, {}); }
 
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
                        SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  return NewSearch(db, monitors);
+  return NewSearch(db, {m1, m2});
 }
 
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
                        SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  monitors.push_back(m3);
-  return NewSearch(db, monitors);
+  return NewSearch(db, {m1, m2, m3});
 }
 
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
                        SearchMonitor* const m2, SearchMonitor* const m3,
                        SearchMonitor* const m4) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  monitors.push_back(m3);
-  monitors.push_back(m4);
-  return NewSearch(db, monitors);
+  return NewSearch(db, {m1, m2, m3, m4});
 }
 
 extern PropagationMonitor* BuildPrintTrace(Solver* s);
@@ -2412,31 +2375,21 @@ bool Solver::CheckConstraint(Constraint* const ct) {
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
                             SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  return SolveAndCommit(db, monitors);
+  return SolveAndCommit(db, std::vector<SearchMonitor*>{m1});
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
-  return SolveAndCommit(db, monitors);
+  return SolveAndCommit(db, {});
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
                             SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  return SolveAndCommit(db, monitors);
+  return SolveAndCommit(db, {m1, m2});
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
                             SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
-  monitors.push_back(m1);
-  monitors.push_back(m2);
-  monitors.push_back(m3);
-  return SolveAndCommit(db, monitors);
+  return SolveAndCommit(db, {m1, m2, m3});
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
@@ -2578,19 +2531,21 @@ void Decision::Accept(DecisionVisitor* const visitor) const {
   visitor->VisitUnknownDecision();
 }
 
-void DecisionVisitor::VisitSetVariableValue(IntVar* const var, int64_t value) {}
-void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var, int64_t value,
-                                               bool lower) {}
+void DecisionVisitor::VisitSetVariableValue([[maybe_unused]] IntVar* const var,
+                                            [[maybe_unused]] int64_t value) {}
+void DecisionVisitor::VisitSplitVariableDomain(
+    [[maybe_unused]] IntVar* const var, [[maybe_unused]] int64_t value,
+    [[maybe_unused]] bool start_with_lower_half) {}
 void DecisionVisitor::VisitUnknownDecision() {}
-void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
-                                              int64_t est) {}
-void DecisionVisitor::VisitScheduleOrExpedite(IntervalVar* const var,
-                                              int64_t est) {}
-void DecisionVisitor::VisitRankFirstInterval(SequenceVar* const sequence,
-                                             int index) {}
+void DecisionVisitor::VisitScheduleOrPostpone(
+    [[maybe_unused]] IntervalVar* const var, [[maybe_unused]] int64_t est) {}
+void DecisionVisitor::VisitScheduleOrExpedite(
+    [[maybe_unused]] IntervalVar* const var, [[maybe_unused]] int64_t est) {}
+void DecisionVisitor::VisitRankFirstInterval(
+    [[maybe_unused]] SequenceVar* const sequence, [[maybe_unused]] int index) {}
 
-void DecisionVisitor::VisitRankLastInterval(SequenceVar* const sequence,
-                                            int index) {}
+void DecisionVisitor::VisitRankLastInterval(
+    [[maybe_unused]] SequenceVar* const sequence, [[maybe_unused]] int index) {}
 
 // ---------- ModelVisitor ----------
 
@@ -2773,41 +2728,50 @@ const char ModelVisitor::kTraceOperation[] = "trace";
 
 ModelVisitor::~ModelVisitor() {}
 
-void ModelVisitor::BeginVisitModel(const std::string& type_name) {}
-void ModelVisitor::EndVisitModel(const std::string& type_name) {}
+void ModelVisitor::BeginVisitModel(
+    [[maybe_unused]] const std::string& type_name) {}
+void ModelVisitor::EndVisitModel(
+    [[maybe_unused]] const std::string& type_name) {}
 
-void ModelVisitor::BeginVisitConstraint(const std::string& type_name,
-                                        const Constraint* const constraint) {}
-void ModelVisitor::EndVisitConstraint(const std::string& type_name,
-                                      const Constraint* const constraint) {}
+void ModelVisitor::BeginVisitConstraint(
+    [[maybe_unused]] const std::string& type_name,
+    [[maybe_unused]] const Constraint* const constraint) {}
+void ModelVisitor::EndVisitConstraint(
+    [[maybe_unused]] const std::string& type_name,
+    [[maybe_unused]] const Constraint* const constraint) {}
 
-void ModelVisitor::BeginVisitExtension(const std::string& type) {}
-void ModelVisitor::EndVisitExtension(const std::string& type) {}
+void ModelVisitor::BeginVisitExtension(
+    [[maybe_unused]] const std::string& type) {}
+void ModelVisitor::EndVisitExtension([[maybe_unused]] const std::string& type) {
+}
 
-void ModelVisitor::BeginVisitIntegerExpression(const std::string& type_name,
-                                               const IntExpr* const expr) {}
-void ModelVisitor::EndVisitIntegerExpression(const std::string& type_name,
-                                             const IntExpr* const expr) {}
+void ModelVisitor::BeginVisitIntegerExpression(
+    [[maybe_unused]] const std::string& type_name,
+    [[maybe_unused]] const IntExpr* const expr) {}
+void ModelVisitor::EndVisitIntegerExpression(
+    [[maybe_unused]] const std::string& type_name,
+    [[maybe_unused]] const IntExpr* const expr) {}
 
-void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
-                                        IntExpr* const delegate) {
+void ModelVisitor::VisitIntegerVariable(
+    [[maybe_unused]] const IntVar* const variable, IntExpr* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
-                                        const std::string& operation,
-                                        int64_t value, IntVar* const delegate) {
+void ModelVisitor::VisitIntegerVariable(
+    [[maybe_unused]] const IntVar* const variable,
+    [[maybe_unused]] const std::string& operation,
+    [[maybe_unused]] int64_t value, IntVar* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
-                                         const std::string& operation,
-                                         int64_t value,
-                                         IntervalVar* const delegate) {
+void ModelVisitor::VisitIntervalVariable(
+    [[maybe_unused]] const IntervalVar* const variable,
+    [[maybe_unused]] const std::string& operation,
+    [[maybe_unused]] int64_t value, IntervalVar* const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
@@ -2819,45 +2783,52 @@ void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
   }
 }
 
-void ModelVisitor::VisitIntegerArgument(const std::string& arg_name,
-                                        int64_t value) {}
+void ModelVisitor::VisitIntegerArgument(
+    [[maybe_unused]] const std::string& arg_name,
+    [[maybe_unused]] int64_t value) {}
 
 void ModelVisitor::VisitIntegerArrayArgument(
-    const std::string& arg_name, const std::vector<int64_t>& values) {}
+    [[maybe_unused]] const std::string& arg_name,
+    [[maybe_unused]] const std::vector<int64_t>& values) {}
 
-void ModelVisitor::VisitIntegerMatrixArgument(const std::string& arg_name,
-                                              const IntTupleSet& tuples) {}
+void ModelVisitor::VisitIntegerMatrixArgument(
+    [[maybe_unused]] const std::string& arg_name,
+    [[maybe_unused]] const IntTupleSet& tuples) {}
 
-void ModelVisitor::VisitIntegerExpressionArgument(const std::string& arg_name,
-                                                  IntExpr* const argument) {
+void ModelVisitor::VisitIntegerExpressionArgument(
+    [[maybe_unused]] const std::string& arg_name, IntExpr* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntegerVariableEvaluatorArgument(
-    const std::string& arg_name, const Solver::Int64ToIntVar& arguments) {}
+    [[maybe_unused]] const std::string& arg_name,
+    [[maybe_unused]] const Solver::Int64ToIntVar& arguments) {}
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
-    const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+    [[maybe_unused]] const std::string& arg_name,
+    const std::vector<IntVar*>& arguments) {
   ForAll(arguments, &IntVar::Accept, this);
 }
 
-void ModelVisitor::VisitIntervalArgument(const std::string& arg_name,
-                                         IntervalVar* const argument) {
+void ModelVisitor::VisitIntervalArgument(
+    [[maybe_unused]] const std::string& arg_name, IntervalVar* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntervalArrayArgument(
-    const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+    [[maybe_unused]] const std::string& arg_name,
+    const std::vector<IntervalVar*>& arguments) {
   ForAll(arguments, &IntervalVar::Accept, this);
 }
 
-void ModelVisitor::VisitSequenceArgument(const std::string& arg_name,
-                                         SequenceVar* const argument) {
+void ModelVisitor::VisitSequenceArgument(
+    [[maybe_unused]] const std::string& arg_name, SequenceVar* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitSequenceArrayArgument(
-    const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+    [[maybe_unused]] const std::string& arg_name,
+    const std::vector<SequenceVar*>& arguments) {
   ForAll(arguments, &SequenceVar::Accept, this);
 }
 
@@ -2909,12 +2880,12 @@ void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
 void SearchMonitor::EnterSearch() {}
 void SearchMonitor::RestartSearch() {}
 void SearchMonitor::ExitSearch() {}
-void SearchMonitor::BeginNextDecision(DecisionBuilder* const b) {}
-void SearchMonitor::EndNextDecision(DecisionBuilder* const b,
-                                    Decision* const d) {}
-void SearchMonitor::ApplyDecision(Decision* const d) {}
-void SearchMonitor::RefuteDecision(Decision* const d) {}
-void SearchMonitor::AfterDecision(Decision* const d, bool apply) {}
+void SearchMonitor::BeginNextDecision(DecisionBuilder* const) {}
+void SearchMonitor::EndNextDecision(DecisionBuilder* const, Decision* const) {}
+void SearchMonitor::ApplyDecision(Decision* const) {}
+void SearchMonitor::RefuteDecision(Decision* const) {}
+void SearchMonitor::AfterDecision(Decision* const,
+                                  [[maybe_unused]] bool apply) {}
 void SearchMonitor::BeginFail() {}
 void SearchMonitor::EndFail() {}
 void SearchMonitor::BeginInitialPropagation() {}
@@ -2923,13 +2894,15 @@ bool SearchMonitor::AcceptSolution() { return true; }
 bool SearchMonitor::AtSolution() { return false; }
 void SearchMonitor::NoMoreSolutions() {}
 bool SearchMonitor::LocalOptimum() { return false; }
-bool SearchMonitor::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+bool SearchMonitor::AcceptDelta([[maybe_unused]] Assignment* delta,
+                                [[maybe_unused]] Assignment* deltadelta) {
   return true;
 }
 void SearchMonitor::AcceptNeighbor() {}
 void SearchMonitor::AcceptUncheckedNeighbor() {}
 void SearchMonitor::PeriodicCheck() {}
-void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
+void SearchMonitor::Accept([[maybe_unused]] ModelVisitor* const visitor) const {
+}
 // A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
   for (std::underlying_type<Solver::MonitorEvent>::type event = 0;
@@ -3230,6 +3203,7 @@ class LocalSearchMonitorPrimary : public LocalSearchMonitor {
   void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
     ForAll(monitors_, &LocalSearchMonitor::EndFiltering, filter, reject);
   }
+  bool IsActive() const override { return !monitors_.empty(); }
 
   // Does not take ownership of monitor.
   void Add(LocalSearchMonitor* monitor) {

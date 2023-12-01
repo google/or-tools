@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -33,9 +34,12 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/time.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -345,7 +349,6 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
     : IntVarLocalSearchOperator(next_vars, true),
       number_of_nexts_(next_vars.size()),
       ignore_path_vars_(path_vars.empty()),
-      next_base_to_increment_(iteration_parameters.number_of_base_nodes),
       base_nodes_(iteration_parameters.number_of_base_nodes),
       base_alternatives_(iteration_parameters.number_of_base_nodes),
       base_sibling_alternatives_(iteration_parameters.number_of_base_nodes),
@@ -356,8 +359,10 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
       calls_per_base_node_(iteration_parameters.number_of_base_nodes, 0),
       just_started_(false),
       first_start_(true),
+      next_base_to_increment_(iteration_parameters.number_of_base_nodes),
       iteration_parameters_(std::move(iteration_parameters)),
       optimal_paths_enabled_(false),
+      active_paths_(number_of_nexts_),
       alternative_index_(next_vars.size(), -1) {
   DCHECK_GT(iteration_parameters_.number_of_base_nodes, 0);
   if (!ignore_path_vars_) {
@@ -376,7 +381,7 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
   }
 }
 
-void PathOperator::Reset() { optimal_paths_.clear(); }
+void PathOperator::Reset() { active_paths_.Clear(); }
 
 void PathOperator::OnStart() {
   optimal_paths_enabled_ = false;
@@ -491,7 +496,10 @@ bool PathOperator::SwapActiveAndInactive(int64_t active, int64_t inactive) {
 bool PathOperator::IncrementPosition() {
   const int base_node_size = iteration_parameters_.number_of_base_nodes;
 
-  if (!just_started_) {
+  if (just_started_) {
+    just_started_ = false;
+    return true;
+  }
     const int number_of_paths = path_starts_.size();
     // Finding next base node positions.
     // Increment the position of inner base nodes first (higher index nodes);
@@ -571,13 +579,12 @@ bool PathOperator::IncrementPosition() {
         iteration_parameters_.skip_locally_optimal_paths) {
       if (path_basis_.size() > 1) {
         for (int i = 1; i < path_basis_.size(); ++i) {
-          optimal_paths_[num_paths_ *
-                             start_to_path_[StartNode(path_basis_[i - 1])] +
-                         start_to_path_[StartNode(path_basis_[i])]] = true;
+        active_paths_.DeactivatePathPair(StartNode(path_basis_[i - 1]),
+                                         StartNode(path_basis_[i]));
         }
       } else {
-        optimal_paths_[num_paths_ * start_to_path_[StartNode(path_basis_[0])] +
-                       start_to_path_[StartNode(path_basis_[0])]] = true;
+      active_paths_.DeactivatePathPair(StartNode(path_basis_[0]),
+                                       StartNode(path_basis_[0]));
       }
     }
     std::vector<int> current_starts(base_node_size);
@@ -612,16 +619,14 @@ bool PathOperator::IncrementPosition() {
       // skip them from now on.
       if (path_basis_.size() > 1) {
         for (int j = 1; j < path_basis_.size(); ++j) {
-          if (!optimal_paths_[num_paths_ * start_to_path_[StartNode(
-                                               path_basis_[j - 1])] +
-                              start_to_path_[StartNode(path_basis_[j])]]) {
+        if (active_paths_.IsPathPairActive(StartNode(path_basis_[j - 1]),
+                                           StartNode(path_basis_[j]))) {
             return CheckEnds();
           }
         }
       } else {
-        if (!optimal_paths_[num_paths_ *
-                                start_to_path_[StartNode(path_basis_[0])] +
-                            start_to_path_[StartNode(path_basis_[0])]]) {
+      if (active_paths_.IsPathPairActive(StartNode(path_basis_[0]),
+                                         StartNode(path_basis_[0]))) {
           return CheckEnds();
         }
       }
@@ -636,10 +641,6 @@ bool PathOperator::IncrementPosition() {
         }
       }
       if (stop) return false;
-    }
-  } else {
-    just_started_ = false;
-    return true;
   }
   return CheckEnds();
 }
@@ -657,29 +658,15 @@ void PathOperator::InitializePathStarts() {
     max_next = std::max(max_next, next);
   }
   // Update locally optimal paths.
-  if (optimal_paths_.empty() &&
-      iteration_parameters_.skip_locally_optimal_paths) {
-    num_paths_ = 0;
-    start_to_path_.clear();
-    start_to_path_.resize(number_of_nexts_, -1);
-    for (int i = 0; i < number_of_nexts_; ++i) {
-      if (!has_prevs[i]) {
-        start_to_path_[i] = num_paths_;
-        ++num_paths_;
-      }
-    }
-    optimal_paths_.resize(num_paths_ * num_paths_, false);
-  }
   if (iteration_parameters_.skip_locally_optimal_paths) {
+    active_paths_.Initialize(
+        /*is_start=*/[&has_prevs](int node) { return !has_prevs[node]; });
     for (int i = 0; i < number_of_nexts_; ++i) {
       if (!has_prevs[i]) {
         int current = i;
         while (!IsPathEnd(current)) {
           if ((OldNext(current) != PrevNext(current))) {
-            for (int j = 0; j < num_paths_; ++j) {
-              optimal_paths_[num_paths_ * start_to_path_[i] + j] = false;
-              optimal_paths_[num_paths_ * j + start_to_path_[i]] = false;
-            }
+            active_paths_.ActivatePath(i);
             break;
           }
           current = OldNext(current);
@@ -921,6 +908,14 @@ class TwoOpt : public PathOperator {
   ~TwoOpt() override {}
   bool MakeNeighbor() override;
   bool IsIncremental() const override { return true; }
+  void Reset() override {
+    PathOperator::Reset();
+    // When using metaheuristics, path operators will reactivate optimal
+    // routes and iterating will start at route starts, which can
+    // potentially be out of sync with the last incremental moves. This requires
+    // resetting incrementalism.
+    last_ = -1;
+  }
 
   std::string DebugString() const override { return "TwoOpt"; }
 
@@ -3821,89 +3816,183 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
   }
 }
 
-int LocalSearchState::AddVariable(int64_t initial_min, int64_t initial_max) {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK_LE(initial_min, initial_max);
-  relaxed_variable_bounds_.push_back({initial_min, initial_max});
-  variable_bounds_.push_back({initial_min, initial_max});
-  variable_is_relaxed_.push_back(false);
-  return variable_bounds_.size() - 1;
+void SubDagComputer::BuildGraph(int num_nodes) {
+  DCHECK_GE(num_nodes, num_nodes_);
+  DCHECK(!graph_was_built_);
+  graph_was_built_ = true;
+  std::sort(arcs_.begin(), arcs_.end());
+  arcs_of_node_.clear();
+  NodeId prev_tail(-1);
+  for (int a = 0; a < arcs_.size(); ++a) {
+    const NodeId tail = arcs_[a].tail;
+    if (tail != prev_tail) {
+      prev_tail = tail;
+      arcs_of_node_.resize(tail.value() + 1, a);
+    }
+  }
+  num_nodes_ = std::max(num_nodes_, num_nodes);
+  arcs_of_node_.resize(num_nodes_ + 1, arcs_.size());
+  DCHECK(!HasDirectedCycle()) << "Graph has a directed cycle";
 }
 
-LocalSearchState::Variable LocalSearchState::MakeVariable(int variable_index) {
-  return {this, variable_index};
+bool SubDagComputer::HasDirectedCycle() const {
+  DCHECK(graph_was_built_);
+  absl::StrongVector<NodeId, bool> node_is_open(num_nodes_, false);
+  absl::StrongVector<NodeId, bool> node_was_visited(num_nodes_, false);
+  // Depth first search event: a node and a boolean indicating whether
+  // to open or to close it.
+  struct DFSEvent {
+    NodeId node;
+    bool to_open;
+  };
+  std::vector<DFSEvent> event_stack;
+
+  for (NodeId node(0); node.value() < num_nodes_; ++node) {
+    if (node_was_visited[node]) continue;
+    event_stack.push_back({node, true});
+    while (!event_stack.empty()) {
+      const auto [node, to_open] = event_stack.back();
+      event_stack.pop_back();
+      if (node_was_visited[node]) continue;
+      if (to_open) {
+        if (node_is_open[node]) return true;
+        node_is_open[node] = true;
+        event_stack.push_back({node, false});
+        for (int a = arcs_of_node_[node];
+             a < arcs_of_node_[NodeId(node.value() + 1)]; ++a) {
+          const NodeId head = arcs_[a].head;
+          if (node_was_visited[head]) continue;  // Optim, keeps stack smaller.
+          event_stack.push_back({head, true});
+        }
+      } else {
+        node_was_visited[node] = true;
+        node_is_open[node] = false;
+      }
+    }
+  }
+  return false;
 }
 
-void LocalSearchState::RelaxVariableBounds(int variable_index) {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK(0 <= variable_index && variable_index < variable_is_relaxed_.size());
-  if (!state_has_relaxed_variables_) {
+const std::vector<SubDagComputer::ArcId>&
+SubDagComputer::ComputeSortedSubDagArcs(NodeId node) {
+  DCHECK_LT(node.value(), num_nodes_);
+  DCHECK(graph_was_built_);
+  if (indegree_of_node_.size() < num_nodes_) {
+    indegree_of_node_.resize(num_nodes_, 0);
+  }
+  // Compute indegrees of nodes of the sub-DAG reachable from node.
+  nodes_to_visit_.clear();
+  nodes_to_visit_.push_back(node);
+  while (!nodes_to_visit_.empty()) {
+    const NodeId node = nodes_to_visit_.back();
+    nodes_to_visit_.pop_back();
+    const NodeId next(node.value() + 1);
+    for (int a = arcs_of_node_[node]; a < arcs_of_node_[next]; ++a) {
+      const NodeId head = arcs_[a].head;
+      if (indegree_of_node_[head] == 0) {
+        nodes_to_visit_.push_back(head);
+      }
+      ++indegree_of_node_[head];
+    }
+  }
+  // Generate arc ordering by iteratively removing zero-indegree nodes.
+  sorted_arcs_.clear();
+  nodes_to_visit_.push_back(node);
+  while (!nodes_to_visit_.empty()) {
+    const NodeId node = nodes_to_visit_.back();
+    nodes_to_visit_.pop_back();
+    const NodeId next(node.value() + 1);
+    for (int a = arcs_of_node_[node]; a < arcs_of_node_[next]; ++a) {
+      const NodeId head = arcs_[a].head;
+      --indegree_of_node_[head];
+      if (indegree_of_node_[head] == 0) {
+        nodes_to_visit_.push_back(head);
+      }
+      sorted_arcs_.push_back(arcs_[a].arc_id);
+    }
+  }
+  // Invariant: indegree_of_node_ must be all 0, or the graph has a cycle.
+  DCHECK(absl::c_all_of(indegree_of_node_, [](int x) { return x == 0; }));
+  return sorted_arcs_;
+}
+
+using VariableDomainId = LocalSearchState::VariableDomainId;
+VariableDomainId LocalSearchState::AddVariableDomain(int64_t relaxed_min,
+                                                     int64_t relaxed_max) {
+  DCHECK(state_domains_are_all_nonempty_);
+  DCHECK_LE(relaxed_min, relaxed_max);
+  relaxed_domains_.push_back({relaxed_min, relaxed_max});
+  current_domains_.push_back({relaxed_min, relaxed_max});
+  domain_is_trailed_.push_back(false);
+  return VariableDomainId(current_domains_.size() - 1);
+}
+
+LocalSearchState::Variable LocalSearchState::MakeVariable(
+    VariableDomainId domain_id) {
+  return {this, domain_id};
+}
+
+void LocalSearchState::RelaxVariableDomain(VariableDomainId domain_id) {
+  DCHECK(state_domains_are_all_nonempty_);
+  if (!state_has_relaxed_domains_) {
     trailed_num_committed_empty_domains_ = num_committed_empty_domains_;
   }
-  state_has_relaxed_variables_ = true;
-  if (!variable_is_relaxed_[variable_index]) {
-    variable_is_relaxed_[variable_index] = true;
-    trailed_variable_bounds_.emplace_back(variable_bounds_[variable_index],
-                                          variable_index);
-    if (BoundsIntersectionIsEmpty(relaxed_variable_bounds_[variable_index],
-                                  variable_bounds_[variable_index])) {
+  state_has_relaxed_domains_ = true;
+  if (!domain_is_trailed_[domain_id]) {
+    domain_is_trailed_[domain_id] = true;
+    trailed_domains_.push_back({current_domains_[domain_id], domain_id});
+    if (IntersectionIsEmpty(relaxed_domains_[domain_id],
+                            current_domains_[domain_id])) {
       DCHECK_GT(num_committed_empty_domains_, 0);
       --num_committed_empty_domains_;
     }
-    variable_bounds_[variable_index] = relaxed_variable_bounds_[variable_index];
+    current_domains_[domain_id] = relaxed_domains_[domain_id];
   }
 }
 
-int64_t LocalSearchState::VariableMin(int variable_index) const {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
-  return variable_bounds_[variable_index].min;
+int64_t LocalSearchState::VariableDomainMin(VariableDomainId domain_id) const {
+  DCHECK(state_domains_are_all_nonempty_);
+  return current_domains_[domain_id].min;
 }
 
-int64_t LocalSearchState::VariableMax(int variable_index) const {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
-  return variable_bounds_[variable_index].max;
+int64_t LocalSearchState::VariableDomainMax(VariableDomainId domain_id) const {
+  DCHECK(state_domains_are_all_nonempty_);
+  return current_domains_[domain_id].max;
 }
 
-bool LocalSearchState::TightenVariableMin(int variable_index,
+bool LocalSearchState::TightenVariableDomainMin(VariableDomainId domain_id,
                                           int64_t min_value) {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK(variable_is_relaxed_[variable_index]);
-  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
-  Bounds& bounds = variable_bounds_[variable_index];
-  if (bounds.max < min_value) {
-    state_all_variable_bounds_are_correct_ = false;
+  DCHECK(state_domains_are_all_nonempty_);
+  DCHECK(domain_is_trailed_[domain_id]);
+  VariableDomain& domain = current_domains_[domain_id];
+  if (domain.max < min_value) {
+    state_domains_are_all_nonempty_ = false;
   }
-  bounds.min = std::max(bounds.min, min_value);
-  return state_all_variable_bounds_are_correct_;
+  domain.min = std::max(domain.min, min_value);
+  return state_domains_are_all_nonempty_;
 }
 
-bool LocalSearchState::TightenVariableMax(int variable_index,
+bool LocalSearchState::TightenVariableDomainMax(VariableDomainId domain_id,
                                           int64_t max_value) {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK(variable_is_relaxed_[variable_index]);
-  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
-  Bounds& bounds = variable_bounds_[variable_index];
-  if (bounds.min > max_value) {
-    state_all_variable_bounds_are_correct_ = false;
+  DCHECK(state_domains_are_all_nonempty_);
+  DCHECK(domain_is_trailed_[domain_id]);
+  VariableDomain& domain = current_domains_[domain_id];
+  if (domain.min > max_value) {
+    state_domains_are_all_nonempty_ = false;
   }
-  bounds.max = std::min(bounds.max, max_value);
-  return state_all_variable_bounds_are_correct_;
+  domain.max = std::min(domain.max, max_value);
+  return state_domains_are_all_nonempty_;
 }
 
-void LocalSearchState::ChangeRelaxedVariableBounds(int variable_index,
+void LocalSearchState::ChangeRelaxedVariableDomain(VariableDomainId domain_id,
                                                    int64_t min, int64_t max) {
-  DCHECK(state_all_variable_bounds_are_correct_);
-  DCHECK_GE(variable_index, 0);
-  DCHECK_LT(variable_index, variable_bounds_.size());
-  DCHECK(!variable_is_relaxed_[variable_index]);
-  const bool domain_was_empty =
-      BoundsIntersectionIsEmpty(relaxed_variable_bounds_[variable_index],
-                                variable_bounds_[variable_index]);
-  relaxed_variable_bounds_[variable_index] = {min, max};
+  DCHECK(state_domains_are_all_nonempty_);
+  DCHECK(!domain_is_trailed_[domain_id]);
+  const bool domain_was_empty = IntersectionIsEmpty(
+      relaxed_domains_[domain_id], current_domains_[domain_id]);
+  relaxed_domains_[domain_id] = {min, max};
   const bool domain_is_empty =
-      BoundsIntersectionIsEmpty({min, max}, variable_bounds_[variable_index]);
+      IntersectionIsEmpty({min, max}, current_domains_[domain_id]);
 
   if (!domain_was_empty && domain_is_empty) {
     num_committed_empty_domains_++;
@@ -3913,25 +4002,206 @@ void LocalSearchState::ChangeRelaxedVariableBounds(int variable_index,
 }
 
 // TODO(user): When the class has more users, find a threshold ratio of
-// saved/total variables under which a sparse clear would be more efficient
+// saved/total domains under which a sparse clear would be more efficient
 // for both Commit() and Revert().
 void LocalSearchState::Commit() {
   DCHECK(StateIsFeasible());
-  state_has_relaxed_variables_ = false;
-  trailed_variable_bounds_.clear();
-  variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
+  state_has_relaxed_domains_ = false;
+  trailed_domains_.clear();
+  domain_is_trailed_.assign(domain_is_trailed_.size(), false);
 }
 
 void LocalSearchState::Revert() {
-  for (const auto& bounds_index : trailed_variable_bounds_) {
-    DCHECK(variable_is_relaxed_[bounds_index.second]);
-    variable_bounds_[bounds_index.second] = bounds_index.first;
+  for (const auto& [domain, domain_id] : trailed_domains_) {
+    DCHECK(domain_is_trailed_[domain_id]);
+    current_domains_[domain_id] = domain;
   }
-  trailed_variable_bounds_.clear();
-  state_has_relaxed_variables_ = false;
-  variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
-  state_all_variable_bounds_are_correct_ = true;
+  trailed_domains_.clear();
+  state_has_relaxed_domains_ = false;
+  domain_is_trailed_.assign(domain_is_trailed_.size(), false);
+  state_domains_are_all_nonempty_ = true;
   num_committed_empty_domains_ = trailed_num_committed_empty_domains_;
+}
+
+using NodeId = SubDagComputer::NodeId;
+NodeId LocalSearchState::DependencyGraph::GetOrCreateNodeOfDomainId(
+    VariableDomainId domain_id) {
+  if (domain_id.value() >= dag_node_of_domain_.size()) {
+    dag_node_of_domain_.resize(domain_id.value() + 1, NodeId(0));
+  }
+  if (dag_node_of_domain_[domain_id] == NodeId(0)) {
+    dag_node_of_domain_[domain_id] = NodeId(num_dag_nodes_++);
+  }
+  return dag_node_of_domain_[domain_id];
+}
+
+NodeId LocalSearchState::DependencyGraph::GetOrCreateNodeOfConstraintId(
+    ConstraintId constraint_id) {
+  if (constraint_id.value() >= dag_node_of_constraint_.size()) {
+    dag_node_of_constraint_.resize(constraint_id.value() + 1, NodeId(0));
+  }
+  if (dag_node_of_constraint_[constraint_id] == NodeId(0)) {
+    dag_node_of_constraint_[constraint_id] = NodeId(num_dag_nodes_++);
+  }
+  return dag_node_of_constraint_[constraint_id];
+}
+
+void LocalSearchState::DependencyGraph::AddDomainsConstraintDependencies(
+    const std::vector<VariableDomainId>& domain_ids,
+    ConstraintId constraint_id) {
+  const NodeId cnode = GetOrCreateNodeOfConstraintId(constraint_id);
+  for (int i = 0; i < domain_ids.size(); ++i) {
+    const NodeId dnode = GetOrCreateNodeOfDomainId(domain_ids[i]);
+    dag_.AddArc(dnode, cnode);
+    dependency_of_dag_arc_.push_back({.domain_id = domain_ids[i],
+                                      .input_index = i,
+                                      .constraint_id = constraint_id});
+  }
+}
+
+void LocalSearchState::DependencyGraph::AddConstraintDomainDependency(
+    ConstraintId constraint_id, VariableDomainId domain_id) {
+  const NodeId cnode = GetOrCreateNodeOfConstraintId(constraint_id);
+  const NodeId dnode = GetOrCreateNodeOfDomainId(domain_id);
+  dag_.AddArc(cnode, dnode);
+  dependency_of_dag_arc_.push_back({.domain_id = domain_id,
+                                    .input_index = -1,
+                                    .constraint_id = constraint_id});
+}
+
+using ArcId = SubDagComputer::ArcId;
+const std::vector<LocalSearchState::DependencyGraph::Dependency>&
+LocalSearchState::DependencyGraph::ComputeSortedDependencies(
+    VariableDomainId domain_id) {
+  sorted_dependencies_.clear();
+  const NodeId node = dag_node_of_domain_[domain_id];
+  for (const ArcId a : dag_.ComputeSortedSubDagArcs(node)) {
+    if (dependency_of_dag_arc_[a].input_index == -1) continue;
+    sorted_dependencies_.push_back(dependency_of_dag_arc_[a]);
+  }
+  return sorted_dependencies_;
+}
+
+void LocalSearchState::AddWeightedSumConstraint(
+    const std::vector<VariableDomainId>& input_domain_ids,
+    const std::vector<int64_t>& input_weights, int64_t input_offset,
+    VariableDomainId output_domain_id) {
+  DCHECK_EQ(input_domain_ids.size(), input_weights.size());
+  // Store domain/constraint dependencies.
+  const ConstraintId constraint_id{constraints_.size()};
+  dependency_graph_.AddDomainsConstraintDependencies(input_domain_ids,
+                                                     constraint_id);
+  dependency_graph_.AddConstraintDomainDependency(constraint_id,
+                                                  output_domain_id);
+  // Store constraint.
+  constraints_.push_back({.inputs = input_domain_ids,
+                          .constants = input_weights,
+                          .output = output_domain_id,
+                          .type = ConstraintType::WeightedSum});
+  constraints_.back().constants.push_back(input_offset);
+}
+
+void LocalSearchState::DependencyGraph::BuildDependencyDAG(int num_domains) {
+  dag_.BuildGraph(num_dag_nodes_);
+  // Assign all unassigned nodes to dummy node 0.
+  const int num_assigned_nodes = dag_node_of_domain_.size();
+  DCHECK_GE(num_domains, num_assigned_nodes);
+  num_domains = std::max(num_domains, num_assigned_nodes);
+  dag_node_of_domain_.resize(num_domains, NodeId(0));
+}
+
+void LocalSearchState::CompileConstraints() {
+  triggers_.clear();
+  triggers_of_domain_.clear();
+  const int num_domains = current_domains_.size();
+  dependency_graph_.BuildDependencyDAG(num_domains);
+  for (int vid = 0; vid < num_domains; ++vid) {
+    triggers_of_domain_.push_back(triggers_.size());
+    for (const auto& [domain_id, input_index, constraint_id] :
+         dependency_graph_.ComputeSortedDependencies(VariableDomainId(vid))) {
+      triggers_.push_back(
+          {.constraint_id = constraint_id, .input_index = input_index});
+    }
+  }
+  triggers_of_domain_.push_back(triggers_.size());
+}
+
+void LocalSearchState::PropagateRelax(VariableDomainId domain_id) {
+  const VariableDomainId next_id = VariableDomainId(domain_id.value() + 1);
+  for (int t = triggers_of_domain_[domain_id]; t < triggers_of_domain_[next_id];
+       ++t) {
+    const auto& [constraint_id, input_index] = triggers_[t];
+    switch (constraints_[constraint_id].type) {
+      case ConstraintType::WeightedSum: {
+        RelaxVariableDomain(constraints_[constraint_id].output);
+      }
+    }
+  }
+}
+
+bool LocalSearchState::PropagateTightenWeightedSum(ConstraintId constraint_id) {
+  const auto& [inputs, constants, output, unused] = constraints_[constraint_id];
+  // TODO(user): O(1) version using label and internal values.
+  int num_neg_inf = 0;
+  int num_pos_inf = 0;
+  // Weighted sums of non-infinite (weight * domain) min/max.
+  const int num_inputs = inputs.size();
+  int64_t wsum_mins = constants.back();  // This is the sum's offset.
+  int64_t wsum_maxs = wsum_mins;
+  for (int i = 0; i < num_inputs; ++i) {
+    const int64_t weight = constants[i];
+    if (weight == 0) continue;
+    const VariableDomainId input = inputs[i];
+    const auto& [min, max] = current_domains_[input];
+    if (weight > 0) {
+      if (min == std::numeric_limits<int64_t>::min()) {
+        num_neg_inf++;
+      } else {
+        wsum_mins = CapAdd(wsum_mins, CapProd(weight, min));
+      }
+      if (max == std::numeric_limits<int64_t>::max()) {
+        num_pos_inf++;
+      } else {
+        wsum_maxs = CapAdd(wsum_maxs, CapProd(weight, max));
+      }
+    } else {
+      if (max == std::numeric_limits<int64_t>::max()) {
+        num_neg_inf++;
+      } else {
+        wsum_mins = CapAdd(wsum_mins, CapProd(weight, max));
+      }
+      if (min == std::numeric_limits<int64_t>::min()) {
+        num_pos_inf++;
+      } else {
+        wsum_maxs = CapAdd(wsum_maxs, CapProd(weight, min));
+      }
+    }
+  }
+  if (num_neg_inf == 0 && !TightenVariableDomainMin(output, wsum_mins)) {
+    return false;
+  }
+  if (num_pos_inf == 0 && !TightenVariableDomainMax(output, wsum_maxs)) {
+    return false;
+  }
+  return true;
+}
+
+bool LocalSearchState::PropagateTighten(VariableDomainId domain_id) {
+  const VariableDomainId next_id = VariableDomainId(domain_id.value() + 1);
+  for (int t = triggers_of_domain_[domain_id]; t < triggers_of_domain_[next_id];
+       ++t) {
+    const auto& [constraint_id, unused_input_index] = triggers_[t];
+    const auto& [inputs, constants, output, type] = constraints_[constraint_id];
+    switch (type) {
+      case ConstraintType::WeightedSum: {
+        if (!PropagateTightenWeightedSum(constraint_id)) {
+          return false;
+        }
+        break;
+      }
+    }
+  }
+  return true;
 }
 
 // ----- LocalSearchProfiler -----
@@ -4191,6 +4461,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       ProfiledDecisionBuilder* profiled_db) {
     profiled_decision_builders_.push_back(profiled_db);
   }
+  bool IsActive() const override { return true; }
   void Install() override { SearchMonitor::Install(); }
 
  private:
@@ -5124,12 +5395,15 @@ Decision* LocalSearch::Next(Solver* const solver) {
   const int state = decision->state();
   switch (state) {
     case NestedSolveDecision::DECISION_FAILED: {
+      const bool local_optimum_reached =
+          LocalOptimumReached(solver->ActiveSearch());
+      if (local_optimum_reached) {
       // A local optimum has been reached. The search will continue only if we
       // accept up-hill moves (due to metaheuristics). In this case we need to
       // reset neighborhood optimal routes.
       ls_operator_->Reset();
-      if (!LocalOptimumReached(solver->ActiveSearch()) ||
-          solver->IsUncheckedSolutionLimitReached()) {
+      }
+      if (!local_optimum_reached || solver->IsUncheckedSolutionLimitReached()) {
         nested_decision_index_ = -1;  // Stop the search
       }
       solver->Fail();
@@ -5253,4 +5527,111 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
       parameters->sub_decision_builder(), parameters->limit(),
       parameters->filter_manager()));
 }
+
+template <bool is_profile_active>
+Assignment* Solver::RunUncheckedLocalSearchInternal(
+    const Assignment* initial_solution,
+    LocalSearchFilterManager* filter_manager, LocalSearchOperator* ls_operator,
+    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit) {
+  DCHECK(initial_solution != nullptr);
+  DCHECK(initial_solution->Objective() != nullptr);
+  DCHECK(filter_manager != nullptr);
+  if (limit != nullptr) limit->Init();
+  Assignment delta(this);
+  Assignment deltadelta(this);
+  Assignment* const current_solution = GetOrCreateLocalSearchState();
+  current_solution->Copy(initial_solution);
+  std::function<bool(Assignment*, Assignment*)> make_next_neighbor;
+  std::function<bool(Assignment*, Assignment*)> filter_neighbor;
+  LocalSearchMonitor* const ls_monitor =
+      is_profile_active ? GetLocalSearchMonitor() : nullptr;
+  const auto sync_with_solution =
+      [this, ls_monitor, ls_operator,  // NOLINT: ls_monitor is used when
+                                       // is_profile_active is true
+       filter_manager, current_solution](Assignment* delta) {
+        IncrementUncheckedSolutionCounter();
+        if constexpr (is_profile_active) {
+          ls_monitor->BeginOperatorStart();
+        }
+        ls_operator->Start(current_solution);
+        filter_manager->Synchronize(current_solution, delta);
+        if constexpr (is_profile_active) {
+          ls_monitor->EndOperatorStart();
+        }
+      };
+  sync_with_solution(/*delta=*/nullptr);
+  while (true) {
+    if (!ls_operator->HoldsDelta()) {
+      delta.Clear();
+    }
+    delta.ClearObjective();
+    deltadelta.Clear();
+    if (limit != nullptr && (limit->CheckWithOffset(absl::ZeroDuration()) ||
+                             limit->IsUncheckedSolutionLimitReached())) {
+      break;
+    }
+    if constexpr (is_profile_active) {
+      ls_monitor->BeginMakeNextNeighbor(ls_operator);
+    }
+    const bool has_neighbor =
+        ls_operator->MakeNextNeighbor(&delta, &deltadelta);
+    if constexpr (is_profile_active) {
+      ls_monitor->EndMakeNextNeighbor(ls_operator, has_neighbor, &delta,
+                                      &deltadelta);
+    }
+    if (!has_neighbor) {
+      break;
+    }
+    if constexpr (is_profile_active) {
+      ls_monitor->BeginFilterNeighbor(ls_operator);
+    }
+    for (SearchMonitor* monitor : monitors) {
+      const bool mh_accept = monitor->AcceptDelta(&delta, &deltadelta);
+      DCHECK(mh_accept);
+    }
+    const bool filter_accept =
+        filter_manager->Accept(ls_monitor, &delta, &deltadelta,
+                               delta.ObjectiveMin(), delta.ObjectiveMax());
+    if constexpr (is_profile_active) {
+      ls_monitor->EndFilterNeighbor(ls_operator, filter_accept);
+      ls_monitor->BeginAcceptNeighbor(ls_operator);
+      ls_monitor->EndAcceptNeighbor(ls_operator, filter_accept);
+    }
+    if (!filter_accept) {
+      filter_manager->Revert();
+      continue;
+    }
+    filtered_neighbors_ += 1;
+    current_solution->CopyIntersection(&delta);
+    current_solution->SetObjectiveValue(
+        filter_manager->GetAcceptedObjectiveValue());
+    DCHECK(delta.AreAllElementsBound());
+    accepted_neighbors_ += 1;
+    SetSearchContext(ActiveSearch(), ls_operator->DebugString());
+    for (SearchMonitor* monitor : monitors) {
+      monitor->AtSolution();
+    }
+    // Syncing here to avoid resyncing when filtering fails.
+    sync_with_solution(/*delta=*/&delta);
+  }
+  if (parameters_.print_local_search_profile()) {
+    const std::string profile = LocalSearchProfile();
+    if (!profile.empty()) LOG(INFO) << profile;
+  }
+  return MakeAssignment(current_solution);
+}
+
+Assignment* Solver::RunUncheckedLocalSearch(
+    const Assignment* initial_solution,
+    LocalSearchFilterManager* filter_manager, LocalSearchOperator* ls_operator,
+    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit) {
+  if (GetLocalSearchMonitor()->IsActive()) {
+    return RunUncheckedLocalSearchInternal<true>(
+        initial_solution, filter_manager, ls_operator, monitors, limit);
+  } else {
+    return RunUncheckedLocalSearchInternal<false>(
+        initial_solution, filter_manager, ls_operator, monitors, limit);
+  }
+}
+
 }  // namespace operations_research
