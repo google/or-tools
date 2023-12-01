@@ -13,13 +13,20 @@
 
 #include "ortools/routing/solution_serializer.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/mutable_memfile.h"
+#include "ortools/base/options.h"
+#include "ortools/routing/simple_graph.h"
 
 namespace operations_research {
 namespace {
