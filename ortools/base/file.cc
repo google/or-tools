@@ -170,11 +170,13 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
   const int64_t size = file->Size();
   if (file->ReadToString(output, size) == size) {
     status.Update(file->Close(flags));
+    delete file;
     return status;
   }
 #if defined(_MSC_VER)
   // On windows, binary files needs to be opened with the "rb" flags.
   file->Close();
+  delete file;
   // Retry in binary mode.
   status = file::Open(filename, "rb", &file, flags);
   if (!status.ok()) return status;
@@ -182,11 +184,13 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
   const int64_t b_size = file->Size();
   if (file->ReadToString(output, b_size) == b_size) {
     status.Update(file->Close(flags));
+    delete file;
     return status;
   }
 #endif  // _MSC_VER
 
   file->Close(flags).IgnoreError();  // Even if ReadToString() fails!
+  delete file;
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not read from '", filename, "'."));
 }
@@ -209,6 +213,7 @@ absl::Status SetContents(const absl::string_view& filename,
   if (!status.ok()) return status;
   status = file::WriteString(file, contents, flags);
   status.Update(file->Close(flags));  // Even if WriteString() fails!
+  delete file;
   return status;
 }
 
