@@ -170,6 +170,9 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
   const int64_t size = file->Size();
   if (file->ReadToString(output, size) == size) {
     status.Update(file->Close(flags));
+#ifdef FIX_MEMORY_LEAK
+    delete file;
+#endif
     return status;
   }
 #if defined(_MSC_VER)
@@ -187,6 +190,9 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
 #endif  // _MSC_VER
 
   file->Close(flags).IgnoreError();  // Even if ReadToString() fails!
+#ifdef FIX_MEMORY_LEAK
+  delete file;
+#endif
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not read from '", filename, "'."));
 }
@@ -209,6 +215,9 @@ absl::Status SetContents(const absl::string_view& filename,
   if (!status.ok()) return status;
   status = file::WriteString(file, contents, flags);
   status.Update(file->Close(flags));  // Even if WriteString() fails!
+#ifdef FIX_MEMORY_LEAK
+  delete file;
+#endif
   return status;
 }
 

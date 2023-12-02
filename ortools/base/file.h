@@ -34,6 +34,8 @@ class File {
  public:
   // Opens file "name" with flags specified by "flag".
   // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
+  // The caller should free the File after closing it by passing the returned
+  // pointer to delete.
   static File* Open(const char* const name, const char* const flag);
 
 #ifndef SWIG  // no overloading
@@ -123,6 +125,8 @@ using Options = int;
 inline Options Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
+
+// The caller should free the file after closing by passing *f to delete.
 absl::Status Open(const absl::string_view& filename,
                   const absl::string_view& mode, File** f, int flags);
 File* OpenOrDie(const absl::string_view& filename,

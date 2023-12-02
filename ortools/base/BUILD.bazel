@@ -217,6 +217,16 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "hello_file",
+    srcs = ["hello_file.cc"],
+    deps = [
+        ":file",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+    ],
+)
+
 cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
