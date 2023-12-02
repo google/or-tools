@@ -4088,7 +4088,7 @@ void LocalSearchState::AddWeightedSumConstraint(
     VariableDomainId output_domain_id) {
   DCHECK_EQ(input_domain_ids.size(), input_weights.size());
   // Store domain/constraint dependencies.
-  const ConstraintId constraint_id{constraints_.size()};
+  const ConstraintId constraint_id(constraints_.size());
   dependency_graph_.AddDomainsConstraintDependencies(input_domain_ids,
                                                      constraint_id);
   dependency_graph_.AddConstraintDomainDependency(constraint_id,
