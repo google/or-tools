@@ -31,6 +31,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
@@ -48,7 +49,7 @@ namespace operations_research {
 namespace sat {
 
 // Checks that all pairwise distances are unique and returns all violators
-void CheckConstraintViolators(const std::vector<int64_t>& vars,
+void CheckConstraintViolators(absl::Span<const int64_t> vars,
                               std::vector<int>* const violators) {
   int dim = vars.size();
 

@@ -54,7 +54,7 @@ class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
         return self.__collect
 
 
-def EnumerateAllKnapsacksWithRepetition(
+def enumerate_all_knapsacks_with_repetition(
     item_sizes: list[int], total_size_min: int, total_size_max: int
 ) -> list[list[int]]:
     """Enumerate all possible knapsacks with total size in the given range.
@@ -85,7 +85,7 @@ def EnumerateAllKnapsacksWithRepetition(
     return solution_collector.combinations()
 
 
-def AggregateItemCollectionsOptimally(
+def aggregate_item_collections_optimally(
     item_collections: list[list[int]],
     max_num_collections: int,
     ideal_item_ratios: list[float],
@@ -179,7 +179,7 @@ def AggregateItemCollectionsOptimally(
     return []
 
 
-def GetOptimalSchedule(
+def get_optimal_schedule(
     demand: list[tuple[float, str, int]]
 ) -> list[tuple[int, list[tuple[int, str]]]]:
     """Computes the optimal schedule for the installation input.
@@ -193,7 +193,7 @@ def GetOptimalSchedule(
     Returns:
       The same output type as EnumerateAllKnapsacksWithRepetition.
     """
-    combinations = EnumerateAllKnapsacksWithRepetition(
+    combinations = enumerate_all_knapsacks_with_repetition(
         [a[2] + _COMMUTE_TIME.value for a in demand],
         _LOAD_MIN.value,
         _LOAD_MAX.value,
@@ -205,7 +205,7 @@ def GetOptimalSchedule(
         )
     )
 
-    selection = AggregateItemCollectionsOptimally(
+    selection = aggregate_item_collections_optimally(
         combinations, _NUM_WORKERS.value, [a[0] / 100.0 for a in demand]
     )
     output = []
@@ -237,7 +237,7 @@ def main(_):
         % (_LOAD_MIN.value, _LOAD_MAX.value)
     )
     print("%d workers" % _NUM_WORKERS.value)
-    selection = GetOptimalSchedule(demand)
+    selection = get_optimal_schedule(demand)
     print()
     installed = 0
     installed_per_type = {}
