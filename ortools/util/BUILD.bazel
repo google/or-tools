@@ -109,18 +109,6 @@ cc_library(
 )
 
 cc_library(
-    name = "graph_export",
-    srcs = ["graph_export.cc"],
-    hdrs = ["graph_export.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "zvector",
     hdrs = ["zvector.h"],
     deps = ["//ortools/base"],
