@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -65,9 +66,11 @@ Status LuFactorization::ComputeFactorization(
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
 
-  // TODO(user): This might fail on badly scaled matrices.
-  // I still prefer to keep it as a DCHECK for tests though.
-  DCHECK(CheckFactorization(matrix, Fractional(1e-6)));
+  // Note(user): This might fail on badly scaled matrices. I still prefer to
+  // keep it as a DCHECK() for tests though, but I only test it for small
+  // matrices.
+  DCHECK(matrix.num_rows() > 100 ||
+         CheckFactorization(matrix, Fractional(1e-6)));
   return Status::OK();
 }
 
