@@ -2831,7 +2831,7 @@ class CpModel:
         Returns:
           True if the model was correctly written.
         """
-        return swig_helper.CpSatHelper.WriteModelToFile(self.__model, file)
+        return swig_helper.CpSatHelper.write_model_to_file(self.__model, file)
 
     def add_hint(self, var: IntVar, value: int) -> None:
         """Adds 'var == value' as a hint to the solver."""
