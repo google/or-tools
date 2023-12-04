@@ -44,13 +44,19 @@
 File::File(FILE* descriptor, absl::string_view name)
     : f_(descriptor), name_(name) {}
 
-bool File::Delete(const char* name) { return remove(name) == 0; }
+bool File::Delete(absl::string_view filename) {
+  std::string null_terminated_name = std::string(filename);
+  return remove(null_terminated_name.c_str()) == 0;
+}
 
-bool File::Exists(const char* name) { return access(name, F_OK) == 0; }
+bool File::Exists(absl::string_view filename) {
+  std::string null_terminated_name = std::string(filename);
+  return access(null_terminated_name.c_str(), F_OK) == 0;
+}
 
 size_t File::Size() {
   struct stat f_stat;
-  stat(name_.data(), &f_stat);
+  stat(name_.c_str(), &f_stat);
   return f_stat.st_size;
 }
 
@@ -87,20 +93,19 @@ size_t File::Write(const void* buf, size_t size) {
   return fwrite(buf, 1, size, f_);
 }
 
-File* File::OpenOrDie(absl::string_view name, absl::string_view flag) {
-  FILE* f_des = fopen(name.data(), flag.data());
-  if (f_des == nullptr) {
-    std::cerr << "Cannot open " << name;
-    exit(1);
-  }
-  File* f = new File(f_des, name.data());
+File* File::OpenOrDie(absl::string_view filename, absl::string_view mode) {
+  File* f = File::Open(filename, mode);
+  CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
   return f;
 }
 
-File* File::Open(absl::string_view name, absl::string_view flag) {
-  FILE* f_des = fopen(name.data(), flag.data());
+File* File::Open(absl::string_view filename, absl::string_view mode) {
+  std::string null_terminated_name = std::string(filename);
+  std::string null_terminated_mode = std::string(mode);
+  FILE* f_des =
+      fopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
   if (f_des == nullptr) return nullptr;
-  File* f = new File(f_des, name.data());
+  File* f = new File(f_des, filename);
   return f;
 }
 
@@ -151,7 +156,7 @@ namespace file {
 absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
                   int flags) {
   if (flags == Defaults()) {
-    *f = File::Open(filename, mode.data());
+    *f = File::Open(filename, mode);
     if (*f != nullptr) {
       return absl::OkStatus();
     }
@@ -163,7 +168,7 @@ absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
 File* OpenOrDie(absl::string_view filename, absl::string_view mode, int flags) {
   File* f;
   CHECK_EQ(flags, Defaults());
-  f = File::Open(filename, mode.data());
+  f = File::Open(filename, mode);
   CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
   return f;
 }
@@ -227,7 +232,7 @@ bool ReadFileToString(absl::string_view file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data, absl::string_view file_name) {
+bool WriteStringToFile(absl::string_view data, absl::string_view file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
@@ -341,7 +346,8 @@ absl::Status SetBinaryProto(absl::string_view filename,
 
 absl::Status Delete(absl::string_view path, int flags) {
   if (flags == Defaults()) {
-    if (remove(path.data()) == 0) return absl::OkStatus();
+    std::string null_terminated_path = std::string(path);
+    if (remove(null_terminated_path.c_str()) == 0) return absl::OkStatus();
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not delete '", path, "'."));
@@ -349,7 +355,10 @@ absl::Status Delete(absl::string_view path, int flags) {
 
 absl::Status Exists(absl::string_view path, int flags) {
   if (flags == Defaults()) {
-    if (access(path.data(), F_OK) == 0) return absl::OkStatus();
+    std::string null_terminated_path = std::string(path);
+    if (access(null_terminated_path.c_str(), F_OK) == 0) {
+      return absl::OkStatus();
+    }
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("File '", path, "' does not exist."));

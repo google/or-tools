@@ -30,17 +30,17 @@
 class File {
  public:
 #ifndef SWIG  // no overloading
-  // Opens file "name" with flags specified by "flag".
+  // Opens file "name" with flags specified by "mode".
   // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
   // The caller should free the File after closing it by passing the returned
   // pointer to delete.
-  static File* Open(absl::string_view name, absl::string_view mode);
+  static File* Open(absl::string_view filename, absl::string_view mode);
 
-  // Opens file "name" with flags specified by "flag".
+  // Opens file "name" with flags specified by "mode".
   // If open failed, program will exit.
   // The caller should free the File after closing it by passing the returned
   // pointer to delete.
-  static File* OpenOrDie(absl::string_view name, absl::string_view flag);
+  static File* OpenOrDie(absl::string_view filename, absl::string_view mode);
 #endif  // SWIG
 
   // Reads "size" bytes to buff from file, buff should be pre-allocated.
@@ -88,11 +88,10 @@ class File {
   absl::string_view filename() const;
 
   // Deletes a file.
-  static bool Delete(const char* name);
-  static bool Delete(absl::string_view name) { return Delete(name.data()); }
+  static bool Delete(absl::string_view filename);
 
   // Tests if a file exists.
-  static bool Exists(const char* name);
+  static bool Exists(absl::string_view filename);
 
   bool Open() const;
 
@@ -100,7 +99,7 @@ class File {
   File(FILE* descriptor, absl::string_view name);
 
   FILE* f_;
-  absl::string_view name_;
+  std::string name_;
 };
 
 namespace file {
