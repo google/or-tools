@@ -39,6 +39,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
@@ -246,60 +247,17 @@ inline GScipVarType GScipVarTypeFromIsInteger(const bool is_integer) {
   return is_integer ? GScipVarType::kInteger : GScipVarType::kContinuous;
 }
 
-// Used to delay the evaluation of a costly computation until the first time it
-// is actually needed.
-//
-// The typical use is when we have two independent branches that need the same
-// data but we don't want to compute these data if we don't enter any of those
-// branches.
-//
-// Usage:
-//   LazyInitialized<Xxx> xxx([&]() {
-//     return Xxx(...);
-//   });
-//
-//   if (predicate_1) {
-//     ...
-//     f(xxx.GetOrCreate());
-//     ...
-//   }
-//   if (predicate_2) {
-//     ...
-//     f(xxx.GetOrCreate());
-//     ...
-//   }
-template <typename T>
-class LazyInitialized {
- public:
-  // Checks that the input initializer is not nullptr.
-  explicit LazyInitialized(std::function<T()> initializer)
-      : initializer_(ABSL_DIE_IF_NULL(initializer)) {}
-
-  // Returns the value returned by initializer(), calling it the first time.
-  const T& GetOrCreate() {
-    if (!value_) {
-      value_ = initializer_();
-    }
-    return *value_;
-  }
-
- private:
-  const std::function<T()> initializer_;
-  std::optional<T> value_;
-};
-
 template <typename T>
 SparseDoubleVectorProto FillSparseDoubleVector(
-    const std::vector<int64_t>& ids_in_order,
-    const absl::flat_hash_map<int64_t, T>& id_map,
+    const gtl::linked_hash_map<int64_t, T>& id_map,
     const absl::flat_hash_map<T, double>& value_map,
     const SparseVectorFilterProto& filter) {
   SparseVectorFilterPredicate predicate(filter);
   SparseDoubleVectorProto result;
-  for (const int64_t variable_id : ids_in_order) {
-    const double value = value_map.at(id_map.at(variable_id));
-    if (predicate.AcceptsAndUpdate(variable_id, value)) {
-      result.add_ids(variable_id);
+  for (const auto [mathopt_id, scip_id] : id_map) {
+    const double value = value_map.at(scip_id);
+    if (predicate.AcceptsAndUpdate(mathopt_id, value)) {
+      result.add_ids(mathopt_id);
       result.add_values(value);
     }
   }
@@ -989,15 +947,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
     }
   };
 
-  LazyInitialized<std::vector<int64_t>> sorted_variables([&]() {
-    std::vector<int64_t> sorted;
-    sorted.reserve(variables_.size());
-    for (const auto& entry : variables_) {
-      sorted.emplace_back(entry.first);
-    }
-    std::sort(sorted.begin(), sorted.end());
-    return sorted;
-  });
   CHECK_EQ(gscip_result.solutions.size(), gscip_result.objective_values.size());
   for (int i = 0; i < gscip_result.solutions.size(); ++i) {
     // GScip ensures the solutions are returned best objective first.
@@ -1009,14 +958,13 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
         solution->mutable_primal_solution();
     primal_solution->set_objective_value(gscip_result.objective_values[i]);
     primal_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
-    *primal_solution->mutable_variable_values() = FillSparseDoubleVector(
-        sorted_variables.GetOrCreate(), variables_, gscip_result.solutions[i],
-        model_parameters.variable_values_filter());
+    *primal_solution->mutable_variable_values() =
+        FillSparseDoubleVector(variables_, gscip_result.solutions[i],
+                               model_parameters.variable_values_filter());
   }
   if (!gscip_result.primal_ray.empty()) {
     *solve_result.add_primal_rays()->mutable_variable_values() =
-        FillSparseDoubleVector(sorted_variables.GetOrCreate(), variables_,
-                               gscip_result.primal_ray,
+        FillSparseDoubleVector(variables_, gscip_result.primal_ray,
                                model_parameters.variable_values_filter());
   }
   ASSIGN_OR_RETURN(*solve_result.mutable_termination(),

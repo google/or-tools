@@ -891,6 +891,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
                    GetBestDualBound(solution_and_claims.solutions));
   solution_claims = solution_and_claims.solution_claims;
 
+  // TODO(b/195295177): Add tests for rays in unbounded MIPs
   RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
 
   for (SolutionProto& solution : solution_and_claims.solutions) {
@@ -2929,7 +2930,9 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   RETURN_IF_ERROR(
       UpdateInt32ListAttribute(model_parameters.branching_priorities(),
                                GRB_INT_ATTR_BRANCHPRIORITY, variables_map_));
-  RETURN_IF_ERROR(SetMultiObjectiveTolerances(model_parameters));
+  if (is_multi_objective_mode()) {
+    RETURN_IF_ERROR(SetMultiObjectiveTolerances(model_parameters));
+  }
 
   // Here we register the callback when we either have a user callback or a
   // local interrupter. The rationale for doing so when we have only an

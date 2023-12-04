@@ -20,7 +20,7 @@ pybind_extension(
     srcs = ["solver.cc"],
     deps =
         select({
-            "//ortools/linear_solver:use_scip": ["//ortools/math_opt/solvers:gscip_solver"],
+            "//ortools/linear_solver:use_cp_sat": ["//ortools/math_opt/solvers:cp_sat_solver"],
             "//conditions:default": [],
         }) +
         select({
@@ -32,7 +32,7 @@ pybind_extension(
             "//conditions:default": [],
         }) +
         select({
-            "//ortools/linear_solver:use_cp_sat": ["//ortools/math_opt/solvers:cp_sat_solver"],
+            "//ortools/linear_solver:use_scip": ["//ortools/math_opt/solvers:gscip_solver"],
             "//conditions:default": [],
         }) + [
         "//ortools/math_opt:result_cc_proto",

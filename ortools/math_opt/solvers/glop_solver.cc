@@ -353,15 +353,10 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
       case LP_ALGORITHM_DUAL_SIMPLEX:
         result.set_use_dual_simplex(true);
         break;
-      case LP_ALGORITHM_BARRIER:
-        warnings.emplace_back(
-            "GLOP does not support 'LP_ALGORITHM_BARRIER' value for "
-            "'lp_algorithm' parameter.");
-        break;
       default:
-        LOG(FATAL) << "LPAlgorithm: "
-                   << ProtoEnumToString(solve_parameters.lp_algorithm())
-                   << " unknown, error setting GLOP parameters";
+        warnings.emplace_back(absl::StrCat(
+            "GLOP does not support the 'lp_algorithm' parameter value: ",
+            ProtoEnumToString(solve_parameters.lp_algorithm())));
     }
   }
   if (!result.has_use_scaling() && !result.has_scaling_method() &&

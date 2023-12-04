@@ -11,19 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
-
-# Features that are new or under construction have restricted access, contact
-# math-opt-dev@ if you want try using these with submitted code.
-package_group(
-    name = "math_opt_allow_list",
-    packages = [
-        "//ortools/...",
-    ],
-)
 
 proto_library(
     name = "callback_proto",
@@ -214,4 +205,28 @@ cc_proto_library(
 py_proto_library(
     name = "infeasible_subsystem_py_pb2",
     deps = [":infeasible_subsystem_proto"],
+)
+
+proto_library(
+    name = "rpc_proto",
+    srcs = ["rpc.proto"],
+    deps = [
+        ":callback_proto",
+        ":infeasible_subsystem_proto",
+        ":model_parameters_proto",
+        ":model_proto",
+        ":model_update_proto",
+        ":parameters_proto",
+        ":result_proto",
+    ],
+)
+
+py_proto_library(
+    name = "rpc_py_pb2",
+    deps = [":rpc_proto"],
+)
+
+cc_proto_library(
+    name = "rpc_cc_proto",
+    deps = [":rpc_proto"],
 )
