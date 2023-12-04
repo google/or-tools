@@ -500,147 +500,147 @@ bool PathOperator::IncrementPosition() {
     just_started_ = false;
     return true;
   }
-    const int number_of_paths = path_starts_.size();
-    // Finding next base node positions.
-    // Increment the position of inner base nodes first (higher index nodes);
-    // if a base node is at the end of a path, reposition it at the start
-    // of the path and increment the position of the preceding base node (this
-    // action is called a restart).
-    int last_restarted = base_node_size;
+  const int number_of_paths = path_starts_.size();
+  // Finding next base node positions.
+  // Increment the position of inner base nodes first (higher index nodes);
+  // if a base node is at the end of a path, reposition it at the start
+  // of the path and increment the position of the preceding base node (this
+  // action is called a restart).
+  int last_restarted = base_node_size;
+  for (int i = base_node_size - 1; i >= 0; --i) {
+    if (base_nodes_[i] < number_of_nexts_ && i <= next_base_to_increment_) {
+      if (ConsiderAlternatives(i)) {
+        // Iterate on sibling alternatives.
+        const int sibling_alternative_index =
+            GetSiblingAlternativeIndex(base_nodes_[i]);
+        if (sibling_alternative_index >= 0) {
+          if (base_sibling_alternatives_[i] <
+              alternative_sets_[sibling_alternative_index].size() - 1) {
+            ++base_sibling_alternatives_[i];
+            break;
+          }
+          base_sibling_alternatives_[i] = 0;
+        }
+        // Iterate on base alternatives.
+        const int alternative_index = alternative_index_[base_nodes_[i]];
+        if (alternative_index >= 0) {
+          if (base_alternatives_[i] <
+              alternative_sets_[alternative_index].size() - 1) {
+            ++base_alternatives_[i];
+            break;
+          }
+          base_alternatives_[i] = 0;
+          base_sibling_alternatives_[i] = 0;
+        }
+      }
+      if (iteration_parameters_.get_neighbors != nullptr &&
+          ++calls_per_base_node_[i] <
+              iteration_parameters_.get_neighbors(BaseNode(i), StartNode(i))
+                  .size()) {
+        break;
+      }
+      calls_per_base_node_[i] = 0;
+      base_alternatives_[i] = 0;
+      base_sibling_alternatives_[i] = 0;
+      base_nodes_[i] = OldNext(base_nodes_[i]);
+      if (iteration_parameters_.accept_path_end_base ||
+          !IsPathEnd(base_nodes_[i]))
+        break;
+    }
+    calls_per_base_node_[i] = 0;
+    base_alternatives_[i] = 0;
+    base_sibling_alternatives_[i] = 0;
+    base_nodes_[i] = StartNode(i);
+    last_restarted = i;
+  }
+  next_base_to_increment_ = base_node_size;
+  // At the end of the loop, base nodes with indexes in
+  // [last_restarted, base_node_size[ have been restarted.
+  // Restarted base nodes are then repositioned by the virtual
+  // GetBaseNodeRestartPosition to reflect position constraints between
+  // base nodes (by default GetBaseNodeRestartPosition leaves the nodes
+  // at the start of the path).
+  // Base nodes are repositioned in ascending order to ensure that all
+  // base nodes "below" the node being repositioned have their final
+  // position.
+  for (int i = last_restarted; i < base_node_size; ++i) {
+    calls_per_base_node_[i] = 0;
+    base_alternatives_[i] = 0;
+    base_sibling_alternatives_[i] = 0;
+    base_nodes_[i] = GetBaseNodeRestartPosition(i);
+  }
+  if (last_restarted > 0) {
+    return CheckEnds();
+  }
+  // If all base nodes have been restarted, base nodes are moved to new paths.
+  // First we mark the current paths as locally optimal if they have been
+  // completely explored.
+  if (optimal_paths_enabled_ &&
+      iteration_parameters_.skip_locally_optimal_paths) {
+    if (path_basis_.size() > 1) {
+      for (int i = 1; i < path_basis_.size(); ++i) {
+        active_paths_.DeactivatePathPair(StartNode(path_basis_[i - 1]),
+                                         StartNode(path_basis_[i]));
+      }
+    } else {
+      active_paths_.DeactivatePathPair(StartNode(path_basis_[0]),
+                                       StartNode(path_basis_[0]));
+    }
+  }
+  std::vector<int> current_starts(base_node_size);
+  for (int i = 0; i < base_node_size; ++i) {
+    current_starts[i] = StartNode(i);
+  }
+  // Exploration of next paths can lead to locally optimal paths since we are
+  // exploring them from scratch.
+  optimal_paths_enabled_ = true;
+  while (true) {
     for (int i = base_node_size - 1; i >= 0; --i) {
-      if (base_nodes_[i] < number_of_nexts_ && i <= next_base_to_increment_) {
-        if (ConsiderAlternatives(i)) {
-          // Iterate on sibling alternatives.
-          const int sibling_alternative_index =
-              GetSiblingAlternativeIndex(base_nodes_[i]);
-          if (sibling_alternative_index >= 0) {
-            if (base_sibling_alternatives_[i] <
-                alternative_sets_[sibling_alternative_index].size() - 1) {
-              ++base_sibling_alternatives_[i];
-              break;
-            }
-            base_sibling_alternatives_[i] = 0;
-          }
-          // Iterate on base alternatives.
-          const int alternative_index = alternative_index_[base_nodes_[i]];
-          if (alternative_index >= 0) {
-            if (base_alternatives_[i] <
-                alternative_sets_[alternative_index].size() - 1) {
-              ++base_alternatives_[i];
-              break;
-            }
-            base_alternatives_[i] = 0;
-            base_sibling_alternatives_[i] = 0;
-          }
-        }
-        if (iteration_parameters_.get_neighbors != nullptr &&
-            ++calls_per_base_node_[i] <
-                iteration_parameters_.get_neighbors(BaseNode(i), StartNode(i))
-                    .size()) {
-          break;
-        }
+      const int next_path_index = base_paths_[i] + 1;
+      if (next_path_index < number_of_paths) {
+        base_paths_[i] = next_path_index;
         calls_per_base_node_[i] = 0;
         base_alternatives_[i] = 0;
         base_sibling_alternatives_[i] = 0;
-        base_nodes_[i] = OldNext(base_nodes_[i]);
-        if (iteration_parameters_.accept_path_end_base ||
-            !IsPathEnd(base_nodes_[i]))
+        base_nodes_[i] = path_starts_[next_path_index];
+        if (i == 0 || !OnSamePathAsPreviousBase(i)) {
           break;
-      }
-      calls_per_base_node_[i] = 0;
-      base_alternatives_[i] = 0;
-      base_sibling_alternatives_[i] = 0;
-      base_nodes_[i] = StartNode(i);
-      last_restarted = i;
-    }
-    next_base_to_increment_ = base_node_size;
-    // At the end of the loop, base nodes with indexes in
-    // [last_restarted, base_node_size[ have been restarted.
-    // Restarted base nodes are then repositioned by the virtual
-    // GetBaseNodeRestartPosition to reflect position constraints between
-    // base nodes (by default GetBaseNodeRestartPosition leaves the nodes
-    // at the start of the path).
-    // Base nodes are repositioned in ascending order to ensure that all
-    // base nodes "below" the node being repositioned have their final
-    // position.
-    for (int i = last_restarted; i < base_node_size; ++i) {
-      calls_per_base_node_[i] = 0;
-      base_alternatives_[i] = 0;
-      base_sibling_alternatives_[i] = 0;
-      base_nodes_[i] = GetBaseNodeRestartPosition(i);
-    }
-    if (last_restarted > 0) {
-      return CheckEnds();
-    }
-    // If all base nodes have been restarted, base nodes are moved to new paths.
-    // First we mark the current paths as locally optimal if they have been
-    // completely explored.
-    if (optimal_paths_enabled_ &&
-        iteration_parameters_.skip_locally_optimal_paths) {
-      if (path_basis_.size() > 1) {
-        for (int i = 1; i < path_basis_.size(); ++i) {
-        active_paths_.DeactivatePathPair(StartNode(path_basis_[i - 1]),
-                                         StartNode(path_basis_[i]));
         }
       } else {
-      active_paths_.DeactivatePathPair(StartNode(path_basis_[0]),
-                                       StartNode(path_basis_[0]));
+        base_paths_[i] = 0;
+        calls_per_base_node_[i] = 0;
+        base_alternatives_[i] = 0;
+        base_sibling_alternatives_[i] = 0;
+        base_nodes_[i] = path_starts_[0];
       }
     }
-    std::vector<int> current_starts(base_node_size);
-    for (int i = 0; i < base_node_size; ++i) {
-      current_starts[i] = StartNode(i);
-    }
-    // Exploration of next paths can lead to locally optimal paths since we are
-    // exploring them from scratch.
-    optimal_paths_enabled_ = true;
-    while (true) {
-      for (int i = base_node_size - 1; i >= 0; --i) {
-        const int next_path_index = base_paths_[i] + 1;
-        if (next_path_index < number_of_paths) {
-          base_paths_[i] = next_path_index;
-          calls_per_base_node_[i] = 0;
-          base_alternatives_[i] = 0;
-          base_sibling_alternatives_[i] = 0;
-          base_nodes_[i] = path_starts_[next_path_index];
-          if (i == 0 || !OnSamePathAsPreviousBase(i)) {
-            break;
-          }
-        } else {
-          base_paths_[i] = 0;
-          calls_per_base_node_[i] = 0;
-          base_alternatives_[i] = 0;
-          base_sibling_alternatives_[i] = 0;
-          base_nodes_[i] = path_starts_[0];
-        }
-      }
-      if (!iteration_parameters_.skip_locally_optimal_paths) return CheckEnds();
-      // If the new paths have already been completely explored, we can
-      // skip them from now on.
-      if (path_basis_.size() > 1) {
-        for (int j = 1; j < path_basis_.size(); ++j) {
+    if (!iteration_parameters_.skip_locally_optimal_paths) return CheckEnds();
+    // If the new paths have already been completely explored, we can
+    // skip them from now on.
+    if (path_basis_.size() > 1) {
+      for (int j = 1; j < path_basis_.size(); ++j) {
         if (active_paths_.IsPathPairActive(StartNode(path_basis_[j - 1]),
                                            StartNode(path_basis_[j]))) {
-            return CheckEnds();
-          }
-        }
-      } else {
-      if (active_paths_.IsPathPairActive(StartNode(path_basis_[0]),
-                                         StartNode(path_basis_[0]))) {
           return CheckEnds();
         }
       }
-      // If we are back to paths we just iterated on or have reached the end
-      // of the neighborhood search space, we can stop.
-      if (!CheckEnds()) return false;
-      bool stop = true;
-      for (int i = 0; i < base_node_size; ++i) {
-        if (StartNode(i) != current_starts[i]) {
-          stop = false;
-          break;
-        }
+    } else {
+      if (active_paths_.IsPathPairActive(StartNode(path_basis_[0]),
+                                         StartNode(path_basis_[0]))) {
+        return CheckEnds();
       }
-      if (stop) return false;
+    }
+    // If we are back to paths we just iterated on or have reached the end
+    // of the neighborhood search space, we can stop.
+    if (!CheckEnds()) return false;
+    bool stop = true;
+    for (int i = 0; i < base_node_size; ++i) {
+      if (StartNode(i) != current_starts[i]) {
+        stop = false;
+        break;
+      }
+    }
+    if (stop) return false;
   }
   return CheckEnds();
 }
@@ -3961,7 +3961,7 @@ int64_t LocalSearchState::VariableDomainMax(VariableDomainId domain_id) const {
 }
 
 bool LocalSearchState::TightenVariableDomainMin(VariableDomainId domain_id,
-                                          int64_t min_value) {
+                                                int64_t min_value) {
   DCHECK(state_domains_are_all_nonempty_);
   DCHECK(domain_is_trailed_[domain_id]);
   VariableDomain& domain = current_domains_[domain_id];
@@ -3973,7 +3973,7 @@ bool LocalSearchState::TightenVariableDomainMin(VariableDomainId domain_id,
 }
 
 bool LocalSearchState::TightenVariableDomainMax(VariableDomainId domain_id,
-                                          int64_t max_value) {
+                                                int64_t max_value) {
   DCHECK(state_domains_are_all_nonempty_);
   DCHECK(domain_is_trailed_[domain_id]);
   VariableDomain& domain = current_domains_[domain_id];
@@ -4937,6 +4937,9 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
           }
         }
       } else {
+        // Reset the last synchronized assignment in case it's no longer up to
+        // date or we fail below.
+        last_synchronized_assignment_.reset();
         if (neighbor_found_) {
           // In case the last checked assignment isn't the current one, restore
           // it to make sure the solver knows about it, especially if this is
@@ -4964,6 +4967,10 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
       }
     }
   }
+  // NOTE(user): The last synchronized assignment must be reset here to
+  // guarantee filters will be properly synched in case we re-solve using an
+  // assignment that wasn't the last accepted and synchronized assignment.
+  last_synchronized_assignment_.reset();
   solver->Fail();
   return nullptr;
 }
@@ -5398,10 +5405,10 @@ Decision* LocalSearch::Next(Solver* const solver) {
       const bool local_optimum_reached =
           LocalOptimumReached(solver->ActiveSearch());
       if (local_optimum_reached) {
-      // A local optimum has been reached. The search will continue only if we
-      // accept up-hill moves (due to metaheuristics). In this case we need to
-      // reset neighborhood optimal routes.
-      ls_operator_->Reset();
+        // A local optimum has been reached. The search will continue only if we
+        // accept up-hill moves (due to metaheuristics). In this case we need to
+        // reset neighborhood optimal routes.
+        ls_operator_->Reset();
       }
       if (!local_optimum_reached || solver->IsUncheckedSolutionLimitReached()) {
         nested_decision_index_ = -1;  // Stop the search
