@@ -2270,7 +2270,7 @@ class FullProblemSolver : public SubSolver {
         shared_(shared),
         split_in_chunks_(split_in_chunks),
         stop_at_first_solution_(stop_at_first_solution),
-        local_model_(name) {
+        local_model_(SubSolver::name()) {
     // Setup the local model parameters and time limit.
     *(local_model_.GetOrCreate<SatParameters>()) = local_parameters;
     shared_->time_limit->UpdateLocalLimit(

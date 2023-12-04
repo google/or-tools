@@ -19,8 +19,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -293,6 +296,122 @@ bool Prober::ProbeBooleanVariables(
     if (num_new_binary_ > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new binary clause: ", num_new_binary_);
     }
+  }
+
+  return true;
+}
+
+bool Prober::ProbeDnf(absl::string_view name,
+                      const std::vector<std::vector<Literal>>& dnf) {
+  if (dnf.size() <= 1) return true;
+
+  // Reset the solver in case it was already used.
+  if (!sat_solver_->ResetToLevelZero()) return false;
+
+  always_propagated_bounds_.clear();
+  always_propagated_literals_.clear();
+  int num_valid_conjunctions = 0;
+  for (const std::vector<Literal>& conjunction : dnf) {
+    if (!sat_solver_->ResetToLevelZero()) return false;
+    if (num_valid_conjunctions > 0 && always_propagated_bounds_.empty() &&
+        always_propagated_literals_.empty()) {
+      // We can exit safely as nothing will be propagated.
+      return true;
+    }
+
+    bool conjunction_is_valid = true;
+    int num_literals_enqueued = 0;
+    const int root_trail_index = trail_.Index();
+    const int root_integer_trail_index = integer_trail_->Index();
+    for (const Literal& lit : conjunction) {
+      if (assignment_.LiteralIsAssigned(lit)) {
+        if (assignment_.LiteralIsTrue(lit)) continue;
+        conjunction_is_valid = false;
+        break;
+      }
+      ++num_literals_enqueued;
+      const int decision_level_before_enqueue =
+          sat_solver_->CurrentDecisionLevel();
+      sat_solver_->EnqueueDecisionAndBackjumpOnConflict(lit);
+      sat_solver_->AdvanceDeterministicTime(time_limit_);
+      const int decision_level_after_enqueue =
+          sat_solver_->CurrentDecisionLevel();
+      ++num_decisions_;
+
+      if (sat_solver_->ModelIsUnsat()) return false;
+      // If the literal has been pushed without any conflict, the level should
+      // have been increased.
+      if (decision_level_after_enqueue <= decision_level_before_enqueue) {
+        conjunction_is_valid = false;
+        break;
+      }
+      // TODO(user): Can we use the callback_?
+    }
+    if (conjunction_is_valid) {
+      ++num_valid_conjunctions;
+    } else {
+      continue;
+    }
+
+    // Process propagated literals.
+    new_propagated_literals_.clear();
+    for (int i = root_trail_index; i < trail_.Index(); ++i) {
+      const LiteralIndex literal_index = trail_[i].Index();
+      if (num_valid_conjunctions == 1 ||
+          always_propagated_literals_.contains(literal_index)) {
+        new_propagated_literals_.insert(literal_index);
+      }
+    }
+    std::swap(new_propagated_literals_, always_propagated_literals_);
+
+    // Process propagated integer bounds.
+    new_integer_bounds_.clear();
+    integer_trail_->AppendNewBoundsFrom(root_integer_trail_index,
+                                        &new_integer_bounds_);
+    new_propagated_bounds_.clear();
+    for (const IntegerLiteral entry : new_integer_bounds_) {
+      const auto it = always_propagated_bounds_.find(entry.var);
+      if (num_valid_conjunctions == 1) {  // First loop.
+        new_propagated_bounds_[entry.var] = entry.bound;
+      } else if (it != always_propagated_bounds_.end()) {
+        new_propagated_bounds_[entry.var] = std::min(entry.bound, it->second);
+      }
+    }
+    std::swap(new_propagated_bounds_, always_propagated_bounds_);
+  }
+
+  if (!sat_solver_->ResetToLevelZero()) return false;
+  // Fix literals implied by the dnf.
+  const int previous_num_literals_fixed = num_new_literals_fixed_;
+  for (const LiteralIndex literal_index : always_propagated_literals_) {
+    const Literal lit(literal_index);
+    if (assignment_.LiteralIsTrue(lit)) continue;
+    ++num_new_literals_fixed_;
+    if (!sat_solver_->AddUnitClause(lit)) return false;
+  }
+
+  // Fix integer bounds implied by the dnf.
+  int previous_num_integer_bounds = num_new_integer_bounds_;
+  for (const auto& [var, bound] : always_propagated_bounds_) {
+    if (bound > integer_trail_->LowerBound(var)) {
+      ++num_new_integer_bounds_;
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, bound),
+                                   {}, {})) {
+        return false;
+      }
+    }
+  }
+
+  if (!sat_solver_->FinishPropagation()) return false;
+
+  if (num_new_integer_bounds_ > previous_num_integer_bounds ||
+      num_new_literals_fixed_ > previous_num_literals_fixed) {
+    VLOG(1) << "ProbeDnf(" << name << ", num_fixed_literals="
+            << num_new_literals_fixed_ - previous_num_literals_fixed
+            << ", num_fixed_integer_bounds="
+            << num_new_integer_bounds_ - previous_num_integer_bounds
+            << ", num_valid_conjunctions=" << num_valid_conjunctions << "/"
+            << dnf.size() << ")";
   }
 
   return true;
@@ -646,7 +765,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
         if (subsumed) {
           ++num_new_subsumed;
           ++num_new_binary;
-          implication_graph->AddBinaryClause(last_decision.Negated(), l);
+          CHECK(implication_graph->AddBinaryClause(last_decision.Negated(), l));
           const int trail_index = trail.Info(l.Variable()).trail_index;
 
           int test = 0;
@@ -683,7 +802,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
         // this clause subsume the reason.
         if (!subsumed && trail.AssignmentType(l.Variable()) != id) {
           ++num_new_binary;
-          implication_graph->AddBinaryClause(last_decision.Negated(), l);
+          CHECK(implication_graph->AddBinaryClause(last_decision.Negated(), l));
         }
       } else {
         // If we don't extract binary, we don't need to explore any of
@@ -705,7 +824,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       for (const auto& w :
            clause_manager->WatcherListOnFalse(last_decision.Negated())) {
         if (assignment.LiteralIsTrue(w.blocking_literal)) {
-          if (w.clause->empty()) continue;
+          if (w.clause->IsRemoved()) continue;
           CHECK_NE(w.blocking_literal, last_decision.Negated());
 
           // Add the binary clause if needed. Note that we change the reason
@@ -713,7 +832,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
           //
           // Tricky: while last_decision would be a valid reason, we need a
           // reason that was assigned before this literal, so we use the
-          // decision at the level where this literal was assigne which is an
+          // decision at the level where this literal was assigned which is an
           // even better reasony. Maybe it is just better to change all the
           // reason above to a binary one so we don't have an issue here.
           if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
@@ -722,8 +841,8 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
             const auto& info = trail.Info(w.blocking_literal.Variable());
             if (info.level > 0) {
               ++num_new_binary;
-              implication_graph->AddBinaryClause(last_decision.Negated(),
-                                                 w.blocking_literal);
+              CHECK(implication_graph->AddBinaryClause(last_decision.Negated(),
+                                                       w.blocking_literal));
 
               const Literal d = sat_solver->Decisions()[info.level - 1].literal;
               if (d != w.blocking_literal) {

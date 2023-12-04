@@ -10560,6 +10560,7 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
   for (int i = 0; i < vector_that_can_grow_during_iter.size(); ++i) {
     const int v = vector_that_can_grow_during_iter[i];
     if (context_->VariableIsNotUsedAnymore(v)) continue;
+    if (context_->ModelIsUnsat()) return false;
     if (!PresolveAffineRelationIfAny(v)) return false;
     if (context_->VariableIsNotUsedAnymore(v)) continue;
 
@@ -10688,6 +10689,7 @@ void CpModelPresolver::PresolveToFixPoint() {
 
       // Make sure all affine relations are propagated.
       // This also remove the relation if the degree is now one.
+      if (context_->ModelIsUnsat()) return;
       if (!PresolveAffineRelationIfAny(v)) return;
 
       const int degree = context_->VarToConstraints(v).size();

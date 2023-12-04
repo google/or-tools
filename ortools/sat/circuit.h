@@ -244,7 +244,7 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // ============================================================================
 
 // This just wraps CircuitPropagator. See the comment there to see what this
-// does. Note that any nodes with no outoing or no incoming arc will cause the
+// does. Note that any nodes with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
 std::function<void(Model*)> SubcircuitConstraint(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,

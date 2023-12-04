@@ -735,6 +735,8 @@ bool PresolveContext::PropagateAffineRelation(int ref) {
 
 bool PresolveContext::PropagateAffineRelation(int ref, int rep, int64_t coeff,
                                               int64_t offset) {
+  DCHECK(!DomainIsEmpty(ref));
+  DCHECK(!DomainIsEmpty(rep));
   if (!RefIsPositive(rep)) {
     rep = NegatedRef(rep);
     coeff = -coeff;
@@ -1299,7 +1301,10 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                                                  int64_t value, bool imply_eq) {
   if (is_unsat_) return false;
-  CHECK(RefIsPositive(var));
+  DCHECK(RefIsPositive(var));
+  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    return SetLiteralToFalse(literal);
+  }
 
   // Creates the linking sets on demand.
   // Insert the enforcement literal in the half encoding map.
@@ -1338,7 +1343,7 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
 
 bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64_t value) {
-  if (!CanonicalizeEncoding(&ref, &value)) {
+  if (!CanonicalizeEncoding(&ref, &value) || !DomainOf(ref).Contains(value)) {
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
@@ -1348,7 +1353,9 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
                                                     int64_t value) {
-  if (!CanonicalizeEncoding(&var, &value)) return false;
+  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
+    return SetLiteralToFalse(literal);
+  }
   literal = GetLiteralRepresentative(literal);
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
 }

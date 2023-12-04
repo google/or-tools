@@ -82,12 +82,15 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(cut_max_active_count_value);
   TEST_IS_FINITE(cut_active_count_decay);
   TEST_IS_FINITE(shaving_search_deterministic_time);
+  TEST_IS_FINITE(minimize_with_propagation_ratio);
   TEST_IS_FINITE(mip_max_bound);
   TEST_IS_FINITE(mip_wanted_precision);
   TEST_IS_FINITE(mip_check_precision);
   TEST_IS_FINITE(mip_max_valid_magnitude);
   TEST_IS_FINITE(mip_drop_tolerance);
   TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
+
+  TEST_POSITIVE(at_most_one_max_expansion_size);
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);

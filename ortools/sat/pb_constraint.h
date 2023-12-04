@@ -27,7 +27,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/model.h"
@@ -153,6 +152,11 @@ class CanonicalBooleanLinearProblem {
  public:
   CanonicalBooleanLinearProblem() = default;
 
+  // This type is neither copyable nor movable.
+  CanonicalBooleanLinearProblem(const CanonicalBooleanLinearProblem&) = delete;
+  CanonicalBooleanLinearProblem& operator=(
+      const CanonicalBooleanLinearProblem&) = delete;
+
   // Adds a new constraint to the problem. The bounds are inclusive.
   // Returns false in case of a possible overflow or if the constraint is
   // never satisfiable.
@@ -175,7 +179,6 @@ class CanonicalBooleanLinearProblem {
 
   std::vector<Coefficient> rhs_;
   std::vector<std::vector<LiteralWithCoeff>> constraints_;
-  DISALLOW_COPY_AND_ASSIGN(CanonicalBooleanLinearProblem);
 };
 
 // Encode a constraint sum term <= rhs, where each term is a positive
@@ -537,6 +540,10 @@ class PbConstraints : public SatPropagator {
         num_threshold_updates_(0) {
     model->GetOrCreate<Trail>()->RegisterPropagator(this);
   }
+
+  // This type is neither copyable nor movable.
+  PbConstraints(const PbConstraints&) = delete;
+  PbConstraints& operator=(const PbConstraints&) = delete;
   ~PbConstraints() override {
     IF_STATS_ENABLED({
       LOG(INFO) << stats_.StatString();
@@ -686,7 +693,6 @@ class PbConstraints : public SatPropagator {
   int64_t num_constraint_lookups_;
   int64_t num_inspected_constraint_literals_;
   int64_t num_threshold_updates_;
-  DISALLOW_COPY_AND_ASSIGN(PbConstraints);
 };
 
 // Boolean linear constraints can propagate a lot of literals at the same time.
@@ -700,6 +706,12 @@ class VariableWithSameReasonIdentifier {
  public:
   explicit VariableWithSameReasonIdentifier(const Trail& trail)
       : trail_(trail) {}
+
+  // This type is neither copyable nor movable.
+  VariableWithSameReasonIdentifier(const VariableWithSameReasonIdentifier&) =
+      delete;
+  VariableWithSameReasonIdentifier& operator=(
+      const VariableWithSameReasonIdentifier&) = delete;
 
   void Resize(int num_variables) {
     first_variable_.resize(num_variables);
@@ -727,8 +739,6 @@ class VariableWithSameReasonIdentifier {
   const Trail& trail_;
   absl::StrongVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
-
-  DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);
 };
 
 }  // namespace sat

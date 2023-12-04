@@ -1903,11 +1903,17 @@ bool IsVarEqOrNeqValue(PresolveContext* context,
                        const LinearConstraintProto& lin) {
   if (lin.vars_size() != 1) return false;
   const Domain rhs = ReadDomainFromProto(lin);
+
+  // This is literal => var == value.
   if (rhs.IsFixed()) return true;
-  return rhs.InverseMultiplicationBy(lin.coeffs(0))
-      .Complement()
-      .IntersectionWith(context->DomainOf(lin.vars(0)))
-      .IsFixed();
+
+  // Is it literal => var != value ?
+  const Domain not_implied =
+      rhs.InverseMultiplicationBy(lin.coeffs(0))
+          .Complement()
+          .IntersectionWith(context->DomainOf(lin.vars(0)));
+  if (not_implied.IsEmpty()) return false;
+  return not_implied.IsFixed();
 }
 
 // This method will scan all constraints of all variables appearing in an
@@ -2067,6 +2073,7 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
       context->params().expand_alldiff_constraints();
   AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
   if (proto.exprs_size() <= 1) return;
+  if (context->ModelIsUnsat()) return;
 
   bool keep_after_expansion = false;
   bool expand_all_diff_from_usage = false;
@@ -2161,6 +2168,7 @@ void ExpandCpModel(PresolveContext* context) {
 
   // Make sure all domains are initialized.
   context->InitializeNewDomains();
+  if (context->ModelIsUnsat()) return;
 
   // Clear the precedence cache.
   context->ClearPrecedenceCache();

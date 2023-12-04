@@ -2047,7 +2047,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
 }
 
 // TODO(user): If this is called many time on the same variables, it could be
-// made faster by using some caching mecanism.
+// made faster by using some caching mechanism.
 absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
                                                int trail_index) const {
   const int index = boolean_trail_index_to_integer_one_[trail_index];
@@ -2066,14 +2066,19 @@ absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
   return *reason;
 }
 
+void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
+  return AppendNewBoundsFrom(vars_.size(), output);
+}
+
 // TODO(user): Implement a dense version if there is more trail entries
 // than variables!
-void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
+void IntegerTrail::AppendNewBoundsFrom(
+    int base_index, std::vector<IntegerLiteral>* output) const {
   tmp_marked_.ClearAndResize(IntegerVariable(vars_.size()));
 
   // In order to push the best bound for each variable, we loop backward.
-  const int end = vars_.size();
-  for (int i = integer_trail_.size(); --i >= end;) {
+  CHECK_GE(base_index, vars_.size());
+  for (int i = integer_trail_.size(); --i >= base_index;) {
     const TrailEntry& entry = integer_trail_[i];
     if (entry.var == kNoIntegerVariable) continue;
     if (tmp_marked_[entry.var]) continue;
@@ -2296,7 +2301,8 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   if (propagation_trail_index_ <= trail_index) {
     // Nothing to do since we found a conflict before Propagate() was called.
-    CHECK_EQ(propagation_trail_index_, trail_index);
+    CHECK_EQ(propagation_trail_index_, trail_index)
+        << " level " << trail.CurrentDecisionLevel();
     return;
   }
 

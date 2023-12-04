@@ -33,13 +33,9 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -161,7 +157,7 @@ inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
 //
 // Each time we create an IntegerVariable we also create its negation. This is
 // done like that so internally we only stores and deal with lower bound. The
-// upper bound beeing the lower bound of the negated variable.
+// upper bound being the lower bound of the negated variable.
 DEFINE_STRONG_INDEX_TYPE(IntegerVariable);
 const IntegerVariable kNoIntegerVariable(-1);
 inline IntegerVariable NegationOf(IntegerVariable i) {
@@ -366,7 +362,7 @@ struct DebugSolution {
   std::vector<int64_t> proto_values;
 
   // This is filled from proto_values at load-time, and using the
-  // cp_model_mapping, we cache the solution of the integer-variabls that are
+  // cp_model_mapping, we cache the solution of the integer variables that are
   // mapped. Note that it is possible that not all integer variable are mapped.
   //
   // TODO(user): When this happen we should be able to infer the value of these
@@ -586,7 +582,7 @@ class IntegerEncoder {
     for (const IntegerLiteral l : GetIntegerLiterals(lit)) {
       temp_associated_vars_.push_back(l.var);
     }
-    for (const auto [var, value] : GetEqualityLiterals(lit)) {
+    for (const auto& [var, value] : GetEqualityLiterals(lit)) {
       temp_associated_vars_.push_back(var);
     }
     return temp_associated_vars_;
@@ -939,8 +935,8 @@ class IntegerTrail : public SatPropagator {
   // restrictive bound than the current one will have no effect.
   //
   // The reason for this "assignment" must be provided as:
-  // - A set of Literal currently beeing all false.
-  // - A set of IntegerLiteral currently beeing all true.
+  // - A set of Literal currently being all false.
+  // - A set of IntegerLiteral currently being all true.
   //
   // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
   // confusing but internally SAT use this direction for efficiency.
@@ -1088,6 +1084,12 @@ class IntegerTrail : public SatPropagator {
   // propagations on the trail.
   void AppendNewBounds(std::vector<IntegerLiteral>* output) const;
 
+  // Inspects the trail and output all the non-level zero bounds from the base
+  // index (one per variables) to the output. The algo is sparse if there is
+  // only a few propagations on the trail.
+  void AppendNewBoundsFrom(int base_index,
+                           std::vector<IntegerLiteral>* output) const;
+
   // Returns the trail index < threshold of a TrailEntry about var. Returns -1
   // if there is no such entry (at a positive decision level). This is basically
   // the trail index of the lower bound of var at the time.
@@ -1103,8 +1105,8 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable NextVariableToBranchOnInPropagationLoop() const;
 
   // If we had an incomplete propagation, it is important to fix all the
-  // variables and not relly on the propagation to do so. This is related to the
-  // InPropagationLoop() code above.
+  // variables and not really on the propagation to do so. This is related to
+  // the InPropagationLoop() code above.
   bool CurrentBranchHadAnIncompletePropagation();
   IntegerVariable FirstUnassignedVariable() const;
 
@@ -1209,7 +1211,7 @@ class IntegerTrail : public SatPropagator {
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
   // for each variable that may or may not point to a TrailEntry regarding this
-  // variable. The validity of the index is verified before beeing used.
+  // variable. The validity of the index is verified before being used.
   //
   // The cache will only be updated with trail_index >= threshold.
   mutable int var_trail_index_cache_threshold_ = 0;
@@ -1346,7 +1348,7 @@ class PropagatorInterface {
   // - At level zero, it will not contain any indices associated with literals
   //   that were already fixed when the propagator was registered. Only the
   //   indices of the literals modified after the registration will be present.
-  virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
+  virtual bool IncrementalPropagate(const std::vector<int>& /*watch_indices*/) {
     LOG(FATAL) << "Not implemented.";
     return false;  // Remove warning in Windows
   }

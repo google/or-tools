@@ -16,13 +16,16 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cmath>
 #include <ostream>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/random/discrete_distribution.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -602,6 +605,404 @@ IntegerValue CapacityProfile::GetBoundingArea() {
     previous_height = new_height;
   }
   return area;
+}
+
+IntegerValue Smallest1DIntersection(IntegerValue range_min,
+                                    IntegerValue range_max, IntegerValue size,
+                                    IntegerValue interval_min,
+                                    IntegerValue interval_max) {
+  // If the item is on the left of the range, we get the intersection between
+  // [range_min, range_min + size] and [interval_min, interval_max].
+  const IntegerValue overlap_on_left =
+      std::min(range_min + size, interval_max) -
+      std::max(range_min, interval_min);
+
+  // If the item is on the right of the range, we get the intersection between
+  // [range_max - size, range_max] and [interval_min, interval_max].
+  const IntegerValue overlap_on_right =
+      std::min(range_max, interval_max) -
+      std::max(range_max - size, interval_min);
+
+  return std::max(IntegerValue(0), std::min(overlap_on_left, overlap_on_right));
+}
+
+ProbingRectangle::ProbingRectangle(
+    const std::vector<RectangleInRange>& intervals)
+    : intervals_(intervals) {
+  minimum_energy_ = 0;
+  if (intervals_.empty()) {
+    return;
+  }
+  interval_points_sorted_by_x_.reserve(intervals_.size() * 4);
+  interval_points_sorted_by_y_.reserve(intervals_.size() * 4);
+  for (int i = 0; i < intervals_.size(); ++i) {
+    const RectangleInRange& interval = intervals_[i];
+    minimum_energy_ += interval.x_size * interval.y_size;
+
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_min, i,
+         IntervalPoint::IntervalPointType::START_MIN});
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_min + interval.x_size, i,
+         IntervalPoint::IntervalPointType::END_MIN});
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_max - interval.x_size, i,
+         IntervalPoint::IntervalPointType::START_MAX});
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_max, i,
+         IntervalPoint::IntervalPointType::END_MAX});
+
+    interval_points_sorted_by_y_.push_back(
+        {interval.bounding_area.y_min, i,
+         IntervalPoint::IntervalPointType::START_MIN});
+    interval_points_sorted_by_y_.push_back(
+        {interval.bounding_area.y_min + interval.y_size, i,
+         IntervalPoint::IntervalPointType::END_MIN});
+    interval_points_sorted_by_y_.push_back(
+        {interval.bounding_area.y_max - interval.y_size, i,
+         IntervalPoint::IntervalPointType::START_MAX});
+    interval_points_sorted_by_y_.push_back(
+        {interval.bounding_area.y_max, i,
+         IntervalPoint::IntervalPointType::END_MAX});
+  }
+
+  std::sort(interval_points_sorted_by_x_.begin(),
+            interval_points_sorted_by_x_.end(),
+            [](const IntervalPoint& a, const IntervalPoint& b) {
+              return a.value < b.value;
+            });
+  std::sort(interval_points_sorted_by_y_.begin(),
+            interval_points_sorted_by_y_.end(),
+            [](const IntervalPoint& a, const IntervalPoint& b) {
+              return a.value < b.value;
+            });
+
+  grouped_intervals_sorted_by_x_.reserve(interval_points_sorted_by_x_.size());
+  grouped_intervals_sorted_by_y_.reserve(interval_points_sorted_by_y_.size());
+  int i = 0;
+  while (i < interval_points_sorted_by_x_.size()) {
+    int idx_begin = i;
+    while (i < interval_points_sorted_by_x_.size() &&
+           interval_points_sorted_by_x_[i].value ==
+               interval_points_sorted_by_x_[idx_begin].value) {
+      i++;
+    }
+    grouped_intervals_sorted_by_x_.push_back(
+        {interval_points_sorted_by_x_[idx_begin].value,
+         absl::Span<IntervalPoint>(interval_points_sorted_by_x_)
+             .subspan(idx_begin, i - idx_begin)});
+  }
+
+  i = 0;
+  while (i < interval_points_sorted_by_y_.size()) {
+    int idx_begin = i;
+    while (i < interval_points_sorted_by_y_.size() &&
+           interval_points_sorted_by_y_[i].value ==
+               interval_points_sorted_by_y_[idx_begin].value) {
+      i++;
+    }
+    grouped_intervals_sorted_by_y_.push_back(
+        {interval_points_sorted_by_y_[idx_begin].value,
+         absl::Span<IntervalPoint>(interval_points_sorted_by_y_)
+             .subspan(idx_begin, i - idx_begin)});
+  }
+
+  left_index_ = 0;
+  right_index_ = grouped_intervals_sorted_by_x_.size() - 1;
+  bottom_index_ = 0;
+  top_index_ = grouped_intervals_sorted_by_y_.size() - 1;
+
+  for (const auto& point : grouped_intervals_sorted_by_x_[left_index_].points) {
+    ranges_touching_boundary_[Edge::LEFT].insert(point.index);
+  }
+  for (const auto& point :
+       grouped_intervals_sorted_by_x_[right_index_].points) {
+    ranges_touching_boundary_[Edge::RIGHT].insert(point.index);
+  }
+  for (const auto& point :
+       grouped_intervals_sorted_by_y_[bottom_index_].points) {
+    ranges_touching_boundary_[Edge::BOTTOM].insert(point.index);
+  }
+  for (const auto& point : grouped_intervals_sorted_by_y_[top_index_].points) {
+    ranges_touching_boundary_[Edge::TOP].insert(point.index);
+  }
+  probe_area_ = GetCurrentRectangle().Area();
+}
+
+Rectangle ProbingRectangle::GetCurrentRectangle() const {
+  return {.x_min = grouped_intervals_sorted_by_x_[left_index_].coordinate,
+          .x_max = grouped_intervals_sorted_by_x_[right_index_].coordinate,
+          .y_min = grouped_intervals_sorted_by_y_[bottom_index_].coordinate,
+          .y_max = grouped_intervals_sorted_by_y_[top_index_].coordinate};
+}
+
+void ProbingRectangle::Shrink(Edge edge) {
+  absl::Span<ProbingRectangle::IntervalPoint> points;
+
+  minimum_energy_ -= GetShrinkDeltaEnergy(edge);
+  switch (edge) {
+    case Edge::LEFT:
+      left_index_++;
+      points = grouped_intervals_sorted_by_x_[left_index_].points;
+      break;
+    case Edge::BOTTOM:
+      bottom_index_++;
+      points = grouped_intervals_sorted_by_y_[bottom_index_].points;
+      break;
+    case Edge::RIGHT:
+      right_index_--;
+      points = grouped_intervals_sorted_by_x_[right_index_].points;
+      break;
+    case Edge::TOP:
+      top_index_--;
+      points = grouped_intervals_sorted_by_y_[top_index_].points;
+      break;
+  }
+
+  for (const auto& point : points) {
+    const bool became_outside_probe =
+        (point.type == IntervalPoint::IntervalPointType::END_MIN &&
+         (edge == Edge::LEFT || edge == Edge::BOTTOM)) ||
+        (point.type == IntervalPoint::IntervalPointType::START_MAX &&
+         (edge == Edge::RIGHT || edge == Edge::TOP));
+    if (became_outside_probe) {
+      ranges_touching_boundary_[Edge::LEFT].erase(point.index);
+      ranges_touching_boundary_[Edge::BOTTOM].erase(point.index);
+      ranges_touching_boundary_[Edge::RIGHT].erase(point.index);
+      ranges_touching_boundary_[Edge::TOP].erase(point.index);
+    }
+  }
+
+  const Rectangle current_rectangle = GetCurrentRectangle();
+  auto can_consume_energy = [&current_rectangle](
+                                const RectangleInRange& range) {
+    // This intersects the current rectangle with the largest rectangle
+    // that must intersect with the range in some way. To visualize this
+    // largest rectangle, imagine the four possible extreme positions for
+    // the item in range (the four corners). This rectangle is the one
+    // defined by the interior points of each position.
+    // This don't use IsDisjoint() because it also works when the rectangle
+    // would be malformed (it's bounding box less than twice the size).
+    return !(
+        range.bounding_area.x_max - range.x_size >= current_rectangle.x_max ||
+        range.bounding_area.y_max - range.y_size >= current_rectangle.y_max ||
+        current_rectangle.x_min >= range.bounding_area.x_min + range.x_size ||
+        current_rectangle.y_min >= range.bounding_area.y_min + range.y_size);
+  };
+
+  switch (edge) {
+    case Edge::LEFT:
+    case Edge::BOTTOM:
+      for (const auto& point : points) {
+        if (point.type == IntervalPoint::IntervalPointType::START_MIN) {
+          if (can_consume_energy(intervals_[point.index])) {
+            ranges_touching_boundary_[edge].insert(point.index);
+          }
+        }
+      }
+      break;
+    case Edge::RIGHT:
+    case Edge::TOP:
+      for (const auto& point : points) {
+        if (point.type == IntervalPoint::IntervalPointType::END_MAX) {
+          if (can_consume_energy(intervals_[point.index])) {
+            ranges_touching_boundary_[edge].insert(point.index);
+          }
+        }
+      }
+      break;
+  }
+  probe_area_ = GetCurrentRectangle().Area();
+}
+
+IntegerValue ProbingRectangle::GetShrinkDeltaArea(Edge edge) const {
+  const Rectangle current_rectangle = GetCurrentRectangle();
+  switch (edge) {
+    case Edge::LEFT:
+      return (grouped_intervals_sorted_by_x_[left_index_ + 1].coordinate -
+              current_rectangle.x_min) *
+             current_rectangle.SizeY();
+    case Edge::BOTTOM:
+      return (grouped_intervals_sorted_by_y_[bottom_index_ + 1].coordinate -
+              current_rectangle.y_min) *
+             current_rectangle.SizeX();
+    case Edge::RIGHT:
+      return (current_rectangle.x_max -
+              grouped_intervals_sorted_by_x_[right_index_ - 1].coordinate) *
+             current_rectangle.SizeY();
+    case Edge::TOP:
+      return (current_rectangle.y_max -
+              grouped_intervals_sorted_by_y_[top_index_ - 1].coordinate) *
+             current_rectangle.SizeX();
+  }
+}
+
+IntegerValue ProbingRectangle::GetShrinkDeltaEnergy(Edge edge) const {
+  const Rectangle current_rectangle = GetCurrentRectangle();
+  Rectangle next_rectangle = current_rectangle;
+  IntegerValue step_1d_size;
+
+  switch (edge) {
+    case Edge::LEFT:
+      next_rectangle.x_min =
+          grouped_intervals_sorted_by_x_[left_index_ + 1].coordinate;
+      step_1d_size = next_rectangle.x_min - current_rectangle.x_min;
+      break;
+    case Edge::BOTTOM:
+      next_rectangle.y_min =
+          grouped_intervals_sorted_by_y_[bottom_index_ + 1].coordinate;
+      step_1d_size = next_rectangle.y_min - current_rectangle.y_min;
+      break;
+    case Edge::RIGHT:
+      next_rectangle.x_max =
+          grouped_intervals_sorted_by_x_[right_index_ - 1].coordinate;
+      step_1d_size = current_rectangle.x_max - next_rectangle.x_max;
+      break;
+    case Edge::TOP:
+      next_rectangle.y_max =
+          grouped_intervals_sorted_by_y_[top_index_ - 1].coordinate;
+      step_1d_size = current_rectangle.y_max - next_rectangle.y_max;
+      break;
+  }
+
+  IntegerValue delta_energy = 0;
+  IntegerValue units_crossed = 0;
+  // Note that the non-deterministic iteration order is fine here.
+  for (const int idx : ranges_touching_boundary_[edge]) {
+    const RectangleInRange& range = intervals_[idx];
+    bool problematic_case_in_two_sides = false;
+    IntegerValue opposite_slack;
+    switch (edge) {
+      case Edge::LEFT:
+        opposite_slack = range.bounding_area.x_max - current_rectangle.x_max;
+        // First check if we touch the opposite edge to the one we are
+        // shrinking.
+        if (opposite_slack >= 0) {
+          // If it do, it's problematic if it has more slack on the opposite
+          // side so it will "jump" to the other side.
+          problematic_case_in_two_sides =
+              opposite_slack >=
+              current_rectangle.x_min - range.bounding_area.x_min;
+        }
+        break;
+      case Edge::BOTTOM:
+        opposite_slack = range.bounding_area.y_max - current_rectangle.y_max;
+        if (opposite_slack >= 0) {
+          problematic_case_in_two_sides =
+              opposite_slack >=
+              current_rectangle.y_min - range.bounding_area.y_min;
+        }
+        break;
+      case Edge::RIGHT:
+        opposite_slack = current_rectangle.x_min - range.bounding_area.x_min;
+        if (opposite_slack >= 0) {
+          problematic_case_in_two_sides =
+              opposite_slack >=
+              range.bounding_area.x_max - current_rectangle.x_max;
+        }
+        break;
+      case Edge::TOP:
+        opposite_slack = current_rectangle.y_min - range.bounding_area.y_min;
+        if (opposite_slack >= 0) {
+          problematic_case_in_two_sides =
+              opposite_slack >=
+              range.bounding_area.y_max - current_rectangle.y_max;
+        }
+        break;
+    }
+    if (problematic_case_in_two_sides) {
+      // When it touches both sides, reducing the probe on the bottom might
+      // make the place with the minimum overlap become the top. It's too
+      // complicated to manage, so we fall back on actually computing it from
+      // scratch.
+      delta_energy += range.GetMinimumIntersectionArea(current_rectangle);
+      delta_energy -= range.GetMinimumIntersectionArea(next_rectangle);
+    } else {
+      IntegerValue intersect_length;
+      if (edge == Edge::LEFT || edge == Edge::RIGHT) {
+        intersect_length = Smallest1DIntersection(
+            range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+            current_rectangle.y_min, current_rectangle.y_max);
+      } else {
+        intersect_length = Smallest1DIntersection(
+            range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+            current_rectangle.x_min, current_rectangle.x_max);
+      }
+      units_crossed += intersect_length;
+    }
+  }
+  delta_energy += units_crossed * step_1d_size;
+  return delta_energy;
+}
+
+bool ProbingRectangle::CanShrink(Edge edge) const {
+  switch (edge) {
+    case Edge::LEFT:
+    case Edge::RIGHT:
+      return (right_index_ - left_index_ > 1);
+    case Edge::BOTTOM:
+    case Edge::TOP:
+      return (top_index_ - bottom_index_ > 1);
+  }
+}
+
+namespace {
+std::vector<double> GetExpTable() {
+  std::vector<double> table(101);
+  for (int i = 0; i <= 100; ++i) {
+    table[i] = std::exp(-(i - 50) / 5.0);
+  }
+  return table;
+}
+}  // namespace
+
+std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
+    const std::vector<RectangleInRange>& intervals, absl::BitGenRef random,
+    double temperature) {
+  std::vector<Rectangle> result;
+  ProbingRectangle ranges(intervals);
+
+  static const std::vector<double>* cached_probabilities =
+      new std::vector<double>(GetExpTable());
+
+  const double inv_temp = 1.0 / temperature;
+  absl::InlinedVector<ProbingRectangle::Edge, 4> candidates;
+  absl::InlinedVector<float, 4> weights;
+  while (!ranges.IsMinimal()) {
+    const IntegerValue rect_area = ranges.GetCurrentRectangleArea();
+    const IntegerValue min_energy = ranges.GetMinimumEnergy();
+    if (min_energy > rect_area) {
+      result.push_back(ranges.GetCurrentRectangle());
+    }
+    if (min_energy == 0) {
+      break;
+    }
+    candidates.clear();
+    weights.clear();
+
+    for (int border_idx = 0; border_idx < 4; ++border_idx) {
+      const ProbingRectangle::Edge border =
+          static_cast<ProbingRectangle::Edge>(border_idx);
+      if (!ranges.CanShrink(border)) {
+        continue;
+      }
+      candidates.push_back(border);
+      const IntegerValue delta_area = ranges.GetShrinkDeltaArea(border);
+      const IntegerValue delta_energy = ranges.GetShrinkDeltaEnergy(border);
+      const IntegerValue delta_slack = delta_energy - delta_area;
+      const int table_lookup = std::max(
+          0, std::min((int)(delta_slack.value() * 5 * inv_temp + 50), 100));
+      weights.push_back(cached_probabilities->at(table_lookup));
+    }
+    // Pick a change with a probability proportional to exp(- delta_E / Temp)
+    absl::discrete_distribution<int> dist(weights.begin(), weights.end());
+    ranges.Shrink(candidates.at(dist(random)));
+  }
+  CHECK_GT(ranges.GetCurrentRectangleArea(), 0);
+  if (ranges.GetMinimumEnergy() > ranges.GetCurrentRectangleArea()) {
+    result.push_back(ranges.GetCurrentRectangle());
+  }
+  return result;
 }
 
 }  // namespace sat

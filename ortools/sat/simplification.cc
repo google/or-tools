@@ -305,10 +305,10 @@ bool SatPresolver::ProcessAllClauses() {
 
   // Because on large problem we don't have a budget to process all clauses,
   // lets start by the smallest ones first.
-  std::sort(clause_to_process_.begin(), clause_to_process_.end(),
-            [this](ClauseIndex c1, ClauseIndex c2) {
-              return clauses_[c1].size() < clauses_[c2].size();
-            });
+  std::stable_sort(clause_to_process_.begin(), clause_to_process_.end(),
+                   [this](ClauseIndex c1, ClauseIndex c2) {
+                     return clauses_[c1].size() < clauses_[c2].size();
+                   });
   while (!clause_to_process_.empty()) {
     const ClauseIndex ci = clause_to_process_.front();
     in_clause_to_process_[ci] = false;
@@ -381,6 +381,7 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   return true;
 }
 
+// TODO(user): Put work limit in place !
 void SatPresolver::PresolveWithBva() {
   var_pq_elements_.clear();  // so we don't update it.
   InitializeBvaPriorityQueue();
@@ -388,6 +389,7 @@ void SatPresolver::PresolveWithBva() {
     const LiteralIndex lit = bva_pq_.Top()->literal;
     bva_pq_.Pop();
     SimpleBva(lit);
+    if (time_limit_ != nullptr && time_limit_->LimitReached()) break;
   }
 }
 
@@ -403,7 +405,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   m_cls_ = literal_to_clauses_[l];
 
   int reduction = 0;
-  while (true) {
+  for (int loop = 0; loop < 100; ++loop) {
     LiteralIndex lmax = kNoLiteralIndex;
     int max_size = 0;
 

@@ -1006,7 +1006,7 @@ SatSolver::Status SatSolver::EnqueueDecisionAndBacktrackOnConflict(
 
 bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(PropagationIsDone());
+  DCHECK(PropagationIsDone());
 
   if (model_is_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
@@ -1128,6 +1128,9 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
       // Keep this clause.
       clauses_propagator_->mutable_clauses_info()->erase(clause);
     }
+    if (trail_->AssignmentType(var) == AssignmentType::kSearchDecision) {
+      continue;
+    }
     for (const Literal l : trail_->Reason(var)) {
       const AssignmentInfo& info = trail_->Info(l.Variable());
       if (info.level == 0) continue;
@@ -1160,10 +1163,8 @@ bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable) {
 
     const BooleanVariable var = (*trail_)[trail_index].Variable();
     const int type = trail_->AssignmentType(var);
-    if (type != AssignmentType::kSearchDecision && type != binary_id &&
-        type != clause_id) {
-      return false;
-    }
+    if (type == AssignmentType::kSearchDecision) continue;
+    if (type != binary_id && type != clause_id) return false;
     SatClause* clause = ReasonClauseOrNull(var);
     if (clause != nullptr && clauses_propagator_->IsRemovable(clause)) {
       ++num_clause_to_mark_as_non_deletable;
@@ -1185,10 +1186,12 @@ bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable) {
 // Ideally this should be scheduled after other faster in-processing technique.
 void SatSolver::TryToMinimizeClause(SatClause* clause) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
+  CHECK(clause != nullptr);
   ++counters_.minimization_num_clauses;
 
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(clause->begin(), clause->end());
+
   while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
@@ -1241,7 +1244,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
       } else {
         ++counters_.minimization_num_decisions;
         EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
-        if (!clause->IsAttached()) {
+        if (clause->IsRemoved()) {
           Backtrack(0);
           return;
         }
@@ -1321,12 +1324,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   }
 
   // Used to trigger clause minimization via propagation.
-  int64_t next_minimization_num_restart =
-      restart_->NumRestarts() +
-      parameters_->minimize_with_propagation_restart_period();
-  if (parameters_->minimize_with_propagation_restart_period() < 0) {
-    next_minimization_num_restart = std::numeric_limits<int64_t>::max();
-  }
+  ResetMinimizationByPropagationThreshold();
 
   // Variables used to show the search progress.
   const int64_t kDisplayFrequency = 10000;
@@ -1404,20 +1402,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
       }
 
       // Clause minimization using propagation.
-      if (CurrentDecisionLevel() == 0 &&
-          restart_->NumRestarts() >= next_minimization_num_restart) {
-        next_minimization_num_restart =
-            restart_->NumRestarts() +
-            parameters_->minimize_with_propagation_restart_period();
-        MinimizeSomeClauses(
-            parameters_->minimize_with_propagation_num_decisions());
-
-        // Corner case: the minimization above being based on propagation may
-        // fix the remaining variables or prove UNSAT.
-        if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
-        if (trail_->Index() == num_variables_.value()) {
-          return StatusWithLog(FEASIBLE);
-        }
+      if (CurrentDecisionLevel() == 0 && !MaybeMinimizeByPropagation()) {
+        return StatusWithLog(UnsatStatus());
       }
 
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
@@ -1426,18 +1412,42 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   }
 }
 
-void SatSolver::MinimizeSomeClauses(int decisions_budget) {
+void SatSolver::ResetMinimizationByPropagationThreshold() {
+  if (parameters_->minimize_with_propagation_ratio() <= 0.0 ||
+      parameters_->minimize_with_propagation_num_decisions() <= 0) {
+    minimization_by_propagation_threshold_ =
+        std::numeric_limits<int64_t>::max();
+    return;
+  }
+  minimization_by_propagation_threshold_ =
+      counters_.num_branches +
+      static_cast<int64_t>(
+          static_cast<double>(
+              parameters_->minimize_with_propagation_num_decisions()) /
+          parameters_->minimize_with_propagation_ratio());
+}
+
+bool SatSolver::MaybeMinimizeByPropagation() {
+  if (counters_.num_branches <= minimization_by_propagation_threshold_) {
+    return true;
+  }
+  return MinimizeByPropagation();
+}
+
+bool SatSolver::MinimizeByPropagation() {
   // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
   // while we are processing it.
   block_clause_deletion_ = true;
 
-  const int64_t target_num_branches = counters_.num_branches + decisions_budget;
+  const int64_t target_num_branches =
+      counters_.num_branches +
+      parameters_->minimize_with_propagation_num_decisions();
   while (counters_.num_branches < target_num_branches &&
          (time_limit_ == nullptr || !time_limit_->LimitReached())) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
-      if (model_is_unsat_) return;
+      if (model_is_unsat_) return false;
     } else {
       if (to_minimize == nullptr) {
         VLOG(1) << "Minimized all clauses, restarting from first one.";
@@ -1449,6 +1459,13 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
 
   block_clause_deletion_ = false;
   clauses_propagator_->DeleteRemovedClauses();
+
+  ResetMinimizationByPropagationThreshold();
+
+  // Note(user): In some corner cases, the function above might find a
+  // feasible assignment. I think it is okay to ignore this special case
+  // that should only happen on trivial problems and just reset the solver.
+  return ResetToLevelZero();
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1747,7 +1764,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // others. Note that none of the clause should be all false because we should
   // have detected a conflict before this is called.
   for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
-    if (!clause->IsAttached()) continue;
+    if (clause->IsRemoved()) continue;
 
     const size_t old_size = clause->size();
     if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {

@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
@@ -473,9 +474,13 @@ class SatSolver {
   // Mainly visible for testing.
   ABSL_MUST_USE_RESULT bool Propagate();
 
-  // This must be called at level zero. It will spend the given num decision and
-  // use propagation to try to minimize some clauses from the database.
-  void MinimizeSomeClauses(int decisions_budget);
+  // This must be called at level zero. If enough decision were taken since the
+  // last ResetMinimizationByPropagationThreshold(), it will spend some decision
+  // (according to the parameters) and use propagation to try to minimize some
+  // clauses from the database. Return false on UNSAT.
+  bool MaybeMinimizeByPropagation();
+  void ResetMinimizationByPropagationThreshold();
+  bool MinimizeByPropagation();
 
   // Sets the export function to the shared clauses manager.
   void SetShareBinaryClauseCallback(const std::function<void(Literal, Literal)>&
@@ -684,7 +689,7 @@ class SatSolver {
   // function choose which one of the other functions to call depending on the
   // parameters.
   //
-  // Precondidtion: is_marked_ should be set to true for all the variables of
+  // Precondition: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
   void MinimizeConflict(
@@ -701,7 +706,7 @@ class SatSolver {
   // - There is an unique literal with the highest decision level.
   // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
-  // - Ther is no literal with a decision level of zero.
+  // - There is no literal with a decision level of zero.
   bool IsConflictValid(const std::vector<Literal>& literals);
 
   // Given the learned clause after a conflict, this computes the correct
@@ -827,6 +832,8 @@ class SatSolver {
   // This counter is decremented each time we learn a clause that can be
   // deleted. When it reaches zero, a clause cleanup is triggered.
   int num_learned_clause_before_cleanup_ = 0;
+
+  int64_t minimization_by_propagation_threshold_ = 0;
 
   // Temporary members used during conflict analysis.
   SparseBitset<BooleanVariable> is_marked_;

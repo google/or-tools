@@ -17,7 +17,6 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <random>
 #include <tuple>
 #include <vector>
@@ -27,7 +26,9 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/implied_bounds.h"
@@ -741,7 +742,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             added_demand[t] = demand_min;
             current_height += demand_min;
           } else if (first_skipped_task == -1) {
-            // We should have everyting needed here to add a new precedence.
+            // We should have everything needed here to add a new precedence.
             first_skipped_task = t;
             found = true;
             break;
@@ -1249,10 +1250,15 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       prober_(model->GetOrCreate<Prober>()),
       product_detector_(model->GetOrCreate<ProductDetector>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      pseudo_costs_(model->GetOrCreate<PseudoCosts>()) {
+      pseudo_costs_(model->GetOrCreate<PseudoCosts>()),
+      inprocessing_(model->GetOrCreate<Inprocessing>()) {
   // This is needed for recording the pseudo-costs.
   const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
   if (objective != nullptr) objective_var_ = objective->objective_var;
+
+  // This is needed for the first MaybeMinimizeByPropagation() not to trigger
+  // right away.
+  sat_solver_->ResetMinimizationByPropagationThreshold();
 }
 
 bool IntegerSearchHelper::BeforeTakingDecision() {
@@ -1267,21 +1273,27 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
     }
   }
 
-  if (sat_solver_->CurrentDecisionLevel() == 0) {
-    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
-    for (const auto& cb : level_zero_callbacks->callbacks) {
-      if (!cb()) {
-        sat_solver_->NotifyThatModelIsUnsat();
-        return false;
-      }
-    }
+  // The rest only trigger at level zero.
+  if (sat_solver_->CurrentDecisionLevel() != 0) return true;
 
-    if (parameters_.use_sat_inprocessing() &&
-        !model_->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+  auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+  for (const auto& cb : level_zero_callbacks->callbacks) {
+    if (!cb()) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
   }
+
+  if (parameters_.use_sat_inprocessing() &&
+      !inprocessing_->InprocessingRound()) {
+    sat_solver_->NotifyThatModelIsUnsat();
+    return false;
+  }
+
+  if (!sat_solver_->MaybeMinimizeByPropagation()) {
+    return sat_solver_->UnsatStatus();
+  }
+
   return true;
 }
 
@@ -1402,22 +1414,10 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
   // how to fix.
   if (!sat_solver_->FinishPropagation()) return sat_solver_->UnsatStatus();
 
-  // Used to trigger clause minimization via propagation.
-  //
-  // TODO(user): integrate this with BeforeTakingDecision() so that shared tree
-  // search worker can also use that.
-  int64_t num_restarts = 0;
-  int64_t next_minimization_num_restart =
-      parameters_.minimize_with_propagation_restart_period();
-  if (next_minimization_num_restart < 0) {
-    next_minimization_num_restart = std::numeric_limits<int64_t>::max();
-  }
-
   // Main search loop.
   const int64_t old_num_conflicts = sat_solver_->num_failures();
   const int64_t conflict_limit = parameters_.max_number_of_conflicts();
   int64_t num_decisions_since_last_lp_record_ = 0;
-  int64_t num_decisions_without_probing = 0;
   while (!time_limit_->LimitReached() &&
          (sat_solver_->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
@@ -1426,24 +1426,9 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
         return sat_solver_->UnsatStatus();
       }
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
-      ++num_restarts;
     }
 
     if (!BeforeTakingDecision()) return sat_solver_->UnsatStatus();
-
-    // Clause minimization using propagation.
-    if (sat_solver_->CurrentDecisionLevel() == 0 &&
-        num_restarts >= next_minimization_num_restart) {
-      next_minimization_num_restart =
-          num_restarts + parameters_.minimize_with_propagation_restart_period();
-      sat_solver_->MinimizeSomeClauses(
-          parameters_.minimize_with_propagation_num_decisions());
-
-      // Note(user): In some corner cases, the function above might find a
-      // feasible assignment. I think it is okay to ignore this special case
-      // that should only happen on trivial problems and just reset the solver.
-      if (!sat_solver_->ResetToLevelZero()) return sat_solver_->UnsatStatus();
-    }
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
@@ -1461,29 +1446,6 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       if (decision == kNoLiteralIndex) {
         if (!GetDecision(heuristics.decision_policies[heuristics.policy_index],
                          &decision)) {
-          continue;
-        }
-      }
-
-      // Probing?
-      //
-      // TODO(user): Be smarter about what variables we probe, we can
-      // also do more than one.
-      if (decision != kNoLiteralIndex &&
-          sat_solver_->CurrentDecisionLevel() == 0 &&
-          parameters_.probing_period_at_root() > 0 &&
-          ++num_decisions_without_probing >=
-              parameters_.probing_period_at_root()) {
-        num_decisions_without_probing = 0;
-        if (!prober_->ProbeOneVariable(Literal(decision).Variable())) {
-          return SatSolver::INFEASIBLE;
-        }
-        DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-
-        // We need to check after the probing that the literal is not fixed,
-        // otherwise we just go to the next decision.
-        if (sat_solver_->Assignment().LiteralIsAssigned(Literal(decision))) {
-          decision = kNoLiteralIndex;
           continue;
         }
       }
@@ -1586,22 +1548,39 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
 }
 
+#define RETURN_IF_NOT_FEASIBLE(test)       \
+  const SatSolver::Status status = (test); \
+  if (status != SatSolver::FEASIBLE) return status;
+
 ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
                                    Model* model)
     : model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      literal_watchers_(model->GetOrCreate<LiteralWatchers>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
+      inprocessing_(model->GetOrCreate<Inprocessing>()),
       parameters_(*(model->GetOrCreate<SatParameters>())),
       level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
       prober_(model->GetOrCreate<Prober>()),
       shared_response_manager_(model->Mutable<SharedResponseManager>()),
       shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
       active_limit_(parameters_.shaving_search_deterministic_time()) {
   auto* mapping = model_->GetOrCreate<CpModelMapping>();
   absl::flat_hash_set<BooleanVariable> visited;
+
+  trail_index_at_start_of_iteration_ = trail_->Index();
+  integer_trail_index_at_start_of_iteration_ = integer_trail_->Index();
+
+  // Build variable lists.
+  // TODO(user): Ideally, we should scan the internal model. But there can be
+  // a large blowup of variables during loading, which slows down the probing
+  // part. Using model variables is a good heuristic to select 'impactful'
+  // Boolean variables.
   for (int v = 0; v < model_proto.variables_size(); ++v) {
     if (mapping->IsBoolean(v)) {
       const BooleanVariable bool_var = mapping->Literal(v).Variable();
@@ -1615,10 +1594,10 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       int_vars_.push_back(var);
     }
   }
+
   VLOG(2) << "Start continuous probing with " << bool_vars_.size()
-          << " Boolean variables, and " << int_vars_.size()
-          << " integer variables"
-          << ", deterministic time limit = "
+          << " Boolean variables,  " << int_vars_.size()
+          << " integer variables, deterministic time limit = "
           << time_limit_->GetDeterministicLimit() << " on " << model_->Name();
 }
 
@@ -1634,14 +1613,11 @@ SatSolver::Status ContinuousProber::Probe() {
   if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
   while (!time_limit_->LimitReached()) {
-    if (parameters_.minimize_with_propagation_restart_period() >= 0) {
-      sat_solver_->MinimizeSomeClauses(
-          parameters_.minimize_with_propagation_num_decisions());
+    if (parameters_.use_sat_inprocessing() &&
+        !inprocessing_->InprocessingRound()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return sat_solver_->UnsatStatus();
     }
-
-    // Probe each Boolean variable at most once per loop.
-    probed_bool_vars_.clear();
-    probed_literals_.clear();
 
     // Store current statistics to detect an iteration without any improvement.
     const int64_t initial_num_literals_fixed =
@@ -1657,51 +1633,39 @@ SatSolver::Status ContinuousProber::Probe() {
         continue;
       }
 
-      if (!ImportFromSharedClasses()) {
-        return SatSolver::INFEASIBLE;
-      }
-
-      if (time_limit_->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
-
-      const BooleanVariable shave_lb =
-          encoder_
-              ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
-                  int_var, integer_trail_->LowerBound(int_var)))
-              .Variable();
-      const auto [_lb, lb_inserted] = probed_bool_vars_.insert(shave_lb);
+      const Literal shave_lb_literal =
+          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(
+              int_var, integer_trail_->LowerBound(int_var)));
+      const BooleanVariable shave_lb_var = shave_lb_literal.Variable();
+      const auto [_lb, lb_inserted] = probed_bool_vars_.insert(shave_lb_var);
       if (lb_inserted) {
-        if (!prober_->ProbeOneVariable(shave_lb)) {
+        if (!prober_->ProbeOneVariable(shave_lb_var)) {
           return SatSolver::INFEASIBLE;
         }
         num_literals_probed_++;
       }
 
-      const BooleanVariable shave_ub =
-          encoder_
-              ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-                  int_var, integer_trail_->UpperBound(int_var)))
-              .Variable();
-      const auto [_ub, ub_inserted] = probed_bool_vars_.insert(shave_ub);
+      const Literal shave_ub_literal =
+          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+              int_var, integer_trail_->UpperBound(int_var)));
+      const BooleanVariable shave_ub_var = shave_ub_literal.Variable();
+      const auto [_ub, ub_inserted] = probed_bool_vars_.insert(shave_ub_var);
       if (ub_inserted) {
-        if (!prober_->ProbeOneVariable(shave_ub)) {
+        if (!prober_->ProbeOneVariable(shave_ub_var)) {
           return SatSolver::INFEASIBLE;
         }
         num_literals_probed_++;
       }
 
-      if (parameters_.use_shaving_in_probing_search()) {
-        const SatSolver::Status lb_status =
-            ShaveLiteral(Literal(shave_lb, true));
+      if (use_shaving_) {
+        const SatSolver::Status lb_status = ShaveLiteral(shave_lb_literal);
         if (ReportStatus(lb_status)) return lb_status;
 
-        const SatSolver::Status ub_status =
-            ShaveLiteral(Literal(shave_ub, true));
+        const SatSolver::Status ub_status = ShaveLiteral(shave_ub_literal);
         if (ReportStatus(ub_status)) return ub_status;
       }
 
-      LogStatistics();
+      RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
     }
 
     // Probe Boolean variables from the model.
@@ -1710,24 +1674,16 @@ SatSolver::Status ContinuousProber::Probe() {
 
       if (sat_solver_->Assignment().VariableIsAssigned(bool_var)) continue;
 
-      if (!ImportFromSharedClasses()) {
+      const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
+      if (!inserted) continue;
+
+      if (!prober_->ProbeOneVariable(bool_var)) {
         return SatSolver::INFEASIBLE;
       }
-
-      if (time_limit_->LimitReached()) {
-        return SatSolver::LIMIT_REACHED;
-      }
-
-      const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
-      if (inserted) {
-        if (!prober_->ProbeOneVariable(bool_var)) {
-          return SatSolver::INFEASIBLE;
-        }
-        num_literals_probed_++;
-      }
+      num_literals_probed_++;
 
       const Literal literal(bool_var, true);
-      if (parameters_.use_shaving_in_probing_search() &&
+      if (use_shaving_ &&
           !sat_solver_->Assignment().LiteralIsAssigned(literal)) {
         const SatSolver::Status true_status = ShaveLiteral(literal);
         if (ReportStatus(true_status)) return true_status;
@@ -1737,39 +1693,198 @@ SatSolver::Status ContinuousProber::Probe() {
         if (ReportStatus(false_status)) return false_status;
       }
 
-      LogStatistics();
+      RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+    }
+
+    if (parameters_.use_extended_probing()) {
+      const auto at_least_one_literal_is_true =
+          [this](absl::Span<const Literal> literals) {
+            for (const Literal literal : literals) {
+              if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
+                return true;
+              }
+            }
+            return false;
+          };
+
+      // Probe clauses of the SAT model.
+      for (;;) {
+        const SatClause* clause = literal_watchers_->NextClauseToProbe();
+        if (clause == nullptr) break;
+        if (at_least_one_literal_is_true(clause->AsSpan())) continue;
+
+        tmp_dnf_.clear();
+        for (const Literal literal : clause->AsSpan()) {
+          if (sat_solver_->Assignment().LiteralIsAssigned(literal)) continue;
+          tmp_dnf_.push_back({literal});
+        }
+        ++num_at_least_one_probed_;
+        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_)) {
+          return SatSolver::INFEASIBLE;
+        }
+
+        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+      }
+
+      // Probe at_most_ones of the SAT model.
+      for (;;) {
+        const absl::Span<const Literal> at_most_one =
+            binary_implication_graph_->NextAtMostOne();
+        if (at_most_one.empty()) break;
+        if (at_least_one_literal_is_true(at_most_one)) continue;
+
+        tmp_dnf_.clear();
+        tmp_literals_.clear();
+        for (const Literal literal : at_most_one) {
+          if (sat_solver_->Assignment().LiteralIsAssigned(literal)) continue;
+          tmp_dnf_.push_back({literal});
+          tmp_literals_.push_back(literal.Negated());
+        }
+        tmp_dnf_.push_back(tmp_literals_);
+        ++num_at_most_one_probed_;
+        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_)) {
+          return SatSolver::INFEASIBLE;
+        }
+
+        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+      }
+
+      // Probe combinations of Booleans variables.
+      // TODO(user): Probe until something is imported, or learned.
+      if (bool_vars_.size() < 1000) {
+        for (; current_bv1_ + 1 < bool_vars_.size(); ++current_bv1_) {
+          const BooleanVariable bv1 = bool_vars_[current_bv1_];
+          if (sat_solver_->Assignment().VariableIsAssigned(bv1)) continue;
+          current_bv2_ = std::max(current_bv1_ + 1, current_bv2_);
+          for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
+            const BooleanVariable& bv2 = bool_vars_[current_bv2_];
+            if (sat_solver_->Assignment().VariableIsAssigned(bv2)) continue;
+            if (!prober_->ProbeDnf(
+                    "pair_of_bool_vars",
+                    {{Literal(bv1, true), Literal(bv2, true)},
+                     {Literal(bv1, true), Literal(bv2, false)},
+                     {Literal(bv1, false), Literal(bv2, true)},
+                     {Literal(bv1, false), Literal(bv2, false)}})) {
+              return SatSolver::INFEASIBLE;
+            }
+            RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+          }
+          current_bv2_ = 0;
+        }
+      } else {
+        for (; random_pair_of_bool_vars_probed_ < 5000;
+             ++random_pair_of_bool_vars_probed_) {
+          const BooleanVariable bv1 =
+              bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
+          if (sat_solver_->Assignment().VariableIsAssigned(bv1)) continue;
+          const BooleanVariable bv2 =
+              bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
+          if (sat_solver_->Assignment().VariableIsAssigned(bv2) || bv1 == bv2) {
+            continue;
+          }
+          if (!prober_->ProbeDnf(
+                  "rnd_pair_of_bool_vars",
+                  {{Literal(bv1, true), Literal(bv2, true)},
+                   {Literal(bv1, true), Literal(bv2, false)},
+                   {Literal(bv1, false), Literal(bv2, true)},
+                   {Literal(bv1, false), Literal(bv2, false)}})) {
+            return SatSolver::INFEASIBLE;
+          }
+
+          RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+        }
+      }
     }
 
     // Adjust the active_limit.
     {
-      const double deterministic_time =
-          parameters_.shaving_search_deterministic_time();
-      const bool something_has_been_detected =
-          num_bounds_shaved_ != initial_num_bounds_shaved ||
-          prober_->num_new_literals_fixed() != initial_num_literals_fixed;
-      if (something_has_been_detected) {  // Reset the limit.
-        active_limit_ = deterministic_time;
-      } else if (active_limit_ < 25 * deterministic_time) {  // Bump the limit.
-        active_limit_ += deterministic_time;
+      if (use_shaving_) {
+        const double deterministic_time =
+            parameters_.shaving_search_deterministic_time();
+        const bool something_has_been_detected =
+            num_bounds_shaved_ != initial_num_bounds_shaved ||
+            prober_->num_new_literals_fixed() != initial_num_literals_fixed;
+        if (something_has_been_detected) {  // Reset the limit.
+          active_limit_ = deterministic_time;
+        } else if (active_limit_ <
+                   25 * deterministic_time) {  // Bump the limit.
+          active_limit_ += deterministic_time;
+        }
       }
     }
 
+    // Reset all counters.
     ++iteration_;
     current_bool_var_ = 0;
     current_int_var_ = 0;
+    current_bv1_ = 0;
+    current_bv2_ = 1;
+    random_pair_of_bool_vars_probed_ = 0;
+    binary_implication_graph_->ResetAtMostOneIterator();
+    literal_watchers_->ResetToProbeIndex();
+    probed_bool_vars_.clear();
+    probed_literals_.clear();
+
+    const int new_trail_index = trail_->Index();
+    const int new_integer_trail_index = integer_trail_->Index();
+
+    // Update the use_shaving_ parameter.
+    // TODO(user): Currently, the heuristics is that we alternate shaving and
+    // not shaving, unless use_shaving_in_probing_search is false.
+    use_shaving_ =
+        parameters_.use_shaving_in_probing_search() ? !use_shaving_ : false;
+    trail_index_at_start_of_iteration_ = new_trail_index;
+    integer_trail_index_at_start_of_iteration_ = new_integer_trail_index;
+
+    // Remove fixed Boolean variables.
+    int size = 0;
+    for (int i = 0; i < bool_vars_.size(); ++i) {
+      if (!sat_solver_->Assignment().VariableIsAssigned(bool_vars_[i])) {
+        bool_vars_[size++] = bool_vars_[i];
+      }
+    }
+    bool_vars_.resize(size);
+
+    // Remove fixed integer variables.
+    size = 0;
+    for (int i = 0; i < int_vars_.size(); ++i) {
+      if (!integer_trail_->IsFixed(int_vars_[i])) {
+        int_vars_[size++] = int_vars_[i];
+      }
+    }
+    int_vars_.resize(size);
   }
   return SatSolver::LIMIT_REACHED;
 }
 
-bool ContinuousProber::ImportFromSharedClasses() {
-  if (!sat_solver_->ResetToLevelZero()) return false;
-  for (const auto& cb : level_zero_callbacks_->callbacks) {
-    if (!cb()) {
-      sat_solver_->NotifyThatModelIsUnsat();
-      return false;
+#undef RETURN_IF_NOT_FEASIBLE
+
+SatSolver::Status ContinuousProber::PeriodicSyncAndCheck() {
+  // Check limit.
+  if (--num_probes_remaining_ <= 0) {
+    num_probes_remaining_ = kTestLimitPeriod;
+    if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
+  }
+
+  // Log the state of the prober.
+  if (--num_logs_remaining_ <= 0) {
+    num_logs_remaining_ = kLogPeriod;
+    LogStatistics();
+  }
+
+  // Sync with shared storage.
+  if (--num_syncs_remaining_ <= 0) {
+    num_syncs_remaining_ = kSyncPeriod;
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+    for (const auto& cb : level_zero_callbacks_->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
     }
   }
-  return true;
+
+  return SatSolver::FEASIBLE;
 }
 
 SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
@@ -1812,11 +1927,16 @@ void ContinuousProber::LogStatistics() {
         "Probe",
         absl::StrCat(
             " (iterations=", iteration_,
+            " linearization_level=", parameters_.linearization_level(),
+            " shaving=", use_shaving_, " active_bool_vars=", bool_vars_.size(),
+            " active_int_vars=", integer_trail_->NumIntegerVariables(),
             " literals fixed/probed=", prober_->num_new_literals_fixed(), "/",
             num_literals_probed_, " bounds shaved/tried=", num_bounds_shaved_,
             "/", num_bounds_tried_, " new_integer_bounds=",
             shared_bounds_manager_->NumBoundsExported("probing"),
-            ", new_binary_clause=", prober_->num_new_binary_clauses(), ")"));
+            " new_binary_clause=", prober_->num_new_binary_clauses(),
+            " num_at_least_one_probed=", num_at_least_one_probed_,
+            " num_at_most_one_probed=", num_at_most_one_probed_, ")"));
   }
 }
 

@@ -108,6 +108,7 @@ class Inprocessing {
             model->GetOrCreate<BlockedClauseSimplifier>()),
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
+        postsolve_(model->GetOrCreate<PostsolveClauses>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         model_(model) {}
 
@@ -155,6 +156,7 @@ class Inprocessing {
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
+  PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
   double total_dtime_ = 0.0;

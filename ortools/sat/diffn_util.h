@@ -15,18 +15,19 @@
 #define OR_TOOLS_SAT_DIFFN_UTIL_H_
 
 #include <algorithm>
-#include <cstdint>
 #include <iosfwd>
+#include <limits>
+#include <optional>
 #include <ostream>
-#include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/graph/connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/util/strong_integers.h"
@@ -47,15 +48,64 @@ struct Rectangle {
     y_max = std::max(y_max, other.y_max);
   }
 
-  IntegerValue Area() const { return (x_max - x_min) * (y_max - y_min); }
+  IntegerValue Area() const { return SizeX() * SizeY(); }
+
+  IntegerValue SizeX() const { return x_max - x_min; }
+  IntegerValue SizeY() const { return y_max - y_min; }
 
   bool IsDisjoint(const Rectangle& other) const;
 
-  std::string DebugString() const {
-    return absl::StrFormat("rectangle(x(%i..%i), y(%i..%i))", x_min.value(),
-                           x_max.value(), y_min.value(), y_max.value());
+  // Returns an empty rectangle if no intersection.
+  Rectangle Intersect(const Rectangle& other) const;
+  IntegerValue IntersectArea(const Rectangle& other) const;
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Rectangle& r) {
+    absl::Format(&sink, "rectangle(x(%i..%i), y(%i..%i))", r.x_min.value(),
+                 r.x_max.value(), r.y_min.value(), r.y_max.value());
+  }
+
+  bool operator==(const Rectangle& other) const {
+    return std::tie(x_min, x_max, y_min, y_max) ==
+           std::tie(other.x_min, other.x_max, other.y_min, other.y_max);
+  }
+
+  static Rectangle GetEmpty() {
+    return Rectangle{.x_min = IntegerValue(0),
+                     .x_max = IntegerValue(0),
+                     .y_min = IntegerValue(0),
+                     .y_max = IntegerValue(0)};
   }
 };
+
+inline Rectangle Rectangle::Intersect(const Rectangle& other) const {
+  const IntegerValue ret_x_min = std::max(x_min, other.x_min);
+  const IntegerValue ret_y_min = std::max(y_min, other.y_min);
+  const IntegerValue ret_x_max = std::min(x_max, other.x_max);
+  const IntegerValue ret_y_max = std::min(y_max, other.y_max);
+
+  if (ret_x_min >= ret_x_max || ret_y_min >= ret_y_max) {
+    return GetEmpty();
+  } else {
+    return Rectangle{.x_min = ret_x_min,
+                     .x_max = ret_x_max,
+                     .y_min = ret_y_min,
+                     .y_max = ret_y_max};
+  }
+}
+
+inline IntegerValue Rectangle::IntersectArea(const Rectangle& other) const {
+  const IntegerValue ret_x_min = std::max(x_min, other.x_min);
+  const IntegerValue ret_y_min = std::max(y_min, other.y_min);
+  const IntegerValue ret_x_max = std::min(x_max, other.x_max);
+  const IntegerValue ret_y_max = std::min(y_max, other.y_max);
+
+  if (ret_x_min >= ret_x_max || ret_y_min >= ret_y_max) {
+    return 0;
+  } else {
+    return (ret_x_max - ret_x_min) * (ret_y_max - ret_y_min);
+  }
+}
 
 // Creates a graph when two nodes are connected iff their rectangles overlap.
 // Then partition into connected components.
@@ -254,6 +304,196 @@ class CapacityProfile {
   std::vector<Event> events_;
   int num_rectangles_added_ = 0;
 };
+
+// 1D counterpart of RectangleInRange::GetMinimumIntersectionArea.
+// Finds the minimum possible overlap of a interval of size `size` that fits in
+// [range_min, range_max] and a second interval [interval_min, interval_max].
+IntegerValue Smallest1DIntersection(IntegerValue range_min,
+                                    IntegerValue range_max, IntegerValue size,
+                                    IntegerValue interval_min,
+                                    IntegerValue interval_max);
+
+// A rectangle of size (`x_size`, `y_size`) that can freely move inside the
+// `bounding_area` rectangle.
+struct RectangleInRange {
+  int box_index;
+  Rectangle bounding_area;
+  IntegerValue x_size;
+  IntegerValue y_size;
+
+  enum class Corner {
+    BOTTOM_LEFT = 0,
+    TOP_LEFT = 1,
+    BOTTOM_RIGHT = 2,
+    TOP_RIGHT = 3,
+  };
+
+  // Returns the position of the rectangle fixed to one of the corner of its
+  // range.
+  Rectangle GetAtCorner(Corner p) const {
+    switch (p) {
+      case Corner::BOTTOM_LEFT:
+        return Rectangle{.x_min = bounding_area.x_min,
+                         .x_max = bounding_area.x_min + x_size,
+                         .y_min = bounding_area.y_min,
+                         .y_max = bounding_area.y_min + y_size};
+      case Corner::TOP_LEFT:
+        return Rectangle{.x_min = bounding_area.x_min,
+                         .x_max = bounding_area.x_min + x_size,
+                         .y_min = bounding_area.y_max - y_size,
+                         .y_max = bounding_area.y_max};
+      case Corner::BOTTOM_RIGHT:
+        return Rectangle{.x_min = bounding_area.x_max - x_size,
+                         .x_max = bounding_area.x_max,
+                         .y_min = bounding_area.y_min,
+                         .y_max = bounding_area.y_min + y_size};
+      case Corner::TOP_RIGHT:
+        return Rectangle{.x_min = bounding_area.x_max - x_size,
+                         .x_max = bounding_area.x_max,
+                         .y_min = bounding_area.y_max - y_size,
+                         .y_max = bounding_area.y_max};
+    }
+  }
+
+  // Returns an empty rectangle if it is possible for no intersection to happen.
+  Rectangle GetMinimumIntersection(const Rectangle& containing_area) const {
+    IntegerValue smallest_area = std::numeric_limits<IntegerValue>::max();
+    Rectangle best_intersection;
+    for (int corner_idx = 0; corner_idx < 4; ++corner_idx) {
+      const Corner p = static_cast<Corner>(corner_idx);
+      Rectangle intersection = containing_area.Intersect(GetAtCorner(p));
+      const IntegerValue intersection_area = intersection.Area();
+      if (intersection_area == 0) {
+        return Rectangle::GetEmpty();
+      }
+      if (intersection_area < smallest_area) {
+        smallest_area = intersection_area;
+        best_intersection = std::move(intersection);
+      }
+    }
+    return best_intersection;
+  }
+
+  IntegerValue GetMinimumIntersectionArea(
+      const Rectangle& containing_area) const {
+    return Smallest1DIntersection(bounding_area.x_min, bounding_area.x_max,
+                                  x_size, containing_area.x_min,
+                                  containing_area.x_max) *
+           Smallest1DIntersection(bounding_area.y_min, bounding_area.y_max,
+                                  y_size, containing_area.y_min,
+                                  containing_area.y_max);
+  }
+
+  static RectangleInRange BiggestWithMinIntersection(
+      const Rectangle& containing_area, const RectangleInRange& original,
+      const IntegerValue& min_intersect_x,
+      const IntegerValue& min_intersect_y) {
+    const IntegerValue x_size = original.x_size;
+    const IntegerValue y_size = original.y_size;
+
+    RectangleInRange result;
+    result.x_size = x_size;
+    result.y_size = y_size;
+    result.box_index = original.box_index;
+
+    // We cannot intersect more units than the whole item.
+    DCHECK_GE(x_size, min_intersect_x);
+    DCHECK_GE(y_size, min_intersect_y);
+
+    // Units that can *not* intersect per dimension.
+    const IntegerValue x_headroom = x_size - min_intersect_x;
+    const IntegerValue y_headroom = y_size - min_intersect_y;
+
+    result.bounding_area.x_min = containing_area.x_min - x_headroom;
+    result.bounding_area.x_max = containing_area.x_max + x_headroom;
+    result.bounding_area.y_min = containing_area.y_min - y_headroom;
+    result.bounding_area.y_max = containing_area.y_max + y_headroom;
+
+    return result;
+  }
+};
+
+// Cheaply test several rectangles for area conflict.
+// This is used by FindRectanglesWithEnergyConflictMC() below.
+class ProbingRectangle {
+ public:
+  // It will initialize with the bounding box of the whole set.
+  explicit ProbingRectangle(const std::vector<RectangleInRange>& intervals);
+
+  enum Edge { TOP = 0, LEFT = 1, BOTTOM = 2, RIGHT = 3 };
+
+  // Shrink the rectangle by moving one of its four edges to the next
+  // "interesting" value. The interesting values for x or y are the ones that
+  // correspond to a boundary, ie., a value that corresponds to one of {min,
+  // min + size, max - size, max} of a rectangle.
+  void Shrink(Edge edge);
+
+  bool CanShrink(Edge edge) const;
+
+  bool IsMinimal() const {
+    // We only need to know if there is slack on both dimensions. Actually
+    // CanShrink(BOTTOM) == CanShrink(TOP) and conversely.
+    return !(CanShrink(Edge::BOTTOM) || CanShrink(Edge::LEFT));
+  }
+
+  // How much of GetMinimumEnergy() will change if Shrink() is called.
+  IntegerValue GetShrinkDeltaEnergy(Edge edge) const;
+
+  // How much of GetCurrentRectangleArea() will change if Shrink() is called.
+  IntegerValue GetShrinkDeltaArea(Edge edge) const;
+
+  Rectangle GetCurrentRectangle() const;
+  IntegerValue GetCurrentRectangleArea() const { return probe_area_; }
+
+  // This is equivalent of, for every item:
+  // - Call GetMinimumIntersectionArea() with GetCurrentRectangle().
+  // - Return the total sum of the areas.
+  IntegerValue GetMinimumEnergy() const { return minimum_energy_; }
+  const std::vector<RectangleInRange>& Intervals() const { return intervals_; }
+
+ private:
+  struct IntervalPoint {
+    IntegerValue value;
+    int index;
+    enum class IntervalPointType {
+      START_MIN,
+      START_MAX,
+      END_MIN,
+      END_MAX,
+    };
+    IntervalPointType type;
+  };
+
+  std::vector<IntervalPoint> interval_points_sorted_by_x_;
+  std::vector<IntervalPoint> interval_points_sorted_by_y_;
+
+  // Those two vectors are not strictly needed, we could instead iterate
+  // directly on the two vectors above, but the code would be much uglier.
+  struct PointsForCoordinate {
+    IntegerValue coordinate;
+    absl::Span<IntervalPoint> points;
+  };
+  std::vector<PointsForCoordinate> grouped_intervals_sorted_by_x_;
+  std::vector<PointsForCoordinate> grouped_intervals_sorted_by_y_;
+
+  const std::vector<RectangleInRange>& intervals_;
+
+  IntegerValue minimum_energy_;
+  IntegerValue probe_area_;
+  int top_index_, bottom_index_, left_index_, right_index_;
+  absl::flat_hash_set<int> ranges_touching_boundary_[4];
+};
+
+// Monte-Carlo inspired heuristic to find a rectangles with an energy conflict:
+// - start with a rectangle equals to the full bounding box of the elements;
+// - shrink the rectangle by an edge to the next "interesting" value. Choose
+//   the edge randomly, but biased towards the change that increases the ratio
+//   area_inside / area_rectangle;
+// - collect a result at every conflict;
+// - stop when the rectangle is empty.
+std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
+    const std::vector<RectangleInRange>& intervals, absl::BitGenRef random,
+    double temperature);
 
 }  // namespace sat
 }  // namespace operations_research

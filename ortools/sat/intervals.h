@@ -333,6 +333,13 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue StartMax(int t) const { return -cached_negated_start_max_[t]; }
   IntegerValue EndMax(int t) const { return -cached_negated_end_max_[t]; }
 
+  IntegerValue LevelZeroStartMin(int t) const {
+    return integer_trail_->LevelZeroLowerBound(starts_[t]);
+  }
+  IntegerValue LevelZeroStartMax(int t) const {
+    return integer_trail_->LevelZeroUpperBound(starts_[t]);
+  }
+
   // In the presence of tasks with a variable size, we do not necessarily
   // have start_min + size_min = end_min, we can instead have a situation
   // like:

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_DIFFN_H_
 #define OR_TOOLS_SAT_DIFFN_H_
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -26,9 +27,51 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
+
+// Propagates using a box energy reasoning.
+class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
+ public:
+  NonOverlappingRectanglesEnergyPropagator(SchedulingConstraintHelper* x,
+                                           SchedulingConstraintHelper* y,
+                                           Model* model)
+      : x_(*x),
+        y_(*y),
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
+  ~NonOverlappingRectanglesEnergyPropagator() override;
+
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  bool BuildAndReportEnergyTooLarge(
+      const std::vector<RectangleInRange>& ranges);
+  void CheckPropagationIsValid(const std::vector<RectangleInRange>& ranges,
+                               const Rectangle& rectangle_too_much_energy);
+  std::vector<RectangleInRange> GetEnergyConflictForRectangle(
+      const Rectangle& rectangle,
+      const std::vector<RectangleInRange>& active_box_ranges);
+
+  SchedulingConstraintHelper& x_;
+  SchedulingConstraintHelper& y_;
+  ModelRandomGenerator* random_;
+  SharedStatistics* shared_stats_;
+
+  int64_t num_calls_ = 0;
+  int64_t num_conflicts_ = 0;
+  int64_t num_multiple_conflicts_ = 0;
+
+  NonOverlappingRectanglesEnergyPropagator(
+      const NonOverlappingRectanglesEnergyPropagator&) = delete;
+  NonOverlappingRectanglesEnergyPropagator& operator=(
+      const NonOverlappingRectanglesEnergyPropagator&) = delete;
+};
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.

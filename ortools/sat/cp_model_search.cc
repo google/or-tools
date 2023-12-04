@@ -605,6 +605,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
+    new_params.set_at_most_one_max_expansion_size(2);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddDualSchedulingHeuristics(new_params);
     }
