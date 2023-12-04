@@ -15,13 +15,13 @@
 
 #include <limits>
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 
@@ -187,7 +187,11 @@ TEST(SetCoverTest, KnightsCoverTrivial) {
 }
 
 TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
-  const int BoardSize = 15;
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverLedger ledger(&model);
 
@@ -208,37 +212,99 @@ TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
 }
 
 TEST(SetCoverTest, KnightsCoverRandomClear) {
-  const int BoardSize = 15;
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverLedger ledger(&model);
   Cost best_cost = std::numeric_limits<Cost>::max();
   SubsetBoolVector best_choices = ledger.GetSolution();
-  std::vector<SubsetIndex> focus = model.all_subsets();
   for (int i = 0; i < 10000; ++i) {
+    ledger.LoadSolution(best_choices);
+    ClearRandomSubsets(0.1 * model.num_subsets().value(), &ledger);
+
     GreedySolutionGenerator greedy(&ledger);
-    CHECK(greedy.NextSolution(focus));
-    // LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+    CHECK(greedy.NextSolution());
 
     SteepestSearch steepest(&ledger);
-    CHECK(steepest.NextSolution(focus, 10000));
-    // LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+    CHECK(steepest.NextSolution(10000));
+
     EXPECT_TRUE(ledger.CheckSolution());
     if (ledger.cost() < best_cost) {
       best_cost = ledger.cost();
       best_choices = ledger.GetSolution();
       LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
     }
-    ledger.LoadSolution(best_choices);
-    ClearProportionRandomly(0.1, &ledger);
-    // focus = ledger.ComputeSettableSubsets();
   }
-  if (ledger.cost() < 0) {
-    // The best solution found until now has a cost of 350.
-    // http://www.contestcen.com/kn50.htm
-    DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  ledger.LoadSolution(best_choices);
+  DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "RandomClear cost: " << best_cost;
+  // The best solution found until 2023-08 has a cost of 350.
+  // http://www.contestcen.com/kn50.htm
+  if (BoardSize == 50) {
     CHECK_GE(ledger.cost(), 350);
   }
+}
+
+TEST(SetCoverTest, KnightsCoverRandomClearMip) {
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverLedger ledger(&model);
+  Cost best_cost = std::numeric_limits<Cost>::max();
+  SubsetBoolVector best_choices = ledger.GetSolution();
+  GreedySolutionGenerator greedy(&ledger);
+  CHECK(greedy.NextSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+
+  SteepestSearch steepest(&ledger);
+  CHECK(steepest.NextSolution(10000));
+  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+
+  best_cost = ledger.cost();
+  best_choices = ledger.GetSolution();
+  for (int i = 0; i < 100; ++i) {
+    ledger.LoadSolution(best_choices);
+    auto focus = ClearRandomSubsets(0.1 * model.num_subsets().value(), &ledger);
+    SetCoverMip mip(&ledger);
+    mip.SetTimeLimitInSeconds(1);
+    mip.NextSolution(focus);
+    EXPECT_TRUE(ledger.CheckSolution());
+    if (ledger.cost() < best_cost) {
+      best_cost = ledger.cost();
+      best_choices = ledger.GetSolution();
+      LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
+    }
+  }
+  ledger.LoadSolution(best_choices);
   DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "RandomClearMip cost: " << best_cost;
+  // The best solution found until 2023-08 has a cost of 350.
+  // http://www.contestcen.com/kn50.htm
+  if (BoardSize == 50) {
+    CHECK_GE(ledger.cost(), 350);
+  }
+}
+
+TEST(SetCoverTest, KnightsCoverMip) {
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverLedger ledger(&model);
+  SetCoverMip mip(&ledger);
+  mip.SetTimeLimitInSeconds(10);
+  mip.NextSolution();
+  SubsetBoolVector best_choices = ledger.GetSolution();
+  DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "Mip cost: " << ledger.cost();
 }
 
 void BM_Steepest(benchmark::State& state) {
