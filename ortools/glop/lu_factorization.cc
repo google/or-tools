@@ -64,6 +64,9 @@ Status LuFactorization::ComputeFactorization(
     stats_.lu_fill_in.Add(GetFillInPercentage(matrix));
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
+
+  // TODO(user): This might fail on badly scaled matrices.
+  // I still prefer to keep it as a DCHECK for tests though.
   DCHECK(CheckFactorization(matrix, Fractional(1e-6)));
   return Status::OK();
 }

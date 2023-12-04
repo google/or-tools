@@ -3304,6 +3304,17 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       }
     }
 
+    // This is to avoid crashes below. It seems to happen rarely on a few miplib
+    // problem like rmine11.pb.gz in multithread.
+    //
+    // TODO(user): Try to recover instead.
+    if (std::abs(direction_[leaving_row]) <= 1e-20) {
+      const std::string error_message = absl::StrCat(
+          "trying to pivot with number too small: ", direction_[leaving_row]);
+      SOLVER_LOG(logger_, error_message);
+      return Status(Status::ERROR_LU, error_message);
+    }
+
     // This test takes place after the check for optimality/feasibility because
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
