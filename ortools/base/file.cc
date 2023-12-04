@@ -11,10 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/base/file.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "absl/strings/str_cat.h"
+#include <cstdint>
 #if defined(_MSC_VER)
 #include <io.h>
 #define access _access
@@ -23,20 +25,28 @@
 #include <unistd.h>
 #endif
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <iostream>  // NOLINT
 #include <memory>
 #include <string>
 
 #include "absl/log/check.h"
-#include "ortools/base/file.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "google/protobuf/io/tokenizer.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 
-File::File(FILE* const f_des, const absl::string_view& name)
-    : f_(f_des), name_(name) {}
+File::File(FILE* descriptor, absl::string_view name)
+    : f_(descriptor), name_(name) {}
 
-bool File::Delete(const char* const name) { return remove(name) == 0; }
+bool File::Delete(const char* name) { return remove(name) == 0; }
 
-bool File::Exists(const char* const name) { return access(name, F_OK) == 0; }
+bool File::Exists(const char* name) { return access(name, F_OK) == 0; }
 
 size_t File::Size() {
   struct stat f_stat;
@@ -64,45 +74,43 @@ absl::Status File::Close(int flags) {
                             absl::StrCat("Could not close file '", name_, "'"));
 }
 
-void File::ReadOrDie(void* const buf, size_t size) {
+void File::ReadOrDie(void* buf, size_t size) {
   CHECK_EQ(fread(buf, 1, size, f_), size);
 }
 
-size_t File::Read(void* const buf, size_t size) {
-  return fread(buf, 1, size, f_);
-}
+size_t File::Read(void* buf, size_t size) { return fread(buf, 1, size, f_); }
 
-void File::WriteOrDie(const void* const buf, size_t size) {
+void File::WriteOrDie(const void* buf, size_t size) {
   CHECK_EQ(fwrite(buf, 1, size, f_), size);
 }
-size_t File::Write(const void* const buf, size_t size) {
+size_t File::Write(const void* buf, size_t size) {
   return fwrite(buf, 1, size, f_);
 }
 
-File* File::OpenOrDie(const char* const name, const char* const flag) {
-  FILE* const f_des = fopen(name, flag);
+File* File::OpenOrDie(absl::string_view name, absl::string_view flag) {
+  FILE* f_des = fopen(name.data(), flag.data());
   if (f_des == nullptr) {
     std::cerr << "Cannot open " << name;
     exit(1);
   }
-  File* const f = new File(f_des, name);
+  File* f = new File(f_des, name.data());
   return f;
 }
 
-File* File::Open(const char* const name, const char* const flag) {
-  FILE* const f_des = fopen(name, flag);
+File* File::Open(absl::string_view name, absl::string_view flag) {
+  FILE* f_des = fopen(name.data(), flag.data());
   if (f_des == nullptr) return nullptr;
-  File* const f = new File(f_des, name);
+  File* f = new File(f_des, name.data());
   return f;
 }
 
-char* File::ReadLine(char* const output, uint64_t max_length) {
+char* File::ReadLine(char* output, uint64_t max_length) {
   return fgets(output, max_length, f_);
 }
 
-int64_t File::ReadToString(std::string* const output, uint64_t max_length) {
-  CHECK(output != nullptr);
-  output->clear();
+int64_t File::ReadToString(std::string* line, uint64_t max_length) {
+  CHECK(line != nullptr);
+  line->clear();
 
   if (max_length == 0) return 0;
 
@@ -115,21 +123,21 @@ int64_t File::ReadToString(std::string* const output, uint64_t max_length) {
   while (needed > 0) {
     nread = Read(buf.get(), (bufsize < needed ? bufsize : needed));
     if (nread > 0) {
-      output->append(buf.get(), nread);
+      line->append(buf.get(), nread);
       needed -= nread;
     } else {
       break;
     }
   }
-  return (nread >= 0 ? static_cast<int64_t>(output->size()) : -1);
+  return (nread >= 0 ? static_cast<int64_t>(line->size()) : -1);
 }
 
-size_t File::WriteString(const std::string& line) {
-  return Write(line.c_str(), line.size());
+size_t File::WriteString(absl::string_view str) {
+  return Write(str.data(), str.size());
 }
 
-bool File::WriteLine(const std::string& line) {
-  if (Write(line.c_str(), line.size()) != line.size()) return false;
+bool File::WriteLine(absl::string_view line) {
+  if (Write(line.data(), line.size()) != line.size()) return false;
   return Write("\n", 1) == 1;
 }
 
@@ -140,8 +148,8 @@ bool File::Open() const { return f_ != nullptr; }
 void File::Init() {}
 
 namespace file {
-absl::Status Open(const absl::string_view& filename,
-                  const absl::string_view& mode, File** f, int flags) {
+absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
+                  int flags) {
   if (flags == Defaults()) {
     *f = File::Open(filename, mode.data());
     if (*f != nullptr) {
@@ -152,8 +160,7 @@ absl::Status Open(const absl::string_view& filename,
                       absl::StrCat("Could not open '", filename, "'"));
 }
 
-File* OpenOrDie(const absl::string_view& filename,
-                const absl::string_view& mode, int flags) {
+File* OpenOrDie(absl::string_view filename, absl::string_view mode, int flags) {
   File* f;
   CHECK_EQ(flags, Defaults());
   f = File::Open(filename, mode.data());
@@ -161,7 +168,7 @@ File* OpenOrDie(const absl::string_view& filename,
   return f;
 }
 
-absl::Status GetContents(const absl::string_view& filename, std::string* output,
+absl::Status GetContents(absl::string_view filename, std::string* output,
                          int flags) {
   File* file;
   auto status = file::Open(filename, "r", &file, flags);
@@ -195,8 +202,7 @@ absl::Status GetContents(const absl::string_view& filename, std::string* output,
                       absl::StrCat("Could not read from '", filename, "'."));
 }
 
-absl::Status WriteString(File* file, const absl::string_view& contents,
-                         int flags) {
+absl::Status WriteString(File* file, absl::string_view contents, int flags) {
   if (flags == Defaults() && file != nullptr &&
       file->Write(contents.data(), contents.size()) == contents.size()) {
     return absl::OkStatus();
@@ -206,8 +212,8 @@ absl::Status WriteString(File* file, const absl::string_view& contents,
       absl::StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-absl::Status SetContents(const absl::string_view& filename,
-                         const absl::string_view& contents, int flags) {
+absl::Status SetContents(absl::string_view filename, absl::string_view contents,
+                         int flags) {
   File* file;
   auto status = file::Open(filename, "w", &file, flags);
   if (!status.ok()) return status;
@@ -217,23 +223,23 @@ absl::Status SetContents(const absl::string_view& filename,
   return status;
 }
 
-bool ReadFileToString(const absl::string_view& file_name, std::string* output) {
+bool ReadFileToString(absl::string_view file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data,
-                       const absl::string_view& file_name) {
+bool WriteStringToFile(const std::string& data, absl::string_view file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
 namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
  public:
+  ~NoOpErrorCollector() override = default;
   void AddError(int line, int column, const std::string& message) override {}
 };
 }  // namespace
 
-bool ReadFileToProto(const absl::string_view& file_name,
+bool ReadFileToProto(absl::string_view file_name,
                      google::protobuf::Message* proto) {
   std::string str;
   if (!ReadFileToString(file_name, &str)) {
@@ -262,36 +268,36 @@ bool ReadFileToProto(const absl::string_view& file_name,
   return false;
 }
 
-void ReadFileToProtoOrDie(const absl::string_view& file_name,
+void ReadFileToProtoOrDie(absl::string_view file_name,
                           google::protobuf::Message* proto) {
   CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           const absl::string_view& file_name) {
+                           absl::string_view file_name) {
   std::string proto_string;
   return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                const absl::string_view& file_name) {
+                                absl::string_view file_name) {
   CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToFile(const google::protobuf::Message& proto,
-                      const absl::string_view& file_name) {
+                      absl::string_view file_name) {
   std::string proto_string;
   return proto.AppendToString(&proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           const absl::string_view& file_name) {
+                           absl::string_view file_name) {
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-absl::Status GetTextProto(const absl::string_view& filename,
+absl::Status GetTextProto(absl::string_view filename,
                           google::protobuf::Message* proto, int flags) {
   if (flags == Defaults()) {
     if (ReadFileToProto(filename, proto)) return absl::OkStatus();
@@ -301,7 +307,7 @@ absl::Status GetTextProto(const absl::string_view& filename,
       absl::StrCat("Could not read proto from '", filename, "'."));
 }
 
-absl::Status SetTextProto(const absl::string_view& filename,
+absl::Status SetTextProto(absl::string_view filename,
                           const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToASCIIFile(proto, filename)) return absl::OkStatus();
@@ -312,8 +318,7 @@ absl::Status SetTextProto(const absl::string_view& filename,
 }
 
 absl::Status GetBinaryProto(const absl::string_view filename,
-                            google::protobuf::Message* const proto,
-                            const int flags) {
+                            google::protobuf::Message* proto, const int flags) {
   std::string str;
   if (flags == Defaults() && ReadFileToString(filename, &str) &&
       proto->ParseFromString(str)) {
@@ -324,7 +329,7 @@ absl::Status GetBinaryProto(const absl::string_view filename,
       absl::StrCat("Could not read proto from '", filename, "'."));
 }
 
-absl::Status SetBinaryProto(const absl::string_view& filename,
+absl::Status SetBinaryProto(absl::string_view filename,
                             const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToFile(proto, filename)) return absl::OkStatus();
@@ -334,7 +339,7 @@ absl::Status SetBinaryProto(const absl::string_view& filename,
       absl::StrCat("Could not write proto to '", filename, "'."));
 }
 
-absl::Status Delete(const absl::string_view& path, int flags) {
+absl::Status Delete(absl::string_view path, int flags) {
   if (flags == Defaults()) {
     if (remove(path.data()) == 0) return absl::OkStatus();
   }
@@ -342,7 +347,7 @@ absl::Status Delete(const absl::string_view& path, int flags) {
                       absl::StrCat("Could not delete '", path, "'."));
 }
 
-absl::Status Exists(const absl::string_view& path, int flags) {
+absl::Status Exists(absl::string_view path, int flags) {
   if (flags == Defaults()) {
     if (access(path.data(), F_OK) == 0) return absl::OkStatus();
   }
