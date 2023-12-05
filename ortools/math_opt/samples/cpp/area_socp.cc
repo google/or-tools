@@ -65,7 +65,7 @@ absl::Status Main(const double target_area) {
   model.Minimize(width + height);
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kEcos));
-  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   std::cout << "Target area: " << target_area << std::endl;
   std::cout << "Area: "
             << result.variable_values().at(width) *

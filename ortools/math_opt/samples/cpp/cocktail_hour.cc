@@ -255,7 +255,7 @@ absl::StatusOr<Menu> SolveForMenu(
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, math_opt::SolverType::kGscip, args));
 
-  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   Menu menu;
   for (const absl::string_view ingredient : kIngredients) {
     if (result.variable_values().at(ingredient_vars.at(ingredient)) > 0.5) {

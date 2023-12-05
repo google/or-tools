@@ -240,7 +240,7 @@ absl::StatusOr<FlowModel> SolveMip(const Graph graph,
   model.Minimize(flow_model.cost);
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   std::cout << "MIP Solution with 2 side constraints" << std::endl;
   std::cout << absl::StrFormat("MIP objective value: %6.3f",
                                result.objective_value())
@@ -263,7 +263,7 @@ absl::Status SolveLinearRelaxation(FlowModel& flow_model, const Graph& graph,
   math_opt::Model& model = *flow_model.model;
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGscip));
-  RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   std::cout << "LP relaxation with 2 side constraints" << std::endl;
   std::cout << absl::StrFormat("LP objective value: %6.3f",
                                result.objective_value())
@@ -354,7 +354,7 @@ absl::Status SolveLagrangianRelaxation(const Graph graph,
     model.Minimize(lagrangian_function);
     ASSIGN_OR_RETURN(math_opt::SolveResult result,
                      Solve(model, math_opt::SolverType::kGscip));
-    RETURN_IF_ERROR(result.termination.IsOptimalOrFeasible());
+    RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
 
     const math_opt::VariableMap<double>& vars_val = result.variable_values();
     bool feasible = true;

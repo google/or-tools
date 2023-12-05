@@ -1,0 +1,108 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Solve parameters that are specific to the model.
+
+syntax = "proto3";
+
+package operations_research.service.v1.mathopt;
+
+import "ortools/service/v1/mathopt/solution.proto";
+import "ortools/service/v1/mathopt/sparse_containers.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.ortools.service.v1.mathopt";
+
+option csharp_namespace = "Google.OrTools.Service";
+
+// A suggested starting solution for the solver.
+//
+// MIP solvers generally only want primal information (`variable_values`), while
+// LP solvers want both primal and dual information (`dual_values`).
+//
+// Many MIP solvers can work with: (1) partial solutions that do not specify all
+// variables or (2) infeasible solutions. In these cases, solvers typically
+// solve a sub-MIP to complete/correct the hint.
+//
+// How the hint is used by the solver, if at all, is highly dependent on the
+// solver, the problem type, and the algorithm used. The most reliable way to
+// ensure your hint has an effect is to read the underlying solvers logs with
+// and without the hint.
+//
+// Simplex-based LP solvers typically prefer an initial basis to a solution hint
+// (they need to crossover to convert the hint to a basic feasible solution
+// otherwise).
+//
+// TODO(b/183616124): Add hint-priorities to variable_values.
+message SolutionHintProto {
+  // A possibly partial assignment of values to the primal variables of the
+  // problem. The solver-independent requirements for this sub-message are:
+  //  * variable_values.ids are elements of VariablesProto.ids.
+  //  * variable_values.values must all be finite.
+  SparseDoubleVectorProto variable_values = 1;
+
+  // A (potentially partial) assignment of values to the linear constraints of
+  // the problem.
+  //
+  //  Requirements:
+  //   * dual_values.ids are elements of LinearConstraintsProto.ids.
+  //   * dual_values.values must all be finite.
+  SparseDoubleVectorProto dual_values = 2;
+}
+
+// TODO(b/183628247): follow naming convention in fields below.
+// Parameters to control a single solve that that are specific to the input
+// model (see SolveParametersProto for model independent parameters).
+message ModelSolveParametersProto {
+  // Filter that is applied to all returned sparse containers keyed by variables
+  // in PrimalSolutionProto and PrimalRayProto
+  // (PrimalSolutionProto.variable_values, PrimalRayProto.variable_values).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of VariablesProto.ids.
+  SparseVectorFilterProto variable_values_filter = 1;
+
+  // Filter that is applied to all returned sparse containers keyed by linear
+  // constraints in DualSolutionProto and DualRay
+  // (DualSolutionProto.dual_values, DualRay.dual_values).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of LinearConstraints.ids.
+  SparseVectorFilterProto dual_values_filter = 2;
+
+  // Filter that is applied to all returned sparse containers keyed by variables
+  // in DualSolutionProto and DualRay (DualSolutionProto.reduced_costs,
+  // DualRay.reduced_costs).
+  //
+  // Requirements:
+  //  * filtered_ids are elements of VariablesProto.ids.
+  SparseVectorFilterProto reduced_costs_filter = 3;
+
+  // Optional initial basis for warm starting simplex LP solvers. If set, it is
+  // expected to be valid according to `ValidateBasis` in
+  // `validators/solution_validator.h` for the current `ModelSummary`.
+  BasisProto initial_basis = 4;
+
+  // Optional solution hints. If the underlying solver only accepts a single
+  // hint, the first hint is used.
+  repeated SolutionHintProto solution_hints = 5;
+
+  // Optional branching priorities. Variables with higher values will be
+  // branched on first. Variables for which priorities are not set get the
+  // solver's default priority (usually zero).
+  //
+  // Requirements:
+  //  * branching_priorities.values must be finite.
+  //  * branching_priorities.ids must be elements of VariablesProto.ids.
+  SparseInt32VectorProto branching_priorities = 6;
+}

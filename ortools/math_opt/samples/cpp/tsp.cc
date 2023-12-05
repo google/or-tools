@@ -291,7 +291,7 @@ absl::StatusOr<Cycle> SolveTsp(
   };
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, math_opt::SolverType::kGurobi, args));
-  RETURN_IF_ERROR(result.termination.IsOptimal());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Route length: " << result.objective_value() << std::endl;
   const std::vector<Cycle> cycles =
       FindCycles(EdgeValues(edge_vars, result.variable_values()));

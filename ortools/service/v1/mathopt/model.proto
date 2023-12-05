@@ -1,0 +1,309 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// An encoding format for mathematical optimization problems.
+
+syntax = "proto3";
+
+package operations_research.service.v1.mathopt;
+
+import "ortools/service/v1/mathopt/sparse_containers.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.ortools.service.v1.mathopt";
+
+option csharp_namespace = "Google.OrTools.Service";
+
+// As used below, we define "#variables" = size(VariablesProto.ids).
+message VariablesProto {
+  // Must be nonnegative and strictly increasing. The max(int64) value can't be
+  // used.
+  repeated int64 ids = 1;
+  // Should have length equal to #variables, values in [-inf, inf).
+  repeated double lower_bounds = 2;
+  // Should have length equal to #variables, values in (-inf, inf].
+  repeated double upper_bounds = 3;
+  // Should have length equal to #variables. Value is false for continuous
+  // variables and true for integer variables.
+  repeated bool integers = 4;
+  // If not set, assumed to be all empty strings. Otherwise, should have length
+  // equal to #variables.
+  //
+  // All nonempty names must be distinct. TODO(b/169575522): we may relax this.
+  repeated string names = 5;
+}
+
+message ObjectiveProto {
+  // false is minimize, true is maximize
+  bool maximize = 1;
+
+  // Must be finite and not NaN.
+  double offset = 2;
+
+  // ObjectiveProto terms that are linear in the decision variables.
+  //
+  // Requirements:
+  //  * linear_coefficients.ids are elements of VariablesProto.ids.
+  //  * VariablesProto not specified correspond to zero.
+  //  * linear_coefficients.values must all be finite.
+  //  * linear_coefficients.values can be zero, but this just wastes space.
+  SparseDoubleVectorProto linear_coefficients = 3;
+
+  // Objective terms that are quadratic in the decision variables.
+  //
+  // Requirements in addition to those on SparseDoubleMatrixProto messages:
+  //  * Each element of quadratic_coefficients.row_ids and each element of
+  //    quadratic_coefficients.column_ids must be an element of
+  //    VariablesProto.ids.
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_coefficients.row_ids[i] <=
+  //    quadratic_coefficients.column_ids[i].
+  //
+  // Notes:
+  //  * Terms not explicitly stored have zero coefficient.
+  //  * Elements of quadratic_coefficients.coefficients can be zero, but this
+  //    just wastes space.
+  SparseDoubleMatrixProto quadratic_coefficients = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.objectives and AuxiliaryObjectivesUpdatesProto.new_objectives.
+  string name = 5;
+
+  // For multi-objective problems, the priority of this objective relative to
+  // the others (lower is more important). This value must be nonnegative.
+  // Furthermore, each objective priority in the model must be distinct at solve
+  // time. This condition is not validated at the proto level, so models may
+  // temporarily have objectives with the same priority.
+  int64 priority = 6;
+}
+
+// As used below, we define "#linear constraints" =
+// size(LinearConstraintsProto.ids).
+message LinearConstraintsProto {
+  // Must be nonnegative and strictly increasing. The max(int64) value can't be
+  // used.
+  repeated int64 ids = 1;
+  // Should have length equal to #linear constraints, values in [-inf, inf).
+  repeated double lower_bounds = 2;
+  // Should have length equal to #linear constraints, values in (-inf, inf].
+  repeated double upper_bounds = 3;
+  // If not set, assumed to be all empty strings. Otherwise, should have length
+  // equal to #linear constraints.
+  //
+  // All nonempty names must be distinct. TODO(b/169575522): we may relax this.
+  repeated string names = 4;
+}
+
+// A single quadratic constraint of the form:
+//    lb <= sum{linear_terms} + sum{quadratic_terms} <= ub.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
+message QuadraticConstraintProto {
+  // Terms that are linear in the decision variables.
+  //
+  // In addition to requirements on SparseDoubleVectorProto messages we require
+  // that:
+  //  * linear_terms.ids are elements of VariablesProto.ids.
+  //  * linear_terms.values must all be finite and not-NaN.
+  //
+  // Notes:
+  //  * Variable ids omitted have a corresponding coefficient of zero.
+  //  * linear_terms.values can be zero, but this just wastes space.
+  SparseDoubleVectorProto linear_terms = 1;
+
+  // Terms that are quadratic in the decision variables.
+  //
+  // In addition to requirements on SparseDoubleMatrixProto messages we require
+  // that:
+  //  * Each element of quadratic_terms.row_ids and each element of
+  //    quadratic_terms.column_ids must be an element of VariablesProto.ids.
+  //  * The matrix must be upper triangular: for each i,
+  //    quadratic_terms.row_ids[i] <= quadratic_terms.column_ids[i].
+  //
+  // Notes:
+  //  * Terms not explicitly stored have zero coefficient.
+  //  * Elements of quadratic_terms.coefficients can be zero, but this just
+  //    wastes space.
+  SparseDoubleMatrixProto quadratic_terms = 2;
+
+  // Must have value in [-inf, inf), and be less than or equal to `upper_bound`.
+  double lower_bound = 3;
+
+  // Must have value in (-inf, inf], and be greater than or equal to
+  // `lower_bound`.
+  double upper_bound = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.quadratic_constraints and
+  // QuadraticConstraintUpdatesProto.new_constraints.
+  string name = 5;
+}
+
+// A single second-order cone constraint of the form:
+//
+//    ||`arguments_to_norm`||_2 <= `upper_bound`,
+//
+// where `upper_bound` and each element of `arguments_to_norm` are linear
+// expressions.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
+message SecondOrderConeConstraintProto {
+  LinearExpressionProto upper_bound = 1;
+  repeated LinearExpressionProto arguments_to_norm = 2;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // `ModelProto.second_order_cone_constraints` and
+  // `SecondOrderConeConstraintUpdatesProto.new_constraints`.
+  string name = 3;
+}
+
+// Data for representing a single SOS1 or SOS2 constraint.
+//
+// If a variable involved in this constraint is deleted, it is treated as if it
+// were set to zero.
+message SosConstraintProto {
+  // The expressions over which to apply the SOS constraint:
+  //   * SOS1: At most one element takes a nonzero value.
+  //   * SOS2: At most two elements take nonzero values, and they must be
+  //           adjacent in the repeated ordering.
+  repeated LinearExpressionProto expressions = 1;
+
+  // Either empty or of equal length to expressions. If empty, default weights
+  // are 1, 2, ...
+  // If present, the entries must be unique.
+  repeated double weights = 2;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // ModelProto.sos1_constraints and SosConstraintUpdatesProto.new_constraints.
+  string name = 3;
+}
+
+// Data for representing a single indicator constraint of the form:
+//    Variable(indicator_id) = (activate_on_zero ? 0 : 1) ⇒
+//    lower_bound <= expression <= upper_bound.
+//
+// If a variable involved in this constraint (either the indicator, or appearing
+// in `expression`) is deleted, it is treated as if it were set to zero. In
+// particular, deleting the indicator variable means that the indicator
+// constraint is vacuous if `activate_on_zero` is false, and that it is
+// equivalent to a linear constraint if `activate_on_zero` is true.
+message IndicatorConstraintProto {
+  // An ID corresponding to a binary variable, or unset. If unset, the indicator
+  // constraint is ignored. If set, we require that:
+  //   * VariablesProto.integers[indicator_id] = true,
+  //   * VariablesProto.lower_bounds[indicator_id] >= 0,
+  //   * VariablesProto.upper_bounds[indicator_id] <= 1.
+  // These conditions are not validated by MathOpt, but if not satisfied will
+  // lead to the solver returning an error upon solving.
+  optional int64 indicator_id = 1;
+
+  // If true, then if the indicator variable takes value 0, the implied
+  // constraint must hold. Otherwise, if the indicator variable takes value 1,
+  // then the implied constraint must hold.
+  bool activate_on_zero = 6;
+
+  // Must be a valid linear expression with respect to the containing model:
+  //   * All stated conditions on `SparseDoubleVectorProto`,
+  //   * All elements of `expression.values` must be finite,
+  //   * `expression.ids` are a subset of `VariablesProto.ids`.
+  SparseDoubleVectorProto expression = 2;
+
+  // Must have value in [-inf, inf); cannot be NaN.
+  double lower_bound = 3;
+
+  // Must have value in (-inf, inf]; cannot be NaN.
+  double upper_bound = 4;
+
+  // Parent messages may have uniqueness requirements on this field; e.g., see
+  // `ModelProto.indicator_constraints` and
+  // `IndicatorConstraintUpdatesProto.new_constraints`.
+  string name = 5;
+}
+
+// An optimization problem.
+// MathOpt supports:
+//   - Continuous and integer decision variables with optional finite bounds.
+//   - Linear and quadratic objectives (single or multiple objectives), either
+//   minimized or maximized.
+//   - A number of constraints types, including:
+//     * Linear constraints
+//     * Quadratic constraints
+//     * Second-order cone constraints
+//     * Logical constraints
+//       > SOS1 and SOS2 constraints
+//       > Indicator constraints
+//
+// By default, constraints are represented in "id-to-data" maps. However, we
+// represent linear constraints in a more efficient "struct-of-arrays" format.
+message ModelProto {
+  string name = 1;
+  VariablesProto variables = 2;
+
+  // The primary objective in the model.
+  ObjectiveProto objective = 3;
+
+  // Auxiliary objectives for use in multi-objective models.
+  //
+  // Map key IDs must be in [0, max(int64)). Each priority, and each nonempty
+  // name, must be unique and also distinct from the primary `objective`.
+  map<int64, ObjectiveProto> auxiliary_objectives = 10;
+
+  LinearConstraintsProto linear_constraints = 4;
+
+  // The variable coefficients for the linear constraints.
+  //
+  // If a variable involved in this constraint is deleted, it is treated as if
+  // it were set to zero.
+  //
+  // Requirements:
+  //  * linear_constraint_matrix.row_ids are elements of linear_constraints.ids.
+  //  * linear_constraint_matrix.column_ids are elements of variables.ids.
+  //  * Matrix entries not specified are zero.
+  //  * linear_constraint_matrix.values must all be finite.
+  SparseDoubleMatrixProto linear_constraint_matrix = 5;
+
+  // Mapped constraints (i.e., stored in "constraint ID"-to-"constraint data"
+  // map). For each subsequent submessage, we require that:
+  //   * Each key is in [0, max(int64)).
+  //   * Each key is unique in its respective map (but not necessarily across
+  //     constraint types)
+  //   * Each value contains a name field (called `name`), and each nonempty
+  //     name must be distinct across all map entries (but not necessarily
+  //     across constraint types).
+
+  // Quadratic constraints in the model.
+  map<int64, QuadraticConstraintProto> quadratic_constraints = 6;
+
+  // Second-order cone constraints in the model.
+  map<int64, SecondOrderConeConstraintProto> second_order_cone_constraints = 11;
+
+  // SOS1 constraints in the model, which constrain that at most one
+  // `expression` can be nonzero. The optional `weights` entries are an
+  // implementation detail used by the solver to (hopefully) converge more
+  // quickly. In more detail, solvers may (or may not) use these weights to
+  // select branching decisions that produce "balanced" children nodes.
+  map<int64, SosConstraintProto> sos1_constraints = 7;
+
+  // SOS2 constraints in the model, which constrain that at most two entries of
+  // `expression` can be nonzero, and they must be adjacent in their ordering.
+  // If no `weights` are provided, this ordering is their linear ordering in the
+  // `expressions` list; if `weights` are presented, the ordering is taken with
+  // respect to these values in increasing order.
+  map<int64, SosConstraintProto> sos2_constraints = 8;
+
+  // Indicator constraints in the model, which enforce that, if a binary
+  // "indicator variable" is set to one, then an "implied constraint" must hold.
+  map<int64, IndicatorConstraintProto> indicator_constraints = 9;
+}

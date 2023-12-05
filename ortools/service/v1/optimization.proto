@@ -1,0 +1,68 @@
+// Copyright 2010-2022 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research.service.v1;
+
+import "ortools/service/v1/mathopt/model.proto";
+import "ortools/service/v1/mathopt/model_parameters.proto";
+import "ortools/service/v1/mathopt/parameters.proto";
+import "ortools/service/v1/mathopt/result.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.ortools.service.v1";
+
+option csharp_namespace = "Google.OrTools.Service";
+
+// A One Platform API exposing a set of optimization solvers for high-level
+// operations research problems.
+service Optimization {
+  // Solves the input model and returns the result at once. Use this when you
+  // don't need callbacks, incrementality and don't need to track the progress
+  // of a solve.
+  rpc SolveMathOptModel(SolveMathOptModelRequest)
+      returns (SolveMathOptModelResponse) {}
+}
+
+// Request for a unary remote solve in MathOpt.
+message SolveMathOptModelRequest {
+  // Solver type to numerically solve the problem. Note that if a solver does
+  // not support a specific feature in the model, the optimization procedure
+  // won't be successful.
+  mathopt.SolverTypeProto solver_type = 1;
+
+  // A mathematical representation of the optimization problem to solve.
+  mathopt.ModelProto model = 2;
+
+  // Parameters to control a single solve. The enable_output parameter is
+  // handled specifically. For solvers that support messages callbacks, setting
+  // it to true will have the server register a message callback. The resulting
+  // messages will be returned in SolveMathOptModelResponse.messages. For other
+  // solvers, setting enable_output to true will result in an error.
+  mathopt.SolveParametersProto parameters = 4;
+
+  // Parameters to control a single solve that are specific to the input model
+  // (see SolveParametersProto for model independent parameters).
+  mathopt.ModelSolveParametersProto model_parameters = 5;
+}
+
+// Response for a unary remote solve in MathOpt.
+message SolveMathOptModelResponse {
+  // Description of the output of solving the model in the request.
+  mathopt.SolveResultProto result = 1;
+
+  // If SolveParametersProto.enable_output has been used, this will contain log
+  // messages for solvers that support message callbacks.
+  repeated string messages = 2;
+}

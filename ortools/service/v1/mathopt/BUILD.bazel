@@ -1,0 +1,151 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
+package(default_visibility = [
+    "//ortools/math_opt:__subpackages__",
+    "//ortools/service:__subpackages__",
+])
+
+proto_library(
+    name = "model_proto",
+    srcs = ["model.proto"],
+    deps = [":sparse_containers_proto"],
+)
+
+cc_proto_library(
+    name = "model_cc_proto",
+    deps = [":model_proto"],
+)
+
+java_proto_library(
+    name = "model_java_proto",
+    deps = [":model_proto"],
+)
+
+py_proto_library(
+    name = "model_py_pb2",
+    deps = [":model_proto"],
+)
+
+proto_library(
+    name = "solution_proto",
+    srcs = ["solution.proto"],
+    deps = [":sparse_containers_proto"],
+)
+
+py_proto_library(
+    name = "solution_py_pb2",
+    deps = [":solution_proto"],
+)
+
+cc_proto_library(
+    name = "solution_cc_proto",
+    deps = [":solution_proto"],
+)
+
+java_proto_library(
+    name = "solution_java_proto",
+    deps = [":solution_proto"],
+)
+
+proto_library(
+    name = "result_proto",
+    srcs = ["result.proto"],
+    deps = [
+        ":solution_proto",
+        "@com_google_protobuf//:duration_proto",
+    ],
+)
+
+py_proto_library(
+    name = "result_py_pb2",
+    deps = [":result_proto"],
+)
+
+cc_proto_library(
+    name = "result_cc_proto",
+    deps = [":result_proto"],
+)
+
+java_proto_library(
+    name = "result_java_proto",
+    deps = [":result_proto"],
+)
+
+proto_library(
+    name = "model_parameters_proto",
+    srcs = ["model_parameters.proto"],
+    deps = [
+        ":solution_proto",
+        ":sparse_containers_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "model_parameters_cc_proto",
+    deps = [":model_parameters_proto"],
+)
+
+java_proto_library(
+    name = "model_parameters_java_proto",
+    deps = [":model_parameters_proto"],
+)
+
+py_proto_library(
+    name = "model_parameters_py_pb2",
+    deps = [":model_parameters_proto"],
+)
+
+proto_library(
+    name = "sparse_containers_proto",
+    srcs = ["sparse_containers.proto"],
+)
+
+cc_proto_library(
+    name = "sparse_containers_cc_proto",
+    deps = [":sparse_containers_proto"],
+)
+
+java_proto_library(
+    name = "sparse_containers_java_proto",
+    deps = [":sparse_containers_proto"],
+)
+
+py_proto_library(
+    name = "sparse_containers_py_pb2",
+    deps = [":sparse_containers_proto"],
+)
+
+proto_library(
+    name = "parameters_proto",
+    srcs = ["parameters.proto"],
+    deps = ["@com_google_protobuf//:duration_proto"],
+)
+
+py_proto_library(
+    name = "parameters_py_pb2",
+    deps = [":parameters_proto"],
+)
+
+cc_proto_library(
+    name = "parameters_cc_proto",
+    deps = [":parameters_proto"],
+)
+
+java_proto_library(
+    name = "parameters_java_proto",
+    deps = [":parameters_proto"],
+)

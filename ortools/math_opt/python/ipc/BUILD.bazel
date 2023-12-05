@@ -1,0 +1,40 @@
+# Copyright 2010-2022 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "remote_http_solve",
+    srcs = ["remote_http_solve.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":proto_converter",
+        "//ortools/service/v1:optimization_py_pb2",
+        requirement("requests"),
+        "//ortools/math_opt:rpc_py_pb2",
+        "//ortools/math_opt/python:mathopt",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
+py_library(
+    name = "proto_converter",
+    srcs = ["proto_converter.py"],
+    deps = [
+        "//ortools/math_opt:rpc_py_pb2",
+        "//ortools/math_opt/python:normalize",
+        "//ortools/service/v1:optimization_py_pb2",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)

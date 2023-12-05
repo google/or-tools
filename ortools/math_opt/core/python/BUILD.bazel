@@ -35,11 +35,11 @@ pybind_extension(
             "//ortools/linear_solver:use_scip": ["//ortools/math_opt/solvers:gscip_solver"],
             "//conditions:default": [],
         }) + [
-        "//ortools/math_opt:result_cc_proto",
-        "//ortools/math_opt/core:solve_interrupter",
-        "//ortools/math_opt/core:solver",
-        "//ortools/math_opt/core:solver_debug",
-        "@pybind11_abseil//pybind11_abseil:status_casters",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
-    ],
+            "//ortools/math_opt:result_cc_proto",
+            "//ortools/math_opt/core:solve_interrupter",
+            "//ortools/math_opt/core:solver",
+            "//ortools/math_opt/core:solver_debug",
+            "@pybind11_abseil//pybind11_abseil:status_casters",
+            "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+        ],
 )

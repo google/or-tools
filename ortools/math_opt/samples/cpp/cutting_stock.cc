@@ -143,7 +143,7 @@ absl::StatusOr<std::pair<Configuration, double>> BestConfiguration(
                             board_length);
   ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  RETURN_IF_ERROR(solve_result.termination.IsOptimal());
+  RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal());
   Configuration config;
   for (int i = 0; i < num_pieces; ++i) {
     const int use = static_cast<int>(
@@ -192,7 +192,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   int pricing_round = 0;
   while (true) {
     ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
-    RETURN_IF_ERROR(solve_result.termination.IsOptimal())
+    RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal())
         << " at iteration " << pricing_round;
     if (!solve_result.has_dual_feasible_solution()) {
       // MathOpt does not require solvers to return a dual solution on optimal,
@@ -224,7 +224,7 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   }
   ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
                    math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  RETURN_IF_ERROR(solve_result.termination.IsOptimalOrFeasible())
+  RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimalOrFeasible())
       << " in final cutting stock MIP";
   CuttingStockSolution solution;
   for (const auto& [config, var] : configs) {

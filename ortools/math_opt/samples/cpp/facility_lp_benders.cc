@@ -248,7 +248,7 @@ absl::Status FullProblem(const FacilityLocationInstance& instance,
   }
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    math_opt::Solve(model, solver_type));
-  RETURN_IF_ERROR(result.termination.IsOptimal());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
 
   std::cout << "Full problem optimal objective: "
             << absl::StrFormat("%.9f", result.objective_value()) << std::endl;
@@ -606,7 +606,7 @@ absl::Status Benders(const FacilityLocationInstance& instance,
     // Solve and process first stage.
     ASSIGN_OR_RETURN(const math_opt::SolveResult first_stage_result,
                      first_stage_solver->Solve());
-    RETURN_IF_ERROR(first_stage_result.termination.IsOptimal())
+    RETURN_IF_ERROR(first_stage_result.termination.EnsureIsOptimal())
         << " in first stage problem";
     for (int j = 0; j < num_facilities; j++) {
       z_values[j] = first_stage_result.variable_values().at(first_stage.z[j]);

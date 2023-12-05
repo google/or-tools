@@ -67,7 +67,7 @@ absl::Status Main() {
 
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, math_opt::SolverType::kGlop));
-  RETURN_IF_ERROR(result.termination.IsOptimal());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;

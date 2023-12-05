@@ -163,7 +163,7 @@ absl::StatusOr<LinearModel> Train(
   args.parameters.enable_output = true;
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
                    Solve(model, absl::GetFlag(FLAGS_solver_type), args));
-  RETURN_IF_ERROR(result.termination.IsOptimal());
+  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Training time: " << result.solve_time() << std::endl;
   return LinearModel{.betas = Values(result.variable_values(), betas)};
 }
