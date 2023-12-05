@@ -99,7 +99,6 @@ cc_library(
 )
 
 # Weighted set covering
-
 cc_library(
     name = "set_cover_model",
     srcs = ["set_cover_model.cc"],
@@ -124,6 +123,18 @@ cc_library(
 )
 
 cc_library(
+    name = "set_cover_mip",
+    srcs = ["set_cover_mip.cc"],
+    hdrs = ["set_cover_mip.h"],
+    deps = [
+        ":set_cover_ledger",
+        "//ortools/linear_solver",
+        "//ortools/lp_data:base",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_library(
     name = "set_cover_utils",
     srcs = ["set_cover_utils.cc"],
     hdrs = ["set_cover_utils.h"],
@@ -139,6 +150,7 @@ cc_library(
     srcs = ["set_cover.cc"],
     hdrs = ["set_cover.h"],
     deps = [
+        ":set_cover_mip",
         ":set_cover_utils",
         "//ortools/base",
         "@com_google_absl//absl/log",
