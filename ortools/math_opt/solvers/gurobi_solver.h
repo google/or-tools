@@ -379,6 +379,8 @@ class GurobiSolver : public SolverInterface {
   // `.constraint_index` is set and refers to the Gurobi linear constraint index
   // for a slack constraint just added to the model such that:
   // `expression` == `.variable_index`.
+  // TODO(b/267310257): Use this for linear constraint slacks, and maybe move it
+  // up the stack to a bridge.
   absl::StatusOr<VariableEqualToExpression>
   CreateSlackVariableEqualToExpression(const LinearExpressionProto& expression);
 

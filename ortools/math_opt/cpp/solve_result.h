@@ -334,11 +334,11 @@ struct Termination {
 
   // Returns an OkStatus if the reason of this `Termination` is `reason`, or an
   // `InternalError` otherwise.
-  absl::Status ReasonIs(TerminationReason reason) const;
+  absl::Status EnsureReasonIs(TerminationReason reason) const;
 
   // Returns an OkStatus if the reason of this `Termination` is in `reasons`, or
   // an `InternalError` otherwise.
-  absl::Status ReasonIsAnyOf(
+  absl::Status EnsureReasonIsAnyOf(
       std::initializer_list<TerminationReason> reasons) const;
 
   // Returns termination with reason kOptimal, the provided objective for both

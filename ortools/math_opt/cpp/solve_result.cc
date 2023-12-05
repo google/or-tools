@@ -325,13 +325,13 @@ bool Termination::limit_reached() const {
          reason == TerminationReason::kNoSolutionFound;
 }
 
-absl::Status Termination::ReasonIs(const TerminationReason reason) const {
+absl::Status Termination::EnsureReasonIs(TerminationReason reason) const {
   if (this->reason == reason) return absl::OkStatus();
   return util::InternalErrorBuilder()
          << "expected termination reason '" << reason << "' but got " << *this;
 }
 
-absl::Status Termination::ReasonIsAnyOf(
+absl::Status Termination::EnsureReasonIsAnyOf(
     std::initializer_list<TerminationReason> reasons) const {
   for (const TerminationReason reason : reasons) {
     if (this->reason == reason) return absl::OkStatus();
@@ -348,11 +348,11 @@ absl::Status Termination::ReasonIsAnyOf(
 }
 
 absl::Status Termination::IsOptimal() const {
-  return ReasonIs(TerminationReason::kOptimal);
+  return EnsureReasonIs(TerminationReason::kOptimal);
 }
 
 absl::Status Termination::IsOptimalOrFeasible() const {
-  return ReasonIsAnyOf(
+  return EnsureReasonIsAnyOf(
       {TerminationReason::kOptimal, TerminationReason::kFeasible});
 }
 

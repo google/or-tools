@@ -14,10 +14,13 @@
 #include "ortools/algorithms/set_cover.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <limits>
 #include <numeric>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "ortools/algorithms/set_cover_ledger.h"
@@ -289,31 +292,97 @@ bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
   return true;
 }
 
-std::vector<SubsetIndex> ClearProportionRandomly(double proportion,
+namespace {
+void SampleSubsets(std::vector<SubsetIndex>* list, std::size_t num_subsets) {
+  num_subsets = std::min(num_subsets, list->size());
+  CHECK_GE(num_subsets, 0);
+  std::shuffle(list->begin(), list->end(), absl::BitGen());
+  list->resize(num_subsets);
+}
+}  // namespace
+
+std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
                                                  SetCoverLedger* ledger) {
-  return ClearProportionRandomly(ledger->model()->all_subsets(), proportion,
+  return ClearRandomSubsets(ledger->model()->all_subsets(), num_subsets,
                                  ledger);
 }
 
-std::vector<SubsetIndex> ClearProportionRandomly(
-    const std::vector<SubsetIndex>& focus, double proportion,
+std::vector<SubsetIndex> ClearRandomSubsets(
+    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
     SetCoverLedger* ledger) {
-  CHECK_LE(proportion, 1.0);
-  CHECK_GE(proportion, 0.0);
-  std::vector<SubsetIndex> choice_indices;
+  num_subsets = std::min(num_subsets, focus.size());
+  CHECK_GE(num_subsets, 0);
+  std::vector<SubsetIndex> chosen_indices;
   for (const SubsetIndex subset : focus) {
     if (ledger->is_selected(subset)) {
-      choice_indices.push_back(subset);
+      chosen_indices.push_back(subset);
     }
   }
-  std::shuffle(choice_indices.begin(), choice_indices.end(), absl::BitGen());
-  const int num_subsets_to_clear = proportion * choice_indices.size();
-  choice_indices.resize(num_subsets_to_clear);
-  for (const SubsetIndex subset : choice_indices) {
+  SampleSubsets(&chosen_indices, num_subsets);
+  for (const SubsetIndex subset : chosen_indices) {
     // Use UnsafeToggle because we allow non-solutions.
     ledger->UnsafeToggle(subset, false);
   }
-  return choice_indices;
+  return chosen_indices;
+}
+
+std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
+                                                  SetCoverLedger* ledger) {
+  return ClearMostCoveredElements(ledger->model()->all_subsets(), num_subsets,
+                                  ledger);
+}
+
+std::vector<SubsetIndex> ClearMostCoveredElements(
+    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
+    SetCoverLedger* ledger) {
+  // This is the vector we will return.
+  std::vector<SubsetIndex> chosen_indices;
+
+  const ElementToSubsetVector& coverage = ledger->coverage();
+
+  // Compute a permutation of the element indices by decreasing order of
+  // coverage by element.
+  std::vector<ElementIndex> permutation(coverage.size().value());
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::sort(permutation.begin(), permutation.end(),
+            [&coverage](ElementIndex i, ElementIndex j) {
+              return coverage[i] > coverage[j];
+            });
+
+  // Now, for the elements that are over-covered (coverage > 1), collect the
+  // sets that are used.
+  absl::flat_hash_set<SubsetIndex> used_subsets_collection;
+  for (ElementIndex element : permutation) {
+    if (coverage[element] <= 1) break;
+    for (SubsetIndex subset : ledger->model()->rows()[element]) {
+      if (ledger->is_selected(subset)) {
+        used_subsets_collection.insert(subset);
+      }
+    }
+  }
+
+  // Now the impacted subset is a vector representation of the flat_hash_set
+  // collection.
+  std::vector<SubsetIndex> impacted_subsets(used_subsets_collection.begin(),
+                                            used_subsets_collection.end());
+  // Sort the impacted subsets to be able to intersect the vector later.
+  std::sort(impacted_subsets.begin(), impacted_subsets.end());
+
+  // chosen_indices = focus ⋂ impacted_subsets
+  std::set_intersection(focus.begin(), focus.end(), impacted_subsets.begin(),
+                        impacted_subsets.end(),
+                        std::back_inserter(chosen_indices));
+
+  std::shuffle(chosen_indices.begin(), chosen_indices.end(), absl::BitGen());
+  chosen_indices.resize(std::min(chosen_indices.size(), num_subsets));
+
+  // Sort before traversing indices (and memory) in order.
+  std::sort(chosen_indices.begin(), chosen_indices.end());
+  for (const SubsetIndex subset : chosen_indices) {
+    // Use UnsafeToggle because we allow non-solutions.
+    ledger->UnsafeToggle(subset, false);
+  }
+  return chosen_indices;
 }
 
 }  // namespace operations_research

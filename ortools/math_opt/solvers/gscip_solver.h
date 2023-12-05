@@ -25,6 +25,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "ortools/base/linked_hash_map.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
@@ -195,8 +196,9 @@ class GScipSolver : public SolverInterface {
   absl::Status RegisterHandlers();
 
   const std::unique_ptr<GScip> gscip_;
+
   InterruptEventHandler interrupt_event_handler_;
-  absl::flat_hash_map<int64_t, SCIP_VAR*> variables_;
+  gtl::linked_hash_map<int64_t, SCIP_VAR*> variables_;
   bool has_quadratic_objective_ = false;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
   absl::flat_hash_map<int64_t, SCIP_CONS*> quadratic_constraints_;

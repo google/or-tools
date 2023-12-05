@@ -20,7 +20,7 @@
 
 
 """Utility functions for normalizing proto3 message objects in Python."""
-from google3.google.protobuf import duration_pb2
+from google.protobuf import duration_pb2
 from google.protobuf import descriptor
 from google.protobuf import message
 

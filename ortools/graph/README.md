@@ -4,9 +4,6 @@ This directory contains data structures and algorithms for graph and
 network flow problems.
 
 It contains in particular:
-* a compact and efficient graph representation,
-  [`EbertGraph`](https://dl.acm.org/doi/abs/10.1145/214762.214769),
-  which is used for most of the algorithms herein, unless specified otherwise.
 * well-tuned algorithms (for example shortest, paths and
   [Hamiltonian paths](https://en.wikipedia.org/wiki/Hamiltonian_path)).
 * hard-to-find algorithms (Hamiltonian paths, push-relabel flow algorithms).
@@ -14,8 +11,7 @@ It contains in particular:
 
 Graph representations:
 * [ebert_graph.h](./ebert_graph.h): entry point for a directed graph class.
-* [digraph.h](./digraph.h): entry point for a directed graph class.
-  To be deprecated by `ebert_graph.h`.
+  Deprecated. Prefer using [`//util/graph/graph.h`](../../graph/graph.h).
 
 Paths:
 
@@ -37,8 +33,7 @@ Graph decompositions:
   or `digraph.h`.)
 
 * [strongly_connected_components.h](./strongly_connected_components.h): entry
-  point for computing the strongly connected components of a directed graph,
-  based on Tarjan's algorithm.
+  point for computing the strongly connected components of a directed graph.
 
 * [cliques.h](./cliques.h): entry point for computing maximum cliques and
   clique covers in a directed graph, based on the Bron-Kerbosch algorithm.
