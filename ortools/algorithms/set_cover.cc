@@ -302,9 +302,9 @@ void SampleSubsets(std::vector<SubsetIndex>* list, std::size_t num_subsets) {
 }  // namespace
 
 std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
-                                                 SetCoverLedger* ledger) {
+                                            SetCoverLedger* ledger) {
   return ClearRandomSubsets(ledger->model()->all_subsets(), num_subsets,
-                                 ledger);
+                            ledger);
 }
 
 std::vector<SubsetIndex> ClearRandomSubsets(
