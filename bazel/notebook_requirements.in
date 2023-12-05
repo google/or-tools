@@ -21,5 +21,5 @@ plotly==5.15.0
 jupyter==1.0.0
 tornado==6.3.3
 Pygments==2.15.0
-jupyter-server==2.7.2
+jupyter-server==2.11.2
 jsonschema==4.19.0
