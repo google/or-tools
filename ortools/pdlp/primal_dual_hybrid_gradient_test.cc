@@ -130,6 +130,8 @@ PrimalDualHybridGradientParams CreateSolverParams(
     params.set_diagonal_qp_trust_region_solver_tolerance(1.0e-8);
   }
   params.set_num_threads(num_threads);
+  // Protect against infinite loops if the termination criteria fail.
+  params.mutable_termination_criteria()->set_kkt_matrix_pass_limit(1'000'000.0);
   return params;
 }
 
