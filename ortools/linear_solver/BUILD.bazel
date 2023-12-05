@@ -416,3 +416,14 @@ cc_binary(
         "@com_google_absl//absl/time",
     ],
 )
+
+cc_library(
+    name = "solve_mp_model",
+    srcs = ["solve_mp_model.cc"],
+    hdrs = ["solve_mp_model.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_solver",
+        ":linear_solver_cc_proto",
+    ],
+)

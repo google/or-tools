@@ -700,6 +700,7 @@ class MPSolver {
 
   // Gives some brief (a few lines, at most) human-readable information about
   // the given request, suitable for debug logging.
+  ABSL_DEPRECATED("Prefer MPModelRequestLoggingInfo() from solve_mp_model.h.")
   static std::string GetMPModelRequestLoggingInfo(
       const MPModelRequest& request);
 
