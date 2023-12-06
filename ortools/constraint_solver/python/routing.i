@@ -56,6 +56,8 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore operations_research::RoutingModel::AddResourceGroup;
+%ignore operations_research::RoutingModel::GetResourceGroups;
 
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingModelParameters,
@@ -107,4 +109,5 @@ struct LocalSearchMetaheuristic {
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
+
 %include "ortools/constraint_solver/routing.h"
