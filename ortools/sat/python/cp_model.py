@@ -398,25 +398,69 @@ class LinearExpr:
             "please use CpModel.add_abs_equality"
         )
 
+    @overload
     def __add__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __add__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __add__(self, arg):
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
+    @overload
     def __radd__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __radd__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __radd__(self, arg):
         if cmh.is_zero(arg):
             return self
         return _Sum(self, arg)
 
+    @overload
     def __sub__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __sub__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __sub__(self, arg):
         if cmh.is_zero(arg):
             return self
-        return _Sum(self, -arg)
+        if isinstance(arg, NumberT):
+            arg = cmh.assert_is_a_number(arg)
+            return _Sum(self, -arg)
+        else:
+            return _Sum(self, -arg)
 
+    @overload
     def __rsub__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __rsub__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __rsub__(self, arg):
         return _Sum(-self, arg)
 
+    @overload
     def __mul__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __mul__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __mul__(self, arg):
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
@@ -424,7 +468,15 @@ class LinearExpr:
             return 0
         return _ProductCst(self, arg)
 
+    @overload
     def __rmul__(self, arg: LinearExprT) -> LinearExprT:
+        ...
+
+    @overload
+    def __rmul__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+        ...
+
+    def __rmul__(self, arg):
         arg = cmh.assert_is_a_number(arg)
         if cmh.is_one(arg):
             return self
