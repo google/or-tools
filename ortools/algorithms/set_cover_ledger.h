@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_model.h"
 
 namespace operations_research {
@@ -138,6 +139,12 @@ class SetCoverLedger {
   std::vector<SubsetIndex> ComputeSettableSubsets() const;
 
   std::vector<SubsetIndex> ComputeResettableSubsets() const;
+
+  // Returns the current solution as a proto.
+  SetCoverSolutionResponse ExportSolutionAsProto() const;
+
+  // Imports the solution from a proto.
+  void ImportSolutionFromProto(const SetCoverSolutionResponse& message);
 
  private:
   // Recomputes the cost from scratch from c.

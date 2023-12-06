@@ -19,7 +19,9 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -27,45 +29,6 @@
 
 namespace operations_research {
 namespace {
-
-TEST(SetCoverTest, InitialValues) {
-  SetCoverModel model;
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(0);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(1);
-  model.AddElementToLastSubset(2);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(1);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(2);
-  EXPECT_TRUE(model.ComputeFeasibility());
-
-  SetCoverLedger ledger(&model);
-  TrivialSolutionGenerator trivial(&ledger);
-  CHECK(trivial.NextSolution());
-  LOG(INFO) << "TrivialSolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-
-  GreedySolutionGenerator greedy(&ledger);
-  CHECK(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-
-  SteepestSearch steepest(&ledger);
-  CHECK(steepest.NextSolution(500));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-}
-
-TEST(SetCoverTest, Infeasible) {
-  SetCoverModel model;
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(0);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(3);
-  EXPECT_FALSE(model.ComputeFeasibility());
-}
 
 SetCoverModel CreateKnightsCoverModel(int num_rows, int num_cols) {
   SetCoverModel model;
@@ -105,6 +68,73 @@ void DisplayKnightsCoverSolution(const SubsetBoolVector& choices, int num_rows,
     LOG(INFO) << line;
     LOG(INFO) << separator;
   }
+}
+
+TEST(SetCoverProtoTest, SaveReload) {
+  SetCoverModel model = CreateKnightsCoverModel(10, 10);
+  SetCoverProto proto = model.ExportModelAsProto();
+  SetCoverModel reloaded;
+  reloaded.ImportModelFromProto(proto);
+  EXPECT_EQ(model.num_subsets(), reloaded.num_subsets());
+  EXPECT_EQ(model.num_elements(), reloaded.num_elements());
+  EXPECT_EQ(model.subset_costs(), reloaded.subset_costs());
+  EXPECT_EQ(model.columns(), reloaded.columns());
+}
+
+TEST(SolutionProtoTest, SaveReloadTwice) {
+  SetCoverModel model = CreateKnightsCoverModel(10, 10);
+  SetCoverLedger ledger(&model);
+  GreedySolutionGenerator greedy(&ledger);
+  CHECK(greedy.NextSolution());
+  EXPECT_TRUE(ledger.CheckSolution());
+  SetCoverSolutionResponse greedy_proto = ledger.ExportSolutionAsProto();
+  SteepestSearch steepest(&ledger);
+  CHECK(steepest.NextSolution(500));
+  EXPECT_TRUE(ledger.CheckSolution());
+  SetCoverSolutionResponse steepest_proto = ledger.ExportSolutionAsProto();
+  ledger.ImportSolutionFromProto(greedy_proto);
+  CHECK(steepest.NextSolution(500));
+  EXPECT_TRUE(ledger.CheckSolution());
+  SetCoverSolutionResponse reloaded_proto = ledger.ExportSolutionAsProto();
+}
+
+TEST(SetCoverTest, InitialValues) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(2);
+  EXPECT_TRUE(model.ComputeFeasibility());
+
+  SetCoverLedger ledger(&model);
+  TrivialSolutionGenerator trivial(&ledger);
+  CHECK(trivial.NextSolution());
+  LOG(INFO) << "TrivialSolutionGenerator cost: " << ledger.cost();
+  EXPECT_TRUE(ledger.CheckSolution());
+
+  GreedySolutionGenerator greedy(&ledger);
+  CHECK(greedy.NextSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+  EXPECT_TRUE(ledger.CheckSolution());
+
+  SteepestSearch steepest(&ledger);
+  CHECK(steepest.NextSolution(500));
+  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+  EXPECT_TRUE(ledger.CheckSolution());
+}
+
+TEST(SetCoverTest, Infeasible) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(3);
+  EXPECT_FALSE(model.ComputeFeasibility());
 }
 
 #ifdef NDEBUG

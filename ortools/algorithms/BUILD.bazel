@@ -99,11 +99,25 @@ cc_library(
 )
 
 # Weighted set covering
+proto_library(
+    name = "set_cover_proto",
+    srcs = ["set_cover.proto"],
+    #deps = [
+    #    "//storage/util/int128:int128_proto",
+    #],
+)
+
+cc_proto_library(
+    name = "set_cover_cc_proto",
+    deps = [":set_cover_proto"],
+)
+
 cc_library(
     name = "set_cover_model",
     srcs = ["set_cover_model.cc"],
     hdrs = ["set_cover_model.h"],
     deps = [
+        ":set_cover_cc_proto",
         "//ortools/lp_data:base",
         "@com_google_absl//absl/log:check",
     ],

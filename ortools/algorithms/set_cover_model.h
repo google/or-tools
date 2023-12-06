@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 
 // Representation class for the weighted set-covering problem.
@@ -89,8 +90,6 @@ class SetCoverModel {
 
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
 
-  Cost subset_costs(SubsetIndex subset) const { return subset_costs_[subset]; }
-
   const SparseColumnView& columns() const { return columns_; }
 
   const SparseColumn& columns(SubsetIndex subset) const {
@@ -123,6 +122,7 @@ class SetCoverModel {
   void AddElementToLastSubset(ElementIndex element);
 
   // Sets 'cost' to an already existing 'subset'.
+  // This will CHECK-fail if cost is infinite or a NaN.
   void SetSubsetCost(int subset, Cost cost);
 
   // Adds 'element' to and already existing 'subset'.
@@ -140,6 +140,14 @@ class SetCoverModel {
 
   // Reserves num_elements rows in the column indexed by subset.
   void ReserveNumElementsInSubset(int num_elements, int subset);
+
+  // Returns the model as a SetCoverProto. The function is not const because
+  // the element indices in the columns need to be sorted for the representation
+  // as a protobuf to be canonical.
+  SetCoverProto ExportModelAsProto();
+
+  // Imports the model from a SetCoverProto.
+  void ImportModelFromProto(const SetCoverProto& message);
 
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
