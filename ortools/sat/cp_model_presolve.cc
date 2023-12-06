@@ -11884,6 +11884,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
       if (used_variables.contains(var)) continue;
       used_variables.insert(var);
 
+      // Replace the variable by its affine representative.
+      // We only do that if there are no more constraint using this variable.
       if (context_->VarToConstraints(var).empty()) {
         const AffineRelation::Relation r = context_->GetAffineRelation(var);
         if (!context_->VarToConstraints(r.representative).empty()) {
@@ -11899,14 +11901,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
             t->set_positive_coeff(std::abs(r.coeff));
           }
           strategy.add_variables(rep);
-        } else {
-          // TODO(user): this variable was removed entirely by the presolve (no
-          // equivalent variable present). We simply ignore it entirely which
-          // might result in a different search...
+          continue;
         }
-      } else {
-        strategy.add_variables(ref);
       }
+
+      strategy.add_variables(ref);
     }
   }
 
