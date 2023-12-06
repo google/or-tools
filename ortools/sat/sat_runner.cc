@@ -22,6 +22,7 @@
 #include "absl/log/initialize.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
@@ -42,6 +43,11 @@ ABSL_FLAG(
     "Required: input file of the problem to solve. Many format are supported:"
     ".cnf (sat, max-sat, weighted max-sat), .opb (pseudo-boolean sat/optim) "
     "and by default the CpModelProto proto (binary or text).");
+
+ABSL_FLAG(
+    std::string, hint_file, "",
+    "Protobuf file containing a CpModelResponse. The solution will be used as a"
+    " hint to bootstrap the search.");
 
 ABSL_FLAG(std::string, output, "",
           "If non-empty, write the response there. By default it uses the "
@@ -77,7 +83,8 @@ std::string ExtractName(absl::string_view full_filename) {
   return filename;
 }
 
-bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
+bool LoadProblem(const std::string& filename, const std::string& hint_file,
+                 CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -100,9 +107,27 @@ bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
     LOG(INFO) << "Reading a CpModelProto.";
     CHECK_OK(ReadFileToProto(filename, cp_model));
   }
+
+  // Read the hint file.
+  if (!hint_file.empty()) {
+    CpSolverResponse response;
+    LOG(INFO) << "Reading a CpSolverResponse.";
+    CHECK_OK(ReadFileToProto(hint_file, &response));
+    CHECK_EQ(response.solution_size(), cp_model->variables_size())
+        << "The hint proto is not compatible with the model proto";
+
+    cp_model->clear_solution_hint();
+    for (int i = 0; i < cp_model->variables_size(); ++i) {
+      cp_model->mutable_solution_hint()->add_vars(i);
+      cp_model->mutable_solution_hint()->add_values(response.solution(i));
+    }
+  }
+
+  // Set the name if not present.
   if (cp_model->name().empty()) {
     cp_model->set_name(ExtractName(filename));
   }
+
   return true;
 }
 
@@ -124,7 +149,8 @@ int Run() {
   google::protobuf::Arena arena;
   CpModelProto* cp_model =
       google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
-  if (!LoadProblem(absl::GetFlag(FLAGS_input), cp_model)) {
+  if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
+                   cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;

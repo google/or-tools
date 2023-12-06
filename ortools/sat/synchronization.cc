@@ -40,8 +40,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -59,6 +57,10 @@
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
           "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
+ABSL_FLAG(bool, cp_model_dump_tightened_models, false,
+          "DEBUG ONLY. If true, dump tightened models incoporating all bounds "
+          "changes under '\"FLAGS_cp_model_dump_prefix\" + "
+          "\"tight_model_xxx.pb.txt\"'.");
 
 namespace operations_research {
 namespace sat {
@@ -304,7 +306,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   if (lb > inner_objective_lower_bound_) {
     // When the improving problem is infeasible, it is possible to report
     // arbitrary high inner_objective_lower_bound_. We make sure it never cross
-    // the current best solution, so that we always report globablly valid lower
+    // the current best solution, so that we always report globally valid lower
     // bound.
     DCHECK_LE(inner_objective_upper_bound_, best_solution_objective_value_);
     inner_objective_lower_bound_ =
@@ -686,7 +688,7 @@ void SharedResponseManager::NewSolution(
         absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pb.txt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
 
-    // Note that here we only want to dump the non-postsolved solution.
+    // Note that here we only want to dump the non-post-solved solution.
     // This is only used for debugging.
     CpSolverResponse response;
     response.mutable_solution()->Assign(solution_values.begin(),
@@ -819,7 +821,24 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     num_improvements++;
   }
   if (num_improvements > 0) {
+    total_num_improvements_ += num_improvements;
+    VLOG(3) << total_num_improvements_ << "/" << num_variables_;
     bounds_exported_[worker_name] += num_improvements;
+    if (absl::GetFlag(FLAGS_cp_model_dump_tightened_models)) {
+      CpModelProto tight_model = model_proto_;
+      for (int i = 0; i < num_variables_; ++i) {
+        IntegerVariableProto* var_proto = tight_model.mutable_variables(i);
+        const Domain domain =
+            ReadDomainFromProto(*var_proto)
+                .IntersectionWith(Domain(lower_bounds_[i], upper_bounds_[i]));
+        FillDomainInProto(domain, var_proto);
+      }
+      const std::string filename = absl::StrCat(dump_prefix_, "tighened_model_",
+                                                export_counter_, ".pb.txt");
+      LOG(INFO) << "Dumping tightened model proto to '" << filename << "'.";
+      export_counter_++;
+      CHECK(WriteModelProtoToFile(tight_model, filename));
+    }
   }
 }
 
@@ -964,15 +983,16 @@ void SharedClausesManager::SetWorkerNameForId(int id,
 }
 
 void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
-  absl::MutexLock mutex_lock(&mutex_);
   if (lit2 < lit1) std::swap(lit1, lit2);
-
   const auto p = std::make_pair(lit1, lit2);
+
+  absl::MutexLock mutex_lock(&mutex_);
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
   if (inserted) {
     added_binary_clauses_.push_back(p);
     if (always_synchronize_) ++last_visible_clause_;
     id_to_clauses_exported_[id]++;
+
     // Small optim. If the worker is already up to date with clauses to import,
     // we can mark this new clause as already seen.
     if (id_to_last_processed_binary_clause_[id] ==
@@ -987,9 +1007,6 @@ void SharedClausesManager::GetUnseenBinaryClauses(
   new_clauses->clear();
   absl::MutexLock mutex_lock(&mutex_);
   const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
-
-  // Protects against the optim that increase the last_binary_clause_seen in
-  // AddBinaryClause(). Checks is nothing needs to be done.
   if (last_binary_clause_seen >= last_visible_clause_) return;
 
   new_clauses->assign(added_binary_clauses_.begin() + last_binary_clause_seen,

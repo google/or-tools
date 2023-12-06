@@ -1618,11 +1618,17 @@ SatSolver::Status ContinuousProber::Probe() {
       sat_solver_->NotifyThatModelIsUnsat();
       return sat_solver_->UnsatStatus();
     }
+    if (parameters_.minimize_with_propagation_ratio() > 0.0 &&
+        !sat_solver_->MinimizeByPropagation()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return sat_solver_->UnsatStatus();
+    }
 
     // Store current statistics to detect an iteration without any improvement.
     const int64_t initial_num_literals_fixed =
         prober_->num_new_literals_fixed();
     const int64_t initial_num_bounds_shaved = num_bounds_shaved_;
+    const auto& assignment = sat_solver_->Assignment();
 
     // Probe variable bounds.
     // TODO(user): Probe optional variables.
@@ -1672,7 +1678,7 @@ SatSolver::Status ContinuousProber::Probe() {
     for (; current_bool_var_ < bool_vars_.size(); ++current_bool_var_) {
       const BooleanVariable& bool_var = bool_vars_[current_bool_var_];
 
-      if (sat_solver_->Assignment().VariableIsAssigned(bool_var)) continue;
+      if (assignment.VariableIsAssigned(bool_var)) continue;
 
       const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
       if (!inserted) continue;
@@ -1683,8 +1689,7 @@ SatSolver::Status ContinuousProber::Probe() {
       num_literals_probed_++;
 
       const Literal literal(bool_var, true);
-      if (use_shaving_ &&
-          !sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+      if (use_shaving_ && !assignment.LiteralIsAssigned(literal)) {
         const SatSolver::Status true_status = ShaveLiteral(literal);
         if (ReportStatus(true_status)) return true_status;
         if (true_status == SatSolver::ASSUMPTIONS_UNSAT) continue;
@@ -1698,9 +1703,9 @@ SatSolver::Status ContinuousProber::Probe() {
 
     if (parameters_.use_extended_probing()) {
       const auto at_least_one_literal_is_true =
-          [this](absl::Span<const Literal> literals) {
+          [&assignment](absl::Span<const Literal> literals) {
             for (const Literal literal : literals) {
-              if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
+              if (assignment.LiteralIsTrue(literal)) {
                 return true;
               }
             }
@@ -1715,7 +1720,7 @@ SatSolver::Status ContinuousProber::Probe() {
 
         tmp_dnf_.clear();
         for (const Literal literal : clause->AsSpan()) {
-          if (sat_solver_->Assignment().LiteralIsAssigned(literal)) continue;
+          if (assignment.LiteralIsAssigned(literal)) continue;
           tmp_dnf_.push_back({literal});
         }
         ++num_at_least_one_probed_;
@@ -1736,7 +1741,7 @@ SatSolver::Status ContinuousProber::Probe() {
         tmp_dnf_.clear();
         tmp_literals_.clear();
         for (const Literal literal : at_most_one) {
-          if (sat_solver_->Assignment().LiteralIsAssigned(literal)) continue;
+          if (assignment.LiteralIsAssigned(literal)) continue;
           tmp_dnf_.push_back({literal});
           tmp_literals_.push_back(literal.Negated());
         }
@@ -1750,15 +1755,19 @@ SatSolver::Status ContinuousProber::Probe() {
       }
 
       // Probe combinations of Booleans variables.
-      // TODO(user): Probe until something is imported, or learned.
-      if (bool_vars_.size() < 1000) {
+      const int limit = parameters_.probing_num_combinations_limit();
+      const bool max_num_bool_vars_for_pairs_probing =
+          static_cast<int>(std::sqrt(2 * limit));
+      const int num_bool_vars = bool_vars_.size();
+
+      if (num_bool_vars < max_num_bool_vars_for_pairs_probing) {
         for (; current_bv1_ + 1 < bool_vars_.size(); ++current_bv1_) {
           const BooleanVariable bv1 = bool_vars_[current_bv1_];
-          if (sat_solver_->Assignment().VariableIsAssigned(bv1)) continue;
+          if (assignment.VariableIsAssigned(bv1)) continue;
           current_bv2_ = std::max(current_bv1_ + 1, current_bv2_);
           for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
             const BooleanVariable& bv2 = bool_vars_[current_bv2_];
-            if (sat_solver_->Assignment().VariableIsAssigned(bv2)) continue;
+            if (assignment.VariableIsAssigned(bv2)) continue;
             if (!prober_->ProbeDnf(
                     "pair_of_bool_vars",
                     {{Literal(bv1, true), Literal(bv2, true)},
@@ -1772,14 +1781,14 @@ SatSolver::Status ContinuousProber::Probe() {
           current_bv2_ = 0;
         }
       } else {
-        for (; random_pair_of_bool_vars_probed_ < 5000;
+        for (; random_pair_of_bool_vars_probed_ < 10000;
              ++random_pair_of_bool_vars_probed_) {
           const BooleanVariable bv1 =
               bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-          if (sat_solver_->Assignment().VariableIsAssigned(bv1)) continue;
+          if (assignment.VariableIsAssigned(bv1)) continue;
           const BooleanVariable bv2 =
               bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
-          if (sat_solver_->Assignment().VariableIsAssigned(bv2) || bv1 == bv2) {
+          if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
             continue;
           }
           if (!prober_->ProbeDnf(
@@ -1794,22 +1803,56 @@ SatSolver::Status ContinuousProber::Probe() {
           RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
         }
       }
+
+      // Note that the product is always >= 0.
+      const bool max_num_bool_vars_for_triplet_probing =
+          static_cast<int>(std::cbrt(2 * limit));
+      // We use a limit to make sure we do not overflow.
+      const int loop_limit =
+          num_bool_vars < max_num_bool_vars_for_triplet_probing
+              ? num_bool_vars * (num_bool_vars - 1) * (num_bool_vars - 2) / 2
+              : limit;
+      for (; random_triplet_of_bool_vars_probed_ < loop_limit;
+           ++random_triplet_of_bool_vars_probed_) {
+        const BooleanVariable bv1 =
+            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
+        if (assignment.VariableIsAssigned(bv1)) continue;
+        const BooleanVariable bv2 =
+            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
+        if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
+          continue;
+        }
+        const BooleanVariable bv3 =
+            bool_vars_[absl::Uniform<int>(*random_, 0, bool_vars_.size())];
+        if (assignment.VariableIsAssigned(bv3) || bv1 == bv3 || bv2 == bv3) {
+          continue;
+        }
+        tmp_dnf_.clear();
+        for (int i = 0; i < 8; ++i) {
+          tmp_dnf_.push_back({Literal(bv1, (i & 1) > 0),
+                              Literal(bv2, (i & 2) > 0),
+                              Literal(bv3, (i & 4) > 0)});
+        }
+
+        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_)) {
+          return SatSolver::INFEASIBLE;
+        }
+
+        RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
+      }
     }
 
     // Adjust the active_limit.
-    {
-      if (use_shaving_) {
-        const double deterministic_time =
-            parameters_.shaving_search_deterministic_time();
-        const bool something_has_been_detected =
-            num_bounds_shaved_ != initial_num_bounds_shaved ||
-            prober_->num_new_literals_fixed() != initial_num_literals_fixed;
-        if (something_has_been_detected) {  // Reset the limit.
-          active_limit_ = deterministic_time;
-        } else if (active_limit_ <
-                   25 * deterministic_time) {  // Bump the limit.
-          active_limit_ += deterministic_time;
-        }
+    if (use_shaving_) {
+      const double deterministic_time =
+          parameters_.shaving_search_deterministic_time();
+      const bool something_has_been_detected =
+          num_bounds_shaved_ != initial_num_bounds_shaved ||
+          prober_->num_new_literals_fixed() != initial_num_literals_fixed;
+      if (something_has_been_detected) {  // Reset the limit.
+        active_limit_ = deterministic_time;
+      } else if (active_limit_ < 25 * deterministic_time) {  // Bump the limit.
+        active_limit_ += deterministic_time;
       }
     }
 
@@ -1820,10 +1863,11 @@ SatSolver::Status ContinuousProber::Probe() {
     current_bv1_ = 0;
     current_bv2_ = 1;
     random_pair_of_bool_vars_probed_ = 0;
+    random_triplet_of_bool_vars_probed_ = 0;
     binary_implication_graph_->ResetAtMostOneIterator();
     literal_watchers_->ResetToProbeIndex();
     probed_bool_vars_.clear();
-    probed_literals_.clear();
+    shaved_literals_.clear();
 
     const int new_trail_index = trail_->Index();
     const int new_integer_trail_index = integer_trail_->Index();
@@ -1837,22 +1881,22 @@ SatSolver::Status ContinuousProber::Probe() {
     integer_trail_index_at_start_of_iteration_ = new_integer_trail_index;
 
     // Remove fixed Boolean variables.
-    int size = 0;
+    int new_size = 0;
     for (int i = 0; i < bool_vars_.size(); ++i) {
       if (!sat_solver_->Assignment().VariableIsAssigned(bool_vars_[i])) {
-        bool_vars_[size++] = bool_vars_[i];
+        bool_vars_[new_size++] = bool_vars_[i];
       }
     }
-    bool_vars_.resize(size);
+    bool_vars_.resize(new_size);
 
     // Remove fixed integer variables.
-    size = 0;
+    new_size = 0;
     for (int i = 0; i < int_vars_.size(); ++i) {
       if (!integer_trail_->IsFixed(int_vars_[i])) {
-        int_vars_[size++] = int_vars_[i];
+        int_vars_[new_size++] = int_vars_[i];
       }
     }
-    int_vars_.resize(size);
+    int_vars_.resize(new_size);
   }
   return SatSolver::LIMIT_REACHED;
 }
@@ -1861,8 +1905,8 @@ SatSolver::Status ContinuousProber::Probe() {
 
 SatSolver::Status ContinuousProber::PeriodicSyncAndCheck() {
   // Check limit.
-  if (--num_probes_remaining_ <= 0) {
-    num_probes_remaining_ = kTestLimitPeriod;
+  if (--num_test_limit_remaining_ <= 0) {
+    num_test_limit_remaining_ = kTestLimitPeriod;
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
   }
 
@@ -1888,7 +1932,7 @@ SatSolver::Status ContinuousProber::PeriodicSyncAndCheck() {
 }
 
 SatSolver::Status ContinuousProber::ShaveLiteral(Literal literal) {
-  const auto [_, inserted] = probed_literals_.insert(literal.Index());
+  const auto [_, inserted] = shaved_literals_.insert(literal.Index());
   if (trail_->Assignment().LiteralIsAssigned(literal) || !inserted) {
     return SatSolver::LIMIT_REACHED;
   }

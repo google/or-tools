@@ -33,7 +33,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/presolve_util.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -577,7 +577,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     TightenMpModel();
 
     // TODO(user): C^c is broken when using SCIP.
-    MPSolver::SolveWithProto(request_, &response_);
+    response_ = SolveMPModel(request_);
     if (response_.status() != MPSolverResponseStatus::MPSOLVER_OPTIMAL) {
       // We currently abort if we have a non-optimal result.
       // This is correct if we had a limit reached, but not in the other

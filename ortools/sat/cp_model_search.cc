@@ -168,6 +168,7 @@ void AddDualSchedulingHeuristics(SatParameters& new_params) {
   new_params.set_use_pairwise_reasoning_in_no_overlap_2d(true);
   new_params.set_use_timetabling_in_no_overlap_2d(true);
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
 }
 
 // We want a random tie breaking among variables with equivalent values.

@@ -270,8 +270,7 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
       // Always true.
       return true;
     } else {
-      AddBinaryClauseInternal(literals[0], literals[1],
-                              /*export_clause=*/false);
+      AddBinaryClauseInternal(literals[0], literals[1]);
     }
   } else {
     if (!clauses_propagator_->AddClause(literals, trail_)) {
@@ -424,9 +423,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
       // This clause MUST be knew, otherwise something is wrong.
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    if (shared_binary_clauses_callback_ != nullptr) {
-      shared_binary_clauses_callback_(literals[0], literals[1]);
-    }
     CHECK(binary_implication_graph_->AddBinaryClause(literals[0], literals[1]));
     return /*lbd=*/2;
   }
@@ -497,15 +493,10 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
-void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
-                                        bool export_clause) {
+void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   if (track_binary_clauses_) {
     // Abort if this clause was already added.
     if (!binary_clauses_.Add(BinaryClause(a, b))) return;
-  }
-
-  if (export_clause && shared_binary_clauses_callback_ != nullptr) {
-    shared_binary_clauses_callback_(a, b);
   }
 
   if (!binary_implication_graph_->AddBinaryClause(a, b)) {
@@ -1202,6 +1193,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (target_level == -1) break;
     Backtrack(target_level);
     while (CurrentDecisionLevel() < candidate.size()) {
+      if (time_limit_->LimitReached()) return;
       const int level = CurrentDecisionLevel();
       const Literal literal = candidate[level];
       if (Assignment().LiteralIsFalse(literal)) {
@@ -1278,7 +1270,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
-    AddBinaryClauseInternal(candidate[0], candidate[1], /*export_clause=*/true);
+    AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_->Detach(clause);
 
     // This is needed in the corner case where this was the first binary clause
@@ -1787,8 +1779,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // This clause is now a binary clause, treat it separately. Note that
       // it is safe to do that because this clause can't be used as a reason
       // since we are at level zero and the clause is not satisfied.
-      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral(),
-                              /*export_clause=*/true);
+      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
       clauses_propagator_->LazyDetach(clause);
       ++num_binary;
       continue;

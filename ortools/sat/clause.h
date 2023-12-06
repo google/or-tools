@@ -526,6 +526,19 @@ class BinaryImplicationGraph : public SatPropagator {
     return AddBinaryClause(a.Negated(), b);
   }
 
+  // When set, the callback will be called on ALL newly added binary clauses.
+  //
+  // The EnableSharing() function can be used to disable sharing temporarily for
+  // the clauses that are imported from the Shared repository already.
+  //
+  // TODO(user): this is meant to share clause between workers, hopefully the
+  // contention will not be too high. Double check and maybe add a batch version
+  // were we keep new implication and add them in batches.
+  void EnableSharing(bool enable) { enable_sharing_ = enable; }
+  void SetAdditionCallback(std::function<void(Literal, Literal)> f) {
+    add_callback_ = f;
+  }
+
   // An at most one constraint of size n is a compact way to encode n * (n - 1)
   // implications. This must only be called at level zero.
   //
@@ -892,6 +905,9 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // For RemoveFixedVariables().
   int num_processed_fixed_variables_ = 0;
+
+  bool enable_sharing_ = true;
+  std::function<void(Literal, Literal)> add_callback_ = nullptr;
 };
 
 extern template std::vector<Literal>

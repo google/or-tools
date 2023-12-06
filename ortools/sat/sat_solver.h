@@ -482,12 +482,6 @@ class SatSolver {
   void ResetMinimizationByPropagationThreshold();
   bool MinimizeByPropagation();
 
-  // Sets the export function to the shared clauses manager.
-  void SetShareBinaryClauseCallback(const std::function<void(Literal, Literal)>&
-                                        shared_binary_clauses_callback) {
-    shared_binary_clauses_callback_ = shared_binary_clauses_callback;
-  }
-
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
   void AdvanceDeterministicTime(TimeLimit* limit) {
@@ -523,10 +517,7 @@ class SatSolver {
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  //
-  // If export_clause is true, then we will also export_clause that to a
-  // potential shared_binary_clauses_callback_.
-  void AddBinaryClauseInternal(Literal a, Literal b, bool export_clause);
+  void AddBinaryClauseInternal(Literal a, Literal b);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
@@ -886,9 +877,6 @@ class SatSolver {
   DratProofHandler* drat_proof_handler_;
 
   mutable StatsGroup stats_;
-
-  std::function<void(Literal, Literal)> shared_binary_clauses_callback_ =
-      nullptr;
 };
 
 // Tries to minimize the given UNSAT core with a really simple heuristic.

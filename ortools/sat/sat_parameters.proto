@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 272
+// NEXT TAG: 273
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -441,7 +441,7 @@ message SatParameters {
   //
   // TODO(user): Clean up. The first one is used in CP-SAT, the other in pure
   // SAT presolve.
-  optional double probing_deterministic_time_limit = 226 [default = 1];
+  optional double probing_deterministic_time_limit = 226 [default = 1.0];
   optional double presolve_probing_deterministic_time_limit = 57
       [default = 30.0];
 
@@ -1043,6 +1043,9 @@ message SatParameters {
 
   // Use extended probing (probe bool_or, at_most_one, exactly_one).
   optional bool use_extended_probing = 269 [default = true];
+
+  // How many combinations of pairs or triplets of variables we want to scan.
+  optional int32 probing_num_combinations_limit = 272 [default = 20000];
 
   // Add a shaving phase (where the solver tries to prove that the lower or
   // upper bound of a variable are infeasible) to the probing search.

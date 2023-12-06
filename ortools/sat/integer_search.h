@@ -328,7 +328,7 @@ class ContinuousProber {
   SatSolver::Status Probe();
 
  private:
-  static const int kTestLimitPeriod = 50;
+  static const int kTestLimitPeriod = 20;
   static const int kLogPeriod = 1000;
   static const int kSyncPeriod = 50;
 
@@ -368,7 +368,7 @@ class ContinuousProber {
   // Period counters;
   int num_logs_remaining_ = 0;
   int num_syncs_remaining_ = 0;
-  int num_probes_remaining_ = 0;
+  int num_test_limit_remaining_ = 0;
 
   // Shaving management.
   bool use_shaving_ = false;
@@ -379,13 +379,14 @@ class ContinuousProber {
   double active_limit_;
   // TODO(user): use 2 vector<bool>.
   absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
-  absl::flat_hash_set<LiteralIndex> probed_literals_;
+  absl::flat_hash_set<LiteralIndex> shaved_literals_;
   int iteration_ = 1;
   int current_int_var_ = 0;
   int current_bool_var_ = 0;
   int current_bv1_ = 0;
   int current_bv2_ = 0;
   int random_pair_of_bool_vars_probed_ = 0;
+  int random_triplet_of_bool_vars_probed_ = 0;
   std::vector<std::vector<Literal>> tmp_dnf_;
   std::vector<Literal> tmp_literals_;
 };

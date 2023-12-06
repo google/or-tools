@@ -535,6 +535,8 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   is_dag_ = false;
   num_implications_ += 2;
 
+  if (enable_sharing_ && add_callback_ != nullptr) add_callback_(a, b);
+
   const auto& assignment = trail_->Assignment();
   if (trail_->CurrentDecisionLevel() == 0) {
     DCHECK(!assignment.LiteralIsAssigned(a));

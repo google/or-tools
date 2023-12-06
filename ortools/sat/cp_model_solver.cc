@@ -35,7 +35,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/sat/intervals.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -1128,6 +1127,7 @@ void RegisterVariableBoundsLevelZeroExport(
   std::vector<int64_t> new_lower_bounds;
   std::vector<int64_t> new_upper_bounds;
   absl::flat_hash_set<int> visited_variables;
+  const std::string name = model->Name();
 
   auto broadcast_level_zero_bounds =
       [=](const std::vector<IntegerVariable>& modified_vars) mutable {
@@ -1218,12 +1218,15 @@ void RegisterVariableBoundsLevelZeroImport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model) {
   CHECK(shared_bounds_manager != nullptr);
+  const std::string name = model->Name();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
   const int id = shared_bounds_manager->RegisterNewId();
 
   const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          model, integer_trail, id, mapping]() {
+                                          name, sat_solver, integer_trail, id,
+                                          mapping]() {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
     std::vector<int64_t> new_upper_bounds;
@@ -1232,8 +1235,19 @@ void RegisterVariableBoundsLevelZeroImport(
     bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       const int model_var = model_variables[i];
-      // This can happen if a boolean variables is forced to have an
-      // integer view in one thread, and not in another thread.
+
+      // If this is a Boolean, fix it if not already done.
+      if (mapping->IsBoolean(model_var)) {
+        Literal lit = mapping->Literal(model_var);
+        if (new_upper_bounds[i] == 0) lit = lit.Negated();
+        if (!sat_solver->Assignment().LiteralIsAssigned(lit)) {
+          new_bounds_have_been_imported = true;
+        }
+        if (!sat_solver->AddUnitClause(lit)) return false;
+        continue;
+      }
+
+      // Deal with integer.
       if (!mapping->IsInteger(model_var)) continue;
       const IntegerVariable var = mapping->Integer(model_var);
       const IntegerValue new_lb(new_lower_bounds[i]);
@@ -1252,9 +1266,9 @@ void RegisterVariableBoundsLevelZeroImport(
             var_proto.name().empty()
                 ? absl::StrCat("anonymous_var(", model_var, ")")
                 : var_proto.name();
-        LOG(INFO) << "  '" << model->Name() << "' imports new bounds for "
-                  << var_name << ": from [" << old_lb << ", " << old_ub
-                  << "] to [" << new_lb << ", " << new_ub << "]";
+        LOG(INFO) << "  '" << name << "' imports new bounds for " << var_name
+                  << ": from [" << old_lb << ", " << old_ub << "] to ["
+                  << new_lb << ", " << new_ub << "]";
       }
 
       if (changed_lb &&
@@ -1268,8 +1282,7 @@ void RegisterVariableBoundsLevelZeroImport(
         return false;
       }
     }
-    if (new_bounds_have_been_imported &&
-        !model->GetOrCreate<SatSolver>()->FinishPropagation()) {
+    if (new_bounds_have_been_imported && !sat_solver->FinishPropagation()) {
       return false;
     }
     return true;
@@ -1361,12 +1374,11 @@ void RegisterObjectiveBoundsImport(
       import_objective_bounds);
 }
 
-// Registers a callback that will export non-problem clauses added during
+// Registers a callback that will export binary clauses discovered during
 // search.
 void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
                            Model* model) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
   const auto& share_binary_clause = [mapping, id, shared_clauses_manager](
                                         Literal l1, Literal l2) {
     const int var1 =
@@ -1379,7 +1391,8 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
     const int lit2 = l2.IsPositive() ? var2 : NegatedRef(var2);
     shared_clauses_manager->AddBinaryClause(id, lit1, lit2);
   };
-  sat_solver->SetShareBinaryClauseCallback(share_binary_clause);
+  model->GetOrCreate<BinaryImplicationGraph>()->SetAdditionCallback(
+      share_binary_clause);
 }
 
 // Registers a callback to import new clauses stored in the
@@ -1393,11 +1406,13 @@ int RegisterClausesLevelZeroImport(int id,
                                    Model* model) {
   CHECK(shared_clauses_manager != nullptr);
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
-                                           sat_solver]() {
+                                           sat_solver, implications]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
+    implications->EnableSharing(false);
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
@@ -1405,6 +1420,7 @@ int RegisterClausesLevelZeroImport(int id,
         return false;
       }
     }
+    implications->EnableSharing(true);
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
@@ -2366,8 +2382,7 @@ class FullProblemSolver : public SubSolver {
         }
 
         // Note that this is done after the loading, so we will never export
-        // problem clauses. We currently also never export binary clauses added
-        // by the initial probing.
+        // problem clauses.
         if (shared_->clauses != nullptr) {
           const int id = shared_->clauses->RegisterNewId();
           shared_->clauses->SetWorkerNameForId(id, local_model_.Name());
@@ -3118,6 +3133,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   if (params.share_level_zero_bounds()) {
     shared.bounds = std::make_unique<SharedBoundsManager>(model_proto);
+    shared.bounds->set_dump_prefix(absl::GetFlag(FLAGS_cp_model_dump_prefix));
     shared.bounds->LoadDebugSolution(
         global_model->GetOrCreate<SharedResponseManager>()->DebugSolution());
   }

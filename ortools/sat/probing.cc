@@ -501,7 +501,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
-  options.log_info |= VLOG_IS_ON(1);
+  options.log_info |= VLOG_IS_ON(2);
 
   // Reset the solver in case it was already used.
   auto* sat_solver = model->GetOrCreate<SatSolver>();

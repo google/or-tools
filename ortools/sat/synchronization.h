@@ -510,6 +510,11 @@ class SharedBoundsManager {
     debug_solution_.assign(solution.begin(), solution.end());
   }
 
+  // Debug only. Set dump prefix for solutions written to file.
+  void set_dump_prefix(absl::string_view dump_prefix) {
+    dump_prefix_ = dump_prefix;
+  }
+
  private:
   const int num_variables_;
   const CpModelProto& model_proto_;
@@ -521,6 +526,7 @@ class SharedBoundsManager {
   std::vector<int64_t> upper_bounds_ ABSL_GUARDED_BY(mutex_);
   SparseBitset<int> changed_variables_since_last_synchronize_
       ABSL_GUARDED_BY(mutex_);
+  int64_t total_num_improvements_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // These are only updated on Synchronize().
   std::vector<int64_t> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
@@ -530,6 +536,8 @@ class SharedBoundsManager {
   absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<int64_t> debug_solution_;
+  std::string dump_prefix_;
+  int export_counter_ = 0;
 };
 
 // This class holds all the binary clauses that were found and shared by the
@@ -563,6 +571,7 @@ class SharedClausesManager {
 
  private:
   absl::Mutex mutex_;
+
   // Cache to avoid adding the same clause twice.
   absl::flat_hash_set<std::pair<int, int>> added_binary_clauses_set_
       ABSL_GUARDED_BY(mutex_);
