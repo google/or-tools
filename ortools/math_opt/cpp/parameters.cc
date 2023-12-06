@@ -73,6 +73,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "glop";
     case SolverType::kCpSat:
       return "cp_sat";
+    case SolverType::kPdlp:
+      return "pdlp";
     case SolverType::kGlpk:
       return "glpk";
     case SolverType::kEcos:
@@ -90,8 +92,9 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
 absl::Span<const SolverType> Enum<SolverType>::AllValues() {
   static constexpr SolverType kSolverTypeValues[] = {
       SolverType::kGscip, SolverType::kGurobi, SolverType::kGlop,
-      SolverType::kCpSat, SolverType::kGlpk,   SolverType::kEcos,
-      SolverType::kScs,   SolverType::kHighs,  SolverType::kSantorini,
+      SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
+      SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
+      SolverType::kSantorini,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }
@@ -258,6 +261,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_gurobi() = gurobi.Proto();
   *result.mutable_glop() = glop;
   *result.mutable_cp_sat() = cp_sat;
+  *result.mutable_pdlp() = pdlp;
   *result.mutable_glpk() = glpk.Proto();
   *result.mutable_highs() = highs;
   return result;
@@ -316,6 +320,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.gurobi = GurobiParameters::FromProto(proto.gurobi());
   result.glop = proto.glop();
   result.cp_sat = proto.cp_sat();
+  result.pdlp = proto.pdlp();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
   result.highs = proto.highs();
   return result;

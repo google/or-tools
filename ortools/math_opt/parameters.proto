@@ -17,6 +17,7 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
+import "ortools/pdlp/solvers.proto";
 import "ortools/glop/parameters.proto";
 import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solvers/glpk.proto";
@@ -56,7 +57,11 @@ enum SolverTypeProto {
   // problems with continuous variables.
   SOLVER_TYPE_CP_SAT = 4;
 
-  reserved 5;
+  // Google's PDLP solver.
+  //
+  // Supports LP and convex diagonal quadratic objectives. Uses first order
+  // methods rather than simplex. Can solve very large problems.
+  SOLVER_TYPE_PDLP = 5;
 
   // GNU Linear Programming Kit (GLPK) (third party).
   //
@@ -346,7 +351,7 @@ message SolveParametersProto {
 
   sat.SatParameters cp_sat = 15;
 
-  reserved 16;
+  pdlp.PrimalDualHybridGradientParams pdlp = 16;
 
   // Users should prefer the generic MathOpt parameters over OSQP-level
   // parameters, when available:

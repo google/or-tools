@@ -282,6 +282,70 @@ cc_library(
 )
 
 cc_library(
+    name = "pdlp_bridge",
+    srcs = ["pdlp_bridge.cc"],
+    hdrs = ["pdlp_bridge.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:inverted_bounds",
+        "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "pdlp_solver",
+    srcs = [
+        "pdlp_solver.cc",
+        "pdlp_solver.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pdlp_bridge",
+        "//ortools/base:protoutil",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:inverted_bounds",
+        "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:solve_interrupter",
+        "//ortools/math_opt/core:solver_interface",
+        "//ortools/math_opt/validators:callback_validator",
+        "//ortools/pdlp:iteration_stats",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
     name = "glpk_solver",
     srcs = [
         "glpk_solver.cc",

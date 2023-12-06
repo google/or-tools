@@ -109,6 +109,7 @@ proto_library(
         "//ortools/math_opt/solvers:gurobi_proto",
         "//ortools/math_opt/solvers:highs_proto",
         "//ortools/math_opt/solvers:osqp_proto",
+        "//ortools/pdlp:solvers_proto",
         "//ortools/sat:sat_parameters_proto",
         "@com_google_protobuf//:duration_proto",
     ],

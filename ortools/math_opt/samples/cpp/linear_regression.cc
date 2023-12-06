@@ -56,7 +56,7 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
-          operations_research::math_opt::SolverType::kGurobi,
+          operations_research::math_opt::SolverType::kPdlp,
           "The solver needs to support quadratic objectives, e.g. pdlp, "
           "gurobi, or osqp.");
 

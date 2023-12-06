@@ -32,6 +32,7 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
+#include "ortools/pdlp/solvers.pb.h"             // IWYU pragma: export
 #include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
 
 namespace operations_research {
@@ -62,6 +63,12 @@ enum class SolverType {
   // to be after presolve). Experimental support to rescale and discretize
   // problems with continuous variables.
   kCpSat = SOLVER_TYPE_CP_SAT,
+
+  // Google's PDLP solver.
+  //
+  // Supports LP and convex diagonal quadratic objectives. Uses first order
+  // methods rather than simplex. Can solve very large problems.
+  kPdlp = SOLVER_TYPE_PDLP,
 
   // GNU Linear Programming Kit (GLPK) (third party).
   //
@@ -409,6 +416,7 @@ struct SolveParameters {
   GurobiParameters gurobi;
   glop::GlopParameters glop;
   sat::SatParameters cp_sat;
+  pdlp::PrimalDualHybridGradientParams pdlp;
 
   GlpkParameters glpk;
   HighsOptionsProto highs;

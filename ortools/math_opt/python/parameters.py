@@ -82,6 +82,7 @@ class SolverType(enum.Enum):
     GUROBI = math_opt_parameters_pb2.SOLVER_TYPE_GUROBI
     GLOP = math_opt_parameters_pb2.SOLVER_TYPE_GLOP
     CP_SAT = math_opt_parameters_pb2.SOLVER_TYPE_CP_SAT
+    PDLP = math_opt_parameters_pb2.SOLVER_TYPE_PDLP
     GLPK = math_opt_parameters_pb2.SOLVER_TYPE_GLPK
     OSQP = math_opt_parameters_pb2.SOLVER_TYPE_OSQP
     ECOS = math_opt_parameters_pb2.SOLVER_TYPE_ECOS
@@ -403,6 +404,9 @@ class SolveParameters:
     cp_sat: sat_parameters_pb2.SatParameters = dataclasses.field(
         default_factory=sat_parameters_pb2.SatParameters
     )
+    pdlp: pdlp_solvers_pb2.PrimalDualHybridGradientParams = dataclasses.field(
+        default_factory=pdlp_solvers_pb2.PrimalDualHybridGradientParams
+    )
     osqp: osqp_pb2.OsqpSettingsProto = dataclasses.field(
         default_factory=osqp_pb2.OsqpSettingsProto
     )
@@ -424,6 +428,7 @@ class SolveParameters:
             gurobi=self.gurobi.to_proto(),
             glop=self.glop,
             cp_sat=self.cp_sat,
+            pdlp=self.pdlp,
             osqp=self.osqp,
             glpk=self.glpk.to_proto(),
             highs=self.highs,

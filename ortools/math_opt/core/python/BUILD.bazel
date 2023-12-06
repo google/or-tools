@@ -34,6 +34,10 @@ pybind_extension(
         select({
             "//ortools/linear_solver:use_scip": ["//ortools/math_opt/solvers:gscip_solver"],
             "//conditions:default": [],
+        }) +
+        select({
+            "//ortools/linear_solver:use_pdlp": ["//ortools/math_opt/solvers:pdlp_solver"],
+            "//conditions:default": [],
         }) + [
             "//ortools/math_opt:result_cc_proto",
             "//ortools/math_opt/core:solve_interrupter",
