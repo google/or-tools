@@ -16,8 +16,11 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 #include <ostream>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -633,49 +636,54 @@ ProbingRectangle::ProbingRectangle(
   if (intervals_.empty()) {
     return;
   }
-  interval_points_sorted_by_x_.reserve(intervals_.size() * 4);
-  interval_points_sorted_by_y_.reserve(intervals_.size() * 4);
+  interval_points_sorted_by_x_.reserve(intervals_.size() * 4 + 2);
+  interval_points_sorted_by_y_.reserve(intervals_.size() * 4 + 2);
+
+  Rectangle bounding_box = {.x_min = std::numeric_limits<IntegerValue>::max(),
+                            .x_max = std::numeric_limits<IntegerValue>::min(),
+                            .y_min = std::numeric_limits<IntegerValue>::max(),
+                            .y_max = std::numeric_limits<IntegerValue>::min()};
+
   for (int i = 0; i < intervals_.size(); ++i) {
     const RectangleInRange& interval = intervals_[i];
     minimum_energy_ += interval.x_size * interval.y_size;
 
-    interval_points_sorted_by_x_.push_back(
-        {interval.bounding_area.x_min, i,
-         IntervalPoint::IntervalPointType::START_MIN});
-    interval_points_sorted_by_x_.push_back(
-        {interval.bounding_area.x_min + interval.x_size, i,
-         IntervalPoint::IntervalPointType::END_MIN});
-    interval_points_sorted_by_x_.push_back(
-        {interval.bounding_area.x_max - interval.x_size, i,
-         IntervalPoint::IntervalPointType::START_MAX});
-    interval_points_sorted_by_x_.push_back(
-        {interval.bounding_area.x_max, i,
-         IntervalPoint::IntervalPointType::END_MAX});
+    bounding_box.x_min =
+        std::min(bounding_box.x_min, interval.bounding_area.x_min);
+    bounding_box.x_max =
+        std::max(bounding_box.x_max, interval.bounding_area.x_max);
+    bounding_box.y_min =
+        std::min(bounding_box.y_min, interval.bounding_area.y_min);
+    bounding_box.y_max =
+        std::max(bounding_box.y_max, interval.bounding_area.y_max);
 
+    interval_points_sorted_by_x_.push_back({interval.bounding_area.x_min, i});
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_min + interval.x_size, i});
+    interval_points_sorted_by_x_.push_back(
+        {interval.bounding_area.x_max - interval.x_size, i});
+    interval_points_sorted_by_x_.push_back({interval.bounding_area.x_max, i});
+
+    interval_points_sorted_by_y_.push_back({interval.bounding_area.y_min, i});
     interval_points_sorted_by_y_.push_back(
-        {interval.bounding_area.y_min, i,
-         IntervalPoint::IntervalPointType::START_MIN});
+        {interval.bounding_area.y_min + interval.y_size, i});
     interval_points_sorted_by_y_.push_back(
-        {interval.bounding_area.y_min + interval.y_size, i,
-         IntervalPoint::IntervalPointType::END_MIN});
-    interval_points_sorted_by_y_.push_back(
-        {interval.bounding_area.y_max - interval.y_size, i,
-         IntervalPoint::IntervalPointType::START_MAX});
-    interval_points_sorted_by_y_.push_back(
-        {interval.bounding_area.y_max, i,
-         IntervalPoint::IntervalPointType::END_MAX});
+        {interval.bounding_area.y_max - interval.y_size, i});
+    interval_points_sorted_by_y_.push_back({interval.bounding_area.y_max, i});
   }
 
-  std::sort(interval_points_sorted_by_x_.begin(),
-            interval_points_sorted_by_x_.end(),
-            [](const IntervalPoint& a, const IntervalPoint& b) {
-              return a.value < b.value;
-            });
-  std::sort(interval_points_sorted_by_y_.begin(),
-            interval_points_sorted_by_y_.end(),
-            [](const IntervalPoint& a, const IntervalPoint& b) {
-              return a.value < b.value;
-            });
+  // Add four bogus points in the extremities so we can delegate setting up all
+  // internal state to Shrink().
+  interval_points_sorted_by_x_.push_back({bounding_box.x_min - 1, -1});
+  interval_points_sorted_by_x_.push_back({bounding_box.x_max + 1, -1});
+  interval_points_sorted_by_y_.push_back({bounding_box.y_min - 1, -1});
+  interval_points_sorted_by_y_.push_back({bounding_box.y_max + 1, -1});
+
+  auto comparator = [](const IntervalPoint& a, const IntervalPoint& b) {
+    return std::tie(a.value, a.index) < std::tie(b.value, b.index);
+  };
+  gtl::STLSortAndRemoveDuplicates(&interval_points_sorted_by_x_, comparator);
+  gtl::STLSortAndRemoveDuplicates(&interval_points_sorted_by_y_, comparator);
 
   grouped_intervals_sorted_by_x_.reserve(interval_points_sorted_by_x_.size());
   grouped_intervals_sorted_by_y_.reserve(interval_points_sorted_by_y_.size());
@@ -712,21 +720,11 @@ ProbingRectangle::ProbingRectangle(
   bottom_index_ = 0;
   top_index_ = grouped_intervals_sorted_by_y_.size() - 1;
 
-  for (const auto& point : grouped_intervals_sorted_by_x_[left_index_].points) {
-    ranges_touching_boundary_[Edge::LEFT].insert(point.index);
-  }
-  for (const auto& point :
-       grouped_intervals_sorted_by_x_[right_index_].points) {
-    ranges_touching_boundary_[Edge::RIGHT].insert(point.index);
-  }
-  for (const auto& point :
-       grouped_intervals_sorted_by_y_[bottom_index_].points) {
-    ranges_touching_boundary_[Edge::BOTTOM].insert(point.index);
-  }
-  for (const auto& point : grouped_intervals_sorted_by_y_[top_index_].points) {
-    ranges_touching_boundary_[Edge::TOP].insert(point.index);
-  }
-  probe_area_ = GetCurrentRectangle().Area();
+  // Remove the four bogus points we added.
+  Shrink(Edge::LEFT);
+  Shrink(Edge::BOTTOM);
+  Shrink(Edge::RIGHT);
+  Shrink(Edge::TOP);
 }
 
 Rectangle ProbingRectangle::GetCurrentRectangle() const {
@@ -736,83 +734,379 @@ Rectangle ProbingRectangle::GetCurrentRectangle() const {
           .y_max = grouped_intervals_sorted_by_y_[top_index_].coordinate};
 }
 
-void ProbingRectangle::Shrink(Edge edge) {
-  absl::Span<ProbingRectangle::IntervalPoint> points;
+namespace {
+// Intersects `rectangle` with the largest rectangle that must intersect with
+// the range in some way. To visualize this largest rectangle, imagine the four
+// possible extreme positions for the item in range (the four corners). This
+// rectangle is the one defined by the interior points of each position. This
+// don't use IsDisjoint() because it also works when the rectangle would be
+// malformed (it's bounding box less than twice the size).
+bool CanConsumeEnergy(const Rectangle& rectangle,
+                      const RectangleInRange& item) {
+  return (rectangle.x_max > item.bounding_area.x_max - item.x_size) &&
+         (rectangle.y_max > item.bounding_area.y_max - item.y_size) &&
+         (rectangle.x_min < item.bounding_area.x_min + item.x_size) &&
+         (rectangle.y_min < item.bounding_area.y_min + item.y_size);
+}
 
-  minimum_energy_ -= GetShrinkDeltaEnergy(edge);
-  switch (edge) {
-    case Edge::LEFT:
-      left_index_++;
-      points = grouped_intervals_sorted_by_x_[left_index_].points;
-      break;
-    case Edge::BOTTOM:
-      bottom_index_++;
-      points = grouped_intervals_sorted_by_y_[bottom_index_].points;
-      break;
-    case Edge::RIGHT:
-      right_index_--;
-      points = grouped_intervals_sorted_by_x_[right_index_].points;
-      break;
-    case Edge::TOP:
-      top_index_--;
-      points = grouped_intervals_sorted_by_y_[top_index_].points;
-      break;
-  }
+std::array<bool, 4> GetPossibleEdgeIntersection(const Rectangle& rectangle,
+                                                const RectangleInRange& range) {
+  std::array<bool, 4> result;
+  using Edge = ProbingRectangle::Edge;
+  result[Edge::LEFT] = rectangle.x_min >= range.bounding_area.x_min;
+  result[Edge::BOTTOM] = rectangle.y_min >= range.bounding_area.y_min;
+  result[Edge::RIGHT] = rectangle.x_max <= range.bounding_area.x_max;
+  result[Edge::TOP] = rectangle.y_max <= range.bounding_area.y_max;
+  return result;
+}
 
-  for (const auto& point : points) {
-    const bool became_outside_probe =
-        (point.type == IntervalPoint::IntervalPointType::END_MIN &&
-         (edge == Edge::LEFT || edge == Edge::BOTTOM)) ||
-        (point.type == IntervalPoint::IntervalPointType::START_MAX &&
-         (edge == Edge::RIGHT || edge == Edge::TOP));
-    if (became_outside_probe) {
-      ranges_touching_boundary_[Edge::LEFT].erase(point.index);
-      ranges_touching_boundary_[Edge::BOTTOM].erase(point.index);
-      ranges_touching_boundary_[Edge::RIGHT].erase(point.index);
-      ranges_touching_boundary_[Edge::TOP].erase(point.index);
+}  // namespace
+
+// NOMUTANTS -- This is a sanity check, it is hard to corrupt the data in an
+// unit test to check it will fail.
+void ProbingRectangle::ValidateInvariants() const {
+  const Rectangle current_rectangle = GetCurrentRectangle();
+
+  IntegerValue intersect_length[4] = {0, 0, 0, 0};
+  IntegerValue corner_count[4] = {0, 0, 0, 0};
+  IntegerValue energy = 0;
+
+  for (int interval_idx = 0; interval_idx < intervals_.size(); interval_idx++) {
+    const RectangleInRange& range = intervals_[interval_idx];
+
+    const Rectangle min_intersect =
+        range.GetMinimumIntersection(current_rectangle);
+    CHECK_LE(min_intersect.SizeX(), range.x_size);
+    CHECK_LE(min_intersect.SizeY(), range.y_size);
+    energy += min_intersect.Area();
+
+    std::array<bool, 4> touching_boundary = {false, false, false, false};
+    if (CanConsumeEnergy(current_rectangle, range)) {
+      touching_boundary = GetPossibleEdgeIntersection(current_rectangle, range);
+    }
+
+    CHECK_EQ(
+        touching_boundary[Edge::LEFT] && touching_boundary[Edge::RIGHT],
+        ranges_touching_both_boundaries_[Direction::LEFT_AND_RIGHT].contains(
+            interval_idx));
+    CHECK_EQ(
+        touching_boundary[Edge::TOP] && touching_boundary[Edge::BOTTOM],
+        ranges_touching_both_boundaries_[Direction::TOP_AND_BOTTOM].contains(
+            interval_idx));
+
+    if (touching_boundary[Edge::LEFT] && !touching_boundary[Edge::RIGHT]) {
+      intersect_length[Edge::LEFT] += Smallest1DIntersection(
+          range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+          current_rectangle.y_min, current_rectangle.y_max);
+    }
+
+    if (touching_boundary[Edge::RIGHT] && !touching_boundary[Edge::LEFT]) {
+      intersect_length[Edge::RIGHT] += Smallest1DIntersection(
+          range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+          current_rectangle.y_min, current_rectangle.y_max);
+    }
+
+    if (touching_boundary[Edge::TOP] && !touching_boundary[Edge::BOTTOM]) {
+      intersect_length[Edge::TOP] += Smallest1DIntersection(
+          range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+          current_rectangle.x_min, current_rectangle.x_max);
+    }
+
+    if (touching_boundary[Edge::BOTTOM] && !touching_boundary[Edge::TOP]) {
+      intersect_length[Edge::BOTTOM] += Smallest1DIntersection(
+          range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+          current_rectangle.x_min, current_rectangle.x_max);
+    }
+
+    if ((touching_boundary[Edge::LEFT] && touching_boundary[Edge::RIGHT]) ||
+        (touching_boundary[Edge::TOP] && touching_boundary[Edge::BOTTOM])) {
+      // We account separately for the problematic items that touches both
+      // sides.
+      continue;
+    }
+    if (touching_boundary[Edge::BOTTOM] && touching_boundary[Edge::LEFT]) {
+      corner_count[RectangleInRange::Corner::BOTTOM_LEFT]++;
+    }
+    if (touching_boundary[Edge::BOTTOM] && touching_boundary[Edge::RIGHT]) {
+      corner_count[RectangleInRange::Corner::BOTTOM_RIGHT]++;
+    }
+    if (touching_boundary[Edge::TOP] && touching_boundary[Edge::LEFT]) {
+      corner_count[RectangleInRange::Corner::TOP_LEFT]++;
+    }
+    if (touching_boundary[Edge::TOP] && touching_boundary[Edge::RIGHT]) {
+      corner_count[RectangleInRange::Corner::TOP_RIGHT]++;
     }
   }
 
-  const Rectangle current_rectangle = GetCurrentRectangle();
-  auto can_consume_energy = [&current_rectangle](
-                                const RectangleInRange& range) {
-    // This intersects the current rectangle with the largest rectangle
-    // that must intersect with the range in some way. To visualize this
-    // largest rectangle, imagine the four possible extreme positions for
-    // the item in range (the four corners). This rectangle is the one
-    // defined by the interior points of each position.
-    // This don't use IsDisjoint() because it also works when the rectangle
-    // would be malformed (it's bounding box less than twice the size).
-    return !(
-        range.bounding_area.x_max - range.x_size >= current_rectangle.x_max ||
-        range.bounding_area.y_max - range.y_size >= current_rectangle.y_max ||
-        current_rectangle.x_min >= range.bounding_area.x_min + range.x_size ||
-        current_rectangle.y_min >= range.bounding_area.y_min + range.y_size);
+  CHECK_EQ(energy, minimum_energy_);
+  for (int i = 0; i < 4; i++) {
+    CHECK_EQ(intersect_length[i], intersect_length_[i]);
+    CHECK_EQ(corner_count[i], corner_count_[i]);
+  }
+}
+
+namespace {
+
+struct EdgeInfo {
+  using Edge = ProbingRectangle::Edge;
+  using Direction = ProbingRectangle::Direction;
+  using Corner = RectangleInRange::Corner;
+
+  Edge opposite_edge;
+
+  struct OrthogonalInfo {
+    Edge edge;
+    Corner adjacent_corner;
   };
 
+  Direction shrink_direction;
+  Direction orthogonal_shrink_direction;
+  // Lower coordinate one first (ie., BOTTOM before TOP, LEFT before RIGHT).
+  OrthogonalInfo orthogonal_edges[2];
+};
+
+struct EdgeInfoHolder {
+  using Edge = ProbingRectangle::Edge;
+  using Direction = ProbingRectangle::Direction;
+  using Corner = RectangleInRange::Corner;
+
+  static constexpr EdgeInfo kLeft = {
+      .opposite_edge = Edge::RIGHT,
+      .shrink_direction = Direction::LEFT_AND_RIGHT,
+      .orthogonal_shrink_direction = Direction::TOP_AND_BOTTOM,
+      .orthogonal_edges = {
+          {.edge = Edge::BOTTOM, .adjacent_corner = Corner::BOTTOM_LEFT},
+          {.edge = Edge::TOP, .adjacent_corner = Corner::TOP_LEFT}}};
+
+  static constexpr EdgeInfo kRight = {
+      .opposite_edge = Edge::LEFT,
+      .shrink_direction = Direction::LEFT_AND_RIGHT,
+      .orthogonal_shrink_direction = Direction::TOP_AND_BOTTOM,
+      .orthogonal_edges = {
+          {.edge = Edge::BOTTOM, .adjacent_corner = Corner::BOTTOM_RIGHT},
+          {.edge = Edge::TOP, .adjacent_corner = Corner::TOP_RIGHT}}};
+  static constexpr EdgeInfo kBottom = {
+      .opposite_edge = Edge::TOP,
+      .shrink_direction = Direction::TOP_AND_BOTTOM,
+      .orthogonal_shrink_direction = Direction::LEFT_AND_RIGHT,
+      .orthogonal_edges = {
+          {.edge = Edge::LEFT, .adjacent_corner = Corner::BOTTOM_LEFT},
+          {.edge = Edge::RIGHT, .adjacent_corner = Corner::BOTTOM_RIGHT}}};
+  static constexpr EdgeInfo kTop = {
+      .opposite_edge = Edge::BOTTOM,
+      .shrink_direction = Direction::TOP_AND_BOTTOM,
+      .orthogonal_shrink_direction = Direction::LEFT_AND_RIGHT,
+      .orthogonal_edges = {
+          {.edge = Edge::LEFT, .adjacent_corner = Corner::TOP_LEFT},
+          {.edge = Edge::RIGHT, .adjacent_corner = Corner::TOP_RIGHT}}};
+};
+
+constexpr const EdgeInfo& GetEdgeInfo(ProbingRectangle::Edge edge) {
+  using Edge = ProbingRectangle::Edge;
   switch (edge) {
     case Edge::LEFT:
+      return EdgeInfoHolder::kLeft;
+    case Edge::RIGHT:
+      return EdgeInfoHolder::kRight;
     case Edge::BOTTOM:
-      for (const auto& point : points) {
-        if (point.type == IntervalPoint::IntervalPointType::START_MIN) {
-          if (can_consume_energy(intervals_[point.index])) {
-            ranges_touching_boundary_[edge].insert(point.index);
-          }
-        }
-      }
+      return EdgeInfoHolder::kBottom;
+    case Edge::TOP:
+      return EdgeInfoHolder::kTop;
+  }
+}
+
+IntegerValue GetSmallest1DIntersection(ProbingRectangle::Direction direction,
+                                       const RectangleInRange& range,
+                                       const Rectangle& rectangle) {
+  switch (direction) {
+    case ProbingRectangle::Direction::LEFT_AND_RIGHT:
+      return Smallest1DIntersection(range.bounding_area.x_min,
+                                    range.bounding_area.x_max, range.x_size,
+                                    rectangle.x_min, rectangle.x_max);
+    case ProbingRectangle::Direction::TOP_AND_BOTTOM:
+      return Smallest1DIntersection(range.bounding_area.y_min,
+                                    range.bounding_area.y_max, range.y_size,
+                                    rectangle.y_min, rectangle.y_max);
+  }
+}
+
+}  // namespace
+
+template <ProbingRectangle::Edge edge>
+void ProbingRectangle::ShrinkImpl() {
+  absl::Span<ProbingRectangle::IntervalPoint> items_touching_coordinate;
+
+  constexpr EdgeInfo e = GetEdgeInfo(edge);
+
+  const Rectangle prev_rectangle = GetCurrentRectangle();
+  IntegerValue step_1d_size;
+  minimum_energy_ -= GetShrinkDeltaEnergy(edge);
+  switch (edge) {
+    case Edge::LEFT:
+      step_1d_size =
+          grouped_intervals_sorted_by_x_[left_index_ + 1].coordinate -
+          prev_rectangle.x_min;
+      left_index_++;
+      items_touching_coordinate =
+          grouped_intervals_sorted_by_x_[left_index_].items_touching_coordinate;
+      break;
+    case Edge::BOTTOM:
+      step_1d_size =
+          grouped_intervals_sorted_by_y_[bottom_index_ + 1].coordinate -
+          prev_rectangle.y_min;
+      bottom_index_++;
+      items_touching_coordinate = grouped_intervals_sorted_by_y_[bottom_index_]
+                                      .items_touching_coordinate;
       break;
     case Edge::RIGHT:
+      step_1d_size =
+          prev_rectangle.x_max -
+          grouped_intervals_sorted_by_x_[right_index_ - 1].coordinate;
+      right_index_--;
+      items_touching_coordinate = grouped_intervals_sorted_by_x_[right_index_]
+                                      .items_touching_coordinate;
+      break;
     case Edge::TOP:
-      for (const auto& point : points) {
-        if (point.type == IntervalPoint::IntervalPointType::END_MAX) {
-          if (can_consume_energy(intervals_[point.index])) {
-            ranges_touching_boundary_[edge].insert(point.index);
+      step_1d_size = prev_rectangle.y_max -
+                     grouped_intervals_sorted_by_y_[top_index_ - 1].coordinate;
+      top_index_--;
+      items_touching_coordinate =
+          grouped_intervals_sorted_by_y_[top_index_].items_touching_coordinate;
+      break;
+  }
+
+  const Rectangle current_rectangle = GetCurrentRectangle();
+
+  IntegerValue delta_corner_count[4] = {0, 0, 0, 0};
+  for (const auto& item : items_touching_coordinate) {
+    const RectangleInRange& range = intervals_[item.index];
+    if (!CanConsumeEnergy(prev_rectangle, range)) {
+      // This item is out of our area of interest, skip.
+      continue;
+    }
+
+    const std::array<bool, 4> touching_boundary_before =
+        GetPossibleEdgeIntersection(prev_rectangle, range);
+    const std::array<bool, 4> touching_boundary_after =
+        CanConsumeEnergy(current_rectangle, range)
+            ? GetPossibleEdgeIntersection(current_rectangle, range)
+            : std::array<bool, 4>({false, false, false, false});
+
+    bool remove_corner[4] = {false, false, false, false};
+    auto erase_item = [this, &prev_rectangle, &range, &touching_boundary_before,
+                       &remove_corner](Edge edge_to_erase) {
+      const EdgeInfo& erase_info = GetEdgeInfo(edge_to_erase);
+      intersect_length_[edge_to_erase] -= GetSmallest1DIntersection(
+          erase_info.orthogonal_shrink_direction, range, prev_rectangle);
+
+      if (touching_boundary_before[erase_info.orthogonal_edges[0].edge] &&
+          touching_boundary_before[erase_info.orthogonal_edges[1].edge]) {
+        // Ignore touching both corners
+        return;
+      }
+      for (const auto [orthogonal_edge, corner] : erase_info.orthogonal_edges) {
+        if (touching_boundary_before[orthogonal_edge]) {
+          remove_corner[corner] = true;
+        }
+      }
+    };
+
+    if (touching_boundary_after[edge] && !touching_boundary_before[edge]) {
+      if (touching_boundary_before[e.opposite_edge]) {
+        ranges_touching_both_boundaries_[e.shrink_direction].insert(item.index);
+        erase_item(e.opposite_edge);
+      } else {
+        // Do the opposite of remove_item().
+        intersect_length_[edge] += GetSmallest1DIntersection(
+            e.orthogonal_shrink_direction, range, prev_rectangle);
+        // Update the corner count unless it is touching both.
+        if (!touching_boundary_before[e.orthogonal_edges[0].edge] ||
+            !touching_boundary_before[e.orthogonal_edges[1].edge]) {
+          for (const auto [orthogonal_edge, corner] : e.orthogonal_edges) {
+            if (touching_boundary_before[orthogonal_edge]) {
+              delta_corner_count[corner]++;
+            }
           }
         }
       }
-      break;
+    }
+
+    for (int i = 0; i < 4; i++) {
+      const Edge edge_to_update = (Edge)i;
+      const EdgeInfo& info = GetEdgeInfo(edge_to_update);
+      const bool remove_edge = touching_boundary_before[edge_to_update] &&
+                               !touching_boundary_after[edge_to_update];
+      if (!remove_edge) {
+        continue;
+      }
+      if (touching_boundary_before[info.opposite_edge]) {
+        ranges_touching_both_boundaries_[info.shrink_direction].erase(
+            item.index);
+      } else {
+        erase_item(edge_to_update);
+      }
+    }
+
+    for (int i = 0; i < 4; i++) {
+      corner_count_[i] -= remove_corner[i];
+    }
   }
-  probe_area_ = GetCurrentRectangle().Area();
+
+  // Update the intersection length for items touching both sides.
+  for (const int idx : ranges_touching_both_boundaries_[e.shrink_direction]) {
+    const RectangleInRange& range = intervals_[idx];
+    const std::array<bool, 2> touching_corner =
+        (e.shrink_direction == Direction::LEFT_AND_RIGHT)
+            ? std::array<bool, 2>(
+                  {current_rectangle.y_min >= range.bounding_area.y_min,
+                   current_rectangle.y_max <= range.bounding_area.y_max})
+            : std::array<bool, 2>(
+                  {current_rectangle.x_min >= range.bounding_area.x_min,
+                   current_rectangle.x_max <= range.bounding_area.x_max});
+    if (touching_corner[0] == touching_corner[1]) {
+      // Either it is not touching neither corners (so no length to update) or
+      // it is touching both corners, which will be handled by the "both
+      // sides" code and should not contribute to intersect_length_.
+      continue;
+    }
+
+    const IntegerValue incr =
+        GetSmallest1DIntersection(e.shrink_direction, range, prev_rectangle) -
+        GetSmallest1DIntersection(e.shrink_direction, range, current_rectangle);
+    for (int i = 0; i < 2; i++) {
+      if (touching_corner[i]) {
+        intersect_length_[e.orthogonal_edges[i].edge] -= incr;
+      }
+    }
+  }
+
+  for (const auto [orthogonal_edge, corner] : e.orthogonal_edges) {
+    intersect_length_[orthogonal_edge] -= corner_count_[corner] * step_1d_size;
+  }
+
+  for (int i = 0; i < 4; i++) {
+    corner_count_[i] += delta_corner_count[i];
+  }
+  probe_area_ = current_rectangle.Area();
+  CacheShrinkDeltaEnergy(0);
+  CacheShrinkDeltaEnergy(1);
+}
+
+void ProbingRectangle::Shrink(Edge edge) {
+  switch (edge) {
+    case Edge::LEFT:
+      ShrinkImpl<Edge::LEFT>();
+      return;
+    case Edge::BOTTOM:
+      ShrinkImpl<Edge::BOTTOM>();
+      return;
+    case Edge::RIGHT:
+      ShrinkImpl<Edge::RIGHT>();
+      return;
+    case Edge::TOP:
+      ShrinkImpl<Edge::TOP>();
+      return;
+  }
 }
 
 IntegerValue ProbingRectangle::GetShrinkDeltaArea(Edge edge) const {
@@ -837,102 +1131,95 @@ IntegerValue ProbingRectangle::GetShrinkDeltaArea(Edge edge) const {
   }
 }
 
-IntegerValue ProbingRectangle::GetShrinkDeltaEnergy(Edge edge) const {
+void ProbingRectangle::CacheShrinkDeltaEnergy(int dimension) {
   const Rectangle current_rectangle = GetCurrentRectangle();
-  Rectangle next_rectangle = current_rectangle;
-  IntegerValue step_1d_size;
+  Rectangle next_rectangle_up = current_rectangle;
+  Rectangle next_rectangle_down = current_rectangle;
+  IntegerValue step_1d_size_up, step_1d_size_down;
+  IntegerValue units_crossed_up, units_crossed_down;
+  IntegerValue* delta_energy_up_ptr;
+  IntegerValue* delta_energy_down_ptr;
 
-  switch (edge) {
-    case Edge::LEFT:
-      next_rectangle.x_min =
-          grouped_intervals_sorted_by_x_[left_index_ + 1].coordinate;
-      step_1d_size = next_rectangle.x_min - current_rectangle.x_min;
-      break;
-    case Edge::BOTTOM:
-      next_rectangle.y_min =
-          grouped_intervals_sorted_by_y_[bottom_index_ + 1].coordinate;
-      step_1d_size = next_rectangle.y_min - current_rectangle.y_min;
-      break;
-    case Edge::RIGHT:
-      next_rectangle.x_max =
-          grouped_intervals_sorted_by_x_[right_index_ - 1].coordinate;
-      step_1d_size = current_rectangle.x_max - next_rectangle.x_max;
-      break;
-    case Edge::TOP:
-      next_rectangle.y_max =
-          grouped_intervals_sorted_by_y_[top_index_ - 1].coordinate;
-      step_1d_size = current_rectangle.y_max - next_rectangle.y_max;
-      break;
+  if (dimension == 0) {
+    // CanShrink(Edge::RIGHT) and CanShrink(Edge::LEFT) are equivalent
+    if (!CanShrink(Edge::LEFT)) {
+      cached_delta_energy_[Edge::LEFT] = 0;
+      cached_delta_energy_[Edge::RIGHT] = 0;
+      return;
+    }
+
+    next_rectangle_up.x_min =
+        grouped_intervals_sorted_by_x_[left_index_ + 1].coordinate;
+    next_rectangle_down.x_max =
+        grouped_intervals_sorted_by_x_[right_index_ - 1].coordinate;
+
+    step_1d_size_up = next_rectangle_up.x_min - current_rectangle.x_min;
+    step_1d_size_down = current_rectangle.x_max - next_rectangle_down.x_max;
+    units_crossed_up = intersect_length_[Edge::LEFT];
+    units_crossed_down = intersect_length_[Edge::RIGHT];
+    delta_energy_up_ptr = &cached_delta_energy_[Edge::LEFT];
+    delta_energy_down_ptr = &cached_delta_energy_[Edge::RIGHT];
+  } else {
+    if (!CanShrink(Edge::TOP)) {
+      cached_delta_energy_[Edge::BOTTOM] = 0;
+      cached_delta_energy_[Edge::TOP] = 0;
+      return;
+    }
+
+    next_rectangle_up.y_min =
+        grouped_intervals_sorted_by_y_[bottom_index_ + 1].coordinate;
+    next_rectangle_down.y_max =
+        grouped_intervals_sorted_by_y_[top_index_ - 1].coordinate;
+
+    step_1d_size_up = next_rectangle_up.y_min - current_rectangle.y_min;
+    step_1d_size_down = current_rectangle.y_max - next_rectangle_down.y_max;
+    units_crossed_up = intersect_length_[Edge::BOTTOM];
+    units_crossed_down = intersect_length_[Edge::TOP];
+    delta_energy_up_ptr = &cached_delta_energy_[Edge::BOTTOM];
+    delta_energy_down_ptr = &cached_delta_energy_[Edge::TOP];
   }
+  IntegerValue delta_energy_up = 0;
+  IntegerValue delta_energy_down = 0;
 
-  IntegerValue delta_energy = 0;
-  IntegerValue units_crossed = 0;
   // Note that the non-deterministic iteration order is fine here.
-  for (const int idx : ranges_touching_boundary_[edge]) {
+  for (const int idx : ranges_touching_both_boundaries_[dimension]) {
     const RectangleInRange& range = intervals_[idx];
-    bool problematic_case_in_two_sides = false;
-    IntegerValue opposite_slack;
-    switch (edge) {
-      case Edge::LEFT:
-        opposite_slack = range.bounding_area.x_max - current_rectangle.x_max;
-        // First check if we touch the opposite edge to the one we are
-        // shrinking.
-        if (opposite_slack >= 0) {
-          // If it do, it's problematic if it has more slack on the opposite
-          // side so it will "jump" to the other side.
-          problematic_case_in_two_sides =
-              opposite_slack >=
-              current_rectangle.x_min - range.bounding_area.x_min;
-        }
-        break;
-      case Edge::BOTTOM:
-        opposite_slack = range.bounding_area.y_max - current_rectangle.y_max;
-        if (opposite_slack >= 0) {
-          problematic_case_in_two_sides =
-              opposite_slack >=
-              current_rectangle.y_min - range.bounding_area.y_min;
-        }
-        break;
-      case Edge::RIGHT:
-        opposite_slack = current_rectangle.x_min - range.bounding_area.x_min;
-        if (opposite_slack >= 0) {
-          problematic_case_in_two_sides =
-              opposite_slack >=
-              range.bounding_area.x_max - current_rectangle.x_max;
-        }
-        break;
-      case Edge::TOP:
-        opposite_slack = current_rectangle.y_min - range.bounding_area.y_min;
-        if (opposite_slack >= 0) {
-          problematic_case_in_two_sides =
-              opposite_slack >=
-              range.bounding_area.y_max - current_rectangle.y_max;
-        }
-        break;
-    }
-    if (problematic_case_in_two_sides) {
-      // When it touches both sides, reducing the probe on the bottom might
-      // make the place with the minimum overlap become the top. It's too
-      // complicated to manage, so we fall back on actually computing it from
-      // scratch.
-      delta_energy += range.GetMinimumIntersectionArea(current_rectangle);
-      delta_energy -= range.GetMinimumIntersectionArea(next_rectangle);
+    const IntegerValue curr_x = Smallest1DIntersection(
+        range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+        current_rectangle.x_min, current_rectangle.x_max);
+    const IntegerValue curr_y = Smallest1DIntersection(
+        range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+        current_rectangle.y_min, current_rectangle.y_max);
+    const IntegerValue curr = curr_x * curr_y;
+    delta_energy_up += curr;
+    delta_energy_down += curr;
+
+    if (dimension == 0) {
+      const IntegerValue up_x = Smallest1DIntersection(
+          range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+          next_rectangle_up.x_min, next_rectangle_up.x_max);
+      const IntegerValue down_x = Smallest1DIntersection(
+          range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
+          next_rectangle_down.x_min, next_rectangle_down.x_max);
+
+      delta_energy_up -= curr_y * up_x;
+      delta_energy_down -= curr_y * down_x;
     } else {
-      IntegerValue intersect_length;
-      if (edge == Edge::LEFT || edge == Edge::RIGHT) {
-        intersect_length = Smallest1DIntersection(
-            range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
-            current_rectangle.y_min, current_rectangle.y_max);
-      } else {
-        intersect_length = Smallest1DIntersection(
-            range.bounding_area.x_min, range.bounding_area.x_max, range.x_size,
-            current_rectangle.x_min, current_rectangle.x_max);
-      }
-      units_crossed += intersect_length;
+      const IntegerValue up_y = Smallest1DIntersection(
+          range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+          next_rectangle_up.y_min, next_rectangle_up.y_max);
+      const IntegerValue down_y = Smallest1DIntersection(
+          range.bounding_area.y_min, range.bounding_area.y_max, range.y_size,
+          next_rectangle_down.y_min, next_rectangle_down.y_max);
+
+      delta_energy_up -= curr_x * up_y;
+      delta_energy_down -= curr_x * down_y;
     }
   }
-  delta_energy += units_crossed * step_1d_size;
-  return delta_energy;
+  delta_energy_up += units_crossed_up * step_1d_size_up;
+  delta_energy_down += units_crossed_down * step_1d_size_down;
+  *delta_energy_up_ptr = delta_energy_up;
+  *delta_energy_down_ptr = delta_energy_down;
 }
 
 bool ProbingRectangle::CanShrink(Edge edge) const {

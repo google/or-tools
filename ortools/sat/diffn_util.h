@@ -321,7 +321,7 @@ struct RectangleInRange {
   IntegerValue x_size;
   IntegerValue y_size;
 
-  enum class Corner {
+  enum Corner {
     BOTTOM_LEFT = 0,
     TOP_LEFT = 1,
     BOTTOM_RIGHT = 2,
@@ -413,7 +413,21 @@ struct RectangleInRange {
   }
 };
 
-// Cheaply test several rectangles for area conflict.
+// Cheaply test several increasingly smaller rectangles for energy conflict.
+// More precisely, each call to `Shrink()` cost O(k + n) operations, where k is
+// the number of points that shrinking the probing rectangle will cross and n is
+// the number of items which are in a range that overlaps the probing rectangle
+// in both sides in the dimension that is getting shrinked. When calling
+// repeatedely `Shrink()` until the probing rectangle collapse into a single
+// point, the O(k) component adds up to a O(M) cost, where M is the number of
+// items. This means this procedure is linear in time if the ranges of the items
+// are small.
+//
+// The energy is defined as the minimum occupied area inside the probing
+// rectangle. For more details, see Clautiaux, François, et al. "A new
+// constraint programming approach for the orthogonal packing problem."
+// Computers & Operations Research 35.3 (2008): 944-959.
+//
 // This is used by FindRectanglesWithEnergyConflictMC() below.
 class ProbingRectangle {
  public:
@@ -436,8 +450,14 @@ class ProbingRectangle {
     return !(CanShrink(Edge::BOTTOM) || CanShrink(Edge::LEFT));
   }
 
+  // Test-only method that check that all internal incremental counts are
+  // correct by comparing with recalculating them from scratch.
+  void ValidateInvariants() const;
+
   // How much of GetMinimumEnergy() will change if Shrink() is called.
-  IntegerValue GetShrinkDeltaEnergy(Edge edge) const;
+  IntegerValue GetShrinkDeltaEnergy(Edge edge) const {
+    return cached_delta_energy_[edge];
+  }
 
   // How much of GetCurrentRectangleArea() will change if Shrink() is called.
   IntegerValue GetShrinkDeltaArea(Edge edge) const;
@@ -449,19 +469,23 @@ class ProbingRectangle {
   // - Call GetMinimumIntersectionArea() with GetCurrentRectangle().
   // - Return the total sum of the areas.
   IntegerValue GetMinimumEnergy() const { return minimum_energy_; }
+
   const std::vector<RectangleInRange>& Intervals() const { return intervals_; }
 
+  enum Direction {
+    LEFT_AND_RIGHT = 0,
+    TOP_AND_BOTTOM = 1,
+  };
+
  private:
+  void CacheShrinkDeltaEnergy(int dimension);
+
+  template <Edge edge>
+  void ShrinkImpl();
+
   struct IntervalPoint {
     IntegerValue value;
     int index;
-    enum class IntervalPointType {
-      START_MIN,
-      START_MAX,
-      END_MIN,
-      END_MAX,
-    };
-    IntervalPointType type;
   };
 
   std::vector<IntervalPoint> interval_points_sorted_by_x_;
@@ -471,7 +495,7 @@ class ProbingRectangle {
   // directly on the two vectors above, but the code would be much uglier.
   struct PointsForCoordinate {
     IntegerValue coordinate;
-    absl::Span<IntervalPoint> points;
+    absl::Span<IntervalPoint> items_touching_coordinate;
   };
   std::vector<PointsForCoordinate> grouped_intervals_sorted_by_x_;
   std::vector<PointsForCoordinate> grouped_intervals_sorted_by_y_;
@@ -481,7 +505,11 @@ class ProbingRectangle {
   IntegerValue minimum_energy_;
   IntegerValue probe_area_;
   int top_index_, bottom_index_, left_index_, right_index_;
-  absl::flat_hash_set<int> ranges_touching_boundary_[4];
+
+  absl::flat_hash_set<int> ranges_touching_both_boundaries_[2];
+  IntegerValue corner_count_[4] = {0, 0, 0, 0};
+  IntegerValue intersect_length_[4] = {0, 0, 0, 0};
+  IntegerValue cached_delta_energy_[4];
 };
 
 // Monte-Carlo inspired heuristic to find a rectangles with an energy conflict:
