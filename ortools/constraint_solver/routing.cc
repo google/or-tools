@@ -39,6 +39,7 @@
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -979,18 +980,22 @@ const ResourceGroup::Attributes& ResourceGroup::Resource::GetDefaultAttributes()
   return *kAttributes;
 }
 
-int RoutingModel::AddResourceGroup() {
+ResourceGroup* RoutingModel::AddResourceGroup() {
   DCHECK_EQ(resource_groups_.size(), resource_vars_.size());
   // Create and add the resource group.
-  resource_groups_.push_back(std::make_unique<ResourceGroup>(this));
+  // Using 'new' to access private constructor.
+  resource_groups_.push_back(absl::WrapUnique(new ResourceGroup(this)));
+  const int rg_index = resource_groups_.back()->Index();
+  DCHECK_EQ(rg_index, resource_groups_.size() - 1);
+
   // Create and add the resource vars (the proper variable bounds and
   // constraints are set up when closing the model).
-  const int rg_index = resource_groups_.size() - 1;
   resource_vars_.push_back({});
   solver_->MakeIntVarArray(vehicles(), -1, std::numeric_limits<int64_t>::max(),
                            absl::StrCat("Resources[", rg_index, "]"),
                            &resource_vars_.back());
-  return rg_index;
+
+  return resource_groups_[rg_index].get();
 }
 
 int ResourceGroup::AddResource(Attributes attributes,

@@ -477,11 +477,6 @@ class RoutingModel {
       friend class ResourceGroup;
     };
 
-    explicit ResourceGroup(const RoutingModel* model)
-        : model_(model),
-          vehicle_requires_resource_(model->vehicles(), false),
-          vehicle_allowed_resources_(model->vehicles()) {}
-
     /// Adds a Resource with the given attributes for the corresponding
     /// dimension. Returns the index of the added resource in resources_.
     int AddResource(Attributes attributes, const RoutingDimension* dimension);
@@ -524,8 +519,16 @@ class RoutingModel {
       return affected_dimension_indices_;
     }
     int Size() const { return resources_.size(); }
+    int Index() const { return index_; }
 
    private:
+    explicit ResourceGroup(const RoutingModel* model)
+        : index_(model->GetResourceGroups().size()),
+          model_(model),
+          vehicle_requires_resource_(model->vehicles(), false),
+          vehicle_allowed_resources_(model->vehicles()) {}
+
+    const int index_;
     const RoutingModel* const model_;
     std::vector<Resource> resources_;
     std::vector<bool> vehicle_requires_resource_;
@@ -539,6 +542,8 @@ class RoutingModel {
     // clang-format on
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
+
+    friend class RoutingModel;
   };
 
   /// Constant used to express a hard constraint instead of a soft penalty.
@@ -775,9 +780,8 @@ class RoutingModel {
     return primary_constrained_dimension_;
   }
 
-  /// Adds a resource group to the routing model. Returns its index in
-  /// resource_groups_.
-  int AddResourceGroup();
+  /// Adds a resource group to the routing model and returns a pointer to it.
+  ResourceGroup* AddResourceGroup();
   // clang-format off
   const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
       const {
