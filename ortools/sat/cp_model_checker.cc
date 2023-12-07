@@ -819,6 +819,10 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
       return absl::StrCat("Unknown or unsupported domain_reduction_strategy: ",
                           drs);
     }
+    if (!strategy.variables().empty() && !strategy.exprs().empty()) {
+      return absl::StrCat("Strategy can't have both variables and exprs: ",
+                          ProtobufShortDebugString(strategy));
+    }
     for (const int ref : strategy.variables()) {
       if (!VariableReferenceIsValid(model, ref)) {
         return absl::StrCat("Invalid variable reference in strategy: ",
@@ -832,19 +836,17 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
                             " SELECT_MEDIAN_VALUE value selection strategy");
       }
     }
-    int previous_index = -1;
-    for (const auto& transformation : strategy.transformations()) {
-      if (transformation.positive_coeff() <= 0) {
-        return absl::StrCat("Affine transformation coeff should be positive: ",
-                            ProtobufShortDebugString(transformation));
+    for (const LinearExpressionProto& expr : strategy.exprs()) {
+      if (!ValidateAffineExpression(model, expr).empty()) {
+        return absl::StrCat("Invalid affine expr in strategy: ",
+                            ProtobufShortDebugString(strategy));
       }
-      if (transformation.index() <= previous_index ||
-          transformation.index() >= strategy.variables_size()) {
-        return absl::StrCat(
-            "Invalid indices (must be sorted and valid) in transformation: ",
-            ProtobufShortDebugString(transformation));
+      if (drs == DecisionStrategyProto::SELECT_MEDIAN_VALUE &&
+          ReadDomainFromProto(model.variables(expr.vars(0))).Size() > 100000) {
+        return absl::StrCat("Variable #", expr.vars(0),
+                            " has a domain too large to be used in a"
+                            " SELECT_MEDIAN_VALUE value selection strategy");
       }
-      previous_index = transformation.index();
     }
   }
   return "";

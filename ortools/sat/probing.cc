@@ -408,7 +408,7 @@ bool Prober::ProbeDnf(absl::string_view name,
       num_new_literals_fixed_ > previous_num_literals_fixed) {
     VLOG(1) << "ProbeDnf(" << name << ", num_fixed_literals="
             << num_new_literals_fixed_ - previous_num_literals_fixed
-            << ", num_fixed_integer_bounds="
+            << ", num_pushed_integer_bounds="
             << num_new_integer_bounds_ - previous_num_integer_bounds
             << ", num_valid_conjunctions=" << num_valid_conjunctions << "/"
             << dnf.size() << ")";

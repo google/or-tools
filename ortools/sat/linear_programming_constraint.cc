@@ -1719,6 +1719,7 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
 }
 
 bool LinearProgrammingConstraint::Propagate() {
+  if (time_limit_->LimitReached()) return true;
   UpdateBoundsOfLpVariables();
 
   // TODO(user): It seems the time we loose by not stopping early might be worth

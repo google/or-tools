@@ -39,6 +39,7 @@
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
@@ -53,7 +54,6 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
@@ -416,8 +416,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
     absl::StrAppend(
-        &result, "Search strategy: on ", strategy.variables_size(),
-        " variables, ",
+        &result, "Search strategy: on ",
+        strategy.exprs().size() + strategy.variables().size(), " variables, ",
         ProtoEnumToString<DecisionStrategyProto::VariableSelectionStrategy>(
             strategy.variable_selection_strategy()),
         ", ",

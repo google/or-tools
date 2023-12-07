@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
@@ -31,7 +32,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"

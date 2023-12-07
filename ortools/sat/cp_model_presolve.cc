@@ -43,6 +43,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/protobuf_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
@@ -123,8 +124,8 @@ void CpModelPresolver::RemoveEmptyConstraints() {
     context_->working_model->mutable_constraints(new_num_constraints++)
         ->Swap(context_->working_model->mutable_constraints(c));
   }
-  context_->working_model->mutable_constraints()->DeleteSubrange(
-      new_num_constraints, old_num_non_empty_constraints - new_num_constraints);
+  google::protobuf::util::Truncate(
+      context_->working_model->mutable_constraints(), new_num_constraints);
   for (ConstraintProto& ct_ref :
        *context_->working_model->mutable_constraints()) {
     ApplyToAllIntervalIndices(
@@ -855,8 +856,8 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     }
     if (new_size < ct->lin_max().exprs_size()) {
       context_->UpdateRuleStats("lin_max: removed exprs");
-      ct->mutable_lin_max()->mutable_exprs()->DeleteSubrange(
-          new_size, ct->lin_max().exprs_size() - new_size);
+      google::protobuf::util::Truncate(ct->mutable_lin_max()->mutable_exprs(),
+                                       new_size);
       changed = true;
     }
   }
@@ -11389,8 +11390,21 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
         in_model.floating_point_objective();
   }
   if (!in_model.search_strategy().empty()) {
+    // We make sure we do not use the old variables field.
     *context->working_model->mutable_search_strategy() =
         in_model.search_strategy();
+    for (DecisionStrategyProto& strategy :
+         *context->working_model->mutable_search_strategy()) {
+      if (!strategy.variables().empty()) {
+        CHECK(strategy.exprs().empty());
+        for (const int ref : strategy.variables()) {
+          LinearExpressionProto* expr = strategy.add_exprs();
+          expr->add_vars(PositiveRef(ref));
+          expr->add_coeffs(RefIsPositive(ref) ? 1 : -1);
+        }
+        strategy.clear_variables();
+      }
+    }
   }
   if (!in_model.assumptions().empty()) {
     *context->working_model->mutable_assumptions() = in_model.assumptions();
@@ -11870,43 +11884,26 @@ CpSolverStatus CpModelPresolver::Presolve() {
   absl::flat_hash_set<int> used_variables;
   for (DecisionStrategyProto& strategy :
        *context_->working_model->mutable_search_strategy()) {
-    DecisionStrategyProto copy = strategy;
-    strategy.clear_variables();
-    strategy.clear_transformations();
-    for (const int ref : copy.variables()) {
-      const int var = PositiveRef(ref);
+    CHECK(strategy.variables().empty());
+    if (strategy.exprs().empty()) continue;
 
-      // Remove fixed variables.
-      if (context_->IsFixed(var)) continue;
-
-      // There is not point having a variable appear twice, so we only keep
-      // the first occurrence in the first strategy in which it occurs.
-      if (used_variables.contains(var)) continue;
-      used_variables.insert(var);
-
-      // Replace the variable by its affine representative.
-      // We only do that if there are no more constraint using this variable.
-      if (context_->VarToConstraints(var).empty()) {
-        const AffineRelation::Relation r = context_->GetAffineRelation(var);
-        if (!context_->VarToConstraints(r.representative).empty()) {
-          const int rep = (r.coeff > 0) == RefIsPositive(ref)
-                              ? r.representative
-                              : NegatedRef(r.representative);
-          if (strategy.variable_selection_strategy() !=
-              DecisionStrategyProto::CHOOSE_FIRST) {
-            DecisionStrategyProto::AffineTransformation* t =
-                strategy.add_transformations();
-            t->set_index(strategy.variables_size());
-            t->set_offset(r.offset);
-            t->set_positive_coeff(std::abs(r.coeff));
-          }
-          strategy.add_variables(rep);
-          continue;
-        }
-      }
-
-      strategy.add_variables(ref);
+    // Canonicalize each expression to use affine representative.
+    ConstraintProto empy_enforcement;
+    for (LinearExpressionProto& expr : *strategy.mutable_exprs()) {
+      CanonicalizeLinearExpression(empy_enforcement, &expr);
     }
+
+    // Remove fixed expression and affine corresponding to same variables.
+    int new_size = 0;
+    for (const LinearExpressionProto& expr : strategy.exprs()) {
+      if (context_->IsFixed(expr)) continue;
+
+      const auto [_, inserted] = used_variables.insert(expr.vars(0));
+      if (!inserted) continue;
+
+      *strategy.mutable_exprs(new_size++) = expr;
+    }
+    google::protobuf::util::Truncate(strategy.mutable_exprs(), new_size);
   }
 
   // Sync the domains.
@@ -12059,27 +12056,27 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   // Remap the search decision heuristic.
   // Note that we delete any heuristic related to a removed variable.
   for (DecisionStrategyProto& strategy : *proto->mutable_search_strategy()) {
-    const DecisionStrategyProto copy = strategy;
-    strategy.clear_variables();
-    std::vector<int> new_indices(copy.variables().size(), -1);
-    for (int i = 0; i < copy.variables().size(); ++i) {
-      const int ref = copy.variables(i);
-      const int image = mapping[PositiveRef(ref)];
+    int new_size = 0;
+    for (LinearExpressionProto expr : strategy.exprs()) {
+      DCHECK_EQ(expr.vars().size(), 1);
+      const int image = mapping[expr.vars(0)];
       if (image >= 0) {
-        new_indices[i] = strategy.variables_size();
-        strategy.add_variables(RefIsPositive(ref) ? image : NegatedRef(image));
+        expr.set_vars(0, image);
+        *strategy.mutable_exprs(new_size++) = expr;
       }
     }
-    strategy.clear_transformations();
-    for (const auto& transform : copy.transformations()) {
-      CHECK_LT(transform.index(), new_indices.size());
-      const int new_index = new_indices[transform.index()];
-      if (new_index == -1) continue;
-      auto* new_transform = strategy.add_transformations();
-      *new_transform = transform;
-      CHECK_LT(new_index, strategy.variables().size());
-      new_transform->set_index(new_index);
+    google::protobuf::util::Truncate(strategy.mutable_exprs(), new_size);
+  }
+
+  // Remove strategy with empty affine expression.
+  {
+    int new_size = 0;
+    for (const DecisionStrategyProto& strategy : proto->search_strategy()) {
+      if (strategy.exprs().empty()) continue;
+      *proto->mutable_search_strategy(new_size++) = strategy;
     }
+    google::protobuf::util::Truncate(proto->mutable_search_strategy(),
+                                     new_size);
   }
 
   // Remap the solution hint. Note that after remapping, we may have duplicate

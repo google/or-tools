@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -28,7 +29,6 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"

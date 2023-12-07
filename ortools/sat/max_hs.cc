@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -28,7 +29,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/presolve_util.h"

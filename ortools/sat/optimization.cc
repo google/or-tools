@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
@@ -32,7 +33,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"

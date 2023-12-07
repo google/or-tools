@@ -512,8 +512,17 @@ message DecisionStrategyProto {
   // criteria defined below.
   repeated int32 variables = 1;
 
-  // The order in which the variables above should be considered. Note that only
-  // variables that are not already fixed are considered.
+  // If this is set, then the variables field must be empty.
+  // We currently only support affine expression.
+  //
+  // Note that this is needed so that if a variable has an affine
+  // representative, we can properly transform a DecisionStrategyProto through
+  // presolve.
+  repeated LinearExpressionProto exprs = 5;
+
+  // The order in which the variables (resp. affine expression) above should be
+  // considered. Note that only variables that are not already fixed are
+  // considered.
   //
   // TODO(user): extend as needed.
   enum VariableSelectionStrategy {
@@ -525,8 +534,8 @@ message DecisionStrategyProto {
   }
   VariableSelectionStrategy variable_selection_strategy = 2;
 
-  // Once a variable has been chosen, this enum describe what decision is taken
-  // on its domain.
+  // Once a variable (resp. affine expression) has been chosen, this enum
+  // describe what decision is taken on its domain.
   //
   // TODO(user): extend as needed.
   enum DomainReductionStrategy {
@@ -537,17 +546,6 @@ message DecisionStrategyProto {
     SELECT_MEDIAN_VALUE = 4;
   }
   DomainReductionStrategy domain_reduction_strategy = 3;
-
-  // Advanced usage. Some of the variable listed above may have been transformed
-  // by the presolve so this is needed to properly follow the given selection
-  // strategy. Instead of using a value X for variables[index], we will use
-  // positive_coeff * X + offset instead.
-  message AffineTransformation {
-    int32 index = 1;
-    int64 offset = 2;
-    int64 positive_coeff = 3;
-  }
-  repeated AffineTransformation transformations = 4;
 }
 
 // This message encodes a partial (or full) assignment of the variables of a

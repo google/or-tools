@@ -216,35 +216,23 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
           randomize_decision ? parameters.search_random_variable_pool_size()
                              : 1);
 
-      int t_index = 0;  // Index in strategy.transformations().
-      for (int i = 0; i < strategy.variables().size(); ++i) {
-        const int ref = strategy.variables(i);
-        const int var = PositiveRef(ref);
+      for (const LinearExpressionProto& expr : strategy.exprs()) {
+        const int var = expr.vars(0);
         if (view.IsFixed(var) || view.IsCurrentlyFree(var)) continue;
 
-        int64_t coeff(1);
-        int64_t offset(0);
-        while (t_index < strategy.transformations().size() &&
-               strategy.transformations(t_index).index() < i) {
-          ++t_index;
-        }
-        if (t_index < strategy.transformations_size() &&
-            strategy.transformations(t_index).index() == i) {
-          coeff = strategy.transformations(t_index).positive_coeff();
-          offset = strategy.transformations(t_index).offset();
-        }
-
-        // TODO(user): deal with integer overflow in case of wrongly specified
-        // coeff? Note that if this is filled by the presolve it shouldn't
-        // happen since any feasible value in the new variable domain should be
-        // a feasible value of the original variable domain.
-        int64_t value(0);
+        int64_t coeff = expr.coeffs(0);
+        int64_t offset = expr.offset();
         int64_t lb = view.Min(var);
         int64_t ub = view.Max(var);
-        if (!RefIsPositive(ref)) {
+        int ref = var;
+        if (coeff < 0) {
           lb = -view.Max(var);
           ub = -view.Min(var);
+          coeff = -coeff;
+          ref = NegatedRef(var);
         }
+
+        int64_t value(0);
         switch (strategy.variable_selection_strategy()) {
           case DecisionStrategyProto::CHOOSE_FIRST:
             break;
