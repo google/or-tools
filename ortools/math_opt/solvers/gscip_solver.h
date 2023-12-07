@@ -86,43 +86,6 @@ class GScipSolver : public SolverInterface {
     std::vector<SCIP_CONS*> constraints;
   };
 
-  // Event handler that it used to call SCIPinterruptSolve() is a safe manner.
-  //
-  // At the start of SCIPsolve(), SCIP resets `userinterrupt` to false. It does
-  // the same in SCIPpresolve(), which is called at the beginning of SCIPsolve()
-  // but also at the beginning of each restart. the `userinterrupt` can also be
-  // reset when the transformed problem is freed when the parameter
-  // "misc/resetstat" is used. On top of that, it is not possible to call
-  // SCIPinterruptSolve() in SCIP_STAGE_INITSOLVE stage; which occurs in the
-  // middle of the solve and at restarts.
-  //
-  // If this was no enough, SCIPinterruptSolve() calls SCIPcheckStage() which is
-  // not thread-safe.
-  //
-  // As a consequence, although it is possible to call SCIPinterruptSolve() from
-  // another thread, it is unreliable at best. Here we take a safer approach: we
-  // call it only from the Exec() of an even handler. This solves all thread
-  // safety issues and, if we have been careful, also ensures we don't call it
-  // in the wrong stage. This also solves the issue the multiple resets of the
-  // `userinterrupt` flag since each time we are called after the interrupter
-  // has been triggered, we simply call SCIPinterruptSolve() until SCIP finally
-  // listens.
-  struct InterruptEventHandler : public GScipEventHandler {
-    InterruptEventHandler();
-
-    SCIP_RETCODE Init(GScip* gscip) override;
-    SCIP_RETCODE Execute(GScipEventHandlerContext) override;
-
-    // Calls SCIPinterruptSolve() if the interrupter is set and triggered and
-    // SCIP is in a valid stage for that.
-    SCIP_RETCODE TryCallInterruptIfNeeded(GScip* gscip);
-
-    // This will be set before SCIPsolve() is called and reset after the end of
-    // the call. It may be null when the user does not provide an interrupter;
-    // in that case we don't register any event.
-    SolveInterrupter* interrupter = nullptr;
-  };
-
   explicit GScipSolver(std::unique_ptr<GScip> gscip);
 
   // Adds the new variables.
@@ -192,12 +155,8 @@ class GScipSolver : public SolverInterface {
   // Returns the indicator constraints with non-binary indicator variables.
   InvalidIndicators ListInvalidIndicators() const;
 
-  // Registers handlers with SCIP (e.g. event handlers, constraint handlers).
-  absl::Status RegisterHandlers();
-
   const std::unique_ptr<GScip> gscip_;
 
-  InterruptEventHandler interrupt_event_handler_;
   gtl::linked_hash_map<int64_t, SCIP_VAR*> variables_;
   bool has_quadratic_objective_ = false;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;

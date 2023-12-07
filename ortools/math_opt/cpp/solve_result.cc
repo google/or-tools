@@ -351,15 +351,18 @@ absl::Status Termination::EnsureIsOptimal() const {
   return EnsureReasonIs(TerminationReason::kOptimal);
 }
 
-absl::Status Termination::IsOptimal() const { return EnsureIsOptimal(); }
+bool Termination::IsOptimalOrFeasible() const {
+  return reason == TerminationReason::kOptimal ||
+         reason == TerminationReason::kFeasible;
+}
 
 absl::Status Termination::EnsureIsOptimalOrFeasible() const {
   return EnsureReasonIsAnyOf(
       {TerminationReason::kOptimal, TerminationReason::kFeasible});
 }
 
-absl::Status Termination::IsOptimalOrFeasible() const {
-  return EnsureIsOptimalOrFeasible();
+bool Termination::IsOptimal() const {
+  return reason == TerminationReason::kOptimal;
 }
 
 absl::StatusOr<Termination> Termination::FromProto(

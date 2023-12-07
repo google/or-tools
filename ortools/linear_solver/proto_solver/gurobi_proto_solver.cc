@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -34,7 +35,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/optional.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"

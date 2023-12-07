@@ -324,9 +324,11 @@ struct Termination {
   // `TerminationReason::kOptimal` or `TerminationReason::kFeasible`, or an
   // `InternalError` otherwise.
   absl::Status EnsureIsOptimalOrFeasible() const;
-  // TODO(b/314776390): Delete this function.
-  ABSL_DEPRECATED("Prefer EnsureIsOptimalOrFeasible()")
-  absl::Status IsOptimalOrFeasible() const;
+
+  // Returns true if the reason of this Termination` is
+  // `TerminationReason::kOptimal` or `TerminationReason::kFeasible`, or false
+  // otherwise.
+  bool IsOptimalOrFeasible() const;
 
   // Returns an OkStatus if the reason of this `Termination` is
   // `TerminationReason::kOptimal`, or an `InternalError` otherwise.
@@ -334,8 +336,13 @@ struct Termination {
   // In most use cases, at least for MIPs, `EnsureIsOptimalOrFeasible` should be
   // used instead.
   absl::Status EnsureIsOptimal() const;
-  // TODO(b/314776390): Delete this function.
-  ABSL_DEPRECATED("Prefer EnsureIsOptimal()") absl::Status IsOptimal() const;
+
+  // Returns true if the reason of this `Termination` is
+  // `TerminationReason::kOptimal`, or false otherwise.
+  //
+  // In most use cases, at least for MIPs, `IsOptimalOrFeasible` should be
+  // used instead.
+  bool IsOptimal() const;
 
   // Returns an OkStatus if the reason of this `Termination` is `reason`, or an
   // `InternalError` otherwise.

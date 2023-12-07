@@ -31,6 +31,7 @@
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #endif  // defined(USE_SCIP)
@@ -461,9 +462,7 @@ std::optional<MPSolutionResponse> ModelSolverHelper::SolveRequest(
               request.solver_type()))) {
     return std::nullopt;
   }
-  MPSolutionResponse temp;
-  MPSolver::SolveWithProto(request, &temp, &interrupt_solve_);
-  return temp;
+  return SolveMPModel(request, &interrupt_solve_);
 }
 
 namespace {

@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -38,7 +39,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -69,7 +69,6 @@
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "scip/type_cons.h"
-#include "scip/type_event.h"
 #include "scip/type_var.h"
 
 namespace operations_research {
@@ -992,7 +991,6 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
   RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
   RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
-  RETURN_IF_ERROR(solver->RegisterHandlers());
 
   RETURN_IF_ERROR(solver->AddVariables(
       model.variables(),
@@ -1047,11 +1045,9 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
 
   // Before calling solve, set the interrupter on the event handler that calls
   // SCIPinterruptSolve().
-  if (interrupter != nullptr) {
-    interrupt_event_handler_.interrupter = interrupter;
-  }
-  const auto interrupter_cleanup = absl::MakeCleanup(
-      [&]() { interrupt_event_handler_.interrupter = nullptr; });
+  GScip::Interrupter gscip_interrupter;
+  const ScopedSolveInterrupterCallback scoped_interrupt_cb(
+      interrupter, [&]() { gscip_interrupter.Interrupt(); });
 
   // SCIP returns "infeasible" when the model contain invalid bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
@@ -1068,7 +1064,8 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   ASSIGN_OR_RETURN(
       GScipResult gscip_result,
       gscip_->Solve(gscip_parameters,
-                    /*legacy_params=*/"", std::move(gscip_msg_cb)));
+                    /*legacy_params=*/"", std::move(gscip_msg_cb),
+                    interrupter == nullptr ? nullptr : &gscip_interrupter));
 
   // Flush the potential last unfinished line.
   std::move(message_cb_cleanup).Invoke();
@@ -1313,67 +1310,6 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
       model_update.sos2_constraint_updates().new_constraints()));
 
   return true;
-}
-
-absl::Status GScipSolver::RegisterHandlers() {
-  RETURN_IF_ERROR(interrupt_event_handler_.Register(gscip_.get()));
-  return absl::OkStatus();
-}
-
-GScipSolver::InterruptEventHandler::InterruptEventHandler()
-    : GScipEventHandler(
-          {.name = "interrupt event handler",
-           .description = "Event handler to call SCIPinterruptSolve() when a "
-                          "user SolveInterrupter is triggered."}) {}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::Init(GScip* const gscip) {
-  // We don't register any event if we don't have an interrupter.
-  if (interrupter == nullptr) {
-    return SCIP_OKAY;
-  }
-
-  // TODO(b/193537362): see if these events are enough or if we should have more
-  // of these.
-  CatchEvent(SCIP_EVENTTYPE_PRESOLVEROUND);
-  CatchEvent(SCIP_EVENTTYPE_NODEEVENT);
-  CatchEvent(SCIP_EVENTTYPE_ROWEVENT);
-
-  return TryCallInterruptIfNeeded(gscip);
-}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::Execute(
-    const GScipEventHandlerContext context) {
-  return TryCallInterruptIfNeeded(context.gscip());
-}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::TryCallInterruptIfNeeded(
-    GScip* const gscip) {
-  if (interrupter == nullptr) {
-    LOG(WARNING) << "TryCallInterruptIfNeeded() called after interrupter has "
-                    "been reset!";
-    return SCIP_OKAY;
-  }
-
-  if (!interrupter->IsInterrupted()) {
-    return SCIP_OKAY;
-  }
-
-  const SCIP_STAGE stage = SCIPgetStage(gscip->scip());
-  switch (stage) {
-    case SCIP_STAGE_INIT:
-    case SCIP_STAGE_FREE:
-      // This should never happen anyway; but if this happens, we may want to
-      // know about it in unit tests.
-      LOG(DFATAL) << "TryCallInterruptIfNeeded() called in stage "
-                  << (stage == SCIP_STAGE_INIT ? "INIT" : "FREE");
-      return SCIP_OKAY;
-    case SCIP_STAGE_INITSOLVE:
-      LOG(WARNING) << "TryCallInterruptIfNeeded() called in INITSOLVE stage; "
-                      "we can't call SCIPinterruptSolve() in this stage.";
-      return SCIP_OKAY;
-    default:
-      return SCIPinterruptSolve(gscip->scip());
-  }
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>

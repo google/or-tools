@@ -587,7 +587,7 @@ GScipConstraintHandler<ConstraintData>::HandleCallbackStatus(
     GScipConstraintHandlerContext context,
     const GScipCallbackResult default_callback_result) {
   if (!result.ok()) {
-    context.gscip()->InterruptSolveFromCallback(result.status());
+    context.gscip()->InterruptSolveFromCallbackOnCallbackError(result.status());
     return default_callback_result;
   }
   return result.value();

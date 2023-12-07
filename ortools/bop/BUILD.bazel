@@ -133,7 +133,6 @@ cc_library(
         ":bop_types",
         ":bop_util",
         "//ortools/base",
-        "//ortools/base:cleanup",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:stl_util",
@@ -148,6 +147,7 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/cleanup",
         "@com_google_protobuf//:protobuf",
     ],
 )

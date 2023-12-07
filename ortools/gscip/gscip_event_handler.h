@@ -20,10 +20,11 @@
 #include <vector>
 
 #include "absl/status/status.h"
-#include "ortools/gscip/gscip.h"
 #include "scip/type_event.h"
 
 namespace operations_research {
+
+class GScip;
 
 struct GScipEventHandlerDescription {
   // For the first two members below, the SCIP constraint handler
@@ -92,6 +93,9 @@ class GScipEventHandler {
  public:
   explicit GScipEventHandler(const GScipEventHandlerDescription& description)
       : description_(description) {}
+
+  GScipEventHandler(const GScipEventHandler&) = delete;
+  GScipEventHandler& operator=(const GScipEventHandler&) = delete;
 
   virtual ~GScipEventHandler() = default;
 

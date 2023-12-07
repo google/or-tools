@@ -13,16 +13,16 @@
 
 #include "ortools/gscip/gscip.h"
 
-#include <stdio.h>
-
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -38,15 +38,22 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/gscip/gscip_parameters.h"
 #include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
+#include "scip/cons_and.h"
+#include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
+#include "scip/cons_or.h"
 #include "scip/cons_quadratic.h"
+#include "scip/cons_sos1.h"
+#include "scip/cons_sos2.h"
 #include "scip/def.h"
-#include "scip/scip.h"
+#include "scip/pub_cons.h"
+#include "scip/pub_var.h"
 #include "scip/scip_cons.h"
 #include "scip/scip_general.h"
 #include "scip/scip_message.h"
@@ -59,7 +66,9 @@
 #include "scip/scip_var.h"
 #include "scip/scipdefplugins.h"
 #include "scip/type_cons.h"
+#include "scip/type_event.h"
 #include "scip/type_paramset.h"
+#include "scip/type_prob.h"
 #include "scip/type_retcode.h"
 #include "scip/type_scip.h"
 #include "scip/type_set.h"
@@ -214,6 +223,67 @@ absl::Status CheckSolutionsInOrder(const GScipResult& result,
 
 }  // namespace
 
+void GScip::InterruptEventHandler::set_interrupter(
+    const GScip::Interrupter* interrupter) {
+  interrupter_ = interrupter;
+}
+
+GScip::InterruptEventHandler::InterruptEventHandler()
+    : GScipEventHandler(
+          {.name = "interrupt event handler",
+           .description = "Event handler to call SCIPinterruptSolve() when a "
+                          "user SolveInterrupter is triggered."}) {}
+
+SCIP_RETCODE GScip::InterruptEventHandler::Init(GScip* const gscip) {
+  // We don't register any event if we don't have an interrupter.
+  if (interrupter_ == nullptr) {
+    return SCIP_OKAY;
+  }
+
+  // TODO(b/193537362): see if these events are enough or if we should have more
+  // of these.
+  CatchEvent(SCIP_EVENTTYPE_PRESOLVEROUND);
+  CatchEvent(SCIP_EVENTTYPE_NODEEVENT);
+  CatchEvent(SCIP_EVENTTYPE_ROWEVENT);
+
+  return TryCallInterruptIfNeeded(gscip);
+}
+
+SCIP_RETCODE GScip::InterruptEventHandler::Execute(
+    const GScipEventHandlerContext context) {
+  return TryCallInterruptIfNeeded(context.gscip());
+}
+
+SCIP_RETCODE GScip::InterruptEventHandler::TryCallInterruptIfNeeded(
+    GScip* const gscip) {
+  if (interrupter_ == nullptr) {
+    LOG(WARNING) << "TryCallInterruptIfNeeded() called after interrupter has "
+                    "been reset!";
+    return SCIP_OKAY;
+  }
+
+  if (!interrupter_->is_interrupted()) {
+    return SCIP_OKAY;
+  }
+
+  const SCIP_STAGE stage = SCIPgetStage(gscip->scip());
+  switch (stage) {
+    case SCIP_STAGE_INIT:
+    case SCIP_STAGE_FREE:
+      // This should never happen anyway; but if this happens, we may want to
+      // know about it in unit tests.
+      LOG(DFATAL) << "TryCallInterruptIfNeeded() called in stage "
+                  << (stage == SCIP_STAGE_INIT ? "INIT" : "FREE");
+      return SCIP_OKAY;
+    case SCIP_STAGE_INITSOLVE:
+      LOG(WARNING) << "TryCallInterruptIfNeeded() called in INITSOLVE stage; "
+                      "we can't call SCIPinterruptSolve() in this stage.";
+      return SCIP_OKAY;
+    default:
+      return SCIPinterruptSolve(gscip->scip());
+  }
+}
+
 const GScipVariableOptions& DefaultGScipVariableOptions() {
   static GScipVariableOptions var_options;
   return var_options;
@@ -291,10 +361,14 @@ absl::StatusOr<std::unique_ptr<GScip>> GScip::Create(
     const std::string& problem_name) {
   SCIP* scip = nullptr;
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip));
+  absl::Cleanup scip_cleanup = [&]() { SCIPfree(&scip); };
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip));
   RETURN_IF_SCIP_ERROR(SCIPcreateProbBasic(scip, problem_name.c_str()));
-  // NOTE(user): the constructor is private, so we cannot call make_unique.
-  return absl::WrapUnique(new GScip(scip));
+  auto result = absl::WrapUnique(new GScip(scip));
+  // GScip takes ownership of `scip`.
+  std::move(scip_cleanup).Cancel();
+  RETURN_IF_ERROR(result->interrupt_event_handler_.Register(result.get()));
+  return result;
 }
 
 GScip::GScip(SCIP* scip) : scip_(scip) {}
@@ -311,14 +385,8 @@ std::string GScip::ScipVersion() {
                          SCIPlpiGetSolverName());
 }
 
-bool GScip::InterruptSolve() {
-  if (scip_ == nullptr) {
-    return true;
-  }
-  return SCIPinterruptSolve(scip_) == SCIP_OKAY;
-}
-
-void GScip::InterruptSolveFromCallback(absl::Status error_status) {
+void GScip::InterruptSolveFromCallbackOnCallbackError(
+    absl::Status error_status) {
   CHECK(!error_status.ok());
   {
     const absl::MutexLock lock(&callback_status_mutex_);
@@ -327,7 +395,12 @@ void GScip::InterruptSolveFromCallback(absl::Status error_status) {
     }
     callback_status_ = std::move(error_status);
   }
-  InterruptSolve();
+  // We are already in an error state, do not propagate.
+  const absl::Status status = SCIP_TO_STATUS(SCIPinterruptSolve(scip_));
+  if (!status.ok()) {
+    LOG(WARNING) << "Error trying to interrupt solve after error in callback: "
+                 << status;
+  }
 }
 
 absl::Status GScip::CleanUp() {
@@ -857,11 +930,15 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
 
 absl::StatusOr<GScipResult> GScip::Solve(
     const GScipParameters& params, absl::string_view legacy_params,
-    const GScipMessageHandler message_handler) {
+    const GScipMessageHandler message_handler,
+    const Interrupter* const interrupter) {
   if (InErrorState()) {
     return absl::InvalidArgumentError(
         "GScip is in an error state due to a previous GScip::Solve()");
   }
+  interrupt_event_handler_.set_interrupter(interrupter);
+  const absl::Cleanup interrupt_cleanup(
+      [this]() { interrupt_event_handler_.set_interrupter(nullptr); });
 
   // A four step process:
   //  1. Apply parameters.
