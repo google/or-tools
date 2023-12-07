@@ -14,6 +14,7 @@
 #include "ortools/algorithms/set_cover_ledger.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -372,6 +373,32 @@ std::vector<SubsetIndex> SetCoverLedger::ComputeResettableSubsets() const {
   DCHECK_LE(focus.size(), model_->num_subsets());
   std::sort(focus.begin(), focus.end());
   return focus;
+}
+
+SetCoverSolutionResponse SetCoverLedger::ExportSolutionAsProto() const {
+  SetCoverSolutionResponse message;
+  message.set_num_subsets(is_selected_.size().value());
+  Cost lower_bound = std::numeric_limits<Cost>::max();
+  for (SubsetIndex subset(0); subset < model_->num_subsets(); ++subset) {
+    if (is_selected_[subset]) {
+      message.add_subset(subset.value());
+    }
+    lower_bound = std::min(model_->subset_costs()[subset], lower_bound);
+  }
+  message.set_cost(cost_);
+  message.set_cost_lower_bound(lower_bound);
+  return message;
+}
+
+void SetCoverLedger::ImportSolutionFromProto(
+    const SetCoverSolutionResponse& message) {
+  is_selected_.resize(SubsetIndex(message.num_subsets()), false);
+  for (auto s : message.subset()) {
+    is_selected_[SubsetIndex(s)] = true;
+  }
+  MakeDataConsistent();
+  Cost cost = message.cost();
+  CHECK_EQ(cost, cost_);
 }
 
 }  // namespace operations_research

@@ -14,8 +14,10 @@
 #include "ortools/algorithms/set_cover_model.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "absl/log/check.h"
+#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 
@@ -53,6 +55,7 @@ void SetCoverModel::AddElementToLastSubset(int element) {
 }
 
 void SetCoverModel::SetSubsetCost(int subset, Cost cost) {
+  CHECK(std::isfinite(cost));
   DCHECK_GE(subset, 0);
   const SubsetIndex subset_index(subset);
   const SubsetIndex num_subsets = columns_.size();
@@ -142,6 +145,40 @@ bool SetCoverModel::ComputeFeasibility() const {
     CHECK_EQ(all_subsets_[subset.value()], subset) << "subset = " << subset;
   }
   return true;
+}
+
+SetCoverProto SetCoverModel::ExportModelAsProto() {
+  SetCoverProto message;
+  for (SubsetIndex subset(0); subset < columns_.size(); ++subset) {
+    SetCoverProto::Subset* subset_proto = message.add_subset();
+    subset_proto->set_cost(subset_costs_[subset]);
+    std::sort(columns_[subset].begin(), columns_[subset].end());
+    for (const ElementIndex element : columns_[subset]) {
+      subset_proto->add_element(element.value());
+    }
+  }
+  return message;
+}
+
+void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
+  columns_.clear();
+  subset_costs_.clear();
+  ReserveNumSubsets(message.subset_size());
+  SubsetIndex subset_index(0);
+  for (const SetCoverProto::Subset& subset_proto : message.subset()) {
+    subset_costs_[SubsetIndex(subset_index)] = subset_proto.cost();
+    if (subset_proto.element_size() > 0) {
+      columns_[subset_index].reserve(EntryIndex(subset_proto.element_size()));
+      for (auto element : subset_proto.element()) {
+        columns_[subset_index].push_back(ElementIndex(element));
+        num_elements_ =
+            ElementIndex(std::max(num_elements_.value(), element + 1));
+      }
+      ++subset_index;
+    }
+  }
+  UpdateAllSubsetsList();
+  CreateSparseRowView();
 }
 
 }  // namespace operations_research
