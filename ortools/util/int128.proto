@@ -19,16 +19,9 @@ option java_package = "com.google.ortools.util";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Util";
 
-// A "three-way" boolean: unspecified, false or true.
-//
-// We don't use the value of 1 to increase the chance to catch bugs: eg. in
-// python, a user may set a proto field of this type enum to a boolean value
-// without type checks, if they set it to True, the proto validity code will
-// catch it (because it'll be cast to 1, which is an invalid enum value).
-// Note that if the user sets if to False (i.e. 0), it will be caught by the
-// routing library's parameter validity check too.
-enum OptionalBoolean {
-  BOOL_UNSPECIFIED = 0;
-  BOOL_FALSE = 2;
-  BOOL_TRUE = 3;
+// The low 64 bits are stored in "low", and the high 64-bits (including the
+// sign) are stored in "high".
+message Int128 {
+  int64 high = 1;
+  uint64 low = 2;
 }

@@ -15,6 +15,8 @@ syntax = "proto3";
 
 package operations_research;
 
+import "ortools/util/int128.proto";
+
 option java_package = "com.google.ortools.algorithms";
 option java_multiple_files = true;
 
@@ -32,6 +34,9 @@ message SetCoverProto {
 
   // A user-defined name for the model.
   optional string name = 2;
+
+  // An automatically fingerprint for the model. TODO(user): Implement.
+  optional Int128 fingerprint = 3;
 }
 
 message SetCoverSolutionResponse {
@@ -64,4 +69,10 @@ message SetCoverSolutionResponse {
 
   // A lower bound of the solution, as computed by the algorithm.
   optional double cost_lower_bound = 5;
+
+  // An automatically fingerprint for the solution. TODO(user): Implement.
+  optional Int128 fingerprint = 6;
+
+  // A reference to the model the solution applies to. TODO(user): Implement.
+  optional Int128 model_fingerprint = 7;
 }

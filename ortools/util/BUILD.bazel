@@ -315,6 +315,23 @@ cc_library(
     ],
 )
 
+# Int128
+proto_library(
+    name = "int128_proto",
+    srcs = ["int128.proto"],
+)
+
+cc_proto_library(
+    name = "int128_cc_proto",
+    deps = [":int128_proto"],
+)
+
+py_proto_library(
+    name = "int128_py_pb2",
+    deps = [":int128_proto"],
+)
+
+# OptionalBoolean
 proto_library(
     name = "optional_boolean_proto",
     srcs = ["optional_boolean.proto"],
@@ -327,10 +344,10 @@ cc_proto_library(
 
 py_proto_library(
     name = "optional_boolean_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":optional_boolean_proto"],
 )
 
+# SWIG
 cc_library(
     name = "functions_swig_helpers",
     hdrs = [
@@ -386,7 +403,6 @@ cc_library(
 cc_library(
     name = "vector_or_function",
     hdrs = ["vector_or_function.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -407,7 +423,6 @@ cc_library(
 #    name = "bp_parser",
 #    srcs = ["bp_parser.cc"],
 #    hdrs = ["bp_parser.h"],
-#    visibility = ["//visibility:public"],
 #    deps = [
 #        "@com_google_absl//absl/strings",
 #        ":filelineiter",
@@ -429,7 +444,6 @@ cc_library(
 cc_library(
     name = "sort",
     hdrs = ["sort.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -439,7 +453,6 @@ cc_library(
     name = "logging",
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
@@ -450,7 +463,6 @@ cc_library(
 cc_library(
     name = "testing_utils",
     hdrs = ["testing_utils.h"],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(

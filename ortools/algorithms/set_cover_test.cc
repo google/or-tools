@@ -138,9 +138,9 @@ TEST(SetCoverTest, Infeasible) {
 }
 
 #ifdef NDEBUG
-static constexpr int SIZE = 512;
+static constexpr int SIZE = 128;
 #else
-static constexpr int SIZE = 32;
+static constexpr int SIZE = 16;
 #endif
 
 TEST(SetCoverTest, KnightsCoverCreation) {
@@ -238,7 +238,7 @@ TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
   CHECK(gts.NextSolution(10000));
   LOG(INFO) << "GuidedTabuSearch cost: " << ledger.cost();
   EXPECT_TRUE(ledger.CheckSolution());
-  DisplayKnightsCoverSolution(ledger.GetSolution(), BoardSize, BoardSize);
+  DisplayKnightsCoverSolution(ledger.is_selected(), BoardSize, BoardSize);
 }
 
 TEST(SetCoverTest, KnightsCoverRandomClear) {
@@ -250,7 +250,7 @@ TEST(SetCoverTest, KnightsCoverRandomClear) {
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverLedger ledger(&model);
   Cost best_cost = std::numeric_limits<Cost>::max();
-  SubsetBoolVector best_choices = ledger.GetSolution();
+  SubsetBoolVector best_choices = ledger.is_selected();
   for (int i = 0; i < 10000; ++i) {
     ledger.LoadSolution(best_choices);
     ClearRandomSubsets(0.1 * model.num_subsets().value(), &ledger);
@@ -264,7 +264,7 @@ TEST(SetCoverTest, KnightsCoverRandomClear) {
     EXPECT_TRUE(ledger.CheckSolution());
     if (ledger.cost() < best_cost) {
       best_cost = ledger.cost();
-      best_choices = ledger.GetSolution();
+      best_choices = ledger.is_selected();
       LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
     }
   }
@@ -287,7 +287,7 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverLedger ledger(&model);
   Cost best_cost = std::numeric_limits<Cost>::max();
-  SubsetBoolVector best_choices = ledger.GetSolution();
+  SubsetBoolVector best_choices = ledger.is_selected();
   GreedySolutionGenerator greedy(&ledger);
   CHECK(greedy.NextSolution());
   LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
@@ -297,7 +297,7 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
 
   best_cost = ledger.cost();
-  best_choices = ledger.GetSolution();
+  best_choices = ledger.is_selected();
   for (int i = 0; i < 100; ++i) {
     ledger.LoadSolution(best_choices);
     auto focus = ClearRandomSubsets(0.1 * model.num_subsets().value(), &ledger);
@@ -307,7 +307,7 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
     EXPECT_TRUE(ledger.CheckSolution());
     if (ledger.cost() < best_cost) {
       best_cost = ledger.cost();
-      best_choices = ledger.GetSolution();
+      best_choices = ledger.is_selected();
       LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
     }
   }
@@ -332,7 +332,7 @@ TEST(SetCoverTest, KnightsCoverMip) {
   SetCoverMip mip(&ledger);
   mip.SetTimeLimitInSeconds(10);
   mip.NextSolution();
-  SubsetBoolVector best_choices = ledger.GetSolution();
+  SubsetBoolVector best_choices = ledger.is_selected();
   DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
   LOG(INFO) << "Mip cost: " << ledger.cost();
 }

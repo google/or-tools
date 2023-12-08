@@ -102,9 +102,7 @@ cc_library(
 proto_library(
     name = "set_cover_proto",
     srcs = ["set_cover.proto"],
-    #deps = [
-    #    "//storage/util/int128:int128_proto",
-    #],
+    deps = ["//ortools/util:int128_proto"],
 )
 
 cc_proto_library(

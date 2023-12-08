@@ -36,7 +36,7 @@ bool SetCoverMip::NextSolution(const std::vector<SubsetIndex>& focus) {
   SetCoverModel* model = ledger_->model();
   const SubsetIndex num_subsets(model->num_subsets());
   const ElementIndex num_elements(model->num_elements());
-  SubsetBoolVector choices = ledger_->GetSolution();
+  SubsetBoolVector choices = ledger_->is_selected();
   MPSolver::OptimizationProblemType problem_type;
   switch (mip_solver_) {
     case SetCoverMipSolver::SCIP:
@@ -68,7 +68,7 @@ bool SetCoverMip::NextSolution(const std::vector<SubsetIndex>& focus) {
     vars[subset] = solver.MakeBoolVar("");
     objective->SetCoefficient(vars[subset], model->subset_costs()[subset]);
     for (ElementIndex element : model->columns()[subset]) {
-      if (ledger_->coverage(element) > 0) continue;
+      if (ledger_->coverage()[element] > 0) continue;
       if (constraints[element] == nullptr) {
         constexpr double kInfinity = std::numeric_limits<double>::infinity();
         constraints[element] = solver.MakeRowConstraint(1.0, kInfinity);

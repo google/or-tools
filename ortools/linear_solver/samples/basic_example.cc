@@ -14,6 +14,9 @@
 // Minimal example to call the GLOP solver.
 // [START program]
 // [START import]
+#include <memory>
+#include <ostream>
+
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 

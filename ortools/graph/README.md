@@ -4,12 +4,14 @@ This directory contains data structures and algorithms for graph and
 network flow problems.
 
 It contains in particular:
+
 * well-tuned algorithms (for example shortest, paths and
   [Hamiltonian paths](https://en.wikipedia.org/wiki/Hamiltonian_path)).
 * hard-to-find algorithms (Hamiltonian paths, push-relabel flow algorithms).
 * other, more common algorithm, that are useful to use with `EbertGraph`.
 
 Graph representations:
+
 * [ebert_graph.h](./ebert_graph.h): entry point for a directed graph class.
   Deprecated. Prefer using [`//util/graph/graph.h`](../../graph/graph.h).
 
@@ -28,6 +30,7 @@ Paths:
     `digraph.h`.)
 
 Graph decompositions:
+
 * [connected_components.h](./connected_components.h): entry point for computing
   connected components in an undirected graph. (It does not need `ebert_graph.h`
   or `digraph.h`.)
@@ -40,6 +43,7 @@ Graph decompositions:
   (It does not need `ebert_graph.h` or `digraph.h`.)
 
 Flow algorithms:
+
 * [linear_assignment.h](./linear_assignment.h): entry point for solving linear
   sum assignment problems (classical assignment problems where the total cost is
   the sum of the costs of each arc used) on directed graphs with arc costs,

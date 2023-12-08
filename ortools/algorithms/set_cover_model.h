@@ -19,6 +19,7 @@
 #include "absl/log/check.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
+#include "ortools/util/strong_integers.h"
 
 // Representation class for the weighted set-covering problem.
 //
@@ -88,22 +89,16 @@ class SetCoverModel {
   // number of columns.
   SubsetIndex num_subsets() const { return columns_.size(); }
 
+  // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
 
+  // Column view of the set covering problem.
   const SparseColumnView& columns() const { return columns_; }
 
-  const SparseColumn& columns(SubsetIndex subset) const {
-    return columns_[subset];
-  }
-
+  // Row view of the set covering problem.
   const SparseRowView& rows() const {
     DCHECK(row_view_is_valid_);
     return rows_;
-  }
-
-  const SparseRow& rows(ElementIndex element) const {
-    DCHECK(row_view_is_valid_);
-    return rows_[element];
   }
 
   // Returns true if rows_ and columns_ represent the same problem.
