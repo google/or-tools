@@ -41,38 +41,27 @@ To begin, skim
 Each *\*_interface.cc*  file corresponds to one of the solver accessible
 through the wrapper.
 
-* Google's BOP (boolean) solver: [bop_interface.cc]
-(../linear_solver/bop_interface.cc)
+* Google's BOP (boolean) solver: [bop_interface.cc](../linear_solver/bop_interface.cc)
 
-* Google's GLOP (lp) solver: [glop_interface.cc]
-(../linear_solver/glop_interface.cc)
+* Google's GLOP (lp) solver: [glop_interface.cc](../linear_solver/glop_interface.cc)
 
-* Gurobi (MIP) solver: [gurobi_interface.cc]
-(../linear_solver/gurobi_interface.cc)
+* Gurobi (MIP) solver: [gurobi_interface.cc](../linear_solver/gurobi_interface.cc)
 
-* Google's PLDP solver: [pdlp_interface.cc]
-(../linear_solver/pdlp_interface.cc)
+* Google's PLDP solver: [pdlp_interface.cc](../linear_solver/pdlp_interface.cc)
 
-* SCIP (MIP) solver: [scip_interface.cc]
-(../linear_solver/scip_interface.cc)
+* SCIP (MIP) solver: [scip_interface.cc](../linear_solver/scip_interface.cc)
 
-* Google's CP-SAT solver: [sat_interface.cc]
-(../linear_solver/sat_interface.cc)
+* Google's CP-SAT solver: [sat_interface.cc](../linear_solver/sat_interface.cc)
 
-* Coin-OR Cbc (MIP) solver: [cbc_interface.cc]
-(../linear_solver/cbc_interface.cc)
+* Coin-OR Cbc (MIP) solver: [cbc_interface.cc](../linear_solver/cbc_interface.cc)
 
-* Coin-OR Clp (LP) solver: [clp_interface.cc]
-(../linear_solver/clp_interface.cc)
+* Coin-OR Clp (LP) solver: [clp_interface.cc](../linear_solver/clp_interface.cc)
 
-* CPLEX (MIP) solver: [cplex_interface.cc]
-(../linear_solver/cplex_interface.cc)
+* CPLEX (MIP) solver: [cplex_interface.cc](../linear_solver/cplex_interface.cc)
 
-* GLPK (MIP) solver: [glpk_interface.cc]
-(../linear_solver/glpk_interface.cc)
+* GLPK (MIP) solver: [glpk_interface.cc](../linear_solver/glpk_interface.cc)
 
-* Xpress (MIP) solver: [xpress_interface.cc]
-(../linear_solver/xpress_interface.cc)
+* Xpress (MIP) solver: [xpress_interface.cc](../linear_solver/xpress_interface.cc)
 
 ## Wrappers
 
