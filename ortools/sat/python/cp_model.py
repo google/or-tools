@@ -435,7 +435,7 @@ class LinearExpr:
     def __sub__(self, arg):
         if cmh.is_zero(arg):
             return self
-        if isinstance(arg, NumberT):
+        if cmh.is_a_number(arg):
             arg = cmh.assert_is_a_number(arg)
             return _Sum(self, -arg)
         else:
