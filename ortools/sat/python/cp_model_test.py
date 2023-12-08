@@ -1314,14 +1314,22 @@ class CpModelTest(absltest.TestCase):
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
+        z = model.new_bool_var("z")
         model.add_decision_strategy(
-            [y, x], cp_model.CHOOSE_MIN_DOMAIN_SIZE, cp_model.SELECT_MAX_VALUE
+            [y, x, z.negated()],
+            cp_model.CHOOSE_MIN_DOMAIN_SIZE,
+            cp_model.SELECT_MAX_VALUE,
         )
         self.assertLen(model.proto.search_strategy, 1)
         strategy = model.proto.search_strategy[0]
-        self.assertLen(strategy.variables, 2)
-        self.assertEqual(y.index, strategy.variables[0])
-        self.assertEqual(x.index, strategy.variables[1])
+        self.assertLen(strategy.exprs, 3)
+        self.assertEqual(y.index, strategy.exprs[0].vars[0])
+        self.assertEqual(1, strategy.exprs[0].coeffs[0])
+        self.assertEqual(x.index, strategy.exprs[1].vars[0])
+        self.assertEqual(1, strategy.exprs[1].coeffs[0])
+        self.assertEqual(z.index, strategy.exprs[2].vars[0])
+        self.assertEqual(-1, strategy.exprs[2].coeffs[0])
+        self.assertEqual(1, strategy.exprs[2].offset)
         self.assertEqual(
             cp_model.CHOOSE_MIN_DOMAIN_SIZE, strategy.variable_selection_strategy
         )

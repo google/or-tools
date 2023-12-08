@@ -2860,7 +2860,15 @@ class CpModel:
 
         strategy = self.__model.search_strategy.add()
         for v in variables:
-            strategy.variables.append(v.index)
+            expr = strategy.exprs.add()
+            if v.index >= 0:
+                expr.vars.append(v.index)
+                expr.coeffs.append(1)
+            else:
+                expr.vars.append(self.negated(v.index))
+                expr.coeffs.append(-1)
+                expr.offset = 1
+
         strategy.variable_selection_strategy = var_strategy
         strategy.domain_reduction_strategy = domain_strategy
 

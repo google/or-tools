@@ -1066,9 +1066,15 @@ class CpModelBuilder {
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
-  /// Adds a decision strategy on a list of boolean variables.
+  /// Adds a decision strategy on a list of affine expressions.
   void AddDecisionStrategy(
-      absl::Span<const BoolVar> variables,
+      absl::Span<const LinearExpr> expressions,
+      DecisionStrategyProto::VariableSelectionStrategy var_strategy,
+      DecisionStrategyProto::DomainReductionStrategy domain_strategy);
+
+  /// Adds a decision strategy on a list of affine expressions.
+  void AddDecisionStrategy(
+      std::initializer_list<LinearExpr> expressions,
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 

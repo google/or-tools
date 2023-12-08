@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_STAT_TABLES_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/string_view.h"

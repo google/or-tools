@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.LinearArgumentProto;
 import com.google.ortools.util.Domain;
 import java.util.ArrayList;
@@ -468,6 +469,40 @@ public final class CpModelTest {
     assertThat(model.model().getConstraints(2).hasNoOverlap2D()).isTrue();
     assertThat(model.model().getConstraints(2).getNoOverlap2D().getXIntervalsCount()).isEqualTo(2);
     assertThat(model.model().getConstraints(2).getNoOverlap2D().getYIntervalsCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void testCpModelAddDecisionStrategy() throws Exception {
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+
+    final Literal x1 = model.newBoolVar("x1");
+    final Literal x2 = model.newBoolVar("x2");
+    final IntVar x3 = model.newIntVar(0, 2, "x3");
+
+    model.addDecisionStrategy(new LinearArgument[] {x1, x2.not(), x3},
+        DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
+        DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
+
+    assertThat(model.model().getSearchStrategyCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprsCount()).isEqualTo(3);
+    assertThat(model.model().getSearchStrategy(0).getExprs(0).getVarsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(0).getCoeffsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(0).getVars(0)).isEqualTo(x1.getIndex());
+    assertThat(model.model().getSearchStrategy(0).getExprs(0).getCoeffs(0)).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(0).getOffset()).isEqualTo(0);
+
+    assertThat(model.model().getSearchStrategy(0).getExprs(1).getVarsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(1).getCoeffsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(1).getVars(0)).isEqualTo(x2.getIndex());
+    assertThat(model.model().getSearchStrategy(0).getExprs(1).getCoeffs(0)).isEqualTo(-1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(1).getOffset()).isEqualTo(1);
+
+    assertThat(model.model().getSearchStrategy(0).getExprs(2).getVarsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(2).getCoeffsCount()).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(2).getVars(0)).isEqualTo(x3.getIndex());
+    assertThat(model.model().getSearchStrategy(0).getExprs(2).getCoeffs(0)).isEqualTo(1);
+    assertThat(model.model().getSearchStrategy(0).getExprs(2).getOffset()).isEqualTo(0);
   }
 
   @Test

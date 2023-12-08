@@ -983,13 +983,24 @@ public final class CpModel {
 
   // DecisionStrategy
 
-  /** Adds {@code DecisionStrategy(variables, varStr, domStr)}. */
-  public void addDecisionStrategy(IntVar[] variables,
+  /** Adds {@code DecisionStrategy(expressions, varStr, domStr)}. */
+  public void addDecisionStrategy(LinearArgument[] expressions,
       DecisionStrategyProto.VariableSelectionStrategy varStr,
       DecisionStrategyProto.DomainReductionStrategy domStr) {
     DecisionStrategyProto.Builder ds = modelBuilder.addSearchStrategyBuilder();
-    for (IntVar var : variables) {
-      ds.addVariables(var.getIndex());
+    for (LinearArgument arg : expressions) {
+      ds.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(arg, /* negate= */ false));
+    }
+    ds.setVariableSelectionStrategy(varStr).setDomainReductionStrategy(domStr);
+  }
+
+  /** Adds {@code DecisionStrategy(expressions, varStr, domStr)}. */
+  public void addDecisionStrategy(Iterable<? extends LinearArgument> expressions,
+      DecisionStrategyProto.VariableSelectionStrategy varStr,
+      DecisionStrategyProto.DomainReductionStrategy domStr) {
+    DecisionStrategyProto.Builder ds = modelBuilder.addSearchStrategyBuilder();
+    for (LinearArgument arg : expressions) {
+      ds.addExprs(getLinearExpressionProtoBuilderFromLinearArgument(arg, /* negate= */ false));
     }
     ds.setVariableSelectionStrategy(varStr).setDomainReductionStrategy(domStr);
   }

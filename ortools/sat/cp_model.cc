@@ -1243,19 +1243,39 @@ void CpModelBuilder::AddDecisionStrategy(
     DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
   for (const IntVar& var : variables) {
-    proto->add_variables(var.index_);
+    LinearExpressionProto* expr = proto->add_exprs();
+    if (var.index_ >= 0) {
+      expr->add_vars(var.index_);
+      expr->add_coeffs(1);
+    } else {
+      expr->add_vars(PositiveRef(var.index_));
+      expr->add_coeffs(-1);
+      expr->set_offset(1);
+    }
   }
   proto->set_variable_selection_strategy(var_strategy);
   proto->set_domain_reduction_strategy(domain_strategy);
 }
 
 void CpModelBuilder::AddDecisionStrategy(
-    absl::Span<const BoolVar> variables,
+    absl::Span<const LinearExpr> expressions,
     DecisionStrategyProto::VariableSelectionStrategy var_strategy,
     DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
-  for (const BoolVar& var : variables) {
-    proto->add_variables(var.index_);
+  for (const LinearExpr& expr : expressions) {
+    *proto->add_exprs() = LinearExprToProto(expr);
+  }
+  proto->set_variable_selection_strategy(var_strategy);
+  proto->set_domain_reduction_strategy(domain_strategy);
+}
+
+void CpModelBuilder::AddDecisionStrategy(
+    std::initializer_list<LinearExpr> expressions,
+    DecisionStrategyProto::VariableSelectionStrategy var_strategy,
+    DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
+  DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
+  for (const LinearExpr& expr : expressions) {
+    *proto->add_exprs() = LinearExprToProto(expr);
   }
   proto->set_variable_selection_strategy(var_strategy);
   proto->set_domain_reduction_strategy(domain_strategy);
