@@ -90,6 +90,7 @@ message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
 # Generate Protobuf java sources
 set(PROTO_JAVAS)
 file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"

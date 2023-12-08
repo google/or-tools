@@ -216,6 +216,7 @@ endfunction()
 # Generate Protobuf cpp sources
 set(OR_TOOLS_PROTO_FILES)
 file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"

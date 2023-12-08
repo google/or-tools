@@ -120,6 +120,7 @@ message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
 # Generate Protobuf .Net sources
 set(PROTO_DOTNETS)
 file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"

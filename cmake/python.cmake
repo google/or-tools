@@ -139,6 +139,7 @@ search_python_module(
 set(PROTO_PYS)
 set(PROTO_MYPYS)
 file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"
