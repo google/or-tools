@@ -937,8 +937,9 @@ absl::StatusOr<GScipResult> GScip::Solve(
         "GScip is in an error state due to a previous GScip::Solve()");
   }
   interrupt_event_handler_.set_interrupter(interrupter);
-  const absl::Cleanup interrupt_cleanup(
-      [this]() { interrupt_event_handler_.set_interrupter(nullptr); });
+  const absl::Cleanup interrupt_cleanup = [this]() {
+    interrupt_event_handler_.set_interrupter(nullptr);
+  };
 
   // A four step process:
   //  1. Apply parameters.

@@ -72,9 +72,11 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
+#include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -166,6 +168,7 @@ class GScip {
    private:
     std::atomic<bool> interrupted_{false};
   };
+
   // Create a new GScip (the constructor is private). The default objective
   // direction is minimization.
   static absl::StatusOr<std::unique_ptr<GScip>> Create(
@@ -413,6 +416,23 @@ class GScip {
   // CHECK fails if status is OK.
   void InterruptSolveFromCallbackOnCallbackError(absl::Status error_status);
 
+  // Internal use only. Users should instead call
+  // GScipConstraintHandler::AddCallbackConstraint().
+  template <typename ConsHandler, typename ConsData>
+  inline absl::StatusOr<SCIP_CONS*> AddConstraintForHandler(
+      ConsHandler* handler, ConsData* data, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
+
+  // Internal use only.
+  //
+  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
+  absl::StatusOr<double> ScipInfClamp(double d);
+
+  // Internal use only.
+  //
+  // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
+  double ScipInfUnclamp(double d);
+
  private:
   // Event handler that it used to call SCIPinterruptSolve() is a safe manner.
   //
@@ -462,12 +482,6 @@ class GScip {
   absl::Status SetParams(const GScipParameters& params,
                          absl::string_view legacy_params);
   absl::Status FreeTransform();
-
-  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
-  absl::StatusOr<double> ScipInfClamp(double d);
-
-  // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
-  double ScipInfUnclamp(double d);
 
   // Returns an error if |d| >= ScipInf().
   absl::Status CheckScipFinite(double d);
@@ -653,6 +667,28 @@ struct GScipConstraintOptions {
   // deleted.
   bool keep_alive = true;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Template function implementations
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename ConsHandler, typename ConsData>
+absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
+    ConsHandler* handler, ConsData* data, const std::string& name,
+    const GScipConstraintOptions& options) {
+  SCIP_CONS* constraint = nullptr;
+  RETURN_IF_SCIP_ERROR(SCIPcreateCons(
+      scip_, &constraint, name.data(), handler, data, options.initial,
+      options.separate, options.enforce, options.check, options.propagate,
+      options.local, options.modifiable, options.dynamic, options.removable,
+      options.sticking_at_node));
+  if (constraint == nullptr) {
+    return absl::InternalError("SCIP failed to create constraint");
+  }
+  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
+  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  return constraint;
+}
 
 }  // namespace operations_research
 

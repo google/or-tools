@@ -20,7 +20,6 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
@@ -35,7 +34,6 @@
 #include "scip/scip_cut.h"
 #include "scip/scip_general.h"
 #include "scip/scip_lp.h"
-#include "scip/scip_prob.h"
 #include "scip/scip_sol.h"
 #include "scip/scip_solvingstats.h"
 #include "scip/scip_tree.h"
@@ -66,22 +64,6 @@ using GScipHandler =
 namespace operations_research {
 namespace {
 
-// Enum with supported user-implementable callback functions in the SCIP
-// constraint handler. Non-user-implementable functions are not included here
-// (e.g. CONSFREE). Same order as in type_cons.h.
-enum class ConstraintHandlerCallbackType {
-  kSepaLp,   // CONSSEPALP
-  kSepaSol,  // CONSSEPASOL
-  kEnfoLp,   // CONSENFOLP
-  // Unsupported:  kEnfoRelax,    // CONSENFORELAX
-  kEnfoPs,     // CONSENFOPS
-  kConsCheck,  // CONSCHECK
-  // Unsupported:  kConsProp,     // CONSPROP
-  // Unsupported:  kConsPresol,   // CONSPRESOL
-  // Unsupported:  kConsResProp,  // CONSRESPROP
-  kConsLock  // CONSLOCK
-};
-
 // Returns the "do nothing" callback result. Used to handle the edge case where
 // Enfo* callbacks need to return kFeasible instead of kDidNotRun.
 GScipCallbackResult DidNotRunCallbackResult(
@@ -92,55 +74,6 @@ GScipCallbackResult DidNotRunCallbackResult(
     return GScipCallbackResult::kFeasible;
   }
   return GScipCallbackResult::kDidNotRun;
-}
-
-// In callbacks, SCIP requires the first SCIP_RESULT in a priority list be
-// returned when multiple results are applicable. This is a unified order of the
-// priorities extracted from type_cons.h. The higher the result, the higher
-// priority it is.
-int ConstraintHandlerResultPriority(
-    const GScipCallbackResult result,
-    const ConstraintHandlerCallbackType callback_type) {
-  // In type_cons.h, callback results are consistently ordered across all
-  // constraint handler callback methods except that SCIP_SOLVELP (kSolveLp)
-  // takes higher priority than SCIP_BRANCHED (kBranched) in CONSENFOLP, and the
-  // reverse is true for CONSENFORELAX and CONSENFOLP.
-  switch (result) {
-    case GScipCallbackResult::kUnbounded:
-      return 14;
-    case GScipCallbackResult::kCutOff:
-      return 13;
-    case GScipCallbackResult::kSuccess:
-      return 12;
-    case GScipCallbackResult::kConstraintAdded:
-      return 11;
-    case GScipCallbackResult::kReducedDomain:
-      return 10;
-    case GScipCallbackResult::kSeparated:
-      return 9;
-    case GScipCallbackResult::kBranched:
-      return callback_type == ConstraintHandlerCallbackType::kEnfoLp ? 7 : 8;
-    case GScipCallbackResult::kSolveLp:
-      return callback_type == ConstraintHandlerCallbackType::kEnfoLp ? 8 : 7;
-    case GScipCallbackResult::kInfeasible:
-      return 6;
-    case GScipCallbackResult::kFeasible:
-      return 5;
-    case GScipCallbackResult::kNewRound:
-      return 4;
-    case GScipCallbackResult::kDidNotFind:
-      return 3;
-    case GScipCallbackResult::kDidNotRun:
-      return 2;
-    case GScipCallbackResult::kDelayed:
-      return 1;
-    case GScipCallbackResult::kDelayNode:
-      return 0;
-    default:
-      // kConstraintChanged, kFoundSolution, and kSuspend are not used in
-      // constraint handlers.
-      return -1;
-  }
 }
 
 constexpr GScipCallbackResult kMinPriority = GScipCallbackResult::kDelayNode;
@@ -207,7 +140,8 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
   return result;
 }
 
-GScipCallbackStats GetCallbackStats(SCIP* scip) {
+GScipCallbackStats GetCallbackStats(GScip* gscip) {
+  SCIP* scip = gscip->scip();
   GScipCallbackStats stats;
   stats.num_processed_nodes = SCIPgetNNodes(scip);
   stats.num_processed_nodes_total = SCIPgetNTotalNodes(scip);
@@ -223,6 +157,38 @@ GScipCallbackStats GetCallbackStats(SCIP* scip) {
     default:
       stats.current_node_id = stats.num_processed_nodes;
   }
+  stats.primal_bound = gscip->ScipInfUnclamp(SCIPgetPrimalbound(scip));
+  stats.dual_bound = gscip->ScipInfUnclamp(SCIPgetDualbound(scip));
+  const SCIP_STAGE stage = SCIPgetStage(scip);
+  switch (stage) {
+    case SCIP_STAGE_PRESOLVED:
+    case SCIP_STAGE_SOLVING:
+    case SCIP_STAGE_SOLVED:
+      stats.primal_simplex_iterations = SCIPgetNPrimalLPIterations(scip);
+      stats.dual_simplex_iterations = SCIPgetNDualLPIterations(scip);
+      stats.num_nodes_left = SCIPgetNNodesLeft(scip);
+      break;
+    default:
+      break;
+  }
+  // SCIP counts the focus node (the current node) as explored, but to be
+  // consistent with gurobi, we want to count it as open instead. In particular,
+  // for callbacks at the root, we want num_processed_nodes=0
+  if (stats.num_processed_nodes > 0) {
+    stats.num_processed_nodes--;
+    stats.num_processed_nodes_total--;
+    stats.num_nodes_left++;
+  }
+  switch (stage) {
+    case SCIP_STAGE_SOLVING:
+    case SCIP_STAGE_SOLVED:
+    case SCIP_STAGE_EXITSOLVE:
+      stats.num_cuts_in_lp = SCIPgetNPoolCuts(scip);
+      break;
+    default:
+      break;
+  }
+  stats.num_solutions_found = SCIPgetNLimSolsFound(scip);
   return stats;
 }
 
@@ -244,6 +210,62 @@ GScipConstraintOptions CallbackLazyConstraintOptions(const bool local,
 }
 
 }  // namespace
+
+int ConstraintHandlerResultPriority(
+    const GScipCallbackResult result,
+    const ConstraintHandlerCallbackType callback_type) {
+  // In type_cons.h, callback results are consistently ordered across all
+  // constraint handler callback methods except that SCIP_SOLVELP (kSolveLp)
+  // takes higher priority than SCIP_BRANCHED (kBranched) in CONSENFOLP, and the
+  // reverse is true for CONSENFORELAX and CONSENFOLP.
+  switch (result) {
+    case GScipCallbackResult::kUnbounded:
+      return 14;
+    case GScipCallbackResult::kCutOff:
+      return 13;
+    case GScipCallbackResult::kSuccess:
+      return 12;
+    case GScipCallbackResult::kConstraintAdded:
+      return 11;
+    case GScipCallbackResult::kReducedDomain:
+      return 10;
+    case GScipCallbackResult::kSeparated:
+      return 9;
+    case GScipCallbackResult::kBranched:
+      return callback_type == ConstraintHandlerCallbackType::kEnfoLp ? 7 : 8;
+    case GScipCallbackResult::kSolveLp:
+      return callback_type == ConstraintHandlerCallbackType::kEnfoLp ? 8 : 7;
+    case GScipCallbackResult::kInfeasible:
+      return 6;
+    case GScipCallbackResult::kFeasible:
+      return 5;
+    case GScipCallbackResult::kNewRound:
+      return 4;
+    case GScipCallbackResult::kDidNotFind:
+      return 3;
+    case GScipCallbackResult::kDidNotRun:
+      return 2;
+    case GScipCallbackResult::kDelayed:
+      return 1;
+    case GScipCallbackResult::kDelayNode:
+      return 0;
+    default:
+      // kConstraintChanged, kFoundSolution, and kSuspend are not used in
+      // constraint handlers.
+      return -1;
+  }
+}
+
+GScipCallbackResult MergeConstraintHandlerResults(
+    const GScipCallbackResult result1, const GScipCallbackResult result2,
+    const ConstraintHandlerCallbackType callback_type) {
+  const int priority1 = ConstraintHandlerResultPriority(result1, callback_type);
+  const int priority2 = ConstraintHandlerResultPriority(result2, callback_type);
+  if (priority2 > priority1) {
+    return result2;
+  }
+  return result1;
+}
 
 double GScipConstraintHandlerContext::VariableValue(SCIP_VAR* variable) const {
   return SCIPgetSolVal(gscip_->scip(), current_solution_, variable);
@@ -355,7 +377,7 @@ static SCIP_DECL_CONSENFOLP(EnforceLpC) {
   SCIP_CONSHDLRDATA* scip_handler_data = SCIPconshdlrGetData(conshdlr);
   operations_research::GScip* gscip = scip_handler_data->gscip;
   operations_research::GScipCallbackStats stats =
-      operations_research::GetCallbackStats(gscip->scip());
+      operations_research::GetCallbackStats(gscip);
   operations_research::GScipConstraintHandlerContext context(gscip, &stats,
                                                              conshdlr, nullptr);
   const bool solution_known_infeasible = static_cast<bool>(solinfeasible);
@@ -380,7 +402,7 @@ static SCIP_DECL_CONSENFOPS(EnforcePseudoSolutionC) {
   SCIP_CONSHDLRDATA* scip_handler_data = SCIPconshdlrGetData(conshdlr);
   operations_research::GScip* gscip = scip_handler_data->gscip;
   operations_research::GScipCallbackStats stats =
-      operations_research::GetCallbackStats(gscip->scip());
+      operations_research::GetCallbackStats(gscip);
   operations_research::GScipConstraintHandlerContext context(gscip, &stats,
                                                              conshdlr, nullptr);
   const bool solution_known_infeasible = static_cast<bool>(solinfeasible);
@@ -408,7 +430,7 @@ static SCIP_DECL_CONSCHECK(CheckFeasibilityC) {
   SCIP_CONSHDLRDATA* scip_handler_data = SCIPconshdlrGetData(conshdlr);
   operations_research::GScip* gscip = scip_handler_data->gscip;
   operations_research::GScipCallbackStats stats =
-      operations_research::GetCallbackStats(gscip->scip());
+      operations_research::GetCallbackStats(gscip);
   operations_research::GScipConstraintHandlerContext context(gscip, &stats,
                                                              conshdlr, sol);
   const bool check_integrality = static_cast<bool>(checkintegrality);
@@ -437,7 +459,7 @@ static SCIP_DECL_CONSSEPALP(SeparateLpC) {
   SCIP_CONSHDLRDATA* scip_handler_data = SCIPconshdlrGetData(conshdlr);
   operations_research::GScip* gscip = scip_handler_data->gscip;
   operations_research::GScipCallbackStats stats =
-      operations_research::GetCallbackStats(gscip->scip());
+      operations_research::GetCallbackStats(gscip);
   operations_research::GScipConstraintHandlerContext context(gscip, &stats,
                                                              conshdlr, nullptr);
   GScipHandler* gscip_handler = scip_handler_data->gscip_handler.get();
@@ -460,7 +482,7 @@ static SCIP_DECL_CONSSEPASOL(SeparatePrimalSolutionC) {
   SCIP_CONSHDLRDATA* scip_handler_data = SCIPconshdlrGetData(conshdlr);
   operations_research::GScip* gscip = scip_handler_data->gscip;
   operations_research::GScipCallbackStats stats =
-      operations_research::GetCallbackStats(gscip->scip());
+      operations_research::GetCallbackStats(gscip);
   operations_research::GScipConstraintHandlerContext context(gscip, &stats,
                                                              conshdlr, sol);
   GScipHandler* gscip_handler = scip_handler_data->gscip_handler.get();
@@ -549,10 +571,10 @@ absl::Status RegisterConstraintHandler(
   return absl::OkStatus();
 }
 
-absl::Status AddCallbackConstraint(GScip* gscip, absl::string_view handler_name,
-                                   absl::string_view constraint_name,
-                                   void* constraint_data,
-                                   const GScipConstraintOptions& options) {
+absl::StatusOr<SCIP_CONS*> AddCallbackConstraint(
+    GScip* gscip, const std::string& handler_name,
+    const std::string& constraint_name, void* constraint_data,
+    const GScipConstraintOptions& options) {
   if (constraint_data == nullptr) {
     return absl::InvalidArgumentError(
         "Constraint data missing when adding a constraint handler callback");
@@ -567,18 +589,9 @@ absl::Status AddCallbackConstraint(GScip* gscip, absl::string_view handler_name,
   }
   SCIP_CONSDATA* consdata = new SCIP_CONSDATA;
   consdata->data = constraint_data;
-  SCIP_CONS* constraint = nullptr;
-  RETURN_IF_SCIP_ERROR(SCIPcreateCons(
-      scip, &constraint, constraint_name.data(), conshdlr, consdata,
-      options.initial, options.separate, options.enforce, options.check,
-      options.propagate, options.local, options.modifiable, options.dynamic,
-      options.removable, options.sticking_at_node));
-  if (constraint == nullptr) {
-    return absl::InternalError("SCIP failed to create constraint");
-  }
-  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, constraint));
-  RETURN_IF_SCIP_ERROR(SCIPreleaseCons(scip, &constraint));
-  return absl::OkStatus();
+
+  return gscip->AddConstraintForHandler(conshdlr, consdata, constraint_name,
+                                        options);
 }
 
 }  // namespace internal
