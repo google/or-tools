@@ -188,6 +188,8 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type);
  */
 class MPSolver {
  public:
+  // Advanced usage : custom interface builder
+  using MPSolverInterfaceBuilder = MPSolverInterface*(*)(MPSolver* const);
   /**
    * The type of problems (LP or MIP) that will be solved and the underlying
    *  solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. This must
@@ -237,10 +239,20 @@ class MPSolver {
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
     COPT_LINEAR_PROGRAMMING = 103,
     COPT_MIXED_INTEGER_PROGRAMMING = 104,
+    // User-defined problem type, where the user provides an MPSolverInterface object
+    USER_DEFINED_PROBLEM_TYPE = 1000
   };
 
-  /// Create a solver with the given name and underlying solver backend.
+private:
+  // For use by public constructors below
+  MPSolver(const std::string& name,
+           MPSolverInterfaceBuilder builder,
+           OptimizationProblemType problem_type);
+public:
+  // Create a solver with the given name and underlying solver backend.
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
+  // Advanced usage : the user injects their own interface at runtime
+  MPSolver(const std::string& name, MPSolverInterfaceBuilder buider);
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -249,7 +261,6 @@ class MPSolver {
 #endif
 
   virtual ~MPSolver();
-
   /**
    * Recommended factory method to create a MPSolver instance, especially in
    * non C++ languages.
