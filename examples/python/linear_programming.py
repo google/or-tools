@@ -138,11 +138,13 @@ def main():
     RunLinearExampleNaturalLanguageAPI("GLPK_LP")
     RunLinearExampleNaturalLanguageAPI("CLP")
     RunLinearExampleNaturalLanguageAPI("PDLP")
+    RunLinearExampleNaturalLanguageAPI("XPRESS_LP")
 
     RunLinearExampleCppStyleAPI("GLOP")
     RunLinearExampleCppStyleAPI("GLPK_LP")
     RunLinearExampleCppStyleAPI("CLP")
     RunLinearExampleCppStyleAPI("PDLP")
+    RunLinearExampleCppStyleAPI("XPRESS_LP")
 
 
 if __name__ == "__main__":

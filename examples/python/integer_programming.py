@@ -102,6 +102,7 @@ def RunAllIntegerExampleNaturalLanguageAPI():
     # RunIntegerExampleNaturalLanguageAPI('CBC')
     RunIntegerExampleNaturalLanguageAPI("SCIP")
     RunIntegerExampleNaturalLanguageAPI("SAT")
+    RunIntegerExampleNaturalLanguageAPI("XPRESS")
 
 
 def RunAllIntegerExampleCppStyleAPI():
@@ -110,6 +111,7 @@ def RunAllIntegerExampleCppStyleAPI():
     # RunIntegerExampleCppStyleAPI('CBC')
     RunIntegerExampleCppStyleAPI("SCIP")
     RunIntegerExampleCppStyleAPI("SAT")
+    RunIntegerExampleCppStyleAPI("XPRESS")
 
 
 def main():

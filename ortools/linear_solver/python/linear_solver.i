@@ -366,6 +366,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::NextSolution;
 // ExportModelAsLpFormat() is also visible: it's overridden by an %extend, above.
 // ExportModelAsMpsFormat() is also visible: it's overridden by an %extend, above.
+%unignore operations_research::MPSolver::Write;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;

@@ -84,5 +84,7 @@ public class IntegerProgramming {
     runIntegerProgrammingExample("GLPK");
     System.out.println("---- Integer programming example with CP-SAT ----");
     runIntegerProgrammingExample("SAT");
+    System.out.println("---- Integer programming example with XPRESS ----");
+    runIntegerProgrammingExample("XPRESS");
   }
 }

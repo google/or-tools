@@ -91,7 +91,7 @@ Here the list of supported solvers:
 * HiGHS\*
 * PDLP
 * SCIP
-* XPRESS\*
+* XPRESS
 
 \*: these solvers are disabled by default.
 
@@ -127,7 +127,6 @@ support for the following third-party solvers:
     note: You must enable the support of GLPK solver by using `-DUSE_GLPK=ON`
     (`OFF` by default).
 *   CPLEX (`USE_CPLEX`),
-*   XPRESS (`USE_XPRESS`)
 
 **warning: Since these solvers are either proprietary (and require a specific
 license) or available under the GPL, we can't test them on public CI and their
@@ -144,14 +143,6 @@ option at configure time.
 For ease of migration from legacy `make third_party` builds, CMake will also
 read the CPLEX installation path from the `UNIX_CPLEX_DIR` environment variable,
 if defined.
-
-### Enabling XPRESS Support
-
-To enable XPRESS support, configure with `-DUSE_XPRESS=ON` and
-`-DXPRESS_ROOT=/absolute/path/to/XPRESS/root/dir`, replacing
-`/absolute/path/to/XPRESS/root/dir` with the path to your XPRESS installation.
-`XPRESS_ROOT` can also be defined as an environment variable rather than an
-option at configure time.
 
 ## CMake Options
 
@@ -216,8 +207,6 @@ cmake -S. -Bbuild -LH
 | `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
 | | | |
 | `USE_CPLEX`  | OFF | Enable CPLEX support |
-| | | |
-| `USE_XPRESS` | OFF | Enable XPRESS support |
 | | | |
 | `BUILD_DOC`   | OFF\* | Build all documentations |
 | `BUILD_CXX_DOC` | OFF\* | Build C++ documentation<br>**Forced** to ON if `BUILD_DOC=ON` |

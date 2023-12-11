@@ -143,18 +143,6 @@ config_setting(
     },
 )
 
-bool_flag(
-    name = "with_xpress",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "use_xpress",
-    flag_values = {
-        ":with_xpress": "true",
-    },
-)
-
 proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
@@ -187,6 +175,7 @@ cc_library(
         "linear_solver_callback.cc",
         "lpi_glop.cpp",
         "sat_interface.cc",
+        "xpress_interface.cc",
     ] + select({
         ":use_bop": ["bop_interface.cc"],
         "//conditions:default": [],
@@ -219,9 +208,6 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_cplex": ["cplex_interface.cc"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_xpress": ["xpress_interface.cc"],
         "//conditions:default": [],
     }),
     hdrs = [
@@ -261,9 +247,6 @@ cc_library(
     }) + select({
         ":use_cplex": ["-DUSE_CPLEX"],
         "//conditions:default": [],
-    }) + select({
-        ":use_xpress": ["-DUSE_XPRESS"],
-        "//conditions:default": [],
     }),
     deps = [
         ":linear_solver_cc_proto",
@@ -279,6 +262,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:timer",
         "//ortools/gurobi:environment",
+        "//ortools/xpress:environment",
         "//ortools/gurobi:gurobi_util",
         "//ortools/linear_solver/proto_solver:glop_proto_solver",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",

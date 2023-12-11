@@ -66,14 +66,6 @@ endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
 endif()
-if(USE_XPRESS)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")
-  if(MSVC)
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=\"${XPRESS_ROOT}\"")
-  else()
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=${XPRESS_ROOT}")
-  endif()
-endif()
 
 if(WIN32)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
@@ -327,7 +319,8 @@ foreach(SUBPROJECT IN ITEMS
  port
  sat
  scheduling
- util)
+ util
+ xpress)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
@@ -365,7 +358,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
   ${PDLP_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
-  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
