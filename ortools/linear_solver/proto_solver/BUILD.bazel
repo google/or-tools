@@ -167,3 +167,26 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
     ],
 )
+
+cc_library(
+    name = "xpress_proto_solver",
+    srcs = ["xpress_proto_solver.cc"],
+    hdrs = ["xpress_proto_solver.h"],
+    deps = [
+        "//ortools/base:timer",
+        "//ortools/xpress:environment",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:model_validator",
+        "//ortools/util:lazy_mutable_copy",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
