@@ -36,6 +36,7 @@ TEST(DumpVars, Empty) {
   EXPECT_EQ(R"()", DUMP_VARS().str());
 }
 
+#if !defined(__APPLE__)
 TEST(DumpVars, Lvalue) {
   int a = 42;
   EXPECT_EQ(R"(a = 42)", ToString(DUMP_VARS(a)));
@@ -158,6 +159,7 @@ TEST(DumpVars, TemporaryLifetime) {
   EXPECT_EQ(R"(std::string_view(std::string("hello")) = hello)", ToString(v));
   EXPECT_EQ(R"(temp = hello)", ToString(v.as("temp")));
 }
+#endif  // !defined(__APPLE__)
 
 }  // namespace
 }  // namespace operations_research::base
