@@ -2306,6 +2306,12 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
     return;
   }
 
+  // Note that we can do that after the test above: If none of the propagator
+  // where called, there are still technically "in dive" if we didn't backtrack
+  // past their last Propagate() call.
+  for (bool* to_reset : bool_to_reset_on_backtrack_) *to_reset = false;
+  bool_to_reset_on_backtrack_.clear();
+
   // We need to clear the watch indices on untrail.
   for (std::deque<int>& queue : queue_by_priority_) {
     for (const int id : queue) {

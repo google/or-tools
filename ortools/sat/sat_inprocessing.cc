@@ -170,13 +170,24 @@ bool Inprocessing::InprocessingRound() {
 
   const bool log_info = VLOG_IS_ON(1);
   const bool log_round_info = VLOG_IS_ON(2);
+  const double start_dtime = time_limit_->GetElapsedDeterministicTime();
 
   // Mainly useful for development.
   double probing_time = 0.0;
-  const double start_dtime = time_limit_->GetElapsedDeterministicTime();
+
+  // Store the dtime of the first call (first restart) and wait for the next
+  // restart.
+  if (first_inprocessing_call_) {
+    reference_dtime_ = start_dtime;
+    first_inprocessing_call_ = false;
+    return true;
+  }
 
   // Try to spend a given ratio of time in the inprocessing.
-  if (total_dtime_ > 0.1 * start_dtime) return true;
+  const double diff = start_dtime - reference_dtime_;
+  if (total_dtime_ > params_.inprocessing_dtime_ratio() * diff) {
+    return true;
+  }
 
   // We make sure we do not "pollute" the current saved polarities. We will
   // restore them at the end.
@@ -190,13 +201,15 @@ bool Inprocessing::InprocessingRound() {
   RETURN_IF_FALSE(LevelZeroPropagate());
 
   // Probing.
-  const double saved_wtime = wall_timer.Get();
-  ProbingOptions probing_options;
-  probing_options.log_info = log_round_info;
-  probing_options.deterministic_limit = 5;
-  probing_options.extract_binary_clauses = true;
-  RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
-  probing_time += wall_timer.Get() - saved_wtime;
+  if (params_.inprocessing_probing_dtime() > 0.0) {
+    const double saved_wtime = wall_timer.Get();
+    ProbingOptions probing_options;
+    probing_options.log_info = log_round_info;
+    probing_options.deterministic_limit = params_.inprocessing_probing_dtime();
+    probing_options.extract_binary_clauses = true;
+    RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
+    probing_time += wall_timer.Get() - saved_wtime;
+  }
 
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -207,9 +220,11 @@ bool Inprocessing::InprocessingRound() {
   RETURN_IF_FALSE(LevelZeroPropagate());
 
   // TODO(user): Add a small wrapper function to time this.
-  RETURN_IF_FALSE(LevelZeroPropagate());
   const auto old_counter = sat_solver_->counters();
-  RETURN_IF_FALSE(sat_solver_->MinimizeByPropagation());
+  if (params_.inprocessing_minimization_dtime() > 0.0) {
+    RETURN_IF_FALSE(sat_solver_->MinimizeByPropagation(
+        params_.inprocessing_minimization_dtime()));
+  }
   const int64_t mini_num_clause =
       sat_solver_->counters().minimization_num_clauses -
       old_counter.minimization_num_clauses;
@@ -229,6 +244,7 @@ bool Inprocessing::InprocessingRound() {
   }
   RETURN_IF_FALSE(LevelZeroPropagate());
 
+  sat_solver_->AdvanceDeterministicTime(time_limit_);
   total_dtime_ += time_limit_->GetElapsedDeterministicTime() - start_dtime;
   if (log_info) {
     SOLVER_LOG(

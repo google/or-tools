@@ -837,15 +837,25 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
       }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
+      for (const int var : expr.vars()) {
+        if (!VariableReferenceIsValid(model, var)) {
+          return absl::StrCat("Invalid variable reference in strategy: ",
+                              ProtobufShortDebugString(strategy));
+        }
+      }
       if (!ValidateAffineExpression(model, expr).empty()) {
         return absl::StrCat("Invalid affine expr in strategy: ",
                             ProtobufShortDebugString(strategy));
       }
-      if (drs == DecisionStrategyProto::SELECT_MEDIAN_VALUE &&
-          ReadDomainFromProto(model.variables(expr.vars(0))).Size() > 100000) {
-        return absl::StrCat("Variable #", expr.vars(0),
-                            " has a domain too large to be used in a"
-                            " SELECT_MEDIAN_VALUE value selection strategy");
+      if (drs == DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
+        for (const int var : expr.vars()) {
+          if (ReadDomainFromProto(model.variables(var)).Size() > 100000) {
+            return absl::StrCat(
+                "Variable #", var,
+                " has a domain too large to be used in a"
+                " SELECT_MEDIAN_VALUE value selection strategy");
+          }
+        }
       }
     }
   }

@@ -1315,9 +1315,6 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
     SOLVER_LOG(logger_, "Parameters: ", ProtobufShortDebugString(*parameters_));
   }
 
-  // Used to trigger clause minimization via propagation.
-  ResetMinimizationByPropagationThreshold();
-
   // Variables used to show the search progress.
   const int64_t kDisplayFrequency = 10000;
   int64_t next_display = parameters_->log_search_progress()
@@ -1393,66 +1390,42 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
         Backtrack(assumption_level_);
       }
 
-      // Clause minimization using propagation.
-      if (CurrentDecisionLevel() == 0 && !MaybeMinimizeByPropagation()) {
-        return StatusWithLog(UnsatStatus());
-      }
-
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
       EnqueueNewDecision(decision_policy_->NextBranch());
     }
   }
 }
 
-void SatSolver::ResetMinimizationByPropagationThreshold() {
-  if (parameters_->minimize_with_propagation_ratio() <= 0.0 ||
-      parameters_->minimize_with_propagation_num_decisions() <= 0) {
-    minimization_by_propagation_threshold_ =
-        std::numeric_limits<int64_t>::max();
-    return;
-  }
-  minimization_by_propagation_threshold_ =
-      counters_.num_branches +
-      static_cast<int64_t>(
-          static_cast<double>(
-              parameters_->minimize_with_propagation_num_decisions()) /
-          parameters_->minimize_with_propagation_ratio());
-}
+bool SatSolver::MinimizeByPropagation(double dtime) {
+  CHECK(time_limit_ != nullptr);
+  AdvanceDeterministicTime(time_limit_);
+  const double threshold = time_limit_->GetElapsedDeterministicTime() + dtime;
 
-bool SatSolver::MaybeMinimizeByPropagation() {
-  if (counters_.num_branches <= minimization_by_propagation_threshold_) {
-    return true;
-  }
-  return MinimizeByPropagation();
-}
-
-bool SatSolver::MinimizeByPropagation() {
   // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
   // while we are processing it.
   block_clause_deletion_ = true;
 
-  const int64_t target_num_branches =
-      counters_.num_branches +
-      parameters_->minimize_with_propagation_num_decisions();
-  while (counters_.num_branches < target_num_branches &&
-         (time_limit_ == nullptr || !time_limit_->LimitReached())) {
+  int num_resets = 0;
+  while (!time_limit_->LimitReached() &&
+         time_limit_->GetElapsedDeterministicTime() < threshold) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
       if (model_is_unsat_) return false;
     } else {
       if (to_minimize == nullptr) {
+        ++num_resets;
         VLOG(1) << "Minimized all clauses, restarting from first one.";
         clauses_propagator_->ResetToMinimizeIndex();
       }
-      break;
+      if (num_resets > 1) break;
     }
+
+    AdvanceDeterministicTime(time_limit_);
   }
 
   block_clause_deletion_ = false;
   clauses_propagator_->DeleteRemovedClauses();
-
-  ResetMinimizationByPropagationThreshold();
 
   // Note(user): In some corner cases, the function above might find a
   // feasible assignment. I think it is okay to ignore this special case

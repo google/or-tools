@@ -941,6 +941,40 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
         rhs_domain.IsIncludedIn(target_domain);
   }
 
+  // Avoid to remove the constraint for special cases:
+  // affine(x) = max(expr(x, ...), ...);
+  //
+  // TODO(user): We could presolve this, but there are a few type of cases.
+  // for example:
+  // - x = max(x + 3, ...) : infeasible.
+  // - x = max(x - 2, ...) : reduce arity: x = max(...)
+  // - x = max(2x, ...) we have x <= 0
+  // - etc...
+  // Actually, I think for the expr=affine' case, it reduces to:
+  // affine(x) >= affine'(x)
+  // affine(x) = max(...);
+  if (affine_target_domain_contains_max_domain) {
+    const int target_var = target.vars(0);
+    bool abort = false;
+    for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+      for (const int var : expr.vars()) {
+        if (var == target_var &&
+            !LinearExpressionProtosAreEqual(expr, target)) {
+          abort = true;
+          break;
+        }
+      }
+      if (abort) break;
+    }
+    if (abort) {
+      // Actually the expression can be more than affine.
+      // We only know that the target is affine here.
+      context_->UpdateRuleStats(
+          "TODO lin_max: affine(x) = max(affine'(x), ...) !!");
+      affine_target_domain_contains_max_domain = false;
+    }
+  }
+
   // If the target is not used, and safe, we can remove the constraint.
   if (affine_target_domain_contains_max_domain &&
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {

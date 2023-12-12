@@ -388,6 +388,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
   auto* repo = model->GetOrCreate<IntervalsRepository>();
   auto* heuristic = model->GetOrCreate<SearchHeuristics>();
   auto* trail = model->GetOrCreate<Trail>();
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const int64_t randomization_size = std::max<int64_t>(
       1,
@@ -398,7 +399,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
   auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
   const int num_intervals = repo->NumIntervals();
   int rev_fixed = 0;
-  int rev_is_in_dive = 0;
+  bool rev_is_in_dive = false;
   std::vector<IntervalVariable> intervals(num_intervals);
   std::vector<IntegerValue> cached_start_mins(num_intervals);
   for (IntervalVariable i(0); i < num_intervals; ++i) {
@@ -446,7 +447,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     // interval that have all their predecessors fixed.
     for (int i = rev_fixed; i < num_intervals; ++i) {
       const ToSchedule& worst = top_decisions.back();
-      if (rev_is_in_dive == 1 && cached_start_mins[i] > worst.start_min) {
+      if (rev_is_in_dive && cached_start_mins[i] > worst.start_min) {
         continue;
       }
 
@@ -512,11 +513,9 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       }
     }
 
-    // Setup rev_is_in_dive to be 1 only if there was no backtrack since the
-    // previous call.
-    rev_is_in_dive = 0;
-    rev_int_repo->SaveState(&rev_is_in_dive);
-    rev_is_in_dive = 1;
+    // Setup rev_is_in_dive to be true on the next call only if there was no
+    // backtrack since the previous call.
+    watcher->SetUntilNextBacktrack(&rev_is_in_dive);
 
     const ToSchedule best =
         top_decisions.size() == 1
@@ -1255,10 +1254,6 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
   // This is needed for recording the pseudo-costs.
   const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
   if (objective != nullptr) objective_var_ = objective->objective_var;
-
-  // This is needed for the first MaybeMinimizeByPropagation() not to trigger
-  // right away.
-  sat_solver_->ResetMinimizationByPropagationThreshold();
 }
 
 bool IntegerSearchHelper::BeforeTakingDecision() {
@@ -1288,10 +1283,6 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
       !inprocessing_->InprocessingRound()) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
-  }
-
-  if (!sat_solver_->MaybeMinimizeByPropagation()) {
-    return sat_solver_->UnsatStatus();
   }
 
   return true;
@@ -1615,11 +1606,6 @@ SatSolver::Status ContinuousProber::Probe() {
   while (!time_limit_->LimitReached()) {
     if (parameters_.use_sat_inprocessing() &&
         !inprocessing_->InprocessingRound()) {
-      sat_solver_->NotifyThatModelIsUnsat();
-      return sat_solver_->UnsatStatus();
-    }
-    if (parameters_.minimize_with_propagation_ratio() > 0.0 &&
-        !sat_solver_->MinimizeByPropagation()) {
       sat_solver_->NotifyThatModelIsUnsat();
       return sat_solver_->UnsatStatus();
     }

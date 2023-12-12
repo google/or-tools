@@ -474,13 +474,7 @@ class SatSolver {
   // Mainly visible for testing.
   ABSL_MUST_USE_RESULT bool Propagate();
 
-  // This must be called at level zero. If enough decision were taken since the
-  // last ResetMinimizationByPropagationThreshold(), it will spend some decision
-  // (according to the parameters) and use propagation to try to minimize some
-  // clauses from the database. Return false on UNSAT.
-  bool MaybeMinimizeByPropagation();
-  void ResetMinimizationByPropagationThreshold();
-  bool MinimizeByPropagation();
+  bool MinimizeByPropagation(double dtime);
 
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.

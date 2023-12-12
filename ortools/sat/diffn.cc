@@ -146,6 +146,26 @@ void AddDiffnCumulativeRelationOnX(SchedulingConstraintHelper* x,
   }
 }
 
+// This function will fill the helper why the two boxes always overlap on that
+// dimension.
+void ClearAndAddMandatoryOverlapReason(int box1, int box2,
+                                       SchedulingConstraintHelper* helper) {
+  helper->ClearReason();
+  helper->AddPresenceReason(box1);
+  helper->AddPresenceReason(box2);
+  helper->AddReasonForBeingBefore(box1, box2);
+  helper->AddReasonForBeingBefore(box2, box1);
+}
+
+bool ClearAndAddTwoBoxesConflictReason(int box1, int box2,
+                                       SchedulingConstraintHelper* x,
+                                       SchedulingConstraintHelper* y) {
+  ClearAndAddMandatoryOverlapReason(box1, box2, x);
+  ClearAndAddMandatoryOverlapReason(box1, box2, y);
+  x->ImportOtherReasons(*y);
+  return x->ReportConflict();
+}
+
 }  // namespace
 
 void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
@@ -219,6 +239,10 @@ NonOverlappingRectanglesEnergyPropagator::
   stats.push_back(
       {"NonOverlappingRectanglesEnergyPropagator/multiple_conflicts",
        num_multiple_conflicts_});
+  stats.push_back(
+      {"NonOverlappingRectanglesEnergyPropagator/conflicts_two_boxes",
+       num_conflicts_two_boxes_});
+
   shared_stats_->AddStats(stats);
 }
 
@@ -289,8 +313,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
       best_explanation = range_for_explanation;
     }
   }
-  BuildAndReportEnergyTooLarge(*best_explanation);
-  return false;
+  return BuildAndReportEnergyTooLarge(*best_explanation);
 }
 
 std::vector<RectangleInRange>
@@ -437,6 +460,11 @@ void NonOverlappingRectanglesEnergyPropagator::CheckPropagationIsValid(
 
 bool NonOverlappingRectanglesEnergyPropagator::BuildAndReportEnergyTooLarge(
     const std::vector<RectangleInRange>& ranges) {
+  if (ranges.size() == 2) {
+    num_conflicts_two_boxes_++;
+    return ClearAndAddTwoBoxesConflictReason(ranges[0].box_index,
+                                             ranges[1].box_index, &x_, &y_);
+  }
   x_.ClearReason();
   y_.ClearReason();
   for (const auto& range : ranges) {
@@ -516,17 +544,6 @@ void SplitDisjointBoxes(const SchedulingConstraintHelper& x,
   if (current_length > 1) {
     result->emplace_back(&boxes[current_start], current_length);
   }
-}
-
-// This function will fill the helper why the two boxes always overlap on that
-// dimension.
-void ClearAndAddMandatoryOverlapReason(int box1, int box2,
-                                       SchedulingConstraintHelper* helper) {
-  helper->ClearReason();
-  helper->AddPresenceReason(box1);
-  helper->AddPresenceReason(box2);
-  helper->AddReasonForBeingBefore(box1, box2);
-  helper->AddReasonForBeingBefore(box2, box1);
 }
 
 // This function assumes that the left and right boxes overlap on the second
@@ -861,10 +878,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes(
 
   switch (state) {
     case 0: {  // Conflict. The two boxes must overlap in both dimensions.
-      ClearAndAddMandatoryOverlapReason(box1, box2, &global_x_);
-      ClearAndAddMandatoryOverlapReason(box1, box2, &global_y_);
-      global_x_.ImportOtherReasons(global_y_);
-      return global_x_.ReportConflict();
+      return ClearAndAddTwoBoxesConflictReason(box1, box2, &global_x_,
+                                               &global_y_);
     }
     case 1: {  // box2 can only be after box1 on x.
       return LeftBoxBeforeRightBoxOnFirstDimension(box1, box2, &global_x_,

@@ -66,6 +66,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   int64_t num_calls_ = 0;
   int64_t num_conflicts_ = 0;
   int64_t num_multiple_conflicts_ = 0;
+  int64_t num_conflicts_two_boxes_ = 0;
 
   NonOverlappingRectanglesEnergyPropagator(
       const NonOverlappingRectanglesEnergyPropagator&) = delete;

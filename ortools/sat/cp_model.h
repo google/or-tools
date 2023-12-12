@@ -1066,6 +1066,12 @@ class CpModelBuilder {
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
+  /// Adds a decision strategy on a list of integer variables.
+  void AddDecisionStrategy(
+      absl::Span<const BoolVar> variables,
+      DecisionStrategyProto::VariableSelectionStrategy var_strategy,
+      DecisionStrategyProto::DomainReductionStrategy domain_strategy);
+
   /// Adds a decision strategy on a list of affine expressions.
   void AddDecisionStrategy(
       absl::Span<const LinearExpr> expressions,

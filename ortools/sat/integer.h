@@ -1463,6 +1463,24 @@ class GenericLiteralWatcher : public SatPropagator {
   // is usually done in a CP solver at the cost of a slightly more complex API.
   void RegisterReversibleInt(int id, int* rev);
 
+  // A simple form of incremental update is to maintain state as we dive into
+  // the search tree but forget everything on every backtrack. A propagator
+  // can be called many times by decision, so this can make a large proportion
+  // of the calls incremental.
+  //
+  // This allows to achieve this with a really low overhead.
+  //
+  // The propagator can define a bool rev_is_in_dive_ = false; and at the
+  // beginning of each propagate do:
+  // const bool no_backtrack_since_last_call = rev_is_in_dive_;
+  // watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
+  void SetUntilNextBacktrack(bool* is_in_dive) {
+    if (!*is_in_dive) {
+      *is_in_dive = true;
+      bool_to_reset_on_backtrack_.push_back(is_in_dive);
+    }
+  }
+
   // Returns the number of registered propagators.
   int NumPropagators() const { return in_queue_.size(); }
 
@@ -1546,6 +1564,8 @@ class GenericLiteralWatcher : public SatPropagator {
       level_zero_modified_variable_callback_;
 
   std::function<bool()> stop_propagation_callback_;
+
+  std::vector<bool*> bool_to_reset_on_backtrack_;
 };
 
 // ============================================================================

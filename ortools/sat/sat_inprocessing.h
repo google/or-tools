@@ -97,6 +97,7 @@ class Inprocessing {
  public:
   explicit Inprocessing(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        params_(*model->GetOrCreate<SatParameters>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
         trail_(model->GetOrCreate<Trail>()),
@@ -147,6 +148,7 @@ class Inprocessing {
 
  private:
   const VariablesAssignment& assignment_;
+  const SatParameters& params_;
   BinaryImplicationGraph* implication_graph_;
   LiteralWatchers* clause_manager_;
   Trail* trail_;
@@ -159,6 +161,9 @@ class Inprocessing {
   PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
+  // Inprocessing dtime.
+  bool first_inprocessing_call_ = true;
+  double reference_dtime_ = 0.0;
   double total_dtime_ = 0.0;
 
   // TODO(user): This is only used for calling probing. We should probably

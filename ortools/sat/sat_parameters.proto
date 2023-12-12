@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 273
+// NEXT TAG: 276
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -189,27 +189,6 @@ message SatParameters {
   // Same as for the clauses, but for the learned pseudo-Boolean constraints.
   optional int32 pb_cleanup_increment = 46 [default = 200];
   optional double pb_cleanup_ratio = 47 [default = 0.5];
-
-  // Parameters for an heuristic similar to the one described in "An effective
-  // learnt clause minimization approach for CDCL Sat Solvers",
-  // https://www.ijcai.org/proceedings/2017/0098.pdf
-  //
-  // For now, we have a somewhat simpler implementation where, each time we
-  // are at level 0, if more that x num decision where taken, we
-  // spend some y decision on clause minimization. We try to keep y / x equal
-  // to the given ratio.
-  //
-  // The minimization technique is the same as the one used to minimize core in
-  // max-sat. We also minimize problem clauses and not just the learned clause
-  // that we keep forever like in the paper.
-  //
-  // Changing these parameters or the kind of clause we minimize seems to have
-  // a big impact on the overall perf on our benchmarks. So this technique seems
-  // definitely useful, but it is hard to tune properly.
-  //
-  // A ratio of zero disable the feature.
-  optional double minimize_with_propagation_ratio = 96 [default = 0.0];
-  optional int32 minimize_with_propagation_num_decisions = 97 [default = 1000];
 
   // ==========================================================================
   // Variable and clause activities
@@ -471,7 +450,6 @@ message SatParameters {
 
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
-  optional bool use_sat_inprocessing = 163 [default = false];
 
   // If true, we detect variable that are unique to a table constraint and only
   // there to encode a cost on each tuple. This is usually the case when a WCSP
@@ -550,6 +528,34 @@ message SatParameters {
   // integer variable corresponding to the common expression and greatly reduce
   // the number of non-zero.
   optional bool find_big_linear_overlap = 234 [default = true];
+
+  // ==========================================================================
+  // Inprocessing
+  // ==========================================================================
+
+  // Enable or disable "inprocessing" which is some SAT presolving done at
+  // each restart to the root level.
+  optional bool use_sat_inprocessing = 163 [default = false];
+
+  // Proportion of deterministic time we should spend on inprocessing.
+  // At each "restart", if the proportion is below this ratio, we will do some
+  // inprocessing, otherwise, we skip it for this restart.
+  optional double inprocessing_dtime_ratio = 273 [default = 0.2];
+
+  // The amount of dtime we should spend on probing for each inprocessing round.
+  optional double inprocessing_probing_dtime = 274 [default = 1.0];
+
+  // Parameters for an heuristic similar to the one described in "An effective
+  // learnt clause minimization approach for CDCL Sat Solvers",
+  // https://www.ijcai.org/proceedings/2017/0098.pdf
+  //
+  // This is the amount of dtime we should spend on this technique during each
+  // inprocessing phase.
+  //
+  // The minimization technique is the same as the one used to minimize core in
+  // max-sat. We also minimize problem clauses and not just the learned clause
+  // that we keep forever like in the paper.
+  optional double inprocessing_minimization_dtime = 275 [default = 1.0];
 
   // ==========================================================================
   // Multithread
