@@ -28,7 +28,7 @@ using SubsetBoolVector = glop::StrictITIVector<SubsetIndex, bool>;
 
 // SetCoverLedger does the bookkeeping for a solution to the
 // SetCoverModel passed as argument.
-// The state of a SetCoverLedger instance is uniquely de fined by a
+// The state of a SetCoverLedger instance is uniquely defined by a
 // SubsetBoolVector representing whether a subset is selected in the solution
 // or not.
 // A SetCoverLedger is (relatively) small:
