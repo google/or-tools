@@ -57,6 +57,7 @@
 #ifndef OR_TOOLS_GSCIP_GSCIP_H_
 #define OR_TOOLS_GSCIP_GSCIP_H_
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <limits>
