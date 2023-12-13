@@ -605,7 +605,7 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       if (rectangles.size() <= 1) continue;
 
       auto generate_cuts = [product_decomposer, manager, model, &rectangles](
-                               const std::string& cut_name,
+                               absl::string_view cut_name,
                                SchedulingConstraintHelper* x_helper,
                                SchedulingConstraintHelper* y_helper) {
         std::vector<DiffnCtEvent> events;

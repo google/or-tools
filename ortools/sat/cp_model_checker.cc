@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
@@ -532,7 +533,7 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
 }
 
 std::string ValidateDomainIsPositive(const CpModelProto& model, int ref,
-                                     const std::string& ref_name) {
+                                     absl::string_view ref_name) {
   if (ref < 0) {
     const IntegerVariableProto& var_proto = model.variables(NegatedRef(ref));
     if (var_proto.domain(var_proto.domain_size() - 1) > 0) {

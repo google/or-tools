@@ -495,11 +495,26 @@ void LiteralWatchers::DeleteRemovedClauses() {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
+  might_have_dups_.resize(num_variables << 1);
   is_redundant_.resize(implications_.size());
   is_removed_.resize(implications_.size(), false);
   estimated_sizes_.resize(implications_.size(), 0);
   in_direct_implications_.resize(implications_.size(), false);
   reasons_.resize(num_variables);
+}
+
+void BinaryImplicationGraph::NotifyPossibleDuplicate(Literal a) {
+  if (might_have_dups_[a.Index()]) return;
+  might_have_dups_[a.Index()] = true;
+  to_clean_.push_back(a);
+}
+
+void BinaryImplicationGraph::RemoveDuplicates() {
+  for (const Literal l : to_clean_) {
+    might_have_dups_[l.Index()] = false;
+    gtl::STLSortAndRemoveDuplicates(&implications_[l.Index()]);
+  }
+  to_clean_.clear();
 }
 
 // TODO(user): Not all of the solver knows about representative literal, do
@@ -532,6 +547,8 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   estimated_sizes_[b.NegatedIndex()]++;
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
+  NotifyPossibleDuplicate(a);
+  NotifyPossibleDuplicate(b);
   is_dag_ = false;
   num_implications_ += 2;
 
@@ -704,6 +721,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
         for (const Literal b : at_most_one) {
           if (a == b) continue;
           implications_[a].push_back(b.Negated());
+          NotifyPossibleDuplicate(a);
         }
       }
       num_implications_ += at_most_one.size() * (at_most_one.size() - 1);

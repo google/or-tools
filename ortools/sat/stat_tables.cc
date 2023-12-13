@@ -50,7 +50,7 @@ SharedStatTables::SharedStatTables() {
   clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
                             "LitLearned", "LitForgotten", "Subsumed",
                             "MClauses", "MDecisions", "MLitTrue", "MSubsumed",
-                            "MLitRemoved"});
+                            "MLitRemoved", "MReused"});
 
   lp_table_.push_back({"Lp stats", "Component", "Iterations", "AddedCuts",
                        "OPTIMAL", "DUAL_F.", "DUAL_U."});
@@ -103,7 +103,8 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
        FormatCounter(counters.minimization_num_decisions),
        FormatCounter(counters.minimization_num_true),
        FormatCounter(counters.minimization_num_subsumed),
-       FormatCounter(counters.minimization_num_removed_literals)});
+       FormatCounter(counters.minimization_num_removed_literals),
+       FormatCounter(counters.minimization_num_reused)});
 }
 
 void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {

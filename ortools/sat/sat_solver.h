@@ -429,6 +429,7 @@ class SatSolver {
     int64_t minimization_num_true = 0;
     int64_t minimization_num_subsumed = 0;
     int64_t minimization_num_removed_literals = 0;
+    int64_t minimization_num_reused = 0;
   };
   Counters counters() const { return counters_; }
 

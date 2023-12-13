@@ -722,7 +722,7 @@ class RandomPrecedencesPackingNeighborhoodGenerator
 class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit SlicePackingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,

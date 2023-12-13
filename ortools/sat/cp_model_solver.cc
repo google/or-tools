@@ -2278,7 +2278,7 @@ struct SharedClasses {
 // Encapsulate a full CP-SAT solve without presolve in the SubSolver API.
 class FullProblemSolver : public SubSolver {
  public:
-  FullProblemSolver(const std::string& name,
+  FullProblemSolver(absl::string_view name,
                     const SatParameters& local_parameters, bool split_in_chunks,
                     SharedClasses* shared, bool stop_at_first_solution = false)
       : SubSolver(stop_at_first_solution ? absl::StrCat("fs_", name) : name,

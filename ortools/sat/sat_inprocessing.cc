@@ -83,6 +83,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
     // This one is fast since only newly fixed variables are considered.
     implication_graph_->RemoveFixedVariables();
+    implication_graph_->RemoveDuplicates();
 
     // This also prepare the stamping below so that we do that on a DAG and do
     // not consider potential new implications added by
@@ -196,6 +197,7 @@ bool Inprocessing::InprocessingRound() {
   // updates.
   decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
 
+  implication_graph_->RemoveDuplicates();
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());

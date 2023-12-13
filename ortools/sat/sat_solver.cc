@@ -1176,12 +1176,50 @@ bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable) {
 // of here. I think the name for that (or similar) technique is called vivify.
 // Ideally this should be scheduled after other faster in-processing technique.
 void SatSolver::TryToMinimizeClause(SatClause* clause) {
-  CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(clause != nullptr);
   ++counters_.minimization_num_clauses;
 
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(clause->begin(), clause->end());
+
+  // Note that CP-SAT presolve detect the clauses that share n-1 literals and
+  // transform them into (n-1 enforcement) => (1 literal per clause). We
+  // currently do not support that internally, but these clauses will still
+  // likely be loaded one after the other, so there is an high chance that if we
+  // call TryToMinimizeClause() on consecutive clauses, there will be a long
+  // prefix in common !
+  //
+  // TODO(user): Exploit this more by choosing a good minimization order?
+  int longest_valid_prefix = 0;
+  if (CurrentDecisionLevel() > 0) {
+    // Quick linear scan to see if first literal is there.
+    const Literal first_decision = decisions_[0].literal;
+    for (int i = 0; i < candidate.size(); ++i) {
+      if (candidate[i].Negated() == first_decision) {
+        std::swap(candidate[0], candidate[i]);
+        longest_valid_prefix = 1;
+        break;
+      }
+    }
+    // Lets compute the full maximum prefix if we have already one match.
+    if (longest_valid_prefix == 1 && CurrentDecisionLevel() > 1) {
+      // Lets do the full algo.
+      absl::flat_hash_map<LiteralIndex, int> indexing;
+      for (int i = 0; i < candidate.size(); ++i) {
+        indexing[candidate[i].NegatedIndex()] = i;
+      }
+      for (; longest_valid_prefix < CurrentDecisionLevel();
+           ++longest_valid_prefix) {
+        const auto it =
+            indexing.find(decisions_[longest_valid_prefix].literal.Index());
+        if (it == indexing.end()) break;
+        std::swap(candidate[longest_valid_prefix], candidate[it->second]);
+        indexing[candidate[it->second].NegatedIndex()] = it->second;
+      }
+      counters_.minimization_num_reused += longest_valid_prefix;
+    }
+  }
+  Backtrack(longest_valid_prefix);
 
   while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
@@ -1251,8 +1289,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
 
   // Returns if we don't have any minimization.
-  Backtrack(0);
+  //
+  // Note that we don't backtrack right away so maybe if the next clause as
+  // similar literal, we can reuse the trail prefix!
   if (candidate.size() == clause->size()) return;
+  Backtrack(0);
 
   if (candidate.size() == 1) {
     if (drat_proof_handler_ != nullptr) {
@@ -1424,13 +1465,14 @@ bool SatSolver::MinimizeByPropagation(double dtime) {
     AdvanceDeterministicTime(time_limit_);
   }
 
-  block_clause_deletion_ = false;
-  clauses_propagator_->DeleteRemovedClauses();
-
   // Note(user): In some corner cases, the function above might find a
   // feasible assignment. I think it is okay to ignore this special case
   // that should only happen on trivial problems and just reset the solver.
-  return ResetToLevelZero();
+  const bool result = ResetToLevelZero();
+
+  block_clause_deletion_ = false;
+  clauses_propagator_->DeleteRemovedClauses();
+  return result;
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {

@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -785,7 +786,13 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns the next at_most_one, or a span of size 0 when finished.
   absl::Span<const Literal> NextAtMostOne();
 
+  // Clean up implications list that might have duplicates.
+  void RemoveDuplicates();
+
  private:
+  // Mark implications_[a] for cleanup in RemoveDuplicates().
+  void NotifyPossibleDuplicate(Literal a);
+
   // Simple wrapper to not forget to output newly fixed variable to the DRAT
   // proof if needed. This will propagate right away the implications.
   bool FixLiteral(Literal true_literal);
@@ -845,6 +852,10 @@ class BinaryImplicationGraph : public SatPropagator {
   absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;
   int64_t num_implications_ = 0;
+
+  // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
+  absl::StrongVector<LiteralIndex, bool> might_have_dups_;
+  std::vector<Literal> to_clean_;
 
   // Internal representation of at_most_one constraints. Each entry point to the
   // start of a constraint in the buffer. Constraints are terminated by
