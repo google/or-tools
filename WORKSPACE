@@ -47,8 +47,7 @@ git_repository(
 
 git_repository(
     name = "rules_java",
-    tag = "6.4.0",
-    #tag = "6.5.1",
+    tag = "7.3.1",
     remote = "https://github.com/bazelbuild/rules_java.git",
 )
 
@@ -104,8 +103,6 @@ git_repository(
 git_repository(
     name = "com_google_protobuf",
     tag = "v25.1",
-    patches = ["//patches:protobuf-v25.1.patch"],
-    patch_args = ["-p1"],
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
