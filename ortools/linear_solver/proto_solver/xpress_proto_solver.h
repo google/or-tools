@@ -25,8 +25,7 @@
 namespace operations_research {
 
 // Solves the input request.
-absl::StatusOr<MPSolutionResponse> XpressSolveProto(
-    const MPModelRequest& request);
+MPSolutionResponse XpressSolveProto(const MPModelRequest& request);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_XPRESS_PROTO_SOLVER_H_
