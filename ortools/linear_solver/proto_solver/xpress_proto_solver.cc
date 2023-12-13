@@ -271,10 +271,9 @@ namespace operations_research {
 
 //   if (error_messages.empty()) return "";
 //   return absl::StrJoin(error_messages, "\n");
-}
+// }
 
-MPSolutionResponse XPressSolveProto(const MPModelRequest& request,
-                                    XPRSprob xpress_env) {
+MPSolutionResponse XPressSolveProto(const MPModelRequest& request) {
   MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
  
@@ -355,9 +354,7 @@ MPSolutionResponse XPressSolveProto(const MPModelRequest& request,
 //       lb[v] = variable.lower_bound();
 //       ub[v] = variable.upper_bound();
 //       ctype[v] = variable.is_integer() &&
-//                          request.solver_type() ==
-//                              MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING
-//                      ? XPRS_INTEGER
+//                          request.solver_type() ==SolutionRes
 //                      : XPRS_CONTINUOUS;
 //       if (variable.is_integer()) has_integer_variables = true;
 //       if (!variable.name().empty()) varnames[v] = variable.name().c_str();

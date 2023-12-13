@@ -606,10 +606,8 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
     case MPModelRequest::
        XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
-      const auto temp = XpressSolveProto(request);
-      if (temp.ok()) {
-        response_ = std::move(temp.value());
-      }
+      response_ = XPressSolveProto(request);
+      break;
     }
 
     default: {

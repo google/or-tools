@@ -16,16 +16,13 @@
 
 #include <string>
 
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
-#include "ortools/xpress/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
 
 // Solves the input request.
-MPSolutionResponse XpressSolveProto(const MPModelRequest& request);
+MPSolutionResponse XPressSolveProto(const MPModelRequest& request);
 
 }  // namespace operations_research
+
 #endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_XPRESS_PROTO_SOLVER_H_
