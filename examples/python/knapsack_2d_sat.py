@@ -133,8 +133,8 @@ def solve_with_duplicate_items(data: pd.Series, max_height: int, max_width: int)
         )
 
         # Unused boxes are fixed at (0.0).
-        model.add(x_starts[i] == 0).only_enforce_if(is_used[i].negated())
-        model.add(y_starts[i] == 0).only_enforce_if(is_used[i].negated())
+        model.add(x_starts[i] == 0).only_enforce_if(~is_used[i])
+        model.add(y_starts[i] == 0).only_enforce_if(~is_used[i])
 
     # Constraints.
 
@@ -235,8 +235,8 @@ def solve_with_duplicate_optional_items(
             )
         )
         # Unused boxes are fixed at (0.0).
-        model.add(x_starts[i] == 0).only_enforce_if(is_used[i].negated())
-        model.add(y_starts[i] == 0).only_enforce_if(is_used[i].negated())
+        model.add(x_starts[i] == 0).only_enforce_if(~is_used[i])
+        model.add(y_starts[i] == 0).only_enforce_if(~is_used[i])
 
     # Constraints.
 
@@ -363,7 +363,7 @@ def solve_with_rotations(data: pd.Series, max_height: int, max_width: int):
         model.add(x_sizes[i] == dim2).only_enforce_if(rotated)
         model.add(y_sizes[i] == dim1).only_enforce_if(rotated)
 
-        is_used.append(not_selected.negated())
+        is_used.append(~not_selected)
 
     ## 2D no overlap.
     model.add_no_overlap_2d(x_intervals, y_intervals)

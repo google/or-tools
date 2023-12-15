@@ -26,15 +26,15 @@ def reified_sample_sat():
     b = model.new_bool_var("b")
 
     # First version using a half-reified bool and.
-    model.add_bool_and(x, y.negated()).only_enforce_if(b)
+    model.add_bool_and(x, ~y).only_enforce_if(b)
 
     # Second version using implications.
     model.add_implication(b, x)
-    model.add_implication(b, y.negated())
+    model.add_implication(b, ~y)
 
     # Third version using bool or.
-    model.add_bool_or(b.negated(), x)
-    model.add_bool_or(b.negated(), y.negated())
+    model.add_bool_or(~b, x)
+    model.add_bool_or(~b, ~y)
 
 
 reified_sample_sat()

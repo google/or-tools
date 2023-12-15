@@ -74,8 +74,8 @@ def rank_tasks_with_circuit(
 
         for j in all_tasks:
             if i == j:
-                arcs.append((i + 1, i + 1, presences[i].negated()))
-                model.add(ranks[i] == -1).only_enforce_if(presences[i].negated())
+                arcs.append((i + 1, i + 1, ~presences[i]))
+                model.add(ranks[i] == -1).only_enforce_if(~presences[i])
             else:
                 literal = model.new_bool_var(f"arc_{i}_to_{j}")
                 arcs.append((i + 1, j + 1, literal))
@@ -97,7 +97,7 @@ def rank_tasks_with_circuit(
     arcs.append((0, 0, empty))
 
     for i in all_tasks:
-        model.add_implication(empty, presences[i].negated())
+        model.add_implication(empty, ~presences[i])
 
     # Add the circuit constraint.
     model.add_circuit(arcs)

@@ -24,7 +24,9 @@ void BoolOrSampleSat() {
 
   const BoolVar x = cp_model.NewBoolVar();
   const BoolVar y = cp_model.NewBoolVar();
-  cp_model.AddBoolOr({x, Not(y)});
+  cp_model.AddBoolOr({x, ~y});
+  // You can also use the ~ operator.
+  cp_model.AddBoolOr({x, ~y});
 }
 
 }  // namespace sat

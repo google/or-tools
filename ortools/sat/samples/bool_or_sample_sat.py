@@ -25,6 +25,9 @@ def bool_or_sample_sat():
     y = model.new_bool_var("y")
 
     model.add_bool_or([x, y.negated()])
+    # The [] is not mandatory.
+    # ~y is equivalent to y.negated()
+    model.add_bool_or(x, ~y)
 
 
 bool_or_sample_sat()

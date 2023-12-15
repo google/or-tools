@@ -270,9 +270,7 @@ def task_allocation_sat():
         ).only_enforce_if(slot_used[slot])
         for task in all_tasks:
             if available[task][slot] == 1:
-                model.add_implication(
-                    slot_used[slot].negated(), assign[(task, slot)].negated()
-                )
+                model.add_implication(~slot_used[slot], ~assign[(task, slot)])
             else:
                 model.add(assign[(task, slot)] == 0)
 

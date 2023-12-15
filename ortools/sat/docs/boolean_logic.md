@@ -30,7 +30,7 @@ from ortools.sat.python import cp_model
 def literal_sample_sat():
     model = cp_model.CpModel()
     x = model.new_bool_var("x")
-    not_x = x.negated()
+    not_x = ~x
     print(x)
     print(not_x)
 
@@ -53,7 +53,7 @@ void LiteralSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar().WithName("x");
-  const BoolVar not_x = Not(x);
+  const BoolVar not_x = ~x;
   LOG(INFO) << "x = " << x << ", not(x) = " << not_x;
 }
 
@@ -135,6 +135,9 @@ def bool_or_sample_sat():
     y = model.new_bool_var("y")
 
     model.add_bool_or([x, y.negated()])
+    # The [] is not mandatory.
+    # ~y is equivalent to y.negated()
+    model.add_bool_or(x, ~y)
 
 
 bool_or_sample_sat()
@@ -156,7 +159,9 @@ void BoolOrSampleSat() {
 
   const BoolVar x = cp_model.NewBoolVar();
   const BoolVar y = cp_model.NewBoolVar();
-  cp_model.AddBoolOr({x, Not(y)});
+  cp_model.AddBoolOr({x, ~y});
+  // You can also use the ~ operator.
+  cp_model.AddBoolOr({x, ~y});
 }
 
 }  // namespace sat
@@ -246,15 +251,15 @@ def reified_sample_sat():
     b = model.new_bool_var("b")
 
     # First version using a half-reified bool and.
-    model.add_bool_and(x, y.negated()).only_enforce_if(b)
+    model.add_bool_and(x, ~y).only_enforce_if(b)
 
     # Second version using implications.
     model.add_implication(b, x)
-    model.add_implication(b, y.negated())
+    model.add_implication(b, ~y)
 
     # Third version using bool or.
-    model.add_bool_or(b.negated(), x)
-    model.add_bool_or(b.negated(), y.negated())
+    model.add_bool_or(~b, x)
+    model.add_bool_or(~b, ~y)
 
 
 reified_sample_sat()
@@ -279,15 +284,15 @@ void ReifiedSampleSat() {
   const BoolVar b = cp_model.NewBoolVar();
 
   // First version using a half-reified bool and.
-  cp_model.AddBoolAnd({x, Not(y)}).OnlyEnforceIf(b);
+  cp_model.AddBoolAnd({x, ~y}).OnlyEnforceIf(b);
 
   // Second version using implications.
   cp_model.AddImplication(b, x);
-  cp_model.AddImplication(b, Not(y));
+  cp_model.AddImplication(b, ~y);
 
   // Third version using bool or.
-  cp_model.AddBoolOr({Not(b), x});
-  cp_model.AddBoolOr({Not(b), Not(y)});
+  cp_model.AddBoolOr({~b, x});
+  cp_model.AddBoolOr({~b, ~y});
 }
 
 }  // namespace sat
@@ -412,7 +417,7 @@ def boolean_product_sample_sat():
     p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.add_bool_or(x.negated(), y.negated(), p)
+    model.add_bool_or(~x, ~y, p)
 
     # p implies x and y, expanded into two implications.
     model.add_implication(p, x)

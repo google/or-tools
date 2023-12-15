@@ -37,13 +37,13 @@ void ChannelingSampleSat() {
 
   // Implement b == (x >= 5).
   cp_model.AddGreaterOrEqual(x, 5).OnlyEnforceIf(b);
-  cp_model.AddLessThan(x, 5).OnlyEnforceIf(Not(b));
+  cp_model.AddLessThan(x, 5).OnlyEnforceIf(~b);
 
   // Create our two half-reified constraints.
   // First, b implies (y == 10 - x).
   cp_model.AddEquality(x + y, 10).OnlyEnforceIf(b);
   // Second, not(b) implies y == 0.
-  cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
+  cp_model.AddEquality(y, 0).OnlyEnforceIf(~b);
 
   // Search for x values in increasing order.
   cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,

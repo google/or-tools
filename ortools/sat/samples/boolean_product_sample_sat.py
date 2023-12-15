@@ -29,7 +29,7 @@ def boolean_product_sample_sat():
     p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.add_bool_or(x.negated(), y.negated(), p)
+    model.add_bool_or(~x, ~y, p)
 
     # p implies x and y, expanded into two implications.
     model.add_implication(p, x)

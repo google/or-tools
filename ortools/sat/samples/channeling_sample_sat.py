@@ -46,13 +46,13 @@ def channeling_sample_sat():
 
     # Implement b == (x >= 5).
     model.add(x >= 5).only_enforce_if(b)
-    model.add(x < 5).only_enforce_if(b.negated())
+    model.add(x < 5).only_enforce_if(~b)
 
     # Create our two half-reified constraints.
     # First, b implies (y == 10 - x).
     model.add(y == 10 - x).only_enforce_if(b)
     # Second, not(b) implies y == 0.
-    model.add(y == 0).only_enforce_if(b.negated())
+    model.add(y == 0).only_enforce_if(~b)
 
     # Search for x values in increasing order.
     model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)

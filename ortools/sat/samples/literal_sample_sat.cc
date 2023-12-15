@@ -23,7 +23,7 @@ void LiteralSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar().WithName("x");
-  const BoolVar not_x = Not(x);
+  const BoolVar not_x = ~x;
   LOG(INFO) << "x = " << x << ", not(x) = " << not_x;
 }
 

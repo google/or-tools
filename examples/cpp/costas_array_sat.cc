@@ -173,10 +173,10 @@ void CostasBool(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr(
+              {~vars[var][value], ~vars[var + step][value + diff], pos});
+          cp_model.AddBoolOr(
+              {~vars[var][value + diff], ~vars[var + step][value], neg});
         }
       }
       cp_model.AddLessOrEqual(LinearExpr::Sum(positive_diffs), 1);
@@ -245,10 +245,10 @@ void CostasBoolSoft(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr(
+              {~vars[var][value], ~vars[var + step][value + diff], pos});
+          cp_model.AddBoolOr(
+              {~vars[var][value + diff], ~vars[var + step][value], neg});
         }
       }
       const IntVar pos_var =

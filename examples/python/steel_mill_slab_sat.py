@@ -220,9 +220,7 @@ def steel_mill_slab(problem, break_symmetries):
         for s in all_slabs:
             for o in orders_per_color[c]:
                 model.add_implication(assign[o][s], color_is_in_slab[s][c])
-                model.add_implication(
-                    color_is_in_slab[s][c].negated(), assign[o][s].negated()
-                )
+                model.add_implication(~color_is_in_slab[s][c], ~assign[o][s])
 
     # At most two colors per slab.
     for s in all_slabs:

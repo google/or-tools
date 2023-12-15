@@ -1027,8 +1027,8 @@ public class CpModel
         foreach (IntVar var in vars)
         {
             LinearExpressionProto expr = new LinearExpressionProto();
-            expr.Vars.add(var.Index);
-            expr.Coeffs.add(1);
+            expr.Vars.Add(var.Index);
+            expr.Coeffs.Add(1);
             ds.Exprs.Add(expr);
         }
         ds.VariableSelectionStrategy = var_str;

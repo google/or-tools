@@ -27,15 +27,15 @@ void ReifiedSampleSat() {
   const BoolVar b = cp_model.NewBoolVar();
 
   // First version using a half-reified bool and.
-  cp_model.AddBoolAnd({x, Not(y)}).OnlyEnforceIf(b);
+  cp_model.AddBoolAnd({x, ~y}).OnlyEnforceIf(b);
 
   // Second version using implications.
   cp_model.AddImplication(b, x);
-  cp_model.AddImplication(b, Not(y));
+  cp_model.AddImplication(b, ~y);
 
   // Third version using bool or.
-  cp_model.AddBoolOr({Not(b), x});
-  cp_model.AddBoolOr({Not(b), Not(y)});
+  cp_model.AddBoolOr({~b, x});
+  cp_model.AddBoolOr({~b, ~y});
 }
 
 }  // namespace sat

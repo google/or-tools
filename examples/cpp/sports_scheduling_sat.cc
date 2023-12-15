@@ -98,7 +98,7 @@ void OpponentModel(int num_teams) {
       builder.AddNotEqual(signed_opp, t + num_teams);
 
       // Link opponent, home_away, and signed_opponent.
-      builder.AddEquality(opp, signed_opp).OnlyEnforceIf(Not(home));
+      builder.AddEquality(opp, signed_opp).OnlyEnforceIf(~home);
       builder.AddEquality(opp + num_teams, signed_opp).OnlyEnforceIf(home);
     }
   }
@@ -148,9 +148,8 @@ void OpponentModel(int num_teams) {
     for (int start = 0; start < num_days - 2; ++start) {
       builder.AddBoolOr({home_aways[t][start], home_aways[t][start + 1],
                          home_aways[t][start + 2]});
-      builder.AddBoolOr({Not(home_aways[t][start]),
-                         Not(home_aways[t][start + 1]),
-                         Not(home_aways[t][start + 2])});
+      builder.AddBoolOr({~home_aways[t][start], ~home_aways[t][start + 1],
+                         ~home_aways[t][start + 2]});
     }
   }
 
@@ -160,8 +159,7 @@ void OpponentModel(int num_teams) {
     for (int d = 0; d < num_days - 1; ++d) {
       BoolVar break_var =
           builder.NewBoolVar().WithName(absl::StrCat("break_", t, "_", d));
-      builder.AddBoolOr(
-          {Not(home_aways[t][d]), Not(home_aways[t][d + 1]), break_var});
+      builder.AddBoolOr({~home_aways[t][d], ~home_aways[t][d + 1], break_var});
       builder.AddBoolOr({home_aways[t][d], home_aways[t][d + 1], break_var});
       breaks.push_back(break_var);
     }
@@ -274,8 +272,7 @@ void FixtureModel(int num_teams) {
       for (int other = 0; other < num_teams; ++other) {
         if (team == other) continue;
         builder.AddImplication(fixtures[d][team][other], at_home[d][team]);
-        builder.AddImplication(fixtures[d][team][other],
-                               Not(at_home[d][other]));
+        builder.AddImplication(fixtures[d][team][other], ~at_home[d][other]);
       }
     }
   }
@@ -285,8 +282,8 @@ void FixtureModel(int num_teams) {
     for (int d = 0; d < num_days - 2; ++d) {
       builder.AddBoolOr(
           {at_home[d][team], at_home[d + 1][team], at_home[d + 2][team]});
-      builder.AddBoolOr({Not(at_home[d][team]), Not(at_home[d + 1][team]),
-                         Not(at_home[d + 2][team])});
+      builder.AddBoolOr(
+          {~at_home[d][team], ~at_home[d + 1][team], ~at_home[d + 2][team]});
     }
   }
 
@@ -295,13 +292,10 @@ void FixtureModel(int num_teams) {
   for (int t = 0; t < num_teams; ++t) {
     for (int d = 0; d < num_days - 1; ++d) {
       BoolVar break_var = builder.NewBoolVar();
-      builder.AddBoolOr(
-          {Not(at_home[d][t]), Not(at_home[d + 1][t]), break_var});
+      builder.AddBoolOr({~at_home[d][t], ~at_home[d + 1][t], break_var});
       builder.AddBoolOr({at_home[d][t], at_home[d + 1][t], break_var});
-      builder.AddBoolOr(
-          {Not(at_home[d][t]), at_home[d + 1][t], Not(break_var)});
-      builder.AddBoolOr(
-          {at_home[d][t], Not(at_home[d + 1][t]), Not(break_var)});
+      builder.AddBoolOr({~at_home[d][t], at_home[d + 1][t], ~break_var});
+      builder.AddBoolOr({at_home[d][t], ~at_home[d + 1][t], ~break_var});
       breaks.push_back(break_var);
     }
   }

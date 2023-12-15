@@ -77,8 +77,7 @@ void BinpackingProblemSat() {
     // slack[b] => load[b] <= safe_capacity.
     cp_model.AddLessOrEqual(load[b], safe_capacity).OnlyEnforceIf(slacks[b]);
     // not(slack[b]) => load[b] > safe_capacity.
-    cp_model.AddGreaterThan(load[b], safe_capacity)
-        .OnlyEnforceIf(Not(slacks[b]));
+    cp_model.AddGreaterThan(load[b], safe_capacity).OnlyEnforceIf(~slacks[b]);
   }
 
   // Maximize sum of slacks.

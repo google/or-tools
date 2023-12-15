@@ -14,11 +14,11 @@
 
 """Solves a Qubo program using the CP-SAT solver."""
 
-from typing import Sequence
+from typing import List, Sequence
 from absl import app
 from ortools.sat.python import cp_model
 
-RAW_DATA = [
+RAW_DATA: List[List[float]] = [
     # fmt:off
     [
         0, 0, 49.774821, -59.5968886, -46.0773896, 0, -65.166109, 0, 0, 0, 0, 0,
@@ -652,7 +652,7 @@ RAW_DATA = [
 ]
 
 
-def solve_qubo():
+def solve_qubo() -> None:
     """solve the Qubo problem."""
 
     # Build the model.
@@ -673,7 +673,7 @@ def solve_qubo():
                 continue
             x_j = variables[j]
             var = model.new_bool_var("")
-            model.add_bool_or([x_i.negated(), x_j.negated(), var])
+            model.add_bool_or([~x_i, ~x_j, var])
             model.add_implication(var, x_i)
             model.add_implication(var, x_j)
             obj_vars.append(var)

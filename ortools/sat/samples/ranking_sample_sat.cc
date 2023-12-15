@@ -56,21 +56,21 @@ void RankingSampleSat() {
       for (int j = i + 1; j < num_tasks; ++j) {
         // Makes sure that if i is not performed, all precedences are
         // false.
-        cp_model.AddImplication(Not(presences[i]), Not(precedences[i][j]));
-        cp_model.AddImplication(Not(presences[i]), Not(precedences[j][i]));
+        cp_model.AddImplication(~presences[i], ~precedences[i][j]);
+        cp_model.AddImplication(~presences[i], ~precedences[j][i]);
         // Makes sure that if j is not performed, all precedences are
         // false.
-        cp_model.AddImplication(Not(presences[j]), Not(precedences[i][j]));
-        cp_model.AddImplication(Not(presences[j]), Not(precedences[j][i]));
+        cp_model.AddImplication(~presences[j], ~precedences[i][j]);
+        cp_model.AddImplication(~presences[j], ~precedences[j][i]);
         //  The following bool_or will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        cp_model.AddBoolOr({precedences[i][j], precedences[j][i],
-                            Not(presences[i]), Not(presences[j])});
+        cp_model.AddBoolOr({precedences[i][j], precedences[j][i], ~presences[i],
+                            ~presences[j]});
         // Redundant constraint: it propagates early that at most one
         // precedence is true.
-        cp_model.AddImplication(precedences[i][j], Not(precedences[j][i]));
-        cp_model.AddImplication(precedences[j][i], Not(precedences[i][j]));
+        cp_model.AddImplication(precedences[i][j], ~precedences[j][i]);
+        cp_model.AddImplication(precedences[j][i], ~precedences[i][j]);
       }
     }
     // Links precedences and ranks.

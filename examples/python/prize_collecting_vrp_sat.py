@@ -144,7 +144,7 @@ def prize_collecting_vrp():
         arcs = []
         for i in all_nodes:
             is_visited = model.new_bool_var(f"{i} is visited")
-            arcs.append((i, i, is_visited.negated()))
+            arcs.append((i, i, ~is_visited))
 
             obj_vars.append(is_visited)
             obj_coeffs.append(VISIT_VALUES[i])
@@ -152,7 +152,7 @@ def prize_collecting_vrp():
 
             for j in all_nodes:
                 if i == j:
-                    used_arcs[v][i, j] = is_visited.negated()
+                    used_arcs[v][i, j] = ~is_visited
                     continue
                 arc_is_used = model.new_bool_var(f"{j} follows {i}")
                 arcs.append((i, j, arc_is_used))

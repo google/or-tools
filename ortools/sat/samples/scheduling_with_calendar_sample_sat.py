@@ -53,10 +53,10 @@ def scheduling_with_calendar_sample_sat():
     across = model.new_bool_var("across")
     non_spanning_hours = cp_model.Domain.from_values([8, 9, 10, 14, 15])
     model.add_linear_expression_in_domain(start, non_spanning_hours).only_enforce_if(
-        across.negated()
+        ~across
     )
     model.add_linear_constraint(start, 11, 12).only_enforce_if(across)
-    model.add(duration == 3).only_enforce_if(across.negated())
+    model.add(duration == 3).only_enforce_if(~across)
     model.add(duration == 4).only_enforce_if(across)
 
     # Search for x values in increasing order.

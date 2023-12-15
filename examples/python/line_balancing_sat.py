@@ -232,26 +232,26 @@ def solve_boolean_model(model, hint):
         for p in all_pods:
             model.add_implication(assign[t, p], possible[t, p])
             if p > 1:
-                model.add_implication(assign[t, p], possible[t, p - 1].negated())
+                model.add_implication(assign[t, p], ~possible[t, p - 1])
 
     # Precedences.
     for before, after in precedences:
         for p in range(1, num_pods):
-            model.add_implication(assign[before, p], possible[after, p - 1].negated())
+            model.add_implication(assign[before, p], ~possible[after, p - 1])
 
     # Link active variables with the assign one.
     for p in all_pods:
         all_assign_vars = [assign[t, p] for t in all_tasks]
         for a in all_assign_vars:
             model.add_implication(a, active[p])
-        model.add_bool_or(all_assign_vars + [active[p].negated()])
+        model.add_bool_or(all_assign_vars + [~active[p]])
 
     # Force pods to be contiguous. This is critical to get good lower bounds
     # on the objective, even if it makes feasibility harder.
     for p in range(1, num_pods):
-        model.add_implication(active[p - 1].negated(), active[p].negated())
+        model.add_implication(~active[p - 1], ~active[p])
         for t in all_tasks:
-            model.add_implication(active[p].negated(), possible[t, p - 1])
+            model.add_implication(~active[p], possible[t, p - 1])
 
     # Objective.
     model.minimize(sum(active))

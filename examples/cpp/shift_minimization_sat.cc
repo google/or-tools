@@ -215,7 +215,7 @@ void LoadAndSolve(const std::string& file_name) {
         if (Overlaps(jobs[job1], jobs[job2])) {
           const BoolVar v1 = worker_job_vars[w][i];
           const BoolVar v2 = worker_job_vars[w][j];
-          cp_model.AddBoolOr({Not(v1), Not(v2)});
+          cp_model.AddBoolOr({~v1, ~v2});
         }
       }
     }

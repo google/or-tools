@@ -378,8 +378,7 @@ void CreateMachines(
       circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
 
       // If the circuit is empty, the interval cannot be performed.
-      cp_model.AddImplication(empty_circuit,
-                              Not(tail.interval.PresenceBoolVar()));
+      cp_model.AddImplication(empty_circuit, ~tail.interval.PresenceBoolVar());
 
       // Used to constrain the size of the tail interval.
       std::vector<BoolVar> literals;
@@ -388,7 +387,7 @@ void CreateMachines(
       // Node to node.
       for (int j = 0; j < num_intervals; ++j) {
         if (i == j) {
-          circuit.AddArc(i + 1, i + 1, Not(tail.interval.PresenceBoolVar()));
+          circuit.AddArc(i + 1, i + 1, ~tail.interval.PresenceBoolVar());
         } else {
           const MachineTaskData& head = machine_to_tasks[m][j];
           const int job_j = head.job;

@@ -52,7 +52,7 @@ def negated_bounded_span(
     if start > 0:
         sequence.append(works[start - 1])
     for i in range(length):
-        sequence.append(works[start + i].negated())
+        sequence.append(~works[start + i])
     # right border (end of works or works[start + length])
     if start + length < len(works):
         sequence.append(works[start + length])
@@ -134,9 +134,7 @@ def add_soft_sequence_constraint(
 
     # Just forbid any sequence of true variables with length hard_max + 1
     for start in range(len(works) - hard_max):
-        model.add_bool_or(
-            [works[i].negated() for i in range(start, start + hard_max + 1)]
-        )
+        model.add_bool_or([~works[i] for i in range(start, start + hard_max + 1)])
     return cost_literals, cost_coefficients
 
 
@@ -368,8 +366,8 @@ def solve_shift_scheduling(params: str, output_proto: str):
         for e in range(num_employees):
             for d in range(num_days - 1):
                 transition = [
-                    work[e, previous_shift, d].negated(),
-                    work[e, next_shift, d + 1].negated(),
+                    ~work[e, previous_shift, d],
+                    ~work[e, next_shift, d + 1],
                 ]
                 if cost == 0:
                     model.add_bool_or(transition)

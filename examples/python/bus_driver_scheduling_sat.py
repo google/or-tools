@@ -1863,14 +1863,10 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
             # Node not performed
             #    - set both driving times to 0
             #    - add a looping arc on the node
-            model.add(total_driving[d, s] == 0).only_enforce_if(
-                performed[d, s].negated()
-            )
-            model.add(no_break_driving[d, s] == 0).only_enforce_if(
-                performed[d, s].negated()
-            )
-            incoming_literals[s].append(performed[d, s].negated())
-            outgoing_literals[s].append(performed[d, s].negated())
+            model.add(total_driving[d, s] == 0).only_enforce_if(~performed[d, s])
+            model.add(no_break_driving[d, s] == 0).only_enforce_if(~performed[d, s])
+            incoming_literals[s].append(~performed[d, s])
+            outgoing_literals[s].append(~performed[d, s])
             # negated adding to the shared lists, because, globally, each node will
             # have one incoming literal, and one outgoing literal.
 
@@ -1919,17 +1915,15 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
         if minimize_drivers:
             # Driver is not working.
             working = model.new_bool_var("working_%i" % d)
-            model.add(start_times[d] == min_start_time).only_enforce_if(
-                working.negated()
-            )
-            model.add(end_times[d] == min_start_time).only_enforce_if(working.negated())
-            model.add(driving_times[d] == 0).only_enforce_if(working.negated())
+            model.add(start_times[d] == min_start_time).only_enforce_if(~working)
+            model.add(end_times[d] == min_start_time).only_enforce_if(~working)
+            model.add(driving_times[d] == 0).only_enforce_if(~working)
             working_drivers.append(working)
-            outgoing_source_literals.append(working.negated())
-            incoming_sink_literals.append(working.negated())
+            outgoing_source_literals.append(~working)
+            incoming_sink_literals.append(~working)
             # Conditional working time constraints
             model.add(working_times[d] >= min_working_time).only_enforce_if(working)
-            model.add(working_times[d] == 0).only_enforce_if(working.negated())
+            model.add(working_times[d] == 0).only_enforce_if(~working)
         else:
             # Working time constraints
             model.add(working_times[d] >= min_working_time)
@@ -1959,9 +1953,7 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
     if minimize_drivers:
         # Push non working drivers to the end
         for d in range(num_drivers - 1):
-            model.add_implication(
-                working_drivers[d].negated(), working_drivers[d + 1].negated()
-            )
+            model.add_implication(~working_drivers[d], ~working_drivers[d + 1])
 
     # Redundant constraints: sum of driving times = sum of shift driving times
     model.add(cp_model.LinearExpr.sum(driving_times) == total_driving_time)

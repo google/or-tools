@@ -71,7 +71,7 @@ def cover_rectangle(num_squares: int) -> bool:
         # Define same to be true iff sizes[i] == sizes[i + 1]
         same = model.new_bool_var("")
         model.add(sizes[i] == sizes[i + 1]).only_enforce_if(same)
-        model.add(sizes[i] < sizes[i + 1]).only_enforce_if(same.negated())
+        model.add(sizes[i] < sizes[i + 1]).only_enforce_if(~same)
 
         # Tie break with starts.
         model.add(x_starts[i] <= x_starts[i + 1]).only_enforce_if(same)

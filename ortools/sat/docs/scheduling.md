@@ -832,7 +832,7 @@ from ortools.sat.python import cp_model
 def rank_tasks(
     model: cp_model.CpModel,
     starts: list[cp_model.IntVar],
-    presences: list[cp_model.IntVar],
+    presences: list[cp_model.BoolVarT],
     ranks: list[cp_model.IntVar],
 ) -> None:
     """This method adds constraints and variables to links tasks and ranks.
@@ -844,7 +844,7 @@ def rank_tasks(
     Args:
       model: The CpModel to add the constraints to.
       starts: The array of starts variables of all tasks.
-      presences: The array of presence variables of all tasks.
+      presences: The array of presence variables or constants of all tasks.
       ranks: The array of rank variables of all tasks.
     """
 
@@ -852,7 +852,7 @@ def rank_tasks(
     all_tasks = range(num_tasks)
 
     # Creates precedence variables between pairs of intervals.
-    precedences: dict[tuple[int, int], cp_model.IntVar] = {}
+    precedences: dict[tuple[int, int], cp_model.BoolVarT] = {}
     for i in all_tasks:
         for j in all_tasks:
             if i == j:
@@ -865,36 +865,28 @@ def rank_tasks(
     # Treats optional intervals.
     for i in range(num_tasks - 1):
         for j in range(i + 1, num_tasks):
-            tmp_array: list[cp_model.LiteralT] = [
+            tmp_array: list[cp_model.BoolVarT] = [
                 precedences[(i, j)],
                 precedences[(j, i)],
             ]
             if not cp_model.object_is_a_true_literal(presences[i]):
-                tmp_array.append(presences[i].negated())
+                tmp_array.append(~presences[i])
                 # Makes sure that if i is not performed, all precedences are false.
-                model.add_implication(
-                    presences[i].negated(), precedences[(i, j)].negated()
-                )
-                model.add_implication(
-                    presences[i].negated(), precedences[(j, i)].negated()
-                )
+                model.add_implication(~presences[i], ~precedences[(i, j)])
+                model.add_implication(~presences[i], ~precedences[(j, i)])
             if not cp_model.object_is_a_true_literal(presences[j]):
-                tmp_array.append(presences[j].negated())
+                tmp_array.append(~presences[j])
                 # Makes sure that if j is not performed, all precedences are false.
-                model.add_implication(
-                    presences[j].negated(), precedences[(i, j)].negated()
-                )
-                model.add_implication(
-                    presences[j].negated(), precedences[(j, i)].negated()
-                )
+                model.add_implication(~presences[j], ~precedences[(i, j)])
+                model.add_implication(~presences[j], ~precedences[(j, i)])
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
             model.add_bool_or(tmp_array)
             # Redundant constraint: it propagates early that at most one precedence
             # is true.
-            model.add_implication(precedences[(i, j)], precedences[(j, i)].negated())
-            model.add_implication(precedences[(j, i)], precedences[(i, j)].negated())
+            model.add_implication(precedences[(i, j)], ~precedences[(j, i)])
+            model.add_implication(precedences[(j, i)], ~precedences[(i, j)])
 
     # Links precedences and ranks.
     for i in all_tasks:
@@ -912,7 +904,7 @@ def ranking_sample_sat() -> None:
     starts = []
     ends = []
     intervals = []
-    presences = []
+    presences: list[cp_model.BoolVarT] = []
     ranks = []
 
     # Creates intervals, half of them are optional.
@@ -922,7 +914,7 @@ def ranking_sample_sat() -> None:
         end = model.new_int_var(0, horizon, f"end[{t}]")
         if t < num_tasks // 2:
             interval = model.new_interval_var(start, duration, end, f"interval[{t}]")
-            presence = True
+            presence = model.new_constant(1)
         else:
             presence = model.new_bool_var(f"presence[{t}]")
             interval = model.new_optional_interval_var(
@@ -1028,21 +1020,21 @@ void RankingSampleSat() {
       for (int j = i + 1; j < num_tasks; ++j) {
         // Makes sure that if i is not performed, all precedences are
         // false.
-        cp_model.AddImplication(Not(presences[i]), Not(precedences[i][j]));
-        cp_model.AddImplication(Not(presences[i]), Not(precedences[j][i]));
+        cp_model.AddImplication(~presences[i], ~precedences[i][j]);
+        cp_model.AddImplication(~presences[i], ~precedences[j][i]);
         // Makes sure that if j is not performed, all precedences are
         // false.
-        cp_model.AddImplication(Not(presences[j]), Not(precedences[i][j]));
-        cp_model.AddImplication(Not(presences[j]), Not(precedences[j][i]));
+        cp_model.AddImplication(~presences[j], ~precedences[i][j]);
+        cp_model.AddImplication(~presences[j], ~precedences[j][i]);
         //  The following bool_or will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        cp_model.AddBoolOr({precedences[i][j], precedences[j][i],
-                            Not(presences[i]), Not(presences[j])});
+        cp_model.AddBoolOr({precedences[i][j], precedences[j][i], ~presences[i],
+                            ~presences[j]});
         // Redundant constraint: it propagates early that at most one
         // precedence is true.
-        cp_model.AddImplication(precedences[i][j], Not(precedences[j][i]));
-        cp_model.AddImplication(precedences[j][i], Not(precedences[i][j]));
+        cp_model.AddImplication(precedences[i][j], ~precedences[j][i]);
+        cp_model.AddImplication(precedences[j][i], ~precedences[i][j]);
       }
     }
     // Links precedences and ranks.
@@ -1540,8 +1532,8 @@ def rank_tasks_with_circuit(
 
         for j in all_tasks:
             if i == j:
-                arcs.append((i + 1, i + 1, presences[i].negated()))
-                model.add(ranks[i] == -1).only_enforce_if(presences[i].negated())
+                arcs.append((i + 1, i + 1, ~presences[i]))
+                model.add(ranks[i] == -1).only_enforce_if(~presences[i])
             else:
                 literal = model.new_bool_var(f"arc_{i}_to_{j}")
                 arcs.append((i + 1, j + 1, literal))
@@ -1563,7 +1555,7 @@ def rank_tasks_with_circuit(
     arcs.append((0, 0, empty))
 
     for i in all_tasks:
-        model.add_implication(empty, presences[i].negated())
+        model.add_implication(empty, ~presences[i])
 
     # Add the circuit constraint.
     model.add_circuit(arcs)
@@ -1710,10 +1702,10 @@ def scheduling_with_calendar_sample_sat():
     across = model.new_bool_var("across")
     non_spanning_hours = cp_model.Domain.from_values([8, 9, 10, 14, 15])
     model.add_linear_expression_in_domain(start, non_spanning_hours).only_enforce_if(
-        across.negated()
+        ~across
     )
     model.add_linear_constraint(start, 11, 12).only_enforce_if(across)
-    model.add(duration == 3).only_enforce_if(across.negated())
+    model.add(duration == 3).only_enforce_if(~across)
     model.add(duration == 4).only_enforce_if(across)
 
     # Search for x values in increasing order.
@@ -1817,20 +1809,20 @@ def overlapping_interval_sample_sat():
     # a_after_b Boolean variable.
     a_after_b = model.new_bool_var("a_after_b")
     model.add(start_var_a >= end_var_b).only_enforce_if(a_after_b)
-    model.add(start_var_a < end_var_b).only_enforce_if(a_after_b.negated())
+    model.add(start_var_a < end_var_b).only_enforce_if(~a_after_b)
 
     # b_after_a Boolean variable.
     b_after_a = model.new_bool_var("b_after_a")
     model.add(start_var_b >= end_var_a).only_enforce_if(b_after_a)
-    model.add(start_var_b < end_var_a).only_enforce_if(b_after_a.negated())
+    model.add(start_var_b < end_var_a).only_enforce_if(~b_after_a)
 
     # Result Boolean variable.
     a_overlaps_b = model.new_bool_var("a_overlaps_b")
 
     # Option a: using only clauses
     model.add_bool_or(a_after_b, b_after_a, a_overlaps_b)
-    model.add_implication(a_after_b, a_overlaps_b.negated())
-    model.add_implication(b_after_a, a_overlaps_b.negated())
+    model.add_implication(a_after_b, ~a_overlaps_b)
+    model.add_implication(b_after_a, ~a_overlaps_b)
 
     # Option b: using an exactly one constraint.
     # model.add_exactly_one(a_after_b, b_after_a, a_overlaps_b)

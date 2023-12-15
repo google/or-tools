@@ -97,6 +97,8 @@ class BoolVar {
     return other.builder_ != builder_ || other.index_ != index_;
   }
 
+  BoolVar operator~() const { return Not(); }
+
   std::string DebugString() const;
 
   /**

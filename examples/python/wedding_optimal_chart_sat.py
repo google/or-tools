@@ -194,8 +194,8 @@ def solve_with_discrete_model():
                 # Link same_table and seats.
                 model.add_bool_or(
                     [
-                        seats[(t, g1)].negated(),
-                        seats[(t, g2)].negated(),
+                        ~seats[(t, g1)],
+                        ~seats[(t, g2)],
                         same_table[(g1, g2, t)],
                     ]
                 )

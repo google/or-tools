@@ -93,14 +93,14 @@ def main(_):
             start1,
             duration,
             end1,
-            performed_on_m0.negated(),
+            ~performed_on_m0,
             "interval_%i_on_m1" % i,
         )
         intervals1.append(interval1)
 
         # We only propagate the constraint if the tasks is performed on the machine.
         model.add(start0 == start).only_enforce_if(performed_on_m0)
-        model.add(start1 == start).only_enforce_if(performed_on_m0.negated())
+        model.add(start1 == start).only_enforce_if(~performed_on_m0)
 
     # Width constraint (modeled as a cumulative)
     model.add_cumulative(intervals, demands, max_width)

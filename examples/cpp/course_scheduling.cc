@@ -25,6 +25,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/numbers.h"
@@ -247,7 +248,7 @@ std::vector<int> CourseSchedulingSolver::GetRoomIndices(const Course& course) {
   return {0};
 }
 
-void CourseSchedulingSolver::InsertSortedPairs(const std::vector<int>& list,
+void CourseSchedulingSolver::InsertSortedPairs(absl::Span<const int> list,
                                                ConflictPairs* pairs) {
   for (int first = 1; first < list.size(); ++first) {
     for (int second = first; second < list.size(); ++second) {

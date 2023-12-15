@@ -58,31 +58,23 @@ def rank_tasks(
                 precedences[(j, i)],
             ]
             if not cp_model.object_is_a_true_literal(presences[i]):
-                tmp_array.append(presences[i].negated())
+                tmp_array.append(~presences[i])
                 # Makes sure that if i is not performed, all precedences are false.
-                model.add_implication(
-                    presences[i].negated(), precedences[(i, j)].negated()
-                )
-                model.add_implication(
-                    presences[i].negated(), precedences[(j, i)].negated()
-                )
+                model.add_implication(~presences[i], ~precedences[(i, j)])
+                model.add_implication(~presences[i], ~precedences[(j, i)])
             if not cp_model.object_is_a_true_literal(presences[j]):
-                tmp_array.append(presences[j].negated())
+                tmp_array.append(~presences[j])
                 # Makes sure that if j is not performed, all precedences are false.
-                model.add_implication(
-                    presences[j].negated(), precedences[(i, j)].negated()
-                )
-                model.add_implication(
-                    presences[j].negated(), precedences[(j, i)].negated()
-                )
+                model.add_implication(~presences[j], ~precedences[(i, j)])
+                model.add_implication(~presences[j], ~precedences[(j, i)])
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
             model.add_bool_or(tmp_array)
             # Redundant constraint: it propagates early that at most one precedence
             # is true.
-            model.add_implication(precedences[(i, j)], precedences[(j, i)].negated())
-            model.add_implication(precedences[(j, i)], precedences[(i, j)].negated())
+            model.add_implication(precedences[(i, j)], ~precedences[(j, i)])
+            model.add_implication(precedences[(j, i)], ~precedences[(i, j)])
 
     # Links precedences and ranks.
     for i in all_tasks:

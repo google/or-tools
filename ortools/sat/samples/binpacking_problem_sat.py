@@ -60,7 +60,7 @@ def binpacking_problem_sat():
         # slack[b] => load[b] <= safe_capacity.
         model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
         # not(slack[b]) => load[b] > safe_capacity.
-        model.add(load[b] > safe_capacity).only_enforce_if(slacks[b].negated())
+        model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
 
     # Maximize sum of slacks.
     model.maximize(sum(slacks))

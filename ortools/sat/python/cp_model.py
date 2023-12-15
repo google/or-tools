@@ -905,6 +905,10 @@ class IntVar(LinearExpr):
             self.__negation = _NotBooleanVariable(self)
         return self.__negation
 
+    def __invert__(self) -> "_NotBooleanVariable":
+        """Returns the logical negation of a Boolean variable."""
+        return self.negated()
+
     # Pre PEP8 compatibility.
     # pylint: disable=invalid-name
     Not = negated
@@ -933,6 +937,10 @@ class _NotBooleanVariable(LinearExpr):
 
     def negated(self) -> IntVar:
         return self.__boolvar
+
+    def __invert__(self) -> IntVar:
+        """Returns the logical negation of a Boolean literal."""
+        return self.negated()
 
     def __str__(self) -> str:
         return self.name

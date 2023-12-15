@@ -55,20 +55,20 @@ def overlapping_interval_sample_sat():
     # a_after_b Boolean variable.
     a_after_b = model.new_bool_var("a_after_b")
     model.add(start_var_a >= end_var_b).only_enforce_if(a_after_b)
-    model.add(start_var_a < end_var_b).only_enforce_if(a_after_b.negated())
+    model.add(start_var_a < end_var_b).only_enforce_if(~a_after_b)
 
     # b_after_a Boolean variable.
     b_after_a = model.new_bool_var("b_after_a")
     model.add(start_var_b >= end_var_a).only_enforce_if(b_after_a)
-    model.add(start_var_b < end_var_a).only_enforce_if(b_after_a.negated())
+    model.add(start_var_b < end_var_a).only_enforce_if(~b_after_a)
 
     # Result Boolean variable.
     a_overlaps_b = model.new_bool_var("a_overlaps_b")
 
     # Option a: using only clauses
     model.add_bool_or(a_after_b, b_after_a, a_overlaps_b)
-    model.add_implication(a_after_b, a_overlaps_b.negated())
-    model.add_implication(b_after_a, a_overlaps_b.negated())
+    model.add_implication(a_after_b, ~a_overlaps_b)
+    model.add_implication(b_after_a, ~a_overlaps_b)
 
     # Option b: using an exactly one constraint.
     # model.add_exactly_one(a_after_b, b_after_a, a_overlaps_b)

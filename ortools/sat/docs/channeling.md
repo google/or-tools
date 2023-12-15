@@ -63,13 +63,13 @@ def channeling_sample_sat():
 
     # Implement b == (x >= 5).
     model.add(x >= 5).only_enforce_if(b)
-    model.add(x < 5).only_enforce_if(b.negated())
+    model.add(x < 5).only_enforce_if(~b)
 
     # Create our two half-reified constraints.
     # First, b implies (y == 10 - x).
     model.add(y == 10 - x).only_enforce_if(b)
     # Second, not(b) implies y == 0.
-    model.add(y == 0).only_enforce_if(b.negated())
+    model.add(y == 0).only_enforce_if(~b)
 
     # Search for x values in increasing order.
     model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
@@ -119,13 +119,13 @@ void ChannelingSampleSat() {
 
   // Implement b == (x >= 5).
   cp_model.AddGreaterOrEqual(x, 5).OnlyEnforceIf(b);
-  cp_model.AddLessThan(x, 5).OnlyEnforceIf(Not(b));
+  cp_model.AddLessThan(x, 5).OnlyEnforceIf(~b);
 
   // Create our two half-reified constraints.
   // First, b implies (y == 10 - x).
   cp_model.AddEquality(x + y, 10).OnlyEnforceIf(b);
   // Second, not(b) implies y == 0.
-  cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
+  cp_model.AddEquality(y, 0).OnlyEnforceIf(~b);
 
   // Search for x values in increasing order.
   cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,
@@ -381,7 +381,7 @@ def binpacking_problem_sat():
         # slack[b] => load[b] <= safe_capacity.
         model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
         # not(slack[b]) => load[b] > safe_capacity.
-        model.add(load[b] > safe_capacity).only_enforce_if(slacks[b].negated())
+        model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
 
     # Maximize sum of slacks.
     model.maximize(sum(slacks))
@@ -470,8 +470,7 @@ void BinpackingProblemSat() {
     // slack[b] => load[b] <= safe_capacity.
     cp_model.AddLessOrEqual(load[b], safe_capacity).OnlyEnforceIf(slacks[b]);
     // not(slack[b]) => load[b] > safe_capacity.
-    cp_model.AddGreaterThan(load[b], safe_capacity)
-        .OnlyEnforceIf(Not(slacks[b]));
+    cp_model.AddGreaterThan(load[b], safe_capacity).OnlyEnforceIf(~slacks[b]);
   }
 
   // Maximize sum of slacks.

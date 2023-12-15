@@ -618,7 +618,7 @@ class NetworkRoutingSolver {
       cp_model.AddGreaterThan(traffic_var, safe_capacity)
           .OnlyEnforceIf(comfort);
       cp_model.AddLessOrEqual(traffic_var, safe_capacity)
-          .OnlyEnforceIf(Not(comfort));
+          .OnlyEnforceIf(~comfort);
       comfortable_traffic_vars[arc_index] = comfort;
     }
 

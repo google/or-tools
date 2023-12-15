@@ -51,7 +51,7 @@
 //
 // No attempt is made to force integrality.
 
-#include <cstdio>
+#include <cstdlib>
 #include <cstring>  // strlen
 #include <map>
 #include <memory>
@@ -60,12 +60,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 ABSL_FLAG(bool, colgen_verbose, false, "print verbosely");
@@ -616,12 +617,10 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif  // USE_CLP
-  //#if defined(USE_GLOP)
   if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
-  //#endif  // USE_GLOP
 #if defined(USE_XPRESS)
   if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
