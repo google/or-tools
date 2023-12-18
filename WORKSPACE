@@ -60,8 +60,6 @@ git_repository(
 git_repository(
     name = "contrib_rules_jvm",
     tag = "v0.19.0",
-    patches = ["//patches:rules_jvm.patch"],
-    patch_args = ["-p1"],
     remote = "https://github.com/bazel-contrib/rules_jvm.git",
 )
 

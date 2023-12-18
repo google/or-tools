@@ -87,10 +87,6 @@ def code_sample_java(name):
         srcs = [name + ".java"],
         main_class = "com.google.ortools.graph.samples." + name,
         test_class = "com.google.ortools.graph.samples." + name,
-        jvm_flags = select({
-            "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
-            "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-        }),
         deps = [
             "//ortools/graph/java:graph",
             "//ortools/java/com/google/ortools:Loader",

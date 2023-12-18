@@ -79,10 +79,6 @@ def code_sample_java(name):
         srcs = [name + ".java"],
         main_class = "com.google.ortools.linearsolver.samples." + name,
         test_class = "com.google.ortools.linearsolver.samples." + name,
-        jvm_flags = select({
-            "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
-            "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-        }),
         deps = [
             "//ortools/linear_solver/java:modelbuilder",
             "//ortools/java/com/google/ortools/modelbuilder",
