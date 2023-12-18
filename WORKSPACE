@@ -20,7 +20,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 ## Bazel Skylib rules.
 git_repository(
     name = "bazel_skylib",
-    tag = "1.4.2",
+    tag = "1.5.0",
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -29,7 +29,7 @@ bazel_skylib_workspace()
 ## Bazel rules.
 git_repository(
     name = "platforms",
-    tag = "0.0.7",
+    tag = "0.0.8",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
@@ -67,7 +67,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.26.0",
+    tag = "0.27.1",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -190,6 +190,7 @@ new_git_repository(
 
 ## Python
 load("@rules_python//python:repositories.bzl", "py_repositories")
+
 py_repositories()
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
@@ -197,7 +198,7 @@ py_repositories()
 load("@rules_python//python:pip.bzl", "pip_parse")
 pip_parse(
    name = "pip_deps",
-   requirements = "//bazel:ortools_requirements.txt",
+   requirements_lock = "//bazel:ortools_requirements.txt",
 )
 
 load("@pip_deps//:requirements.bzl",
@@ -207,7 +208,7 @@ install_pip_deps()
 # Add a second repo @ortools_notebook_deps for jupyter notebooks.
 pip_parse(
    name = "ortools_notebook_deps",
-   requirements = "//bazel:notebook_requirements.txt",
+   requirements_lock = "//bazel:notebook_requirements.txt",
 )
 
 load("@ortools_notebook_deps//:requirements.bzl",
