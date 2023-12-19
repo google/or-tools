@@ -5,15 +5,15 @@ index e936f66..eaac571 100644
 @@ -21,7 +21,7 @@ option(BUILD_TESTS "Build tests." OFF)
  # ============================================================================
  # Find Python
-
+ 
 -find_package(Python COMPONENTS Interpreter Development)
 +find_package(Python3 COMPONENTS Interpreter Development.Module)
-
+ 
  # ============================================================================
  # Build dependencies
 @@ -47,8 +47,10 @@ pybind11_add_module(
    pybind11_protobuf/proto_utils.h)
-
+ 
  target_link_libraries(
 -  pybind11_proto_utils PRIVATE absl::strings protobuf::libprotobuf
 -                               ${Python_LIBRARIES})
@@ -21,7 +21,7 @@ index e936f66..eaac571 100644
 +    absl::strings
 +    protobuf::libprotobuf
 +    Python3::Module)
-
+ 
  target_include_directories(
    pybind11_proto_utils PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS}
 @@ -57,7 +59,7 @@ target_include_directories(
@@ -39,20 +39,20 @@ index e936f66..eaac571 100644
    pybind11::pybind11
 -  ${Python_LIBRARIES})
 +  Python3::Module)
-
+ 
  target_include_directories(
    pybind11_native_proto_caster
 +  PUBLIC
 +    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
    PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
            ${pybind11_INCLUDE_DIRS})
-
+ 
 @@ -109,7 +113,7 @@ target_link_libraries(
    absl::optional
    protobuf::libprotobuf
    pybind11::pybind11
 -  ${Python_LIBRARIES})
 +  Python3::Module)
-
+ 
  target_include_directories(
    pybind11_wrapped_proto_caster

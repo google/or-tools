@@ -188,7 +188,6 @@ new_git_repository(
 
 ## Python
 load("@rules_python//python:repositories.bzl", "py_repositories")
-
 py_repositories()
 
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
