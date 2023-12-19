@@ -744,10 +744,8 @@ class TriangularMatrix : private CompactSparseMatrix {
   // sorted by rows. It is up to the client to call the direct or reverse
   // hyper-sparse solve function depending if the matrix is upper or lower
   // triangular.
-  void ComputeRowsToConsiderInSortedOrder(RowIndexVector* non_zero_rows,
-                                          Fractional sparsity_ratio,
-                                          Fractional num_ops_ratio) const;
   void ComputeRowsToConsiderInSortedOrder(RowIndexVector* non_zero_rows) const;
+
   // This is currently only used for testing. It achieves the same result as
   // PermutedLowerSparseSolve() below, but the latter exploits the sparsity of
   // rhs and is thus faster for our use case.
@@ -869,7 +867,7 @@ class TriangularMatrix : private CompactSparseMatrix {
 
   // For the hyper-sparse version. These are used to implement a DFS, see
   // TriangularComputeRowsToConsider() for more details.
-  mutable DenseBooleanColumn stored_;
+  mutable Bitset64<RowIndex> stored_;
   mutable std::vector<RowIndex> nodes_to_explore_;
 
   // For PermutedLowerSparseSolve().

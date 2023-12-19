@@ -1253,7 +1253,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
 void TriangularMatrix::PermutedComputeRowsToConsider(
     const ColumnView& rhs, const RowPermutation& row_perm,
     RowIndexVector* lower_column_rows, RowIndexVector* upper_column_rows) {
-  stored_.resize(num_rows_, false);
+  stored_.Resize(num_rows_);
   marked_.resize(num_rows_, false);
   lower_column_rows->clear();
   upper_column_rows->clear();
@@ -1262,7 +1262,7 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
   for (SparseColumn::Entry e : rhs) {
     const ColIndex col = RowToColIndex(row_perm[e.row()]);
     if (col < 0) {
-      stored_[e.row()] = true;
+      stored_.Set(e.row());
       lower_column_rows->push_back(e.row());
     } else {
       nodes_to_explore_.push_back(e.row());
@@ -1291,7 +1291,7 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
       const RowIndex explored_row = nodes_to_explore_.back();
       nodes_to_explore_.pop_back();
       DCHECK(!stored_[explored_row]);
-      stored_[explored_row] = true;
+      stored_.Set(explored_row);
       upper_column_rows->push_back(explored_row);
 
       // Unmark and prune the nodes that are already unmarked. See the header
@@ -1333,7 +1333,7 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
     // Otherwise we can store the node right away.
     const ColIndex col = RowToColIndex(row_perm[row]);
     if (col < 0) {
-      stored_[row] = true;
+      stored_.Set(row);
       lower_column_rows->push_back(row);
       nodes_to_explore_.pop_back();
       continue;
@@ -1357,10 +1357,10 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
 
   // Clear stored_.
   for (const RowIndex row : *lower_column_rows) {
-    stored_[row] = false;
+    stored_.ClearBucket(row);
   }
   for (const RowIndex row : *upper_column_rows) {
-    stored_[row] = false;
+    stored_.ClearBucket(row);
   }
 }
 
@@ -1387,7 +1387,7 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
   }
 
   // Initialize using the non-zero positions of the input.
-  stored_.resize(num_rows_, false);
+  stored_.Resize(num_rows_);
   nodes_to_explore_.clear();
   nodes_to_explore_.swap(*non_zero_rows);
 
@@ -1402,7 +1402,7 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
     if (row < 0) {
       nodes_to_explore_.pop_back();
       const RowIndex explored_row = -row - 1;
-      stored_[explored_row] = true;
+      stored_.Set(explored_row);
       non_zero_rows->push_back(explored_row);
       continue;
     }
@@ -1435,7 +1435,7 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
 
   // Clear stored_.
   for (const RowIndex row : *non_zero_rows) {
-    stored_[row] = false;
+    stored_.ClearBucket(row);
   }
 
   // If we aborted, clear the result.
@@ -1444,15 +1444,6 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
 
 void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     RowIndexVector* non_zero_rows) const {
-  static const Fractional kDefaultSparsityRatio = 0.025;
-  static const Fractional kDefaultNumOpsRatio = 0.05;
-  ComputeRowsToConsiderInSortedOrder(non_zero_rows, kDefaultSparsityRatio,
-                                     kDefaultNumOpsRatio);
-}
-
-void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
-    RowIndexVector* non_zero_rows, Fractional sparsity_ratio,
-    Fractional num_ops_ratio) const {
   if (non_zero_rows->empty()) return;
 
   // TODO(user): Investigate the best thresholds.
@@ -1466,28 +1457,29 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     return;
   }
 
-  stored_.resize(num_rows_, false);
-  for (const RowIndex row : *non_zero_rows) stored_[row] = true;
+  stored_.Resize(num_rows_);
+  for (const RowIndex row : *non_zero_rows) stored_.Set(row);
 
   const auto entry_rows = rows_.view();
   for (int i = 0; i < non_zero_rows->size(); ++i) {
     const RowIndex row = (*non_zero_rows)[i];
-    for (const EntryIndex i : Column(RowToColIndex(row))) {
+    for (const EntryIndex index : Column(RowToColIndex(row))) {
       ++num_ops;
-      const RowIndex entry_row = entry_rows[i];
+      const RowIndex entry_row = entry_rows[index];
       if (!stored_[entry_row]) {
         non_zero_rows->push_back(entry_row);
-        stored_[entry_row] = true;
+        stored_.Set(entry_row);
       }
     }
     if (num_ops > num_ops_threshold) break;
   }
 
-  for (const RowIndex row : *non_zero_rows) stored_[row] = false;
   if (num_ops > num_ops_threshold) {
+    stored_.ClearAll();
     non_zero_rows->clear();
   } else {
     std::sort(non_zero_rows->begin(), non_zero_rows->end());
+    for (const RowIndex row : *non_zero_rows) stored_.ClearBucket(row);
   }
 }
 
