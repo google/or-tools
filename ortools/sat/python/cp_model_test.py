@@ -66,6 +66,35 @@ class SolutionObjective(cp_model.CpSolverSolutionCallback):
         return self.__obj
 
 
+class RecordSolution(cp_model.CpSolverSolutionCallback):
+    """Record the objective value of the solution."""
+
+    def __init__(
+        self,
+        int_vars: list[cp_model.VariableT],
+        bool_vars: list[cp_model.LiteralT],
+    ):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__int_vars = int_vars
+        self.__bool_vars = bool_vars
+        self.__int_var_values: list[int] = []
+        self.__bool_var_values: list[bool] = []
+
+    def on_solution_callback(self):
+        for int_var in self.__int_vars:
+            self.__int_var_values.append(self.value(int_var))
+        for bool_var in self.__bool_vars:
+            self.__bool_var_values.append(self.boolean_value(bool_var))
+
+    @property
+    def int_var_values(self):
+        return self.__int_var_values
+
+    @property
+    def bool_var_values(self):
+        return self.__bool_var_values
+
+
 class LogToString:
     """Record log in a string."""
 
@@ -113,7 +142,9 @@ class CpModelTest(absltest.TestCase):
         b = model.new_bool_var("b")
         nb = b.negated()
         self.assertEqual(b.negated(), nb)
+        self.assertEqual(~b, nb)
         self.assertEqual(b.negated().negated(), b)
+        self.assertEqual(~(~b), b)
         self.assertEqual(nb.index, -b.index - 1)
         self.assertRaises(TypeError, x.negated)
 
@@ -136,6 +167,17 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
         self.assertEqual(10, solver.value(x))
         self.assertEqual(-5, solver.value(y))
+
+    def testLinearConstraint(self):
+        print("testLinear")
+        model = cp_model.CpModel()
+        model.add_linear_constraint(5, 0, 10)
+        model.add_linear_constraint(-1, 0, 10)
+        self.assertLen(model.proto.constraints, 2)
+        self.assertTrue(model.proto.constraints[0].HasField("bool_and"))
+        self.assertEmpty(model.proto.constraints[0].bool_and.literals)
+        self.assertTrue(model.proto.constraints[1].HasField("bool_or"))
+        self.assertEmpty(model.proto.constraints[1].bool_or.literals)
 
     def testLinearNonEqual(self):
         print("testLinearNonEqual")
@@ -529,6 +571,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].element.index)
         self.assertEqual(4, model.proto.constraints[0].element.target)
         self.assertRaises(ValueError, model.add_element, x[0], [], x[4])
+
+    def testFixedElement(self):
+        print("testFixedElement")
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 4, "x%i" % i) for i in range(4)]
+        model.add_element(1, [x[0], 2, 4, x[2]], x[3])
+        self.assertLen(model.proto.variables, 4)
+        self.assertLen(model.proto.constraints, 1)
+        self.assertLen(model.proto.constraints[0].linear.vars, 1)
+        self.assertEqual(x[3].index, model.proto.constraints[0].linear.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].linear.coeffs[0])
+        self.assertEqual([2, 2], model.proto.constraints[0].linear.domain)
 
     def testCircuit(self):
         print("testCircuit")
@@ -1277,6 +1331,25 @@ class CpModelTest(absltest.TestCase):
         print("obj = ", solution_obj.obj)
         self.assertEqual(11, solution_obj.obj)
 
+    def testSolutionValue(self):
+        print("testSolutionValue")
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 5, "x")
+        b = model.new_bool_var("b")
+        model.add_decision_strategy(
+            [x], cp_model.CHOOSE_MIN_DOMAIN_SIZE, cp_model.SELECT_MAX_VALUE
+        )
+        model.add_decision_strategy(
+            [b], cp_model.CHOOSE_MIN_DOMAIN_SIZE, cp_model.SELECT_MIN_VALUE
+        )
+        solver = cp_model.CpSolver()
+        solver.parameters.keep_all_feasible_solutions_in_presolve = True
+        solution_recorder = RecordSolution([3, x, 1 - x], [1, False, ~b])
+        status = solver.solve(model, solution_recorder)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertEqual([3, 5, -4], solution_recorder.int_var_values)
+        self.assertEqual([True, False, True], solution_recorder.bool_var_values)
+
     def testSolutionHinting(self):
         print("testSolutionHinting")
         model = cp_model.CpModel()
@@ -1504,13 +1577,19 @@ class CpModelTest(absltest.TestCase):
         ends = model.new_int_var_series(
             name="ends", index=df.index, lower_bounds=0, upper_bounds=10
         )
-        presences = model.new_bool_var_series(name="rresences", index=df.index)
+        presences = model.new_bool_var_series(name="presences", index=df.index)
         intervals = model.new_interval_var_series(
             name="fixed_size_intervals",
             index=df.index,
             starts=starts,
             sizes=sizes,
             ends=ends,
+        )
+        fixed_intervals = model.new_fixed_size_interval_var_series(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=3,
         )
         opt_intervals = model.new_optional_interval_var_series(
             name="fixed_size_intervals",
@@ -1520,8 +1599,20 @@ class CpModelTest(absltest.TestCase):
             ends=ends,
             are_present=presences,
         )
-        model.add_no_overlap(intervals.to_list() + opt_intervals.to_list())
-        self.assertLen(model.proto.constraints, 13)
+        absent_fixed_intervals = model.new_optional_fixed_size_interval_var_series(
+            name="fixed_size_intervals",
+            index=df.index,
+            starts=starts,
+            sizes=3,
+            are_present=False,
+        )
+        model.add_no_overlap(
+            intervals.to_list()
+            + opt_intervals.to_list()
+            + fixed_intervals.to_list()
+            + absent_fixed_intervals.to_list()
+        )
+        self.assertLen(model.proto.constraints, 19)
 
 
 if __name__ == "__main__":

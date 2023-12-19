@@ -114,7 +114,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     }
 
     // Fix variable and add new binary clauses.
-    if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
+    if (!sat_solver_->ResetToLevelZero()) return false;
     for (const Literal l : to_fix_at_true_) {
       if (!sat_solver_->AddUnitClause(l)) return false;
     }
@@ -206,8 +206,7 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
   propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
 
   // Reset the solver in case it was already used.
-  sat_solver_->SetAssumptionLevel(0);
-  if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
+  if (!sat_solver_->ResetToLevelZero()) return false;
 
   const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
   if (!ProbeOneVariableInternal(b)) return false;
@@ -236,8 +235,7 @@ bool Prober::ProbeBooleanVariables(
   propagated_.ClearAndResize(LiteralIndex(2 * num_variables));
 
   // Reset the solver in case it was already used.
-  sat_solver_->SetAssumptionLevel(0);
-  if (!sat_solver_->RestoreSolverToAssumptionLevel()) return false;
+  if (!sat_solver_->ResetToLevelZero()) return false;
 
   const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
   const double initial_deterministic_time =
@@ -427,8 +425,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 
   // Reset the solver in case it was already used.
   auto* sat_solver = model->GetOrCreate<SatSolver>();
-  sat_solver->SetAssumptionLevel(0);
-  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+  if (!sat_solver->ResetToLevelZero()) return false;
 
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
@@ -465,7 +462,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
       return true;
     }
 
-    if (!sat_solver->RestoreSolverToAssumptionLevel()) {
+    if (!sat_solver->ResetToLevelZero()) {
       SOLVER_LOG(logger, "UNSAT during trivial exploration heuristic.");
       time_limit->AdvanceDeterministicTime(elapsed_dtime);
       return false;
@@ -483,7 +480,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   sat_solver->SetParameters(initial_params);
   sat_solver->ResetDecisionHeuristic();
   time_limit->AdvanceDeterministicTime(elapsed_dtime);
-  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+  if (!sat_solver->ResetToLevelZero()) return false;
 
   if (logger->LoggingIsEnabled()) {
     const int num_fixed = sat_solver->LiteralTrail().Index();
@@ -505,8 +502,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
 
   // Reset the solver in case it was already used.
   auto* sat_solver = model->GetOrCreate<SatSolver>();
-  sat_solver->SetAssumptionLevel(0);
-  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+  if (!sat_solver->ResetToLevelZero()) return false;
 
   // When called from Inprocessing, the implication graph should already be a
   // DAG, so these two calls should return right away. But we do need them to
@@ -821,6 +817,16 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
     // true. So after many propagations, we hope to have such configuration
     // which is quite cheap to test here.
     if (options.subsume_with_binary_clause) {
+      // Tricky: If we have many "decision" and we do not extract the binary
+      // clause, then the fact that last_decision => literal might not be
+      // currently encoded in the problem clause, so if we use that relation
+      // to subsume, we should make sure it is added.
+      //
+      // Note that it is okay to add duplicate binary clause, we will clean that
+      // later.
+      const bool always_add_binary = sat_solver->CurrentDecisionLevel() > 1 &&
+                                     !options.extract_binary_clauses;
+
       for (const auto& w :
            clause_manager->WatcherListOnFalse(last_decision.Negated())) {
         if (assignment.LiteralIsTrue(w.blocking_literal)) {
@@ -833,9 +839,10 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
           // Tricky: while last_decision would be a valid reason, we need a
           // reason that was assigned before this literal, so we use the
           // decision at the level where this literal was assigned which is an
-          // even better reasony. Maybe it is just better to change all the
+          // even better reason. Maybe it is just better to change all the
           // reason above to a binary one so we don't have an issue here.
-          if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
+          if (always_add_binary ||
+              trail.AssignmentType(w.blocking_literal.Variable()) != id) {
             // If the variable was true at level zero, there is no point
             // adding the clause.
             const auto& info = trail.Info(w.blocking_literal.Variable());

@@ -2873,16 +2873,19 @@ class LnsSolver : public SubSolver {
         ModelCopy copier(context.get());
 
         // Copy and simplify the constraints from the initial model.
-        if (!copier.ImportAndSimplifyConstraints(
-                helper_->ModelProto(), neighborhood.constraints_to_ignore)) {
+        if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
           return;
         }
 
         // Copy and simplify the constraints from the delta model.
         if (!neighborhood.delta.constraints().empty() &&
-            !copier.ImportAndSimplifyConstraints(neighborhood.delta, {})) {
+            !copier.ImportAndSimplifyConstraints(neighborhood.delta)) {
           return;
         }
+
+        // This is not stricly needed, but useful for properly debugging an
+        // infeasible LNS.
+        context->WriteVariableDomainsToProto();
       }
 
       // Copy the rest of the model and overwrite the name.

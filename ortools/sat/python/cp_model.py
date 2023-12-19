@@ -121,7 +121,7 @@ RANDOMIZED_SEARCH = sat_parameters_pb2.SatParameters.RANDOMIZED_SEARCH
 # Type aliases
 # We need to add int to numbers.Integral
 IntegralT = Union[numbers.Integral, int]
-# We need to add int and float, otherwise pytype complains.
+# We need to add int and float, otherwise type checkers complain.
 NumberT = Union[numbers.Integral, int, numbers.Number, float]
 LiteralT = Union["IntVar", "_NotBooleanVariable", IntegralT, bool]
 BoolVarT = Union["IntVar", "_NotBooleanVariable"]
@@ -1089,12 +1089,12 @@ class Constraint:
           self.
         """
         for lit in expand_generator_or_tuple(boolvar):
-            if (isinstance(lit, bool) and lit) or (
+            if (cmh.is_boolean(lit) and lit) or (
                 isinstance(lit, numbers.Integral) and lit == 1
             ):
                 # Always true. Do nothing.
                 pass
-            elif (isinstance(lit, bool) and not lit) or (
+            elif (cmh.is_boolean(lit) and not lit) or (
                 isinstance(lit, numbers.Integral) and lit == 0
             ):
                 self.__constraint.enforcement_literal.append(
@@ -1476,7 +1476,7 @@ class CpModel:
                 ]
             )
             return ct
-        elif isinstance(linear_expr, numbers.Integral):
+        if isinstance(linear_expr, numbers.Integral):
             if not domain.contains(int(linear_expr)):
                 return self.add_bool_or([])  # Evaluate to false.
             else:
@@ -1502,9 +1502,9 @@ class CpModel:
             return self.add_linear_expression_in_domain(
                 ct.expression(), Domain.from_flat_intervals(ct.bounds())
             )
-        elif ct and isinstance(ct, bool):
+        if ct and cmh.is_boolean(ct):
             return self.add_bool_or([True])
-        elif not ct and isinstance(ct, bool):
+        if not ct and cmh.is_boolean(ct):
             return self.add_bool_or([])  # Evaluate to false.
         raise TypeError("not supported: CpModel.add(" + str(ct) + ")")
 
@@ -2722,31 +2722,32 @@ class CpModel:
         """Returns the index of a variable, its negation, or a number."""
         if isinstance(arg, IntVar):
             return arg.index
-        elif (
+        if (
             isinstance(arg, _ProductCst)
             and isinstance(arg.expression(), IntVar)
             and arg.coefficient() == -1
         ):
             return -arg.expression().index - 1
-        elif isinstance(arg, numbers.Integral):
+        if isinstance(arg, numbers.Integral):
             arg = cmh.assert_is_int64(arg)
             return self.get_or_make_index_from_constant(arg)
-        else:
-            raise TypeError("NotSupported: model.get_or_make_index(" + str(arg) + ")")
+        raise TypeError("NotSupported: model.get_or_make_index(" + str(arg) + ")")
 
     def get_or_make_boolean_index(self, arg: LiteralT) -> int:
         """Returns an index from a boolean expression."""
+        print(arg, type(arg))
         if isinstance(arg, IntVar):
             self.assert_is_boolean_variable(arg)
             return arg.index
-        elif isinstance(arg, _NotBooleanVariable):
+        if isinstance(arg, _NotBooleanVariable):
             self.assert_is_boolean_variable(arg.negated())
             return arg.index
-        elif isinstance(arg, numbers.Integral):
+        if isinstance(arg, numbers.Integral):
             arg = cmh.assert_is_zero_or_one(arg)
             return self.get_or_make_index_from_constant(arg)
-        else:
-            raise TypeError(f"not supported: model.get_or_make_boolean_index({arg})")
+        if cmh.is_boolean(arg):
+            return self.get_or_make_index_from_constant(int(arg))
+        raise TypeError(f"not supported: model.get_or_make_boolean_index({arg})")
 
     def get_interval_index(self, arg: IntervalVar) -> int:
         if not isinstance(arg, IntervalVar):
@@ -3416,10 +3417,12 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
             raise RuntimeError("solve() has not been called.")
         if isinstance(lit, numbers.Integral):
             return bool(lit)
-        elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
+        if isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
             return self.SolutionBooleanValue(
                 cast(Union[IntVar, _NotBooleanVariable], lit).index
             )
+        if cmh.is_boolean(lit):
+            return bool(lit)
         raise TypeError(f"Cannot interpret {lit} as a boolean expression.")
 
     def value(self, expression: LinearExprT) -> int:

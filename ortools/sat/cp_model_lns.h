@@ -58,7 +58,6 @@ struct Neighborhood {
   // with updated domains.
   // It can contains new variables and new constraints, and solution hinting.
   CpModelProto delta;
-  std::vector<int> constraints_to_ignore;
 
   // Neighborhood Id. Used to identify the neighborhood by a generator.
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
@@ -110,10 +109,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   Neighborhood FixGivenVariables(
       const CpSolverResponse& base_solution,
       const absl::flat_hash_set<int>& variables_to_fix) const;
-
-  // Returns the neighborhood where the given constraints are removed.
-  Neighborhood RemoveMarkedConstraints(
-      const std::vector<int>& constraints_to_remove) const;
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.

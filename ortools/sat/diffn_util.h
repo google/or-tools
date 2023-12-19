@@ -214,6 +214,50 @@ void GetOverlappingIntervalComponents(
 std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
 
+struct ItemForPairwiseRestriction {
+  int index;
+  struct Interval {
+    IntegerValue start_min;
+    IntegerValue start_max;
+    IntegerValue end_min;
+    IntegerValue end_max;
+  };
+  Interval x;
+  Interval y;
+};
+
+struct PairwiseRestriction {
+  enum class PairwiseRestrictionType {
+    CONFLICT,
+    FIRST_BELOW_SECOND,
+    FIRST_ABOVE_SECOND,
+    FIRST_LEFT_OF_SECOND,
+    FIRST_RIGHT_OF_SECOND,
+  };
+
+  int first_index;
+  int second_index;
+  PairwiseRestrictionType type;
+
+  bool operator==(const PairwiseRestriction& rhs) const {
+    return first_index == rhs.first_index && second_index == rhs.second_index &&
+           type == rhs.type;
+  }
+};
+
+// Find pair of items that are either in conflict or could have their range
+// shrinked to avoid conflict.
+void AppendPairwiseRestrictions(
+    const std::vector<ItemForPairwiseRestriction>& items,
+    std::vector<PairwiseRestriction>* result);
+
+// Same as above, but test `items` against `other_items` and append the
+// restrictions found to `result`.
+void AppendPairwiseRestrictions(
+    const std::vector<ItemForPairwiseRestriction>& items,
+    const std::vector<ItemForPairwiseRestriction>& other_items,
+    std::vector<PairwiseRestriction>* result);
+
 // This class is used by the no_overlap_2d constraint to maintain the envelope
 // of a set of rectangles. This envelope is not the convex hull, but the exact
 // polyline (aligned with the x and y axis) that contains all the rectangles

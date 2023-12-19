@@ -1122,16 +1122,6 @@ void NeighborhoodGeneratorHelper::AddSolutionHinting(
   }
 }
 
-Neighborhood NeighborhoodGeneratorHelper::RemoveMarkedConstraints(
-    const std::vector<int>& constraints_to_remove) const {
-  Neighborhood neighborhood = FullNeighborhood();
-
-  if (constraints_to_remove.empty()) return neighborhood;
-  neighborhood.is_reduced = false;
-  neighborhood.constraints_to_ignore = constraints_to_remove;
-  return neighborhood;
-}
-
 Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     const CpSolverResponse& initial_solution,
     const std::vector<int>& relaxed_variables) const {

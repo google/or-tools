@@ -366,7 +366,6 @@ class ModelCopy {
   // constraint so that they only use reference to previously defined intervals.
   // This allow to be more efficient later in a few preprocessing steps.
   bool ImportAndSimplifyConstraints(const CpModelProto& in_model,
-                                    const std::vector<int>& ignored_constraints,
                                     bool first_copy = false);
 
   // Copy variables from the in_model to the working model.

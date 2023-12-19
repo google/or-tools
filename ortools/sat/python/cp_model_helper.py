@@ -15,12 +15,22 @@
 
 import numbers
 from typing import Any, Union
+import numpy as np
 
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
 INT32_MIN = -2147483648
 INT32_MAX = 2147483647
+
+
+def is_boolean(x: Any) -> bool:
+    """Checks if the x is a boolean."""
+    if isinstance(x, bool):
+        return True
+    if isinstance(x, np.bool_):
+        return True
+    return False
 
 
 def is_zero(x: Any) -> bool:
@@ -79,10 +89,9 @@ def assert_is_a_number(x: Any) -> Union[int, float]:
     """Asserts that x is a number and returns it casted to an int or a float."""
     if isinstance(x, numbers.Integral):
         return int(x)
-    elif isinstance(x, numbers.Number):
+    if isinstance(x, numbers.Number):
         return float(x)
-    else:
-        raise TypeError("Not a number: %s" % x)
+    raise TypeError("Not a number: %s" % x)
 
 
 def to_capped_int64(v: int) -> int:

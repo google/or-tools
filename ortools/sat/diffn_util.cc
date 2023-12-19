@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <ostream>
 #include <tuple>
@@ -28,7 +29,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/random/discrete_distribution.h"
+#include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -493,6 +494,99 @@ std::vector<int> GetIntervalArticulationPoints(
   // Convert articulation point indices to IndexedInterval.index.
   for (int& index : articulation_points) index = (*intervals)[index].index;
   return articulation_points;
+}
+
+namespace {
+bool IsZeroOrPowerOfTwo(int value) { return (value & (value - 1)) == 0; }
+
+void AppendPairwiseRestriction(const ItemForPairwiseRestriction& item1,
+                               const ItemForPairwiseRestriction& item2,
+                               std::vector<PairwiseRestriction>* result) {
+  const int state =
+      // box1 can be left of box2.
+      (item1.x.end_min <= item2.x.start_max) +
+      // box1 can be right of box2.
+      2 * (item2.x.end_min <= item1.x.start_max) +
+      // box1 can be below box2.
+      4 * (item1.y.end_min <= item2.y.start_max) +
+      // box1 can be up of box2.
+      8 * (item2.y.end_min <= item1.y.start_max);
+
+  if (!IsZeroOrPowerOfTwo(state)) {
+    return;
+  }
+
+  switch (state) {
+    case 0:
+      // Conflict. The two boxes must overlap in both dimensions.
+      result->push_back(
+          {.first_index = item1.index,
+           .second_index = item2.index,
+           .type = PairwiseRestriction::PairwiseRestrictionType::CONFLICT});
+      break;
+    case 1:
+      // box2 can only be after box1 on x.
+      if (item1.x.end_min > item2.x.start_min ||
+          item2.x.start_max < item1.x.end_max) {
+        result->push_back({.first_index = item1.index,
+                           .second_index = item2.index,
+                           .type = PairwiseRestriction::
+                               PairwiseRestrictionType::FIRST_LEFT_OF_SECOND});
+      }
+      break;
+    case 2:  // box1 an only be after box2 on x.
+      if (item2.x.end_min > item1.x.start_min ||
+          item1.x.start_max < item2.x.end_max) {
+        result->push_back({.first_index = item1.index,
+                           .second_index = item2.index,
+                           .type = PairwiseRestriction::
+                               PairwiseRestrictionType::FIRST_RIGHT_OF_SECOND});
+      }
+      break;
+    case 4:
+      // box2 an only be after box1 on y.
+      if (item1.y.end_min > item2.y.start_min ||
+          item2.y.start_max < item1.y.end_max) {
+        result->push_back({.first_index = item1.index,
+                           .second_index = item2.index,
+                           .type = PairwiseRestriction::
+                               PairwiseRestrictionType::FIRST_BELOW_SECOND});
+      }
+      break;
+    case 8:  // box1 an only be after box2 on y.
+      if (item2.y.end_min > item1.y.start_min ||
+          item1.y.start_max < item2.y.end_max) {
+        result->push_back({.first_index = item1.index,
+                           .second_index = item2.index,
+                           .type = PairwiseRestriction::
+                               PairwiseRestrictionType::FIRST_ABOVE_SECOND});
+      }
+      break;
+    default:
+      break;
+  }
+}
+}  // namespace
+
+void AppendPairwiseRestrictions(
+    const std::vector<ItemForPairwiseRestriction>& items,
+    std::vector<PairwiseRestriction>* result) {
+  for (int i1 = 0; i1 + 1 < items.size(); ++i1) {
+    for (int i2 = i1 + 1; i2 < items.size(); ++i2) {
+      AppendPairwiseRestriction(items[i1], items[i2], result);
+    }
+  }
+}
+
+void AppendPairwiseRestrictions(
+    const std::vector<ItemForPairwiseRestriction>& items,
+    const std::vector<ItemForPairwiseRestriction>& other_items,
+    std::vector<PairwiseRestriction>* result) {
+  for (int i1 = 0; i1 < items.size(); ++i1) {
+    for (int i2 = 0; i2 < other_items.size(); ++i2) {
+      AppendPairwiseRestriction(items[i1], other_items[i2], result);
+    }
+  }
 }
 
 void CapacityProfile::Clear() {
@@ -1241,6 +1335,28 @@ std::vector<double> GetExpTable() {
   }
   return table;
 }
+
+// This is equivalent of
+// absl::discrete_distribution<std::size_t>(input.begin(), input.end())(random)
+// but does no allocations.
+std::size_t weighted_pick(absl::Span<const double> input,
+                          absl::BitGenRef random) {
+  double total_weight = 0;
+  for (double w : input) {
+    total_weight += w;
+  }
+
+  const double weight_point = absl::Uniform(random, 0.0f, total_weight);
+  double total_weight2 = 0;
+  for (int i = 0; i < input.size(); ++i) {
+    total_weight2 += input[i];
+    if (total_weight2 > weight_point) {
+      return i;
+    }
+  }
+  return input.size() - 1;
+}
+
 }  // namespace
 
 std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
@@ -1254,7 +1370,7 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
 
   const double inv_temp = 1.0 / temperature;
   absl::InlinedVector<ProbingRectangle::Edge, 4> candidates;
-  absl::InlinedVector<float, 4> weights;
+  absl::InlinedVector<double, 4> weights;
   while (!ranges.IsMinimal()) {
     const IntegerValue rect_area = ranges.GetCurrentRectangleArea();
     const IntegerValue min_energy = ranges.GetMinimumEnergy();
@@ -1279,11 +1395,10 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
       const IntegerValue delta_slack = delta_energy - delta_area;
       const int table_lookup = std::max(
           0, std::min((int)(delta_slack.value() * 5 * inv_temp + 50), 100));
-      weights.push_back(cached_probabilities->at(table_lookup));
+      weights.push_back((*cached_probabilities)[table_lookup]);
     }
     // Pick a change with a probability proportional to exp(- delta_E / Temp)
-    absl::discrete_distribution<int> dist(weights.begin(), weights.end());
-    ranges.Shrink(candidates.at(dist(random)));
+    ranges.Shrink(candidates[weighted_pick(weights, random)]);
   }
   CHECK_GT(ranges.GetCurrentRectangleArea(), 0);
   if (ranges.GetMinimumEnergy() > ranges.GetCurrentRectangleArea()) {

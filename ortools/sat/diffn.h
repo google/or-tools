@@ -99,13 +99,6 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
  private:
   bool PropagateOnXWhenOnlyTwoBoxes();
-  // If two boxes must overlap but do not have a mandatory line/column that
-  // crosses both of them, then the code above do not see it. So we manually
-  // propagate this case.
-  // This also propagates boxes with null area against other boxes (with a non
-  // zero area, and with a zero area in the other dimension).
-  bool PropagateAllPairsOfBoxes();
-  bool PropagateTwoBoxes(int box1, int box2);
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       bool fast_propagation, const SchedulingConstraintHelper& x,
       SchedulingConstraintHelper* y);
@@ -123,9 +116,6 @@ class NonOverlappingRectanglesDisjunctivePropagator
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<int>> boxes_to_propagate_;
   std::vector<absl::Span<int>> disjoint_boxes_;
-  std::vector<int> horizontal_zero_area_boxes_;
-  std::vector<int> vertical_zero_area_boxes_;
-  std::vector<int> point_zero_area_boxes_;
   std::vector<int> non_zero_area_boxes_;
 
   DisjunctiveOverloadChecker overload_checker_;
@@ -136,13 +126,60 @@ class NonOverlappingRectanglesDisjunctivePropagator
   DisjunctiveEdgeFinding forward_edge_finding_;
   DisjunctiveEdgeFinding backward_edge_finding_;
 
-  bool has_zero_area_boxes_ = false;
-  const bool pairwise_propagation_ = false;
-
   NonOverlappingRectanglesDisjunctivePropagator(
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
   NonOverlappingRectanglesDisjunctivePropagator& operator=(
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
+};
+
+// Propagator that compares the boxes pairwise.
+class RectanglePairwisePropagator : public PropagatorInterface {
+ public:
+  RectanglePairwisePropagator(SchedulingConstraintHelper* x,
+                              SchedulingConstraintHelper* y, Model* model)
+      : global_x_(*x),
+        global_y_(*y),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        full_pairwise_propagation_(
+            model->GetOrCreate<SatParameters>()
+                ->use_pairwise_reasoning_in_no_overlap_2d()) {}
+
+  ~RectanglePairwisePropagator() override;
+
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  RectanglePairwisePropagator(const RectanglePairwisePropagator&) = delete;
+  RectanglePairwisePropagator& operator=(const RectanglePairwisePropagator&) =
+      delete;
+
+  // Return false if a conflict is found.
+  bool FindRestrictionsAndPropagateConflict(
+      const std::vector<ItemForPairwiseRestriction>& items,
+      std::vector<PairwiseRestriction>* restrictions);
+
+  bool FindRestrictionsAndPropagateConflict(
+      const std::vector<ItemForPairwiseRestriction>& items1,
+      const std::vector<ItemForPairwiseRestriction>& items2,
+      std::vector<PairwiseRestriction>* restrictions);
+
+  bool PropagateTwoBoxes(const PairwiseRestriction& restriction);
+
+  SchedulingConstraintHelper& global_x_;
+  SchedulingConstraintHelper& global_y_;
+  SharedStatistics* shared_stats_;
+
+  int64_t num_calls_ = 0;
+  int64_t num_pairwise_conflicts_ = 0;
+  int64_t num_pairwise_propagations_ = 0;
+
+  const bool full_pairwise_propagation_;
+
+  std::vector<ItemForPairwiseRestriction> non_zero_area_boxes_;
+  std::vector<ItemForPairwiseRestriction> horizontal_zero_area_boxes_;
+  std::vector<ItemForPairwiseRestriction> vertical_zero_area_boxes_;
+  std::vector<ItemForPairwiseRestriction> point_zero_area_boxes_;
 };
 
 }  // namespace sat

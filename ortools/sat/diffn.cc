@@ -181,6 +181,13 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
   constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
   model->TakeOwnership(constraint);
 
+  RectanglePairwisePropagator* pairwise_propagator =
+      new RectanglePairwisePropagator(x_helper, y_helper, model);
+  GenericLiteralWatcher* const watcher =
+      model->GetOrCreate<GenericLiteralWatcher>();
+  watcher->SetPropagatorPriority(pairwise_propagator->RegisterWith(watcher), 4);
+  model->TakeOwnership(pairwise_propagator);
+
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   const bool add_cumulative_relaxation =
       params.use_timetabling_in_no_overlap_2d() ||
@@ -611,17 +618,7 @@ NonOverlappingRectanglesDisjunctivePropagator::
       forward_not_last_(true, &x_),
       backward_not_last_(false, &x_),
       forward_edge_finding_(true, &x_),
-      backward_edge_finding_(false, &x_),
-      pairwise_propagation_(model->GetOrCreate<SatParameters>()
-                                ->use_pairwise_reasoning_in_no_overlap_2d()) {
-  // Checks the presence of potential zero area boxes.
-  for (int b = 0; b < global_x_.NumTasks(); ++b) {
-    if (global_x_.SizeMin(b) == 0 || global_y_.SizeMin(b) == 0) {
-      has_zero_area_boxes_ = true;
-      break;
-    }
-  }
-}
+      backward_edge_finding_(false, &x_) {}
 
 NonOverlappingRectanglesDisjunctivePropagator::
     ~NonOverlappingRectanglesDisjunctivePropagator() = default;
@@ -766,10 +763,6 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       fast_propagation, global_y_, &global_x_));
 
-  if (!fast_propagation && (has_zero_area_boxes_ || pairwise_propagation_)) {
-    RETURN_IF_FALSE(PropagateAllPairsOfBoxes());
-  }
-
   return true;
 }
 
@@ -800,11 +793,34 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   }
 }
 
-// TODO(user): Use box splitting to speed up.
-bool NonOverlappingRectanglesDisjunctivePropagator::PropagateAllPairsOfBoxes() {
-  // Extra propagation code for zero-area boxes, and for all pairs of boxes in
-  // pairwise_propagation_ mode.
-  DCHECK(pairwise_propagation_ || has_zero_area_boxes_);
+int RectanglePairwisePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  global_x_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
+                          /*watch_end_max=*/false);
+  global_y_.WatchAllTasks(id, watcher, /*watch_start_max=*/true,
+                          /*watch_end_max=*/false);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
+  return id;
+}
+
+RectanglePairwisePropagator::~RectanglePairwisePropagator() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"RectanglePairwisePropagator/called", num_calls_});
+  stats.push_back({"RectanglePairwisePropagator/pairwise_conflicts",
+                   num_pairwise_conflicts_});
+  stats.push_back({"RectanglePairwisePropagator/pairwise_propagations",
+                   num_pairwise_propagations_});
+
+  shared_stats_->AddStats(stats);
+}
+
+bool RectanglePairwisePropagator::Propagate() {
+  if (!global_x_.SynchronizeAndSetTimeDirection(true)) return false;
+  if (!global_y_.SynchronizeAndSetTimeDirection(true)) return false;
+
+  num_calls_++;
+
   horizontal_zero_area_boxes_.clear();
   vertical_zero_area_boxes_.clear();
   point_zero_area_boxes_.clear();
@@ -813,95 +829,106 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateAllPairsOfBoxes() {
     if (!global_x_.IsPresent(b) || !global_y_.IsPresent(b)) continue;
     const IntegerValue x_size_max = global_x_.SizeMax(b);
     const IntegerValue y_size_max = global_y_.SizeMax(b);
+    ItemForPairwiseRestriction* box;
     if (x_size_max == 0) {
       if (y_size_max == 0) {
-        point_zero_area_boxes_.push_back(b);
+        box = &point_zero_area_boxes_.emplace_back();
       } else {
-        vertical_zero_area_boxes_.push_back(b);
+        box = &vertical_zero_area_boxes_.emplace_back();
       }
     } else if (y_size_max == 0) {
-      horizontal_zero_area_boxes_.push_back(b);
+      box = &horizontal_zero_area_boxes_.emplace_back();
     } else {
-      non_zero_area_boxes_.push_back(b);
+      box = &non_zero_area_boxes_.emplace_back();
     }
+    *box = ItemForPairwiseRestriction{.index = b,
+                                      .x = {.start_min = global_x_.StartMin(b),
+                                            .start_max = global_x_.StartMax(b),
+                                            .end_min = global_x_.EndMin(b),
+                                            .end_max = global_x_.EndMax(b)},
+                                      .y = {.start_min = global_y_.StartMin(b),
+                                            .start_max = global_y_.StartMax(b),
+                                            .end_min = global_y_.EndMin(b),
+                                            .end_max = global_y_.EndMax(b)}};
   }
 
-  if (pairwise_propagation_) {
-    for (int i1 = 0; i1 + 1 < non_zero_area_boxes_.size(); ++i1) {
-      for (int i2 = i1 + 1; i2 < non_zero_area_boxes_.size(); ++i2) {
-        RETURN_IF_FALSE(PropagateTwoBoxes(non_zero_area_boxes_[i1],
-                                          non_zero_area_boxes_[i2]));
-      }
-    }
+  std::vector<PairwiseRestriction> restrictions;
+  if (full_pairwise_propagation_) {
+    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(non_zero_area_boxes_,
+                                                         &restrictions));
   }
 
-  // Propagates zero area boxes against non-zero area boxes.
-  for (const int nz : non_zero_area_boxes_) {
-    for (const int z : horizontal_zero_area_boxes_) {
-      RETURN_IF_FALSE(PropagateTwoBoxes(z, nz));
-    }
-    for (const int z : vertical_zero_area_boxes_) {
-      RETURN_IF_FALSE(PropagateTwoBoxes(z, nz));
-    }
-    for (const int z : point_zero_area_boxes_) {
-      RETURN_IF_FALSE(PropagateTwoBoxes(z, nz));
-    }
-  }
+  // Check zero area boxes against non-zero area boxes.
+  RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+      non_zero_area_boxes_, horizontal_zero_area_boxes_, &restrictions));
+  RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+      non_zero_area_boxes_, vertical_zero_area_boxes_, &restrictions));
+  RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+      non_zero_area_boxes_, point_zero_area_boxes_, &restrictions));
 
-  // Propagates vertical zero area boxes against horizontal zero area boxes.
-  for (const int i1 : horizontal_zero_area_boxes_) {
-    for (const int i2 : vertical_zero_area_boxes_) {
-      RETURN_IF_FALSE(PropagateTwoBoxes(i1, i2));
-    }
-  }
+  // Check vertical zero area boxes against horizontal zero area boxes.
+  RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
+      vertical_zero_area_boxes_, horizontal_zero_area_boxes_, &restrictions));
 
+  for (const PairwiseRestriction& restriction : restrictions) {
+    RETURN_IF_FALSE(PropagateTwoBoxes(restriction));
+  }
   return true;
 }
 
-bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes(
-    int box1, int box2) {
-  // We use the global helpers, without the mechanism of sub-helpers.
-  // So any reason will need to be computed on both dimensions, and imported in
-  // the helper doing the modification.
-  DCHECK(!global_x_.HasOtherHelper());
-  DCHECK(!global_y_.HasOtherHelper());
-
-  const int state =
-      // box1 can be left of box2.
-      (global_x_.EndMin(box1) <= global_x_.StartMax(box2)) +
-      // box1 can be right of box2.
-      2 * (global_x_.EndMin(box2) <= global_x_.StartMax(box1)) +
-      // box1 can be below box2.
-      4 * (global_y_.EndMin(box1) <= global_y_.StartMax(box2)) +
-      // box1 can be up of box2.
-      8 * (global_y_.EndMin(box2) <= global_y_.StartMax(box1));
-
-  switch (state) {
-    case 0: {  // Conflict. The two boxes must overlap in both dimensions.
-      return ClearAndAddTwoBoxesConflictReason(box1, box2, &global_x_,
-                                               &global_y_);
-    }
-    case 1: {  // box2 can only be after box1 on x.
-      return LeftBoxBeforeRightBoxOnFirstDimension(box1, box2, &global_x_,
-                                                   &global_y_);
-    }
-    case 2: {  // box1 an only be after box2 on x.
-      return LeftBoxBeforeRightBoxOnFirstDimension(box2, box1, &global_x_,
-                                                   &global_y_);
-    }
-    case 4: {  // box2 an only be after box1 on y.
-      return LeftBoxBeforeRightBoxOnFirstDimension(box1, box2, &global_y_,
-                                                   &global_x_);
-    }
-    case 8: {  // box1 an only be after box2 on y.
-      return LeftBoxBeforeRightBoxOnFirstDimension(box2, box1, &global_y_,
-                                                   &global_x_);
-    }
-    default: {
-      break;
+bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
+    const std::vector<ItemForPairwiseRestriction>& items,
+    std::vector<PairwiseRestriction>* restrictions) {
+  AppendPairwiseRestrictions(items, restrictions);
+  for (const PairwiseRestriction& restriction : *restrictions) {
+    if (restriction.type ==
+        PairwiseRestriction::PairwiseRestrictionType::CONFLICT) {
+      RETURN_IF_FALSE(PropagateTwoBoxes(restriction));
     }
   }
   return true;
+}
+
+bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
+    const std::vector<ItemForPairwiseRestriction>& items1,
+    const std::vector<ItemForPairwiseRestriction>& items2,
+    std::vector<PairwiseRestriction>* restrictions) {
+  AppendPairwiseRestrictions(items1, items2, restrictions);
+  for (const PairwiseRestriction& restriction : *restrictions) {
+    if (restriction.type ==
+        PairwiseRestriction::PairwiseRestrictionType::CONFLICT) {
+      RETURN_IF_FALSE(PropagateTwoBoxes(restriction));
+    }
+  }
+  return true;
+}
+
+bool RectanglePairwisePropagator::PropagateTwoBoxes(
+    const PairwiseRestriction& restriction) {
+  const int box1 = restriction.first_index;
+  const int box2 = restriction.second_index;
+  switch (restriction.type) {
+    case PairwiseRestriction::PairwiseRestrictionType::CONFLICT:
+      num_pairwise_conflicts_++;
+      return ClearAndAddTwoBoxesConflictReason(box1, box2, &global_x_,
+                                               &global_y_);
+    case PairwiseRestriction::PairwiseRestrictionType::FIRST_LEFT_OF_SECOND:
+      num_pairwise_propagations_++;
+      return LeftBoxBeforeRightBoxOnFirstDimension(box1, box2, &global_x_,
+                                                   &global_y_);
+    case PairwiseRestriction::PairwiseRestrictionType::FIRST_RIGHT_OF_SECOND:
+      num_pairwise_propagations_++;
+      return LeftBoxBeforeRightBoxOnFirstDimension(box2, box1, &global_x_,
+                                                   &global_y_);
+    case PairwiseRestriction::PairwiseRestrictionType::FIRST_BELOW_SECOND:
+      num_pairwise_propagations_++;
+      return LeftBoxBeforeRightBoxOnFirstDimension(box1, box2, &global_y_,
+                                                   &global_x_);
+    case PairwiseRestriction::PairwiseRestrictionType::FIRST_ABOVE_SECOND:
+      num_pairwise_propagations_++;
+      return LeftBoxBeforeRightBoxOnFirstDimension(box2, box1, &global_y_,
+                                                   &global_x_);
+  }
 }
 
 #undef RETURN_IF_FALSE

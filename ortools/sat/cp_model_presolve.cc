@@ -10887,11 +10887,8 @@ void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
 // TODO(user): It seems easy to forget to update this if any new constraint
 // contains an interval or if we add a field to an existing constraint. Find a
 // way to remind contributor to not forget this.
-bool ModelCopy::ImportAndSimplifyConstraints(
-    const CpModelProto& in_model, const std::vector<int>& ignored_constraints,
-    bool first_copy) {
-  const absl::flat_hash_set<int> ignored_constraints_set(
-      ignored_constraints.begin(), ignored_constraints.end());
+bool ModelCopy::ImportAndSimplifyConstraints(const CpModelProto& in_model,
+                                             bool first_copy) {
   context_->InitializeNewDomains();
   const bool ignore_names = context_->params().ignore_names();
 
@@ -10901,8 +10898,6 @@ bool ModelCopy::ImportAndSimplifyConstraints(
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
-    if (ignored_constraints_set.contains(c)) continue;
-
     const ConstraintProto& ct = in_model.constraints(c);
     if (first_copy) {
       if (!PrepareEnforcementCopyWithDup(ct)) continue;
@@ -11403,7 +11398,7 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context) {
   ModelCopy copier(context);
   copier.ImportVariablesAndMaybeIgnoreNames(in_model);
-  if (copier.ImportAndSimplifyConstraints(in_model, {}, /*first_copy=*/true)) {
+  if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/true)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
                                                                  context);
     return true;
