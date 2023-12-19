@@ -42,6 +42,7 @@ cc_library(
     deps = [
         ":gscip_cc_proto",
         "//ortools/base:status_macros",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
     ],
 )

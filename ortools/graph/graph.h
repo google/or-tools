@@ -817,8 +817,8 @@ class SVector {
   }
 
   // Move constructor and move assignment operator.
-  SVector(SVector&& other) : SVector() { swap(other); }
-  SVector& operator=(SVector&& other) {
+  SVector(SVector&& other) noexcept : SVector() { swap(other); }
+  SVector& operator=(SVector&& other) noexcept {
     // NOTE(user): We could just swap() and let the other's destruction take
     // care of the clean-up, but it is probably less bug-prone to perform the
     // destruction immediately.

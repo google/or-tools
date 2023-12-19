@@ -142,10 +142,29 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
 
 GScipCallbackStats GetCallbackStats(GScip* gscip) {
   SCIP* scip = gscip->scip();
+  const SCIP_STAGE stage = SCIPgetStage(scip);
   GScipCallbackStats stats;
-  stats.num_processed_nodes = SCIPgetNNodes(scip);
-  stats.num_processed_nodes_total = SCIPgetNTotalNodes(scip);
-  switch (SCIPgetStage(scip)) {
+  switch (stage) {
+    case SCIP_STAGE_PROBLEM:
+    case SCIP_STAGE_TRANSFORMING:
+    case SCIP_STAGE_TRANSFORMED:
+    case SCIP_STAGE_INITPRESOLVE:
+    case SCIP_STAGE_PRESOLVING:
+    case SCIP_STAGE_EXITPRESOLVE:
+    case SCIP_STAGE_PRESOLVED:
+    case SCIP_STAGE_INITSOLVE:
+    case SCIP_STAGE_SOLVING:
+    case SCIP_STAGE_SOLVED:
+    case SCIP_STAGE_EXITSOLVE:
+    case SCIP_STAGE_FREETRANS:
+      stats.num_processed_nodes = SCIPgetNNodes(scip);
+      stats.num_processed_nodes_total = SCIPgetNTotalNodes(scip);
+      break;
+    default:
+      break;
+  }
+
+  switch (stage) {
     case SCIP_STAGE_INITPRESOLVE:
     case SCIP_STAGE_PRESOLVING:
     case SCIP_STAGE_EXITPRESOLVE:
@@ -157,9 +176,27 @@ GScipCallbackStats GetCallbackStats(GScip* gscip) {
     default:
       stats.current_node_id = stats.num_processed_nodes;
   }
-  stats.primal_bound = gscip->ScipInfUnclamp(SCIPgetPrimalbound(scip));
-  stats.dual_bound = gscip->ScipInfUnclamp(SCIPgetDualbound(scip));
-  const SCIP_STAGE stage = SCIPgetStage(scip);
+  switch (stage) {
+    case SCIP_STAGE_TRANSFORMED:
+    case SCIP_STAGE_INITPRESOLVE:
+    case SCIP_STAGE_PRESOLVING:
+    case SCIP_STAGE_EXITPRESOLVE:
+    case SCIP_STAGE_PRESOLVED:
+    case SCIP_STAGE_INITSOLVE:
+    case SCIP_STAGE_SOLVING:
+    case SCIP_STAGE_SOLVED:
+    case SCIP_STAGE_EXITSOLVE:
+      stats.primal_bound = gscip->ScipInfUnclamp(SCIPgetPrimalbound(scip));
+      stats.dual_bound = gscip->ScipInfUnclamp(SCIPgetDualbound(scip));
+      // Note: SCIPgetNLimSolsFound() docs claim it can be called in more
+      // stages, but that appears to be a typo in the docs.
+      stats.num_solutions_found = static_cast<int>(SCIPgetNLimSolsFound(scip));
+
+      break;
+    default:
+      break;
+  }
+
   switch (stage) {
     case SCIP_STAGE_PRESOLVED:
     case SCIP_STAGE_SOLVING:
@@ -188,7 +225,7 @@ GScipCallbackStats GetCallbackStats(GScip* gscip) {
     default:
       break;
   }
-  stats.num_solutions_found = SCIPgetNLimSolsFound(scip);
+
   return stats;
 }
 
@@ -506,7 +543,9 @@ static SCIP_DECL_CONSLOCK(VariableRoundingLockC) {
   operations_research::GScip* gscip = scip_handler_data->gscip;
   GScipHandler* gscip_handler = scip_handler_data->gscip_handler.get();
   SCIP_CONSDATA* consdata = SCIPconsGetData(cons);
-  if (consdata == nullptr) {
+  if (consdata == nullptr || consdata->data == nullptr) {
+    SCIPerrorMessage(
+        "consdata or consdata->data was null in SCIP_DECL_CONSLOCK");
     return SCIP_ERROR;
   }
   const bool lock_type_is_model = locktype == SCIP_LOCKTYPE_MODEL;

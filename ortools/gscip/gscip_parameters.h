@@ -59,6 +59,9 @@ bool GScipCatchCtrlC(const GScipParameters& parameters);
 // Returns true when the misc/catchctrlc property is set.
 bool GScipCatchCtrlCSet(const GScipParameters& parameters);
 
+// Turns off all SCIP separators.
+void DisableAllCutsExceptUserDefined(GScipParameters* parameters);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GSCIP_GSCIP_PARAMETERS_H_

@@ -304,6 +304,15 @@ class GScipConstraintHandler {
 
   // Adds a callback constraint to the model. That is, it attaches to the
   // constraint handler a constraint for the given constraint data.
+  //
+  // Warning: the user is responsible for ensuring that constraint_data outlives
+  // the returned constraint (e.g. until GScip is destroyed or
+  // GScip::delete_constraint() is invoked on the returned constraint).
+  //
+  // Note: it appears to be safe (from looking at the source and running asan)
+  // to free constraint_data before calling ~GScip(), but this is difficult to
+  // verify. Any other interaction with GScip after freeing the constraint_data
+  // seems very likely to cause memory corruption.
   absl::StatusOr<SCIP_CONS*> AddCallbackConstraint(
       GScip* gscip, const std::string& constraint_name,
       const ConstraintData* constraint_data,

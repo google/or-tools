@@ -96,10 +96,10 @@ class Domain {
   }
 
   /// Move constructor.
-  Domain(Domain&& other) : intervals_(std::move(other.intervals_)) {}
+  Domain(Domain&& other) noexcept : intervals_(std::move(other.intervals_)) {}
 
   /// Move operator.
-  Domain& operator=(Domain&& other) {
+  Domain& operator=(Domain&& other) noexcept {
     intervals_ = std::move(other.intervals_);
     return *this;
   }
