@@ -282,7 +282,8 @@ class MPCallbackWrapper {
         // SWIG issues in Java & Python. Instead, we'll only log them.
         // (The use cases where the user has to raise an exception inside their
         // call-back does not seem to be frequent, anyway.)
-        LOG(ERROR) << "Caught exception during user-defined call-back: " << ex.what();
+        LOG(ERROR) << "Caught exception during user-defined call-back: "
+                   << ex.what();
       }
     }
     caught_exceptions_.clear();
@@ -1261,7 +1262,8 @@ static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
   }
 }
 
-static int MPSolverToXpressBasisStatus(MPSolver::BasisStatus mpsolver_basis_status) {
+static int MPSolverToXpressBasisStatus(
+    MPSolver::BasisStatus mpsolver_basis_status) {
   switch (mpsolver_basis_status) {
     case MPSolver::AT_LOWER_BOUND:
       return XPRS_AT_LOWER;
@@ -1468,7 +1470,8 @@ void XpressInterface::ExtractNewVariables() {
         //TODO fixme
         // Writing all names worsen the performance significantly
         //if (have_names) {
-        //  CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(), 0,
+        //   CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(),
+        //   0,
         //                            new_col_count - 1));
         //}
         int const cols = getnumcols(mLp);
@@ -1739,7 +1742,8 @@ void XpressInterface::SetStartingLpBasis(
     return;
   }
   initial_variables_basis_status_ = XpressBasisStatusesFrom(variable_statuses);
-  initial_constraint_basis_status_ = XpressBasisStatusesFrom(constraint_statuses);
+  initial_constraint_basis_status_ =
+      XpressBasisStatusesFrom(constraint_statuses);
 }
 
 bool XpressInterface::readParameters(std::istream& is, char sep) {
@@ -1852,7 +1856,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Load basis if present
   // TODO : check number of variables / constraints
-  if (!mMip && !initial_variables_basis_status_.empty() && !initial_constraint_basis_status_.empty()) {
+  if (!mMip && !initial_variables_basis_status_.empty() &&
+      !initial_constraint_basis_status_.empty()) {
     CHECK_STATUS(XPRSloadbasis(mLp, initial_constraint_basis_status_.data(),
                                initial_variables_basis_status_.data()));
   }
