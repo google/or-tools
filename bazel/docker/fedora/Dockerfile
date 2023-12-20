@@ -9,13 +9,12 @@ RUN dnf -y update \
 && dnf -y groupinstall "Development Tools" \
 && dnf -y install gcc-c++ zlib-devel \
 && dnf -y install dnf-plugins-core \
-&& dnf -y copr enable vbatts/bazel \
 && dnf -y install which \
 && dnf clean all
 
 # Install Bazelisk
 RUN wget \
-https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64 \
+https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64 \
 && chmod +x bazelisk-linux-amd64 \
 && mv bazelisk-linux-amd64 /usr/local/bin/bazel
 
