@@ -2735,7 +2735,6 @@ class CpModel:
 
     def get_or_make_boolean_index(self, arg: LiteralT) -> int:
         """Returns an index from a boolean expression."""
-        print(arg, type(arg))
         if isinstance(arg, IntVar):
             self.assert_is_boolean_variable(arg)
             return arg.index
