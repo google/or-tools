@@ -826,10 +826,11 @@ message SatParameters {
   optional bool use_area_energetic_reasoning_in_no_overlap_2d = 271
       [default = false];
 
-  // Performs an extra step of propagation in the no_overlap_2d constraint by
-  // looking at all pairs of intervals.
-  optional int32 max_size_pairwise_reasoning_in_no_overlap_2d = 276
-      [default = 50];
+  // If the number of pairs to look is below this threshold, do an extra step of
+  // propagation in the no_overlap_2d constraint by looking at all pairs of
+  // intervals.
+  optional int32 max_pairs_pairwise_reasoning_in_no_overlap_2d = 276
+      [default = 1250];
 
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers

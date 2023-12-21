@@ -50,6 +50,17 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  struct Conflict {
+    std::vector<RectangleInRange> items;
+    Rectangle rectangle_too_much_energy;
+  };
+  std::optional<Conflict> FindConflict(
+      std::vector<RectangleInRange> active_box_ranges);
+
+  std::vector<RectangleInRange> GeneralizeExplanation(
+      const Rectangle& rectangle,
+      const std::vector<RectangleInRange>& active_box_ranges);
+
   bool BuildAndReportEnergyTooLarge(
       const std::vector<RectangleInRange>& ranges);
   void CheckPropagationIsValid(const std::vector<RectangleInRange>& ranges,
@@ -67,6 +78,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   int64_t num_conflicts_ = 0;
   int64_t num_multiple_conflicts_ = 0;
   int64_t num_conflicts_two_boxes_ = 0;
+  int64_t num_refined_conflicts_ = 0;
 
   NonOverlappingRectanglesEnergyPropagator(
       const NonOverlappingRectanglesEnergyPropagator&) = delete;
@@ -140,9 +152,7 @@ class RectanglePairwisePropagator : public PropagatorInterface {
       : global_x_(*x),
         global_y_(*y),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        full_pairwise_propagation_threshold_(
-            model->GetOrCreate<SatParameters>()
-                ->max_size_pairwise_reasoning_in_no_overlap_2d()) {}
+        params_(model->GetOrCreate<SatParameters>()) {}
 
   ~RectanglePairwisePropagator() override;
 
@@ -169,12 +179,11 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   SchedulingConstraintHelper& global_x_;
   SchedulingConstraintHelper& global_y_;
   SharedStatistics* shared_stats_;
+  const SatParameters* params_;
 
   int64_t num_calls_ = 0;
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
-
-  const int full_pairwise_propagation_threshold_;
 
   std::vector<ItemForPairwiseRestriction> non_zero_area_boxes_;
   std::vector<ItemForPairwiseRestriction> horizontal_zero_area_boxes_;

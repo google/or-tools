@@ -1410,10 +1410,10 @@ bool ProbingRectangle::CanShrink(Edge edge) const {
   switch (edge) {
     case Edge::LEFT:
     case Edge::RIGHT:
-      return (next_indexes_[Edge::RIGHT] != indexes_[Edge::LEFT]);
+      return (next_indexes_[Edge::RIGHT] > indexes_[Edge::LEFT]);
     case Edge::BOTTOM:
     case Edge::TOP:
-      return (indexes_[Edge::TOP] != next_indexes_[Edge::BOTTOM]);
+      return (indexes_[Edge::TOP] > next_indexes_[Edge::BOTTOM]);
   }
 }
 

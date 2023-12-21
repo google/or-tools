@@ -18,7 +18,6 @@
 #include <functional>
 #include <limits>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -165,7 +164,7 @@ void AddDualSchedulingHeuristics(SatParameters& new_params) {
   new_params.set_use_overload_checker_in_cumulative(true);
   new_params.set_use_strong_propagation_in_disjunctive(true);
   new_params.set_use_timetable_edge_finding_in_cumulative(true);
-  new_params.set_max_size_pairwise_reasoning_in_no_overlap_2d(200);
+  new_params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(5000);
   new_params.set_use_timetabling_in_no_overlap_2d(true);
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
 }

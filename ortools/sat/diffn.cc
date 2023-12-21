@@ -249,6 +249,8 @@ NonOverlappingRectanglesEnergyPropagator::
   stats.push_back(
       {"NonOverlappingRectanglesEnergyPropagator/conflicts_two_boxes",
        num_conflicts_two_boxes_});
+  stats.push_back({"NonOverlappingRectanglesEnergyPropagator/refined",
+                   num_refined_conflicts_});
 
   shared_stats_->AddStats(stats);
 }
@@ -285,7 +287,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
         .y_size = y_.SizeMin(box)});
   }
 
-  if (active_box_ranges.size() <= 2) {
+  if (active_box_ranges.size() < 2) {
     return true;
   }
 
@@ -302,71 +304,79 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
     return true;
   }
 
+  std::optional<Conflict> best_conflict =
+      FindConflict(std::move(active_box_ranges));
+  if (!best_conflict.has_value()) {
+    return true;
+  }
+  // We found a conflict, so we can afford to run the propagator again to
+  // search for a best explanation. This is specially the case since we only
+  // want to re-run it over the items that participate in the conflict, so its
+  // a much smaller problem.
+  IntegerValue best_explanation_size = best_conflict->items.size();
+  bool found_improvement;
+  bool refined = false;
+  do {
+    found_improvement = false;
+    std::optional<Conflict> conflict = FindConflict(best_conflict->items);
+    if (!conflict.has_value()) break;
+    // We prefer an explanation with the least number of boxes.
+    if (conflict->items.size() < best_explanation_size) {
+      found_improvement = true;
+      best_explanation_size = conflict->items.size();
+      best_conflict = conflict;
+      refined = true;
+    }
+  } while (found_improvement);
+
+  num_refined_conflicts_ += refined;
+  std::vector<RectangleInRange> generalized_explanation = GeneralizeExplanation(
+      best_conflict->rectangle_too_much_energy, best_conflict->items);
+  if (best_explanation_size == 2) {
+    num_conflicts_two_boxes_++;
+  }
+  BuildAndReportEnergyTooLarge(generalized_explanation);
+  return false;
+}
+
+std::optional<NonOverlappingRectanglesEnergyPropagator::Conflict>
+NonOverlappingRectanglesEnergyPropagator::FindConflict(
+    std::vector<RectangleInRange> active_box_ranges) {
   const std::vector<Rectangle> rectangles_too_much_energy =
       FindRectanglesWithEnergyConflictMC(active_box_ranges, *random_, 1.0);
 
-  if (rectangles_too_much_energy.empty()) return true;
+  if (rectangles_too_much_energy.empty()) return std::nullopt;
 
   num_conflicts_++;
   num_multiple_conflicts_ += rectangles_too_much_energy.size() > 1;
 
-  std::optional<std::vector<RectangleInRange>> best_explanation;
+  std::vector<RectangleInRange> best_explanation;
+  Rectangle best_rectangle;
   for (const auto& r : rectangles_too_much_energy) {
     std::vector<RectangleInRange> range_for_explanation =
         GetEnergyConflictForRectangle(r, active_box_ranges);
     CheckPropagationIsValid(range_for_explanation, r);
-    if (!best_explanation ||
-        best_explanation->size() > range_for_explanation.size()) {
+    if (best_explanation.empty() ||
+        best_explanation.size() > range_for_explanation.size()) {
       best_explanation = range_for_explanation;
+      best_rectangle = r;
     }
   }
-  return BuildAndReportEnergyTooLarge(*best_explanation);
+  return Conflict{best_explanation, best_rectangle};
 }
 
 std::vector<RectangleInRange>
-NonOverlappingRectanglesEnergyPropagator::GetEnergyConflictForRectangle(
+NonOverlappingRectanglesEnergyPropagator::GeneralizeExplanation(
     const Rectangle& rectangle,
     const std::vector<RectangleInRange>& active_box_ranges) {
-  struct OverlapPerBox {
-    IntegerValue energy;
-    IntegerValue overlap_x_size;
-    IntegerValue overlap_y_size;
-    int index;
-  };
-
-  // First select the minimum amount of elements that would be enough to exceed
-  // the energy.
-  std::vector<OverlapPerBox> energy_per_box(active_box_ranges.size());
-  for (int i = 0; i < active_box_ranges.size(); ++i) {
-    const Rectangle overlap =
-        active_box_ranges[i].GetMinimumIntersection(rectangle);
-    OverlapPerBox& box = energy_per_box[i];
-    box.overlap_x_size = overlap.SizeX();
-    box.overlap_y_size = overlap.SizeY();
-    box.index = i;
-    box.energy = box.overlap_x_size * box.overlap_y_size;
-  }
-  std::sort(energy_per_box.begin(), energy_per_box.end(),
-            [](const OverlapPerBox& a, const OverlapPerBox& b) {
-              return a.energy > b.energy;
-            });
   IntegerValue available_energy = rectangle.Area();
   IntegerValue used_energy = 0;
-  std::vector<RectangleInRange> ranges_for_explanation;
-  ranges_for_explanation.reserve(energy_per_box.size());
-  for (int i = 0; i < energy_per_box.size(); ++i) {
-    const OverlapPerBox& box = energy_per_box[i];
-    used_energy += box.energy;
-    ranges_for_explanation.push_back(
-        RectangleInRange::BiggestWithMinIntersection(
-            rectangle, active_box_ranges[box.index], box.overlap_x_size,
-            box.overlap_y_size));
-    if (used_energy > available_energy) {
-      break;
-    }
+  for (const RectangleInRange& box : active_box_ranges) {
+    IntegerValue energy = box.GetMinimumIntersectionArea(rectangle);
+    used_energy += energy;
   }
+  std::vector<RectangleInRange> ranges_for_explanation(active_box_ranges);
 
-  // Now use the energy slack to make the intervals even bigger.
   IntegerValue slack = used_energy - available_energy - 1;
   VLOG_EVERY_N_SEC(2, 3) << "Rectangle with energy overflow: " << rectangle
                          << " (" << used_energy << "/" << available_energy
@@ -377,6 +387,9 @@ NonOverlappingRectanglesEnergyPropagator::GetEnergyConflictForRectangle(
     Rectangle overlap = range.GetMinimumIntersection(rectangle);
     DCHECK_GT(overlap.SizeX(), 0);
     DCHECK_GT(overlap.SizeY(), 0);
+    range = RectangleInRange::BiggestWithMinIntersection(
+        rectangle, range, overlap.SizeX(), overlap.SizeY());
+    // Now use the energy slack to make the intervals even bigger.
     if (overlap.SizeX() < slack) {
       IntegerValue y_slack = slack / overlap.SizeX();
       // We know we can remove an area as big as y_slack * x_size. That means
@@ -424,6 +437,50 @@ NonOverlappingRectanglesEnergyPropagator::GetEnergyConflictForRectangle(
   }
   CHECK_GT(used_energy, available_energy);
   CHECK_GT(available_energy, 0);
+
+  return ranges_for_explanation;
+}
+
+std::vector<RectangleInRange>
+NonOverlappingRectanglesEnergyPropagator::GetEnergyConflictForRectangle(
+    const Rectangle& rectangle,
+    const std::vector<RectangleInRange>& active_box_ranges) {
+  struct OverlapPerBox {
+    IntegerValue energy;
+    IntegerValue overlap_x_size;
+    IntegerValue overlap_y_size;
+    int index;
+  };
+
+  // First select the minimum amount of elements that would be enough to exceed
+  // the energy.
+  std::vector<OverlapPerBox> energy_per_box(active_box_ranges.size());
+  for (int i = 0; i < active_box_ranges.size(); ++i) {
+    const Rectangle overlap =
+        active_box_ranges[i].GetMinimumIntersection(rectangle);
+    OverlapPerBox& box = energy_per_box[i];
+    box.overlap_x_size = overlap.SizeX();
+    box.overlap_y_size = overlap.SizeY();
+    box.index = i;
+    box.energy = box.overlap_x_size * box.overlap_y_size;
+  }
+  std::sort(energy_per_box.begin(), energy_per_box.end(),
+            [](const OverlapPerBox& a, const OverlapPerBox& b) {
+              return a.energy > b.energy;
+            });
+  IntegerValue available_energy = rectangle.Area();
+  IntegerValue used_energy = 0;
+  std::vector<RectangleInRange> ranges_for_explanation;
+  ranges_for_explanation.reserve(energy_per_box.size());
+  for (int i = 0; i < energy_per_box.size(); ++i) {
+    const OverlapPerBox& box = energy_per_box[i];
+    used_energy += box.energy;
+    CHECK_GT(box.energy, 0);
+    ranges_for_explanation.push_back(active_box_ranges[box.index]);
+    if (used_energy > available_energy) {
+      break;
+    }
+  }
   return ranges_for_explanation;
 }
 
@@ -853,10 +910,8 @@ bool RectanglePairwisePropagator::Propagate() {
   }
 
   std::vector<PairwiseRestriction> restrictions;
-  if (non_zero_area_boxes_.size() <= full_pairwise_propagation_threshold_) {
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(non_zero_area_boxes_,
-                                                         &restrictions));
-  }
+  RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(non_zero_area_boxes_,
+                                                       &restrictions));
 
   // Check zero area boxes against non-zero area boxes.
   RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
@@ -879,6 +934,11 @@ bool RectanglePairwisePropagator::Propagate() {
 bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
     const std::vector<ItemForPairwiseRestriction>& items,
     std::vector<PairwiseRestriction>* restrictions) {
+  const int max_pairs =
+      params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();
+  if (items.size() * (items.size() - 1) / 2 > max_pairs) {
+    return true;
+  }
   AppendPairwiseRestrictions(items, restrictions);
   for (const PairwiseRestriction& restriction : *restrictions) {
     if (restriction.type ==
@@ -893,6 +953,11 @@ bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
     const std::vector<ItemForPairwiseRestriction>& items1,
     const std::vector<ItemForPairwiseRestriction>& items2,
     std::vector<PairwiseRestriction>* restrictions) {
+  const int max_pairs =
+      params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();
+  if (items1.size() * items2.size() > max_pairs) {
+    return true;
+  }
   AppendPairwiseRestrictions(items1, items2, restrictions);
   for (const PairwiseRestriction& restriction : *restrictions) {
     if (restriction.type ==
