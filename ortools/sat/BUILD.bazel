@@ -560,6 +560,7 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -2041,6 +2042,7 @@ cc_binary(
         ":boolean_problem_cc_proto",
         ":cp_model_cc_proto",
         ":cp_model_solver",
+        ":cp_model_utils",
         ":model",
         ":sat_cnf_reader",
         ":sat_parameters_cc_proto",
@@ -2054,6 +2056,7 @@ cc_binary(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/log:flags",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )

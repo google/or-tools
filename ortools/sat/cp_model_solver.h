@@ -92,6 +92,17 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer);
 
+/** Creates a callbacks that will append a string to the search log when
+ * reporting a new solution.
+ *
+ * The given function will be called on each improving feasible solution found
+ * during the search. For a non-optimization problem, if the option to find all
+ * solution was set, then this will be called on each new solution.
+ */
+std::function<void(Model*)> NewFeasibleSolutionLogCallback(
+    const std::function<std::string(const CpSolverResponse& response)>&
+        callback);
+
 /**
  * Creates parameters for the solver, which you can add to the model with
  * \code

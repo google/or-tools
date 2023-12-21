@@ -244,17 +244,30 @@ class SharedResponseManager {
       std::function<void(CpSolverResponse*)> postprocessor);
 
   // Adds a callback that will be called on each new solution (for
-  // statisfiablity problem) or each improving new solution (for an optimization
+  // satisfiability problem) or each improving new solution (for an optimization
   // problem). Returns its id so it can be unregistered if needed.
   //
   // Note that adding a callback is not free since the solution will be
-  // postsolved before this is called.
+  // post-solved before this is called.
   //
   // Note that currently the class is waiting for the callback to finish before
   // accepting any new updates. That could be changed if needed.
   int AddSolutionCallback(
       std::function<void(const CpSolverResponse&)> callback);
   void UnregisterCallback(int callback_id);
+
+  // Adds an inline callback that will be called on each new solution (for
+  // satisfiability problem) or each improving new solution (for an optimization
+  // problem). Returns its id so it can be unregistered if needed.
+  //
+  // Note that adding a callback is not free since the solution will be
+  // post-solved before this is called.
+  //
+  // Note that currently the class is waiting for the callback to finish before
+  // accepting any new updates. That could be changed if needed.
+  int AddLogCallback(
+      std::function<std::string(const CpSolverResponse&)> callback);
+  void UnregisterLogCallback(int callback_id);
 
   // The "inner" objective is the CpModelProto objective without scaling/offset.
   // Note that these bound correspond to valid bound for the problem of finding
@@ -424,6 +437,11 @@ class SharedResponseManager {
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
       callbacks_ ABSL_GUARDED_BY(mutex_);
+
+  int next_search_log_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
+  std::vector<
+      std::pair<int, std::function<std::string(const CpSolverResponse&)>>>
+      search_log_callbacks_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::function<void(std::vector<int64_t>*)>>
       solution_postprocessors_ ABSL_GUARDED_BY(mutex_);

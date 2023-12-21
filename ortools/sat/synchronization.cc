@@ -453,6 +453,25 @@ void SharedResponseManager::UnregisterCallback(int callback_id) {
   LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
 }
 
+int SharedResponseManager::AddLogCallback(
+    std::function<std::string(const CpSolverResponse&)> callback) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = next_search_log_callback_id_++;
+  search_log_callbacks_.emplace_back(id, std::move(callback));
+  return id;
+}
+
+void SharedResponseManager::UnregisterLogCallback(int callback_id) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < search_log_callbacks_.size(); ++i) {
+    if (search_log_callbacks_[i].first == callback_id) {
+      search_log_callbacks_.erase(search_log_callbacks_.begin() + i);
+      return;
+    }
+  }
+  LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
+}
+
 CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
     const std::string& solution_info) {
@@ -638,7 +657,18 @@ void SharedResponseManager::NewSolution(
 
   // Logging.
   ++num_solutions_;
+
+  // Compute the post-solved response once.
+  CpSolverResponse tmp_postsolved_response;
+  if ((!search_log_callbacks_.empty() && logger_->LoggingIsEnabled()) ||
+      !callbacks_.empty()) {
+    tmp_postsolved_response =
+        GetResponseInternal(solution_values, solution_info);
+    FillSolveStatsInResponse(model, &tmp_postsolved_response);
+  }
+
   // TODO(user): Remove this code and the need for model in this function.
+  // Use search log callbacks instead.
   if (logger_->LoggingIsEnabled()) {
     std::string solution_message = solution_info;
     if (model != nullptr) {
@@ -646,6 +676,13 @@ void SharedResponseManager::NewSolution(
       const int64_t num_fixed = model->Get<SatSolver>()->NumFixedVariables();
       absl::StrAppend(&solution_message, " (fixed_bools=", num_fixed, "/",
                       num_bool, ")");
+    }
+
+    if (!search_log_callbacks_.empty()) {
+      for (const auto& pair : search_log_callbacks_) {
+        absl::StrAppend(&solution_message, " ",
+                        pair.second(tmp_postsolved_response));
+      }
     }
 
     if (objective_or_null_ != nullptr) {
@@ -671,12 +708,8 @@ void SharedResponseManager::NewSolution(
   // Call callbacks.
   // Note that we cannot call function that try to get the mutex_ here.
   TestGapLimitsIfNeeded();
-  if (!callbacks_.empty()) {
-    CpSolverResponse copy = GetResponseInternal(solution_values, solution_info);
-    FillSolveStatsInResponse(model, &copy);
-    for (const auto& pair : callbacks_) {
-      pair.second(copy);
-    }
+  for (const auto& pair : callbacks_) {
+    pair.second(tmp_postsolved_response);
   }
 
 #if !defined(__PORTABLE_PLATFORM__)

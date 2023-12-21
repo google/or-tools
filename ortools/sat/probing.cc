@@ -528,7 +528,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
 
   const auto& trail = *(model->Get<Trail>());
   const auto& assignment = trail.Assignment();
-  auto* clause_manager = model->GetOrCreate<LiteralWatchers>();
+  auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const int id = implication_graph->PropagatorId();
   const int clause_id = clause_manager->PropagatorId();
 

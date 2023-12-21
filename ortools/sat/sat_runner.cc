@@ -21,6 +21,7 @@
 #include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
@@ -32,6 +33,7 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/opb_reader.h"
 #include "ortools/sat/sat_cnf_reader.h"
@@ -60,6 +62,8 @@ ABSL_FLAG(std::string, params, "",
 ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "If true, when we add a slack variable to reify a soft clause, we "
           "enforce the fact that when it is true, the clause must be false.");
+ABSL_FLAG(bool, fingerprint_intermediate_solutions, true,
+          "Attach the fingerprint of intermediate solutions to the output.");
 
 namespace operations_research {
 namespace sat {
@@ -158,6 +162,15 @@ int Run() {
 
   Model model;
   model.Add(NewSatParameters(parameters));
+  if (absl::GetFlag(FLAGS_fingerprint_intermediate_solutions)) {
+    // Let's add a solution callback that will display the fingerprint of all
+    // solutions.
+    model.Add(NewFeasibleSolutionLogCallback([](const CpSolverResponse& r) {
+      return absl::StrFormat(
+          "fingerprint: %#x",
+          FingerprintRepeatedField(r.solution(), kDefaultFingerprintSeed));
+    }));
+  }
   const CpSolverResponse response = SolveCpModel(*cp_model, &model);
 
   if (!absl::GetFlag(FLAGS_output).empty()) {

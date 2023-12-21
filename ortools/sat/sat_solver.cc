@@ -64,7 +64,7 @@ SatSolver::SatSolver() : SatSolver(new Model()) {
 SatSolver::SatSolver(Model* model)
     : model_(model),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-      clauses_propagator_(model->GetOrCreate<LiteralWatchers>()),
+      clauses_propagator_(model->GetOrCreate<ClauseManager>()),
       pb_constraints_(model->GetOrCreate<PbConstraints>()),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
@@ -1035,7 +1035,14 @@ void SatSolver::Backtrack(int target_level) {
   const int target_trail_index =
       decisions_[current_decision_level_].trail_index;
 
-  Untrail(target_trail_index);
+  DCHECK_LT(target_trail_index, trail_->Index());
+  for (SatPropagator* propagator : propagators_) {
+    if (propagator->IsEmpty()) continue;
+    propagator->Untrail(*trail_, target_trail_index);
+  }
+  decision_policy_->Untrail(target_trail_index);
+  trail_->Untrail(target_trail_index);
+
   last_decision_or_backtrack_trail_index_ = trail_->Index();
 }
 
@@ -1956,17 +1963,6 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   ++current_decision_level_;
   trail_->SetDecisionLevel(current_decision_level_);
   trail_->EnqueueSearchDecision(literal);
-}
-
-void SatSolver::Untrail(int target_trail_index) {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK_LT(target_trail_index, trail_->Index());
-  for (SatPropagator* propagator : propagators_) {
-    if (propagator->IsEmpty()) continue;
-    propagator->Untrail(*trail_, target_trail_index);
-  }
-  decision_policy_->Untrail(target_trail_index);
-  trail_->Untrail(target_trail_index);
 }
 
 std::string SatSolver::DebugString(const SatClause& clause) const {

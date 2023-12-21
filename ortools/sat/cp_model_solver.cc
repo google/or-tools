@@ -94,7 +94,6 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/simplification.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -1068,15 +1067,26 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
 
 }  // namespace
 
-// Used by NewFeasibleSolutionObserver to register observers.
+// Used by NewFeasibleSolutionObserver or NewFeasibleSolutionLogCallback
+// to register observers.
 struct SolutionObservers {
   std::vector<std::function<void(const CpSolverResponse& response)>> observers;
+  std::vector<std::function<std::string(const CpSolverResponse& response)>>
+      log_callbacks;
 };
 
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer) {
   return [=](Model* model) {
     model->GetOrCreate<SolutionObservers>()->observers.push_back(observer);
+  };
+}
+
+std::function<void(Model*)> NewFeasibleSolutionLogCallback(
+    const std::function<std::string(const CpSolverResponse& response)>&
+        callback) {
+  return [=](Model* model) {
+    model->GetOrCreate<SolutionObservers>()->log_callbacks.push_back(callback);
   };
 }
 
@@ -2883,7 +2893,7 @@ class LnsSolver : public SubSolver {
           return;
         }
 
-        // This is not stricly needed, but useful for properly debugging an
+        // This is not strictly needed, but useful for properly debugging an
         // infeasible LNS.
         context->WriteVariableDomainsToProto();
       }
@@ -4130,6 +4140,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
             observer(response);
           }
         });
+  }
+
+  const auto& log_callbacks =
+      model->GetOrCreate<SolutionObservers>()->log_callbacks;
+  for (const auto& callback : log_callbacks) {
+    shared_response_manager->AddLogCallback(callback);
   }
 
   // Make sure everything stops when we have a first solution if requested.

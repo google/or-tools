@@ -1216,7 +1216,7 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
   VLOG(1) << "Detecting GreaterThanAtLeastOneOf() constraints...";
   auto* time_limit = model->GetOrCreate<TimeLimit>();
   auto* solver = model->GetOrCreate<SatSolver>();
-  auto* clauses = model->GetOrCreate<LiteralWatchers>();
+  auto* clauses = model->GetOrCreate<ClauseManager>();
   int num_added_constraints = 0;
 
   // We have two possible approaches. For now, we prefer the first one except if

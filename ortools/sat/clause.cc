@@ -67,25 +67,25 @@ void RemoveIf(Container c, Predicate p) {
 
 }  // namespace
 
-// ----- LiteralWatchers -----
+// ----- ClauseManager -----
 
-LiteralWatchers::LiteralWatchers(Model* model)
-    : SatPropagator("LiteralWatchers"),
+ClauseManager::ClauseManager(Model* model)
+    : SatPropagator("ClauseManager"),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
-      stats_("LiteralWatchers") {
+      stats_("ClauseManager") {
   trail_->RegisterPropagator(this);
 }
 
-LiteralWatchers::~LiteralWatchers() {
+ClauseManager::~ClauseManager() {
   gtl::STLDeleteElements(&clauses_);
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
 }
 
-void LiteralWatchers::Resize(int num_variables) {
+void ClauseManager::Resize(int num_variables) {
   DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
   reasons_.resize(num_variables);
@@ -94,15 +94,15 @@ void LiteralWatchers::Resize(int num_variables) {
 
 // Note that this is the only place where we add Watcher so the DCHECK
 // guarantees that there are no duplicates.
-void LiteralWatchers::AttachOnFalse(Literal literal, Literal blocking_literal,
-                                    SatClause* clause) {
+void ClauseManager::AttachOnFalse(Literal literal, Literal blocking_literal,
+                                  SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   DCHECK(!WatcherListContains(watchers_on_false_[literal], *clause));
   watchers_on_false_[literal].push_back(Watcher(clause, blocking_literal));
 }
 
-bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
+bool ClauseManager::PropagateOnFalse(Literal false_literal, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
@@ -198,7 +198,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   return true;
 }
 
-bool LiteralWatchers::Propagate(Trail* trail) {
+bool ClauseManager::Propagate(Trail* trail) {
   const int old_index = trail->Index();
   while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
     const Literal literal = (*trail)[propagation_trail_index_++];
@@ -207,27 +207,27 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<const Literal> LiteralWatchers::Reason(const Trail& /*trail*/,
-                                                  int trail_index) const {
+absl::Span<const Literal> ClauseManager::Reason(const Trail& /*trail*/,
+                                                int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
-SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
+SatClause* ClauseManager::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
-bool LiteralWatchers::AddClause(absl::Span<const Literal> literals) {
+bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
   return AddClause(literals, trail_);
 }
 
-bool LiteralWatchers::AddClause(absl::Span<const Literal> literals,
-                                Trail* trail) {
+bool ClauseManager::AddClause(absl::Span<const Literal> literals,
+                              Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
   return AttachAndPropagate(clause, trail);
 }
 
-SatClause* LiteralWatchers::AddRemovableClause(
+SatClause* ClauseManager::AddRemovableClause(
     const std::vector<Literal>& literals, Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
@@ -240,7 +240,7 @@ SatClause* LiteralWatchers::AddRemovableClause(
 // false. It returns false if the clause only contains literals assigned to
 // false. If only one literals is not false, it propagates it to true if it
 // is not already assigned.
-bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
+bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
 
   const int size = clause->size();
@@ -289,7 +289,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   return true;
 }
 
-void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
+void ClauseManager::Attach(SatClause* clause, Trail* trail) {
   Literal* literals = clause->literals();
   DCHECK(!trail->Assignment().LiteralIsAssigned(literals[0]));
   DCHECK(!trail->Assignment().LiteralIsAssigned(literals[1]));
@@ -299,7 +299,7 @@ void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
   AttachOnFalse(literals[1], literals[0], clause);
 }
 
-void LiteralWatchers::InternalDetach(SatClause* clause) {
+void ClauseManager::InternalDetach(SatClause* clause) {
   --num_watched_clauses_;
   const size_t size = clause->size();
   if (drat_proof_handler_ != nullptr && size > 2) {
@@ -309,14 +309,14 @@ void LiteralWatchers::InternalDetach(SatClause* clause) {
   clause->Clear();
 }
 
-void LiteralWatchers::LazyDetach(SatClause* clause) {
+void ClauseManager::LazyDetach(SatClause* clause) {
   InternalDetach(clause);
   is_clean_ = false;
   needs_cleaning_.Set(clause->FirstLiteral());
   needs_cleaning_.Set(clause->SecondLiteral());
 }
 
-void LiteralWatchers::Detach(SatClause* clause) {
+void ClauseManager::Detach(SatClause* clause) {
   InternalDetach(clause);
   for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
     needs_cleaning_.Clear(l);
@@ -326,7 +326,7 @@ void LiteralWatchers::Detach(SatClause* clause) {
   }
 }
 
-void LiteralWatchers::DetachAllClauses() {
+void ClauseManager::DetachAllClauses() {
   if (!all_clauses_are_attached_) return;
   all_clauses_are_attached_ = false;
 
@@ -337,7 +337,7 @@ void LiteralWatchers::DetachAllClauses() {
   watchers_on_false_.clear();
 }
 
-void LiteralWatchers::AttachAllClauses() {
+void ClauseManager::AttachAllClauses() {
   if (all_clauses_are_attached_) return;
   all_clauses_are_attached_ = true;
 
@@ -354,7 +354,7 @@ void LiteralWatchers::AttachAllClauses() {
 }
 
 // This one do not need the clause to be detached.
-bool LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
+bool ClauseManager::InprocessingFixLiteral(Literal true_literal) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause({true_literal});
@@ -373,7 +373,7 @@ bool LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
 
 // TODO(user): We could do something slower if the clauses are attached like
 // we do for InprocessingRewriteClause().
-void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
+void ClauseManager::InprocessingRemoveClause(SatClause* clause) {
   DCHECK(!all_clauses_are_attached_);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->DeleteClause(clause->AsSpan());
@@ -382,7 +382,7 @@ void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
   clause->Clear();
 }
 
-bool LiteralWatchers::InprocessingRewriteClause(
+bool ClauseManager::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause) {
   if (new_clause.empty()) return false;  // UNSAT.
 
@@ -430,7 +430,7 @@ bool LiteralWatchers::InprocessingRewriteClause(
   return true;
 }
 
-SatClause* LiteralWatchers::InprocessingAddClause(
+SatClause* ClauseManager::InprocessingAddClause(
     absl::Span<const Literal> new_clause) {
   DCHECK(!new_clause.empty());
   DCHECK(!all_clauses_are_attached_);
@@ -456,7 +456,7 @@ SatClause* LiteralWatchers::InprocessingAddClause(
   return clause;
 }
 
-void LiteralWatchers::CleanUpWatchers() {
+void ClauseManager::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (const LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
     DCHECK(needs_cleaning_[index]);
@@ -469,25 +469,28 @@ void LiteralWatchers::CleanUpWatchers() {
   is_clean_ = true;
 }
 
-void LiteralWatchers::DeleteRemovedClauses() {
+// We also update to_minimize_index_/to_probe_index_ correctly.
+//
+// TODO(user): If more indices are needed, generalize the code to a vector of
+// indices.
+void ClauseManager::DeleteRemovedClauses() {
   DCHECK(is_clean_);
 
-  // Update to_minimize_index_.
-  if (to_minimize_index_ >= clauses_.size()) {
-    to_minimize_index_ = clauses_.size();
+  int new_size = 0;
+  const int old_size = clauses_.size();
+  for (int i = 0; i < old_size; ++i) {
+    if (i == to_minimize_index_) to_minimize_index_ = new_size;
+    if (i == to_probe_index_) to_probe_index_ = new_size;
+    if (clauses_[i]->IsRemoved()) {
+      delete clauses_[i];
+    } else {
+      clauses_[new_size++] = clauses_[i];
+    }
   }
-  to_minimize_index_ =
-      std::stable_partition(clauses_.begin(),
-                            clauses_.begin() + to_minimize_index_,
-                            [](SatClause* a) { return !a->IsRemoved(); }) -
-      clauses_.begin();
+  clauses_.resize(new_size);
 
-  // Do the proper deletion.
-  std::vector<SatClause*>::iterator iter =
-      std::stable_partition(clauses_.begin(), clauses_.end(),
-                            [](SatClause* a) { return !a->IsRemoved(); });
-  gtl::STLDeleteContainerPointers(iter, clauses_.end());
-  clauses_.erase(iter, clauses_.end());
+  if (to_minimize_index_ > new_size) to_minimize_index_ = new_size;
+  if (to_probe_index_ > new_size) to_probe_index_ = new_size;
 }
 
 // ----- BinaryImplicationGraph -----
@@ -594,7 +597,7 @@ bool BinaryImplicationGraph::AddAtMostOne(
   return CleanUpAndAddAtMostOnes(base_index);
 }
 
-// TODO(user): remove dupl with LiteralWatchers::InprocessingFixLiteral().
+// TODO(user): remove dupl with ClauseManager::InprocessingFixLiteral().
 //
 // Note that we currently do not support calling this at a positive level since
 // we might loose the fixing on backtrack otherwise.

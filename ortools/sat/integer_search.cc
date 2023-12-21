@@ -1262,10 +1262,7 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   // the level zero first ! otherwise, the new deductions will not be
   // incorporated and the solver will loop forever.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
-    sat_solver_->Backtrack(0);
-    if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
-      return false;
-    }
+    if (!sat_solver_->ResetToLevelZero()) return false;
   }
 
   // The rest only trigger at level zero.
@@ -1503,23 +1500,20 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
 
 SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model) {
-  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  // Backtrack to level zero.
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  if (!sat_solver->ResetToLevelZero()) return sat_solver->UnsatStatus();
 
-  // Sync the bound first.
-  if (!solver->ResetToLevelZero()) return solver->UnsatStatus();
-  auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
-  for (const auto& cb : level_zero_callbacks->callbacks) {
-    if (!cb()) {
-      solver->NotifyThatModelIsUnsat();
-      return solver->UnsatStatus();
-    }
-  }
+  // Sync bounds and maybe do some inprocessing.
+  // We reuse the BeforeTakingDecision() code
+  auto* helper = model->GetOrCreate<IntegerSearchHelper>();
+  if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
 
   // Add the assumptions if any and solve.
-  if (!solver->ResetWithGivenAssumptions(assumptions)) {
-    return solver->UnsatStatus();
+  if (!sat_solver->ResetWithGivenAssumptions(assumptions)) {
+    return sat_solver->UnsatStatus();
   }
-  return model->GetOrCreate<IntegerSearchHelper>()->SolveIntegerProblem();
+  return helper->SolveIntegerProblem();
 }
 
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
@@ -1549,7 +1543,7 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-      literal_watchers_(model->GetOrCreate<LiteralWatchers>()),
+      clause_manager_(model->GetOrCreate<ClauseManager>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -1700,7 +1694,7 @@ SatSolver::Status ContinuousProber::Probe() {
 
       // Probe clauses of the SAT model.
       for (;;) {
-        const SatClause* clause = literal_watchers_->NextClauseToProbe();
+        const SatClause* clause = clause_manager_->NextClauseToProbe();
         if (clause == nullptr) break;
         if (at_least_one_literal_is_true(clause->AsSpan())) continue;
 
@@ -1851,7 +1845,7 @@ SatSolver::Status ContinuousProber::Probe() {
     random_pair_of_bool_vars_probed_ = 0;
     random_triplet_of_bool_vars_probed_ = 0;
     binary_implication_graph_->ResetAtMostOneIterator();
-    literal_watchers_->ResetToProbeIndex();
+    clause_manager_->ResetToProbeIndex();
     probed_bool_vars_.clear();
     shaved_literals_.clear();
 

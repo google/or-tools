@@ -113,9 +113,9 @@ class SatClause {
   std::string DebugString() const;
 
  private:
-  // LiteralWatchers needs to permute the order of literals in the clause and
+  // The manager needs to permute the order of literals in the clause and
   // call Clear()/Rewrite.
-  friend class LiteralWatchers;
+  friend class ClauseManager;
 
   Literal* literals() { return &(literals_[0]); }
 
@@ -155,18 +155,15 @@ class BinaryImplicationGraph;
 //
 // This class is also responsible for owning the clause memory and all related
 // information.
-//
-// TODO(user): Rename ClauseManager. This does more than just watching the
-// clauses and is the place where all the clauses are stored.
-class LiteralWatchers : public SatPropagator {
+class ClauseManager : public SatPropagator {
  public:
-  explicit LiteralWatchers(Model* model);
+  explicit ClauseManager(Model* model);
 
   // This type is neither copyable nor movable.
-  LiteralWatchers(const LiteralWatchers&) = delete;
-  LiteralWatchers& operator=(const LiteralWatchers&) = delete;
+  ClauseManager(const ClauseManager&) = delete;
+  ClauseManager& operator=(const ClauseManager&) = delete;
 
-  ~LiteralWatchers() override;
+  ~ClauseManager() override;
 
   // Must be called before adding clauses referring to such variables.
   void Resize(int num_variables);
@@ -246,9 +243,10 @@ class LiteralWatchers : public SatPropagator {
     drat_proof_handler_ = drat_proof_handler;
   }
 
-  // Really basic algorithm to return a clause to try to minimize. We simply
-  // loop over the clause that we keep forever, in creation order. This starts
-  // by the problem clauses and then the learned one that we keep forever.
+  // Round-robbing selection of the next clause to minimize/probe.
+  // Note that for minimization we only look at clause kept forever.
+  //
+  // TODO(user): If more indices are needed, switch to a generic API.
   SatClause* NextClauseToMinimize() {
     for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
       if (clauses_[to_minimize_index_]->IsRemoved()) continue;
@@ -258,13 +256,6 @@ class LiteralWatchers : public SatPropagator {
     }
     return nullptr;
   }
-
-  // Restart the scan in NextClauseToMinimize() from the first problem clause.
-  void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
-
-  // Really basic algorithm to return a clause to try to probe. We simply
-  // loop over the clause that we keep forever, in creation order. This starts
-  // by the problem clauses and then the learned one that we keep forever.
   SatClause* NextClauseToProbe() {
     for (; to_probe_index_ < clauses_.size(); ++to_probe_index_) {
       if (clauses_[to_probe_index_]->IsRemoved()) continue;
@@ -273,8 +264,9 @@ class LiteralWatchers : public SatPropagator {
     return nullptr;
   }
 
-  // Restart the scan in NextClauseToProbe() from the first problem clause.
+  // Restart the scans.
   void ResetToProbeIndex() { to_probe_index_ = 0; }
+  void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
 
   // During an inprocessing phase, it is easier to detach all clause first,
   // then simplify and then reattach them. Note however that during these

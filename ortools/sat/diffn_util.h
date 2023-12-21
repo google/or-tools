@@ -480,6 +480,9 @@ class ProbingRectangle {
 
   enum Edge { TOP = 0, LEFT = 1, BOTTOM = 2, RIGHT = 3 };
 
+  // Reset to the bounding box of the whole set.
+  void Reset();
+
   // Shrink the rectangle by moving one of its four edges to the next
   // "interesting" value. The interesting values for x or y are the ones that
   // correspond to a boundary, ie., a value that corresponds to one of {min,
@@ -546,9 +549,10 @@ class ProbingRectangle {
 
   const std::vector<RectangleInRange>& intervals_;
 
+  IntegerValue full_energy_;
   IntegerValue minimum_energy_;
   IntegerValue probe_area_;
-  int top_index_, bottom_index_, left_index_, right_index_;
+  int indexes_[4];
 
   absl::flat_hash_set<int> ranges_touching_both_boundaries_[2];
   IntegerValue corner_count_[4] = {0, 0, 0, 0};

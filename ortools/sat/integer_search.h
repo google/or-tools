@@ -346,7 +346,7 @@ class ContinuousProber {
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* binary_implication_graph_;
-  LiteralWatchers* literal_watchers_;
+  ClauseManager* clause_manager_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;

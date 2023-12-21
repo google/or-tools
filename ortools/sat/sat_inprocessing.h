@@ -99,7 +99,7 @@ class Inprocessing {
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         params_(*model->GetOrCreate<SatParameters>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         trail_(model->GetOrCreate<Trail>()),
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -150,7 +150,7 @@ class Inprocessing {
   const VariablesAssignment& assignment_;
   const SatParameters& params_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   Trail* trail_;
   SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
@@ -193,7 +193,7 @@ class StampingSimplifier {
   explicit StampingSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -226,7 +226,7 @@ class StampingSimplifier {
  private:
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   ModelRandomGenerator* random_;
   TimeLimit* time_limit_;
 
@@ -272,7 +272,7 @@ class BlockedClauseSimplifier {
   explicit BlockedClauseSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -286,7 +286,7 @@ class BlockedClauseSimplifier {
 
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   PostsolveClauses* postsolve_;
   TimeLimit* time_limit_;
 
@@ -316,7 +316,7 @@ class BoundedVariableElimination {
       : parameters_(*model->GetOrCreate<SatParameters>()),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         trail_(model->GetOrCreate<Trail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
@@ -344,7 +344,7 @@ class BoundedVariableElimination {
   const SatParameters& parameters_;
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   PostsolveClauses* postsolve_;
   Trail* trail_;
   TimeLimit* time_limit_;

@@ -628,10 +628,6 @@ class SatSolver {
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
 
-  // Unrolls the trail until a given point. This unassign the assigned variables
-  // and add them to the priority queue with the correct weight.
-  void Untrail(int target_trail_index);
-
   // Output to the DRAT proof handler any newly fixed variables.
   void ProcessNewlyFixedVariablesForDratProof();
 
@@ -750,7 +746,7 @@ class SatSolver {
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
   BinaryImplicationGraph* binary_implication_graph_;
-  LiteralWatchers* clauses_propagator_;
+  ClauseManager* clauses_propagator_;
   PbConstraints* pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
