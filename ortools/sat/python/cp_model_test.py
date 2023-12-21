@@ -1344,6 +1344,7 @@ class CpModelTest(absltest.TestCase):
         )
         solver = cp_model.CpSolver()
         solver.parameters.keep_all_feasible_solutions_in_presolve = True
+        solver.parameters.num_workers = 1
         solution_recorder = RecordSolution([3, x, 1 - x], [1, False, ~b])
         status = solver.solve(model, solution_recorder)
         self.assertEqual(cp_model.OPTIMAL, status)
