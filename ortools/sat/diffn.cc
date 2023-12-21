@@ -853,7 +853,7 @@ bool RectanglePairwisePropagator::Propagate() {
   }
 
   std::vector<PairwiseRestriction> restrictions;
-  if (full_pairwise_propagation_) {
+  if (non_zero_area_boxes_.size() <= full_pairwise_propagation_threshold_) {
     RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(non_zero_area_boxes_,
                                                          &restrictions));
   }

@@ -140,9 +140,9 @@ class RectanglePairwisePropagator : public PropagatorInterface {
       : global_x_(*x),
         global_y_(*y),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        full_pairwise_propagation_(
+        full_pairwise_propagation_threshold_(
             model->GetOrCreate<SatParameters>()
-                ->use_pairwise_reasoning_in_no_overlap_2d()) {}
+                ->max_size_pairwise_reasoning_in_no_overlap_2d()) {}
 
   ~RectanglePairwisePropagator() override;
 
@@ -174,7 +174,7 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  const bool full_pairwise_propagation_;
+  const int full_pairwise_propagation_threshold_;
 
   std::vector<ItemForPairwiseRestriction> non_zero_area_boxes_;
   std::vector<ItemForPairwiseRestriction> horizontal_zero_area_boxes_;

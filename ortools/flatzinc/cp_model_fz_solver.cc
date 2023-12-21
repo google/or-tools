@@ -748,7 +748,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
       FillDomainInProto(domain, proto.mutable_variables(var));
 
-      for (const ClosedInterval interval : domain.intervals()) {
+      for (const ClosedInterval interval : domain) {
         for (int64_t value = interval.start; value <= interval.end; ++value) {
           // Create one Boolean variable for this arc.
           const int literal = proto.variables_size();

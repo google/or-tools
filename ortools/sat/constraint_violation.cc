@@ -903,7 +903,7 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
 
 bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
   for (const int c : VarToConstraints(var)) {
-    if (domains_[c].intervals().size() > 2) return false;
+    if (domains_[c].NumIntervals() > 2) return false;
   }
   return true;
 }

@@ -455,6 +455,12 @@ struct RectangleInRange {
 
     return result;
   }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const RectangleInRange& r) {
+    absl::Format(&sink, "item(size=%vx%v, BB=%v)", r.x_size, r.y_size,
+                 r.bounding_area);
+  }
 };
 
 // Cheaply test several increasingly smaller rectangles for energy conflict.
@@ -553,6 +559,7 @@ class ProbingRectangle {
   IntegerValue minimum_energy_;
   IntegerValue probe_area_;
   int indexes_[4];
+  int next_indexes_[4];
 
   absl::flat_hash_set<int> ranges_touching_both_boundaries_[2];
   IntegerValue corner_count_[4] = {0, 0, 0, 0};

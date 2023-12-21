@@ -810,16 +810,7 @@ ProbingRectangle::ProbingRectangle(
              .subspan(idx_begin, i - idx_begin)});
   }
 
-  indexes_[Edge::LEFT] = 0;
-  indexes_[Edge::RIGHT] = grouped_intervals_sorted_by_x_.size() - 1;
-  indexes_[Edge::BOTTOM] = 0;
-  indexes_[Edge::TOP] = grouped_intervals_sorted_by_y_.size() - 1;
-
-  // Remove the four bogus points we added.
-  Shrink(Edge::LEFT);
-  Shrink(Edge::BOTTOM);
-  Shrink(Edge::RIGHT);
-  Shrink(Edge::TOP);
+  Reset();
 }
 
 void ProbingRectangle::Reset() {
@@ -827,6 +818,11 @@ void ProbingRectangle::Reset() {
   indexes_[Edge::RIGHT] = grouped_intervals_sorted_by_x_.size() - 1;
   indexes_[Edge::BOTTOM] = 0;
   indexes_[Edge::TOP] = grouped_intervals_sorted_by_y_.size() - 1;
+
+  next_indexes_[Edge::LEFT] = 1;
+  next_indexes_[Edge::RIGHT] = grouped_intervals_sorted_by_x_.size() - 2;
+  next_indexes_[Edge::BOTTOM] = 1;
+  next_indexes_[Edge::TOP] = grouped_intervals_sorted_by_y_.size() - 2;
 
   minimum_energy_ = full_energy_;
   ranges_touching_both_boundaries_[0].clear();
@@ -890,6 +886,10 @@ void ProbingRectangle::ValidateInvariants() const {
   IntegerValue intersect_length[4] = {0, 0, 0, 0};
   IntegerValue corner_count[4] = {0, 0, 0, 0};
   IntegerValue energy = 0;
+  CHECK_LE(next_indexes_[Edge::LEFT], indexes_[Edge::RIGHT]);
+  CHECK_LE(next_indexes_[Edge::BOTTOM], indexes_[Edge::TOP]);
+  CHECK_GE(next_indexes_[Edge::TOP], indexes_[Edge::BOTTOM]);
+  CHECK_GE(next_indexes_[Edge::RIGHT], indexes_[Edge::LEFT]);
 
   for (int interval_idx = 0; interval_idx < intervals_.size(); interval_idx++) {
     const RectangleInRange& range = intervals_[interval_idx];
@@ -901,6 +901,9 @@ void ProbingRectangle::ValidateInvariants() const {
     energy += min_intersect.Area();
 
     std::array<bool, 4> touching_boundary = {false, false, false, false};
+    CHECK_EQ(CanConsumeEnergy(current_rectangle, range) &&
+                 current_rectangle.Area() != 0,
+             range.GetMinimumIntersectionArea(current_rectangle) != 0);
     if (CanConsumeEnergy(current_rectangle, range)) {
       touching_boundary = GetPossibleEdgeIntersection(current_rectangle, range);
     }
@@ -1056,39 +1059,53 @@ template <ProbingRectangle::Edge edge>
 void ProbingRectangle::ShrinkImpl() {
   constexpr EdgeInfo e = GetEdgeInfo(edge);
 
-  const Rectangle prev_rectangle = GetCurrentRectangle();
+  bool update_next_index[4] = {false, false, false, false};
+  update_next_index[edge] = true;
+
   IntegerValue step_1d_size;
   minimum_energy_ -= GetShrinkDeltaEnergy(edge);
   const std::vector<PointsForCoordinate>& sorted_intervals =
       e.shrink_direction == Direction::LEFT_AND_RIGHT
           ? grouped_intervals_sorted_by_x_
           : grouped_intervals_sorted_by_y_;
+
+  const Rectangle prev_rectangle = GetCurrentRectangle();
+  indexes_[edge] = next_indexes_[edge];
+  const Rectangle current_rectangle = GetCurrentRectangle();
+
   switch (edge) {
     case Edge::LEFT:
-      step_1d_size = sorted_intervals[indexes_[edge] + 1].coordinate -
-                     prev_rectangle.x_min;
-      indexes_[edge]++;
+      step_1d_size = current_rectangle.x_min - prev_rectangle.x_min;
+      next_indexes_[edge] =
+          std::min(indexes_[edge] + 1, indexes_[e.opposite_edge]);
+      next_indexes_[e.opposite_edge] =
+          std::max(indexes_[edge], next_indexes_[e.opposite_edge]);
       break;
     case Edge::BOTTOM:
-      step_1d_size = sorted_intervals[indexes_[edge] + 1].coordinate -
-                     prev_rectangle.y_min;
-      indexes_[edge]++;
+      step_1d_size = current_rectangle.y_min - prev_rectangle.y_min;
+      next_indexes_[edge] =
+          std::min(indexes_[edge] + 1, indexes_[e.opposite_edge]);
+      next_indexes_[e.opposite_edge] =
+          std::max(indexes_[edge], next_indexes_[e.opposite_edge]);
       break;
     case Edge::RIGHT:
-      step_1d_size = prev_rectangle.x_max -
-                     sorted_intervals[indexes_[edge] - 1].coordinate;
-      indexes_[edge]--;
+      step_1d_size = prev_rectangle.x_max - current_rectangle.x_max;
+      next_indexes_[edge] =
+          std::max(indexes_[edge] - 1, indexes_[e.opposite_edge]);
+      next_indexes_[e.opposite_edge] =
+          std::min(indexes_[edge], next_indexes_[e.opposite_edge]);
       break;
     case Edge::TOP:
-      step_1d_size = prev_rectangle.y_max -
-                     sorted_intervals[indexes_[edge] - 1].coordinate;
-      indexes_[edge]--;
+      step_1d_size = prev_rectangle.y_max - current_rectangle.y_max;
+      next_indexes_[edge] =
+          std::max(indexes_[edge] - 1, indexes_[e.opposite_edge]);
+      next_indexes_[e.opposite_edge] =
+          std::min(indexes_[edge], next_indexes_[e.opposite_edge]);
       break;
   }
 
   absl::Span<ProbingRectangle::IntervalPoint> items_touching_coordinate =
       sorted_intervals[indexes_[edge]].items_touching_coordinate;
-  const Rectangle current_rectangle = GetCurrentRectangle();
 
   IntegerValue delta_corner_count[4] = {0, 0, 0, 0};
   for (const auto& item : items_touching_coordinate) {
@@ -1152,6 +1169,9 @@ void ProbingRectangle::ShrinkImpl() {
       if (!remove_edge) {
         continue;
       }
+
+      update_next_index[edge_to_update] = true;
+
       if (touching_boundary_before[info.opposite_edge]) {
         ranges_touching_both_boundaries_[info.shrink_direction].erase(
             item.index);
@@ -1200,6 +1220,59 @@ void ProbingRectangle::ShrinkImpl() {
   for (int i = 0; i < 4; i++) {
     corner_count_[i] += delta_corner_count[i];
   }
+
+  auto points_consume_energy =
+      [this,
+       &current_rectangle](absl::Span<ProbingRectangle::IntervalPoint> points) {
+        for (const auto& item : points) {
+          const RectangleInRange& range = intervals_[item.index];
+          if (CanConsumeEnergy(current_rectangle, range)) {
+            return true;
+          }
+        }
+        return false;
+      };
+  if (update_next_index[Edge::LEFT]) {
+    for (; next_indexes_[Edge::LEFT] < indexes_[Edge::RIGHT];
+         ++next_indexes_[Edge::LEFT]) {
+      if (points_consume_energy(
+              grouped_intervals_sorted_by_x_[next_indexes_[Edge::LEFT]]
+                  .items_touching_coordinate)) {
+        break;
+      }
+    }
+  }
+  if (update_next_index[Edge::BOTTOM]) {
+    for (; next_indexes_[Edge::BOTTOM] < indexes_[Edge::TOP];
+         ++next_indexes_[Edge::BOTTOM]) {
+      if (points_consume_energy(
+              grouped_intervals_sorted_by_y_[next_indexes_[Edge::BOTTOM]]
+                  .items_touching_coordinate)) {
+        break;
+      }
+    }
+  }
+  if (update_next_index[Edge::RIGHT]) {
+    for (; next_indexes_[Edge::RIGHT] > indexes_[Edge::LEFT];
+         --next_indexes_[Edge::RIGHT]) {
+      if (points_consume_energy(
+              grouped_intervals_sorted_by_x_[next_indexes_[Edge::RIGHT]]
+                  .items_touching_coordinate)) {
+        break;
+      }
+    }
+  }
+  if (update_next_index[Edge::TOP]) {
+    for (; next_indexes_[Edge::TOP] > indexes_[Edge::BOTTOM];
+         --next_indexes_[Edge::TOP]) {
+      if (points_consume_energy(
+              grouped_intervals_sorted_by_y_[next_indexes_[Edge::TOP]]
+                  .items_touching_coordinate)) {
+        break;
+      }
+    }
+  }
+
   probe_area_ = current_rectangle.Area();
   CacheShrinkDeltaEnergy(0);
   CacheShrinkDeltaEnergy(1);
@@ -1224,23 +1297,21 @@ void ProbingRectangle::Shrink(Edge edge) {
 
 IntegerValue ProbingRectangle::GetShrinkDeltaArea(Edge edge) const {
   const Rectangle current_rectangle = GetCurrentRectangle();
+  const std::vector<PointsForCoordinate>& sorted_intervals =
+      (edge == Edge::LEFT || edge == Edge::RIGHT)
+          ? grouped_intervals_sorted_by_x_
+          : grouped_intervals_sorted_by_y_;
+  const IntegerValue coordinate =
+      sorted_intervals[next_indexes_[edge]].coordinate;
   switch (edge) {
     case Edge::LEFT:
-      return (grouped_intervals_sorted_by_x_[indexes_[edge] + 1].coordinate -
-              current_rectangle.x_min) *
-             current_rectangle.SizeY();
+      return (coordinate - current_rectangle.x_min) * current_rectangle.SizeY();
     case Edge::BOTTOM:
-      return (grouped_intervals_sorted_by_y_[indexes_[edge] + 1].coordinate -
-              current_rectangle.y_min) *
-             current_rectangle.SizeX();
+      return (coordinate - current_rectangle.y_min) * current_rectangle.SizeX();
     case Edge::RIGHT:
-      return (current_rectangle.x_max -
-              grouped_intervals_sorted_by_x_[indexes_[edge] - 1].coordinate) *
-             current_rectangle.SizeY();
+      return (current_rectangle.x_max - coordinate) * current_rectangle.SizeY();
     case Edge::TOP:
-      return (current_rectangle.y_max -
-              grouped_intervals_sorted_by_y_[indexes_[edge] - 1].coordinate) *
-             current_rectangle.SizeX();
+      return (current_rectangle.y_max - coordinate) * current_rectangle.SizeX();
   }
 }
 
@@ -1262,9 +1333,9 @@ void ProbingRectangle::CacheShrinkDeltaEnergy(int dimension) {
     }
 
     next_rectangle_up.x_min =
-        grouped_intervals_sorted_by_x_[indexes_[Edge::LEFT] + 1].coordinate;
+        grouped_intervals_sorted_by_x_[next_indexes_[Edge::LEFT]].coordinate;
     next_rectangle_down.x_max =
-        grouped_intervals_sorted_by_x_[indexes_[Edge::RIGHT] - 1].coordinate;
+        grouped_intervals_sorted_by_x_[next_indexes_[Edge::RIGHT]].coordinate;
 
     step_1d_size_up = next_rectangle_up.x_min - current_rectangle.x_min;
     step_1d_size_down = current_rectangle.x_max - next_rectangle_down.x_max;
@@ -1280,9 +1351,9 @@ void ProbingRectangle::CacheShrinkDeltaEnergy(int dimension) {
     }
 
     next_rectangle_up.y_min =
-        grouped_intervals_sorted_by_y_[indexes_[Edge::BOTTOM] + 1].coordinate;
+        grouped_intervals_sorted_by_y_[next_indexes_[Edge::BOTTOM]].coordinate;
     next_rectangle_down.y_max =
-        grouped_intervals_sorted_by_y_[indexes_[Edge::TOP] - 1].coordinate;
+        grouped_intervals_sorted_by_y_[next_indexes_[Edge::TOP]].coordinate;
 
     step_1d_size_up = next_rectangle_up.y_min - current_rectangle.y_min;
     step_1d_size_down = current_rectangle.y_max - next_rectangle_down.y_max;
@@ -1339,10 +1410,10 @@ bool ProbingRectangle::CanShrink(Edge edge) const {
   switch (edge) {
     case Edge::LEFT:
     case Edge::RIGHT:
-      return (indexes_[Edge::RIGHT] - indexes_[Edge::LEFT] > 1);
+      return (next_indexes_[Edge::RIGHT] != indexes_[Edge::LEFT]);
     case Edge::BOTTOM:
     case Edge::TOP:
-      return (indexes_[Edge::TOP] - indexes_[Edge::BOTTOM] > 1);
+      return (indexes_[Edge::TOP] != next_indexes_[Edge::BOTTOM]);
   }
 }
 
@@ -1419,7 +1490,6 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
     // Pick a change with a probability proportional to exp(- delta_E / Temp)
     ranges.Shrink(candidates[weighted_pick(weights, random)]);
   }
-  CHECK_GT(ranges.GetCurrentRectangleArea(), 0);
   if (ranges.GetMinimumEnergy() > ranges.GetCurrentRectangleArea()) {
     result.push_back(ranges.GetCurrentRectangle());
   }
