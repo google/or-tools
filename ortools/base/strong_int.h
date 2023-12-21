@@ -258,14 +258,14 @@ class StrongInt {
   // -- ASSIGNMENT OPERATORS ---------------------------------------------------
   // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
   // and %= for both ThisType and ValueType.
-#define STRONG_INT_TYPE_ASSIGNMENT_OP(op)            \
-  ThisType& operator op(const ThisType& arg_value) { \
-    value_ op arg_value.value();                     \
-    return *this;                                    \
-  }                                                  \
-  ThisType& operator op(ValueType arg_value) {       \
-    value_ op arg_value;                             \
-    return *this;                                    \
+#define STRONG_INT_TYPE_ASSIGNMENT_OP(op)             \
+  ThisType& operator op(const ThisType & arg_value) { \
+    value_ op arg_value.value();                      \
+    return *this;                                     \
+  }                                                   \
+  ThisType& operator op(ValueType arg_value) {        \
+    value_ op arg_value;                              \
+    return *this;                                     \
   }
   STRONG_INT_TYPE_ASSIGNMENT_OP(+=);
   STRONG_INT_TYPE_ASSIGNMENT_OP(-=);
