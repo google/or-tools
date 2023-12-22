@@ -329,6 +329,31 @@ TEST(XpressInterface, LpStartingBasis) {
   EXPECT_LT(iterWithBasis, 10);
 }
 
+TEST(XpressInterface, LpStartingBasisNoIterationsIfBasisIsProvided) {
+  UNITTEST_INIT_LP();
+  buildLargeLp(solver, 1000);
+  // First, we record the number of iterations without an initial basis
+  solver.Solve();
+
+  // Then, we retrieve the final basis
+  std::vector<MPSolver::BasisStatus> varStatus, constrStatus;
+  for (auto* var : solver.variables()) {
+    varStatus.push_back(var->basis_status());
+  }
+  for (auto* constr : solver.constraints()) {
+    constrStatus.push_back(constr->basis_status());
+  }
+
+  MPSolver solver_BasisProvided("XPRESS_LP", MPSolver::XPRESS_LINEAR_PROGRAMMING);
+  buildLargeLp(solver_BasisProvided, 1000);
+  solver_BasisProvided.SetStartingLpBasis(varStatus, constrStatus);
+  solver_BasisProvided.Solve();
+  const auto iterWithBasis = solver_BasisProvided.iterations();
+  // ...and finally check that no iteration has been performed
+  EXPECT_EQ(iterWithBasis, 0);
+}
+
+
 TEST(XpressInterface, NumVariables) {
   UNITTEST_INIT_MIP();
   MPVariable* x1 = solver.MakeNumVar(-1., 5.1, "x1");
