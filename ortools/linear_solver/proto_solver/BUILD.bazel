@@ -174,10 +174,10 @@ cc_library(
     hdrs = ["xpress_proto_solver.h"],
     deps = [
         "//ortools/base:timer",
-        "//ortools/xpress:environment",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/util:lazy_mutable_copy",
+        "//ortools/xpress:environment",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/log",

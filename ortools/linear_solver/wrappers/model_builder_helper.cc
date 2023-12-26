@@ -595,16 +595,14 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_PDLP)
-    case MPModelRequest::
-        GUROBI_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
+    case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING: {
       const auto temp = GurobiSolveProto(request);
       if (temp.ok()) {
         response_ = std::move(temp.value());
       }
     }
-    case MPModelRequest::
-       XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
+    case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
       response_ = XPressSolveProto(request);
       break;
