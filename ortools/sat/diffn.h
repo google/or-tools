@@ -52,7 +52,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
  private:
   struct Conflict {
     std::vector<RectangleInRange> items;
-    Rectangle rectangle_too_much_energy;
+    Rectangle rectangle_with_too_much_energy;
   };
   std::optional<Conflict> FindConflict(
       std::vector<RectangleInRange> active_box_ranges);
@@ -64,7 +64,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   bool BuildAndReportEnergyTooLarge(
       const std::vector<RectangleInRange>& ranges);
   void CheckPropagationIsValid(const std::vector<RectangleInRange>& ranges,
-                               const Rectangle& rectangle_too_much_energy);
+                               const Rectangle& rectangle_with_too_much_energy);
   std::vector<RectangleInRange> GetEnergyConflictForRectangle(
       const Rectangle& rectangle,
       const std::vector<RectangleInRange>& active_box_ranges);

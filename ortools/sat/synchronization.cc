@@ -31,6 +31,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -964,10 +965,17 @@ void SharedBoundsManager::GetChangedBounds(
   absl::MutexLock mutex_lock(&mutex_);
   for (const int var : id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
     variables->push_back(var);
+  }
+  id_to_changed_variables_[id].ClearAll();
+
+  // We need to report the bounds in a deterministic order as it is difficult to
+  // guarantee that nothing depend on the order in which the new bounds are
+  // processed.
+  absl::c_sort(*variables);
+  for (const int var : *variables) {
     new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
     new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
   }
-  id_to_changed_variables_[id].ClearAll();
 }
 
 void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {

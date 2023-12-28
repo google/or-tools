@@ -51,6 +51,11 @@ struct ClosedInterval {
     return start < other.start;
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const ClosedInterval& interval) {
+    return H::combine(std::move(h), interval.start, interval.end);
+  }
+
   int64_t start = 0;  // Inclusive.
   int64_t end = 0;    // Inclusive.
 };
@@ -449,6 +454,11 @@ class Domain {
 
   bool operator!=(const Domain& other) const {
     return intervals_ != other.intervals_;
+  }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const Domain& domain) {
+    return H::combine(std::move(h), domain.intervals_);
   }
 
   /**

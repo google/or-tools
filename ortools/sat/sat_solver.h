@@ -674,9 +674,7 @@ class SatSolver {
   // Precondition: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void MinimizeConflict(
-      std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict);
+  void MinimizeConflict(std::vector<Literal>* conflict);
   void MinimizeConflictExperimental(std::vector<Literal>* conflict);
   void MinimizeConflictSimple(std::vector<Literal>* conflict);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict);

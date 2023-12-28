@@ -862,7 +862,7 @@ void SatSolver::ProcessCurrentConflict() {
   }
 
   // Minimize the learned conflict.
-  MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
+  MinimizeConflict(&learned_conflict_);
 
   // Minimize it further with binary clauses?
   if (!binary_implication_graph_->IsEmpty()) {
@@ -2042,20 +2042,18 @@ void SatSolver::ComputeFirstUIPConflict(
     for (const Literal literal : clause_to_expand) {
       const BooleanVariable var = literal.Variable();
       const int level = DecisionLevel(var);
-      if (level > 0) ++num_vars_at_positive_level_in_clause_to_expand;
+      if (level == 0) continue;
+      ++num_vars_at_positive_level_in_clause_to_expand;
       if (!is_marked_[var]) {
         is_marked_.Set(var);
+        ++num_new_vars_at_positive_level;
         if (level == highest_level) {
-          ++num_new_vars_at_positive_level;
           ++num_literal_at_highest_level_that_needs_to_be_processed;
-        } else if (level > 0) {
-          ++num_new_vars_at_positive_level;
+        } else {
           // Note that all these literals are currently false since the clause
           // to expand was used to infer the value of a literal at this level.
           DCHECK(trail_->Assignment().LiteralIsFalse(literal));
           conflict->push_back(literal);
-        } else {
-          reason_used_to_infer_the_conflict->push_back(literal);
         }
       }
     }
@@ -2292,9 +2290,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
   LOG(FATAL) << "The code should never reach here.";
 }
 
-void SatSolver::MinimizeConflict(
-    std::vector<Literal>* conflict,
-    std::vector<Literal>* reason_used_to_infer_the_conflict) {
+void SatSolver::MinimizeConflict(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
 
   const int old_size = conflict->size();

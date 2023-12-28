@@ -190,17 +190,17 @@ class ElementEncodings {
            int exactly_one_index);
 
   // Returns an empty map if there is no such encoding.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>& Get(
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>& Get(
       IntegerVariable var);
 
   // Get an unsorted set of variables appearing in element encodings.
   const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
 
  private:
-  absl::flat_hash_map<IntegerVariable,
-                      absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
+  absl::btree_map<IntegerVariable,
+                  absl::btree_map<int, std::vector<ValueLiteralPair>>>
       var_to_index_to_element_encodings_;
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>
       empty_element_encoding_;
   std::vector<IntegerVariable> element_encoded_variables_;
 };

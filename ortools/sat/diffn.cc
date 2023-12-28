@@ -311,27 +311,26 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   }
   // We found a conflict, so we can afford to run the propagator again to
   // search for a best explanation. This is specially the case since we only
-  // want to re-run it over the items that participate in the conflict, so its
+  // want to re-run it over the items that participate in the conflict, so it is
   // a much smaller problem.
   IntegerValue best_explanation_size = best_conflict->items.size();
-  bool found_improvement;
   bool refined = false;
-  do {
-    found_improvement = false;
+  while (true) {
     std::optional<Conflict> conflict = FindConflict(best_conflict->items);
     if (!conflict.has_value()) break;
     // We prefer an explanation with the least number of boxes.
-    if (conflict->items.size() < best_explanation_size) {
-      found_improvement = true;
-      best_explanation_size = conflict->items.size();
-      best_conflict = conflict;
-      refined = true;
+    if (conflict->items.size() >= best_explanation_size) {
+      // The new explanation isn't better than the old one. Stop trying.
+      break;
     }
-  } while (found_improvement);
+    best_explanation_size = conflict->items.size();
+    best_conflict = conflict;
+    refined = true;
+  }
 
   num_refined_conflicts_ += refined;
   std::vector<RectangleInRange> generalized_explanation = GeneralizeExplanation(
-      best_conflict->rectangle_too_much_energy, best_conflict->items);
+      best_conflict->rectangle_with_too_much_energy, best_conflict->items);
   if (best_explanation_size == 2) {
     num_conflicts_two_boxes_++;
   }
@@ -342,17 +341,17 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 std::optional<NonOverlappingRectanglesEnergyPropagator::Conflict>
 NonOverlappingRectanglesEnergyPropagator::FindConflict(
     std::vector<RectangleInRange> active_box_ranges) {
-  const std::vector<Rectangle> rectangles_too_much_energy =
+  const std::vector<Rectangle> rectangles_with_too_much_energy =
       FindRectanglesWithEnergyConflictMC(active_box_ranges, *random_, 1.0);
 
-  if (rectangles_too_much_energy.empty()) return std::nullopt;
+  if (rectangles_with_too_much_energy.empty()) return std::nullopt;
 
   num_conflicts_++;
-  num_multiple_conflicts_ += rectangles_too_much_energy.size() > 1;
+  num_multiple_conflicts_ += rectangles_with_too_much_energy.size() > 1;
 
   std::vector<RectangleInRange> best_explanation;
   Rectangle best_rectangle;
-  for (const auto& r : rectangles_too_much_energy) {
+  for (const auto& r : rectangles_with_too_much_energy) {
     std::vector<RectangleInRange> range_for_explanation =
         GetEnergyConflictForRectangle(r, active_box_ranges);
     CheckPropagationIsValid(range_for_explanation, r);
@@ -468,7 +467,7 @@ NonOverlappingRectanglesEnergyPropagator::GetEnergyConflictForRectangle(
             [](const OverlapPerBox& a, const OverlapPerBox& b) {
               return a.energy > b.energy;
             });
-  IntegerValue available_energy = rectangle.Area();
+  const IntegerValue available_energy = rectangle.Area();
   IntegerValue used_energy = 0;
   std::vector<RectangleInRange> ranges_for_explanation;
   ranges_for_explanation.reserve(energy_per_box.size());
@@ -496,8 +495,8 @@ int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
 
 void NonOverlappingRectanglesEnergyPropagator::CheckPropagationIsValid(
     const std::vector<RectangleInRange>& ranges,
-    const Rectangle& rectangle_too_much_energy) {
-  const IntegerValue available_energy = rectangle_too_much_energy.Area();
+    const Rectangle& rectangle_with_too_much_energy) {
+  const IntegerValue available_energy = rectangle_with_too_much_energy.Area();
   IntegerValue used_energy = 0;
   for (const auto& range : ranges) {
     const int b = range.box_index;
@@ -510,7 +509,7 @@ void NonOverlappingRectanglesEnergyPropagator::CheckPropagationIsValid(
     // Each one of the boxes-in-range that we found on the cut does intersect
     // the rectangle we found.
     const auto intersection =
-        range.GetMinimumIntersection(rectangle_too_much_energy);
+        range.GetMinimumIntersection(rectangle_with_too_much_energy);
     CHECK_GT(intersection.Area(), 0);
     // It cannot intersect more than the size of the object.
     CHECK_GE(x_.SizeMin(b), intersection.SizeX());

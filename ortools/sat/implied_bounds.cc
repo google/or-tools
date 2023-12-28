@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -232,7 +233,7 @@ void ElementEncodings::Add(IntegerVariable var,
   var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
 }
 
-const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
+const absl::btree_map<int, std::vector<ValueLiteralPair>>&
 ElementEncodings::Get(IntegerVariable var) {
   const auto& it = var_to_index_to_element_encodings_.find(var);
   if (it == var_to_index_to_element_encodings_.end()) {
@@ -359,12 +360,12 @@ std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
   }
 
   // Fill in the encodings for the left variable.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      left_encodings = element_encodings_->Get(left.var);
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>& left_encodings =
+      element_encodings_->Get(left.var);
 
   // Fill in the encodings for the right variable.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>&
-      right_encodings = element_encodings_->Get(right.var);
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>& right_encodings =
+      element_encodings_->Get(right.var);
 
   std::vector<int> compatible_keys;
   for (const auto& [index, encoding] : left_encodings) {
