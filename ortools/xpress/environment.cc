@@ -15,15 +15,17 @@
 
 #include "ortools/xpress/environment.h"
 
+#include <cstdlib>
 #include <filesystem>
-#include <mutex>
+#include <functional>
 #include <string>
+#include <vector>
 
 #include "absl/status/status.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
+#include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -31,6 +33,8 @@ namespace operations_research {
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
 
+// Let's not reformat for rest of the file.
+// clang-format off
 // This was generated with the parse_header_xpress.py script.
 // See the comment at the top of the script.
 
@@ -159,6 +163,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
 }
+// clang-format on
 
 void printXpressBanner(bool error) {
   char banner[XPRS_MAXBANNERLENGTH];
@@ -217,7 +222,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
   static std::once_flag xpress_loading_done;
   static absl::Status xpress_load_status;
   static DynamicLibrary xpress_library;
-  static absl::Mutex mutex;
+  static absl::Mutex mutex(absl::kConstInit);
 
   absl::MutexLock lock(&mutex);
 
@@ -253,7 +258,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
 
 void log_message_about_XPRSinit_argument();
 void log_full_license_error(int code, const std::string& xpress_lib_dir);
-/** init XPRESS environment */
+//! init XPRESS environment.
 bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
   std::string xpress_lib_dir;
   absl::Status status = LoadXpressDynamicLibrary(xpress_lib_dir);
@@ -335,13 +340,12 @@ bool initXpressEnv(bool verbose, int xpress_oem_license_key) {
   }
 }
 void log_full_license_error(int code, const std::string& xpress_lib_dir) {
-  LOG(WARNING) << "XpressInterface: Xpress found at " << xpress_lib_dir
-             << "\n";
+  LOG(WARNING) << "XpressInterface: Xpress found at " << xpress_lib_dir << "\n";
   char errmsg[256];
   XPRSgetlicerrmsg(errmsg, 256);
 
   LOG(ERROR) << "XpressInterface : License error : " << errmsg
-      << " (XPRSinit returned code " << code << "). \n";
+             << " (XPRSinit returned code " << code << "). \n";
   LOG(ERROR)
       << "|_Your Xpress installation should have set the env var XPAUTH_PATH"
          " to the full path of your licence file\n";

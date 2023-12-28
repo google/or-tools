@@ -13,14 +13,13 @@
 
 // Initial version of this code was provided by RTE
 
-#ifndef OR_TOOLS_XPRESS_ENVIRONMENT_H
-#define OR_TOOLS_XPRESS_ENVIRONMENT_H
+#ifndef OR_TOOLS_XPRESS_ENVIRONMENT_H_
+#define OR_TOOLS_XPRESS_ENVIRONMENT_H_
+
+#include <functional>
+#include <string>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/dynamic_library.h"
-#include "ortools/base/logging.h"
 
 extern "C" {
 typedef struct xo_prob_struct* XPRSprob;
@@ -33,13 +32,13 @@ void printXpressBanner(bool error);
 bool initXpressEnv(bool verbose = true, int xpress_oem_license_key = 0);
 
 bool XpressIsCorrectlyInstalled();
-// clang-format off
+
 // Force the loading of the xpress dynamic library. It returns true if the
 // library was successfully loaded. This method can only be called once.
 // Successive calls are no-op.
 //
 // Note that it does not check if a token license can be grabbed.
-absl::Status LoadXpressDynamicLibrary(std::string &xpresspath);
+absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 
 // The list of #define and extern std::function<> below is generated directly
 // from xprs.h via parse_header_xpress.py
@@ -47,7 +46,8 @@ absl::Status LoadXpressDynamicLibrary(std::string &xpresspath);
 // This is the header section
 #if defined(_WIN32)
 #define XPRSint64 __int64
-#elif defined(__LP64__) || defined(_LP64) || defined(__ILP64__) || defined(_ILP64)
+#elif defined(__LP64__) || defined(_LP64) || defined(__ILP64__) || \
+    defined(_ILP64)
 #define XPRSint64 long
 #else
 #define XPRSint64 long long
@@ -58,36 +58,35 @@ absl::Status LoadXpressDynamicLibrary(std::string &xpresspath);
 #else
 #define XPRS_CC
 #endif
-/***************************************************************************\
- * values related to XPRSinterrupt                                         *
-\***************************************************************************/
-#define XPRS_STOP_NONE                     0
-#define XPRS_STOP_TIMELIMIT                1
-#define XPRS_STOP_CTRLC                    2
-#define XPRS_STOP_NODELIMIT                3
-#define XPRS_STOP_ITERLIMIT                4
-#define XPRS_STOP_MIPGAP                   5
-#define XPRS_STOP_SOLLIMIT                 6
-#define XPRS_STOP_GENERICERROR             7
-#define XPRS_STOP_MEMORYERROR              8
-#define XPRS_STOP_USER                     9
-#define XPRS_STOP_SOLVECOMPLETE            10
-#define XPRS_STOP_LICENSELOST              11
-#define XPRS_STOP_NUMERICALERROR           13
-/***************************************************************************\
- * values related to Set/GetControl/Attribinfo                                  *
-\***************************************************************************/
-#define XPRS_TYPE_NOTDEFINED               0
-#define XPRS_TYPE_INT                      1
-#define XPRS_TYPE_INT64                    2
-#define XPRS_TYPE_DOUBLE                   3
-#define XPRS_TYPE_STRING                   4
-/***************************************************************************\
- * values related to NAMESPACES                                            *
-\***************************************************************************/
-#define XPRS_NAMES_ROW                      1
-#define XPRS_NAMES_COLUMN                   2
-
+// ***************************************************************************
+// * values related to XPRSinterrupt                                         *
+// ***************************************************************************
+#define XPRS_STOP_NONE 0
+#define XPRS_STOP_TIMELIMIT 1
+#define XPRS_STOP_CTRLC 2
+#define XPRS_STOP_NODELIMIT 3
+#define XPRS_STOP_ITERLIMIT 4
+#define XPRS_STOP_MIPGAP 5
+#define XPRS_STOP_SOLLIMIT 6
+#define XPRS_STOP_GENERICERROR 7
+#define XPRS_STOP_MEMORYERROR 8
+#define XPRS_STOP_USER 9
+#define XPRS_STOP_SOLVECOMPLETE 10
+#define XPRS_STOP_LICENSELOST 11
+#define XPRS_STOP_NUMERICALERROR 13
+// ***************************************************************************
+// * values related to Set/GetControl/Attribinfo                             *
+// ***************************************************************************
+#define XPRS_TYPE_NOTDEFINED 0
+#define XPRS_TYPE_INT 1
+#define XPRS_TYPE_INT64 2
+#define XPRS_TYPE_DOUBLE 3
+#define XPRS_TYPE_STRING 4
+// ***************************************************************************
+// * values related to NAMESPACES                                            *
+// ***************************************************************************
+#define XPRS_NAMES_ROW 1
+#define XPRS_NAMES_COLUMN 2
 
 #define XPRS_PLUSINFINITY 1.0e+20
 #define XPRS_MINUSINFINITY -1.0e+20
@@ -434,6 +433,9 @@ absl::Status LoadXpressDynamicLibrary(std::string &xpresspath);
 #define XPRS_MIP_UNBOUNDED 7
 #define XPRS_OBJ_MINIMIZE 1
 #define XPRS_OBJ_MAXIMIZE -1
+
+// Let's not reformat for rest of the file.
+// clang-format off
 extern std::function<int(XPRSprob* p_prob)> XPRScreateprob;
 extern std::function<int(XPRSprob prob)> XPRSdestroyprob;
 extern std::function<int(const char* path)> XPRSinit;
@@ -493,7 +495,8 @@ extern std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob
 extern std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize;
 extern std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize;
+// clang-format on
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_XPRESS_ENVIRONMENT_H
+#endif  // OR_TOOLS_XPRESS_ENVIRONMENT_H_
