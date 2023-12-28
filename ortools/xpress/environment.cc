@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <vector>
 
