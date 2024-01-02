@@ -860,7 +860,7 @@ class SVector {
 
   T* data() const { return base_; }
 
-  void swap(SVector<T>& x) {
+  void swap(SVector<T>& x) noexcept {
     std::swap(base_, x.base_);
     std::swap(size_, x.size_);
     std::swap(capacity_, x.capacity_);

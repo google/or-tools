@@ -26,6 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -72,12 +73,13 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
 template <class Graph>
 std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
   std::string out;
-  std::vector<typename Graph::NodeIndex> adj;
+  std::vector<uint64_t> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
     if (format == PRINT_GRAPH_ARCS) {
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
         if (!out.empty()) out += '\n';
-        absl::StrAppend(&out, node, "->", graph.Head(arc));
+        absl::StrAppend(&out, static_cast<uint64_t>(node), "->",
+                        static_cast<uint64_t>(graph.Head(arc)));
       }
     } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
@@ -88,7 +90,8 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
         std::sort(adj.begin(), adj.end());
       }
       if (node != 0) out += '\n';
-      absl::StrAppend(&out, node, ": ", absl::StrJoin(adj, " "));
+      absl::StrAppend(&out, static_cast<uint64_t>(node), ": ",
+                      absl::StrJoin(adj, " "));
     }
   }
   return out;
