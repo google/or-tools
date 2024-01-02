@@ -1287,6 +1287,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           if (!is_redundant_[l]) {
             ++num_redundant_literals_;
             is_redundant_.Set(l);
+            representative_of_[l] = l.Index();
           }
           const Literal to_fix = all_true ? l : l.Negated();
           if (assignment.LiteralIsFalse(to_fix)) return false;
