@@ -62,7 +62,7 @@ ABSL_FLAG(std::string, params, "",
 ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "If true, when we add a slack variable to reify a soft clause, we "
           "enforce the fact that when it is true, the clause must be false.");
-ABSL_FLAG(bool, fingerprint_intermediate_solutions, true,
+ABSL_FLAG(bool, fingerprint_intermediate_solutions, false,
           "Attach the fingerprint of intermediate solutions to the output.");
 
 namespace operations_research {
