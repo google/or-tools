@@ -576,6 +576,7 @@ std::string LinearProgram::Dump() const {
 
   // Constraints.
   const RowIndex num_rows = num_constraints();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
   for (RowIndex row(0); row < num_rows; ++row) {
     const Fractional lower_bound = constraint_lower_bounds()[row];
     const Fractional upper_bound = constraint_upper_bounds()[row];
@@ -586,9 +587,10 @@ std::string LinearProgram::Dump() const {
       output += Stringify(lower_bound);
       output += " <=";
     }
-    for (ColIndex col(0); col < num_cols; ++col) {
-      const Fractional coeff = matrix_.LookUpValue(row, col);
-      output += StringifyMonomial(coeff, GetVariableName(col), false);
+    for (const auto& entry : transpose.column(RowToColIndex(row))) {
+      const Fractional coeff = entry.coefficient();
+      output += StringifyMonomial(
+          coeff, GetVariableName(RowToColIndex(entry.row())), false);
     }
     if (AreBoundsFreeOrBoxed(lower_bound, upper_bound)) {
       output += " <= ";
