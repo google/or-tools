@@ -1869,7 +1869,7 @@ class LocalSearchState {
       VariableDomainId domain_id;
       int input_index;
       ConstraintId constraint_id;
-};
+    };
     // Adds all dependencies domains[i] -> constraint labelled by i.
     void AddDomainsConstraintDependencies(
         const std::vector<VariableDomainId>& domain_ids,

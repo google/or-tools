@@ -50,7 +50,8 @@ namespace operations_research {
 
 // bool XPressCodeToInvalidResponse(int error_code, const char* source_file,
 //                                  int source_line, const char* statement,
-//                                  XPRSprob prob, MPSolutionResponse* response) {
+//                                  XPRSprob prob, MPSolutionResponse* response)
+//                                  {
 //   if (error_code == XPRS_OK) return true;
 //   response->set_status();
 //   response->set_status_message(absl::StrFormat(
@@ -83,7 +84,8 @@ namespace operations_research {
 //   if (cst.upper_bound() < std::numeric_limits<double>::infinity() &&
 //       cst.lower_bound() != cst.upper_bound()) {
 //     return XPRSaddgenconstrIndicator(xpress_model, gen_cst.name().c_str(),
-//                                      ind_cst.var_index(), ind_cst.var_value(),
+//                                      ind_cst.var_index(),
+//                                      ind_cst.var_value(),
 //                                      cst.var_index_size(),
 //                                      cst.mutable_var_index()->mutable_data(),
 //                                      cst.mutable_coefficient()->mutable_data(),
@@ -169,7 +171,8 @@ namespace operations_research {
 // }
 
 // int AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
-//                      XPRSprob xpress_model, std::vector<int>* tmp_variables) {
+//                      XPRSprob xpress_model, std::vector<int>* tmp_variables)
+//                      {
 //   CHECK(xpress_model != nullptr);
 //   CHECK(tmp_variables != nullptr);
 
@@ -197,7 +200,8 @@ namespace operations_research {
 // }
 
 // int AddMinConstraint(const MPGeneralConstraintProto& gen_cst,
-//                      XPRSprob xpress_model, std::vector<int>* tmp_variables) {
+//                      XPRSprob xpress_model, std::vector<int>* tmp_variables)
+//                      {
 //   CHECK(xpress_model != nullptr);
 //   CHECK(tmp_variables != nullptr);
 
@@ -214,7 +218,8 @@ namespace operations_research {
 // }
 
 // int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
-//                      XPRSprob xpress_model, std::vector<int>* tmp_variables) {
+//                      XPRSprob xpress_model, std::vector<int>* tmp_variables)
+//                      {
 //   CHECK(xpress_model != nullptr);
 //   CHECK(tmp_variables != nullptr);
 
@@ -245,7 +250,8 @@ namespace operations_research {
 //          absl::StrSplit(line, ',', absl::SkipWhitespace())) {
 //       if (token.empty()) continue;
 //       std::vector<std::string> key_value =
-//           absl::StrSplit(token, absl::ByAnyChar(" ="), absl::SkipWhitespace());
+//           absl::StrSplit(token, absl::ByAnyChar(" ="),
+//           absl::SkipWhitespace());
 //       // If one parameter fails, we keep processing the list of parameters.
 //       if (key_value.size() != 2) {
 //         const std::string current_message =
@@ -264,7 +270,8 @@ namespace operations_research {
 //         error_messages.push_back(current_message);
 //         continue;
 //       }
-//       VLOG(2) << absl::StrCat("Set parameter '", key_value[0], "' to value '",
+//       VLOG(2) << absl::StrCat("Set parameter '", key_value[0], "' to value
+//       '",
 //                               key_value[1]);
 //     }
 //   }
@@ -276,648 +283,686 @@ namespace operations_research {
 MPSolutionResponse XPressSolveProto(const MPModelRequest& request) {
   MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
- 
-//   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-//       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
-//   if (!optional_model) return response;
-//   const MPModelProto& model = optional_model->get();
 
-//   // We set `xpress_env` to point to a new environment if no existing one is
-//   // provided. We must make sure that we free this environment when we exit this
-//   // function.
-//   bool xpress_env_was_created = false;
-//   auto xpress_env_deleter = absl::MakeCleanup([&]() {
-//     if (xpress_env_was_created && xpress_env != nullptr) {
-//       XPRSfreeenv(xpress_env);
-//     }
-//   });
-//   if (xpress_env == nullptr) {
-//     ASSIGN_OR_RETURN(xpress_env, GetXPressEnv());
-//     xpress_env_was_created = true;
-//   }
+  //   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  //       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+  //   if (!optional_model) return response;
+  //   const MPModelProto& model = optional_model->get();
 
-//   XPRSprob xpress_model = nullptr;
-//   auto xpress_model_deleter = absl::MakeCleanup([&]() {
-//     const int error_code = XPRSfreemodel(xpress_model);
-//     LOG_IF(DFATAL, error_code != XPRS_OK)
-//         << "XPRSfreemodel failed with error " << error_code << ": "
-//         << XPRSgeterrormsg(xpress_env);
-//   });
+  //   // We set `xpress_env` to point to a new environment if no existing one
+  //   is
+  //   // provided. We must make sure that we free this environment when we exit
+  //   this
+  //   // function.
+  //   bool xpress_env_was_created = false;
+  //   auto xpress_env_deleter = absl::MakeCleanup([&]() {
+  //     if (xpress_env_was_created && xpress_env != nullptr) {
+  //       XPRSfreeenv(xpress_env);
+  //     }
+  //   });
+  //   if (xpress_env == nullptr) {
+  //     ASSIGN_OR_RETURN(xpress_env, GetXPressEnv());
+  //     xpress_env_was_created = true;
+  //   }
 
-// // `xpress_env` references ther XPRSenv argument.
-// #define RETURN_IF_XPRESS_ERROR(x) \
+  //   XPRSprob xpress_model = nullptr;
+  //   auto xpress_model_deleter = absl::MakeCleanup([&]() {
+  //     const int error_code = XPRSfreemodel(xpress_model);
+  //     LOG_IF(DFATAL, error_code != XPRS_OK)
+  //         << "XPRSfreemodel failed with error " << error_code << ": "
+  //         << XPRSgeterrormsg(xpress_env);
+  //   });
+
+  // // `xpress_env` references ther XPRSenv argument.
+  // #define RETURN_IF_XPRESS_ERROR(x) \
 //   RETURN_IF_ERROR(                \
-//       if (!XPressCodeToInvalidResponse(x, __FILE__, __LINE__, #x, xpress, &response)) { \
+//       if (!XPressCodeToInvalidResponse(x, __FILE__, __LINE__, #x, xpress,
+  //       &response)) { \
 //         return response; \
 //       })
 
-//   RETURN_IF_XPRESS_ERROR(XPRSnewmodel(xpress_env, &xpress_model,
-//                                       model.name().c_str(),
-//                                       /*numvars=*/0,
-//                                       /*obj=*/nullptr,
-//                                       /*lb=*/nullptr,
-//                                       /*ub=*/nullptr,
-//                                       /*vtype=*/nullptr,
-//                                       /*varnames=*/nullptr));
-//   XPRSprob const model_env = XPRSgetenv(xpress_model);
+  //   RETURN_IF_XPRESS_ERROR(XPRSnewmodel(xpress_env, &xpress_model,
+  //                                       model.name().c_str(),
+  //                                       /*numvars=*/0,
+  //                                       /*obj=*/nullptr,
+  //                                       /*lb=*/nullptr,
+  //                                       /*ub=*/nullptr,
+  //                                       /*vtype=*/nullptr,
+  //                                       /*varnames=*/nullptr));
+  //   XPRSprob const model_env = XPRSgetenv(xpress_model);
 
-//   if (request.has_solver_specific_parameters()) {
-//     const auto parameters_status = SetSolverSpecificParameters(
-//         request.solver_specific_parameters(), model_env);
-//     if (!parameters_status.ok()) {
-//       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-//       response.set_status_str(
-//           std::string(parameters_status.message()));  // NOLINT
-//       return response;
-//     }
-//   }
-//   if (request.solver_time_limit_seconds() > 0) {
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSsetdblparam(model_env, XPRS_DBL_PAR_TIMELIMIT,
-//                         request.solver_time_limit_seconds()));
-//   }
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSsetintparam(model_env, XPRS_INT_PAR_OUTPUTFLAG,
-//                       request.enable_internal_solver_output()));
+  //   if (request.has_solver_specific_parameters()) {
+  //     const auto parameters_status = SetSolverSpecificParameters(
+  //         request.solver_specific_parameters(), model_env);
+  //     if (!parameters_status.ok()) {
+  //       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+  //       response.set_status_str(
+  //           std::string(parameters_status.message()));  // NOLINT
+  //       return response;
+  //     }
+  //   }
+  //   if (request.solver_time_limit_seconds() > 0) {
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSsetdblparam(model_env, XPRS_DBL_PAR_TIMELIMIT,
+  //                         request.solver_time_limit_seconds()));
+  //   }
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSsetintparam(model_env, XPRS_INT_PAR_OUTPUTFLAG,
+  //                       request.enable_internal_solver_output()));
 
-//   const int variable_size = model.variable_size();
-//   bool has_integer_variables = false;
-//   {
-//     std::vector<double> obj_coeffs(variable_size, 0);
-//     std::vector<double> lb(variable_size);
-//     std::vector<double> ub(variable_size);
-//     std::vector<char> ctype(variable_size);
-//     std::vector<const char*> varnames(variable_size);
-//     for (int v = 0; v < variable_size; ++v) {
-//       const MPVariableProto& variable = model.variable(v);
-//       obj_coeffs[v] = variable.objective_coefficient();
-//       lb[v] = variable.lower_bound();
-//       ub[v] = variable.upper_bound();
-//       ctype[v] = variable.is_integer() &&
-//                          request.solver_type() ==SolutionRes
-//                      : XPRS_CONTINUOUS;
-//       if (variable.is_integer()) has_integer_variables = true;
-//       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
-//     }
+  //   const int variable_size = model.variable_size();
+  //   bool has_integer_variables = false;
+  //   {
+  //     std::vector<double> obj_coeffs(variable_size, 0);
+  //     std::vector<double> lb(variable_size);
+  //     std::vector<double> ub(variable_size);
+  //     std::vector<char> ctype(variable_size);
+  //     std::vector<const char*> varnames(variable_size);
+  //     for (int v = 0; v < variable_size; ++v) {
+  //       const MPVariableProto& variable = model.variable(v);
+  //       obj_coeffs[v] = variable.objective_coefficient();
+  //       lb[v] = variable.lower_bound();
+  //       ub[v] = variable.upper_bound();
+  //       ctype[v] = variable.is_integer() &&
+  //                          request.solver_type() ==SolutionRes
+  //                      : XPRS_CONTINUOUS;
+  //       if (variable.is_integer()) has_integer_variables = true;
+  //       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
+  //     }
 
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSaddvars(xpress_model, variable_size, 0, nullptr, nullptr, nullptr,
-//                     /*obj=*/obj_coeffs.data(),
-//                     /*lb=*/lb.data(), /*ub=*/ub.data(), /*vtype=*/ctype.data(),
-//                     /*varnames=*/const_cast<char**>(varnames.data())));
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSaddvars(xpress_model, variable_size, 0, nullptr, nullptr,
+  //         nullptr,
+  //                     /*obj=*/obj_coeffs.data(),
+  //                     /*lb=*/lb.data(), /*ub=*/ub.data(),
+  //                     /*vtype=*/ctype.data(),
+  //                     /*varnames=*/const_cast<char**>(varnames.data())));
 
-//     // Set solution hints if any.
-//     for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
-//       RETURN_IF_XPRESS_ERROR(XPRSsetdblattrelement(
-//           xpress_model, XPRS_DBL_ATTR_START, model.solution_hint().var_inde  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-//       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
-//   if (!optional_model) return response;
-//   const MPModelProto& model = optional_model->get();
+  //     // Set solution hints if any.
+  //     for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
+  //       RETURN_IF_XPRESS_ERROR(XPRSsetdblattrelement(
+  //           xpress_model, XPRS_DBL_ATTR_START, model.solution_hint().var_inde
+  //           const absl::optional<LazyMutableCopy<MPModelProto>>
+  //           optional_model =
+  //       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+  //   if (!optional_model) return response;
+  //   const MPModelProto& model = optional_model->get();
 
-//   // We set `xpress_env` to point to a new environment if no existing one is
-//   // provided. We must make sure that we free this environment when we exit this
-//   // function.
-//   bool xpress_env_was_created = false;
-//   auto xpress_env_deleter = absl::MakeCleanup([&]() {
-//     if (xpress_env_was_created && xpress_env != nullptr) {
-//       XPRSfreeenv(xpress_env);
-//     }
-//   });
-//   if (xpress_env == nullptr) {
-//     ASSIGN_OR_RETURN(xpress_env, GetXPressEnv());
-//     xpress_env_was_created = true;
-//   }
+  //   // We set `xpress_env` to point to a new environment if no existing one
+  //   is
+  //   // provided. We must make sure that we free this environment when we exit
+  //   this
+  //   // function.
+  //   bool xpress_env_was_created = false;
+  //   auto xpress_env_deleter = absl::MakeCleanup([&]() {
+  //     if (xpress_env_was_created && xpress_env != nullptr) {
+  //       XPRSfreeenv(xpress_env);
+  //     }
+  //   });
+  //   if (xpress_env == nullptr) {
+  //     ASSIGN_OR_RETURN(xpress_env, GetXPressEnv());
+  //     xpress_env_was_created = true;
+  //   }
 
-//   XPRSprob xpress_model = nullptr;
-//   auto xpress_model_deleter = absl::MakeCleanup([&]() {
-//     const int error_code = XPRSfreemodel(xpress_model);
-//     LOG_IF(DFATAL, error_code != XPRS_OK)
-//         << "XPRSfreemodel failed with error " << error_code << ": "
-//         << XPRSgeterrormsg(xpress_env);
-//   });
+  //   XPRSprob xpress_model = nullptr;
+  //   auto xpress_model_deleter = absl::MakeCleanup([&]() {
+  //     const int error_code = XPRSfreemodel(xpress_model);
+  //     LOG_IF(DFATAL, error_code != XPRS_OK)
+  //         << "XPRSfreemodel failed with error " << error_code << ": "
+  //         << XPRSgeterrormsg(xpress_env);
+  //   });
 
-// // `xpress_env` references ther XPRSenv argument.
-// #define RETURN_IF_XPRESS_ERROR(x) \
+  // // `xpress_env` references ther XPRSenv argument.
+  // #define RETURN_IF_XPRESS_ERROR(x) \
 //   RETURN_IF_ERROR(                \
 //       XPressCodeToUtilStatus(x, __FILE__, __LINE__, #x, xpress_env));
 
-//   RETURN_IF_XPRESS_ERROR(XPRSnewmodel(xpress_env, &xpress_model,
-//                                       model.name().c_str(),
-//                                       /*numvars=*/0,
-//                                       /*obj=*/nullptr,
-//                                       /*lb=*/nullptr,
-//                                       /*ub=*/nullptr,
-//                                       /*vtype=*/nullptr,
-//                                       /*varnames=*/nullptr));
-//   XPRSprob const model_env = XPRSgetenv(xpress_model);
+  //   RETURN_IF_XPRESS_ERROR(XPRSnewmodel(xpress_env, &xpress_model,
+  //                                       model.name().c_str(),
+  //                                       /*numvars=*/0,
+  //                                       /*obj=*/nullptr,
+  //                                       /*lb=*/nullptr,
+  //                                       /*ub=*/nullptr,
+  //                                       /*vtype=*/nullptr,
+  //                                       /*varnames=*/nullptr));
+  //   XPRSprob const model_env = XPRSgetenv(xpress_model);
 
-//   if (request.has_solver_specific_parameters()) {
-//     const auto parameters_status = SetSolverSpecificParameters(
-//         request.solver_specific_parameters(), model_env);
-//     if (!parameters_status.ok()) {
-//       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-//       response.set_status_str(
-//           std::string(parameters_status.message()));  // NOLINT
-//       return response;
-//     }
-//   }
-//   if (request.solver_time_limit_seconds() > 0) {
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSsetdblparam(model_env, XPRS_DBL_PAR_TIMELIMIT,
-//                         request.solver_time_limit_seconds()));
-//   }
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSsetintparam(model_env, XPRS_INT_PAR_OUTPUTFLAG,
-//                       request.enable_internal_solver_output()));
+  //   if (request.has_solver_specific_parameters()) {
+  //     const auto parameters_status = SetSolverSpecificParameters(
+  //         request.solver_specific_parameters(), model_env);
+  //     if (!parameters_status.ok()) {
+  //       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+  //       response.set_status_str(
+  //           std::string(parameters_status.message()));  // NOLINT
+  //       return response;
+  //     }
+  //   }
+  //   if (request.solver_time_limit_seconds() > 0) {
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSsetdblparam(model_env, XPRS_DBL_PAR_TIMELIMIT,
+  //                         request.solver_time_limit_seconds()));
+  //   }
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSsetintparam(model_env, XPRS_INT_PAR_OUTPUTFLAG,
+  //                       request.enable_internal_solver_output()));
 
-//   const int variable_size = model.variable_size();
-//   bool has_integer_variables = false;
-//   {
-//     std::vector<double> obj_coeffs(variable_size, 0);
-//     std::vector<double> lb(variable_size);
-//     std::vector<double> ub(variable_size);
-//     std::vector<char> ctype(variable_size);
-//     std::vector<const char*> varnames(variable_size);
-//     for (int v = 0; v < variable_size; ++v) {
-//       const MPVariableProto& variable = model.variable(v);
-//       obj_coeffs[v] = variable.objective_coefficient();
-//       lb[v] = variable.lower_bound();
-//       ub[v] = variable.upper_bound();
-//       ctype[v] = variable.is_integer() &&
-//                          request.solver_type() ==
-//                              MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING
-//                      ? XPRS_INTEGER
-//                      : XPRS_CONTINUOUS;
-//       if (variable.is_integer()) has_integer_variables = true;
-//       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
-//     }
+  //   const int variable_size = model.variable_size();
+  //   bool has_integer_variables = false;
+  //   {
+  //     std::vector<double> obj_coeffs(variable_size, 0);
+  //     std::vector<double> lb(variable_size);
+  //     std::vector<double> ub(variable_size);
+  //     std::vector<char> ctype(variable_size);
+  //     std::vector<const char*> varnames(variable_size);
+  //     for (int v = 0; v < variable_size; ++v) {
+  //       const MPVariableProto& variable = model.variable(v);
+  //       obj_coeffs[v] = variable.objective_coefficient();
+  //       lb[v] = variable.lower_bound();
+  //       ub[v] = variable.upper_bound();
+  //       ctype[v] = variable.is_integer() &&
+  //                          request.solver_type() ==
+  //                              MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING
+  //                      ? XPRS_INTEGER
+  //                      : XPRS_CONTINUOUS;
+  //       if (variable.is_integer()) has_integer_variables = true;
+  //       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
+  //     }
 
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSaddvars(xpress_model, variable_size, 0, nullptr, nullptr, nullptr,
-//                     /*obj=*/obj_coeffs.data(),
-//                     /*lb=*/lb.data(), /*ub=*/ub.data(), /*vtype=*/ctype.data(),
-//                     /*varnames=*/const_cast<char**>(varnames.data())));
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSaddvars(xpress_model, variable_size, 0, nullptr, nullptr,
+  //         nullptr,
+  //                     /*obj=*/obj_coeffs.data(),
+  //                     /*lb=*/lb.data(), /*ub=*/ub.data(),
+  //                     /*vtype=*/ctype.data(),
+  //                     /*varnames=*/const_cast<char**>(varnames.data())));
 
-//     // Set solution hints if any.
-//     for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
-//       RETURN_IF_XPRESS_ERROR(XPRSsetdblattrelement(
-//           xpress_model, XPRS_DBL_ATTR_START, model.solution_hint().var_index(i),
-//           model.solution_hint().var_value(i)));
-//     }
-//   }
+  //     // Set solution hints if any.
+  //     for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
+  //       RETURN_IF_XPRESS_ERROR(XPRSsetdblattrelement(
+  //           xpress_model, XPRS_DBL_ATTR_START,
+  //           model.solution_hint().var_index(i),
+  //           model.solution_hint().var_value(i)));
+  //     }
+  //   }
 
-//   {
-//     std::vector<int> ct_variables;
-//     std::vector<double> ct_coefficients;
-//     for (int c = 0; c < model.constraint_size(); ++c) {
-//       const MPConstraintProto& constraint = model.constraint(c);
-//       const int size = constraint.var_index_size();
-//       ct_variables.resize(size, 0);
-//       ct_coefficients.resize(size, 0);
-//       for (int i = 0; i < size; ++i) {
-//         ct_variables[i] = constraint.var_index(i);
-//         ct_coefficients[i] = constraint.coefficient(i);
-//       }
-//       // Using XPRSaddrangeconstr for constraints that don't require it adds
-//       // a slack which is not always removed by presolve.
-//       if (constraint.lower_bound() == constraint.upper_bound()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_EQUAL, /*rhs=*/constraint.lower_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else if (constraint.lower_bound() ==
-//                  -std::numeric_limits<double>::infinity()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else if (constraint.upper_bound() ==
-//                  std::numeric_limits<double>::infinity()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddrangeconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*lower=*/constraint.lower_bound(),
-//             /*upper=*/constraint.upper_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       }
-//     }
+  //   {
+  //     std::vector<int> ct_variables;
+  //     std::vector<double> ct_coefficients;
+  //     for (int c = 0; c < model.constraint_size(); ++c) {
+  //       const MPConstraintProto& constraint = model.constraint(c);
+  //       const int size = constraint.var_index_size();
+  //       ct_variables.resize(size, 0);
+  //       ct_coefficients.resize(size, 0);
+  //       for (int i = 0; i < size; ++i) {
+  //         ct_variables[i] = constraint.var_index(i);
+  //         ct_coefficients[i] = constraint.coefficient(i);
+  //       }
+  //       // Using XPRSaddrangeconstr for constraints that don't require it
+  //       adds
+  //       // a slack which is not always removed by presolve.
+  //       if (constraint.lower_bound() == constraint.upper_bound()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_EQUAL, /*rhs=*/constraint.lower_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else if (constraint.lower_bound() ==
+  //                  -std::numeric_limits<double>::infinity()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else if (constraint.upper_bound() ==
+  //                  std::numeric_limits<double>::infinity()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddrangeconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*lower=*/constraint.lower_bound(),
+  //             /*upper=*/constraint.upper_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       }
+  //     }
 
-//     for (const auto& gen_cst : model.general_constraint()) {
-//       switch (gen_cst.general_constraint_case()) {
-//         case MPGeneralConstraintProto::kIndicatorConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddIndicatorConstraint(
-//               gen_cst, xpress_model, &ct_variables, &ct_coefficients));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kSosConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
-//                                                   xpress_model, &ct_variables,
-//                                                   &ct_coefficients));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kQuadraticConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddQuadraticConstraint(gen_cst, xpress_model));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kAbsConstraint: {
-//           RETURN_IF_XPRESS_ERROR(XPRSaddgenconstrAbs(
-//               xpress_model,
-//               /*name=*/gen_cst.name().c_str(),
-//               /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
-//               /*argvar=*/gen_cst.abs_constraint().var_index()));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kAndConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddAndConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kOrConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddOrConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kMinConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddMinConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kMaxConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddMaxConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         default:
-//           return absl::UnimplementedError(
-//               absl::StrFormat("General constraints of type %i not supported.",
-//                               gen_cst.general_constraint_case()));
-//       }
-//     }
-//   }
+  //     for (const auto& gen_cst : model.general_constraint()) {
+  //       switch (gen_cst.general_constraint_case()) {
+  //         case MPGeneralConstraintProto::kIndicatorConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddIndicatorConstraint(
+  //               gen_cst, xpress_model, &ct_variables, &ct_coefficients));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kSosConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
+  //                                                   xpress_model,
+  //                                                   &ct_variables,
+  //                                                   &ct_coefficients));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kQuadraticConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddQuadraticConstraint(gen_cst,
+  //           xpress_model)); break;
+  //         }
+  //         case MPGeneralConstraintProto::kAbsConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(XPRSaddgenconstrAbs(
+  //               xpress_model,
+  //               /*name=*/gen_cst.name().c_str(),
+  //               /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
+  //               /*argvar=*/gen_cst.abs_constraint().var_index()));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kAndConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddAndConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kOrConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddOrConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kMinConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddMinConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kMaxConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddMaxConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         default:
+  //           return absl::UnimplementedError(
+  //               absl::StrFormat("General constraints of type %i not
+  //               supported.",
+  //                               gen_cst.general_constraint_case()));
+  //       }
+  //     }
+  //   }
 
-//   RETURN_IF_XPRESS_ERROR(XPRSsetintattr(xpress_model, XPRS_INT_ATTR_MODELSENSE,
-//                                         model.maximize() ? -1 : 1));
-//   RETURN_IF_XPRESS_ERROR(XPRSsetdblattr(xpress_model, XPRS_DBL_ATTR_OBJCON,
-//                                         model.objective_offset()));
-//   if (model.has_quadratic_objective()) {
-//     MPQuadraticObjective qobj = model.quadratic_objective();
-//     if (qobj.coefficient_size() > 0) {
-//       RETURN_IF_XPRESS_ERROR(
-//           XPRSaddqpterms(xpress_model, /*numqnz=*/qobj.coefficient_size(),
-//                          /*qrow=*/qobj.mutable_qvar1_index()->mutable_data(),
-//                          /*qcol=*/qobj.mutable_qvar2_index()->mutable_data(),
-//                          /*qval=*/qobj.mutable_coefficient()->mutable_data()));
-//     }
-//   }
+  //   RETURN_IF_XPRESS_ERROR(XPRSsetintattr(xpress_model,
+  //   XPRS_INT_ATTR_MODELSENSE,
+  //                                         model.maximize() ? -1 : 1));
+  //   RETURN_IF_XPRESS_ERROR(XPRSsetdblattr(xpress_model, XPRS_DBL_ATTR_OBJCON,
+  //                                         model.objective_offset()));
+  //   if (model.has_quadratic_objective()) {
+  //     MPQuadraticObjective qobj = model.quadratic_objective();
+  //     if (qobj.coefficient_size() > 0) {
+  //       RETURN_IF_XPRESS_ERROR(
+  //           XPRSaddqpterms(xpress_model, /*numqnz=*/qobj.coefficient_size(),
+  //                          /*qrow=*/qobj.mutable_qvar1_index()->mutable_data(),
+  //                          /*qcol=*/qobj.mutable_qvar2_index()->mutable_data(),
+  //                          /*qval=*/qobj.mutable_coefficient()->mutable_data()));
+  //     }
+  //   }
 
-//   RETURN_IF_XPRESS_ERROR(XPRSupdatemodel(xpress_model));
+  //   RETURN_IF_XPRESS_ERROR(XPRSupdatemodel(xpress_model));
 
-//   const absl::Time time_before = absl::Now();
-//   UserTimer user_timer;
-//   user_timer.Start();
+  //   const absl::Time time_before = absl::Now();
+  //   UserTimer user_timer;
+  //   user_timer.Start();
 
-//   RETURN_IF_XPRESS_ERROR(XPRSoptimize(xpress_model));
+  //   RETURN_IF_XPRESS_ERROR(XPRSoptimize(xpress_model));
 
-//   const absl::Duration solving_duration = absl::Now() - time_before;
-//   user_timer.Stop();
-//   VLOG(1) << "Finished solving in XPressSolveProto(), walltime = "
-//           << solving_duration << ", usertime = " << user_timer.GetDuration();
-//   response.mutable_solve_info()->set_solve_wall_time_seconds(
-//       absl::ToDoubleSeconds(solving_duration));
-//   response.mutable_solve_info()->set_solve_user_time_seconds(
-//       absl::ToDoubleSeconds(user_timer.GetDuration()));
+  //   const absl::Duration solving_duration = absl::Now() - time_before;
+  //   user_timer.Stop();
+  //   VLOG(1) << "Finished solving in XPressSolveProto(), walltime = "
+  //           << solving_duration << ", usertime = " <<
+  //           user_timer.GetDuration();
+  //   response.mutable_solve_info()->set_solve_wall_time_seconds(
+  //       absl::ToDoubleSeconds(solving_duration));
+  //   response.mutable_solve_info()->set_solve_user_time_seconds(
+  //       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-//   int optimization_status = 0;
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_STATUS, &optimization_status));
-//   int solution_count = 0;
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_SOLCOUNT, &solution_count));
-//   switch (optimization_status) {
-//     case XPRS_OPTIMAL:
-//       response.set_status(MPSOLVER_OPTIMAL);
-//       break;
-//     case XPRS_INF_OR_UNBD:
-//       DLOG(INFO) << "XPress solve returned XPRS_INF_OR_UNBD, which we treat as "
-//                     "INFEASIBLE even though it may mean UNBOUNDED.";
-//       response.set_status_str(
-//           "The model may actually be unbounded: XPress returned "
-//           "XPRS_INF_OR_UNBD");
-//       ABSL_FALLTHROUGH_INTENDED;
-//     case XPRS_INFEASIBLE:
-//       response.set_status(MPSOLVER_INFEASIBLE);
-//       break;
-//     case XPRS_UNBOUNDED:
-//       response.set_status(MPSOLVER_UNBOUNDED);
-//       break;
-//     default: {
-//       if (solution_count > 0) {
-//         response.set_status(MPSOLVER_FEASIBLE);
-//       } else {
-//         response.set_status(MPSOLVER_NOT_SOLVED);
-//         response.set_status_str(
-//             absl::StrFormat("XPress status code %d", optimization_status));
-//       }
-//       break;
-//     }
-//   }
+  //   int optimization_status = 0;
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_STATUS,
+  //       &optimization_status));
+  //   int solution_count = 0;
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_SOLCOUNT,
+  //       &solution_count));
+  //   switch (optimization_status) {
+  //     case XPRS_OPTIMAL:
+  //       response.set_status(MPSOLVER_OPTIMAL);
+  //       break;
+  //     case XPRS_INF_OR_UNBD:
+  //       DLOG(INFO) << "XPress solve returned XPRS_INF_OR_UNBD, which we treat
+  //       as "
+  //                     "INFEASIBLE even though it may mean UNBOUNDED.";
+  //       response.set_status_str(
+  //           "The model may actually be unbounded: XPress returned "
+  //           "XPRS_INF_OR_UNBD");
+  //       ABSL_FALLTHROUGH_INTENDED;
+  //     case XPRS_INFEASIBLE:
+  //       response.set_status(MPSOLVER_INFEASIBLE);
+  //       break;
+  //     case XPRS_UNBOUNDED:
+  //       response.set_status(MPSOLVER_UNBOUNDED);
+  //       break;
+  //     default: {
+  //       if (solution_count > 0) {
+  //         response.set_status(MPSOLVER_FEASIBLE);
+  //       } else {
+  //         response.set_status(MPSOLVER_NOT_SOLVED);
+  //         response.set_status_str(
+  //             absl::StrFormat("XPress status code %d", optimization_status));
+  //       }
+  //       break;
+  //     }
+  //   }
 
-//   if (solution_count > 0 && (response.status() == MPSOLVER_FEASIBLE ||
-//                              response.status() == MPSOLVER_OPTIMAL)) {
-//     double objective_value = 0;
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJVAL, &objective_value));
-//     response.set_objective_value(objective_value);
-//     double best_objective_bound = 0;
-//     const int error = XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJBOUND,
-//                                      &best_objective_bound);
-//     if (response.status() == MPSOLVER_OPTIMAL &&
-//         error == XPRS_ERROR_DATA_NOT_AVAILABLE) {
-//       // If the presolve deletes all variables, there's no best bound.
-//       response.set_best_objective_bound(objective_value);
-//     } else {
-//       RETURN_IF_XPRESS_ERROR(error);
-//       response.set_best_objective_bound(best_objective_bound);
-//     }
+  //   if (solution_count > 0 && (response.status() == MPSOLVER_FEASIBLE ||
+  //                              response.status() == MPSOLVER_OPTIMAL)) {
+  //     double objective_value = 0;
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJVAL,
+  //         &objective_value));
+  //     response.set_objective_value(objective_value);
+  //     double best_objective_bound = 0;
+  //     const int error = XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJBOUND,
+  //                                      &best_objective_bound);
+  //     if (response.status() == MPSOLVER_OPTIMAL &&
+  //         error == XPRS_ERROR_DATA_NOT_AVAILABLE) {
+  //       // If the presolve deletes all variables, there's no best bound.
+  //       response.set_best_objective_bound(objective_value);
+  //     } else {
+  //       RETURN_IF_XPRESS_ERROR(error);
+  //       response.set_best_objective_bound(best_objective_bound);
+  //     }
 
-//     response.mutable_variable_value()->Resize(variable_size, 0);
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSgetdblattrarray(xpress_model, XPRS_DBL_ATTR_X, 0, variable_size,
-//                             response.mutable_variable_value()->mutable_data()));
-//     // NOTE, XPressSolveProto() is exposed to external clients via MPSolver API,
-//     // which assumes the solution values of integer variables are rounded to
-//     // integer values.
-//     auto round_values_of_integer_variables_fn =
-//         [&](google::protobuf::RepeatedField<double>* values) {
-//           for (int v = 0; v < variable_size; ++v) {
-//             if (model.variable(v).is_integer()) {
-//               (*values)[v] = std::round((*values)[v]);
-//             }
-//           }
-//         };
-//     round_values_of_integer_variables_fn(response.mutable_variable_value());
-//     if (!has_integer_variables && model.general_constraint_size() == 0) {
-//       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
-//           xpress_model, XPRS_DBL_ATTR_PI, 0, model.constraint_size(),
-//           response.mutable_dual_value()->mutable_data()));
-//     }
-//     const int additional_solutions = std::min(
-//         solution_count, std::min(request.populate_additional_solutions_up_to(),
-//                                  std::numeric_limits<int32_t>::max() - 1) +
-//                             1);
-//     for (int i = 1; i < additional_solutions; ++i) {
-//       RETURN_IF_XPRESS_ERROR(
-//           XPRSsetintparam(model_env, XPRS_INT_PAR_SOLUTIONNUMBER, i));
-//       MPSolution* solution = response.add_additional_solutions();
-//       solution->mutable_variable_value()->Resize(variable_size, 0);
-//       double objective_value = 0;
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattr(
-//           xpress_model, XPRS_DBL_ATTR_POOLOBJVAL, &objective_value));
-//       solution->set_objective_value(objective_value);
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
-//           xpress_model, XPRS_DBL_ATTR_XN, 0, variable_size,
-//           solution->mutable_variable_value()->mutable_data()));
-//       round_values_of_integer_variables_fn(solution->mutable_variable_value());
-//     }
-//   }
-// #undef RETURN_IF_XPRESS_ERRORx(i),
-//           model.solution_hint().var_value(i)));
-//     }
-//   }
+  //     response.mutable_variable_value()->Resize(variable_size, 0);
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSgetdblattrarray(xpress_model, XPRS_DBL_ATTR_X, 0,
+  //         variable_size,
+  //                             response.mutable_variable_value()->mutable_data()));
+  //     // NOTE, XPressSolveProto() is exposed to external clients via MPSolver
+  //     API,
+  //     // which assumes the solution values of integer variables are rounded
+  //     to
+  //     // integer values.
+  //     auto round_values_of_integer_variables_fn =
+  //         [&](google::protobuf::RepeatedField<double>* values) {
+  //           for (int v = 0; v < variable_size; ++v) {
+  //             if (model.variable(v).is_integer()) {
+  //               (*values)[v] = std::round((*values)[v]);
+  //             }
+  //           }
+  //         };
+  //     round_values_of_integer_variables_fn(response.mutable_variable_value());
+  //     if (!has_integer_variables && model.general_constraint_size() == 0) {
+  //       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
+  //           xpress_model, XPRS_DBL_ATTR_PI, 0, model.constraint_size(),
+  //           response.mutable_dual_value()->mutable_data()));
+  //     }
+  //     const int additional_solutions = std::min(
+  //         solution_count,
+  //         std::min(request.populate_additional_solutions_up_to(),
+  //                                  std::numeric_limits<int32_t>::max() - 1) +
+  //                             1);
+  //     for (int i = 1; i < additional_solutions; ++i) {
+  //       RETURN_IF_XPRESS_ERROR(
+  //           XPRSsetintparam(model_env, XPRS_INT_PAR_SOLUTIONNUMBER, i));
+  //       MPSolution* solution = response.add_additional_solutions();
+  //       solution->mutable_variable_value()->Resize(variable_size, 0);
+  //       double objective_value = 0;
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattr(
+  //           xpress_model, XPRS_DBL_ATTR_POOLOBJVAL, &objective_value));
+  //       solution->set_objective_value(objective_value);
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
+  //           xpress_model, XPRS_DBL_ATTR_XN, 0, variable_size,
+  //           solution->mutable_variable_value()->mutable_data()));
+  //       round_values_of_integer_variables_fn(solution->mutable_variable_value());
+  //     }
+  //   }
+  // #undef RETURN_IF_XPRESS_ERRORx(i),
+  //           model.solution_hint().var_value(i)));
+  //     }
+  //   }
 
-//   {
-//     std::vector<int> ct_variables;
-//     std::vector<double> ct_coefficients;
-//     for (int c = 0; c < model.constraint_size(); ++c) {
-//       const MPConstraintProto& constraint = model.constraint(c);
-//       const int size = constraint.var_index_size();
-//       ct_variables.resize(size, 0);
-//       ct_coefficients.resize(size, 0);
-//       for (int i = 0; i < size; ++i) {
-//         ct_variables[i] = constraint.var_index(i);
-//         ct_coefficients[i] = constraint.coefficient(i);
-//       }
-//       // Using XPRSaddrangeconstr for constraints that don't require it adds
-//       // a slack which is not always removed by presolve.
-//       if (constraint.lower_bound() == constraint.upper_bound()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_EQUAL, /*rhs=*/constraint.lower_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else if (constraint.lower_bound() ==
-//                  -std::numeric_limits<double>::infinity()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else if (constraint.upper_bound() ==
-//                  std::numeric_limits<double>::infinity()) {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*sense=*/XPRS_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       } else {
-//         RETURN_IF_XPRESS_ERROR(XPRSaddrangeconstr(
-//             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-//             /*cval=*/ct_coefficients.data(),
-//             /*lower=*/constraint.lower_bound(),
-//             /*upper=*/constraint.upper_bound(),
-//             /*constrname=*/constraint.name().c_str()));
-//       }
-//     }
+  //   {
+  //     std::vector<int> ct_variables;
+  //     std::vector<double> ct_coefficients;
+  //     for (int c = 0; c < model.constraint_size(); ++c) {
+  //       const MPConstraintProto& constraint = model.constraint(c);
+  //       const int size = constraint.var_index_size();
+  //       ct_variables.resize(size, 0);
+  //       ct_coefficients.resize(size, 0);
+  //       for (int i = 0; i < size; ++i) {
+  //         ct_variables[i] = constraint.var_index(i);
+  //         ct_coefficients[i] = constraint.coefficient(i);
+  //       }
+  //       // Using XPRSaddrangeconstr for constraints that don't require it
+  //       adds
+  //       // a slack which is not always removed by presolve.
+  //       if (constraint.lower_bound() == constraint.upper_bound()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_EQUAL, /*rhs=*/constraint.lower_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else if (constraint.lower_bound() ==
+  //                  -std::numeric_limits<double>::infinity()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else if (constraint.upper_bound() ==
+  //                  std::numeric_limits<double>::infinity()) {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*sense=*/XPRS_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       } else {
+  //         RETURN_IF_XPRESS_ERROR(XPRSaddrangeconstr(
+  //             xpress_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+  //             /*cval=*/ct_coefficients.data(),
+  //             /*lower=*/constraint.lower_bound(),
+  //             /*upper=*/constraint.upper_bound(),
+  //             /*constrname=*/constraint.name().c_str()));
+  //       }
+  //     }
 
-//     for (const auto& gen_cst : model.general_constraint()) {
-//       switch (gen_cst.general_constraint_case()) {
-//         case MPGeneralConstraintProto::kIndicatorConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddIndicatorConstraint(
-//               gen_cst, xpress_model, &ct_variables, &ct_coefficients));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kSosConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
-//                                                   xpress_model, &ct_variables,
-//                                                   &ct_coefficients));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kQuadraticConstraint: {
-//           RETURN_IF_XPRESS_ERROR(AddQuadraticConstraint(gen_cst, xpress_model));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kAbsConstraint: {
-//           RETURN_IF_XPRESS_ERROR(XPRSaddgenconstrAbs(
-//               xpress_model,
-//               /*name=*/gen_cst.name().c_str(),
-//               /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
-//               /*argvar=*/gen_cst.abs_constraint().var_index()));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kAndConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddAndConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kOrConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddOrConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kMinConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddMinConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         case MPGeneralConstraintProto::kMaxConstraint: {
-//           RETURN_IF_XPRESS_ERROR(
-//               AddMaxConstraint(gen_cst, xpress_model, &ct_variables));
-//           break;
-//         }
-//         default:
-//           return absl::UnimplementedError(
-//               absl::StrFormat("General constraints of type %i not supported.",
-//                               gen_cst.general_constraint_case()));
-//       }
-//     }
-//   }
+  //     for (const auto& gen_cst : model.general_constraint()) {
+  //       switch (gen_cst.general_constraint_case()) {
+  //         case MPGeneralConstraintProto::kIndicatorConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddIndicatorConstraint(
+  //               gen_cst, xpress_model, &ct_variables, &ct_coefficients));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kSosConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
+  //                                                   xpress_model,
+  //                                                   &ct_variables,
+  //                                                   &ct_coefficients));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kQuadraticConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(AddQuadraticConstraint(gen_cst,
+  //           xpress_model)); break;
+  //         }
+  //         case MPGeneralConstraintProto::kAbsConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(XPRSaddgenconstrAbs(
+  //               xpress_model,
+  //               /*name=*/gen_cst.name().c_str(),
+  //               /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
+  //               /*argvar=*/gen_cst.abs_constraint().var_index()));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kAndConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddAndConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kOrConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddOrConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kMinConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddMinConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         case MPGeneralConstraintProto::kMaxConstraint: {
+  //           RETURN_IF_XPRESS_ERROR(
+  //               AddMaxConstraint(gen_cst, xpress_model, &ct_variables));
+  //           break;
+  //         }
+  //         default:
+  //           return absl::UnimplementedError(
+  //               absl::StrFormat("General constraints of type %i not
+  //               supported.",
+  //                               gen_cst.general_constraint_case()));
+  //       }
+  //     }
+  //   }
 
-//   RETURN_IF_XPRESS_ERROR(XPRSsetintattr(xpress_model, XPRS_INT_ATTR_MODELSENSE,
-//                                         model.maximize() ? -1 : 1));
-//   RETURN_IF_XPRESS_ERROR(XPRSsetdblattr(xpress_model, XPRS_DBL_ATTR_OBJCON,
-//                                         model.objective_offset()));
-//   if (model.has_quadratic_objective()) {
-//     MPQuadraticObjective qobj = model.quadratic_objective();
-//     if (qobj.coefficient_size() > 0) {
-//       RETURN_IF_XPRESS_ERROR(
-//           XPRSaddqpterms(xpress_model, /*numqnz=*/qobj.coefficient_size(),
-//                          /*qrow=*/qobj.mutable_qvar1_index()->mutable_data(),
-//                          /*qcol=*/qobj.mutable_qvar2_index()->mutable_data(),
-//                          /*qval=*/qobj.mutable_coefficient()->mutable_data()));
-//     }
-//   }
+  //   RETURN_IF_XPRESS_ERROR(XPRSsetintattr(xpress_model,
+  //   XPRS_INT_ATTR_MODELSENSE,
+  //                                         model.maximize() ? -1 : 1));
+  //   RETURN_IF_XPRESS_ERROR(XPRSsetdblattr(xpress_model, XPRS_DBL_ATTR_OBJCON,
+  //                                         model.objective_offset()));
+  //   if (model.has_quadratic_objective()) {
+  //     MPQuadraticObjective qobj = model.quadratic_objective();
+  //     if (qobj.coefficient_size() > 0) {
+  //       RETURN_IF_XPRESS_ERROR(
+  //           XPRSaddqpterms(xpress_model, /*numqnz=*/qobj.coefficient_size(),
+  //                          /*qrow=*/qobj.mutable_qvar1_index()->mutable_data(),
+  //                          /*qcol=*/qobj.mutable_qvar2_index()->mutable_data(),
+  //                          /*qval=*/qobj.mutable_coefficient()->mutable_data()));
+  //     }
+  //   }
 
-//   RETURN_IF_XPRESS_ERROR(XPRSupdatemodel(xpress_model));
+  //   RETURN_IF_XPRESS_ERROR(XPRSupdatemodel(xpress_model));
 
-//   const absl::Time time_before = absl::Now();
-//   UserTimer user_timer;
-//   user_timer.Start();
+  //   const absl::Time time_before = absl::Now();
+  //   UserTimer user_timer;
+  //   user_timer.Start();
 
-//   RETURN_IF_XPRESS_ERROR(XPRSoptimize(xpress_model));
+  //   RETURN_IF_XPRESS_ERROR(XPRSoptimize(xpress_model));
 
-//   const absl::Duration solving_duration = absl::Now() - time_before;
-//   user_timer.Stop();
-//   VLOG(1) << "Finished solving in XPressSolveProto(), walltime = "
-//           << solving_duration << ", usertime = " << user_timer.GetDuration();
-//   response.mutable_solve_info()->set_solve_wall_time_seconds(
-//       absl::ToDoubleSeconds(solving_duration));
-//   response.mutable_solve_info()->set_solve_user_time_seconds(
-//       absl::ToDoubleSeconds(user_timer.GetDuration()));
+  //   const absl::Duration solving_duration = absl::Now() - time_before;
+  //   user_timer.Stop();
+  //   VLOG(1) << "Finished solving in XPressSolveProto(), walltime = "
+  //           << solving_duration << ", usertime = " <<
+  //           user_timer.GetDuration();
+  //   response.mutable_solve_info()->set_solve_wall_time_seconds(
+  //       absl::ToDoubleSeconds(solving_duration));
+  //   response.mutable_solve_info()->set_solve_user_time_seconds(
+  //       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-//   int optimization_status = 0;
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_STATUS, &optimization_status));
-//   int solution_count = 0;
-//   RETURN_IF_XPRESS_ERROR(
-//       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_SOLCOUNT, &solution_count));
-//   switch (optimization_status) {
-//     case XPRS_OPTIMAL:
-//       response.set_status(MPSOLVER_OPTIMAL);
-//       break;
-//     case XPRS_INF_OR_UNBD:
-//       DLOG(INFO) << "XPress solve returned XPRS_INF_OR_UNBD, which we treat as "
-//                     "INFEASIBLE even though it may mean UNBOUNDED.";
-//       response.set_status_str(
-//           "The model may actually be unbounded: XPress returned "
-//           "XPRS_INF_OR_UNBD");
-//       ABSL_FALLTHROUGH_INTENDED;
-//     case XPRS_INFEASIBLE:
-//       response.set_status(MPSOLVER_INFEASIBLE);
-//       break;
-//     case XPRS_UNBOUNDED:
-//       response.set_status(MPSOLVER_UNBOUNDED);
-//       break;
-//     default: {
-//       if (solution_count > 0) {
-//         response.set_status(MPSOLVER_FEASIBLE);
-//       } else {
-//         response.set_status(MPSOLVER_NOT_SOLVED);
-//         response.set_status_str(
-//             absl::StrFormat("XPress status code %d", optimization_status));
-//       }
-//       break;
-//     }
-//   }
+  //   int optimization_status = 0;
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_STATUS,
+  //       &optimization_status));
+  //   int solution_count = 0;
+  //   RETURN_IF_XPRESS_ERROR(
+  //       XPRSgetintattr(xpress_model, XPRS_INT_ATTR_SOLCOUNT,
+  //       &solution_count));
+  //   switch (optimization_status) {
+  //     case XPRS_OPTIMAL:
+  //       response.set_status(MPSOLVER_OPTIMAL);
+  //       break;
+  //     case XPRS_INF_OR_UNBD:
+  //       DLOG(INFO) << "XPress solve returned XPRS_INF_OR_UNBD, which we treat
+  //       as "
+  //                     "INFEASIBLE even though it may mean UNBOUNDED.";
+  //       response.set_status_str(
+  //           "The model may actually be unbounded: XPress returned "
+  //           "XPRS_INF_OR_UNBD");
+  //       ABSL_FALLTHROUGH_INTENDED;
+  //     case XPRS_INFEASIBLE:
+  //       response.set_status(MPSOLVER_INFEASIBLE);
+  //       break;
+  //     case XPRS_UNBOUNDED:
+  //       response.set_status(MPSOLVER_UNBOUNDED);
+  //       break;
+  //     default: {
+  //       if (solution_count > 0) {
+  //         response.set_status(MPSOLVER_FEASIBLE);
+  //       } else {
+  //         response.set_status(MPSOLVER_NOT_SOLVED);
+  //         response.set_status_str(
+  //             absl::StrFormat("XPress status code %d", optimization_status));
+  //       }
+  //       break;
+  //     }
+  //   }
 
-//   if (solution_count > 0 && (response.status() == MPSOLVER_FEASIBLE ||
-//                              response.status() == MPSOLVER_OPTIMAL)) {
-//     double objective_value = 0;
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJVAL, &objective_value));
-//     response.set_objective_value(objective_value);
-//     double best_objective_bound = 0;
-//     const int error = XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJBOUND,
-//                                      &best_objective_bound);
-//     if (response.status() == MPSOLVER_OPTIMAL &&
-//         error == XPRS_ERROR_DATA_NOT_AVAILABLE) {
-//       // If the presolve deletes all variables, there's no best bound.
-//       response.set_best_objective_bound(objective_value);
-//     } else {
-//       RETURN_IF_XPRESS_ERROR(error);
-//       response.set_best_objective_bound(best_objective_bound);
-//     }
+  //   if (solution_count > 0 && (response.status() == MPSOLVER_FEASIBLE ||
+  //                              response.status() == MPSOLVER_OPTIMAL)) {
+  //     double objective_value = 0;
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJVAL,
+  //         &objective_value));
+  //     response.set_objective_value(objective_value);
+  //     double best_objective_bound = 0;
+  //     const int error = XPRSgetdblattr(xpress_model, XPRS_DBL_ATTR_OBJBOUND,
+  //                                      &best_objective_bound);
+  //     if (response.status() == MPSOLVER_OPTIMAL &&
+  //         error == XPRS_ERROR_DATA_NOT_AVAILABLE) {
+  //       // If the presolve deletes all variables, there's no best bound.
+  //       response.set_best_objective_bound(objective_value);
+  //     } else {
+  //       RETURN_IF_XPRESS_ERROR(error);
+  //       response.set_best_objective_bound(best_objective_bound);
+  //     }
 
-//     response.mutable_variable_value()->Resize(variable_size, 0);
-//     RETURN_IF_XPRESS_ERROR(
-//         XPRSgetdblattrarray(xpress_model, XPRS_DBL_ATTR_X, 0, variable_size,
-//                             response.mutable_variable_value()->mutable_data()));
-//     // NOTE, XPressSolveProto() is exposed to external clients via MPSolver API,
-//     // which assumes the solution values of integer variables are rounded to
-//     // integer values.
-//     auto round_values_of_integer_variables_fn =
-//         [&](google::protobuf::RepeatedField<double>* values) {
-//           for (int v = 0; v < variable_size; ++v) {
-//             if (model.variable(v).is_integer()) {
-//               (*values)[v] = std::round((*values)[v]);
-//             }
-//           }
-//         };
-//     round_values_of_integer_variables_fn(response.mutable_variable_value());
-//     if (!has_integer_variables && model.general_constraint_size() == 0) {
-//       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
-//           xpress_model, XPRS_DBL_ATTR_PI, 0, model.constraint_size(),
-//           response.mutable_dual_value()->mutable_data()));
-//     }
-//     const int additional_solutions = std::min(
-//         solution_count, std::min(request.populate_additional_solutions_up_to(),
-//                                  std::numeric_limits<int32_t>::max() - 1) +
-//                             1);
-//     for (int i = 1; i < additional_solutions; ++i) {
-//       RETURN_IF_XPRESS_ERROR(
-//           XPRSsetintparam(model_env, XPRS_INT_PAR_SOLUTIONNUMBER, i));
-//       MPSolution* solution = response.add_additional_solutions();
-//       solution->mutable_variable_value()->Resize(variable_size, 0);
-//       double objective_value = 0;
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattr(
-//           xpress_model, XPRS_DBL_ATTR_POOLOBJVAL, &objective_value));
-//       solution->set_objective_value(objective_value);
-//       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
-//           xpress_model, XPRS_DBL_ATTR_XN, 0, variable_size,
-//           solution->mutable_variable_value()->mutable_data()));
-//       round_values_of_integer_variables_fn(solution->mutable_variable_value());
-//     }
-//   }
-// #undef RETURN_IF_XPRESS_ERROR
+  //     response.mutable_variable_value()->Resize(variable_size, 0);
+  //     RETURN_IF_XPRESS_ERROR(
+  //         XPRSgetdblattrarray(xpress_model, XPRS_DBL_ATTR_X, 0,
+  //         variable_size,
+  //                             response.mutable_variable_value()->mutable_data()));
+  //     // NOTE, XPressSolveProto() is exposed to external clients via MPSolver
+  //     API,
+  //     // which assumes the solution values of integer variables are rounded
+  //     to
+  //     // integer values.
+  //     auto round_values_of_integer_variables_fn =
+  //         [&](google::protobuf::RepeatedField<double>* values) {
+  //           for (int v = 0; v < variable_size; ++v) {
+  //             if (model.variable(v).is_integer()) {
+  //               (*values)[v] = std::round((*values)[v]);
+  //             }
+  //           }
+  //         };
+  //     round_values_of_integer_variables_fn(response.mutable_variable_value());
+  //     if (!has_integer_variables && model.general_constraint_size() == 0) {
+  //       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
+  //           xpress_model, XPRS_DBL_ATTR_PI, 0, model.constraint_size(),
+  //           response.mutable_dual_value()->mutable_data()));
+  //     }
+  //     const int additional_solutions = std::min(
+  //         solution_count,
+  //         std::min(request.populate_additional_solutions_up_to(),
+  //                                  std::numeric_limits<int32_t>::max() - 1) +
+  //                             1);
+  //     for (int i = 1; i < additional_solutions; ++i) {
+  //       RETURN_IF_XPRESS_ERROR(
+  //           XPRSsetintparam(model_env, XPRS_INT_PAR_SOLUTIONNUMBER, i));
+  //       MPSolution* solution = response.add_additional_solutions();
+  //       solution->mutable_variable_value()->Resize(variable_size, 0);
+  //       double objective_value = 0;
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattr(
+  //           xpress_model, XPRS_DBL_ATTR_POOLOBJVAL, &objective_value));
+  //       solution->set_objective_value(objective_value);
+  //       RETURN_IF_XPRESS_ERROR(XPRSgetdblattrarray(
+  //           xpress_model, XPRS_DBL_ATTR_XN, 0, variable_size,
+  //           solution->mutable_variable_value()->mutable_data()));
+  //       round_values_of_integer_variables_fn(solution->mutable_variable_value());
+  //     }
+  //   }
+  // #undef RETURN_IF_XPRESS_ERROR
 
   return response;
 }

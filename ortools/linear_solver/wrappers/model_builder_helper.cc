@@ -215,8 +215,8 @@ void ModelBuilderHelper::SafeAddConstraintTerm(int ct_index, int var_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint yet,
-  // so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint
+  // yet, so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -235,8 +235,8 @@ void ModelBuilderHelper::SetConstraintCoefficient(int ct_index, int var_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint yet,
-  // so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint
+  // yet, so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -328,8 +328,8 @@ void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint yet,
-  // so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint
+  // yet, so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -352,8 +352,8 @@ void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint yet,
-  // so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint
+  // yet, so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -595,19 +595,21 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_PDLP)
-    case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
+    case MPModelRequest::
+        GUROBI_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING: {
       const auto temp = GurobiSolveProto(request);
       if (temp.ok()) {
         response_ = std::move(temp.value());
       }
+      break;
     }
-    case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
+    case MPModelRequest::
+        XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
       response_ = XPressSolveProto(request);
       break;
     }
-
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);

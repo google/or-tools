@@ -277,7 +277,7 @@ class MPCallbackWrapper {
     for (const std::exception_ptr& ex : caught_exceptions_) {
       try {
         std::rethrow_exception(ex);
-      } catch (std::exception &ex) {
+      } catch (std::exception& ex) {
         // We don't want the interface to throw exceptions, plus it causes
         // SWIG issues in Java & Python. Instead, we'll only log them.
         // (The use cases where the user has to raise an exception inside their
@@ -1466,13 +1466,13 @@ void XpressInterface::ExtractNewVariables() {
         CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(),
                                  cmatbeg.data(), cmatind.get(), cmatval.get(),
                                  lb.get(), ub.get()));
-        //TODO fixme
-        // Writing all names worsen the performance significantly
-        //if (have_names) {
-        //   CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN, col_names.data(),
-        //   0,
-        //                            new_col_count - 1));
-        //}
+        // TODO fixme
+        //  Writing all names worsen the performance significantly
+        // if (have_names) {
+        //    CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN,
+        //    col_names.data(), 0,
+        //                             new_col_count - 1));
+        // }
         int const cols = getnumcols(mLp);
         unique_ptr<int[]> ind(new int[new_col_count]);
         for (int j = 0; j < cols; ++j) ind[j] = j;
@@ -1735,7 +1735,7 @@ std::vector<int> XpressBasisStatusesFrom(
 
 void XpressInterface::SetStartingLpBasis(
     const std::vector<MPSolver::BasisStatus>& variable_statuses,
-    const std::vector<MPSolver::BasisStatus>& constraint_statuses){
+    const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
   if (mMip) {
     LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
     return;
@@ -1880,10 +1880,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   int xpress_stat = 0;
   if (mMip) {
-    status = XPRSmipoptimize(mLp,"");
+    status = XPRSmipoptimize(mLp, "");
     XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpress_stat);
   } else {
-    status = XPRSlpoptimize(mLp,"");
+    status = XPRSlpoptimize(mLp, "");
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpress_stat);
   }
 

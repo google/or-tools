@@ -406,7 +406,6 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 extern MPSolverInterface* BuildXpressInterface(bool mip,
                                                MPSolver* const solver);
 
-
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != nullptr);

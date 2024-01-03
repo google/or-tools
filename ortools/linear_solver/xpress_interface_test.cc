@@ -230,8 +230,7 @@ void buildLargeLp(MPSolver& solver, int numVars) {
   MPObjective* obj = solver.MutableObjective();
   obj->SetMaximization();
   for (int i = 0; i < numVars; ++i) {
-    MPVariable* x = solver.MakeNumVar(-(i * i) % 21,
-                                      (i * i) % 55,
+    MPVariable* x = solver.MakeNumVar(-(i * i) % 21, (i * i) % 55,
                                       "x_" + std::to_string(i));
     obj->SetCoefficient(x, (i * i) % 23);
     int min = -50;
@@ -344,7 +343,8 @@ TEST(XpressInterface, LpStartingBasisNoIterationsIfBasisIsProvided) {
     constrStatus.push_back(constr->basis_status());
   }
 
-  MPSolver solver_BasisProvided("XPRESS_LP", MPSolver::XPRESS_LINEAR_PROGRAMMING);
+  MPSolver solver_BasisProvided("XPRESS_LP",
+                                MPSolver::XPRESS_LINEAR_PROGRAMMING);
   buildLargeLp(solver_BasisProvided, 1000);
   solver_BasisProvided.SetStartingLpBasis(varStatus, constrStatus);
   solver_BasisProvided.Solve();
@@ -352,7 +352,6 @@ TEST(XpressInterface, LpStartingBasisNoIterationsIfBasisIsProvided) {
   // ...and finally check that no iteration has been performed
   EXPECT_EQ(iterWithBasis, 0);
 }
-
 
 TEST(XpressInterface, NumVariables) {
   UNITTEST_INIT_MIP();
@@ -1315,7 +1314,6 @@ TEST(XpressInterface, SetHint) {
 }
 #endif
 
-
 TEST(XpressInterface, SetCallBack) {
   UNITTEST_INIT_MIP();
 
@@ -1367,7 +1365,9 @@ TEST(XpressInterface, CallbackThrowsException) {
   EXPECT_NO_THROW(solver.Solve());
   std::string errors = testing::internal::GetCapturedStderr();
   // Test that StdErr contains the following error message
-  std::string expected_error = "Caught exception during user-defined call-back: This is a mocked exception in MyMPCallback";
+  std::string expected_error =
+      "Caught exception during user-defined call-back: This is a mocked "
+      "exception in MyMPCallback";
   ASSERT_NE(errors.find(expected_error), std::string::npos);
 }
 
@@ -1380,8 +1380,7 @@ int main(int argc, char** argv) {
   if (solver == nullptr) {
     LOG(ERROR) << "Xpress solver is not available";
     return EXIT_SUCCESS;
-  }
-  else{
+  } else {
     return RUN_ALL_TESTS();
   }
 }
