@@ -7,7 +7,7 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an "AS IS" BASIS,ww
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
@@ -220,9 +220,9 @@ def solve_shift_scheduling(params, output_proto):
         # Employee 3 does not want to work on the first Saturday (negative weight
         # for the Off shift).
         (3, 0, 5, -2),
-        # Employee 5 wants a night shift on the second Thursday (negative weight).
+        # Employee 5 does not want a night shift on the second Thursday (negative weight).
         (5, 3, 10, -2),
-        # Employee 2 does not want a night shift on the first Friday (positive
+        # Employee 2 wants a night shift on the first Friday (positive
         # weight).
         (2, 3, 4, 4),
     ]
