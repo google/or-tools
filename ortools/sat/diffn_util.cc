@@ -19,6 +19,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <ostream>
 #include <tuple>
@@ -1460,6 +1461,7 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
 
   const double inv_temp = 1.0 / temperature;
   absl::InlinedVector<ProbingRectangle::Edge, 4> candidates;
+  absl::InlinedVector<IntegerValue, 4> energy_deltas;
   absl::InlinedVector<double, 4> weights;
   while (!ranges.IsMinimal()) {
     const IntegerValue rect_area = ranges.GetCurrentRectangleArea();
@@ -1471,7 +1473,7 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
       break;
     }
     candidates.clear();
-    weights.clear();
+    energy_deltas.clear();
 
     for (int border_idx = 0; border_idx < 4; ++border_idx) {
       const ProbingRectangle::Edge border =
@@ -1482,9 +1484,18 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
       candidates.push_back(border);
       const IntegerValue delta_area = ranges.GetShrinkDeltaArea(border);
       const IntegerValue delta_energy = ranges.GetShrinkDeltaEnergy(border);
-      const IntegerValue delta_slack = delta_energy - delta_area;
-      const int table_lookup = std::max(
-          0, std::min((int)(delta_slack.value() * 5 * inv_temp + 50), 100));
+      energy_deltas.push_back(delta_energy - delta_area);
+    }
+    const IntegerValue min_energy_delta =
+        *std::min_element(energy_deltas.begin(), energy_deltas.end());
+    weights.clear();
+    for (const IntegerValue delta_slack : energy_deltas) {
+      const int64_t table_lookup =
+          std::max((int64_t)0,
+                   std::min((int64_t)((delta_slack - min_energy_delta).value() *
+                                          5 * inv_temp +
+                                      50),
+                            (int64_t)100));
       weights.push_back((*cached_probabilities)[table_lookup]);
     }
     // Pick a change with a probability proportional to exp(- delta_E / Temp)

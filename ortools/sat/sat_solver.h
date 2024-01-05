@@ -444,6 +444,7 @@ class SatSolver {
   // debug mode, and after this is called, all the learned clauses are tested to
   // satisfy this saved assignment.
   void SaveDebugAssignment();
+  void LoadDebugSolution(const std::vector<Literal>& solution);
 
   // Returns true iff the loaded problem only contains clauses.
   bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
@@ -518,7 +519,7 @@ class SatSolver {
   // variables at the time the debug_assignment_ was saved. If new variables
   // were added since that time, they will be considered unassigned.
   bool ClauseIsValidUnderDebugAssignment(
-      const std::vector<Literal>& clause) const;
+      absl::Span<const Literal> clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
       const std::vector<LiteralWithCoeff>& cst, Coefficient rhs) const;
 

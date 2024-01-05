@@ -931,7 +931,11 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   MarkDescendants(conflict->front().Negated());
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
-    if (trail.Assignment().LiteralIsFalse(Literal(i))) {
+    // TODO(user): if this is false, then we actually have a conflict of size 2.
+    // This can only happen if the binary clause was not propagated properly
+    // if for instance we do chronological bactracking without re-enqueing the
+    // consequence of a binary clause.
+    if (trail.Assignment().LiteralIsTrue(Literal(i))) {
       marked->Set(Literal(i).Variable());
     }
   }

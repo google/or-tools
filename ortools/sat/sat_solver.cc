@@ -493,6 +493,22 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
+void SatSolver::LoadDebugSolution(const std::vector<Literal>& solution) {
+  debug_assignment_.Resize(num_variables_.value());
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
+    if (!debug_assignment_.VariableIsAssigned(var)) continue;
+    debug_assignment_.UnassignLiteral(Literal(var, true));
+  }
+  for (const Literal l : solution) {
+    debug_assignment_.AssignFromTrueLiteral(l);
+  }
+
+  // We should only call this with complete solution.
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
+    CHECK(debug_assignment_.VariableIsAssigned(var));
+  }
+}
+
 void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   if (track_binary_clauses_) {
     // Abort if this clause was already added.
@@ -506,7 +522,8 @@ void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
 }
 
 bool SatSolver::ClauseIsValidUnderDebugAssignment(
-    const std::vector<Literal>& clause) const {
+    absl::Span<const Literal> clause) const {
+  if (debug_assignment_.NumberOfVariables() == 0) return true;
   for (Literal l : clause) {
     if (l.Variable() >= debug_assignment_.NumberOfVariables() ||
         debug_assignment_.LiteralIsTrue(l)) {
@@ -909,6 +926,16 @@ void SatSolver::ProcessCurrentConflict() {
   // may be deleted.
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause(learned_conflict_);
+  }
+
+  // Because we might change the conflict with this minimization algorithm, we
+  // cannot just subsume clauses with it blindly.
+  //
+  // TODO(user): Either remove that algorithm or support subsumption by just
+  // checking if it is okay to do so, or doing it on the fly while computing the
+  // first UIP.
+  if (parameters_->minimization_algorithm() == SatParameters::EXPERIMENTAL) {
+    subsumed_clauses_.clear();
   }
 
   // Detach any subsumed clause. They will actually be deleted on the next

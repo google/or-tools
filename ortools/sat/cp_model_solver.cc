@@ -698,14 +698,33 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
   debug_sol.ivar_has_value.assign(num_integers, false);
   debug_sol.ivar_values.assign(num_integers, 0);
 
+  std::vector<Literal> boolean_solution;
+
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   for (int i = 0; i < debug_sol.proto_values.size(); ++i) {
+    if (mapping.IsBoolean(i)) {
+      Literal l = mapping.Literal(i);
+      if (debug_sol.proto_values[i] == 0) {
+        l = l.Negated();
+      }
+      boolean_solution.push_back(l);
+    }
+
     if (!mapping.IsInteger(i)) continue;
     const IntegerVariable var = mapping.Integer(i);
     debug_sol.ivar_has_value[var] = true;
     debug_sol.ivar_has_value[NegationOf(var)] = true;
     debug_sol.ivar_values[var] = debug_sol.proto_values[i];
     debug_sol.ivar_values[NegationOf(var)] = -debug_sol.proto_values[i];
+  }
+
+  // If the solution is fully boolean (there is no integer variable), and
+  // we have a decision problem (so no new boolean should be created), we load
+  // it in the sat solver for debugging too.
+  if (boolean_solution.size() == debug_sol.proto_values.size() &&
+      !model_proto.has_objective()) {
+    LOG(INFO) << "Loaded pure Boolean debugging solution.";
+    model->GetOrCreate<SatSolver>()->LoadDebugSolution(boolean_solution);
   }
 
   // The objective variable is usually not part of the proto, but it is still

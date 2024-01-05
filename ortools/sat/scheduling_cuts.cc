@@ -82,9 +82,6 @@ struct EnergyEvent : BaseEvent {
   // True if linearized_energy is not exact and a McCormick relaxation.
   bool energy_is_quadratic = false;
 
-  // Used to minimize the increase on the y axis for rectangles.
-  double y_spread = 0.0;
-
   // The actual value of the presence literal of the interval(s) is checked
   // when the event is created. A value of kNoLiteralIndex indicates that either
   // the interval was not optional, or that its presence literal is true at
