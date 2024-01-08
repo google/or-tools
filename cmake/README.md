@@ -1,4 +1,5 @@
 # OR-Tools CMake Build Instructions
+
 | OS       | C++   | Python   | Java   | .NET   |
 |:-------- | :---: | :------: | :----: | :----: |
 | Linux    | [![Status][linux_cpp_svg]][linux_cpp_link] | [![Status][linux_python_svg]][linux_python_link] | [![Status][linux_java_svg]][linux_java_link] | [![Status][linux_dotnet_svg]][linux_dotnet_link] |
