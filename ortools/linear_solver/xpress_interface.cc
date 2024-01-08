@@ -468,7 +468,7 @@ class XpressInterface : public MPSolverInterface {
   std::vector<int> mutable initial_variables_basis_status_;
   std::vector<int> mutable initial_constraint_basis_status_;
 
-  // Set up the right-hand side of a constraint from its lower and upper bound.
+  // Setup the right-hand side of a constraint from its lower and upper bound.
   static void MakeRhs(double lb, double ub, double& rhs, char& sense,
                       double& range);
 
@@ -970,7 +970,7 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
   }
 }
 
-// Set up the right-hand side of a constraint.
+// Setup the right-hand side of a constraint.
 void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                               double& range) {
   if (lb == ub) {
@@ -1366,7 +1366,7 @@ void XpressInterface::ExtractNewVariables() {
       obj[j] = solver_->objective_->GetCoefficient(var);
     }
 
-    // Arrays for modifying the problem are set up. Update the index
+    // Arrays for modifying the problem are setup. Update the index
     // of variables that will get extracted now. Updating indices
     // _before_ the actual extraction makes things much simpler in
     // case we support incremental extraction.
@@ -1416,7 +1416,7 @@ void XpressInterface::ExtractNewVariables() {
           unique_ptr<int[]> cmatind(new int[nonzeros]);
           unique_ptr<double[]> cmatval(new double[nonzeros]);
 
-          // Here is how cmatbeg[] is set up:
+          // Here is how cmatbeg[] is setup:
           // - it is initialized as
           //     [ 0, 0, collen[0], collen[0]+collen[1], ... ]
           //   so that cmatbeg[j+1] tells us where in cmatind[] and

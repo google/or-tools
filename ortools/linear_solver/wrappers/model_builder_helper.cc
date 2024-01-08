@@ -215,8 +215,8 @@ void ModelBuilderHelper::SafeAddConstraintTerm(int ct_index, int var_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint
-  // yet, so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -235,8 +235,8 @@ void ModelBuilderHelper::SetConstraintCoefficient(int ct_index, int var_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint
-  // yet, so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -328,8 +328,8 @@ void ModelBuilderHelper::SafeAddEnforcedConstraintTerm(int ct_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint
-  // yet, so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }
@@ -352,8 +352,8 @@ void ModelBuilderHelper::SetEnforcedConstraintCoefficient(int ct_index,
       return;
     }
   }
-  // If we reach this point, the variable does not exist in the constraint
-  // yet, so we add it to the constraint as a new term.
+  // If we reach this point, the variable does not exist in the constraint yet,
+  // so we add it to the constraint as a new term.
   ct_proto->add_var_index(var_index);
   ct_proto->add_coefficient(coeff);
 }

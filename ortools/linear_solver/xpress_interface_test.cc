@@ -741,8 +741,8 @@ TEST(XpressInterface, Write) {
 OBJSENSE  MAXIMIZE
 ROWS
  N  __OBJ___
- L  R1      
- L  R2      
+ L  R1
+ L  R2
 COLUMNS
     C1        __OBJ___  1
     C1        R1        3
