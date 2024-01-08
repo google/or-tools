@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -6519,7 +6520,7 @@ IntVar* Solver::MakeIntConst(int64_t val) { return MakeIntConst(val, ""); }
 // ----- Int Var and associated methods -----
 
 namespace {
-std::string IndexedName(const std::string& prefix, int index, int max_index) {
+std::string IndexedName(absl::string_view prefix, int index, int max_index) {
 #if 0
 #if defined(_MSC_VER)
   const int digits = max_index > 0 ?

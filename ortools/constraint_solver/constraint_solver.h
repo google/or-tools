@@ -2113,7 +2113,7 @@ class Solver {
   /// neither impact nor are impacted by this constraint.
   Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
                              const std::vector<int64_t>& demands,
-                             IntVar* capacity, const std::string& name);
+                             IntVar* capacity, absl::string_view name);
 
   /// This constraint enforces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2883,7 +2883,8 @@ class Solver {
       const Assignment* initial_solution,
       LocalSearchFilterManager* filter_manager,
       LocalSearchOperator* ls_operator,
-      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit);
+      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit,
+      absl::flat_hash_set<IntVar*>* touched = nullptr);
 
   /// Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
@@ -3073,7 +3074,7 @@ class Solver {
   /// Adds the local search monitor to the solver. This is called internally
   /// when a propagation monitor is passed to the Solve() or NewSearch() method.
   void AddLocalSearchMonitor(LocalSearchMonitor* monitor);
-  void SetSearchContext(Search* search, const std::string& search_context);
+  void SetSearchContext(Search* search, absl::string_view search_context);
   std::string SearchContext() const;
   std::string SearchContext(const Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
@@ -3220,7 +3221,8 @@ class Solver {
       const Assignment* initial_solution,
       LocalSearchFilterManager* filter_manager,
       LocalSearchOperator* ls_operator,
-      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit);
+      const std::vector<SearchMonitor*>& monitors, RegularLimit* limit,
+      absl::flat_hash_set<IntVar*>* touched);
 
   /// Naming
   std::string GetName(const PropagationBaseObject* object);
@@ -3378,7 +3380,7 @@ class PropagationBaseObject : public BaseObject {
 
   /// Object naming.
   virtual std::string name() const;
-  void set_name(const std::string& name);
+  void set_name(absl::string_view name);
   /// Returns whether the object has been named or not.
   bool HasName() const;
   /// Returns a base name for automatic naming.

@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
@@ -117,7 +118,7 @@ class PathEnergyCostChecker {
 
 LocalSearchFilter* MakePathEnergyCostFilter(
     Solver* solver, std::unique_ptr<PathEnergyCostChecker> checker,
-    const std::string& dimension_name);
+    absl::string_view dimension_name);
 
 /// Appends dimension-based filters to the given list of filters using a path
 /// state.

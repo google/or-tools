@@ -24,6 +24,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -59,7 +60,7 @@ class TreeArrayConstraint : public CastConstraint {
     root_node_ = &tree_[0][0];
   }
 
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s) == %s", name,
                            JoinDebugStringPtr(vars_, ", "),
                            target_var_->DebugString());
@@ -1481,7 +1482,7 @@ class BaseSumBooleanConstraint : public Constraint {
   ~BaseSumBooleanConstraint() override {}
 
  protected:
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 

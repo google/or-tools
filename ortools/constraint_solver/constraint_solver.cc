@@ -2496,7 +2496,7 @@ std::string PropagationBaseObject::name() const {
   return solver_->GetName(this);
 }
 
-void PropagationBaseObject::set_name(const std::string& name) {
+void PropagationBaseObject::set_name(absl::string_view name) {
   solver_->SetName(this, name);
 }
 
@@ -3239,7 +3239,7 @@ LocalSearchMonitor* Solver::GetLocalSearchMonitor() const {
 }
 
 void Solver::SetSearchContext(Search* search,
-                              const std::string& search_context) {
+                              absl::string_view search_context) {
   search->set_search_context(search_context);
 }
 

@@ -37,6 +37,7 @@ DEFINE_INT_TYPE(RoutingCostClassIndex, int);
 DEFINE_INT_TYPE(RoutingDimensionIndex, int);
 DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
 DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
+DEFINE_INT_TYPE(RoutingResourceClassIndex, int);
 
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.

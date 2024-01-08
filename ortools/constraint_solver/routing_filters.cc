@@ -3190,7 +3190,7 @@ class PathEnergyCostFilter : public LocalSearchFilter {
 
 LocalSearchFilter* MakePathEnergyCostFilter(
     Solver* solver, std::unique_ptr<PathEnergyCostChecker> checker,
-    const std::string& dimension_name) {
+    absl::string_view dimension_name) {
   PathEnergyCostFilter* filter =
       new PathEnergyCostFilter(std::move(checker), dimension_name);
   return solver->RevAlloc(filter);

@@ -645,19 +645,19 @@ class DimensionCumulOptimizerCore {
       const RouteDimensionTravelInfo& dimension_travel_info,
       const Resource* resource, bool optimize_vehicle_costs,
       RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
-      std::vector<int64_t>* break_values, int64_t* cost, int64_t* transit_cost,
-      bool clear_lp = true);
+      std::vector<int64_t>* break_values, int64_t* cost_without_transit,
+      int64_t* transit_cost, bool clear_lp = true);
 
   // Given some cumuls and breaks, computes the solution cost by solving the
   // same model as in OptimizeSingleRouteWithResource() with the addition of
   // constraints for cumuls and breaks.
-  DimensionSchedulingStatus ComputeSingleRouteSolutionCost(
+  DimensionSchedulingStatus ComputeSingleRouteSolutionCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const RouteDimensionTravelInfo& dimension_travel_info,
       RoutingLinearSolverWrapper* solver,
       const std::vector<int64_t>& solution_cumul_values,
-      const std::vector<int64_t>& solution_break_values, int64_t* cost,
-      int64_t* transit_cost, int64_t* cost_offset = nullptr,
+      const std::vector<int64_t>& solution_break_values,
+      int64_t* cost_without_transits, int64_t* cost_offset = nullptr,
       bool reuse_previous_model_if_possible = true, bool clear_lp = false,
       bool clear_solution_constraints = true,
       absl::Duration* solve_duration = nullptr);
@@ -675,7 +675,8 @@ class DimensionCumulOptimizerCore {
       RoutingLinearSolverWrapper* solver,
       std::vector<std::vector<int64_t>>* cumul_values,
       std::vector<std::vector<int64_t>>* break_values,
-      std::vector<int64_t>* costs, int64_t* transit_cost, bool clear_lp = true);
+      std::vector<int64_t>* costs_without_transits, int64_t* transit_cost,
+      bool clear_lp = true);
 
   // In the Optimize() method, if both "cumul_values" and "cost" parameters are
   // null, we don't optimize the cost and stop at the first feasible solution in
@@ -686,8 +687,9 @@ class DimensionCumulOptimizerCore {
           dimension_travel_info_per_route,
       RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
       std::vector<int64_t>* break_values,
-      std::vector<std::vector<int>>* resource_indices_per_group, int64_t* cost,
-      int64_t* transit_cost, bool clear_lp = true);
+      std::vector<std::vector<int>>* resource_indices_per_group,
+      int64_t* cost_without_transits, int64_t* transit_cost,
+      bool clear_lp = true);
 
   DimensionSchedulingStatus OptimizeAndPack(
       const std::function<int64_t(int64_t)>& next_accessor,
@@ -853,16 +855,18 @@ class LocalDimensionCumulOptimizer {
       std::vector<int64_t>* optimal_cumuls,
       std::vector<int64_t>* optimal_breaks);
 
-  // Simple combination of ComputeRouteCumulCost() and ComputeRouteCumuls()
-  DimensionSchedulingStatus ComputeRouteCumulsAndCost(
+  // Simple combination of ComputeRouteCumulCostWithoutFixedTransits() and
+  // ComputeRouteCumuls().
+  DimensionSchedulingStatus ComputeRouteCumulsAndCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
       std::vector<int64_t>* optimal_cumuls,
-      std::vector<int64_t>* optimal_breaks, int64_t* optimal_cost);
+      std::vector<int64_t>* optimal_breaks,
+      int64_t* optimal_cost_without_transits);
 
   // If feasible, computes the cost of a given route performed by a vehicle
   // defined by its cumuls and breaks.
-  DimensionSchedulingStatus ComputeRouteSolutionCost(
+  DimensionSchedulingStatus ComputeRouteSolutionCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
       const std::vector<int64_t>& solution_cumul_values,

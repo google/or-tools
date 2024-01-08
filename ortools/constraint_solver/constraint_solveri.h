@@ -63,7 +63,6 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
@@ -1806,6 +1805,7 @@ class LocalSearchState {
   int64_t VariableDomainMax(VariableDomainId domain_id) const;
   void ChangeRelaxedVariableDomain(VariableDomainId domain_id, int64_t min,
                                    int64_t max);
+
   // Propagation of all events.
   void PropagateRelax(VariableDomainId domain_id);
   bool PropagateTighten(VariableDomainId domain_id);
@@ -1842,7 +1842,7 @@ class LocalSearchState {
   absl::StrongVector<VariableDomainId, VariableDomain> relaxed_domains_;
   absl::StrongVector<VariableDomainId, VariableDomain> current_domains_;
   struct TrailedVariableDomain {
-    VariableDomain domain;
+    VariableDomain committed_domain;
     VariableDomainId domain_id;
   };
   std::vector<TrailedVariableDomain> trailed_domains_;
@@ -1854,6 +1854,14 @@ class LocalSearchState {
   // current_domains_[d] and relaxed_domains_[d] is empty.
   int num_committed_empty_domains_ = 0;
   int trailed_num_committed_empty_domains_ = 0;
+
+  // Constraints may be trailed too, they decide how to track their internal
+  // structure.
+  class Constraint;
+  void TrailConstraint(Constraint* constraint) {
+    trailed_constraints_.push_back(constraint);
+  }
+  std::vector<Constraint*> trailed_constraints_;
 
   // Stores domain-constraint dependencies, allows to generate topological
   // orderings of dependency arcs reachable from nodes.
@@ -1916,7 +1924,7 @@ class LocalSearchState {
   // Each trigger tells a constraint that a domain changed, and identifies
   // the domain by the index in the list of the constraint's inputs.
   struct Trigger {
-    ConstraintId constraint_id;
+    Constraint* constraint;
     int input_index;
   };
   // Triggers of all constraints, concatenated.
@@ -1928,19 +1936,72 @@ class LocalSearchState {
   // Constraints are used to form expressions that make up the objective.
   // Constraints are directed: they have inputs and an output, moreover the
   // constraint-domain graph must not have directed cycles.
-  // WeightedSum have constants.size() = inputs.size() + 1, they maintain
-  // output = constants.back() + sum_i inputs[i] * constants[i]
-  enum class ConstraintType { WeightedSum };
-  struct Constraint {
-    std::vector<VariableDomainId> inputs;
-    std::vector<int64_t> constants;
-    VariableDomainId output;
-    ConstraintType type;
+  class Constraint {
+   public:
+    virtual ~Constraint() = default;
+    virtual LocalSearchState::VariableDomain Propagate(int input_index) = 0;
+    virtual VariableDomainId Output() const = 0;
+    virtual void Commit() = 0;
+    virtual void Revert() = 0;
   };
-  absl::StrongVector<ConstraintId, Constraint> constraints_;
+  // WeightedSum constraints enforces the equation:
+  //   output = offset + sum_i input_weights[i] * input_domain_ids[i]
+  class WeightedSum final : public Constraint {
+   public:
+    WeightedSum(LocalSearchState* state,
+                const std::vector<VariableDomainId>& input_domain_ids,
+                const std::vector<int64_t>& input_weights, int64_t input_offset,
+                VariableDomainId output);
+    ~WeightedSum() override = default;
+    LocalSearchState::VariableDomain Propagate(int input_index) override;
+    void Commit() override;
+    void Revert() override;
+    VariableDomainId Output() const override { return output_; }
 
-  // Helper functions.
-  bool PropagateTightenWeightedSum(ConstraintId constraint);
+   private:
+    // Weighted variable holds a variable's domain, an associated weight,
+    // and the variable's last known min and max.
+    struct WeightedVariable {
+      int64_t min;
+      int64_t max;
+      int64_t committed_min;
+      int64_t committed_max;
+      int64_t weight;
+      VariableDomainId domain;
+      bool is_trailed;
+      void Commit() {
+        committed_min = min;
+        committed_max = max;
+        is_trailed = false;
+      }
+      void Revert() {
+        min = committed_min;
+        max = committed_max;
+        is_trailed = false;
+      }
+    };
+    std::vector<WeightedVariable> inputs_;
+    std::vector<WeightedVariable*> trailed_inputs_;
+    // Invariants held by this constraint to allow O(1) propagation.
+    struct Invariants {
+      // Number of inputs_[i].min equal to kint64min.
+      int64_t num_neg_inf;
+      // Sum of inputs_[i].min that are different from kint64min.
+      int64_t wsum_mins;
+      // Number of inputs_[i].max equal to kint64max.
+      int64_t num_pos_inf;
+      // Sum of inputs_[i].max that are different from kint64max.
+      int64_t wsum_maxs;
+    };
+    Invariants invariants_;
+    Invariants committed_invariants_;
+
+    const VariableDomainId output_;
+    LocalSearchState* const state_;
+    bool constraint_is_trailed_ = false;
+  };
+  // Used to identify constraints and hold ownership.
+  absl::StrongVector<ConstraintId, std::unique_ptr<Constraint>> constraints_;
 };
 
 // A LocalSearchState Variable can only be created by a LocalSearchState,
@@ -2342,6 +2403,7 @@ class SearchLog : public SearchMonitor {
   int max_depth_;
   int sliding_min_depth_;
   int sliding_max_depth_;
+  int neighbors_offset_ = 0;
 };
 
 /// Implements a complete cache for model elements: expressions and

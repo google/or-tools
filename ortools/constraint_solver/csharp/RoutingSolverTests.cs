@@ -328,4 +328,6 @@ public class RoutingDimensionTest
     }
 }
 
+// TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
+
 } // namespace Google.OrTools.Tests

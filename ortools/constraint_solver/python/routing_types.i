@@ -73,3 +73,4 @@ DEFINE_INDEX_TYPE(operations_research::RoutingCostClassIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingDimensionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
+DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);

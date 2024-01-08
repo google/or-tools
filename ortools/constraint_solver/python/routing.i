@@ -51,6 +51,9 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingVehicleClassIndex,
     operations_research::RoutingModel::VehicleClassIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::RoutingResourceClassIndex,
+    operations_research::RoutingModel::ResourceClassIndex);
 
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;

@@ -2638,7 +2638,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int64_t>& demands,
                                    IntVar* const capacity,
-                                   const std::string& name) {
+                                   absl::string_view name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);

@@ -158,6 +158,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -174,6 +175,7 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
@@ -287,6 +289,7 @@ class RoutingModel {
   typedef RoutingDimensionIndex DimensionIndex;
   typedef RoutingDisjunctionIndex DisjunctionIndex;
   typedef RoutingVehicleClassIndex VehicleClassIndex;
+  typedef RoutingResourceClassIndex ResourceClassIndex;
   typedef RoutingTransitCallback1 TransitCallback1;
   typedef RoutingTransitCallback2 TransitCallback2;
 
@@ -346,6 +349,16 @@ class RoutingModel {
         }
         return cost_coefficient < cost.cost_coefficient;
       }
+
+      friend bool operator==(const DimensionCost& c1, const DimensionCost& c2) {
+        return c1.transit_evaluator_class == c2.transit_evaluator_class &&
+               c1.cost_coefficient == c2.cost_coefficient;
+      }
+      template <typename H>
+      friend H AbslHashValue(H h, const DimensionCost& cost) {
+        return H::combine(std::move(h), cost.transit_evaluator_class,
+                          cost.cost_coefficient);
+      }
     };
     std::vector<DimensionCost>
         dimension_transit_evaluator_class_and_cost_coefficient;
@@ -353,48 +366,17 @@ class RoutingModel {
     explicit CostClass(int evaluator_index)
         : evaluator_index(evaluator_index) {}
 
-    /// Comparator for STL containers and algorithms.
-    static bool LessThan(const CostClass& a, const CostClass& b) {
-      if (a.evaluator_index != b.evaluator_index) {
-        return a.evaluator_index < b.evaluator_index;
+    friend bool operator==(const CostClass& c1, const CostClass& c2) {
+      return c1.evaluator_index == c2.evaluator_index &&
+             c1.dimension_transit_evaluator_class_and_cost_coefficient ==
+                 c2.dimension_transit_evaluator_class_and_cost_coefficient;
       }
-      return a.dimension_transit_evaluator_class_and_cost_coefficient <
-             b.dimension_transit_evaluator_class_and_cost_coefficient;
+    template <typename H>
+    friend H AbslHashValue(H h, const CostClass& c) {
+      return H::combine(
+          std::move(h), c.evaluator_index,
+          c.dimension_transit_evaluator_class_and_cost_coefficient);
     }
-  };
-
-  struct VehicleClass {
-    /// The cost class of the vehicle.
-    CostClassIndex cost_class_index;
-    /// Contrarily to CostClass, here we need strict equivalence.
-    int64_t fixed_cost;
-    /// Whether or not the vehicle is used when empty.
-    bool used_when_empty;
-    /// Vehicle start and end equivalence classes. Currently if two vehicles
-    /// have different start/end nodes which are "physically" located at the
-    /// same place, these two vehicles will be considered as non-equivalent
-    /// unless the two indices are in the same class.
-    // TODO(user): Find equivalent start/end nodes wrt dimensions and
-    // callbacks.
-    int start_equivalence_class;
-    int end_equivalence_class;
-    /// Bounds of cumul variables at start and end vehicle nodes.
-    /// dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d.
-    absl::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_min;
-    absl::StrongVector<DimensionIndex, int64_t> dimension_start_cumuls_max;
-    absl::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_min;
-    absl::StrongVector<DimensionIndex, int64_t> dimension_end_cumuls_max;
-    absl::StrongVector<DimensionIndex, int64_t> dimension_capacities;
-    /// dimension_evaluators[d]->Run(from, to) is the transit value of arc
-    /// from->to for a dimension d.
-    absl::StrongVector<DimensionIndex, int64_t> dimension_evaluator_classes;
-    /// Fingerprint of unvisitable non-start/end nodes.
-    uint64_t unvisitable_nodes_fprint;
-    /// Sorted set of resource groups for which the vehicle requires a resource.
-    std::vector<int> required_resource_group_indices;
-
-    /// Comparator for STL containers and algorithms.
-    static bool LessThan(const VehicleClass& a, const VehicleClass& b);
   };
 #endif  // defined(SWIG)
 
@@ -448,8 +430,18 @@ class RoutingModel {
       const Domain& start_domain() const { return start_domain_; }
       const Domain& end_domain() const { return end_domain_; }
 
+      friend bool operator==(const Attributes& a, const Attributes& b) {
+        return a.start_domain_ == b.start_domain_ &&
+               a.end_domain_ == b.end_domain_;
+      }
+      template <typename H>
+      friend H AbslHashValue(H h, const Attributes& attributes) {
+        return H::combine(std::move(h), attributes.start_domain_,
+                          attributes.end_domain_);
+      }
+
      private:
-      /// The following domains constrain the dimension start/end cumul of the
+      /// The following domains constrain the dimension start/end cumul of
       /// the vehicle assigned to this resource:
       /// start_domain_.Min() <= cumul[Start(v)] <= start_domain_.Max()
       Domain start_domain_;
@@ -497,16 +489,29 @@ class RoutingModel {
     void SetAllowedResourcesForVehicle(
         int vehicle, const std::vector<int>& allowed_resource_indices) {
       DCHECK(!model_->closed_);
+      // NOTE: As of 12/2023, an empty set of allowed resources means "all
+      // resources allowed", so we make sure the empty set isn't used here
+      // explicitly by the user to mark a vehicle as "unusable".
+      DCHECK(!allowed_resource_indices.empty());
       DCHECK(vehicle_requires_resource_[vehicle]);
       DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
       vehicle_allowed_resources_[vehicle].clear();
       vehicle_allowed_resources_[vehicle].insert(
           allowed_resource_indices.begin(), allowed_resource_indices.end());
     }
+    void ClearAllowedResourcesForVehicle(int vehicle) {
+      DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
+      vehicle_allowed_resources_[vehicle].clear();
+    }
     const absl::flat_hash_set<int>& GetResourcesMarkedAllowedForVehicle(
         int vehicle) const {
       DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
       return vehicle_allowed_resources_[vehicle];
+    }
+    bool IsResourceAllowedForVehicle(int resource, int vehicle) const {
+      DCHECK_LT(vehicle, vehicle_allowed_resources_.size());
+      return vehicle_allowed_resources_[vehicle].empty() ||
+             vehicle_allowed_resources_[vehicle].contains(resource);
     }
 
     const std::vector<Resource>& GetResources() const { return resources_; }
@@ -518,6 +523,15 @@ class RoutingModel {
         const {
       return affected_dimension_indices_;
     }
+
+    int GetResourceClassesCount() const {
+      return resource_indices_per_class_.size();
+    }
+    ResourceClassIndex GetResourceClassIndex(int resource_index) const {
+      DCHECK_LT(resource_index, resource_class_indices_.size());
+      return resource_class_indices_[resource_index];
+    }
+
     int Size() const { return resources_.size(); }
     int Index() const { return index_; }
 
@@ -528,15 +542,24 @@ class RoutingModel {
           vehicle_requires_resource_(model->vehicles(), false),
           vehicle_allowed_resources_(model->vehicles()) {}
 
+    void ComputeResourceClasses();
+
     const int index_;
     const RoutingModel* const model_;
     std::vector<Resource> resources_;
+    // Stores the ResourceClassIndex of each resource (See implementation of
+    // ComputeResourceClasses()).
+    std::vector<ResourceClassIndex> resource_class_indices_;
+    // clang-format off
+    absl::StrongVector<ResourceClassIndex, std::vector<int> >
+        resource_indices_per_class_;
+    // clang-format on
+
     std::vector<bool> vehicle_requires_resource_;
     std::vector<int> vehicles_requiring_resource_;
     // For each vehicle, stores the set of allowed resource indices if it's
     // restricted for that vehicle. If the set is empty for a vehicle, then any
     // resource from this group can be assigned to it.
-    // TODO(user): Take this into account for vehicle class computations!!
     // clang-format off
     std::vector<absl::flat_hash_set<int> > vehicle_allowed_resources_;
     // clang-format on
@@ -544,6 +567,30 @@ class RoutingModel {
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
 
     friend class RoutingModel;
+  };
+
+  /// Struct used to store a variable value.
+  struct VariableValuePair {
+    int var_index;
+    int64_t value;
+  };
+
+  /// Class used to solve a secondary model within a first solution strategy.
+  class SecondaryOptimizer {
+   public:
+    SecondaryOptimizer(RoutingModel* model,
+                       RoutingSearchParameters* search_parameters,
+                       int64_t solve_period);
+    bool Solve(const std::vector<RoutingModel::VariableValuePair>& in_state,
+               std::vector<RoutingModel::VariableValuePair>* out_state);
+
+   private:
+    RoutingModel* const model_;
+    const RoutingSearchParameters* const search_parameters_;
+    const int64_t solve_period_ = 0;
+    int64_t call_count_ = 0;
+    Assignment* state_ = nullptr;
+    absl::flat_hash_map<IntVar*, int> var_to_index_;
   };
 
   /// Constant used to express a hard constraint instead of a soft penalty.
@@ -759,7 +806,7 @@ class RoutingModel {
       const RoutingDimension& dimension) const;
 
   /// Returns true if a dimension exists for a given dimension name.
-  bool HasDimension(const std::string& dimension_name) const;
+  bool HasDimension(absl::string_view dimension_name) const;
   /// Returns a dimension from its name. Dies if the dimension does not exist.
   const RoutingDimension& GetDimensionOrDie(
       const std::string& dimension_name) const;
@@ -1270,13 +1317,18 @@ class RoutingModel {
   const Assignment* FastSolveFromAssignmentWithParameters(
       const Assignment* assignment,
       const RoutingSearchParameters& search_parameters,
-      bool check_solution_in_cp);
+      bool check_solution_in_cp,
+      absl::flat_hash_set<IntVar*>* touched = nullptr);
   /// Same as above but will try all assignments in order as first solutions
   /// until one succeeds.
   const Assignment* SolveFromAssignmentsWithParameters(
       const std::vector<const Assignment*>& assignments,
       const RoutingSearchParameters& search_parameters,
       std::vector<const Assignment*>* solutions = nullptr);
+  /// Solves the current routing model by using an Iterated Local Search
+  /// approach.
+  const Assignment* SolveWithIteratedLocalSearch(
+      const RoutingSearchParameters& search_parameters);
   /// Given a "source_model" and its "source_assignment", resets
   /// "target_assignment" with the IntVar variables (nexts_, and vehicle_vars_
   /// if costs aren't homogeneous across vehicles) of "this" model, with the
@@ -1480,7 +1532,7 @@ class RoutingModel {
 #endif
   class NodeNeighborsByCostClass {
    public:
-    NodeNeighborsByCostClass() {}
+    NodeNeighborsByCostClass() = default;
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
     /// routing_model.
@@ -1660,7 +1712,7 @@ class RoutingModel {
         .front();
   }
   /// Returns the number of different vehicle classes in the model.
-  int GetVehicleClassesCount() const { return vehicle_classes_.size(); }
+  int GetVehicleClassesCount() const { return num_vehicle_classes_; }
   /// Returns variable indices of nodes constrained to be on the same route.
   const std::vector<int>& GetSameVehicleIndicesOfIndex(int node) const {
     DCHECK(closed_);
@@ -1832,6 +1884,15 @@ class RoutingModel {
   const PathsMetadata& GetPathsMetadata() const { return paths_metadata_; }
 #ifndef SWIG
   BinCapacities* GetBinCapacities() { return bin_capacities_.get(); }
+
+  /// Sets a secondary solver (routing model + parameters) which can be used to
+  /// run sub-solves while building a first solution.
+  void SetSecondaryModel(RoutingModel* secondary_model,
+                         RoutingSearchParameters secondary_parameters) {
+    DCHECK(!closed_);
+    secondary_model_ = secondary_model;
+    secondary_parameters_ = std::move(secondary_parameters);
+  }
 #endif  // SWIG
 
  private:
@@ -1977,6 +2038,8 @@ class RoutingModel {
   /// - The vehicles for each vehicle class are stored in
   ///   vehicles_per_vehicle_class.
   void ComputeVehicleTypes();
+  /// Computes resource classes for all resource groups in the model.
+  void ComputeResourceClasses();
   /// This method scans the visit types and sets up the following members:
   /// - single_nodes_of_type_[type] contains indices of nodes of visit type
   ///   "type" which are not part of any pickup/delivery pair.
@@ -2052,7 +2115,7 @@ class RoutingModel {
 #endif
   /// Log a solution.
   void LogSolution(const RoutingSearchParameters& parameters,
-                   const std::string& description, int64_t solution_cost,
+                   absl::string_view description, int64_t solution_cost,
                    int64_t start_time_ms);
   /// See CompactAssignment. Checks the final solution if
   /// check_compact_assignment is true.
@@ -2330,9 +2393,8 @@ class RoutingModel {
   bool cache_callbacks_;
   mutable std::vector<CostCacheElement> cost_cache_;  /// Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
-#ifndef SWIG
-  absl::StrongVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
-#endif  // SWIG
+  int num_vehicle_classes_;
+
   VehicleTypeContainer vehicle_type_container_;
   std::function<int(int64_t)> vehicle_start_class_callback_;
   /// Disjunctions
@@ -2421,6 +2483,11 @@ class RoutingModel {
   bool closed_ = false;
   Status status_ = ROUTING_NOT_SOLVED;
   bool enable_deep_serialization_ = true;
+
+  // Secondary routing solver
+  RoutingModel* secondary_model_ = nullptr;
+  RoutingSearchParameters secondary_parameters_;
+  std::unique_ptr<SecondaryOptimizer> secondary_optimizer_;
 
   // Search data
   std::vector<DecisionBuilder*> first_solution_decision_builders_;
@@ -2681,7 +2748,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
           before_start_(before_start),
           after_start_(after_start) {}
     explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
-    TaskTranslator() {}
+    TaskTranslator() = default;
 
     void SetStartMin(int64_t value) {
       if (start_ != nullptr) {
@@ -2738,7 +2805,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
 class TypeRegulationsChecker {
  public:
   explicit TypeRegulationsChecker(const RoutingModel& model);
-  virtual ~TypeRegulationsChecker() {}
+  virtual ~TypeRegulationsChecker() = default;
 
   bool CheckVehicle(int vehicle,
                     const std::function<int64_t(int64_t)>& next_accessor);
@@ -2799,7 +2866,7 @@ class TypeIncompatibilityChecker : public TypeRegulationsChecker {
  public:
   TypeIncompatibilityChecker(const RoutingModel& model,
                              bool check_hard_incompatibilities);
-  ~TypeIncompatibilityChecker() override {}
+  ~TypeIncompatibilityChecker() override = default;
 
  private:
   bool HasRegulationsToCheck() const override;
@@ -2815,7 +2882,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
  public:
   explicit TypeRequirementChecker(const RoutingModel& model)
       : TypeRegulationsChecker(model) {}
-  ~TypeRequirementChecker() override {}
+  ~TypeRequirementChecker() override = default;
 
  private:
   bool HasRegulationsToCheck() const override;

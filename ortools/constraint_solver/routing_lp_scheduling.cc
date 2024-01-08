@@ -212,34 +212,34 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost) {
-  return optimizer_core_.OptimizeSingleRouteWithResource(
+  int64_t transit_cost = 0;
+  const DimensionSchedulingStatus status =
+      optimizer_core_.OptimizeSingleRouteWithResource(
       vehicle, next_accessor,
       /*dimension_travel_info=*/{},
-      /*resource=*/nullptr, /*optimize_vehicle_costs=*/optimal_cost != nullptr,
+          /*resource=*/nullptr,
+          /*optimize_vehicle_costs=*/optimal_cost != nullptr,
       solver_[vehicle].get(), /*cumul_values=*/nullptr,
-      /*break_values=*/nullptr, optimal_cost, /*transit_cost=*/nullptr);
+          /*break_values=*/nullptr, optimal_cost, &transit_cost);
+  if (status != DimensionSchedulingStatus::INFEASIBLE &&
+      optimal_cost != nullptr) {
+    DCHECK_GE(*optimal_cost, 0);
+    *optimal_cost = CapAdd(*optimal_cost, transit_cost);
+  }
+  return status;
 }
 
 DimensionSchedulingStatus
 LocalDimensionCumulOptimizer::ComputeRouteCumulCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost_without_transits) {
-  int64_t transit_cost = 0;
-  const DimensionSchedulingStatus status =
-      optimizer_core_.OptimizeSingleRouteWithResource(
+  return optimizer_core_.OptimizeSingleRouteWithResource(
           vehicle, next_accessor,
           /*dimension_travel_info=*/{},
           /*resource=*/nullptr,
           /*optimize_vehicle_costs=*/optimal_cost_without_transits != nullptr,
           solver_[vehicle].get(), /*cumul_values=*/nullptr,
-          /*break_values=*/nullptr, optimal_cost_without_transits,
-          &transit_cost);
-  if (status != DimensionSchedulingStatus::INFEASIBLE &&
-      optimal_cost_without_transits != nullptr) {
-    *optimal_cost_without_transits =
-        CapSub(*optimal_cost_without_transits, transit_cost);
-  }
-  return status;
+      /*break_values=*/nullptr, optimal_cost_without_transits, nullptr);
 }
 
 std::vector<DimensionSchedulingStatus> LocalDimensionCumulOptimizer::
@@ -251,19 +251,10 @@ std::vector<DimensionSchedulingStatus> LocalDimensionCumulOptimizer::
         std::vector<int64_t>* optimal_costs_without_transits,
         std::vector<std::vector<int64_t>>* optimal_cumuls,
         std::vector<std::vector<int64_t>>* optimal_breaks) {
-  int64_t transit_cost = 0;
-  const std::vector<DimensionSchedulingStatus> statuses =
-      optimizer_core_.OptimizeSingleRouteWithResources(
-          vehicle, next_accessor, transit_accessor, {}, resources,
-          resource_indices, optimize_vehicle_costs, solver_[vehicle].get(),
-          optimal_cumuls, optimal_breaks, optimal_costs_without_transits,
-          &transit_cost);
-  if (optimal_costs_without_transits != nullptr) {
-    for (int64_t& cost : *optimal_costs_without_transits) {
-      cost = CapSub(cost, transit_cost);
-    }
-  }
-  return statuses;
+  return optimizer_core_.OptimizeSingleRouteWithResources(
+      vehicle, next_accessor, transit_accessor, {}, resources, resource_indices,
+      optimize_vehicle_costs, solver_[vehicle].get(), optimal_cumuls,
+      optimal_breaks, optimal_costs_without_transits, nullptr);
 }
 
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumuls(
@@ -279,19 +270,19 @@ DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumuls(
 }
 
 DimensionSchedulingStatus
-LocalDimensionCumulOptimizer::ComputeRouteCumulsAndCost(
+LocalDimensionCumulOptimizer::ComputeRouteCumulsAndCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
     std::vector<int64_t>* optimal_cumuls, std::vector<int64_t>* optimal_breaks,
-    int64_t* optimal_cost) {
+    int64_t* optimal_cost_without_transits) {
   return optimizer_core_.OptimizeSingleRouteWithResource(
       vehicle, next_accessor, dimension_travel_info, nullptr,
       /*optimize_vehicle_costs=*/true, solver_[vehicle].get(), optimal_cumuls,
-      optimal_breaks, optimal_cost, /*transit_cost=*/nullptr);
+      optimal_breaks, optimal_cost_without_transits, nullptr);
 }
 
 DimensionSchedulingStatus
-LocalDimensionCumulOptimizer::ComputeRouteSolutionCost(
+LocalDimensionCumulOptimizer::ComputeRouteSolutionCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
     const std::vector<int64_t>& solution_cumul_values,
@@ -299,10 +290,10 @@ LocalDimensionCumulOptimizer::ComputeRouteSolutionCost(
     int64_t* cost_offset, bool reuse_previous_model_if_possible, bool clear_lp,
     absl::Duration* solve_duration) {
   RoutingLinearSolverWrapper* solver = solver_[vehicle].get();
-  return optimizer_core_.ComputeSingleRouteSolutionCost(
+  return optimizer_core_.ComputeSingleRouteSolutionCostWithoutFixedTransits(
       vehicle, next_accessor, dimension_travel_info, solver,
-      solution_cumul_values, solution_break_values, solution_cost, nullptr,
-      cost_offset, reuse_previous_model_if_possible, clear_lp,
+      solution_cumul_values, solution_break_values, solution_cost, cost_offset,
+      reuse_previous_model_if_possible, clear_lp,
       /*clear_solution_constraints=*/true, solve_duration);
 }
 
@@ -520,7 +511,7 @@ bool CumulBoundsPropagator::PropagateCumulBounds(
 
     if (tree_parent_node_of_[node] == kParentToBePropagated) {
       // The parent of this node is still in the queue, so no need to process
-      // node now, since it will be re-enqued when its parent is processed.
+      // node now, since it will be re-enqueued when its parent is processed.
       continue;
     }
 
@@ -583,13 +574,13 @@ DimensionCumulOptimizerCore::DimensionCumulOptimizerCore(
 }
 
 DimensionSchedulingStatus
-DimensionCumulOptimizerCore::ComputeSingleRouteSolutionCost(
+DimensionCumulOptimizerCore::ComputeSingleRouteSolutionCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     const RouteDimensionTravelInfo& dimension_travel_info,
     RoutingLinearSolverWrapper* solver,
     const std::vector<int64_t>& solution_cumul_values,
-    const std::vector<int64_t>& solution_break_values, int64_t* cost,
-    int64_t* transit_cost, int64_t* cost_offset,
+    const std::vector<int64_t>& solution_break_values,
+    int64_t* cost_without_transits, int64_t* cost_offset,
     bool reuse_previous_model_if_possible, bool clear_lp,
     bool clear_solution_constraints, absl::Duration* const solve_duration) {
   absl::Duration solve_duration_value;
@@ -608,7 +599,7 @@ DimensionCumulOptimizerCore::ComputeSingleRouteSolutionCost(
             vehicle, next_accessor, dimension_->transit_evaluator(vehicle),
             dimension_travel_info,
             dimension_->GetLocalOptimizerOffsetForVehicle(vehicle),
-            optimize_vehicle_costs, solver, transit_cost, &cost_offset_value)) {
+            optimize_vehicle_costs, solver, nullptr, &cost_offset_value)) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (model->CheckLimit()) {
@@ -662,8 +653,9 @@ DimensionCumulOptimizerCore::ComputeSingleRouteSolutionCost(
     return status;
   }
 
-  if (cost != nullptr) {
-    *cost = CapAdd(cost_offset_value, solver->GetObjectiveValue());
+  if (cost_without_transits != nullptr) {
+    *cost_without_transits =
+        CapAdd(cost_offset_value, solver->GetObjectiveValue());
   }
 
   if (clear_lp) {
@@ -699,8 +691,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResource(
     const RoutingModel::ResourceGroup::Resource* resource,
     bool optimize_vehicle_costs, RoutingLinearSolverWrapper* solver,
     std::vector<int64_t>* cumul_values, std::vector<int64_t>* break_values,
-    int64_t* cost, int64_t* transit_cost, bool clear_lp) {
-  if (cost != nullptr) *cost = -1;
+    int64_t* cost_without_transits, int64_t* transit_cost, bool clear_lp) {
+  if (cost_without_transits != nullptr) *cost_without_transits = -1;
   ClearIfNonNull(cumul_values);
   ClearIfNonNull(break_values);
 
@@ -709,7 +701,7 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResource(
                           : std::vector<Resource>({*resource});
   const std::vector<int> resource_indices =
       resource == nullptr ? std::vector<int>() : std::vector<int>({0});
-  std::vector<int64_t> costs;
+  std::vector<int64_t> costs_without_transits;
   std::vector<std::vector<int64_t>> cumul_values_vec;
   std::vector<std::vector<int64_t>> break_values_vec;
   const std::vector<DimensionSchedulingStatus> statuses =
@@ -719,7 +711,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResource(
           optimize_vehicle_costs, solver,
           cumul_values != nullptr ? &cumul_values_vec : nullptr,
           break_values != nullptr ? &break_values_vec : nullptr,
-          cost != nullptr ? &costs : nullptr, transit_cost, clear_lp);
+          cost_without_transits != nullptr ? &costs_without_transits : nullptr,
+          transit_cost, clear_lp);
 
   if (dimension()->model()->CheckLimit()) {
     return DimensionSchedulingStatus::INFEASIBLE;
@@ -729,7 +722,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResource(
 
   if (status == DimensionSchedulingStatus::INFEASIBLE) return status;
 
-  if (cost != nullptr) *cost = costs[0];
+  if (cost_without_transits != nullptr) {
+    *cost_without_transits = costs_without_transits[0];
+  }
   if (cumul_values != nullptr) *cumul_values = std::move(cumul_values_vec[0]);
   if (break_values != nullptr) *break_values = std::move(break_values_vec[0]);
 
@@ -808,7 +803,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     RoutingLinearSolverWrapper* solver,
     std::vector<std::vector<int64_t>>* cumul_values,
     std::vector<std::vector<int64_t>>* break_values,
-    std::vector<int64_t>* costs, int64_t* transit_cost, bool clear_lp) {
+    std::vector<int64_t>* costs_without_transits, int64_t* transit_cost,
+    bool clear_lp) {
+  ClearIfNonNull(costs_without_transits);
   const bool optimize_with_resources = !resource_indices.empty();
   if (!optimize_with_resources && !resources.empty()) return {};
 
@@ -816,7 +813,6 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
   // Make sure SetRouteCumulConstraints will properly set the cumul bounds by
   // looking at this route only.
   DCHECK_EQ(propagator_.get(), nullptr);
-  ClearIfNonNull(costs);
 
   RoutingModel* const model = dimension()->model();
   if (model->IsEnd(next_accessor(model->Start(vehicle))) &&
@@ -833,6 +829,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
                                 dimension_travel_info, cumul_offset,
                                 optimize_vehicle_costs, solver, transit_cost,
                                 &cost_offset)) {
+    if (costs_without_transits != nullptr) {
+      costs_without_transits->assign(1, -1);
+    }
     return {DimensionSchedulingStatus::INFEASIBLE};
   }
   DCHECK_GE(current_route_cumul_variables_.size(), 2);
@@ -842,7 +841,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
   const int num_solves =
       std::max(static_cast<decltype(resource_indices.size())>(1UL),
                resource_indices.size());
-  if (costs != nullptr) costs->assign(num_solves, -1);
+  if (costs_without_transits != nullptr) {
+    costs_without_transits->assign(num_solves, -1);
+  }
   if (cumul_values != nullptr) cumul_values->assign(num_solves, {});
   if (break_values != nullptr) break_values->assign(num_solves, {});
 
@@ -851,10 +852,11 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
   const int end_cumul = current_route_cumul_variables_.back();
   const ClosedInterval end_bounds = GetVariableBounds(end_cumul, *solver);
   std::vector<DimensionSchedulingStatus> statuses;
+  statuses.reserve(num_solves);
   for (int i = 0; i < num_solves; i++) {
     if (model->CheckLimit()) {
       // The model's deadline has been reached, stop.
-      ClearIfNonNull(costs);
+      ClearIfNonNull(costs_without_transits);
       ClearIfNonNull(cumul_values);
       ClearIfNonNull(break_values);
       solver->Clear();
@@ -873,8 +875,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     if (statuses.back() == DimensionSchedulingStatus::INFEASIBLE) {
       continue;
     }
-    if (costs != nullptr) {
-      costs->at(i) = optimize_vehicle_costs
+    if (costs_without_transits != nullptr) {
+      costs_without_transits->at(i) =
+          optimize_vehicle_costs
                          ? CapAdd(cost_offset, solver->GetObjectiveValue())
                          : 0;
     }
@@ -901,13 +904,14 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::Optimize(
         dimension_travel_info_per_route,
     RoutingLinearSolverWrapper* solver, std::vector<int64_t>* cumul_values,
     std::vector<int64_t>* break_values,
-    std::vector<std::vector<int>>* resource_indices_per_group, int64_t* cost,
-    int64_t* transit_cost, bool clear_lp) {
+    std::vector<std::vector<int>>* resource_indices_per_group,
+    int64_t* cost_without_transits, int64_t* transit_cost, bool clear_lp) {
   InitOptimizer(solver);
 
-  // If both "cumul_values" and "cost" parameters are null, we don't try to
-  // optimize the cost and stop at the first feasible solution.
-  const bool optimize_costs = (cumul_values != nullptr) || (cost != nullptr);
+  // If both "cumul_values" and "costs_without_transits" parameters are null,
+  // we don't try to optimize the cost and stop at the first feasible solution.
+  const bool optimize_costs =
+      (cumul_values != nullptr) || (cost_without_transits != nullptr);
   bool has_vehicles_being_optimized = false;
 
   const int64_t cumul_offset = dimension_->GetGlobalOptimizerOffset();
@@ -964,8 +968,9 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::Optimize(
   SetValuesFromLP(all_break_variables_, cumul_offset, solver, break_values);
   SetResourceIndices(solver, resource_indices_per_group);
 
-  if (cost != nullptr) {
-    *cost = CapAdd(solver->GetObjectiveValue(), total_cost_offset);
+  if (cost_without_transits != nullptr) {
+    *cost_without_transits =
+        CapAdd(solver->GetObjectiveValue(), total_cost_offset);
   }
 
   if (clear_lp) {
@@ -1691,9 +1696,12 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   const int path_size = path.size();
 
   std::vector<int64_t> fixed_transit(path_size - 1);
+  int64_t total_fixed_transit = 0;
   {
     for (int pos = 1; pos < path_size; ++pos) {
-      fixed_transit[pos - 1] = transit_accessor(path[pos - 1], path[pos]);
+      int64_t& transit = fixed_transit[pos - 1];
+      transit = transit_accessor(path[pos - 1], path[pos]);
+      total_fixed_transit = CapAdd(total_fixed_transit, transit);
     }
   }
   if (!ExtractRouteCumulBounds(path, cumul_offset)) {
@@ -1859,11 +1867,23 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     solver->SetCoefficient(ct, lp_cumuls.front(), -1);
   }
   // Add span cost.
+  // NOTE: The fixed transit is removed from the span cost since it doesn't
+  // affect the optimization of the scheduling of the route.
   const int64_t span_cost_coef =
       dimension_->GetSpanCostCoefficientForVehicle(vehicle);
   if (optimize_costs && span_cost_coef > 0) {
-    solver->SetObjectiveCoefficient(lp_cumuls.back(), span_cost_coef);
-    solver->SetObjectiveCoefficient(lp_cumuls.front(), -span_cost_coef);
+    // span_without_fixed_transit_var =
+    //                  end_cumul - start_cumul - total_fixed_transit
+    const int span_without_fixed_transit_var =
+        solver->CreateNewPositiveVariable();
+    SET_DEBUG_VARIABLE_NAME(solver, span_without_fixed_transit_var,
+                            "span_without_fixed_transit_var");
+    solver->AddLinearConstraint(total_fixed_transit, total_fixed_transit,
+                                {{lp_cumuls.back(), 1},
+                                 {lp_cumuls.front(), -1},
+                                 {span_without_fixed_transit_var, -1}});
+    solver->SetObjectiveCoefficient(span_without_fixed_transit_var,
+                                    span_cost_coef);
   }
   // Add soft span cost.
   if (optimize_costs && dimension_->HasSoftSpanUpperBounds()) {
@@ -1898,8 +1918,6 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   // Fill transit cost if specified.
   if (route_transit_cost != nullptr) {
     if (optimize_costs && span_cost_coef > 0) {
-      const int64_t total_fixed_transit = std::accumulate(
-          fixed_transit.begin(), fixed_transit.end(), 0, CapAdd);
       *route_transit_cost = CapProd(total_fixed_transit, span_cost_coef);
     } else {
       *route_transit_cost = 0;
@@ -2265,8 +2283,17 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
   //     global_span_cost_coefficient * (max_end_cumul - min_start_cumul).
   const int64_t global_span_coeff = dimension_->global_span_cost_coefficient();
   if (optimize_costs && global_span_coeff > 0) {
-    solver->SetObjectiveCoefficient(max_end_cumul_, global_span_coeff);
-    solver->SetObjectiveCoefficient(min_start_cumul_, -global_span_coeff);
+    // global_span_var = max_end_cumul_ - min_start_cumul_
+    const int global_span_var = solver->CreateNewPositiveVariable();
+    SET_DEBUG_VARIABLE_NAME(solver, global_span_var, "global_span_var");
+    solver->AddLinearConstraint(
+        0, 0,
+        {{global_span_var, 1}, {max_end_cumul_, -1}, {min_start_cumul_, 1}});
+    // NOTE: Adding the global span cost to the objective as
+    // global_span_coeff * global_span_var increases the precision of the solver
+    // compared to adding two separate terms global_span_coeff * max_end_cumul
+    // and -global_span_coeff * min_start_cumul.
+    solver->SetObjectiveCoefficient(global_span_var, global_span_coeff);
   }
 
   // Node precedence constraints, set when both nodes are visited.
@@ -2362,12 +2389,16 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
     // A(r).start_domain.Min() <= cumul[Start(v)] <= A(r).start_domain.Max(),
     // and
     // A(r).end_domain.Min() <= cumul[End(v)] <= A(r).end_domain.Max().
-    for (int r = 0; r < num_resources; r++) {
-      if (resource_constraints[r] == kNoConstraint) continue;
-      const ResourceGroup::Attributes& attributes =
-          resources[r].GetDimensionAttributes(dimension_);
+    DCHECK_EQ(resource_group.Index(), rg_index);
       for (int v : resource_group.GetVehiclesRequiringAResource()) {
         if (vehicle_constraints[v] == kNoConstraint) continue;
+      IntVar* const resource_var = model.ResourceVar(v, rg_index);
+      std::unique_ptr<IntVarIterator> it(
+          resource_var->MakeDomainIterator(false));
+      for (int r : InitAndGetValues(it.get())) {
+        if (r < 0) continue;
+        DCHECK_LT(r, num_resources);
+        if (resource_constraints[r] == kNoConstraint) continue;
 
         const int assign_r_to_v = solver->AddVariable(0, 1);
         SET_DEBUG_VARIABLE_NAME(
@@ -2402,13 +2433,15 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraints(
                   cumul_bounds.start, cumul_bounds.end, {{cumul_variable, 1}});
               solver->SetEnforcementLiteral(cumul_constraint, assign_r_to_v);
             };
+        const ResourceGroup::Attributes& attributes =
+            resources[r].GetDimensionAttributes(dimension_);
         add_domain_constraint(attributes.start_domain(),
                               index_to_cumul_variable_[model.Start(v)]);
         add_domain_constraint(attributes.end_domain(),
                               index_to_cumul_variable_[model.End(v)]);
       }
     }
-  }
+  }  // for (int rg_index : model.GetDimensionResourceGroupIndices(dimension_))
   return true;
 }
 
@@ -2500,16 +2533,9 @@ DimensionSchedulingStatus
 GlobalDimensionCumulOptimizer::ComputeCumulCostWithoutFixedTransits(
     const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost_without_transits) {
-  int64_t cost = 0;
-  int64_t transit_cost = 0;
-  DimensionSchedulingStatus status =
-      optimizer_core_.Optimize(next_accessor, {}, solver_.get(), nullptr,
-                               nullptr, nullptr, &cost, &transit_cost);
-  if (status != DimensionSchedulingStatus::INFEASIBLE &&
-      optimal_cost_without_transits != nullptr) {
-    *optimal_cost_without_transits = CapSub(cost, transit_cost);
-  }
-  return status;
+  return optimizer_core_.Optimize(next_accessor, {}, solver_.get(), nullptr,
+                                  nullptr, nullptr,
+                                  optimal_cost_without_transits, nullptr);
 }
 
 DimensionSchedulingStatus GlobalDimensionCumulOptimizer::ComputeCumuls(
@@ -2535,6 +2561,36 @@ DimensionSchedulingStatus GlobalDimensionCumulOptimizer::ComputePackedCumuls(
       packed_cumuls, packed_breaks, resource_indices);
 }
 
+namespace {
+
+template <typename T>
+void SwapValuesAtIndicesFrom(std::vector<T>* values,
+                             const std::vector<int>& indices,
+                             std::vector<T>& values_to_copy) {
+  if (values == nullptr) {
+    DCHECK(values_to_copy.empty());
+    return;
+  }
+  DCHECK_EQ(values_to_copy.size(), indices.size());
+  for (int i = 0; i < indices.size(); i++) {
+    DCHECK_LT(indices[i], values->size());
+    values->at(indices[i]).swap(values_to_copy[i]);
+  }
+}
+
+void SetValuesAtIndicesFrom(std::vector<int64_t>* values,
+                            const std::vector<int>& indices,
+                            const std::vector<int64_t>& values_to_copy) {
+  DCHECK_NE(values, nullptr);
+  DCHECK_EQ(values_to_copy.size(), indices.size());
+  for (int i = 0; i < indices.size(); i++) {
+    DCHECK_LT(indices[i], values->size());
+    values->at(indices[i]) = values_to_copy[i];
+  }
+}
+
+}  // namespace
+
 bool ComputeVehicleToResourcesAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
     const std::function<int64_t(int64_t)>& next_accessor,
@@ -2546,14 +2602,17 @@ bool ComputeVehicleToResourcesAssignmentCosts(
     std::vector<std::vector<int64_t>>* break_values) {
   DCHECK(lp_optimizer != nullptr);
   DCHECK(mp_optimizer != nullptr);
+  DCHECK_NE(assignment_costs, nullptr);
+  assignment_costs->clear();
+  ClearIfNonNull(cumul_values);
+  ClearIfNonNull(break_values);
+
   const RoutingDimension* dimension = lp_optimizer->dimension();
   DCHECK_EQ(dimension, mp_optimizer->dimension());
   RoutingModel* const model = dimension->model();
-  DCHECK_NE(assignment_costs, nullptr);
   if (!resource_group.VehicleRequiresAResource(v) ||
       (!model->IsVehicleUsedWhenEmpty(v) &&
        next_accessor(model->Start(v)) == model->End(v))) {
-    assignment_costs->clear();
     return true;
   }
   if (model->CheckLimit()) {
@@ -2561,29 +2620,57 @@ bool ComputeVehicleToResourcesAssignmentCosts(
     return false;
   }
 
-  const std::vector<ResourceGroup::Resource>& resources =
-      resource_group.GetResources();
-  const int num_resources = resources.size();
-  std::vector<int> all_resource_indices(num_resources);
-  std::iota(all_resource_indices.begin(), all_resource_indices.end(), 0);
+  IntVar* const resource_var = model->ResourceVar(v, resource_group.Index());
+  std::vector<int> allowed_resource_indices;
+  allowed_resource_indices.reserve(resource_var->Size());
+  std::unique_ptr<IntVarIterator> it(resource_var->MakeDomainIterator(false));
+  for (const int res : InitAndGetValues(it.get())) {
+    if (res < 0) {
+      continue;
+    }
+    allowed_resource_indices.push_back(res);
+  }
   const bool use_mp_optimizer =
       dimension->HasBreakConstraints() &&
       !dimension->GetBreakIntervalsOfVehicle(v).empty();
   LocalDimensionCumulOptimizer* optimizer =
       use_mp_optimizer ? mp_optimizer : lp_optimizer;
+
+  const std::vector<ResourceGroup::Resource>& resources =
+      resource_group.GetResources();
+  std::vector<int64_t> allowed_assignment_costs;
+  std::vector<std::vector<int64_t>> allowed_cumul_values;
+  std::vector<std::vector<int64_t>> allowed_break_values;
   std::vector<DimensionSchedulingStatus> statuses =
       optimizer->ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
-          v, next_accessor, transit_accessor, resources, all_resource_indices,
-          optimize_vehicle_costs, assignment_costs, cumul_values, break_values);
+          v, next_accessor, transit_accessor, resources,
+          allowed_resource_indices, optimize_vehicle_costs,
+          &allowed_assignment_costs,
+          cumul_values == nullptr ? nullptr : &allowed_cumul_values,
+          break_values == nullptr ? nullptr : &allowed_break_values);
 
-  if (assignment_costs->empty()) {
+  if (statuses.empty() ||
+      (statuses.size() == 1 &&
+       statuses[0] == DimensionSchedulingStatus::INFEASIBLE)) {
     // Couldn't assign any resource to this vehicle.
     return false;
   }
-  DCHECK_EQ(assignment_costs->size(), num_resources);
-  DCHECK_EQ(statuses.size(), num_resources);
-  DCHECK(cumul_values == nullptr || cumul_values->size() == num_resources);
-  DCHECK(break_values == nullptr || break_values->size() == num_resources);
+
+  const int total_num_resources = resources.size();
+  assignment_costs->resize(total_num_resources, -1);
+  if (cumul_values != nullptr) {
+    cumul_values->resize(total_num_resources, {});
+  }
+  if (break_values != nullptr) {
+    break_values->resize(total_num_resources, {});
+  }
+
+  SetValuesAtIndicesFrom(assignment_costs, allowed_resource_indices,
+                         allowed_assignment_costs);
+  SwapValuesAtIndicesFrom(cumul_values, allowed_resource_indices,
+                          allowed_cumul_values);
+  SwapValuesAtIndicesFrom(break_values, allowed_resource_indices,
+                          allowed_break_values);
 
   if (use_mp_optimizer) {
     // We already used the mp optimizer, so we don't need to recompute anything.
@@ -2593,10 +2680,11 @@ bool ComputeVehicleToResourcesAssignmentCosts(
                           [](int64_t cost) { return cost >= 0; });
   }
 
-  std::vector<int> mp_optimizer_resource_indices;
-  for (int r = 0; r < num_resources; r++) {
-    if (statuses[r] == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
-      mp_optimizer_resource_indices.push_back(r);
+  std::vector<int> mp_resource_indices;
+  DCHECK_EQ(statuses.size(), allowed_resource_indices.size());
+  for (int i = 0; i < allowed_resource_indices.size(); i++) {
+    if (statuses[i] == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
+      mp_resource_indices.push_back(allowed_resource_indices[i]);
     }
   }
 
@@ -2604,32 +2692,20 @@ bool ComputeVehicleToResourcesAssignmentCosts(
   std::vector<std::vector<int64_t>> mp_cumul_values;
   std::vector<std::vector<int64_t>> mp_break_values;
   mp_optimizer->ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
-      v, next_accessor, transit_accessor, resources,
-      mp_optimizer_resource_indices, optimize_vehicle_costs,
-      &mp_assignment_costs,
+      v, next_accessor, transit_accessor, resources, mp_resource_indices,
+      optimize_vehicle_costs, &mp_assignment_costs,
       cumul_values == nullptr ? nullptr : &mp_cumul_values,
       break_values == nullptr ? nullptr : &mp_break_values);
-  if (!mp_optimizer_resource_indices.empty() && mp_assignment_costs.empty()) {
+  if (!mp_resource_indices.empty() && mp_assignment_costs.empty()) {
     // A timeout was reached during optimization.
     return false;
   }
-  DCHECK_EQ(mp_assignment_costs.size(), mp_optimizer_resource_indices.size());
-  DCHECK(cumul_values == nullptr ||
-         mp_cumul_values.size() == mp_optimizer_resource_indices.size());
-  DCHECK(break_values == nullptr ||
-         mp_break_values.size() == mp_optimizer_resource_indices.size());
-  for (int i = 0; i < mp_optimizer_resource_indices.size(); i++) {
-    assignment_costs->at(mp_optimizer_resource_indices[i]) =
-        mp_assignment_costs[i];
-    if (cumul_values != nullptr) {
-      cumul_values->at(mp_optimizer_resource_indices[i])
-          .swap(mp_cumul_values[i]);
-    }
-    if (break_values != nullptr) {
-      break_values->at(mp_optimizer_resource_indices[i])
-          .swap(mp_break_values[i]);
-    }
-  }
+
+  SetValuesAtIndicesFrom(assignment_costs, mp_resource_indices,
+                         mp_assignment_costs);
+  SwapValuesAtIndicesFrom(cumul_values, mp_resource_indices, mp_cumul_values);
+  SwapValuesAtIndicesFrom(break_values, mp_resource_indices, mp_break_values);
+
   return absl::c_any_of(*assignment_costs,
                         [](int64_t cost) { return cost >= 0; });
 }

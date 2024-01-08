@@ -34,6 +34,7 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
@@ -3430,7 +3431,7 @@ class DimensionFilter : public LocalSearchFilter {
  public:
   std::string DebugString() const override { return name_; }
   DimensionFilter(std::unique_ptr<DimensionChecker> checker,
-                  const std::string& dimension_name)
+                  absl::string_view dimension_name)
       : checker_(std::move(checker)),
         name_(absl::StrCat("DimensionFilter(", dimension_name, ")")) {}
 
@@ -4006,21 +4007,33 @@ void LocalSearchState::ChangeRelaxedVariableDomain(VariableDomainId domain_id,
 // for both Commit() and Revert().
 void LocalSearchState::Commit() {
   DCHECK(StateIsFeasible());
+  // Clear domains trail.
   state_has_relaxed_domains_ = false;
   trailed_domains_.clear();
   domain_is_trailed_.assign(domain_is_trailed_.size(), false);
+  // Clear constraint trail.
+  for (Constraint* constraint : trailed_constraints_) {
+    constraint->Commit();
+  }
+  trailed_constraints_.clear();
 }
 
 void LocalSearchState::Revert() {
-  for (const auto& [domain, domain_id] : trailed_domains_) {
-    DCHECK(domain_is_trailed_[domain_id]);
-    current_domains_[domain_id] = domain;
+  // Revert trailed domains.
+  for (const auto& [domain, id] : trailed_domains_) {
+    DCHECK(domain_is_trailed_[id]);
+    current_domains_[id] = domain;
   }
   trailed_domains_.clear();
   state_has_relaxed_domains_ = false;
   domain_is_trailed_.assign(domain_is_trailed_.size(), false);
   state_domains_are_all_nonempty_ = true;
   num_committed_empty_domains_ = trailed_num_committed_empty_domains_;
+  // Revert trailed constraints.
+  for (Constraint* constraint : trailed_constraints_) {
+    constraint->Revert();
+  }
+  trailed_constraints_.clear();
 }
 
 using NodeId = SubDagComputer::NodeId;
@@ -4094,11 +4107,9 @@ void LocalSearchState::AddWeightedSumConstraint(
   dependency_graph_.AddConstraintDomainDependency(constraint_id,
                                                   output_domain_id);
   // Store constraint.
-  constraints_.push_back({.inputs = input_domain_ids,
-                          .constants = input_weights,
-                          .output = output_domain_id,
-                          .type = ConstraintType::WeightedSum});
-  constraints_.back().constants.push_back(input_offset);
+  auto constraint = std::make_unique<WeightedSum>(
+      this, input_domain_ids, input_weights, input_offset, output_domain_id);
+  constraints_.push_back(std::move(constraint));
 }
 
 void LocalSearchState::DependencyGraph::BuildDependencyDAG(int num_domains) {
@@ -4119,86 +4130,195 @@ void LocalSearchState::CompileConstraints() {
     triggers_of_domain_.push_back(triggers_.size());
     for (const auto& [domain_id, input_index, constraint_id] :
          dependency_graph_.ComputeSortedDependencies(VariableDomainId(vid))) {
-      triggers_.push_back(
-          {.constraint_id = constraint_id, .input_index = input_index});
+      triggers_.push_back({.constraint = constraints_[constraint_id].get(),
+                           .input_index = input_index});
     }
   }
   triggers_of_domain_.push_back(triggers_.size());
+}
+
+LocalSearchState::WeightedSum::WeightedSum(
+    LocalSearchState* state,
+    const std::vector<VariableDomainId>& input_domain_ids,
+    const std::vector<int64_t>& input_weights, int64_t input_offset,
+    VariableDomainId output)
+    : output_(output), state_(state) {
+  // Make trailable values that mirror last known value of inputs,
+  // and others to represent internal counts and sums of inputs.
+  invariants_.num_neg_inf = 0;
+  invariants_.num_pos_inf = 0;
+  invariants_.wsum_mins = input_offset;
+  invariants_.wsum_maxs = input_offset;
+  for (int i = 0; i < input_domain_ids.size(); ++i) {
+    const VariableDomainId domain_id = input_domain_ids[i];
+    const int64_t weight = input_weights[i];
+    const int64_t min = state->VariableDomainMin(domain_id);
+    const int64_t max = state->VariableDomainMax(domain_id);
+    inputs_.push_back({.min = min,
+                       .max = max,
+                       .committed_min = min,
+                       .committed_max = max,
+                       .weight = weight,
+                       .domain = domain_id,
+                       .is_trailed = false});
+
+    if (weight > 0) {
+      if (min == kint64min) {
+        ++invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapAdd(invariants_.wsum_mins, CapProd(weight, min));
+      }
+      if (max == kint64max) {
+        ++invariants_.num_pos_inf;
+      } else {
+        invariants_.wsum_maxs =
+            CapAdd(invariants_.wsum_maxs, CapProd(weight, max));
+    }
+    } else {
+      if (min == kint64min) {
+        ++invariants_.num_pos_inf;
+      } else {
+        invariants_.wsum_maxs =
+            CapAdd(invariants_.wsum_maxs, CapProd(weight, min));
+  }
+      if (max == kint64max) {
+        ++invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapAdd(invariants_.wsum_mins, CapProd(weight, max));
+      }
+    }
+  }
+  committed_invariants_ = invariants_;
+}
+
+LocalSearchState::VariableDomain LocalSearchState::WeightedSum::Propagate(
+    int input_index) {
+  if (!constraint_is_trailed_) {
+    constraint_is_trailed_ = true;
+    state_->TrailConstraint(this);
+  }
+  WeightedVariable& input = inputs_[input_index];
+  if (!input.is_trailed) {
+    input.is_trailed = true;
+    trailed_inputs_.push_back(&input);
+  }
+  const int64_t new_min = state_->VariableDomainMin(input.domain);
+  const int64_t new_max = state_->VariableDomainMax(input.domain);
+  const int64_t weight = input.weight;
+    if (weight > 0) {
+    if (input.min != new_min) {
+      // Remove contribution of last known min.
+      if (input.min == kint64min) {
+        --invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapSub(invariants_.wsum_mins, CapProd(weight, input.min));
+      }
+      // Add contribution of new min.
+      if (new_min == kint64min) {
+        ++invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapAdd(invariants_.wsum_mins, CapProd(weight, new_min));
+      }
+      input.min = new_min;
+    }
+    if (input.max != new_max) {
+      // Remove contribution of last known max.
+      if (input.max == kint64max) {
+        --invariants_.num_pos_inf;
+    } else {
+        invariants_.wsum_maxs =
+            CapSub(invariants_.wsum_maxs, CapProd(weight, input.max));
+      }
+      // Add contribution of new max.
+      if (new_max == kint64max) {
+        ++invariants_.num_pos_inf;
+      } else {
+        invariants_.wsum_maxs =
+            CapAdd(invariants_.wsum_maxs, CapProd(weight, new_max));
+      }
+      input.max = new_max;
+    }
+  } else {  // weight <= 0
+    if (input.min != new_min) {
+      // Remove contribution of last known min.
+      if (input.min == kint64min) {
+        --invariants_.num_pos_inf;
+      } else {
+        invariants_.wsum_maxs =
+            CapSub(invariants_.wsum_maxs, CapProd(weight, input.min));
+      }
+      // Add contribution of new min.
+      if (new_min == kint64min) {
+        ++invariants_.num_pos_inf;
+      } else {
+        invariants_.wsum_maxs =
+            CapAdd(invariants_.wsum_maxs, CapProd(weight, new_min));
+    }
+      input.min = new_min;
+  }
+    if (input.max != new_max) {
+      // Remove contribution of last known max.
+      if (input.max == kint64max) {
+        --invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapSub(invariants_.wsum_mins, CapProd(weight, input.max));
+  }
+      // Add contribution of new max.
+      if (new_max == kint64max) {
+        ++invariants_.num_neg_inf;
+      } else {
+        invariants_.wsum_mins =
+            CapAdd(invariants_.wsum_mins, CapProd(weight, new_max));
+  }
+      input.max = new_max;
+    }
+  }
+  return {invariants_.num_neg_inf == 0 ? invariants_.wsum_mins : kint64min,
+          invariants_.num_pos_inf == 0 ? invariants_.wsum_maxs : kint64max};
+}
+
+void LocalSearchState::WeightedSum::Commit() {
+  committed_invariants_ = invariants_;
+  constraint_is_trailed_ = false;
+  for (WeightedVariable* wv : trailed_inputs_) wv->Commit();
+  trailed_inputs_.clear();
+}
+
+void LocalSearchState::WeightedSum::Revert() {
+  invariants_ = committed_invariants_;
+  constraint_is_trailed_ = false;
+  for (WeightedVariable* wv : trailed_inputs_) wv->Revert();
+  trailed_inputs_.clear();
 }
 
 void LocalSearchState::PropagateRelax(VariableDomainId domain_id) {
   const VariableDomainId next_id = VariableDomainId(domain_id.value() + 1);
   for (int t = triggers_of_domain_[domain_id]; t < triggers_of_domain_[next_id];
        ++t) {
-    const auto& [constraint_id, input_index] = triggers_[t];
-    switch (constraints_[constraint_id].type) {
-      case ConstraintType::WeightedSum: {
-        RelaxVariableDomain(constraints_[constraint_id].output);
-      }
-    }
+    const auto& [constraint, input_index] = triggers_[t];
+    constraint->Propagate(input_index);
+    RelaxVariableDomain(constraint->Output());
   }
-}
-
-bool LocalSearchState::PropagateTightenWeightedSum(ConstraintId constraint_id) {
-  const auto& [inputs, constants, output, unused] = constraints_[constraint_id];
-  // TODO(user): O(1) version using label and internal values.
-  int num_neg_inf = 0;
-  int num_pos_inf = 0;
-  // Weighted sums of non-infinite (weight * domain) min/max.
-  const int num_inputs = inputs.size();
-  int64_t wsum_mins = constants.back();  // This is the sum's offset.
-  int64_t wsum_maxs = wsum_mins;
-  for (int i = 0; i < num_inputs; ++i) {
-    const int64_t weight = constants[i];
-    if (weight == 0) continue;
-    const VariableDomainId input = inputs[i];
-    const auto& [min, max] = current_domains_[input];
-    if (weight > 0) {
-      if (min == std::numeric_limits<int64_t>::min()) {
-        num_neg_inf++;
-      } else {
-        wsum_mins = CapAdd(wsum_mins, CapProd(weight, min));
-      }
-      if (max == std::numeric_limits<int64_t>::max()) {
-        num_pos_inf++;
-      } else {
-        wsum_maxs = CapAdd(wsum_maxs, CapProd(weight, max));
-      }
-    } else {
-      if (max == std::numeric_limits<int64_t>::max()) {
-        num_neg_inf++;
-      } else {
-        wsum_mins = CapAdd(wsum_mins, CapProd(weight, max));
-      }
-      if (min == std::numeric_limits<int64_t>::min()) {
-        num_pos_inf++;
-      } else {
-        wsum_maxs = CapAdd(wsum_maxs, CapProd(weight, min));
-      }
-    }
-  }
-  if (num_neg_inf == 0 && !TightenVariableDomainMin(output, wsum_mins)) {
-    return false;
-  }
-  if (num_pos_inf == 0 && !TightenVariableDomainMax(output, wsum_maxs)) {
-    return false;
-  }
-  return true;
 }
 
 bool LocalSearchState::PropagateTighten(VariableDomainId domain_id) {
   const VariableDomainId next_id = VariableDomainId(domain_id.value() + 1);
   for (int t = triggers_of_domain_[domain_id]; t < triggers_of_domain_[next_id];
        ++t) {
-    const auto& [constraint_id, unused_input_index] = triggers_[t];
-    const auto& [inputs, constants, output, type] = constraints_[constraint_id];
-    switch (type) {
-      case ConstraintType::WeightedSum: {
-        if (!PropagateTightenWeightedSum(constraint_id)) {
+    const auto& [constraint, input_index] = triggers_[t];
+    const auto [output_min, output_max] = constraint->Propagate(input_index);
+    if (output_min != kint64min &&
+        !TightenVariableDomainMin(constraint->Output(), output_min)) {
           return false;
         }
-        break;
-      }
+    if (output_max != kint64max &&
+        !TightenVariableDomainMax(constraint->Output(), output_max)) {
+      return false;
     }
   }
   return true;
@@ -4279,7 +4399,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
           first_solution_statistics->set_duration_seconds(duration_seconds);
         });
     ParseLocalSearchOperatorStatistics([&statistics_proto](
-                                           const std::string& name,
+                                           absl::string_view name,
                                            int64_t num_neighbors,
                                            int64_t num_filtered_neighbors,
                                            int64_t num_accepted_neighbors,
@@ -4370,7 +4490,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
     max_name_size = 0;
     ParseLocalSearchFilterStatistics(
-        [&max_name_size](const std::string&, const std::string& name, int64_t,
+        [&max_name_size](absl::string_view, absl::string_view name, int64_t,
                          int64_t, double) {
           max_name_size = std::max(max_name_size, name.length());
         });
@@ -5539,7 +5659,8 @@ template <bool is_profile_active>
 Assignment* Solver::RunUncheckedLocalSearchInternal(
     const Assignment* initial_solution,
     LocalSearchFilterManager* filter_manager, LocalSearchOperator* ls_operator,
-    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit) {
+    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit,
+    absl::flat_hash_set<IntVar*>* touched) {
   DCHECK(initial_solution != nullptr);
   DCHECK(initial_solution->Objective() != nullptr);
   DCHECK(filter_manager != nullptr);
@@ -5618,6 +5739,11 @@ Assignment* Solver::RunUncheckedLocalSearchInternal(
     for (SearchMonitor* monitor : monitors) {
       monitor->AtSolution();
     }
+    if (touched != nullptr) {
+      for (const auto& element : delta.IntVarContainer().elements()) {
+        touched->insert(element.Var());
+      }
+    }
     // Syncing here to avoid resyncing when filtering fails.
     sync_with_solution(/*delta=*/&delta);
   }
@@ -5631,13 +5757,16 @@ Assignment* Solver::RunUncheckedLocalSearchInternal(
 Assignment* Solver::RunUncheckedLocalSearch(
     const Assignment* initial_solution,
     LocalSearchFilterManager* filter_manager, LocalSearchOperator* ls_operator,
-    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit) {
+    const std::vector<SearchMonitor*>& monitors, RegularLimit* limit,
+    absl::flat_hash_set<IntVar*>* touched) {
   if (GetLocalSearchMonitor()->IsActive()) {
-    return RunUncheckedLocalSearchInternal<true>(
-        initial_solution, filter_manager, ls_operator, monitors, limit);
+    return RunUncheckedLocalSearchInternal<true>(initial_solution,
+                                                 filter_manager, ls_operator,
+                                                 monitors, limit, touched);
   } else {
-    return RunUncheckedLocalSearchInternal<false>(
-        initial_solution, filter_manager, ls_operator, monitors, limit);
+    return RunUncheckedLocalSearchInternal<false>(initial_solution,
+                                                  filter_manager, ls_operator,
+                                                  monitors, limit, touched);
   }
 }
 

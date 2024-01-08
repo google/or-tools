@@ -861,5 +861,7 @@ class TestRoutingDimension(unittest.TestCase):
         self.assertTrue(dimension.HasQuadraticCostSoftSpanUpperBounds())
 
 
+# TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
+
 if __name__ == "__main__":
     unittest.main()

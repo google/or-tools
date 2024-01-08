@@ -147,12 +147,60 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
       << "The default search parameters aren't valid: " << error;
   return p;
 }
+
+RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
+  RoutingSearchParameters p = CreateDefaultRoutingSearchParameters();
+  p.set_local_search_metaheuristic(LocalSearchMetaheuristic::GREEDY_DESCENT);
+  RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
+      p.mutable_local_search_operators();
+  o->set_use_relocate(BOOL_TRUE);
+  o->set_use_relocate_pair(BOOL_FALSE);
+  o->set_use_light_relocate_pair(BOOL_TRUE);
+  o->set_use_relocate_subtrip(BOOL_TRUE);
+  o->set_use_relocate_neighbors(BOOL_FALSE);
+  o->set_use_exchange(BOOL_TRUE);
+  o->set_use_exchange_pair(BOOL_TRUE);
+  o->set_use_exchange_subtrip(BOOL_TRUE);
+  o->set_use_cross(BOOL_TRUE);
+  o->set_use_cross_exchange(BOOL_FALSE);
+  o->set_use_relocate_expensive_chain(BOOL_FALSE);
+  o->set_use_two_opt(BOOL_TRUE);
+  o->set_use_or_opt(BOOL_TRUE);
+  o->set_use_lin_kernighan(BOOL_TRUE);
+  o->set_use_tsp_opt(BOOL_FALSE);
+  o->set_use_make_active(BOOL_FALSE);
+  o->set_use_relocate_and_make_active(BOOL_FALSE);
+  o->set_use_make_inactive(BOOL_FALSE);
+  o->set_use_make_chain_inactive(BOOL_FALSE);
+  o->set_use_swap_active(BOOL_FALSE);
+  o->set_use_extended_swap_active(BOOL_FALSE);
+  o->set_use_shortest_path_swap_active(BOOL_FALSE);
+  o->set_use_node_pair_swap_active(BOOL_FALSE);
+  o->set_use_path_lns(BOOL_FALSE);
+  o->set_use_full_path_lns(BOOL_FALSE);
+  o->set_use_tsp_lns(BOOL_FALSE);
+  o->set_use_inactive_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_path_lns(BOOL_FALSE);
+  o->set_use_local_cheapest_insertion_path_lns(BOOL_FALSE);
+  o->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
+      BOOL_FALSE);
+  const std::string error = FindErrorInRoutingSearchParameters(p);
+  LOG_IF(DFATAL, !error.empty())
+      << "The default secondary search parameters aren't valid: " << error;
+  return p;
+}
 }  // namespace
 
 // static
 RoutingSearchParameters DefaultRoutingSearchParameters() {
   static const auto* default_parameters =
       new RoutingSearchParameters(CreateDefaultRoutingSearchParameters());
+  return *default_parameters;
+}
+
+RoutingSearchParameters DefaultSecondaryRoutingSearchParameters() {
+  static const auto* default_parameters = new RoutingSearchParameters(
+      CreateDefaultSecondaryRoutingSearchParameters());
   return *default_parameters;
 }
 
