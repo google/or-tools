@@ -182,7 +182,7 @@ new_git_repository(
     build_file = "//bazel:swig.BUILD.bazel",
     patches = ["//bazel:swig.patch"],
     patch_args = ["-p1"],
-    tag = "v4.1.1",
+    tag = "v4.2.0",
     remote = "https://github.com/swig/swig.git",
 )
 

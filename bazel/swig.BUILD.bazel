@@ -159,20 +159,3 @@ filegroup(
     path = "Lib",
     visibility = ["//visibility:public"],
 )
-
-genrule(
-    name = "swigconfig",
-    outs = ["Source/Include/swigconfig.h"],
-    cmd = "cat <<EOF >$@\n" +
-          "#define HAVE_BOOL\n" +
-          "#define HAVE_PCRE\n" +
-          "#define HAVE_POPEN\n" +
-          "#define PACKAGE_BUGREPORT \"http://www.swig.org\"\n" +
-          "#define PACKAGE_VERSION \"4.1.1\"\n" +
-          "#define STDC_HEADERS\n" +
-          "#define SWIG_CXX \"bazel4lyfe\"\n" +
-          "#define SWIG_LIB \"external/swig/Lib\"\n" +
-          "#define SWIG_LIB_WIN_UNIX \"\"\n" +
-          "#define SWIG_PLATFORM \"bazel4lyfe\"\n" +
-          "EOF",
-)
