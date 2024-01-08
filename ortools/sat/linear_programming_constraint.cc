@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -103,22 +104,22 @@ bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
 
 template <bool check_overflow>
 bool ScatteredIntegerVector::AddLinearExpressionMultiple(
-    const IntegerValue multiplier,
-    const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms) {
+    const IntegerValue multiplier, absl::Span<const glop::ColIndex> cols,
+    absl::Span<const IntegerValue> coeffs) {
   const double threshold = 0.1 * static_cast<double>(dense_vector_.size());
-  if (is_sparse_ && static_cast<double>(terms.size()) < threshold) {
-    for (const std::pair<glop::ColIndex, IntegerValue>& term : terms) {
-      if (is_zeros_[term.first]) {
-        is_zeros_[term.first] = false;
-        non_zeros_.push_back(term.first);
+  const int num_terms = cols.size();
+  if (is_sparse_ && static_cast<double>(num_terms) < threshold) {
+    for (int i = 0; i < num_terms; ++i) {
+      if (is_zeros_[cols[i]]) {
+        is_zeros_[cols[i]] = false;
+        non_zeros_.push_back(cols[i]);
       }
       if (check_overflow) {
-        if (!AddProductTo(multiplier, term.second,
-                          &dense_vector_[term.first])) {
+        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
           return false;
         }
       } else {
-        dense_vector_[term.first] += multiplier * term.second;
+        dense_vector_[cols[i]] += multiplier * coeffs[i];
       }
     }
     if (static_cast<double>(non_zeros_.size()) > threshold) {
@@ -126,14 +127,13 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
     }
   } else {
     is_sparse_ = false;
-    for (const std::pair<glop::ColIndex, IntegerValue>& term : terms) {
+    for (int i = 0; i < num_terms; ++i) {
       if (check_overflow) {
-        if (!AddProductTo(multiplier, term.second,
-                          &dense_vector_[term.first])) {
+        if (!AddProductTo(multiplier, coeffs[i], &dense_vector_[cols[i]])) {
           return false;
         }
       } else {
-        dense_vector_[term.first] += multiplier * term.second;
+        dense_vector_[cols[i]] += multiplier * coeffs[i];
       }
     }
   }
@@ -322,6 +322,9 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
 
   // Fill integer_lp_.
   integer_lp_.clear();
+  integer_lp_cols_.clear();
+  integer_lp_coeffs_.clear();
+
   infinity_norms_.clear();
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
@@ -342,18 +345,22 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     IntegerValue infinity_norm = 0;
     infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
     infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
-    new_ct.terms.reserve(size);
+    new_ct.start_in_buffer = integer_lp_cols_.size();
+    new_ct.num_terms = size;
     for (int i = 0; i < size; ++i) {
       // We only use positive variable inside this class.
       const IntegerVariable var = ct.vars[i];
       const IntegerValue coeff = ct.coeffs[i];
       infinity_norm = std::max(infinity_norm, IntTypeAbs(coeff));
-      new_ct.terms.push_back({GetMirrorVariable(var), coeff});
+      integer_lp_cols_.push_back(GetMirrorVariable(var));
+      integer_lp_coeffs_.push_back(coeff);
     }
     infinity_norms_.push_back(infinity_norm);
 
     // It is important to keep lp_data_ "clean".
-    DCHECK(std::is_sorted(new_ct.terms.begin(), new_ct.terms.end()));
+    DCHECK(std::is_sorted(
+        integer_lp_cols_.data() + new_ct.start_in_buffer,
+        integer_lp_cols_.data() + new_ct.start_in_buffer + new_ct.num_terms));
   }
 
   // Copy the integer_lp_ into lp_data_.
@@ -394,8 +401,10 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     lp_data_.SetConstraintBounds(
         row, ct.lb_is_trivial ? -infinity : ToDouble(ct.lb),
         ct.ub_is_trivial ? +infinity : ToDouble(ct.ub));
-    for (const auto& term : ct.terms) {
-      lp_data_.SetCoefficient(row, term.first, ToDouble(term.second));
+    for (int i = 0; i < ct.num_terms; ++i) {
+      const int index = ct.start_in_buffer + i;
+      lp_data_.SetCoefficient(row, integer_lp_cols_[index],
+                              ToDouble(integer_lp_coeffs_[index]));
     }
   }
   lp_data_.NotifyThatColumnsAreClean();
@@ -1229,7 +1238,7 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
         const int slack_index = (var.value() - first_slack.value()) / 2;
         const glop::RowIndex row = tmp_slack_rows_[slack_index];
         if (!tmp_scattered_vector_.AddLinearExpressionMultiple(
-                coeff, integer_lp_[row].terms)) {
+                coeff, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
           VLOG(2) << "Overflow in slack removal";
           ++num_cut_overflows_;
           return false;
@@ -1328,18 +1337,6 @@ void LinearProgrammingConstraint::AddCGCuts() {
     }
   }
 }
-
-namespace {
-
-template <class ListOfTerms>
-IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
-  for (const auto& term : terms) {
-    if (term.first == col) return term.second;
-  }
-  return IntegerValue(0);
-}
-
-}  // namespace
 
 // Because we know the objective is integer, the constraint objective >= lb can
 // sometime cut the current lp optimal, and it can make a big difference to add
@@ -1502,10 +1499,11 @@ void LinearProgrammingConstraint::AddMirCuts() {
     non_zeros_.SparseClearAll();
 
     // Copy cut.
-    for (const std::pair<ColIndex, IntegerValue>& term :
-         integer_lp_[entry.first].terms) {
-      const ColIndex col = term.first;
-      const IntegerValue coeff = term.second;
+    const LinearConstraintInternal& ct = integer_lp_[entry.first];
+    for (int i = 0; i < ct.num_terms; ++i) {
+      const int index = ct.start_in_buffer + i;
+      const ColIndex col = integer_lp_cols_[index];
+      const IntegerValue coeff = integer_lp_coeffs_[index];
       non_zeros_.Set(col);
       dense_cut[col] += coeff * multiplier;
     }
@@ -1588,8 +1586,18 @@ void LinearProgrammingConstraint::AddMirCuts() {
       const RowIndex row_to_combine =
           possible_rows[std::discrete_distribution<>(weights.begin(),
                                                      weights.end())(*random_)];
-      const IntegerValue to_combine_coeff =
-          GetCoeff(var_to_eliminate, integer_lp_[row_to_combine].terms);
+
+      // Find the coefficient of the variable to eliminate.
+      IntegerValue to_combine_coeff = 0;
+      const LinearConstraintInternal& ct_to_combine =
+          integer_lp_[row_to_combine];
+      for (int i = 0; i < ct_to_combine.num_terms; ++i) {
+        const int index = ct_to_combine.start_in_buffer + i;
+        if (integer_lp_cols_[index] == var_to_eliminate) {
+          to_combine_coeff = integer_lp_coeffs_[index];
+          break;
+        }
+      }
       CHECK_NE(to_combine_coeff, 0);
 
       IntegerValue mult1 = -to_combine_coeff;
@@ -1638,10 +1646,10 @@ void LinearProgrammingConstraint::AddMirCuts() {
       for (ColIndex col : non_zeros_.PositionsSetAtLeastOnce()) {
         dense_cut[col] *= mult1;
       }
-      for (const std::pair<ColIndex, IntegerValue>& term :
-           integer_lp_[row_to_combine].terms) {
-        const ColIndex col = term.first;
-        const IntegerValue coeff = term.second;
+      for (int i = 0; i < ct_to_combine.num_terms; ++i) {
+        const int index = ct_to_combine.start_in_buffer + i;
+        const ColIndex col = integer_lp_cols_[index];
+        const IntegerValue coeff = integer_lp_coeffs_[index];
         non_zeros_.Set(col);
         dense_cut[col] += coeff * mult2;
       }
@@ -1672,7 +1680,8 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
     if (status == glop::ConstraintStatus::FREE) continue;
 
     zero_half_cut_helper_.AddOneConstraint(
-        row, integer_lp_[row].terms, integer_lp_[row].lb, integer_lp_[row].ub);
+        row, IntegerLpRowCols(row), IntegerLpRowCoeffs(row),
+        integer_lp_[row].lb, integer_lp_[row].ub);
   }
   for (const std::vector<std::pair<RowIndex, IntegerValue>>& multipliers :
        zero_half_cut_helper_.InterestingCandidates(random_)) {
@@ -2038,7 +2047,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
 
     // Update the constraint.
     if (!scattered_vector->AddLinearExpressionMultiple<check_overflow>(
-            multiplier, integer_lp_[row].terms)) {
+            multiplier, IntegerLpRowCols(row), IntegerLpRowCoeffs(row))) {
       return false;
     }
 
@@ -2113,9 +2122,11 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     // TODO(user): we could relax a bit some of the condition and allow a sign
     // change. It is just trickier to compute the diff when we allow such
     // changes.
-    for (const auto& entry : integer_lp_[row].terms) {
-      const ColIndex col = entry.first;
-      const IntegerValue coeff = entry.second;
+    const LinearConstraintInternal& ct = integer_lp_[row];
+    for (int i = 0; i < ct.num_terms; ++i) {
+      const int index = ct.start_in_buffer + i;
+      const ColIndex col = integer_lp_cols_[index];
+      const IntegerValue coeff = integer_lp_coeffs_[index];
       DCHECK_NE(coeff, 0);
 
       // Moving a variable away from zero seems to improve the bound even
@@ -2208,7 +2219,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       adjusted = true;
       CHECK(scattered_vector
                 ->AddLinearExpressionMultiple</*check_overflow=*/false>(
-                    to_add, integer_lp_[row].terms));
+                    to_add, IntegerLpRowCols(row), IntegerLpRowCoeffs(row)));
     }
   }
   if (adjusted) ++num_adjusts_;
@@ -2299,9 +2310,17 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   // The "objective constraint" behave like if the unscaled cp multiplier was
   // 1.0, so we will multiply it by this number and add it to reduced_costs.
   const IntegerValue obj_scale = scaling;
+
+  // TODO(user): Maybe avoid this conversion.
+  tmp_cols_.clear();
+  tmp_coeffs_.clear();
+  for (const auto [col, coeff] : integer_objective_) {
+    tmp_cols_.push_back(col);
+    tmp_coeffs_.push_back(coeff);
+  }
   CHECK(tmp_scattered_vector_
             .AddLinearExpressionMultiple</*check_overflow=*/false>(
-                obj_scale, integer_objective_));
+                obj_scale, tmp_cols_, tmp_coeffs_));
   CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
   AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
                             &rc_ub);
@@ -2680,6 +2699,20 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary() {
     }
     return IntegerLiteral();
   };
+}
+
+absl::Span<const glop::ColIndex> LinearProgrammingConstraint::IntegerLpRowCols(
+    glop::RowIndex row) const {
+  const int start = integer_lp_[row].start_in_buffer;
+  const size_t num_terms = static_cast<size_t>(integer_lp_[row].num_terms);
+  return {integer_lp_cols_.data() + start, num_terms};
+}
+
+absl::Span<const IntegerValue> LinearProgrammingConstraint::IntegerLpRowCoeffs(
+    glop::RowIndex row) const {
+  const int start = integer_lp_[row].start_in_buffer;
+  const size_t num_terms = static_cast<size_t>(integer_lp_[row].num_terms);
+  return {integer_lp_coeffs_.data() + start, num_terms};
 }
 
 }  // namespace sat

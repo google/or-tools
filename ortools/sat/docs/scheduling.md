@@ -186,6 +186,56 @@ public class IntervalSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The interval_sample_sat_go command is a simple example of the Interval variable.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"ortools/sat/go/cpmodel"
+)
+
+const horizon = 100
+
+func intervalSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+	domain := cpmodel.NewDomain(0, horizon)
+
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVar(2, 4).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	// An interval can be created from three affine expressions.
+	intervalVar := model.NewIntervalVar(x, y, cpmodel.NewConstant(2).Add(z)).WithName("interval")
+
+	// If the size is fixed, a simpler version uses the start expression and the size.
+	fixedSizeIntervalVar := model.NewFixedSizeIntervalVar(x, 10).WithName("fixedSizeInterval")
+
+	// A fixed interval can be created using the same API.
+	fixedIntervalVar := model.NewFixedSizeIntervalVar(cpmodel.NewConstant(5), 10).WithName("fixedInterval")
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	fmt.Printf("%v\n", m.GetConstraints()[intervalVar.Index()])
+	fmt.Printf("%v\n", m.GetConstraints()[fixedSizeIntervalVar.Index()])
+	fmt.Printf("%v\n", m.GetConstraints()[fixedIntervalVar.Index()])
+
+	return nil
+}
+
+func main() {
+	if err := intervalSampleSat(); err != nil {
+		log.Exitf("intervalSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Optional intervals
 
 An interval can be marked as optional. The presence of this interval is
@@ -358,6 +408,54 @@ public class OptionalIntervalSampleSat
         IntervalVar fixedInterval = model.NewOptionalFixedSizeIntervalVar(5, 10, presence_var, "fixed_interval");
         Console.WriteLine(fixedInterval);
     }
+}
+```
+
+### Go code
+
+```cs
+// The optional_interval_sample_sat command is an example of an Interval variable that is
+// marked as optional.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"ortools/sat/go/cpmodel"
+)
+
+const horizon = 100
+
+func optionalIntervalSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+	domain := cpmodel.NewDomain(0, horizon)
+
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVar(2, 4).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+	presenceVar := model.NewBoolVar().WithName("presence")
+
+	// An optional interval can be created from three affine expressions and a BoolVar.
+	intervalVar := model.NewOptionalIntervalVar(x, y, cpmodel.NewConstant(2).Add(z), presenceVar).WithName("interval")
+
+	// If the size is fixed, a simpler version uses the start expression and the size.
+	fixedSizeIntervalVar := model.NewOptionalFixedSizeIntervalVar(x, 10, presenceVar).WithName("fixedSizeInterval")
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	fmt.Printf("%v\n", m.GetConstraints()[intervalVar.Index()])
+	fmt.Printf("%v\n", m.GetConstraints()[fixedSizeIntervalVar.Index()])
+
+	return nil
+}
+
+func main() {
+	if err := optionalIntervalSampleSat(); err != nil {
+		log.Exitf("optionalIntervalSampleSat returned with error: %v", err)
+	}
 }
 ```
 
@@ -643,6 +741,88 @@ public class NoOverlapSampleSat
             Console.WriteLine("Task 2 starts at " + solver.Value(start_2));
         }
     }
+}
+```
+
+### Go code
+
+```cs
+// The no_overlap_sample_sat command is an example of the NoOverlap constraints.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+)
+
+const horizon = 21 // 3 weeks
+
+func noOverlapSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+	domain := cpmodel.NewDomain(0, horizon)
+
+	// Task 0, duration 2.
+	start0 := model.NewIntVarFromDomain(domain)
+	duration0 := cpmodel.NewConstant(2)
+	end0 := model.NewIntVarFromDomain(domain)
+	task0 := model.NewIntervalVar(start0, duration0, end0)
+
+	// Task 1, duration 4.
+	start1 := model.NewIntVarFromDomain(domain)
+	duration1 := cpmodel.NewConstant(4)
+	end1 := model.NewIntVarFromDomain(domain)
+	task1 := model.NewIntervalVar(start1, duration1, end1)
+
+	// Task 2, duration 3
+	start2 := model.NewIntVarFromDomain(domain)
+	duration2 := cpmodel.NewConstant(2)
+	end2 := model.NewIntVarFromDomain(domain)
+	task2 := model.NewIntervalVar(start2, duration2, end2)
+
+	// Weekends.
+	weekend0 := model.NewFixedSizeIntervalVar(cpmodel.NewConstant(5), 2)
+	weekend1 := model.NewFixedSizeIntervalVar(cpmodel.NewConstant(12), 2)
+	weekend2 := model.NewFixedSizeIntervalVar(cpmodel.NewConstant(19), 2)
+
+	// No Overlap constraint.
+	model.AddNoOverlap(task0, task1, task2, weekend0, weekend1, weekend2)
+
+	// Makespan.
+	makespan := model.NewIntVarFromDomain(domain)
+	model.AddLessOrEqual(end0, makespan)
+	model.AddLessOrEqual(end1, makespan)
+	model.AddLessOrEqual(end2, makespan)
+
+	model.Minimize(makespan)
+
+	// Solve.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	response, err := cpmodel.SolveCpModel(m)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Println(response.GetStatus())
+		fmt.Println("Optimal Schedule Length: ", response.GetObjectiveValue())
+		fmt.Println("Task 0 starts at ", cpmodel.SolutionIntegerValue(response, start0))
+		fmt.Println("Task 1 starts at ", cpmodel.SolutionIntegerValue(response, start1))
+		fmt.Println("Task 2 starts at ", cpmodel.SolutionIntegerValue(response, start2))
+	}
+
+	return nil
+}
+
+func main() {
+	if err := noOverlapSampleSat(); err != nil {
+		log.Exitf("noOverlapSampleSat returned with error: %v", err)
+	}
 }
 ```
 
@@ -1455,6 +1635,163 @@ public class RankingSampleSat
             Console.WriteLine(String.Format("Solver exited with nonoptimal status: {0}", status));
         }
     }
+}
+```
+
+### Go code
+
+```cs
+// The ranking_sample_sat command is an example of ranking intervals in a NoOverlap constraint.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+)
+
+const (
+	horizonLength = 100
+	numTasks      = 4
+)
+
+// rankTasks adds constraints and variables to link tasks and ranks. This method
+// assumes that all starts are disjoint, meaning that all tasks have a strictly
+// positive duration, and they appear in the same NoOverlap constraint.
+func rankTasks(starts []cpmodel.IntVar, presences []cpmodel.BoolVar, ranks []cpmodel.IntVar, model *cpmodel.Builder) {
+	// Creates precedence variables between pairs of intervals.
+	precedences := make([][]cpmodel.BoolVar, numTasks)
+	for i := 0; i < numTasks; i++ {
+		precedences[i] = make([]cpmodel.BoolVar, numTasks)
+		for j := 0; j < numTasks; j++ {
+			if i == j {
+				precedences[i][i] = presences[i]
+			} else {
+				prec := model.NewBoolVar()
+				precedences[i][j] = prec
+				model.AddLessOrEqual(starts[i], starts[j]).OnlyEnforceIf(prec)
+			}
+		}
+	}
+
+	// Treats optional intervals.
+	for i := 0; i+1 < numTasks; i++ {
+		for j := i + 1; j < numTasks; j++ {
+			// Make sure that if task i is not performed, all precedences are false.
+			model.AddImplication(presences[i].Not(), precedences[i][j].Not())
+			model.AddImplication(presences[i].Not(), precedences[j][i].Not())
+			// Make sure that if task j is not performed, all precedences are false.
+			model.AddImplication(presences[j].Not(), precedences[i][j].Not())
+			model.AddImplication(presences[j].Not(), precedences[j][i].Not())
+			// The following BoolOr will enforce that for any two intervals:
+			// 		i precedes j or j precedes i or at least one interval is not performed.
+			model.AddBoolOr(precedences[i][j], precedences[j][i], presences[i].Not(), presences[j].Not())
+			// Redundant constraint: it propagates early that at most one precedence
+			// is true.
+			model.AddImplication(precedences[i][j], precedences[j][i].Not())
+			model.AddImplication(precedences[j][i], precedences[i][j].Not())
+		}
+	}
+
+	// Links precedences and ranks.
+	for i := 0; i < numTasks; i++ {
+		sumOfPredecessors := cpmodel.NewConstant(-1)
+		for j := 0; j < numTasks; j++ {
+			sumOfPredecessors.Add(precedences[j][i])
+		}
+		model.AddEquality(ranks[i], sumOfPredecessors)
+	}
+}
+
+func rankingSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	starts := make([]cpmodel.IntVar, numTasks)
+	ends := make([]cpmodel.IntVar, numTasks)
+	intervals := make([]cpmodel.IntervalVar, numTasks)
+	presences := make([]cpmodel.BoolVar, numTasks)
+	ranks := make([]cpmodel.IntVar, numTasks)
+
+	horizon := cpmodel.NewDomain(0, horizonLength)
+	possibleRanks := cpmodel.NewDomain(-1, numTasks-1)
+
+	for t := 0; t < numTasks; t++ {
+		start := model.NewIntVarFromDomain(horizon)
+		duration := cpmodel.NewConstant(int64_t(t + 1))
+		end := model.NewIntVarFromDomain(horizon)
+		var presence cpmodel.BoolVar
+		if t < numTasks/2 {
+			presence = model.TrueVar()
+		} else {
+			presence = model.NewBoolVar()
+		}
+		interval := model.NewOptionalIntervalVar(start, duration, end, presence)
+		rank := model.NewIntVarFromDomain(possibleRanks)
+
+		starts[t] = start
+		ends[t] = end
+		intervals[t] = interval
+		presences[t] = presence
+		ranks[t] = rank
+	}
+
+	// Adds NoOverlap constraint.
+	model.AddNoOverlap(intervals...)
+
+	// Ranks tasks.
+	rankTasks(starts, presences, ranks, model)
+
+	// Adds a constraint on ranks.
+	model.AddLessThan(ranks[0], ranks[1])
+
+	// Creates makespan variables.
+	makespan := model.NewIntVarFromDomain(horizon)
+	for t := 0; t < numTasks; t++ {
+		model.AddLessOrEqual(ends[t], makespan).OnlyEnforceIf(presences[t])
+	}
+
+	// Create objective: minimize 2 * makespan - 7 * sum of presences.
+	// This is you gain 7 by interval performed, but you pay 2 by day of delays.
+	objective := cpmodel.NewLinearExpr().AddTerm(makespan, 2)
+	for t := 0; t < numTasks; t++ {
+		objective.AddTerm(presences[t], -7)
+	}
+	model.Minimize(objective)
+
+	// Solving part.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	response, err := cpmodel.SolveCpModel(m)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Println(response.GetStatus())
+		fmt.Println("Optimal cost: ", response.GetObjectiveValue())
+		fmt.Println("Makespan: ", cpmodel.SolutionIntegerValue(response, makespan))
+		for t := 0; t < numTasks; t++ {
+			rank := cpmodel.SolutionIntegerValue(response, ranks[t])
+			if cpmodel.SolutionBooleanValue(response, presences[t]) {
+				start := cpmodel.SolutionIntegerValue(response, starts[t])
+				fmt.Printf("Task %v starts at %v with rank %v\n", t, start, rank)
+			} else {
+				fmt.Printf("Task %v is not performed and ranked at %v\n", t, rank)
+			}
+		}
+	}
+
+	return nil
+}
+
+func main() {
+	if err := rankingSampleSat(); err != nil {
+		log.Exitf("rankingSampleSat returned with error: %v", err)
+	}
 }
 ```
 

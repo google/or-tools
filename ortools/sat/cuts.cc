@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -279,6 +280,7 @@ void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
 
 // TODO(user): Divide by gcd first to avoid possible overflow in the
 // conversion? it is however unlikely given that our coeffs should be small.
+ABSL_DEPRECATED("Only used in tests, this will be removed.")
 bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
                                                LinearConstraint* output) {
   tmp_map_.clear();
@@ -300,9 +302,10 @@ bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
     }
   }
 
-  output->ClearTerms();
   output->lb = kMinIntegerValue;
   output->ub = new_rhs;
+  output->vars.clear();
+  output->coeffs.clear();
   for (const auto [var, coeff] : tmp_map_) {
     if (coeff == 0) continue;
     output->vars.push_back(var);

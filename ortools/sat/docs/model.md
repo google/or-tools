@@ -25,6 +25,7 @@ model list of variables:
 -   **Python**: `var.Index()`
 -   **Java**: `var.getIndex()`
 -   **C#**: `var.Index` or `var.GetIndex()`
+-   **Go**: `var.Index()`
 
 The implementation of Boolean literals differs across languages.
 
@@ -44,6 +45,10 @@ The implementation of Boolean literals differs across languages.
 -   **C#**: Boolean variables are defined as an `IntVar` with a Boolean domain
     (0 or 1). Boolean variables and their negations implement the `ILiteral`
     interface. This interface defines `GetIndex()` and `Not()` methods.
+-   **Go**: The `BoolVar` class is a separate class from the `IntVar` class. A
+    `BoolVar` object has two important methods: `Not()` and `Index()`. `Not()`
+    returned another `BoolVar` with a different index: `b.Not.Index() =
+    -b.Index() - 1`
 
 ## Solution hinting
 
@@ -292,6 +297,63 @@ public class SolutionHintingSampleSat
         VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, z });
         CpSolverStatus status = solver.Solve(model, cb);
     }
+}
+```
+
+### Go code
+
+```cs
+// The solution_hinting_sample_sat command is an example of setting solution hints on the model.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+)
+
+func solutionHintingSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	model.Maximize(cpmodel.NewLinearExpr().AddWeightedSum([]cpmodel.LinearArgument{x, y, z}, []int64_t{1, 2, 3}))
+
+	// Solution hinting: x <- 1, y <- 2
+	hint := &cpmodel.Hint{Ints: map[cpmodel.IntVar]int64_t{x: 7}}
+	model.SetHint(hint)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	response, err := cpmodel.SolveCpModel(m)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Printf(" x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+		fmt.Printf(" y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+		fmt.Printf(" z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+	}
+
+	return nil
+}
+
+func main() {
+	if err := solutionHintingSampleSat(); err != nil {
+		log.Exitf("solutionHintingSampleSat returned with error: %v", err)
+	}
 }
 ```
 

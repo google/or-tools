@@ -48,10 +48,9 @@ class ZeroHalfCutHelper {
   void ProcessVariables(const std::vector<double>& lp_values,
                         const std::vector<IntegerValue>& lower_bounds,
                         const std::vector<IntegerValue>& upper_bounds);
-  void AddOneConstraint(
-      glop::RowIndex,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms,
-      IntegerValue lb, IntegerValue ub);
+  void AddOneConstraint(glop::RowIndex, absl::Span<const glop::ColIndex> cols,
+                        absl::Span<const IntegerValue> coeffs, IntegerValue lb,
+                        IntegerValue ub);
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
   InterestingCandidates(ModelRandomGenerator* random);
 

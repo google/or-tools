@@ -8,7 +8,7 @@ https://developers.google.com/optimization/cp/cp_solver
 
 This document presents modeling recipes for the CP-SAT solver.
 
-Code samples are given in C++, Python, Java and C#. Each language has
+Code samples are given in C++, Python, Java, C#, and Go. Each language has
 different requirements for the code samples.
 
 ## Searching for one (optimal) solution of a CP-SAT model
@@ -205,5 +205,66 @@ public class SimpleSatProgram
             Console.WriteLine("No solution found.");
         }
     }
+}
+```
+
+### Go code samples
+
+The interface to the CP-SAT solver is implemented through the **CpModelBuilder**
+described in the package **cpmodel** in
+*ortools/sat/go/cp_model.go*. This class is a helper to fill in
+the cp_model protobuf.
+
+Also within the **cpmodel** package is
+*ortools/sat/go/cp_model.go* which provides functions to solve
+the model along with helpers to access the solution found by the solver.
+
+```cs
+// The simple_sat_program command is an example of a simple sat program.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+)
+
+func simpleSatProgram() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	response, err := cpmodel.SolveCpModel(m)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	switch response.GetStatus() {
+	case cmpb.CpSolverStatus_OPTIMAL, cmpb.CpSolverStatus_FEASIBLE:
+		fmt.Printf("x = %d\n", cpmodel.SolutionIntegerValue(response, x))
+		fmt.Printf("y = %d\n", cpmodel.SolutionIntegerValue(response, y))
+		fmt.Printf("z = %d\n", cpmodel.SolutionIntegerValue(response, z))
+	default:
+		fmt.Println("No solution found.")
+	}
+
+	return nil
+}
+
+func main() {
+	if err := simpleSatProgram(); err != nil {
+		log.Exitf("simpleSatProgram returned with error: %v", err)
+	}
 }
 ```

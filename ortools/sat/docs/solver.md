@@ -185,6 +185,66 @@ public class SolveWithTimeLimitSampleSat
 }
 ```
 
+### Specifying the time limit in Go
+
+```cs
+// The solve_with_time_limit_sample_sat command is an example of setting a time limit on the model.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"golang/protobuf/v2/proto/proto"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func solveWithTimeLimitSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+
+	// Sets a time limit of 10 seconds.
+	params := sppb.SatParameters_builder{
+		MaxTimeInSeconds: proto.Float64(10.0),
+	}.Build()
+
+	// Solve.
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Printf(" x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+		fmt.Printf(" y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+		fmt.Printf(" z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+	}
+
+	return nil
+}
+
+func main() {
+	if err := solveWithTimeLimitSampleSat(); err != nil {
+		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Printing intermediate solutions
 
 In an optimization model, you can print intermediate solutions. For all
@@ -432,6 +492,68 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
 
         Console.WriteLine(String.Format("Number of solutions found: {0}", cb.SolutionCount()));
     }
+}
+```
+
+### Go code
+
+```cs
+// The solve_and_print_intermediate_solutions_sample_sat command
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func solveAndPrintIntermediateSolutionsSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	model.Maximize(cpmodel.NewLinearExpr().Add(x).AddTerm(y, 2).AddTerm(z, 3))
+
+	// Create a solver and solve with a fixed search.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+
+	// Currently, the CpModelBuilder does not allow for callbacks, so intermediate solutions
+	// cannot be printed while solving. However, the CP-SAT solver does allow for returning
+	// the intermediate solutions found while solving in the response.
+	params := sppb.SatParameters_builder{
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(10),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Println("Number of intermediate solutions found: ", len(response.GetAdditionalSolutions()))
+
+	fmt.Println("Optimal solution:")
+	fmt.Printf("  x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+	fmt.Printf("  y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+	fmt.Printf("  z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+
+	return nil
+}
+
+func main() {
+	if err := solveAndPrintIntermediateSolutionsSampleSat(); err != nil {
+		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
+	}
 }
 ```
 
@@ -703,6 +825,68 @@ public class SearchForAllSolutionsSampleSat
 
         Console.WriteLine($"Number of solutions found: {cb.SolutionCount()}");
     }
+}
+```
+
+### Go code
+
+To search for all solutions, a parameter of the SAT solver must be changed.
+
+```cs
+// The search_for_all_solutions_sample_sat command is an example for how to search for
+// all solutions.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func searchForAllSolutionsSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	// Currently, the CpModelBuilder does not allow for callbacks, so each feasible solution cannot
+	// be printed while solving. However, the CP Solver can return all of the enumerated solutions
+	// in the response by setting the following parameters.
+	params := sppb.SatParameters_builder{
+		EnumerateAllSolutions:             proto.Bool(true),
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(27),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	for i, solution := range response.GetAdditionalSolutions() {
+		vs := solution.GetValues()
+		fmt.Printf("Solution %v: x = %v, y = %v, z = %v\n", i, vs[x.Index()], vs[y.Index()], vs[z.Index()])
+	}
+
+	fmt.Println("Number of solutions found: ", len(response.GetAdditionalSolutions()))
+
+	return nil
+}
+
+func main() {
+	if err := searchForAllSolutionsSampleSat(); err != nil {
+		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
+	}
 }
 ```
 

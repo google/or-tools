@@ -106,6 +106,31 @@ public class LiteralSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The literal_sample_sat command is a simple example of literals.
+package main
+
+import (
+	"ortools/base/go/log"
+	"ortools/sat/go/cpmodel"
+)
+
+func literalSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar().WithName("x")
+	notX := x.Not()
+
+	log.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
+}
+
+func main() {
+	literalSampleSat()
+}
+```
+
 ## Boolean constraints
 
 For Boolean variables x and y, the following are elementary Boolean constraints:
@@ -213,6 +238,30 @@ public class BoolOrSampleSat
 
         model.AddBoolOr(new ILiteral[] { x, y.Not() });
     }
+}
+```
+
+### Go code
+
+```cs
+// The bool_or_sample_sat command is simple example of the BoolOr constraint.
+package main
+
+import (
+	"ortools/sat/go/cpmodel"
+)
+
+func boolOrSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar()
+	y := model.NewBoolVar()
+
+	model.AddBoolOr(x, y.Not())
+}
+
+func main() {
+	boolOrSampleSat()
 }
 ```
 
@@ -378,6 +427,40 @@ public class ReifiedSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The reified_sample_sat command is a simple example of implication constraints.
+package main
+
+import (
+	"ortools/sat/go/cpmodel"
+)
+
+func reifiedSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar()
+	y := model.NewBoolVar()
+	b := model.NewBoolVar()
+
+	// First version using a half-reified bool and.
+	model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+
+	// Second version using implications.
+	model.AddImplication(b, x)
+	model.AddImplication(b, y.Not())
+
+	// Third version using bool or.
+	model.AddBoolOr(b.Not(), x)
+	model.AddBoolOr(b.Not(), y.Not())
+}
+
+func main() {
+	reifiedSampleSat()
+}
+```
+
 ## Product of two Boolean Variables
 
 A useful construct is the product `p` of two Boolean variables `x` and `y`.
@@ -431,4 +514,69 @@ def boolean_product_sample_sat():
 
 
 boolean_product_sample_sat()
+```
+
+### Go code
+
+```cs
+// The boolean_product_sample_sat command is a simple example of the product of two literals.
+package main
+
+import (
+	"fmt"
+
+	"ortools/base/go/log"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func booleanProductSample() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar().WithName("x")
+	y := model.NewBoolVar().WithName("y")
+	p := model.NewBoolVar().WithName("p")
+
+	// x and y implies p, rewrite as not(x and y) or p.
+	model.AddBoolOr(x.Not(), y.Not(), p)
+
+	// p implies x and y, expanded into two implications.
+	model.AddImplication(p, x)
+	model.AddImplication(p, y)
+
+	// Solve.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
+	// the solver returns all solutions found.
+	params := sppb.SatParameters_builder{
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		EnumerateAllSolutions:             proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(4),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	for _, additionalSolution := range response.GetAdditionalSolutions() {
+		fmt.Printf("x: %v", additionalSolution.GetValues()[x.Index()])
+		fmt.Printf(" y: %v", additionalSolution.GetValues()[y.Index()])
+		fmt.Printf(" p: %v\n", additionalSolution.GetValues()[p.Index()])
+	}
+
+	return nil
+}
+
+func main() {
+	err := booleanProductSample()
+	if err != nil {
+		log.Exitf("booleanProductSample returned with error: %v", err)
+	}
+}
 ```

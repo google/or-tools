@@ -76,9 +76,9 @@ class ScatteredIntegerVector {
   // Returns false if we encountered any integer overflow. If the template bool
   // is false, we do not check for a bit of extra speed.
   template <bool check_overflow = true>
-  bool AddLinearExpressionMultiple(
-      IntegerValue multiplier,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms);
+  bool AddLinearExpressionMultiple(IntegerValue multiplier,
+                                   absl::Span<const glop::ColIndex> cols,
+                                   absl::Span<const IntegerValue> coeffs);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse
@@ -418,6 +418,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // linearization level 2 and above.
   void UpdateSimplexIterationLimit(int64_t min_iter, int64_t max_iter);
 
+  // Returns the col/coeff of integer_lp_[row].
+  absl::Span<const glop::ColIndex> IntegerLpRowCols(glop::RowIndex row) const;
+  absl::Span<const IntegerValue> IntegerLpRowCoeffs(glop::RowIndex row) const;
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -442,10 +446,20 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   struct LinearConstraintInternal {
     IntegerValue lb;
     IntegerValue ub;
-    LinearExpression terms;
+
+    // Point in integer_lp_cols_/integer_lp_coeffs_ for the actual data.
+    int start_in_buffer;
+    int num_terms;
+
     bool lb_is_trivial = false;
     bool ub_is_trivial = false;
   };
+  std::vector<glop::ColIndex> integer_lp_cols_;
+  std::vector<IntegerValue> integer_lp_coeffs_;
+
+  std::vector<glop::ColIndex> tmp_cols_;
+  std::vector<IntegerValue> tmp_coeffs_;
+
   LinearExpression integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);

@@ -41,26 +41,14 @@ namespace sat {
 struct LinearConstraint {
   IntegerValue lb;
   IntegerValue ub;
+
+  // TODO(user): This class is almost always static, replace by a size
+  // and two [] to save 24 bytes per constraints.
   std::vector<IntegerVariable> vars;
   std::vector<IntegerValue> coeffs;
 
   LinearConstraint() = default;
   LinearConstraint(IntegerValue _lb, IntegerValue _ub) : lb(_lb), ub(_ub) {}
-
-  void AddTerm(IntegerVariable var, IntegerValue coeff) {
-    vars.push_back(var);
-    coeffs.push_back(coeff);
-  }
-
-  void Clear() {
-    lb = ub = IntegerValue(0);
-    ClearTerms();
-  }
-
-  void ClearTerms() {
-    vars.clear();
-    coeffs.clear();
-  }
 
   std::string DebugString() const {
     std::string result;
@@ -176,6 +164,8 @@ class LinearConstraintBuilder {
   // TODO(user): Have a subclass so we can enforce that a caller using
   // AddLiteralTerm() must construct the Builder with an encoder.
   LinearConstraintBuilder() : encoder_(nullptr), lb_(0), ub_(0) {}
+  LinearConstraintBuilder(IntegerValue lb, IntegerValue ub)
+      : encoder_(nullptr), lb_(lb), ub_(ub) {}
 
   // Adds the corresponding term to the current linear expression.
   void AddConstant(IntegerValue value);
