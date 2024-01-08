@@ -13,15 +13,12 @@
 
 #include "ortools/routing/solomon_parser.h"
 
-#include <memory>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 
 ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 

@@ -16,6 +16,7 @@ many formats.
 | VRPTW | Solomon | `solomon_parser.h` | [Solomon][solomon], [Homberger][homberger] |
 | CARP | CARPLIB | `carplib_parser.h` | [CARPLIB][carplib] |
 | NEARP | NEARPLIB | `nearplib_parser.h` | [NEARPLIB][nearplib] |
+| PDPTW | LiLim | `lilim_parser.h` | [LiLim][lilim]  |
 
 In the future, this folder will contain the whole routing solver.
 
@@ -26,3 +27,4 @@ In the future, this folder will contain the whole routing solver.
 [pdtsp]: https://web.archive.org/web/20080318001744/http://www.diku.dk/~sropke/
 [nearplib]: https://www.sintef.no/projectweb/top/nearp/
 [carplib]: https://www.uv.es/belengue/carp.html
+[lilim]: https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/

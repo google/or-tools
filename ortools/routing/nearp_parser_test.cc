@@ -18,6 +18,7 @@
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
+#include "ortools/routing/simple_graph.h"
 
 #if defined(_MSC_VER)
 #define ROOT_DIR "../../../../../../../"

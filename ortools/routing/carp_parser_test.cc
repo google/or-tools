@@ -18,6 +18,7 @@
 #include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/scoped_mock_log.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 

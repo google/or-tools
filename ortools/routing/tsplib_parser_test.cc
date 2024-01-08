@@ -14,21 +14,21 @@
 #include "ortools/routing/tsplib_parser.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
-#include "ortools/base/helpers.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/memfile.h"
+#include "ortools/base/options.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 
 #if defined(_MSC_VER)
