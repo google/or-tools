@@ -179,6 +179,10 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
+CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
+message(STATUS "Build eigen3: ${BUILD_Eigen3}")
+
 if(BUILD_LP_PARSER)
   CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
     "NOT BUILD_DEPS" ON)
@@ -251,11 +255,6 @@ if(USE_PDLP)
   CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build PDLP: ${BUILD_PDLP}")
-  if(BUILD_PDLP)
-    CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
-      "NOT BUILD_DEPS" ON)
-    message(STATUS "Build eigen3: ${BUILD_Eigen3}")
-  endif()
 endif()
 
 ## SCIP
