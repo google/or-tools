@@ -237,6 +237,7 @@ endif()
 ## GUROBI
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
 CMAKE_DEPENDENT_OPTION(USE_GUROBI "Use the Gurobi solver" ON "BUILD_CXX" OFF)
+message(STATUS "Gurobi support: ${USE_GUROBI}")
 
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
@@ -275,6 +276,7 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 ## XPRESS
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
 CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
+message(STATUS "Xpress support: ${USE_XPRESS}")
 
 # Language specific options
 if(BUILD_CXX)
