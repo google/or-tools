@@ -20,6 +20,7 @@
 %include "typemaps.i"
 %include "stdint.i"
 %include "std_string.i"
+%include "std_string_view.i"
 
 // Don't break on ABSL_DEPRECATED macro.
 %define ABSL_DEPRECATED(msg)

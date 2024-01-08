@@ -2496,7 +2496,7 @@ std::string PropagationBaseObject::name() const {
   return solver_->GetName(this);
 }
 
-void PropagationBaseObject::set_name(absl::string_view name) {
+void PropagationBaseObject::set_name(std::string_view name) {
   solver_->SetName(this, name);
 }
 
