@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -116,6 +116,6 @@ func binpackingProblemSat() error {
 
 func main() {
 	if err := binpackingProblemSat(); err != nil {
-		log.Exitf("binpackingProblemSat returned with error: %v", err)
+		glog.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }

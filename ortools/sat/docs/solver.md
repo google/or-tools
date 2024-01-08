@@ -194,7 +194,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
@@ -240,7 +240,7 @@ func solveWithTimeLimitSampleSat() error {
 
 func main() {
 	if err := solveWithTimeLimitSampleSat(); err != nil {
-		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
+		glog.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -504,7 +504,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	"ortools/sat/go/cpmodel"
 	sppb "ortools/sat/sat_parameters_go_proto"
@@ -552,7 +552,7 @@ func solveAndPrintIntermediateSolutionsSampleSat() error {
 
 func main() {
 	if err := solveAndPrintIntermediateSolutionsSampleSat(); err != nil {
-		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
+		glog.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -840,7 +840,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	"ortools/sat/go/cpmodel"
 	sppb "ortools/sat/sat_parameters_go_proto"
@@ -885,7 +885,7 @@ func searchForAllSolutionsSampleSat() error {
 
 func main() {
 	if err := searchForAllSolutionsSampleSat(); err != nil {
-		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
+		glog.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }
 ```

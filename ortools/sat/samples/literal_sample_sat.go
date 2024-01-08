@@ -15,7 +15,7 @@
 package main
 
 import (
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -25,7 +25,7 @@ func literalSampleSat() {
 	x := model.NewBoolVar().WithName("x")
 	notX := x.Not()
 
-	log.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
+	glog.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
 }
 
 func main() {

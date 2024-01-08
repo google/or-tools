@@ -20,7 +20,7 @@ import (
 	"sort"
 	"testing"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/cmp/cmp"
 	"golang/protobuf/v2/testing/protocmp/protocmp"
 	cmpb "ortools/sat/cp_model_go_proto"

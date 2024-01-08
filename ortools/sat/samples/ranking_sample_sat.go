@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
 )
@@ -160,6 +160,6 @@ func rankingSampleSat() error {
 
 func main() {
 	if err := rankingSampleSat(); err != nil {
-		log.Exitf("rankingSampleSat returned with error: %v", err)
+		glog.Exitf("rankingSampleSat returned with error: %v", err)
 	}
 }

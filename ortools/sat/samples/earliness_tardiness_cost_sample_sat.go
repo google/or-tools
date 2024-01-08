@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
@@ -85,6 +85,6 @@ func earlinessTardinessCostSampleSat() error {
 
 func main() {
 	if err := earlinessTardinessCostSampleSat(); err != nil {
-		log.Exitf("earlinessTardinessCostSampleSat returned with error: %v", err)
+		glog.Exitf("earlinessTardinessCostSampleSat returned with error: %v", err)
 	}
 }

@@ -195,7 +195,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -231,7 +231,7 @@ func intervalSampleSat() error {
 
 func main() {
 	if err := intervalSampleSat(); err != nil {
-		log.Exitf("intervalSampleSat returned with error: %v", err)
+		glog.Exitf("intervalSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -421,7 +421,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -454,7 +454,7 @@ func optionalIntervalSampleSat() error {
 
 func main() {
 	if err := optionalIntervalSampleSat(); err != nil {
-		log.Exitf("optionalIntervalSampleSat returned with error: %v", err)
+		glog.Exitf("optionalIntervalSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -753,7 +753,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
 )
@@ -821,7 +821,7 @@ func noOverlapSampleSat() error {
 
 func main() {
 	if err := noOverlapSampleSat(); err != nil {
-		log.Exitf("noOverlapSampleSat returned with error: %v", err)
+		glog.Exitf("noOverlapSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -1647,7 +1647,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
 )
@@ -1790,7 +1790,7 @@ func rankingSampleSat() error {
 
 func main() {
 	if err := rankingSampleSat(); err != nil {
-		log.Exitf("rankingSampleSat returned with error: %v", err)
+		glog.Exitf("rankingSampleSat returned with error: %v", err)
 	}
 }
 ```

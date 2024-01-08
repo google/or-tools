@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
@@ -63,6 +63,6 @@ func solveWithTimeLimitSampleSat() error {
 
 func main() {
 	if err := solveWithTimeLimitSampleSat(); err != nil {
-		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
+		glog.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
 	}
 }

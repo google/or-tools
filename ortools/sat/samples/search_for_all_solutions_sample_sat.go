@@ -18,7 +18,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	"ortools/sat/go/cpmodel"
 	sppb "ortools/sat/sat_parameters_go_proto"
@@ -63,6 +63,6 @@ func searchForAllSolutionsSampleSat() error {
 
 func main() {
 	if err := searchForAllSolutionsSampleSat(); err != nil {
-		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
+		glog.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }

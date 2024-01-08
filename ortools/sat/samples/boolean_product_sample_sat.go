@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	"ortools/sat/go/cpmodel"
 	sppb "ortools/sat/sat_parameters_go_proto"
@@ -68,6 +68,6 @@ func booleanProductSample() error {
 func main() {
 	err := booleanProductSample()
 	if err != nil {
-		log.Exitf("booleanProductSample returned with error: %v", err)
+		glog.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }

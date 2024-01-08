@@ -28,7 +28,7 @@ import (
 	"math"
 	"sort"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 
 	cmpb "ortools/sat/cp_model_go_proto"
 )

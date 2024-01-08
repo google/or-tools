@@ -226,7 +226,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
 )
@@ -264,7 +264,7 @@ func simpleSatProgram() error {
 
 func main() {
 	if err := simpleSatProgram(); err != nil {
-		log.Exitf("simpleSatProgram returned with error: %v", err)
+		glog.Exitf("simpleSatProgram returned with error: %v", err)
 	}
 }
 ```

@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -121,6 +121,6 @@ func nursesSat() error {
 
 func main() {
 	if err := nursesSat(); err != nil {
-		log.Exitf("nursesSat returned with error: %v", err)
+		glog.Exitf("nursesSat returned with error: %v", err)
 	}
 }

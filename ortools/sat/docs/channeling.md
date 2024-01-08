@@ -305,7 +305,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"golang/protobuf/v2/proto/proto"
 	cmpb "ortools/sat/cp_model_go_proto"
 	"ortools/sat/go/cpmodel"
@@ -364,7 +364,7 @@ func channelingSampleSat() error {
 
 func main() {
 	if err := channelingSampleSat(); err != nil {
-		log.Exitf("channelingSampleSat returned with error: %v", err)
+		glog.Exitf("channelingSampleSat returned with error: %v", err)
 	}
 }
 ```
@@ -785,7 +785,7 @@ package main
 import (
 	"fmt"
 
-	"ortools/base/go/log"
+	"github.com/golang/glog"
 	"ortools/sat/go/cpmodel"
 )
 
@@ -883,7 +883,7 @@ func binpackingProblemSat() error {
 
 func main() {
 	if err := binpackingProblemSat(); err != nil {
-		log.Exitf("binpackingProblemSat returned with error: %v", err)
+		glog.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }
 ```
