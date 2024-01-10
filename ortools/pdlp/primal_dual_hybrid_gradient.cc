@@ -960,6 +960,24 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   *solve_log.mutable_params() = params;
   sharded_qp_.ReplaceLargeConstraintBoundsWithInfinity(
       params.infinite_constraint_bound_threshold());
+  if (!HasValidBounds(sharded_qp_)) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        "The input problem has invalid bounds (after replacing large "
+        "constraint bounds with infinity): some variable or constraint has "
+        "lower_bound > upper_bound, lower_bound == inf, or upper_bound == "
+        "-inf.");
+  }
+  if (Qp().objective_matrix.has_value() &&
+      !sharded_qp_.PrimalSharder().ParallelTrueForAllShards(
+          [&](const Sharder::Shard& shard) -> bool {
+            return (shard(Qp().objective_matrix->diagonal()).array() >= 0.0)
+                .all();
+          })) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "The objective is not convex (i.e., the objective "
+                             "matrix contains negative or NAN entries).");
+  }
   *solve_log.mutable_original_problem_stats() = ComputeStats(sharded_qp_);
   const QuadraticProgramStats& original_problem_stats =
       solve_log.original_problem_stats();
@@ -2810,19 +2828,9 @@ SolverResult PrimalDualHybridGradient(
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              dimensions_status.ToString());
   }
-  if (!HasValidBounds(qp)) {
-    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "The input problem has inconsistent bounds.");
-  }
   if (qp.objective_scaling_factor == 0) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              "The objective scaling factor cannot be zero.");
-  }
-  if (qp.objective_matrix.has_value() &&
-      qp.objective_matrix->diagonal().minCoeff() < 0.0) {
-    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "The objective is not convex (i.e., the objective "
-                             "matrix contains negative entries).");
   }
   if (params.use_feasibility_polishing() && !IsLinearProgram(qp)) {
     return ErrorSolverResult(

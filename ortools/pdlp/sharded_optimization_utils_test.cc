@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <random>
 #include <utility>
@@ -460,20 +461,49 @@ TEST(ComputeDualGradientTest, CorrectOnTwoSidedConstraints) {
   EXPECT_DOUBLE_EQ(dual_part.value, 1.0 * -1.0);
 }
 
-TEST(HasValidBoundsTest, SmallInvalidLp) {
+TEST(HasValidBoundsTest, InconsistentConstraintBounds) {
   ShardedQuadraticProgram lp(SmallInvalidProblemLp(), /*num_threads=*/2,
                              /*num_shards=*/2);
+  EXPECT_FALSE(HasValidBounds(lp));
+}
 
-  bool is_valid = HasValidBounds(lp);
-  EXPECT_FALSE(is_valid);
+TEST(HasValidBoundsTest, InconsistentVariableBounds) {
+  ShardedQuadraticProgram lp(SmallInconsistentVariableBoundsLp(),
+                             /*num_threads=*/2,
+                             /*num_shards=*/2);
+  EXPECT_FALSE(HasValidBounds(lp));
 }
 
 TEST(HasValidBoundsTest, SmallValidLp) {
   ShardedQuadraticProgram lp(SmallPrimalInfeasibleLp(), /*num_threads=*/2,
                              /*num_shards=*/2);
+  EXPECT_TRUE(HasValidBounds(lp));
+}
 
-  bool is_valid = HasValidBounds(lp);
-  EXPECT_TRUE(is_valid);
+TEST(HasValidBoundsTest, EqualInfiniteConstraintBounds) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  QuadraticProgram lp = SmallPrimalInfeasibleLp();
+  lp.constraint_lower_bounds[1] = kInfinity;
+  lp.constraint_upper_bounds[1] = kInfinity;
+  EXPECT_FALSE(HasValidBounds(ShardedQuadraticProgram(lp, /*num_threads=*/2,
+                                                      /*num_shards=*/2)));
+  lp.constraint_lower_bounds[1] = -kInfinity;
+  lp.constraint_upper_bounds[1] = -kInfinity;
+  EXPECT_FALSE(HasValidBounds(ShardedQuadraticProgram(lp, /*num_threads=*/2,
+                                                      /*num_shards=*/2)));
+}
+
+TEST(HasValidBoundsTest, EqualInfiniteVariableBounds) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  QuadraticProgram lp = SmallPrimalInfeasibleLp();
+  lp.variable_lower_bounds[1] = kInfinity;
+  lp.variable_upper_bounds[1] = kInfinity;
+  EXPECT_FALSE(HasValidBounds(ShardedQuadraticProgram(lp, /*num_threads=*/2,
+                                                      /*num_shards=*/2)));
+  lp.variable_lower_bounds[1] = -kInfinity;
+  lp.variable_upper_bounds[1] = -kInfinity;
+  EXPECT_FALSE(HasValidBounds(ShardedQuadraticProgram(lp, /*num_threads=*/2,
+                                                      /*num_shards=*/2)));
 }
 
 TEST(ComputePrimalGradientTest, CorrectForQp) {

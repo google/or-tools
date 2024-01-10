@@ -184,9 +184,9 @@ SingularValueAndIterations EstimateMaximumSingularValueOfConstraintMatrix(
     std::mt19937& mt_generator);
 
 // Checks if the lower and upper bounds of the problem are consistent, i.e. for
-// each variable and constraint bound we have lower_bound <= upper_bound. If
-// the input is consistent the method returns true, otherwise it returns false.
-// See also `HasValidBounds(const QuadraticProgram&)`.
+// each variable and constraint bound we have lower_bound <= upper_bound,
+// lower_bound < inf, and upper_bound > -inf. If the input is consistent the
+// method returns true, otherwise it returns false.
 bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp);
 
 // Projects `primal` onto the variable bounds constraints.

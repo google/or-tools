@@ -704,14 +704,18 @@ bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp) {
       sharded_qp.DualSharder().ParallelTrueForAllShards(
           [&](const Sharder::Shard& shard) {
             return (shard(qp.constraint_lower_bounds).array() <=
-                    shard(qp.constraint_upper_bounds).array())
+                        shard(qp.constraint_upper_bounds).array() &&
+                    shard(qp.constraint_lower_bounds).array() < kInfinity &&
+                    shard(qp.constraint_upper_bounds).array() > -kInfinity)
                 .all();
           });
   const bool variable_bounds_valid =
       sharded_qp.PrimalSharder().ParallelTrueForAllShards(
           [&](const Sharder::Shard& shard) {
             return (shard(qp.variable_lower_bounds).array() <=
-                    shard(qp.variable_upper_bounds).array())
+                        shard(qp.variable_upper_bounds).array() &&
+                    shard(qp.variable_lower_bounds).array() < kInfinity &&
+                    shard(qp.variable_upper_bounds).array() > -kInfinity)
                 .all();
           });
 
