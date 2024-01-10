@@ -28,6 +28,7 @@ using System.Collections.Generic;
 %include "std_string.i"
 
 %include "ortools/base/base.i"
+%include "ortools/util/csharp/absl_string_view.i"
 %import "ortools/util/csharp/vector.i"
 %include "ortools/util/csharp/proto.i"
 

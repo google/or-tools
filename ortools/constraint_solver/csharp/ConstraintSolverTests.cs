@@ -40,6 +40,10 @@ public class ConstraintSolverTest
         Assert.Equal(3, x.Min());
         Assert.Equal(7, x.Max());
         Assert.Equal("x(3..7)", x.ToString());
+        Assert.True(x.HasName());
+        Assert.Equal("x", x.Name());
+        x.SetName("renamed");
+        Assert.Equal("renamed", x.Name());
     }
 
     [Fact]
