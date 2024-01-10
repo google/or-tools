@@ -51,8 +51,9 @@ public final class ConstraintSolverTest {
     final IntVar var = solver.makeIntVar(3, 11, "IntVar");
     assertEquals(3, var.min());
     assertEquals(11, var.max());
-    var.setName("test");
-    assertEquals("test", var.name());
+    assertEquals("IntVar", var.name());
+    var.setName("renamed");
+    assertEquals("renamed", var.name());
   }
 
   @Test

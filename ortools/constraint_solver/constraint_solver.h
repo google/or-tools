@@ -3380,7 +3380,7 @@ class PropagationBaseObject : public BaseObject {
 
   /// Object naming.
   virtual std::string name() const;
-  void set_name(std::string_view name);
+  void set_name(absl::string_view name);
   /// Returns whether the object has been named or not.
   bool HasName() const;
   /// Returns a base name for automatic naming.

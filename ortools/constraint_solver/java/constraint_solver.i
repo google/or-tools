@@ -17,6 +17,7 @@
 %include "exception.i"
 
 %include "ortools/base/base.i"
+%include "ortools/util/java/absl_string_view.i"
 %include "ortools/util/java/tuple_set.i"
 %include "ortools/util/java/vector.i"
 %include "ortools/util/java/proto.i"
