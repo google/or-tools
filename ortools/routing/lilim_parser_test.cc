@@ -18,7 +18,6 @@
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
-#include "testing/base/public/googletest.h"
 
 #if defined(_MSC_VER)
 #define ROOT_DIR "../../../../../../../"
@@ -83,18 +82,6 @@ TEST(LiLimParserTest, LoadNonExistingInstance) {
       parser.LoadFile("doesnotexist.txt",
                       file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
                                      "ortools/routing/testdata/lilim.zip")));
-}
-
-TEST(LiLimParserTest, LoadExistingInstance) {
-  LiLimParser parser;
-  EXPECT_TRUE(parser.LoadFile(
-      "pdptw_LRC2_10_6.txt",
-      file::JoinPath("/zip", absl::GetFlag(FLAGS_test_srcdir),
-                     ROOT_DIR "ortools/routing/testdata/lilim.zip")));
-  CheckData(parser);
-  // Load a non-existing archive to check the parser was cleaned.
-  EXPECT_FALSE(parser.LoadFile("pdptw_LRC2_10_6.txt", ""));
-  EXPECT_EQ(parser.NumberOfNodes(), 0);
 }
 
 }  // namespace

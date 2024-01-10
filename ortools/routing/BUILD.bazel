@@ -63,6 +63,37 @@ cc_test(
 )
 
 cc_library(
+    name = "lilim_parser",
+    srcs = ["lilim_parser.cc"],
+    hdrs = ["lilim_parser.h"],
+    deps = [
+        ":simple_graph",
+        "//ortools/base:file",
+        "//ortools/base:numbers",
+        "//ortools/base:path",
+        "//ortools/base:zipfile",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "lilim_parser_test",
+    size = "small",
+    srcs = ["lilim_parser_test.cc"],
+    data = [
+        "//ortools/routing/testdata:lilim.zip",
+        "//ortools/routing/testdata:pdptw_LRC2_10_6.txt",
+    ],
+    deps = [
+        ":lilim_parser",
+        "//ortools/base:path",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "carp_parser",
     srcs = ["carp_parser.cc"],
     hdrs = ["carp_parser.h"],
