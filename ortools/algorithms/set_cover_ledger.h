@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_model.h"
 
@@ -98,7 +99,7 @@ class SetCoverLedger {
   std::vector<SubsetIndex> ComputeImpactedSubsets(SubsetIndex subset) const;
 
   // Updates is_removable_ for each subset in impacted_subsets.
-  void UpdateIsRemovable(const std::vector<SubsetIndex>& impacted_subsets);
+  void UpdateIsRemovable(absl::Span<const SubsetIndex> impacted_subsets);
 
   // Updates marginal_impacts_ for each subset in impacted_subsets.
   void UpdateMarginalImpacts(const std::vector<SubsetIndex>& impacted_subsets);

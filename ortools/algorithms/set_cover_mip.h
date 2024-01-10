@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_model.h"
 
@@ -36,7 +37,7 @@ class SetCoverMip {
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus);
+  bool NextSolution(absl::Span<const SubsetIndex> focus);
 
   void SetMipSolver(const SetCoverMipSolver mip_solver) {
     mip_solver_ = mip_solver;

@@ -29,6 +29,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
@@ -322,7 +323,7 @@ void AssignmentAndConstraintFeasibilityMaintainer::
 }
 
 void AssignmentAndConstraintFeasibilityMaintainer::Assign(
-    const std::vector<sat::Literal>& literals) {
+    absl::Span<const sat::Literal> literals) {
   for (const sat::Literal& literal : literals) {
     const VariableIndex var(literal.Variable().value());
     const bool value = literal.IsPositive();

@@ -19,6 +19,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 
@@ -290,7 +291,7 @@ bool SetCoverLedger::ComputeIsRemovable(SubsetIndex subset) const {
 }
 
 void SetCoverLedger::UpdateIsRemovable(
-    const std::vector<SubsetIndex>& impacted_subsets) {
+    absl::Span<const SubsetIndex> impacted_subsets) {
   for (const SubsetIndex subset : impacted_subsets) {
     is_removable_[subset] = ComputeIsRemovable(subset);
   }

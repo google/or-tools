@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_utils.h"
@@ -284,7 +285,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
 
 // Same as above, but clears the subset indices in focus.
 std::vector<SubsetIndex> ClearMostCoveredElements(
-    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
+    absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
     SetCoverLedger* ledger);
 
 }  // namespace operations_research

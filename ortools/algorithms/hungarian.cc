@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -37,7 +38,7 @@ class HungarianOptimizer {
   // be square (i.e. we can have different numbers of agents and tasks), but it
   // must be regular (i.e. there must be the same number of entries in each row
   // of the matrix).
-  explicit HungarianOptimizer(const std::vector<std::vector<double>>& costs);
+  explicit HungarianOptimizer(absl::Span<const std::vector<double>> costs);
 
   // Find an assignment which maximizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
@@ -204,7 +205,7 @@ class HungarianOptimizer {
 };
 
 HungarianOptimizer::HungarianOptimizer(
-    const std::vector<std::vector<double>>& costs)
+    absl::Span<const std::vector<double>> costs)
     : matrix_size_(0),
       costs_(),
       max_cost_(0),

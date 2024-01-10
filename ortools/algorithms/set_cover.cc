@@ -23,6 +23,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_utils.h"
@@ -333,7 +334,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
 }
 
 std::vector<SubsetIndex> ClearMostCoveredElements(
-    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
+    absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
     SetCoverLedger* ledger) {
   // This is the vector we will return.
   std::vector<SubsetIndex> chosen_indices;

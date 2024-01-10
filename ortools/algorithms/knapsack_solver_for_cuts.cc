@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -138,8 +139,8 @@ KnapsackPropagatorForCuts::KnapsackPropagatorForCuts(
 
 KnapsackPropagatorForCuts::~KnapsackPropagatorForCuts() = default;
 
-void KnapsackPropagatorForCuts::Init(const std::vector<double>& profits,
-                                     const std::vector<double>& weights,
+void KnapsackPropagatorForCuts::Init(absl::Span<const double> profits,
+                                     absl::Span<const double> weights,
                                      const double capacity) {
   const int number_of_items = profits.size();
   items_.clear();

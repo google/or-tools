@@ -17,6 +17,7 @@
 #include <limits>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_ledger.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
@@ -32,7 +33,7 @@ bool SetCoverMip::NextSolution() {
   return NextSolution(ledger_->model()->all_subsets());
 }
 
-bool SetCoverMip::NextSolution(const std::vector<SubsetIndex>& focus) {
+bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   SetCoverModel* model = ledger_->model();
   const SubsetIndex num_subsets(model->num_subsets());
   const ElementIndex num_elements(model->num_elements());

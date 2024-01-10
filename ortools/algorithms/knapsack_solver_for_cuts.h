@@ -51,6 +51,7 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
@@ -239,8 +240,8 @@ class KnapsackPropagatorForCuts {
       delete;
 
   // Initializes the data structure and then calls InitPropagator.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, double capacity);
+  void Init(absl::Span<const double> profits, absl::Span<const double> weights,
+            double capacity);
 
   // Updates data structure. Returns false on failure.
   bool Update(bool revert, const KnapsackAssignmentForCuts& assignment);

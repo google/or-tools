@@ -105,7 +105,7 @@ class LinearProgram {
   // LinearProgramBuilder class to simplify the code of some functions like
   // DeleteColumns() here and make the behavior on copy clear? or simply remove
   // them as it is almost as easy to maintain a hash_table on the client side.
-  ColIndex FindOrCreateVariable(const std::string& variable_id);
+  ColIndex FindOrCreateVariable(absl::string_view variable_id);
   RowIndex FindOrCreateConstraint(const std::string& constraint_id);
 
   // Functions to set the name of a variable or constraint. Note that you
