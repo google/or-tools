@@ -67,6 +67,7 @@ PathWithLength ConstrainedShortestPathsOnDag(
 // -----------------------------------------------------------------------------
 // Advanced API.
 // -----------------------------------------------------------------------------
+#if __cplusplus >= 202002L
 template <class GraphType>
 concept DagGraphType = requires(GraphType graph) {
   { typename GraphType::NodeIndex{} };
@@ -81,16 +82,19 @@ concept DagGraphType = requires(GraphType graph) {
     graph.Head(typename GraphType::ArcIndex{})
   } -> std::same_as<typename GraphType::NodeIndex>;
 };
+#endif
 
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
 // `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
 template <class GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 class ConstrainedShortestPathsOnDagWrapper {
  public:
-  using NodeIndex = GraphType::NodeIndex;
-  using ArcIndex = GraphType::ArcIndex;
+  using NodeIndex = typename GraphType::NodeIndex;
+  using ArcIndex = typename GraphType::ArcIndex;
 
   // IMPORTANT: All arguments must outlive the class.
   //
@@ -198,7 +202,9 @@ std::vector<int> GetInversePermutation(absl::Span<const int> permutation);
 // -----------------------------------------------------------------------------
 
 template <class GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 ConstrainedShortestPathsOnDagWrapper<GraphType>::
     ConstrainedShortestPathsOnDagWrapper(
         const GraphType* graph, const std::vector<double>* arc_lengths,
@@ -285,7 +291,9 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
 }
 
 template <typename GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 double ConstrainedShortestPathsOnDagWrapper<GraphType>::LengthTo(
     NodeIndex node) const {
   CHECK(IsReachable(node));
@@ -300,7 +308,9 @@ double ConstrainedShortestPathsOnDagWrapper<GraphType>::LengthTo(
 }
 
 template <typename GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 bool ConstrainedShortestPathsOnDagWrapper<GraphType>::Label::IsLinkedTo(
     const Label& other, ArcIndex arc, const std::vector<double>* arc_lengths,
     const std::vector<std::vector<double>>* arc_resources) const {
@@ -316,7 +326,9 @@ bool ConstrainedShortestPathsOnDagWrapper<GraphType>::Label::IsLinkedTo(
 }
 
 template <typename GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 std::vector<typename GraphType::ArcIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
     NodeIndex node) const {
@@ -348,7 +360,9 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
 }
 
 template <typename GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 std::vector<typename GraphType::NodeIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathTo(
     NodeIndex node) const {
@@ -381,7 +395,9 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathTo(
 }
 
 template <class GraphType>
+#if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
+#endif
 void ConstrainedShortestPathsOnDagWrapper<
     GraphType>::RunConstrainedShortestPathOnDag() {
   // Caching the vector addresses allow to not fetch it on each access.
