@@ -102,7 +102,7 @@ setup(
     },
     include_package_data=True,
     license='Apache 2.0',
-    license_files = ['LICENSE'],
+    license_files=['LICENSE'],
     author='Google LLC',
     author_email='or-tools@google.com',
     description='Google OR-Tools python libraries and modules',
