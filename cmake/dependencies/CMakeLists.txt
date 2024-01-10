@@ -343,7 +343,11 @@ if(BUILD_Cbc)
   message(CHECK_PASS "fetched")
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
+if(MSVC)
+  set(CMAKE_CXX_STANDARD 20)
+else()
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 ###############
 ##  TESTING  ##
