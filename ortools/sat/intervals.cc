@@ -840,7 +840,7 @@ IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& filtered_energy,
+    absl::Span<const LiteralValueValue> filtered_energy,
     IntegerValue window_start, IntegerValue window_end) {
   if (window_end <= window_start) return IntegerValue(0);
 
@@ -1075,7 +1075,7 @@ bool SchedulingDemandHelper::AddLinearizedDemand(
 }
 
 void SchedulingDemandHelper::OverrideLinearizedEnergies(
-    const std::vector<LinearExpression>& energies) {
+    absl::Span<const LinearExpression> energies) {
   const int num_tasks = energies.size();
   DCHECK_EQ(num_tasks, helper_->NumTasks());
   linearized_energies_.resize(num_tasks);

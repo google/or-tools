@@ -938,7 +938,8 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
 // Adds one LinearProgrammingConstraint per connected component of the model.
 IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
                                  const CpModelProto& model_proto, Model* m) {
-  const LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
+  // Non const as we will std::move() stuff out of there.
+  LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -966,7 +967,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
            PositiveVariable(var).value();
   };
   for (int i = 0; i < num_lp_constraints; i++) {
-    for (const IntegerVariable var : relaxation.linear_constraints[i].vars) {
+    for (const IntegerVariable var :
+         relaxation.linear_constraints[i].VarsAsSpan()) {
       components.AddEdge(get_constraint_index(i), get_var_index(var));
     }
   }
@@ -1786,28 +1788,6 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // search.
     if (model->GetOrCreate<SatParameters>()->share_objective_bounds()) {
       RegisterObjectiveBoundsImport(shared_response_manager, model);
-    }
-  }
-
-  // Cache the links between model vars, IntegerVariables and lp constraints.
-  // TODO(user): Cache this only if it is actually used.
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
-  auto* lp_vars = model->GetOrCreate<LPVariables>();
-  IntegerVariable size = integer_trail->NumIntegerVariables();
-  for (IntegerVariable positive_var(0); positive_var < size;
-       positive_var += 2) {
-    LPVariable lp_var;
-    lp_var.positive_var = positive_var;
-    lp_var.model_var =
-        mapping->GetProtoVariableFromIntegerVariable(positive_var);
-    const auto& it = lp_dispatcher->find(positive_var);
-    lp_var.lp = it != lp_dispatcher->end() ? it->second : nullptr;
-
-    if (lp_var.model_var >= 0) {
-      lp_vars->vars.push_back(lp_var);
-      lp_vars->model_vars_size =
-          std::max(lp_vars->model_vars_size, lp_var.model_var + 1);
     }
   }
 

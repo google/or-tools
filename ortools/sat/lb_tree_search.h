@@ -24,6 +24,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
@@ -131,7 +132,7 @@ class LbTreeSearch {
   // Returns a small number of decision needed to reach the same conflict.
   // We basically reduce the number of decision at each level to 1.
   std::vector<Literal> ExtractDecisions(int base_level,
-                                        const std::vector<Literal>& conflict);
+                                        absl::Span<const Literal> conflict);
 
   // Used in the solve logs.
   std::string SmallProgressString() const;

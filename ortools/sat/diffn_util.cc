@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <tuple>
 #include <utility>
@@ -1450,10 +1451,10 @@ std::size_t weighted_pick(absl::Span<const double> input,
 
 }  // namespace
 
-std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
+FindRectanglesResult FindRectanglesWithEnergyConflictMC(
     const std::vector<RectangleInRange>& intervals, absl::BitGenRef random,
-    double temperature) {
-  std::vector<Rectangle> result;
+    double temperature, double candidate_energy_usage_factor) {
+  FindRectanglesResult result;
   ProbingRectangle ranges(intervals);
 
   static const std::vector<double>* cached_probabilities =
@@ -1467,7 +1468,10 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
     const IntegerValue rect_area = ranges.GetCurrentRectangleArea();
     const IntegerValue min_energy = ranges.GetMinimumEnergy();
     if (min_energy > rect_area) {
-      result.push_back(ranges.GetCurrentRectangle());
+      result.conflicts.push_back(ranges.GetCurrentRectangle());
+    } else if (min_energy.value() >
+               candidate_energy_usage_factor * rect_area.value()) {
+      result.candidates.push_back(ranges.GetCurrentRectangle());
     }
     if (min_energy == 0) {
       break;
@@ -1502,7 +1506,7 @@ std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
     ranges.Shrink(candidates[weighted_pick(weights, random)]);
   }
   if (ranges.GetMinimumEnergy() > ranges.GetCurrentRectangleArea()) {
-    result.push_back(ranges.GetCurrentRectangle());
+    result.conflicts.push_back(ranges.GetCurrentRectangle());
   }
   return result;
 }

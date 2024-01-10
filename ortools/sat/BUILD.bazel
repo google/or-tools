@@ -1014,6 +1014,7 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -1373,6 +1374,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -1695,6 +1697,7 @@ cc_library(
         "@com_google_absl//absl/random:bit_gen_ref",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -1807,10 +1810,37 @@ cc_library(
 )
 
 cc_library(
+    name = "2d_orthogonal_packing",
+    srcs = ["2d_orthogonal_packing.cc"],
+    hdrs = ["2d_orthogonal_packing.h"],
+    deps = [
+        ":integer",
+        ":synchronization",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "2d_orthogonal_packing_testing",
+    testonly = 1,
+    srcs = ["2d_orthogonal_packing_testing.cc"],
+    hdrs = ["2d_orthogonal_packing_testing.h"],
+    deps = [
+        ":diffn_util",
+        ":integer",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random:bit_gen_ref",
+        "@com_google_absl//absl/random:distributions",
+    ],
+)
+
+cc_library(
     name = "diffn",
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
+        ":2d_orthogonal_packing",
         ":cumulative_energy",
         ":diffn_util",
         ":disjunctive",
@@ -1827,6 +1857,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
@@ -1954,6 +1985,7 @@ cc_library(
     srcs = ["rins.cc"],
     hdrs = ["rins.h"],
     deps = [
+        ":cp_model_mapping",
         ":integer",
         ":linear_programming_constraint",
         ":model",

@@ -98,10 +98,12 @@ struct CutData {
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       IntegerTrail* integer_trail);
 
-  bool FillFromParallelVectors(const LinearConstraint& base_ct,
-                               const std::vector<double>& lp_values,
-                               const std::vector<IntegerValue>& lower_bounds,
-                               const std::vector<IntegerValue>& upper_bounds);
+  bool FillFromParallelVectors(IntegerValue ub,
+                               absl::Span<const IntegerVariable> vars,
+                               absl::Span<const IntegerValue> coeffs,
+                               absl::Span<const double> lp_values,
+                               absl::Span<const IntegerValue> lower_bounds,
+                               absl::Span<const IntegerValue> upper_bounds);
 
   bool AppendOneTerm(IntegerVariable var, IntegerValue coeff, double lp_value,
                      IntegerValue lb, IntegerValue ub);

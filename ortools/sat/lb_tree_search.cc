@@ -25,6 +25,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -622,7 +623,7 @@ SatSolver::Status LbTreeSearch::Search(
 }
 
 std::vector<Literal> LbTreeSearch::ExtractDecisions(
-    int base_level, const std::vector<Literal>& conflict) {
+    int base_level, absl::Span<const Literal> conflict) {
   std::vector<int> num_per_level(sat_solver_->CurrentDecisionLevel() + 1, 0);
   std::vector<bool> is_marked;
   for (const Literal l : conflict) {

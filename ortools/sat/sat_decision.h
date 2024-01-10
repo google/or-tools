@@ -54,11 +54,6 @@ class SatDecisionPolicy {
   // variables are assigned.
   Literal NextBranch();
 
-  // Updates statistics about literal occurrences in constraints.
-  // Input is a canonical linear constraint of the form (terms <= rhs).
-  void UpdateWeightedSign(const std::vector<LiteralWithCoeff>& terms,
-                          Coefficient rhs);
-
   // Bumps the activity of all variables appearing in the conflict. All literals
   // must be currently assigned. See VSIDS decision heuristic: Chaff:
   // Engineering an Efficient SAT Solver. M.W. Moskewicz et al. ANNUAL ACM IEEE
@@ -100,10 +95,10 @@ class SatDecisionPolicy {
   //
   // Note(user): Having a lot of different weights may slow down the priority
   // queue operations if there is millions of variables.
-  void SetAssignmentPreference(Literal literal, double weight);
+  void SetAssignmentPreference(Literal literal, float weight);
 
   // Returns the vector of the current assignment preferences.
-  std::vector<std::pair<Literal, double>> AllPreferences() const;
+  std::vector<std::pair<Literal, float>> AllPreferences() const;
 
   // Returns the current activity of a BooleanVariable.
   double Activity(Literal l) const {
@@ -210,7 +205,7 @@ class SatDecisionPolicy {
   // Stores variable activity and the number of time each variable was "bumped".
   // The later is only used with the ERWA heuristic.
   absl::StrongVector<BooleanVariable, double> activities_;
-  absl::StrongVector<BooleanVariable, double> tie_breakers_;
+  absl::StrongVector<BooleanVariable, float> tie_breakers_;
   absl::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
   // If the polarity if forced (externally) we always use this first.
@@ -233,9 +228,6 @@ class SatDecisionPolicy {
 
   // The longest partial assignment since the last reset.
   std::vector<Literal> best_partial_assignment_;
-
-  // Used in initial polarity computation.
-  absl::StrongVector<BooleanVariable, double> weighted_sign_;
 
   // Used in InitializeVariableOrdering().
   std::vector<BooleanVariable> tmp_variables_;

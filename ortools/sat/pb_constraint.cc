@@ -239,7 +239,7 @@ bool CanonicalBooleanLinearProblem::AddLinearConstraint(
 }
 
 bool CanonicalBooleanLinearProblem::AddConstraint(
-    const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
+    absl::Span<const LiteralWithCoeff> cst, Coefficient max_value,
     Coefficient rhs) {
   if (rhs < 0) return false;          // Trivially unsatisfiable.
   if (rhs >= max_value) return true;  // Trivially satisfiable.

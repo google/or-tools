@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -37,20 +38,26 @@ void RecordLPRelaxationValues(Model* model) {
   auto* lp_solutions = model->Mutable<SharedLPSolutionRepository>();
   if (lp_solutions == nullptr) return;
 
-  const LPVariables& lp_vars = *model->GetOrCreate<LPVariables>();
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* lp_values = model->GetOrCreate<ModelLpValues>();
+
+  // TODO(user): The default of ::infinity() for variable for which we do not
+  // have any LP solution is weird and inconsistent with ModelLpValues default
+  // which is zero. Fix. Note that in practice, at linearization level 2, all
+  // variable will eventually have an lp relaxation value, so it shoulnd't
+  // matter much to just use zero in RINS/RENS.
   std::vector<double> relaxation_values(
-      lp_vars.model_vars_size, std::numeric_limits<double>::infinity());
+      mapping->NumProtoVariables(), std::numeric_limits<double>::infinity());
 
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (const LPVariable& lp_var : lp_vars.vars) {
-    const IntegerVariable positive_var = lp_var.positive_var;
-    if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
-
-    LinearProgrammingConstraint* lp = lp_var.lp;
-    if (lp == nullptr || !lp->HasSolution()) continue;
-
-    relaxation_values[lp_var.model_var] = lp->GetSolutionValue(positive_var);
+  // We only loop over the positive variables.
+  const int size = lp_values->size();
+  for (IntegerVariable var(0); var < size; var += 2) {
+    const int proto_var = mapping->GetProtoVariableFromIntegerVariable(var);
+    if (proto_var != -1) {
+      relaxation_values[proto_var] = (*lp_values)[var];
+    }
   }
+
   lp_solutions->NewLPSolution(std::move(relaxation_values));
 }
 

@@ -289,10 +289,6 @@ bool SatSolver::AddLinearConstraintInternal(
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
   if (rhs >= max_value) return true;    // Always satisfied constraint.
 
-  // The case "rhs = 0" will just fix variables, so there is no need to
-  // updates the weighted sign.
-  if (rhs > 0) decision_policy_->UpdateWeightedSign(cst, rhs);
-
   // Since the constraint is in canonical form, the coefficients are sorted.
   const Coefficient min_coeff = cst.front().coefficient;
   const Coefficient max_coeff = cst.back().coefficient;

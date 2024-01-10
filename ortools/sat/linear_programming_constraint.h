@@ -86,9 +86,11 @@ class ScatteredIntegerVector {
   //
   // TODO(user): Ideally we should convert to IntegerVariable as late as
   // possible. Prefer to use GetTerms().
-  void ConvertToLinearConstraint(
-      const std::vector<IntegerVariable>& integer_variables,
-      IntegerValue upper_bound, LinearConstraint* result);
+  LinearConstraint ConvertToLinearConstraint(
+      absl::Span<const IntegerVariable> integer_variables,
+      IntegerValue upper_bound,
+      std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
+          std::nullopt);
 
   void ConvertToCutData(absl::int128 rhs,
                         const std::vector<IntegerVariable>& integer_variables,
@@ -332,7 +334,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Called by PropagateExactLpReason() and PropagateExactDualRay() to finish
   // propagation.
-  bool PropagateLpConstraint(const LinearConstraint& ct);
+  bool PropagateLpConstraint(LinearConstraint ct);
 
   // Returns number of non basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
@@ -364,7 +366,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // is false, we do not check for a bit of extra speed.
   template <bool check_overflow = true>
   bool ComputeNewLinearConstraint(
-      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+      absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
           integer_multipliers,
       ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
@@ -484,9 +486,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
-  LinearConstraint cut_;
-  LinearConstraint saved_cut_;
-  LinearConstraint tmp_constraint_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 

@@ -20,6 +20,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
+#include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
@@ -42,7 +43,8 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
       : x_(*x),
         y_(*y),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        orthogonal_packing_checker_(shared_stats_) {}
 
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
@@ -53,13 +55,15 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   struct Conflict {
     std::vector<RectangleInRange> items;
     Rectangle rectangle_with_too_much_energy;
+    // Size of the Orthogonal Packing Problem we used. Can be smaller than
+    // `items.size()` if we found a OPP conflict that didn't need all items.
+    int opp_problem_size;
   };
   std::optional<Conflict> FindConflict(
-      std::vector<RectangleInRange> active_box_ranges);
+      std::vector<RectangleInRange> active_box_ranges,
+      const IntegerValue& max_x_item_size, const IntegerValue& max_y_item_size);
 
-  std::vector<RectangleInRange> GeneralizeExplanation(
-      const Rectangle& rectangle,
-      const std::vector<RectangleInRange>& active_box_ranges);
+  std::vector<RectangleInRange> GeneralizeExplanation(const Conflict& conflict);
 
   bool BuildAndReportEnergyTooLarge(
       const std::vector<RectangleInRange>& ranges);
@@ -73,12 +77,14 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   SchedulingConstraintHelper& y_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_;
+  OrthogonalPackingInfeasibilityDetector orthogonal_packing_checker_;
 
   int64_t num_calls_ = 0;
   int64_t num_conflicts_ = 0;
   int64_t num_multiple_conflicts_ = 0;
   int64_t num_conflicts_two_boxes_ = 0;
   int64_t num_refined_conflicts_ = 0;
+  int64_t num_orthogonal_packing_conflict_ = 0;
 
   NonOverlappingRectanglesEnergyPropagator(
       const NonOverlappingRectanglesEnergyPropagator&) = delete;

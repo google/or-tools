@@ -29,6 +29,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/presolve_util.h"
@@ -208,7 +209,7 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
 }
 
 void HittingSetOptimizer::ExtractAdditionalVariables(
-    const std::vector<IntegerVariable>& to_extract) {
+    absl::Span<const IntegerVariable> to_extract) {
   MPModelProto* hs_model = request_.mutable_model();
 
   VLOG(2) << "Extract " << to_extract.size() << " additional variables";
@@ -268,14 +269,14 @@ HittingSetOptimizer::ComputeAdditionalVariablesToExtract() {
 
   for (const LinearConstraint& linear : relaxation_.linear_constraints) {
     bool found_at_least_one = extract_all;
-    for (const IntegerVariable var : linear.vars) {
+    for (const IntegerVariable var : linear.VarsAsSpan()) {
       if (GetExtractedIndex(var) != kUnextracted) {
         found_at_least_one = true;
       }
       if (found_at_least_one) break;
     }
     if (!found_at_least_one) continue;
-    for (const IntegerVariable var : linear.vars) {
+    for (const IntegerVariable var : linear.VarsAsSpan()) {
       if (GetExtractedIndex(var) == kUnextracted) {
         result_set.insert(PositiveVariable(var));
       }
@@ -305,7 +306,7 @@ void HittingSetOptimizer::ProjectAndAddAtMostOne(
 MPConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(
     const LinearConstraint& linear) {
   int num_extracted_variables = 0;
-  for (int i = 0; i < linear.vars.size(); ++i) {
+  for (int i = 0; i < linear.num_terms; ++i) {
     if (GetExtractedIndex(PositiveVariable(linear.vars[i])) != kUnextracted) {
       num_extracted_variables++;
     }
@@ -322,7 +323,7 @@ void HittingSetOptimizer::ProjectLinear(const LinearConstraint& linear,
   IntegerValue lb = linear.lb;
   IntegerValue ub = linear.ub;
 
-  for (int i = 0; i < linear.vars.size(); ++i) {
+  for (int i = 0; i < linear.num_terms; ++i) {
     const IntegerVariable var = linear.vars[i];
     const IntegerValue coeff = linear.coeffs[i];
     const int index = GetExtractedIndex(PositiveVariable(var));

@@ -161,21 +161,14 @@ class SatSolver {
   //
   // TODO(user): Clean this up by making clients directly talk to
   // SatDecisionPolicy.
-  void SetAssignmentPreference(Literal literal, double weight) {
+  void SetAssignmentPreference(Literal literal, float weight) {
     decision_policy_->SetAssignmentPreference(literal, weight);
   }
-  std::vector<std::pair<Literal, double>> AllPreferences() const {
+  std::vector<std::pair<Literal, float>> AllPreferences() const {
     return decision_policy_->AllPreferences();
   }
   void ResetDecisionHeuristic() {
     return decision_policy_->ResetDecisionHeuristic();
-  }
-  void ResetDecisionHeuristicAndSetAllPreferences(
-      const std::vector<std::pair<Literal, double>>& prefs) {
-    decision_policy_->ResetDecisionHeuristic();
-    for (const std::pair<Literal, double>& p : prefs) {
-      decision_policy_->SetAssignmentPreference(p.first, p.second);
-    }
   }
 
   // Solves the problem and returns its status.

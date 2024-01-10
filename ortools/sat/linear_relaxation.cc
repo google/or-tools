@@ -209,7 +209,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     // precondition but not the Var = sum bool * value one. In this case, we
     // just don't encode it this way. Hopefully, most normal model will not run
     // into this.
-    const LinearConstraint lc = encoding_ct.Build();
+    LinearConstraint lc = encoding_ct.Build();
     if (!PossibleOverflow(*integer_trail, lc)) {
       relaxation->linear_constraints.push_back(at_least_one.Build());
       relaxation->linear_constraints.push_back(std::move(lc));
@@ -230,7 +230,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
                                        rhs - value_literal.value));
     }
 
-    const LinearConstraint lc = encoding_ct.Build();
+    LinearConstraint lc = encoding_ct.Build();
     if (!PossibleOverflow(*integer_trail, lc)) {
       relaxation->at_most_ones.push_back(at_most_one_ct);
       relaxation->linear_constraints.push_back(std::move(lc));
@@ -248,7 +248,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(lower_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_min - value_literal.value));
   }
-  const LinearConstraint built_lb_ct = lower_bound_ct.Build();
+  LinearConstraint built_lb_ct = lower_bound_ct.Build();
   if (!PossibleOverflow(*integer_trail, built_lb_ct)) {
     relaxation->linear_constraints.push_back(std::move(built_lb_ct));
     ++*num_loose;
@@ -263,7 +263,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(upper_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_max - value_literal.value));
   }
-  const LinearConstraint built_ub_ct = upper_bound_ct.Build();
+  LinearConstraint built_ub_ct = upper_bound_ct.Build();
   if (!PossibleOverflow(*integer_trail, built_ub_ct)) {
     relaxation->linear_constraints.push_back(std::move(built_ub_ct));
     ++*num_loose;
@@ -335,7 +335,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 namespace {
 
 bool AllLiteralsHaveViews(const IntegerEncoder& encoder,
-                          const std::vector<Literal>& literals) {
+                          absl::Span<const Literal> literals) {
   for (const Literal lit : literals) {
     if (!encoder.LiteralOrNegationHasView(lit)) return false;
   }
@@ -1718,7 +1718,7 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
         }
       }
       ++num_exactly_one_elements;
-      const LinearConstraint lc = builder.Build();
+      LinearConstraint lc = builder.Build();
       if (!PossibleOverflow(*integer_trail, lc)) {
         relaxation->linear_constraints.push_back(std::move(lc));
       }
@@ -1844,7 +1844,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
       std::remove_if(
           relaxation.linear_constraints.begin(),
           relaxation.linear_constraints.end(),
-          [](const LinearConstraint& lc) { return lc.vars.size() <= 1; }),
+          [](const LinearConstraint& lc) { return lc.num_terms <= 1; }),
       relaxation.linear_constraints.end());
 
   // We add a clique cut generation over all Booleans of the problem.

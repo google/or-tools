@@ -572,11 +572,22 @@ class ProbingRectangle {
 // - shrink the rectangle by an edge to the next "interesting" value. Choose
 //   the edge randomly, but biased towards the change that increases the ratio
 //   area_inside / area_rectangle;
-// - collect a result at every conflict;
+// - collect a result at every conflict or every time the ratio
+//   used_energy/available_energy is more than `candidate_energy_usage_factor`;
 // - stop when the rectangle is empty.
-std::vector<Rectangle> FindRectanglesWithEnergyConflictMC(
+struct FindRectanglesResult {
+  // Known conflicts: the minimal energy used inside the rectangle is larger
+  // than the area of the rectangle.
+  std::vector<Rectangle> conflicts;
+  // Rectangles without a conflict but having used_energy/available_energy >
+  // candidate_energy_usage_factor. Those are good candidates for finding
+  // conflicts using more sophisticated heuristics. Those rectangles are
+  // ordered so the n-th rectangle is always fully inside the n-1-th one.
+  std::vector<Rectangle> candidates;
+};
+FindRectanglesResult FindRectanglesWithEnergyConflictMC(
     const std::vector<RectangleInRange>& intervals, absl::BitGenRef random,
-    double temperature);
+    double temperature, double candidate_energy_usage_factor);
 
 }  // namespace sat
 }  // namespace operations_research

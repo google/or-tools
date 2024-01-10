@@ -573,6 +573,7 @@ class TopN {
   bool empty() const { return elements_.empty(); }
 
   const std::vector<Element>& UnorderedElements() const { return elements_; }
+  std::vector<Element>* MutableUnorderedElements() { return &elements_; }
 
  private:
   const int n_;

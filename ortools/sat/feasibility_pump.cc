@@ -84,7 +84,7 @@ FeasibilityPump::~FeasibilityPump() {
 
 void FeasibilityPump::AddLinearConstraint(const LinearConstraint& ct) {
   // We still create the mirror variable right away though.
-  for (const IntegerVariable var : ct.vars) {
+  for (const IntegerVariable var : ct.VarsAsSpan()) {
     GetOrCreateMirrorVariable(PositiveVariable(var));
   }
 
@@ -92,9 +92,8 @@ void FeasibilityPump::AddLinearConstraint(const LinearConstraint& ct) {
   LinearConstraintInternal& new_ct = integer_lp_.back();
   new_ct.lb = ct.lb;
   new_ct.ub = ct.ub;
-  const int size = ct.vars.size();
   CHECK_LE(ct.lb, ct.ub);
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < ct.num_terms; ++i) {
     // We only use positive variable inside this class.
     IntegerVariable var = ct.vars[i];
     IntegerValue coeff = ct.coeffs[i];

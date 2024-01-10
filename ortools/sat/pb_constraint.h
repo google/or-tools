@@ -174,7 +174,7 @@ class CanonicalBooleanLinearProblem {
   }
 
  private:
-  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst,
+  bool AddConstraint(absl::Span<const LiteralWithCoeff> cst,
                      Coefficient max_value, Coefficient rhs);
 
   std::vector<Coefficient> rhs_;

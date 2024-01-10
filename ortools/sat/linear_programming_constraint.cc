@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -140,30 +141,63 @@ bool ScatteredIntegerVector::AddLinearExpressionMultiple(
   return true;
 }
 
-void ScatteredIntegerVector::ConvertToLinearConstraint(
-    const std::vector<IntegerVariable>& integer_variables,
-    IntegerValue upper_bound, LinearConstraint* result) {
-  result->vars.clear();
-  result->coeffs.clear();
+LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
+    absl::Span<const IntegerVariable> integer_variables,
+    IntegerValue upper_bound,
+    std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term) {
+  // We first do one pass to compute the exact size and not overallocate.
+  int final_size = 0;
+  if (is_sparse_) {
+    for (const glop::ColIndex col : non_zeros_) {
+      const IntegerValue coeff = dense_vector_[col];
+      if (coeff == 0) continue;
+      ++final_size;
+    }
+  } else {
+    for (const IntegerValue coeff : dense_vector_) {
+      if (coeff != 0) ++final_size;
+    }
+  }
+  if (extra_term != std::nullopt) ++final_size;
+
+  // Allocate once.
+  LinearConstraint result;
+  result.resize(final_size);
+
+  // Copy terms.
+  int new_size = 0;
   if (is_sparse_) {
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
       const IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
-      result->vars.push_back(integer_variables[col.value()]);
-      result->coeffs.push_back(coeff);
+      result.vars[new_size] = integer_variables[col.value()];
+      result.coeffs[new_size] = coeff;
+      ++new_size;
     }
   } else {
     const int size = dense_vector_.size();
     for (glop::ColIndex col(0); col < size; ++col) {
       const IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
-      result->vars.push_back(integer_variables[col.value()]);
-      result->coeffs.push_back(coeff);
+      result.vars[new_size] = integer_variables[col.value()];
+      result.coeffs[new_size] = coeff;
+      ++new_size;
     }
   }
-  result->lb = kMinIntegerValue;
-  result->ub = upper_bound;
+
+  result.lb = kMinIntegerValue;
+  result.ub = upper_bound;
+
+  if (extra_term != std::nullopt) {
+    result.vars[new_size] += extra_term->first;
+    result.coeffs[new_size] += extra_term->second;
+    ++new_size;
+  }
+
+  CHECK_EQ(new_size, final_size);
+  DivideByGCD(&result);
+  return result;
 }
 
 void ScatteredIntegerVector::ConvertToCutData(
@@ -336,7 +370,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     new_ct.ub = ct.ub;
     new_ct.lb_is_trivial = all_constraints[index].lb_is_trivial;
     new_ct.ub_is_trivial = all_constraints[index].ub_is_trivial;
-    const int size = ct.vars.size();
+    const int size = ct.num_terms;
     if (ct.lb > ct.ub) {
       VLOG(1) << "Trivial infeasible bound in an LP constraint";
       return false;
@@ -604,7 +638,12 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   std::sort(integer_objective_.begin(), integer_objective_.end());
 
   // Set the LP to its initial content.
-  if (!parameters_.add_lp_constraints_lazily()) {
+  //
+  // Note that we always add LP constraint lazily if we have A LOT of them.
+  // This is because currently on large problem with millions of constraints,
+  // our LP is usually not fast enough anyway.
+  if (!parameters_.add_lp_constraints_lazily() &&
+      constraint_manager_.num_constraints() < 1e6) {
     constraint_manager_.AddAllConstraintsToLp();
   }
   if (!CreateLpFromConstraintManager()) {
@@ -1247,17 +1286,20 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
     }
   }
 
-  tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, cut_ub,
-                                                  &cut_);
-  DivideByGCD(&cut_);
+  // TODO(user): avoid allocating memory if it turns out this is a duplicate of
+  // something we already added. This tends to happen if the duplicate was
+  // already a generated cut which is currently not part of the LP.
+  LinearConstraint converted_cut =
+      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_,
+                                                      cut_ub);
 
   // TODO(user): We probably generate too many cuts, keep best one only?
   // Note that we do need duplicate removal and maybe some orthogonality here?
   if (/*DISABLES CODE*/ (false)) {
-    top_n_cuts_.AddCut(cut_, name, expanded_lp_solution_);
+    top_n_cuts_.AddCut(std::move(converted_cut), name, expanded_lp_solution_);
     return true;
   }
-  return constraint_manager_.AddCut(cut_, name, info);
+  return constraint_manager_.AddCut(std::move(converted_cut), name, info);
 }
 
 // TODO(user): This can be still too slow on some problems like
@@ -1364,23 +1406,26 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   objective_ct.ub = integer_objective_offset_ -
                     integer_trail_->LevelZeroLowerBound(objective_cp_);
   IntegerValue obj_coeff_magnitude(0);
+  objective_ct.resize(integer_objective_.size());
+  int i = 0;
   for (const auto& [col, coeff] : integer_objective_) {
     const IntegerVariable var = integer_variables_[col.value()];
-    objective_ct.vars.push_back(var);
-    objective_ct.coeffs.push_back(-coeff);
+    objective_ct.vars[i] = var;
+    objective_ct.coeffs[i] = -coeff;
     obj_coeff_magnitude = std::max(obj_coeff_magnitude, IntTypeAbs(coeff));
+    ++i;
+  }
+
+  if (!base_ct_.FillFromLinearConstraint(objective_ct, expanded_lp_solution_,
+                                         integer_trail_)) {
+    return;
   }
 
   // If the magnitude is small enough, just try to add the full objective. Other
   // cuts will be derived in subsequent passes. Otherwise, try normal cut
   // heuristic that should result in a cut with reasonable coefficients.
   if (obj_coeff_magnitude < 1e9 &&
-      constraint_manager_.AddCut(objective_ct, "Objective")) {
-    return;
-  }
-
-  if (!base_ct_.FillFromLinearConstraint(objective_ct, expanded_lp_solution_,
-                                         integer_trail_)) {
+      constraint_manager_.AddCut(std::move(objective_ct), "Objective")) {
     return;
   }
 
@@ -1911,7 +1956,7 @@ bool LinearProgrammingConstraint::Propagate() {
 absl::int128 LinearProgrammingConstraint::GetImpliedLowerBound(
     const LinearConstraint& terms) const {
   absl::int128 lower_bound(0);
-  const int size = terms.vars.size();
+  const int size = terms.num_terms;
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = terms.vars[i];
     const IntegerValue coeff = terms.coeffs[i];
@@ -2032,7 +2077,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
 
 template <bool check_overflow>
 bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
-    const std::vector<std::pair<RowIndex, IntegerValue>>& integer_multipliers,
+    absl::Span<const std::pair<RowIndex, IntegerValue>> integer_multipliers,
     ScatteredIntegerVector* scattered_vector, IntegerValue* upper_bound) const {
   // Initialize the new constraint.
   *upper_bound = 0;
@@ -2225,16 +2270,18 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
   if (adjusted) ++num_adjusts_;
 }
 
-bool LinearProgrammingConstraint::PropagateLpConstraint(
-    const LinearConstraint& ct) {
+bool LinearProgrammingConstraint::PropagateLpConstraint(LinearConstraint ct) {
   DCHECK(constraint_manager_.DebugCheckConstraint(ct));
-  if (ct.vars.empty()) {
+
+  // We need to cache this before we std::move() the constraint!
+  const int num_terms = ct.num_terms;
+  if (num_terms == 0) {
     if (ct.ub >= 0) return true;
     return integer_trail_->ReportConflict({});  // Unsat.
   }
 
   std::unique_ptr<IntegerSumLE128> cp_constraint(
-      new IntegerSumLE128({}, ct.vars, ct.coeffs, ct.ub, model_));
+      new IntegerSumLE128(std::move(ct), model_));
 
   // We always propagate level zero bounds first.
   // If we are at level zero, there is nothing else to do.
@@ -2252,7 +2299,7 @@ bool LinearProgrammingConstraint::PropagateLpConstraint(
           ? 0
           : cumulative_optimal_constraint_sizes_.back();
   optimal_constraints_.push_back(std::move(cp_constraint));
-  cumulative_optimal_constraint_sizes_.push_back(current_size + ct.vars.size());
+  cumulative_optimal_constraint_sizes_.push_back(current_size + num_terms);
   rev_optimal_constraints_size_ = optimal_constraints_.size();
   return no_conflict;
 }
@@ -2327,19 +2374,18 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
 
   // Create the IntegerSumLE that will allow to propagate the objective and more
   // generally do the reduced cost fixing.
-  tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, rc_ub,
-                                                  &tmp_constraint_);
-  tmp_constraint_.vars.push_back(objective_cp_);
-  tmp_constraint_.coeffs.push_back(-obj_scale);
-  DivideByGCD(&tmp_constraint_);
+  LinearConstraint explanation =
+      tmp_scattered_vector_.ConvertToLinearConstraint(
+          integer_variables_, rc_ub,
+          /*extra_term=*/{{objective_cp_, -obj_scale}});
 
   // Corner case where prevent overflow removed all terms.
-  if (tmp_constraint_.vars.empty()) {
+  if (explanation.num_terms == 0) {
     trail_->MutableConflict()->clear();
-    return tmp_constraint_.ub >= 0;
+    return explanation.ub >= 0;
   }
 
-  return PropagateLpConstraint(tmp_constraint_);
+  return PropagateLpConstraint(std::move(explanation));
 }
 
 bool LinearProgrammingConstraint::PropagateExactDualRay() {
@@ -2367,17 +2413,22 @@ bool LinearProgrammingConstraint::PropagateExactDualRay() {
   AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
                             &new_constraint_ub);
 
-  tmp_scattered_vector_.ConvertToLinearConstraint(
-      integer_variables_, new_constraint_ub, &tmp_constraint_);
-  DivideByGCD(&tmp_constraint_);
+  LinearConstraint explanation =
+      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_,
+                                                      new_constraint_ub);
+
+  std::string message;
+  if (VLOG_IS_ON(1)) {
+    // Unfortunately, we need to set this up before we std::move() it.
+    message = absl::StrCat("LP exact dual ray not infeasible,",
+                           " implied_lb: ", GetImpliedLowerBound(explanation),
+                           " ub: ", explanation.ub.value());
+  }
 
   // This should result in a conflict if the precision is good enough.
-  if (!PropagateLpConstraint(tmp_constraint_)) return false;
+  if (!PropagateLpConstraint(std::move(explanation))) return false;
 
-  const absl::int128 implied_lb = GetImpliedLowerBound(tmp_constraint_);
-  VLOG(1) << "LP exact dual ray not infeasible,"
-          << " implied_lb: " << implied_lb
-          << " ub: " << tmp_constraint_.ub.value();
+  VLOG(1) << message;
   return true;
 }
 

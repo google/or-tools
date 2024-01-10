@@ -495,7 +495,9 @@ bool ProductDecomposer::TryToLinearize(const AffineExpression& left,
 }
 
 ProductDetector::ProductDetector(Model* model)
-    : enabled_(model->GetOrCreate<SatParameters>()->linearization_level() > 1),
+    : enabled_(
+          model->GetOrCreate<SatParameters>()->detect_linearized_product() &&
+          model->GetOrCreate<SatParameters>()->linearization_level() > 1),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -76,8 +77,7 @@ class HittingSetOptimizer {
 
   // Calls ComputeAdditionalVariablesToExtract() and extract all new variables.
   // This must be called after the linear relaxation has been filled.
-  void ExtractAdditionalVariables(
-      const std::vector<IntegerVariable>& to_extract);
+  void ExtractAdditionalVariables(absl::Span<const IntegerVariable> to_extract);
 
   // Heuristic to decide which variables (in addition to the objective
   // variables) to extract.

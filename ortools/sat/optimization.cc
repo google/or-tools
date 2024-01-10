@@ -434,9 +434,8 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
 }  // namespace
 
 CoreBasedOptimizer::CoreBasedOptimizer(
-    IntegerVariable objective_var,
-    const std::vector<IntegerVariable>& variables,
-    const std::vector<IntegerValue>& coefficients,
+    IntegerVariable objective_var, absl::Span<const IntegerVariable> variables,
+    absl::Span<const IntegerValue> coefficients,
     std::function<void()> feasible_solution_observer, Model* model)
     : parameters_(model->GetOrCreate<SatParameters>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),

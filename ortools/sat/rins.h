@@ -29,24 +29,6 @@
 namespace operations_research {
 namespace sat {
 
-// Links IntegerVariable with model variable and its lp constraint if any.
-struct LPVariable {
-  IntegerVariable positive_var = kNoIntegerVariable;
-  LinearProgrammingConstraint* lp = nullptr;
-  int model_var;
-
-  bool operator==(const LPVariable other) const {
-    return (positive_var == other.positive_var && lp == other.lp &&
-            model_var == other.model_var);
-  }
-};
-
-// This is used to "cache" in the model the set of relevant LPVariable.
-struct LPVariables {
-  std::vector<LPVariable> vars;
-  int model_vars_size = 0;
-};
-
 // A RINS Neighborhood is actually just a generic neighborhood where the domain
 // of some variable have been reduced (fixed or restricted in [lb, ub]).
 //

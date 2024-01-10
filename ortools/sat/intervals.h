@@ -684,8 +684,7 @@ class SchedulingDemandHelper {
   }
 
   // Visible for testing.
-  void OverrideLinearizedEnergies(
-      const std::vector<LinearExpression>& energies);
+  void OverrideLinearizedEnergies(absl::Span<const LinearExpression> energies);
   void OverrideDecomposedEnergies(
       const std::vector<std::vector<LiteralValueValue>>& energies);
   // Returns the decomposed energy terms compatible with the current literal
@@ -735,7 +734,7 @@ class SchedulingDemandHelper {
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& filtered_energy,
+    absl::Span<const LiteralValueValue> filtered_energy,
     IntegerValue window_start, IntegerValue window_end);
 
 // =============================================================================
@@ -978,13 +977,19 @@ inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     int64_t min_start, int64_t max_end, int64_t size, Literal is_present) {
   return [=](Model* model) {
+    CHECK_LE(min_start + size, max_end);
+    const IntegerVariable start =
+        model->Add(NewIntegerVariable(min_start, max_end - size));
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        model->Add(NewIntegerVariable(min_start, max_end)),
-        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
-        IntegerValue(size), is_present.Index());
+        AffineExpression(start),
+        AffineExpression(start, IntegerValue(1), IntegerValue(size)),
+        AffineExpression(IntegerValue(size)), is_present.Index(),
+        /*add_linear_relation=*/true);
   };
 }
 
+// TODO(user): Optional variables can be broken with sat_inprocessing, use with
+// care.
 inline std::function<IntervalVariable(Model*)>
 NewOptionalIntervalWithOptionalVariables(int64_t min_start, int64_t max_end,
                                          int64_t size, Literal is_present) {

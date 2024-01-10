@@ -33,6 +33,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -137,7 +138,7 @@ bool CutData::FillFromLinearConstraint(
     IntegerTrail* integer_trail) {
   rhs = absl::int128(base_ct.ub.value());
   terms.clear();
-  const int num_terms = base_ct.vars.size();
+  const int num_terms = base_ct.num_terms;
   for (int i = 0; i < num_terms; ++i) {
     const IntegerVariable var = base_ct.vars[i];
     if (!AppendOneTerm(var, base_ct.coeffs[i], lp_values[base_ct.vars[i]],
@@ -150,24 +151,24 @@ bool CutData::FillFromLinearConstraint(
 }
 
 bool CutData::FillFromParallelVectors(
-    const LinearConstraint& base_ct, const std::vector<double>& lp_values,
-    const std::vector<IntegerValue>& lower_bounds,
-    const std::vector<IntegerValue>& upper_bounds) {
-  rhs = absl::int128(base_ct.ub.value());
+    IntegerValue ub, absl::Span<const IntegerVariable> vars,
+    absl::Span<const IntegerValue> coeffs, absl::Span<const double> lp_values,
+    absl::Span<const IntegerValue> lower_bounds,
+    absl::Span<const IntegerValue> upper_bounds) {
+  rhs = absl::int128(ub.value());
   terms.clear();
 
   const int size = lp_values.size();
   if (size == 0) return true;
 
+  CHECK_EQ(vars.size(), size);
+  CHECK_EQ(coeffs.size(), size);
   CHECK_EQ(lower_bounds.size(), size);
   CHECK_EQ(upper_bounds.size(), size);
-  CHECK_EQ(base_ct.vars.size(), size);
-  CHECK_EQ(base_ct.coeffs.size(), size);
-  CHECK_EQ(base_ct.lb, kMinIntegerValue);
 
   for (int i = 0; i < size; ++i) {
-    if (!AppendOneTerm(base_ct.vars[i], base_ct.coeffs[i], lp_values[i],
-                       lower_bounds[i], upper_bounds[i])) {
+    if (!AppendOneTerm(vars[i], coeffs[i], lp_values[i], lower_bounds[i],
+                       upper_bounds[i])) {
       return false;
     }
   }
@@ -304,13 +305,15 @@ bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
 
   output->lb = kMinIntegerValue;
   output->ub = new_rhs;
-  output->vars.clear();
-  output->coeffs.clear();
+  output->resize(tmp_map_.size());
+  int new_size = 0;
   for (const auto [var, coeff] : tmp_map_) {
     if (coeff == 0) continue;
-    output->vars.push_back(var);
-    output->coeffs.push_back(coeff);
+    output->vars[new_size] = var;
+    output->coeffs[new_size] = coeff;
+    ++new_size;
   }
+  output->resize(new_size);
   DivideByGCD(output);
   return true;
 }

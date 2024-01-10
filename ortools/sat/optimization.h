@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
@@ -92,8 +93,8 @@ void PresolveBooleanLinearExpression(std::vector<Literal>* literals,
 class CoreBasedOptimizer {
  public:
   CoreBasedOptimizer(IntegerVariable objective_var,
-                     const std::vector<IntegerVariable>& variables,
-                     const std::vector<IntegerValue>& coefficients,
+                     absl::Span<const IntegerVariable> variables,
+                     absl::Span<const IntegerValue> coefficients,
                      std::function<void()> feasible_solution_observer,
                      Model* model);
 
