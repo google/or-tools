@@ -51,41 +51,38 @@ cc_library(
     ],
 )
 
-# You might want to use "graph" rather than this old, inferior library.
-#cc_library(
-#    name = "digraph",
-#    srcs = ["digraph.cc"],
-#    hdrs = ["digraph.h"],
-#    deps = [
-#        "//ortools/base",
-#        "//ortools/base:types",
-#        "@com_google_absl//absl/synchronization",
-#        "//ortools/base:intops",
-#        "//ortools/base:strong_vector",
-#    ],
-#)
+cc_library(
+    name = "bounded_dijkstra",
+    hdrs = ["bounded_dijkstra.h"],
+    deps = [
+        ":graph",
+        "//ortools/base",
+        "//ortools/base:iterator_adaptors",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/base:core_headers",
+    ],
+)
 
-#cc_library(
-#    name = "bounded_dijkstra",
-#    hdrs = ["bounded_dijkstra.h"],
-#    deps = [
-#        "//ortools/base",
-#        "//ortools/base:iterator_adaptors",
-#        "//ortools/thread",
-#    ],
-#)
+cc_library(
+    name = "multi_dijkstra",
+    hdrs = ["multi_dijkstra.h"],
+    deps = [
+       "//ortools/base",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
 
-#cc_library(
-#    name = "bidirectional_dijkstra",
-#    hdrs = ["bidirectional_dijkstra.h"],
-#    deps = [
-#        "//ortools/base",
-#        "@com_google_absl//absl/base:core_headers",
-#        "@com_google_absl//absl/strings",
-#        "@com_google_absl//absl/synchronization",
-#        "//ortools/thread",
-#    ],
-#)
+cc_library(
+    name = "bidirectional_dijkstra",
+    hdrs = ["bidirectional_dijkstra.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:threadpool",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
 
 cc_library(
     name = "cliques",
@@ -161,7 +158,6 @@ cc_library(
     hdrs = ["ebert_graph.h"],
     deps = [
         "//ortools/base",
-        #        "//ortools/testing/production_stub/public:gunit_prod",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
     ],
@@ -183,21 +179,6 @@ cc_library(
         "//ortools/base:timer",
         "//ortools/util:zvector",
         "@com_google_absl//absl/functional:bind_front",
-    ],
-)
-
-cc_library(
-    name = "perfect_matching",
-    srcs = ["perfect_matching.cc"],
-    hdrs = ["perfect_matching.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:intops",
-        "//ortools/base:strong_vector",
-        "//ortools/util:saturated_arithmetic",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -255,6 +236,26 @@ cc_library(
     ],
 )
 
+# Flow-problem solver
+cc_binary(
+    name = "solve_flow_model",
+    srcs = ["solve_flow_model.cc"],
+    deps = [
+        ":flow_problem_cc_proto",
+        ":graph",
+        ":max_flow",
+        ":min_cost_flow",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:filesystem",
+        "//ortools/util:filelineiter",
+        "//ortools/util:stats",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
 # Linear Assignment wrapper that consumes more memory but presents a
 # simplified interface and no speed degradation from the full-featured
 # linear assignment implementation.
@@ -286,6 +287,92 @@ cc_library(
     ],
 )
 
+# Biconnected
+#cc_library(
+#    name = "biconnected",
+#    srcs = ["biconnected.cc"],
+#    hdrs = ["biconnected.h"],
+#    deps = [
+#        ":ebert_graph",
+#        "//ortools/base",
+#        "//ortools/base:types",
+#    ],
+#)
+
+# Hopcroft-Karp (Old)
+#cc_library(
+#    name = "hopcroft_karp",
+#    srcs = ["hopcroft_karp.c"],
+#    hdrs = ["hopcroft_karp.h"],
+#)
+
+# Hopcroft-Karp (New)
+#cc_library(
+#    name = "bipartite_matching",
+#    srcs = ["bipartite_matching.cc"],
+#    hdrs = ["bipartite_matching.h"],
+#    deps = [
+#        "//ortools/base",
+#    ],
+#)
+
+#cc_library(
+#    name = "dag_connectivity",
+#    srcs = ["dag_connectivity.cc"],
+#    hdrs = ["dag_connectivity.h"],
+#    deps = [
+#        ":topologicalsorter",
+#        "//ortools/base",
+#    ],
+#)
+
+cc_library(
+    name = "perfect_matching",
+    srcs = ["perfect_matching.cc"],
+    hdrs = ["perfect_matching.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "dag_shortest_path",
+    srcs = ["dag_shortest_path.cc"],
+    hdrs = ["dag_shortest_path.h"],
+    deps = [
+        ":graph",
+        ":topologicalsorter",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "dag_constrained_shortest_path",
+    srcs = ["dag_constrained_shortest_path.cc"],
+    hdrs = ["dag_constrained_shortest_path.h"],
+    deps = [
+        ":dag_shortest_path",
+        ":graph",
+        ":topologicalsorter",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+# From util/graph
 cc_library(
     name = "connected_components",
     srcs = [
@@ -302,6 +389,24 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
+)
+
+cc_library(
+    name = "io",
+    hdrs = ["io.h"],
+    deps = [
+        ":graph",
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
 )
 
 cc_library(
@@ -332,23 +437,6 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "biconnected",
-#    srcs = ["biconnected.cc"],
-#    hdrs = ["biconnected.h"],
-#    deps = [
-#        ":ebert_graph",
-#        "//ortools/base",
-#        "//ortools/util:packed_array",
-#    ],
-#)
-
-#cc_library(
-#    name = "hopcroft_karp",
-#    srcs = ["hopcroft_karp.c"],
-#    hdrs = ["hopcroft_karp.h"],
-#)
-
 cc_library(
     name = "util",
     srcs = ["util.cc"],
@@ -360,23 +448,5 @@ cc_library(
         "//ortools/base:map_util",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:inlined_vector",
-    ],
-)
-
-cc_library(
-    name = "iterators",
-    hdrs = ["iterators.h"],
-)
-
-cc_library(
-    name = "io",
-    hdrs = ["io.h"],
-    deps = [
-        ":graph",
-        "//ortools/base:numbers",
-        "//ortools/util:filelineiter",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
     ],
 )

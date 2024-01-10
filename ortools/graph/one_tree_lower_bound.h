@@ -130,6 +130,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/graph/minimum_spanning_tree.h"
@@ -177,7 +178,7 @@ class VolgenantJonkerEvaluator {
   }
 
   void OnOneTree(CostType one_tree_cost, double w,
-                 const std::vector<int>& degrees) {
+                 absl::Span<const int> degrees) {
     if (!step1_initialized_) {
       step1_initialized_ = true;
       UpdateStep(one_tree_cost);
@@ -238,7 +239,7 @@ class HeldWolfeCrowderEvaluator {
   double GetStep() const { return step_; }
 
   void OnOneTree(CostType one_tree_cost, double w,
-                 const std::vector<int>& degrees) {
+                 absl::Span<const int> degrees) {
     double norm = 0;
     for (int degree : degrees) {
       const double delta = degree - 2;

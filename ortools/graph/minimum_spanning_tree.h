@@ -17,6 +17,7 @@
 #include <queue>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/types.h"
@@ -49,7 +50,7 @@ template <typename Graph>
 std::vector<typename Graph::ArcIndex>
 BuildKruskalMinimumSpanningTreeFromSortedArcs(
     const Graph& graph,
-    const std::vector<typename Graph::ArcIndex>& sorted_arcs) {
+    absl::Span<const typename Graph::ArcIndex> sorted_arcs) {
   using ArcIndex = typename Graph::ArcIndex;
   using NodeIndex = typename Graph::NodeIndex;
   const int num_arcs = graph.num_arcs();

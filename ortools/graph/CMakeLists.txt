@@ -16,6 +16,8 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/assignment_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/christofides_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/cliques_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/dag_constrained_shortest_path_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/dag_shortest_path_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/ebert_graph_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_path_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/hamiltonian_path_test.cc
