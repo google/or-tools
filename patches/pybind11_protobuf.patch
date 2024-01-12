@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e936f66..eaac571 100644
+index 46388d1..a035b25 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -21,7 +21,7 @@ option(BUILD_TESTS "Build tests." OFF)
@@ -11,7 +11,7 @@ index e936f66..eaac571 100644
  
  # ============================================================================
  # Build dependencies
-@@ -47,8 +47,10 @@ pybind11_add_module(
+@@ -50,8 +50,10 @@ pybind11_add_module(
    pybind11_protobuf/proto_utils.h)
  
  target_link_libraries(
@@ -24,7 +24,7 @@ index e936f66..eaac571 100644
  
  target_include_directories(
    pybind11_proto_utils PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS}
-@@ -57,7 +59,7 @@ target_include_directories(
+@@ -60,7 +62,7 @@ target_include_directories(
  # ============================================================================
  # pybind11_native_proto_caster shared library
  add_library(
@@ -33,7 +33,7 @@ index e936f66..eaac571 100644
    # bazel: pybind_library: native_proto_caster
    pybind11_protobuf/native_proto_caster.h
    # bazel: pybind_library: enum_type_caster
-@@ -79,10 +81,12 @@ target_link_libraries(
+@@ -82,10 +84,12 @@ target_link_libraries(
    absl::optional
    protobuf::libprotobuf
    pybind11::pybind11
@@ -47,7 +47,7 @@ index e936f66..eaac571 100644
    PRIVATE ${PROJECT_SOURCE_DIR} ${protobuf_INCLUDE_DIRS} ${protobuf_SOURCE_DIR}
            ${pybind11_INCLUDE_DIRS})
  
-@@ -109,7 +113,7 @@ target_link_libraries(
+@@ -112,7 +116,7 @@ target_link_libraries(
    absl::optional
    protobuf::libprotobuf
    pybind11::pybind11
@@ -56,3 +56,51 @@ index e936f66..eaac571 100644
  
  target_include_directories(
    pybind11_wrapped_proto_caster
+diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
+index 111b34f..8880d08 100644
+--- a/cmake/dependencies/CMakeLists.txt
++++ b/cmake/dependencies/CMakeLists.txt
+@@ -7,7 +7,7 @@ if(NOT absl_FOUND)
+   set(ABSL_PROPAGATE_CXX_STD ON)
+   set(ABSL_ENABLE_INSTALL ON)
+   FetchContent_Declare(
+-    absl
++    abseil-cpp
+     GIT_REPOSITORY ${_absl_repository}
+     GIT_TAG ${_absl_tag})
+ endif()
+@@ -20,7 +20,7 @@ if(NOT Protobuf_FOUND)
+       OFF
+       CACHE INTERNAL "")
+   FetchContent_Declare(
+-    Protobuf
++    protobuf
+     GIT_REPOSITORY ${_protobuf_repository}
+     GIT_TAG ${_protobuf_tag}
+     GIT_SUBMODULES "")
+@@ -35,20 +35,20 @@ if(NOT pybind11_FOUND)
+ endif()
+ 
+ # ============================================================================
+-# Make dependencies avaialble
++# Make dependencies available
+ 
+-if(NOT absl_FOUND)
++if(NOT abseil-cpp_FOUND)
+   message(CHECK_START "Fetching Abseil-cpp")
+   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+-  FetchContent_MakeAvailable(absl)
++  FetchContent_MakeAvailable(abseil-cpp)
+   list(POP_BACK CMAKE_MESSAGE_INDENT)
+   message(CHECK_PASS "fetched")
+ endif()
+ 
+-if(NOT Protobuf_FOUND)
++if(NOT protobuf_FOUND)
+   message(CHECK_START "Fetching Protobuf")
+   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+-  FetchContent_MakeAvailable(Protobuf)
++  FetchContent_MakeAvailable(protobuf)
+   list(POP_BACK CMAKE_MESSAGE_INDENT)
+   message(CHECK_PASS "fetched")
+ endif()
