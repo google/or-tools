@@ -224,7 +224,7 @@ if(USE_COINOR)
 endif()
 
 ## GLPK
-# Disable by default since it is GLPv3, user could enable it and release under GLPv3
+# Disable by default since it is GPLv3, user could enable it and release under GPLv3
 # see: https://www.apache.org/licenses/GPL-compatibility.html
 CMAKE_DEPENDENT_OPTION(USE_GLPK "Use the GLPK solver" OFF "BUILD_CXX" OFF)
 message(STATUS "GLPK support: ${USE_GLPK}")
