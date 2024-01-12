@@ -140,6 +140,8 @@ endforeach()
 #   FILES
 #     ortools/foo/foo.proto
 #     ortools/bar/bar.proto
+#  LINK_LIBRARIES
+#     ortools::ortools_proto
 #   NO_ALIAS
 # )
 function(generate_proto_library)
