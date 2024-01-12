@@ -138,7 +138,8 @@ search_python_module(
   NO_VERSION)
 set(PROTO_PYS)
 set(PROTO_MYPYS)
-file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+set(OR_TOOLS_PROTO_PY_FILES)
+file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
@@ -150,12 +151,18 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
   )
-if(USE_PDLP)
-  file(GLOB_RECURSE pdlp_proto_py_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
-  list(APPEND proto_py_files ${pdlp_proto_py_files})
+list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE MATH_OPT_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solver/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${MATH_OPT_PROTO_PY_FILES})
 endif()
-list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
-foreach(PROTO_FILE IN LISTS proto_py_files)
+if(USE_PDLP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE PDLP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${PDLP_PROTO_PY_FILES})
+endif()
+foreach(PROTO_FILE IN LISTS OR_TOOLS_PROTO_PY_FILES)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
@@ -258,10 +265,15 @@ message(STATUS "Python project: ${PYTHON_PROJECT}")
 set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
-# Swig wrap all libraries
+# SWIG/Pybind11 wrap all libraries
 foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver pdlp sat scheduling util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
+
+if(BUILD_MATH_OPT)
+  add_subdirectory(ortools/math_opt/core/python)
+  add_subdirectory(ortools/math_opt/python)
+endif()
 
 #######################
 ## Python Packaging  ##
@@ -286,9 +298,15 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/python/__init__.py CONTENT "")
+if(BUILD_MATH_OPT)
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/__init__.py CONTENT "")
+endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
+if(USE_PDLP OR BUILD_MATH_OPT)
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
+endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
@@ -304,6 +322,26 @@ file(COPY
   ortools/linear_solver/python/model_builder.py
   ortools/linear_solver/python/model_builder_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
+if(BUILD_MATH_OPT)
+  file(COPY
+    ortools/math_opt/python/callback.py
+    ortools/math_opt/python/compute_infeasible_subsystem_result.py
+    ortools/math_opt/python/expressions.py
+    ortools/math_opt/python/hash_model_storage.py
+    ortools/math_opt/python/mathopt.py
+    ortools/math_opt/python/message_callback.py
+    ortools/math_opt/python/model_parameters.py
+    ortools/math_opt/python/model.py
+    ortools/math_opt/python/model_storage.py
+    ortools/math_opt/python/normalize.py
+    ortools/math_opt/python/parameters.py
+    ortools/math_opt/python/result.py
+    ortools/math_opt/python/solution.py
+    ortools/math_opt/python/solve.py
+    ortools/math_opt/python/sparse_containers.py
+    ortools/math_opt/python/statistics.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)
+endif()
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
@@ -382,6 +420,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:math_opt_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
@@ -401,6 +441,7 @@ add_custom_command(
     pywrapcp
     pywraplp
     model_builder_helper_pybind11
+    math_opt_pybind11
     pdlp_pybind11
     swig_helper_pybind11
     rcpsp_pybind11
@@ -435,6 +476,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
