@@ -240,15 +240,15 @@ new_git_repository(
 )
 
 new_git_repository(
-    name = "pybind11_protobuf",
-    commit = "8359a091a9b0bc7deb0233de986c06c885a3ff2d",
-    remote = "https://github.com/pybind/pybind11_protobuf.git",
+    name = "pybind11_abseil",
+    commit = "52f27398876a3177049977249e004770bd869e61",
+    remote = "https://github.com/pybind/pybind11_abseil.git",
 )
 
 new_git_repository(
-    name = "pybind11_abseil",
-    remote = "https://github.com/pybind/pybind11_abseil.git",
-    commit = "2c4932ed6f6204f1656e245838f4f5eae69d2e29"
+    name = "pybind11_protobuf",
+    commit = "3b11990a99dea5101799e61d98a82c4737d240cc",
+    remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
