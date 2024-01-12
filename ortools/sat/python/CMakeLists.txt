@@ -41,6 +41,6 @@ add_library(${PROJECT_NAMESPACE}::swig_helper_pybind11 ALIAS swig_helper_pybind1
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_test(${FILE_NAME})
+    add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()

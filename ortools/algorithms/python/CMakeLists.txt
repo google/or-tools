@@ -36,6 +36,6 @@ add_library(${PROJECT_NAMESPACE}::knapsack_solver_pybind11 ALIAS knapsack_solver
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_test(${FILE_NAME})
+    add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()

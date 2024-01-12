@@ -205,21 +205,46 @@ if(BUILD_TESTING)
   # add_python_test()
   # CMake function to generate and build python test.
   # Parameters:
-  #  the python filename
+  #  FILE_NAME: the python filename
+  #  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+  #  note: automatically if ortools/<component>/python/test.py
   # e.g.:
-  # add_python_test(foo.py)
-  function(add_python_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME} ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  # add_python_test(
+  #   FILE_NAME
+  #     ${PROJECT_SOURCE_DIR}/ortools/foo/python/bar_test.py
+  #   COMPONENT_NAME
+  #     foo
+  # )
+  function(add_python_test)
+    set(options "")
+    set(oneValueArgs FILE_NAME COMPONENT_NAME)
+    set(multiValueArgs "")
+    cmake_parse_arguments(TEST
+      "${options}"
+      "${oneValueArgs}"
+      "${multiValueArgs}"
+      ${ARGN}
+    )
+    if(NOT TEST_FILE_NAME)
+      message(FATAL_ERROR "no FILE_NAME provided")
+    endif()
+    get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+    message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+    if(NOT TEST_COMPONENT_NAME)
+      # tests are located in ortools/<component_name>/python/<test_name>.py
+      get_filename_component(TEST_WRAPPER_DIR ${TEST_FILE_NAME} DIRECTORY)
+      get_filename_component(TEST_COMPONENT_DIR ${TEST_WRAPPER_DIR} DIRECTORY)
+      get_filename_component(TEST_COMPONENT_NAME ${TEST_COMPONENT_DIR} NAME)
+    endif()
+
 
     add_test(
-      NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
+      NAME python_${TEST_COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
-    message(STATUS "Configuring test ${FILE_NAME} done")
+    message(STATUS "Configuring test ${TEST_FILE_NAME} done")
   endfunction()
 endif()
 

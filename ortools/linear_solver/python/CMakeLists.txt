@@ -77,6 +77,6 @@ add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_buil
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_test(${FILE_NAME})
+    add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
