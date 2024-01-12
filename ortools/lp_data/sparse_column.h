@@ -16,6 +16,8 @@
 
 #include <vector>
 
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse_vector.h"
 
 namespace operations_research {

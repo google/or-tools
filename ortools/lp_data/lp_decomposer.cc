@@ -16,10 +16,14 @@
 #include <algorithm>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace glop {

@@ -15,10 +15,9 @@
 
 #include <string>
 
-#include "ortools/base/file.h"
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
+#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/file_util.h"
 

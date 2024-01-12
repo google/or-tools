@@ -19,7 +19,11 @@
 #include <limits>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/hash.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {

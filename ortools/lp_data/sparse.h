@@ -34,11 +34,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/return_macros.h"
 
 namespace operations_research {

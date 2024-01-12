@@ -21,8 +21,6 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/rational_approximation.h"
 

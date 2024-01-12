@@ -20,12 +20,19 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/return_macros.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

@@ -79,11 +79,13 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/base/port.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
 

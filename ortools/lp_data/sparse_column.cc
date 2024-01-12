@@ -15,7 +15,9 @@
 
 #include <algorithm>
 
+#include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/return_macros.h"
 
 namespace operations_research {
 namespace glop {
