@@ -25,11 +25,6 @@ set(OR_TOOLS_LINK_OPTIONS)
 if(BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
 endif()
-# Mandatory built-in components
-list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
-  "USE_BOP" # enable BOP support
-  "USE_GLOP" # enable GLOP support
-  )
 # Optional built-in components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
@@ -39,11 +34,17 @@ if(BUILD_MATH_OPT)
   set(MATH_OPT_DIR math_opt)
 endif()
 # Optional solvers
+if(USE_BOP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_BOP")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
     "USE_CLP" # enable COIN-OR CLP support
   )
+endif()
+if(USE_GLOP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLOP")
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")

@@ -92,9 +92,15 @@ endif()
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
-# By default only build the C++ library.
+# By default only build the C++ library which agregate all components.
 option(BUILD_CXX "Build C++ library" ON)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
+
+# If we don't build ortools we could build the GLOP standalone project
+if(NOT BUILD_CXX)
+  OPTION(BUILD_GLOP "Build GLOP standalone" ON)
+  message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
+endif()
 
 option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
@@ -122,9 +128,6 @@ message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 ## MathOpt
 CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
 message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
-
-CMAKE_DEPENDENT_OPTION(BUILD_GLOP "Build GLOP standalone" ON "NOT BUILD_CXX" OFF)
-message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
 
 ## Samples
 option(BUILD_SAMPLES "Build samples" ON)
@@ -198,6 +201,11 @@ else()
 endif()
 
 # Optional third party solvers (enabled by default)
+## BOP
+# note OFF is currently not supported.
+CMAKE_DEPENDENT_OPTION(USE_BOP "Use the BOP solver" ON "BUILD_CXX" OFF)
+message(STATUS "BOP support: ${USE_BOP}")
+
 ## COIN-OR Solvers (Cbc, Clp)
 CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
@@ -222,6 +230,11 @@ if(USE_COINOR)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build Cbc: ${BUILD_Cbc}")
 endif()
+
+## GLOP
+# note OFF is currently not supported.
+CMAKE_DEPENDENT_OPTION(USE_GLOP "Use the GLOP solver" ON "BUILD_CXX" OFF)
+message(STATUS "GLOP support: ${USE_GLOP}")
 
 ## GLPK
 # Disable by default since it is GPLv3, user could enable it and release under GPLv3
