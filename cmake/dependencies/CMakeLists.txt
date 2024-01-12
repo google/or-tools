@@ -172,6 +172,20 @@ if(BUILD_PYTHON AND BUILD_pybind11)
   message(CHECK_PASS "fetched")
 endif()
 
+if(BUILD_PYTHON AND BUILD_pybind11_abseil)
+  message(CHECK_START "Fetching pybind11_abseil")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  FetchContent_Declare(
+    pybind11_abseil
+    GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git"
+    GIT_TAG "52f27398876a3177049977249e004770bd869e61"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
+  )
+  FetchContent_MakeAvailable(pybind11_abseil)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
 if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
   message(CHECK_START "Fetching pybind11_protobuf")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")

@@ -1,0 +1,134 @@
+diff --git a/.gitignore b/.gitignore
+index 2a7b42e..c96b037 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,2 +1,3 @@
+ build
+ tmp_build
++.*.swp
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ceb65a8..aaff3d6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,14 +1,11 @@
+ cmake_minimum_required(VERSION 3.11)
+ project(pybind11_abseil LANGUAGES CXX)
+ 
+-include(FetchContent)
+ include(CTest)
+ 
+ if(NOT DEFINED CMAKE_CXX_STANDARD)
+   set(CMAKE_CXX_STANDARD 17)
+ endif(NOT DEFINED CMAKE_CXX_STANDARD)
+-set(ABSL_PROPAGATE_CXX_STD ON)
+-set(BUILD_TESTING OFF)
+ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+ 
+@@ -16,17 +13,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+   cmake_policy(SET CMP0135 NEW)
+ endif()
+ 
+-FetchContent_Declare(
+-  abseil-cpp
+-  URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.0.tar.gz
+-  URL_HASH
+-    SHA256=59d2976af9d6ecf001a81a35749a6e551a335b949d34918cfade07737b9d93c5)
+-
+-FetchContent_Declare(
+-  pybind11
+-  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
+-
+-FetchContent_MakeAvailable(abseil-cpp pybind11)
++add_subdirectory(cmake/dependencies dependencies)
+ 
+ set(TOP_LEVEL_DIR ${CMAKE_CURRENT_LIST_DIR})
+ include_directories(${TOP_LEVEL_DIR} ${pybind11_INCLUDE_DIRS})
+diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
+new file mode 100644
+index 0000000..ffe4d38
+--- /dev/null
++++ b/cmake/dependencies/CMakeLists.txt
+@@ -0,0 +1,15 @@
++include(FetchContent)
++
++set(ABSL_PROPAGATE_CXX_STD ON)
++set(BUILD_TESTING OFF)
++FetchContent_Declare(
++  abseil-cpp
++  URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.0.tar.gz
++  URL_HASH
++    SHA256=59d2976af9d6ecf001a81a35749a6e551a335b949d34918cfade07737b9d93c5)
++
++FetchContent_Declare(
++  pybind11
++  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
++
++FetchContent_MakeAvailable(abseil-cpp pybind11)
+diff --git a/pybind11_abseil/CMakeLists.txt b/pybind11_abseil/CMakeLists.txt
+index d1b7483..f0bfe32 100644
+--- a/pybind11_abseil/CMakeLists.txt
++++ b/pybind11_abseil/CMakeLists.txt
+@@ -150,14 +150,15 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
+ 
+ # status ====================================================================
+ 
+-add_library(status SHARED status_py_extension_stub.cc)
+-add_library(pybind11_abseil::status ALIAS status)
++add_library(status_py_extension_stub SHARED status_py_extension_stub.cc)
++set_target_properties(status_py_extension_stub PROPERTIES LIBRARY_OUTPUT_NAME "status")
++add_library(pybind11_abseil::status ALIAS status_py_extension_stub)
+ 
+-target_include_directories(status INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
++target_include_directories(status_py_extension_stub INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-set_target_properties(status PROPERTIES PREFIX "")
++set_target_properties(status_py_extension_stub PROPERTIES PREFIX "")
+ 
+-target_link_libraries(status PUBLIC status_pyinit_google3 absl::status)
++target_link_libraries(status_py_extension_stub PUBLIC status_pyinit_google3 absl::status)
+ 
+ # import_status_module =========================================================
+ 
+@@ -167,7 +168,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
+ target_include_directories(import_status_module
+                            INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-target_link_libraries(import_status_module PUBLIC status)
++target_link_libraries(import_status_module PUBLIC status_py_extension_stub)
+ 
+ # status_casters ===============================================================
+ 
+@@ -175,25 +176,27 @@ add_library(status_casters INTERFACE)
+ add_library(pybind11_abseil::status_casters ALIAS status_casters)
+ 
+ target_include_directories(status_casters
+-                           INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
++  INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+ target_link_libraries(status_casters INTERFACE import_status_module
+-                                               status_caster statusor_caster)
++  status_caster statusor_caster)
+ 
+-add_subdirectory(tests)
++if(BUILD_TESTING)
++  add_subdirectory(tests)
++endif()
+ 
+ if(CMAKE_INSTALL_PYDIR)
+   # Copying to two target directories for simplicity. It is currently unknown
+   # how to determine here which copy is actually being used.
+   install(
+-    TARGETS status ok_status_singleton
++    TARGETS status_py_extension_stub ok_status_singleton
+     EXPORT pybind11_abseilTargets
+     LIBRARY DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil
+     RUNTIME DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil)
+ 
+   install(
+-    TARGETS status ok_status_singleton
++    TARGETS status_py_extension_stub ok_status_singleton
+     EXPORT pybind11_abseil_cppTargets
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

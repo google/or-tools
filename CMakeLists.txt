@@ -371,6 +371,10 @@ if(BUILD_PYTHON)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11_protobuf: ${BUILD_pybind11_protobuf}")
 
+  CMAKE_DEPENDENT_OPTION(BUILD_pybind11_abseil "Build the pybind11_abseil dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Python: Build pybind11_abseil: ${BUILD_pybind11_abseil}")
+
   option(GENERATE_PYTHON_STUB "Generate Python stub file (.pyi)" ON)
   message(STATUS "Python: Generate stub file: ${GENERATE_PYTHON_STUB}")
 
