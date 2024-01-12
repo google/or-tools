@@ -80,12 +80,12 @@ if(BUILD_absl)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
   set(ABSL_PROPAGATE_CXX_STD ON)
   FetchContent_Declare(
-    absl
+    abseil-cpp
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
     GIT_TAG "20230802.1"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20230802.1.patch"
   )
-  FetchContent_MakeAvailable(absl)
+  FetchContent_MakeAvailable(abseil-cpp)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
