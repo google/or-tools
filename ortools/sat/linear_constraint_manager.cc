@@ -136,7 +136,8 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   DCHECK(NoDuplicateVariable(ct));
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
-  CanonicalizeConstraint(&ct);
+  MakeAllVariablesPositive(&ct);
+  CHECK(std::is_sorted(ct.VarsAsSpan().begin(), ct.VarsAsSpan().end()));
   DCHECK(DebugCheckConstraint(ct));
 
   // If an identical constraint exists, only updates its bound.

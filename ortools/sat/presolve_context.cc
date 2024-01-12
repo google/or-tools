@@ -544,16 +544,32 @@ void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {
   }
 }
 
+void PresolveContext::MaybeResizeIntervalData() {
+  // Lazy allocation so that we only do that if there are some interval.
+  const int num_constraints = constraint_to_vars_.size();
+  if (constraint_to_intervals_.size() != num_constraints) {
+    constraint_to_intervals_.resize(num_constraints);
+    interval_usage_.resize(num_constraints);
+  }
+}
+
 void PresolveContext::AddVariableUsage(int c) {
   const ConstraintProto& ct = working_model->constraints(c);
+
   constraint_to_vars_[c] = UsedVariables(ct);
-  constraint_to_intervals_[c] = UsedIntervals(ct);
   for (const int v : constraint_to_vars_[c]) {
     DCHECK_LT(v, var_to_constraints_.size());
     DCHECK(!VariableWasRemoved(v));
     var_to_constraints_[v].insert(c);
   }
-  for (const int i : constraint_to_intervals_[c]) interval_usage_[i]++;
+
+  std::vector<int> used_interval = UsedIntervals(ct);
+  if (!used_interval.empty()) {
+    MaybeResizeIntervalData();
+    constraint_to_intervals_[c].swap(used_interval);
+    for (const int i : constraint_to_intervals_[c]) interval_usage_[i]++;
+  }
+
   UpdateLinear1Usage(ct, c);
 }
 
@@ -570,17 +586,21 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
   const ConstraintProto& ct = working_model->constraints(c);
 
   // We don't optimize the interval usage as this is not super frequent.
-  for (const int i : constraint_to_intervals_[c]) interval_usage_[i]--;
-  constraint_to_intervals_[c] = UsedIntervals(ct);
-  for (const int i : constraint_to_intervals_[c]) interval_usage_[i]++;
+  std::vector<int> used_interval = UsedIntervals(ct);
+  if (c < constraint_to_intervals_.size() || !used_interval.empty()) {
+    MaybeResizeIntervalData();
+    for (const int i : constraint_to_intervals_[c]) interval_usage_[i]--;
+    constraint_to_intervals_[c].swap(used_interval);
+    for (const int i : constraint_to_intervals_[c]) interval_usage_[i]++;
+  }
 
   // For the variables, we avoid an erase() followed by an insert() for the
   // variables that didn't change.
-  tmp_new_usage_ = UsedVariables(ct);
-  const std::vector<int>& old_usage = constraint_to_vars_[c];
+  std::vector<int> new_usage = UsedVariables(ct);
+  const absl::Span<const int> old_usage = constraint_to_vars_[c];
   const int old_size = old_usage.size();
   int i = 0;
-  for (const int var : tmp_new_usage_) {
+  for (const int var : new_usage) {
     DCHECK(!VariableWasRemoved(var));
     while (i < old_size && old_usage[i] < var) {
       EraseFromVarToConstraint(old_usage[i], c);
@@ -595,7 +615,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
   for (; i < old_size; ++i) {
     EraseFromVarToConstraint(old_usage[i], c);
   }
-  constraint_to_vars_[c] = tmp_new_usage_;
+  constraint_to_vars_[c].swap(new_usage);
 
   UpdateLinear1Usage(ct, c);
 }
@@ -608,11 +628,9 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
   if (is_unsat_) return;
   const int old_size = constraint_to_vars_.size();
   const int new_size = working_model->constraints_size();
-  CHECK_LE(old_size, new_size);
+  DCHECK_LE(old_size, new_size);
   constraint_to_vars_.resize(new_size);
   constraint_to_linear1_var_.resize(new_size, -1);
-  constraint_to_intervals_.resize(new_size);
-  interval_usage_.resize(new_size);
   for (int c = old_size; c < new_size; ++c) {
     AddVariableUsage(c);
   }

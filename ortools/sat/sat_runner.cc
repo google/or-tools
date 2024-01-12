@@ -87,7 +87,7 @@ std::string ExtractName(absl::string_view full_filename) {
   return filename;
 }
 
-bool LoadProblem(const std::string& filename, const std::string& hint_file,
+bool LoadProblem(const std::string& filename, absl::string_view hint_file,
                  CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {

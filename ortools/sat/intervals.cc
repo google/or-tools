@@ -530,7 +530,7 @@ void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
   if (after.var == kNoIntegerVariable) return;
   if (before.var == kNoIntegerVariable) return;
   const IntegerValue offset = before.constant - after.constant;
-  precedence_relations_->UpdateOffset(before.var, after.var, offset);
+  precedence_relations_->Add(before.var, after.var, offset);
   if (precedences_->AddPrecedenceWithOffsetIfNew(before.var, after.var,
                                                  offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)

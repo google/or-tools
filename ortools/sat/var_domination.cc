@@ -1138,7 +1138,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 
   // First scan: update the partition.
   const int num_constraints = cp_model.constraints_size();
-  std::vector<std::pair<int64_t, int64_t>> activities(num_constraints);
+  std::vector<bool> c_is_free_to_increase(num_constraints);
+  std::vector<bool> c_is_free_to_decrease(num_constraints);
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
     switch (ct.constraint_case()) {
@@ -1154,13 +1155,15 @@ void ScanModelForDominanceDetection(PresolveContext& context,
         break;
       case ConstraintProto::kLinear: {
         // TODO(user): Maybe we should avoid recomputing that here.
-        activities[c] = context.ComputeMinMaxActivity(ct.linear());
-        const auto [min_activity, max_activity] = activities[c];
+        const auto [min_activity, max_activity] =
+            context.ComputeMinMaxActivity(ct.linear());
         const bool domain_is_simple = ct.linear().domain().size() == 2;
         const bool free_to_increase =
             domain_is_simple && ct.linear().domain(1) >= max_activity;
         const bool free_to_decrease =
             domain_is_simple && ct.linear().domain(0) <= min_activity;
+        c_is_free_to_increase[c] = free_to_increase;
+        c_is_free_to_decrease[c] = free_to_decrease;
         if (free_to_decrease && free_to_increase) break;
         if (!free_to_increase && !free_to_decrease) {
           var_domination->ActivityShouldNotChange(ct.linear().vars(),
@@ -1234,12 +1237,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
                                                     /*coeffs=*/{});
           break;
         case ConstraintProto::kLinear: {
-          const auto [min_activity, max_activity] = activities[c];
-          const bool domain_is_simple = ct.linear().domain().size() == 2;
-          const bool free_to_increase =
-              domain_is_simple && ct.linear().domain(1) >= max_activity;
-          const bool free_to_decrease =
-              domain_is_simple && ct.linear().domain(0) <= min_activity;
+          const bool free_to_increase = c_is_free_to_increase[c];
+          const bool free_to_decrease = c_is_free_to_decrease[c];
           if (free_to_decrease && free_to_increase) break;
           if (free_to_increase) {
             var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),

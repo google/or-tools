@@ -32,6 +32,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
@@ -49,34 +50,57 @@ namespace sat {
 
 void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
                               IntegerValue offset) {
-  // In some case we load new linear constraint as part of the linear
-  // relaxation. We just ignore anything after the first
-  // ComputeFullPrecedences() call.
-  if (is_built_) return;
-
   // Ignore trivial relation: tail + offset <= head.
-  if (integer_trail_->UpperBound(tail) + offset <=
-      integer_trail_->LowerBound(head)) {
+  if (integer_trail_->LevelZeroUpperBound(tail) + offset <=
+      integer_trail_->LevelZeroLowerBound(head)) {
     return;
   }
-  if (PositiveVariable(tail) == PositiveVariable(head)) return;
 
-  // TODO(user): Remove once we support non-DAG.
-  if (offset < 0) return;
+  // TODO(user): Return infeasible if tail == head and offset > 0.
+  // TODO(user): if tail = Negation(head) also update Domain.
+  if (tail == head) return;
 
-  graph_.AddArc(tail.value(), head.value());
-  graph_.AddArc(NegationOf(head).value(), NegationOf(tail).value());
-  arc_offset_.push_back(offset);
-  arc_offset_.push_back(offset);
+  AddToHashTable(tail, head, offset);
+  AddToHashTable(NegationOf(head), NegationOf(tail), offset);
+
+  // If we are not built, make sure there is enough room in the graph.
+  // TODO(user): Alternatively, force caller to do a Resize().
+  const int max_node =
+      std::max(PositiveVariable(tail), PositiveVariable(head)).value() + 1;
+  if (!is_built_ && max_node >= graph_.num_nodes()) {
+    graph_.AddNode(max_node);
+  }
 }
 
 void PrecedenceRelations::Build() {
   if (is_built_) return;
-
   is_built_ = true;
+
+  const int num_nodes = graph_.num_nodes();
+  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> before(
+      num_nodes);
+
+  // We will construct a graph with the current relation from all_relations_.
+  // And use this to compute the "closure".
+  // Note that the non-determinism of the arcs order shouldn't matter.
+  CHECK(arc_offsets_.empty());
+  graph_.ReserveArcs(all_relations_.size());
+  for (const auto [var_pair, offset] : all_relations_) {
+    // TODO(user): Support negative offset?
+    //
+    // Note that if we only have >= 0 ones, if we do have a cycle, we could
+    // make sure all variales are the same, and otherwise, we have a DAG or a
+    // conflict.
+    if (offset < 0) continue;
+    graph_.AddArc(var_pair.first.value(), var_pair.second.value());
+    arc_offsets_.push_back(offset);
+    CHECK_LT(var_pair.second, before.size());
+    before[var_pair.second].push_back(var_pair.first);
+  }
+
   std::vector<int> permutation;
   graph_.Build(&permutation);
-  util::Permute(permutation, &arc_offset_);
+  util::Permute(permutation, &arc_offsets_);
 
   // Is it a DAG?
   // Get a topological order of the DAG formed by all the arcs that are present.
@@ -87,7 +111,6 @@ void PrecedenceRelations::Build() {
   // with strictly positive weight.
   //
   // TODO(user): Only explore the sub-graph reachable from "vars".
-  const int num_nodes = graph_.num_nodes();
   DenseIntStableTopologicalSorter sorter(num_nodes);
   for (int arc = 0; arc < graph_.num_arcs(); ++arc) {
     sorter.AddEdge(graph_.Tail(arc), graph_.Head(arc));
@@ -110,8 +133,6 @@ void PrecedenceRelations::Build() {
 
   int work = 0;
   const int kWorkLimit = 1e6;
-  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> before(
-      graph_.num_nodes());
   const auto add = [&before, this](IntegerVariable a, IntegerVariable b,
                                    IntegerValue offset) {
     const auto [it, inserted] = all_relations_.insert({{a, b}, offset});
@@ -122,24 +143,21 @@ void PrecedenceRelations::Build() {
     }
   };
 
-  // TODO(user): We probably do not need to do both var and its negation.
   for (const IntegerVariable tail_var : topological_order_) {
     if (++work > kWorkLimit) break;
     for (const int arc : graph_.OutgoingArcs(tail_var.value())) {
-      CHECK_EQ(tail_var.value(), graph_.Tail(arc));
+      DCHECK_EQ(tail_var.value(), graph_.Tail(arc));
       const IntegerVariable head_var = IntegerVariable(graph_.Head(arc));
-      const IntegerValue arc_offset = arc_offset_[arc];
+      const IntegerValue arc_offset = arc_offsets_[arc];
 
       if (++work > kWorkLimit) break;
       add(tail_var, head_var, arc_offset);
-      add(NegationOf(head_var), NegationOf(tail_var), -arc_offset);
 
       for (const IntegerVariable before_var : before[tail_var]) {
         if (++work > kWorkLimit) break;
         const IntegerValue offset =
             all_relations_.at({before_var, tail_var}) + arc_offset;
         add(before_var, head_var, offset);
-        add(NegationOf(head_var), NegationOf(before_var), -offset);
       }
     }
   }
@@ -188,7 +206,7 @@ void PrecedenceRelations::ComputeFullPrecedences(
     for (const int arc : graph_.OutgoingArcs(tail_var.value())) {
       CHECK_EQ(tail_var.value(), graph_.Tail(arc));
       const IntegerVariable head_var = IntegerVariable(graph_.Head(arc));
-      const IntegerValue arc_offset = arc_offset_[arc];
+      const IntegerValue arc_offset = arc_offsets_[arc];
 
       // No need to create an empty entry in this case.
       if (tail_map.empty() && !to_consider.contains(tail_var)) continue;

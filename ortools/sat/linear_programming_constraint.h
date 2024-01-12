@@ -268,6 +268,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return optimal_constraints_;
   }
 
+  // This api allows to temporarily disable the LP propagator which can be
+  // costly during probing or other heavy propagation phase.
+  void EnablePropagation(bool enable) { enabled_ = enable; }
+  bool PropagationIsEnabled() const { return enabled_; }
+
  private:
   // Helper methods for branching. Returns true if branching on the given
   // variable helps with more propagation or finds a conflict.
@@ -613,6 +618,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   mutable int64_t num_bad_cuts_ = 0;
   mutable int64_t num_scaling_issues_ = 0;
   std::vector<int64_t> num_solves_by_status_;
+
+  // We might temporarily disable the LP propagation.
+  bool enabled_ = true;
 };
 
 // A class that stores which LP propagator is associated to each variable.

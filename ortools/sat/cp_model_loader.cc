@@ -994,11 +994,12 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
 
 void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
   std::vector<Literal> literals = mapping->Literals(ct.bool_or().literals());
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  m->Add(ClauseConstraint(literals));
+  sat_solver->AddProblemClause(literals, /*is_safe=*/false);
   if (literals.size() == 3) {
     m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
   }

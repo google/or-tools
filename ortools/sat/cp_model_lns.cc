@@ -53,6 +53,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/adaptative_parameter_value.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -223,9 +224,8 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   //
   // TODO(user): Remove duplicate constraints?
   const auto& constraints = simplied_model_proto_.constraints();
-  var_to_constraint_.assign(model_proto_.variables_size(), {});
-  constraint_to_var_.assign(constraints.size(), {});
-  int reduced_ct_index = 0;
+  constraint_to_var_.clear();
+  constraint_to_var_.reserve(constraints.size());
   for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
     // We remove the interval constraints since we should have an equivalent
     // linear constraint somewhere else. This is not the case if we have a fixed
@@ -236,9 +236,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       continue;
     }
 
+    tmp_row_.clear();
     for (const int var : UsedVariables(constraints[ct_index])) {
       if (IsConstant(var)) continue;
-      constraint_to_var_[reduced_ct_index].push_back(var);
+      tmp_row_.push_back(var);
     }
 
     // We replace intervals by their underlying integer variables. Note that
@@ -248,27 +249,28 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       need_sort = true;
       for (const int var : UsedVariables(constraints[interval])) {
         if (IsConstant(var)) continue;
-        constraint_to_var_[reduced_ct_index].push_back(var);
+        tmp_row_.push_back(var);
       }
     }
 
     // We remove constraint of size 0 and 1 since they are not useful for LNS
     // based on this graph.
-    if (constraint_to_var_[reduced_ct_index].size() <= 1) {
-      constraint_to_var_[reduced_ct_index].clear();
+    if (tmp_row_.size() <= 1) {
       continue;
     }
 
     // Keep this constraint.
     if (need_sort) {
-      gtl::STLSortAndRemoveDuplicates(&constraint_to_var_[reduced_ct_index]);
+      gtl::STLSortAndRemoveDuplicates(&tmp_row_);
     }
-    for (const int var : constraint_to_var_[reduced_ct_index]) {
-      var_to_constraint_[var].push_back(reduced_ct_index);
-    }
-    ++reduced_ct_index;
+    constraint_to_var_.Add(tmp_row_);
   }
-  constraint_to_var_.resize(reduced_ct_index);
+
+  // Initialize var to constraints, and make sure it has an entry for all
+  // variables.
+  var_to_constraint_.ResetFromTranspose(
+      constraint_to_var_,
+      /*min_transpose_size=*/model_proto_.variables().size());
 
   // We mark as active all non-constant variables.
   // Non-active variable will never be fixed in standard LNS fragment.
@@ -294,10 +296,11 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Note that fixed variable are just ignored.
   DenseConnectedComponentsFinder union_find;
   union_find.SetNumberOfNodes(num_variables);
-  for (const std::vector<int>& var_in_constraint : constraint_to_var_) {
-    if (var_in_constraint.size() <= 1) continue;
-    for (int i = 1; i < var_in_constraint.size(); ++i) {
-      union_find.AddEdge(var_in_constraint[0], var_in_constraint[i]);
+  for (int c = 0; c < constraint_to_var_.size(); ++c) {
+    const auto row = constraint_to_var_[c];
+    if (row.size() <= 1) continue;
+    for (int i = 1; i < row.size(); ++i) {
+      union_find.AddEdge(row[0], row[i]);
     }
   }
 
@@ -1402,8 +1405,8 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
   //   - reduce it in place
   //   - not hold the mutex too long.
   // TODO(user): should we compress it or use a different representation ?
-  std::vector<std::vector<int>> vars_to_constraints;
-  std::vector<std::vector<int>> constraints_to_vars;
+  CompactVectorVector<int, int> vars_to_constraints;
+  CompactVectorVector<int, int> constraints_to_vars;
   int num_active_vars = 0;
   std::vector<int> active_objective_vars;
   {
@@ -1438,28 +1441,30 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
     const int tail_index = absl::Uniform<int>(random, 0, active_vars.size());
     const int tail_var = active_vars[tail_index];
     int head_var = tail_var;
-    auto& cts = vars_to_constraints[tail_var];
-    while (!cts.empty() && head_var == tail_var) {
+    while (!vars_to_constraints[tail_var].empty() && head_var == tail_var) {
+      const auto cts = vars_to_constraints[tail_var];
       const int pos_ct = absl::Uniform<int>(random, 0, cts.size());
       const int ct = cts[pos_ct];
-      auto& vars = constraints_to_vars[ct];
-      while (!vars.empty() && head_var == tail_var) {
+      while (!constraints_to_vars[ct].empty() && head_var == tail_var) {
+        const auto vars = constraints_to_vars[ct];
         const int pos_var = absl::Uniform<int>(random, 0, vars.size());
-        std::swap(vars[pos_var], vars.back());
-        const int candidate = vars.back();
+        const int candidate = vars[pos_var];
+
         // We remove the variable as it is either already relaxed, or will be
         // relaxed.
-        vars.pop_back();
+        constraints_to_vars.RemoveBySwap(ct, pos_var);
         if (!relaxed_variables_set[candidate]) {
           head_var = candidate;
         }
       }
-      if (vars.empty()) {
-        std::swap(cts[pos_ct], cts.back());
-        cts.pop_back();  // This constraint has no more un-relaxed variables.
+      if (constraints_to_vars[ct].empty()) {
+        // This constraint has no more un-relaxed variables.
+        vars_to_constraints.RemoveBySwap(tail_var, pos_ct);
       }
     }
-    if (cts.empty()) {  // Variable is no longer active.
+
+    // Variable is no longer active ?
+    if (vars_to_constraints[tail_var].empty()) {
       std::swap(active_vars[tail_index], active_vars.back());
       active_vars.pop_back();
     }
@@ -1519,7 +1524,9 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
       // Add all the variable of this constraint and increase the set of next
       // possible constraints.
       DCHECK_LT(constraint_index, num_active_constraints);
-      random_variables = helper_.ConstraintToVar()[constraint_index];
+      random_variables.assign(
+          helper_.ConstraintToVar()[constraint_index].begin(),
+          helper_.ConstraintToVar()[constraint_index].end());
       std::shuffle(random_variables.begin(), random_variables.end(), random);
       for (const int var : random_variables) {
         if (visited_variables_set[var]) continue;

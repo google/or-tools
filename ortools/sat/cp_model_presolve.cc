@@ -5133,6 +5133,7 @@ void ExtractClauses(bool merge_into_bool_and,
 
     // bool_or.
     ConstraintProto* ct = proto->add_constraints();
+    ct->mutable_bool_or()->mutable_literals()->Reserve(clause.size());
     for (const Literal l : clause) {
       const int var = index_mapping[l.Variable().value()];
       if (l.IsPositive()) {
@@ -8891,7 +8892,6 @@ void CpModelPresolver::DetectDominatedLinearConstraints() {
       continue;
     }
 
-    DCHECK_LT(c, context_->ConstraintToVarsGraph().size());
     detector.AddPotentialSet(c);
 
     const auto [min_activity, max_activity] =

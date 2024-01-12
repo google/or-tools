@@ -30,6 +30,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -104,6 +105,8 @@ class Inprocessing {
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
+        all_lp_constraints_(
+            model->GetOrCreate<LinearProgrammingConstraintCollection>()),
         stamping_simplifier_(model->GetOrCreate<StampingSimplifier>()),
         blocked_clause_simplifier_(
             model->GetOrCreate<BlockedClauseSimplifier>()),
@@ -155,6 +158,7 @@ class Inprocessing {
   SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
   SatSolver* sat_solver_;
+  LinearProgrammingConstraintCollection* all_lp_constraints_;
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;

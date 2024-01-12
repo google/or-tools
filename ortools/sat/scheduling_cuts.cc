@@ -871,7 +871,7 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
   //   A Computational Study of the Job-Shop Scheduling Problem. 149-156
   //   INFORMS Journal on Computing, Volume 3, Number 1, Winter 1991
   const auto add_balas_disjunctive_cut =
-      [&](const std::string& local_cut_name, IntegerValue start_min_1,
+      [&](absl::string_view local_cut_name, IntegerValue start_min_1,
           IntegerValue duration_min_1, AffineExpression start_1,
           IntegerValue start_min_2, IntegerValue duration_min_2,
           AffineExpression start_2) {

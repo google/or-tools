@@ -492,11 +492,7 @@ class PresolveContext {
   // Important: To properly handle the objective, var_to_constraints[objective]
   // contains kObjectiveConstraint (i.e. -1) so that if the objective appear in
   // only one constraint, the constraint cannot be simplified.
-  const std::vector<std::vector<int>>& ConstraintToVarsGraph() const {
-    DCHECK(ConstraintVariableGraphIsUpToDate());
-    return constraint_to_vars_;
-  }
-  const std::vector<int>& ConstraintToVars(int c) const {
+  absl::Span<const int> ConstraintToVars(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return constraint_to_vars_[c];
   }
@@ -506,6 +502,7 @@ class PresolveContext {
   }
   int IntervalUsage(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
+    if (c >= interval_usage_.size()) return 0;
     return interval_usage_[c];
   }
 
@@ -595,6 +592,8 @@ class PresolveContext {
   DomainDeductions deductions;
 
  private:
+  void MaybeResizeIntervalData();
+
   void EraseFromVarToConstraint(int var, int c);
 
   // Helper to add an affine relation x = c.y + o to the given repository.
@@ -688,8 +687,6 @@ class PresolveContext {
   // detection time. But we mark all the variables in affine relations as part
   // of the kAffineRelationConstraint.
   AffineRelation affine_relations_;
-
-  std::vector<int> tmp_new_usage_;
 
   // Used by SetVariableAsRemoved() and VariableWasRemoved().
   absl::flat_hash_set<int> removed_variables_;

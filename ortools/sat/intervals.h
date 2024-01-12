@@ -948,10 +948,14 @@ inline std::function<IntervalVariable(Model*)> NewInterval(int64_t min_start,
                                                            int64_t max_end,
                                                            int64_t size) {
   return [=](Model* model) {
+    CHECK_LE(min_start + size, max_end);
+    const IntegerVariable start =
+        model->Add(NewIntegerVariable(min_start, max_end - size));
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        model->Add(NewIntegerVariable(min_start, max_end)),
-        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
-        IntegerValue(size), kNoLiteralIndex);
+        AffineExpression(start),
+        AffineExpression(start, IntegerValue(1), IntegerValue(size)),
+        AffineExpression(IntegerValue(size)), kNoLiteralIndex,
+        /*add_linear_relation=*/false);
   };
 }
 
@@ -984,7 +988,7 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
         AffineExpression(start),
         AffineExpression(start, IntegerValue(1), IntegerValue(size)),
         AffineExpression(IntegerValue(size)), is_present.Index(),
-        /*add_linear_relation=*/true);
+        /*add_linear_relation=*/false);
   };
 }
 

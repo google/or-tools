@@ -183,11 +183,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Important:
   //   - The constraint index is NOT related to the one in the cp_model.
   //   - Only non-constant var are listed in ConstraintToVar().
-  const std::vector<std::vector<int>>& ConstraintToVar() const
+  const CompactVectorVector<int, int>& ConstraintToVar() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return constraint_to_var_;
   }
-  const std::vector<std::vector<int>>& VarToConstraint() const
+  const CompactVectorVector<int, int>& VarToConstraint() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return var_to_constraint_;
   }
@@ -316,9 +316,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   //
   // TODO(user): Note that the objective is not considered here. Which is fine
   // except if the objective domain is constraining.
-  std::vector<std::vector<int>> constraint_to_var_
+  CompactVectorVector<int, int> constraint_to_var_
       ABSL_GUARDED_BY(graph_mutex_);
-  std::vector<std::vector<int>> var_to_constraint_
+  CompactVectorVector<int, int> var_to_constraint_
       ABSL_GUARDED_BY(graph_mutex_);
 
   // Connected components of the variable-constraint graph. If a variable is
@@ -335,6 +335,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // The list of non constant variables appearing in the objective.
   std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
+
+  std::vector<int> tmp_row_;
 
   mutable absl::Mutex domain_mutex_;
 };

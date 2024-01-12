@@ -1129,7 +1129,7 @@ class SccGraph {
       absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
       StronglyConnectedComponentsFinder<int32_t, SccGraph,
-                                        std::vector<std::vector<int32_t>>>;
+                                        CompactVectorVector<int32_t, int32_t>>;
 
   explicit SccGraph(SccFinder* finder, Implication* graph,
                     AtMostOne* at_most_ones,
@@ -1245,7 +1245,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   // TODO(user): We could just do it directly though.
   const int32_t size(implications_.size());
-  std::vector<std::vector<int32_t>> scc;
+  CompactVectorVector<int32_t, int32_t> scc;
+  scc.reserve(size);
   double dtime = 0.0;
   {
     SccGraph::SccFinder finder;
@@ -1267,7 +1268,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
-  for (std::vector<int32_t>& component : scc) {
+  for (int index = 0; index < scc.size(); ++index) {
+    const absl::Span<int32_t> component = scc[index];
+
     // If one is fixed then all must be fixed. Note that the reason why the
     // propagation didn't already do that and we don't always get fixed
     // component of size 1 is because of the potential newly fixed literals

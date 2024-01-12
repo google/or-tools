@@ -357,31 +357,6 @@ std::string LinearExpression::DebugString() const {
   return result;
 }
 
-// TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
-// we should just make the later switch negative variable to positive ones to
-// avoid an extra linear scan on each new cuts.
-void CanonicalizeConstraint(LinearConstraint* ct) {
-  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-
-  const int size = ct->num_terms;
-  for (int i = 0; i < size; ++i) {
-    if (VariableIsPositive(ct->vars[i])) {
-      terms.push_back({ct->vars[i], ct->coeffs[i]});
-    } else {
-      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
-    }
-  }
-  std::sort(terms.begin(), terms.end());
-
-  int new_size = 0;
-  for (const auto& term : terms) {
-    ct->vars[new_size] = term.first;
-    ct->coeffs[new_size] = term.second;
-    ++new_size;
-  }
-  ct->resize(new_size);
-}
-
 bool NoDuplicateVariable(const LinearConstraint& ct) {
   absl::flat_hash_set<IntegerVariable> seen_variables;
   const int size = ct.num_terms;

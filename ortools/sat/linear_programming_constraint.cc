@@ -683,7 +683,7 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   //
   // TODO(user): Keep all optimal solution in the current branch?
   // TODO(user): Still try to add cuts/constraints though!
-  if (level == 0 && !level_zero_lp_solution_.empty()) {
+  if (level == 0 && !lp_solution_is_set_ && !level_zero_lp_solution_.empty()) {
     lp_solution_is_set_ = true;
     lp_solution_ = level_zero_lp_solution_;
     lp_solution_level_ = 0;
@@ -701,6 +701,8 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
+  if (!enabled_) return true;
+
   // If we have a really deep branch, with a lot of LP explanation constraint,
   // we could take a quadratic amount of memory: O(num_var) per number of
   // propagation in that branch. To avoid that, once the memory starts to be
@@ -1773,6 +1775,7 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
 }
 
 bool LinearProgrammingConstraint::Propagate() {
+  if (!enabled_) return true;
   if (time_limit_->LimitReached()) return true;
   UpdateBoundsOfLpVariables();
 

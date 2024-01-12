@@ -18,8 +18,10 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
@@ -30,6 +32,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -189,6 +192,22 @@ bool Inprocessing::InprocessingRound() {
   if (total_dtime_ > params_.inprocessing_dtime_ratio() * diff) {
     return true;
   }
+
+  // LP Propagation during inprocessing can be really slow, so we temporarily
+  // disable it.
+  //
+  // TODO(user): The LP and incremental structure will still be called though,
+  // which can take some time, try to disable it more cleanly.
+  std::vector<std::pair<LinearProgrammingConstraint*, bool>> saved_state;
+  for (LinearProgrammingConstraint* lp : *all_lp_constraints_) {
+    saved_state.push_back({lp, lp->PropagationIsEnabled()});
+    lp->EnablePropagation(false);
+  }
+  auto cleanup = absl::MakeCleanup([&saved_state]() {
+    for (const auto [lp, old_value] : saved_state) {
+      lp->EnablePropagation(old_value);
+    }
+  });
 
   // We make sure we do not "pollute" the current saved polarities. We will
   // restore them at the end.

@@ -328,12 +328,6 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint);
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
-// Sorts the terms and makes all IntegerVariable positive. This assumes that a
-// variable or its negation only appear once.
-//
-// Note that currently this allocates some temporary memory.
-void CanonicalizeConstraint(LinearConstraint* ct);
-
 // Returns false if duplicate variables are found in ct.
 bool NoDuplicateVariable(const LinearConstraint& ct);
 
