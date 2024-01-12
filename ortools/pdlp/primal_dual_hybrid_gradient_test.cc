@@ -70,32 +70,6 @@ using ::testing::UnorderedElementsAre;
 
 const double kInfinity = std::numeric_limits<double>::infinity();
 
-}  // namespace
-
-// ITERATION_TYPE_CONSIDER_CASE(x) expands to print the iteration type x to *os.
-// Using this macro prevents typos in the strings.
-#define ITERATION_TYPE_CONSIDER_CASE(x) \
-  case IterationType::x:                \
-    *os << #x;                          \
-    break
-
-// NOTE: `PrintTo(IterationType, std::ostream*)` needs to be in the same
-// namespace as `IterationType`.
-void PrintTo(IterationType iteration_type, std::ostream* os) {
-  switch (iteration_type) {
-    ITERATION_TYPE_CONSIDER_CASE(kNormal);
-    ITERATION_TYPE_CONSIDER_CASE(kPrimalFeasibility);
-    ITERATION_TYPE_CONSIDER_CASE(kDualFeasibility);
-    ITERATION_TYPE_CONSIDER_CASE(kNormalTermination);
-    ITERATION_TYPE_CONSIDER_CASE(kPresolveTermination);
-    ITERATION_TYPE_CONSIDER_CASE(kFeasibilityPolishingTermination);
-  }
-}
-
-#undef ITERATION_TYPE_CONSIDER_CASE
-
-namespace {
-
 PrimalDualHybridGradientParams CreateSolverParams(
     const int iteration_limit, const double eps_optimal_absolute,
     const bool enable_scaling, const int num_threads,
