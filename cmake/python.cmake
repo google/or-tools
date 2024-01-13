@@ -314,6 +314,11 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
+configure_file(
+  ${PROJECT_SOURCE_DIR}/LICENSE
+  ${PROJECT_BINARY_DIR}/python/LICENSE
+  COPYONLY)
+
 add_custom_command(
   OUTPUT python/ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
