@@ -33,7 +33,7 @@ endif()
 target_link_libraries(math_opt_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_abseil::absl_casters
-  pybind11_abseil::import_status_module
+  pybind11_abseil::status_casters
   pybind11_native_proto_caster
   protobuf::libprotobuf
   )
