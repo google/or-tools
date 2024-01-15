@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f78fccc27..f830c8258 100644
+index 4137ce2e9..56fbd6bf7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -41,7 +41,7 @@ else (BUILD_SHARED_LIBS)
@@ -54,21 +54,18 @@ index f78fccc27..f830c8258 100644
    ${protobuf_BINARY_DIR}
    ${protobuf_SOURCE_DIR}/src)
  
-diff --git a/cmake/libprotobuf.cmake b/cmake/libprotobuf.cmake
-index 422754a1a..ea91898d5 100644
---- a/cmake/libprotobuf.cmake
-+++ b/cmake/libprotobuf.cmake
-@@ -26,7 +26,9 @@ endif()
- if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-   target_link_libraries(libprotobuf PRIVATE log)
- endif()
--target_include_directories(libprotobuf PUBLIC ${protobuf_SOURCE_DIR}/src)
-+target_include_directories(libprotobuf PUBLIC
-+  ${protobuf_SOURCE_DIR}/src
-+  ${protobuf_SOURCE_DIR})
- target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})
- protobuf_configure_target(libprotobuf)
- if(protobuf_BUILD_SHARED_LIBS)
+diff --git a/cmake/install.cmake b/cmake/install.cmake
+index 998c2e31a..99f0707a9 100644
+--- a/cmake/install.cmake
++++ b/cmake/install.cmake
+@@ -31,6 +31,7 @@ foreach(_library ${_protobuf_libraries})
+   set_property(TARGET ${_library}
+     PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+     $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}/src>
++    $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}>
+     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+   if (UNIX AND NOT APPLE)
+     set_property(TARGET ${_library}
 diff --git a/src/google/protobuf/map_field.h b/src/google/protobuf/map_field.h
 index 8aa9e45fe..8388f8a2e 100644
 --- a/src/google/protobuf/map_field.h
