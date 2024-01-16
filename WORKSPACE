@@ -226,7 +226,7 @@ http_archive(
 ## `pybind11_bazel`
 git_repository(
     name = "pybind11_bazel",
-    commit = "fc56ce8a8b51e3dd941139d329b63ccfea1d304b",
+    commit = "23926b00e2b2eb2fc46b17e587cf0c0cfd2f2c4b", # 2023/11/29
     patches = ["//patches:pybind11_bazel.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
@@ -241,13 +241,13 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_abseil",
-    commit = "52f27398876a3177049977249e004770bd869e61",
+    commit = "52f27398876a3177049977249e004770bd869e61", # 2024/01/11
     remote = "https://github.com/pybind/pybind11_abseil.git",
 )
 
 new_git_repository(
     name = "pybind11_protobuf",
-    commit = "3b11990a99dea5101799e61d98a82c4737d240cc",
+    commit = "3b11990a99dea5101799e61d98a82c4737d240cc", # 2024/01/04
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
