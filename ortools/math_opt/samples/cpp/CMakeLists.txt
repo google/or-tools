@@ -28,6 +28,8 @@ if(BUILD_CXX_SAMPLES)
 
 
   foreach(SAMPLE IN LISTS CXX_SRCS)
-    add_cxx_sample(${SAMPLE})
+    add_cxx_sample(
+      FILE_NAME ${SAMPLE}
+      COMPONENT_NAME math_opt)
   endforeach()
 endif()

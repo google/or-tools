@@ -505,82 +505,9 @@ install(DIRECTORY ortools/constraint_solver/docs/
   PATTERN "*.md")
 endif()
 
-############################
-## Samples/Examples/Tests ##
-############################
-# add_cxx_sample()
-# CMake function to generate and build C++ sample.
-# Parameters:
-#  the C++ filename
-# e.g.:
-# add_cxx_sample(foo.cc)
-function(add_cxx_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME}: ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  add_executable(${SAMPLE_NAME} ${FILE_NAME})
-  target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-  include(GNUInstallDirs)
-  if(APPLE)
-    set_target_properties(${SAMPLE_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
-    set_target_properties(${SAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-  endif()
-  install(TARGETS ${SAMPLE_NAME})
-
-  if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})
-  endif()
-  message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
-endfunction()
-
-# add_cxx_example()
-# CMake function to generate and build C++ example.
-# Parameters:
-#  the C++ filename
-# e.g.:
-# add_cxx_example(foo.cc)
-function(add_cxx_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME}: ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  add_executable(${EXAMPLE_NAME} ${FILE_NAME})
-  target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-  include(GNUInstallDirs)
-  if(APPLE)
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-  endif()
-  install(TARGETS ${EXAMPLE_NAME})
-
-  if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME} COMMAND ${EXAMPLE_NAME})
-  endif()
-  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
-endfunction()
-
+################
+##  C++ Test  ##
+################
 # add_cxx_test()
 # CMake function to generate and build C++ test.
 # Parameters:
@@ -616,4 +543,109 @@ function(add_cxx_test FILE_NAME)
     add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})
   endif()
   message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
+endfunction()
+
+##################
+##  C++ Sample  ##
+##################
+# add_cxx_sample()
+# CMake function to generate and build C++ sample.
+# Parameters:
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
+# e.g.:
+# add_cxx_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/bar.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(SAMPLE_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  endif()
+
+  add_executable(${SAMPLE_NAME} ${SAMPLE_FILE_NAME})
+  target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${SAMPLE_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+               OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${SAMPLE_NAME} PROPERTIES
+                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+  install(TARGETS ${SAMPLE_NAME})
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME cxx_${SAMPLE_COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${SAMPLE_NAME})
+  endif()
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
+endfunction()
+
+###################
+##  C++ Example  ##
+###################
+# add_cxx_example()
+# CMake function to generate and build C++ example.
+# Parameters:
+#  the C++ filename
+# e.g.:
+# add_cxx_example(foo.cc)
+function(add_cxx_example FILE_NAME)
+  message(STATUS "Configuring example ${FILE_NAME}: ...")
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  add_executable(${EXAMPLE_NAME} ${FILE_NAME})
+  target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${EXAMPLE_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+               OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${EXAMPLE_NAME} PROPERTIES
+                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+  install(TARGETS ${EXAMPLE_NAME})
+
+  if(BUILD_TESTING)
+    add_test(NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME} COMMAND ${EXAMPLE_NAME})
+  endif()
+  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
 endfunction()

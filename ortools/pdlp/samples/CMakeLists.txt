@@ -18,7 +18,7 @@ endif()
 if(BUILD_CXX_SAMPLES)
   file(GLOB CXX_SRCS "*.cc")
   foreach(SAMPLE IN LISTS CXX_SRCS)
-    add_cxx_sample(${SAMPLE})
+    add_cxx_sample(FILE_NAME ${SAMPLE})
   endforeach()
 endif()
 
