@@ -17,6 +17,9 @@ endif()
 
 if(BUILD_PYTHON_SAMPLES)
   file(GLOB PYTHON_SRCS "*.py")
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/remote_solve.py") # need ortools.math_opt.python.ipc
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/tsp.py") # need gurobi
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/facility_lp_benders.py") # too long
   foreach(SAMPLE IN LISTS PYTHON_SRCS)
     add_python_sample(
       FILE_NAME ${SAMPLE}

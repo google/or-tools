@@ -15,7 +15,6 @@
 import threading
 from typing import Callable, Optional, Sequence
 import unittest
-from google3.testing.pybase import parameterized
 from pybind11_abseil.status import StatusNotOk
 from ortools.math_opt import callback_pb2
 from ortools.math_opt import model_parameters_pb2

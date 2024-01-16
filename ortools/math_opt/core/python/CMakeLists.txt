@@ -40,7 +40,9 @@ target_link_libraries(math_opt_pybind11 PRIVATE
 add_library(${PROJECT_NAMESPACE}::math_opt_pybind11 ALIAS math_opt_pybind11)
 
 if(BUILD_TESTING)
-  file(GLOB PYTHON_SRCS "solver_test.py")
+  file(GLOB PYTHON_SRCS "*_test.py")
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solver_gurobi_test.py") # need gurobi
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solver_test.py") # need google3.testing.pybase.parameterized
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(
       FILE_NAME ${FILE_NAME}
