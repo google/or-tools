@@ -24,6 +24,7 @@ or-tools*.zip
 *.pbtxt
 *.ass
 *.swp
+*.swo
 
 build*.log
 test.log
