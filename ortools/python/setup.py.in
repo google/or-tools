@@ -80,7 +80,10 @@ setup(
             '*.pyi',
             'py.typed'
         ],
-        'pybind11_abseil':['$<TARGET_FILE_NAME:status_py_extension_stub>'],
+        'pybind11_abseil':[
+            '$<TARGET_FILE_NAME:status_py_extension_stub>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.math_opt':['*.pyi'],
         '@PYTHON_PROJECT@.math_opt.core.python':[
             '$<TARGET_FILE_NAME:math_opt_pybind11>',

@@ -488,6 +488,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
