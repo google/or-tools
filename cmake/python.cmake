@@ -635,23 +635,47 @@ endif()
 # add_python_sample()
 # CMake function to generate and build python sample.
 # Parameters:
-#  the python filename
+#  FILE_NAME: the Python filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_python_sample(foo.py)
-function(add_python_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME} ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_python_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/bar.py
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_python_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(SAMPLE_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      NAME python_${SAMPLE_COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
-  message(STATUS "Configuring sample ${FILE_NAME} done")
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
 
 ######################

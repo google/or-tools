@@ -25,7 +25,7 @@ endif()
 if(BUILD_PYTHON_SAMPLES)
   file(GLOB PYTHON_SRCS "*.py")
   foreach(SAMPLE IN LISTS PYTHON_SRCS)
-    add_python_sample(${SAMPLE})
+    add_python_sample(FILE_NAME ${SAMPLE})
   endforeach()
 endif()
 
