@@ -219,7 +219,7 @@ install_notebook_deps()
 
 git_repository(
     name = "pybind11_bazel",
-    commit = "fc56ce8a8b51e3dd941139d329b63ccfea1d304b",
+    commit = "23926b00e2b2eb2fc46b17e587cf0c0cfd2f2c4b", # 2023/11/29
     patches = ["//patches:pybind11_bazel.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
@@ -234,9 +234,7 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_protobuf",
-    #build_file = "@pybind11_bazel//:pybind11.BUILD",
-    #tag = "v2.10.3",
-    commit = "5baa2dc9d93e3b608cde86dfa4b8c63aeab4ac78",
+    commit = "b713501f1da56d9b76c42f89efd00b97c26c9eac", # 2023/11/29
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
