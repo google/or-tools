@@ -617,16 +617,40 @@ endfunction()
 # add_cxx_example()
 # CMake function to generate and build C++ example.
 # Parameters:
-#  the C++ filename
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the examples/ subdir where the test is located
+#  note: automatically determined if located in examples/<subdir>/
 # e.g.:
-# add_cxx_example(foo.cc)
-function(add_cxx_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME}: ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_cxx_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/example/foo/bar.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
 
-  add_executable(${EXAMPLE_NAME} ${FILE_NAME})
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # sample is located in examples/<component_name>/
+    get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(EXAMPLE_COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  endif()
+
+  add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE_NAME})
   target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
   target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
@@ -637,15 +661,17 @@ function(add_cxx_example FILE_NAME)
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${EXAMPLE_NAME})
 
   if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME} COMMAND ${EXAMPLE_NAME})
+    add_test(
+      NAME cxx_${EXAMPLE_COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${EXAMPLE_NAME})
   endif()
-  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

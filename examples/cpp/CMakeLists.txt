@@ -59,6 +59,6 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/pdlp_solve.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/strawberry_fields_with_column_generation.cc") # Too long
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/vector_bin_packing_solver.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/weighted_tardiness_sat.cc")
-foreach(SAMPLE IN LISTS CXX_SRCS)
-  add_cxx_example(${SAMPLE})
+foreach(EXAMPLE IN LISTS CXX_SRCS)
+  add_cxx_example(FILE_NAME ${EXAMPLE})
 endforeach()
