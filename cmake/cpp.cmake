@@ -511,21 +511,43 @@ endif()
 # add_cxx_test()
 # CMake function to generate and build C++ test.
 # Parameters:
-#  the C++ filename
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/
 # e.g.:
-# add_cxx_test(foo_test.cc)
-function(add_cxx_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME}: ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_cxx_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_test)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
 
-  add_executable(${TEST_NAME} ${FILE_NAME})
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/
+    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
+    get_filename_component(TEST_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  endif()
+
+  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
   target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE
-    ${PROJECT_NAMESPACE}::ortools
-  )
+  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
   include(GNUInstallDirs)
   if(APPLE)
@@ -533,16 +555,18 @@ function(add_cxx_test FILE_NAME)
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
-             set_target_properties(${TEST_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
 
   if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})
+    add_test(
+      NAME cxx_${TEST_COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${TEST_NAME})
   endif()
-  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
 endfunction()
 
 ##################
