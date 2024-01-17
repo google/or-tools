@@ -620,10 +620,10 @@ function(add_cxx_sample)
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${SAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${SAMPLE_NAME})
 
@@ -669,7 +669,7 @@ function(add_cxx_example)
   message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
 
   if(NOT EXAMPLE_COMPONENT_NAME)
-    # sample is located in examples/<component_name>/
+    # example is located in examples/<component_name>/
     get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
     get_filename_component(EXAMPLE_COMPONENT_NAME ${EXAMPLE_DIR} NAME)
   endif()
