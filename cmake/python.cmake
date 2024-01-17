@@ -684,20 +684,44 @@ endfunction()
 # add_python_example()
 # CMake function to generate and build python example.
 # Parameters:
-#  the python filename
+#  FILE_NAME: the Python filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_python_example(foo.py)
-function(add_python_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME} ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_python_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/examples/foo/bar.py
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_python_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # example is located in example/<component_name>/
+    get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(EXAMPLE_COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      NAME python_${EXAMPLE_COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
-  message(STATUS "Configuring example ${FILE_NAME} done")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

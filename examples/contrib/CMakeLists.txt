@@ -38,7 +38,7 @@ if(BUILD_PYTHON_EXAMPLES)
   #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/project_scheduling_sat.py") # ISSUE
   #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/sports_schedule_sat.py") # ISSUE
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_example(${FILE_NAME})
+    add_python_example(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
 

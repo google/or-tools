@@ -22,5 +22,5 @@ list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/bus_driver_scheduling_sat.py") # too l
 list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/cvrptw_plot.py") # depend on numpy
 
 foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-  add_python_example(${FILE_NAME})
+  add_python_example(FILE_NAME ${FILE_NAME})
 endforeach()
