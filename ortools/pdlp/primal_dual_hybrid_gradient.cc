@@ -729,7 +729,7 @@ SolverResult ErrorSolverResult(const TerminationReason reason,
 // bounds, variable bound gaps, and objective vector values that PDLP can handle
 // but that cause problems for other code such as glop's presolve.
 std::optional<SolverResult> CheckProblemStats(
-    const QuadraticProgramStats& problem_stats,
+    const QuadraticProgramStats& problem_stats, const double objective_offset,
     bool check_excessively_small_values) {
   const double kExcessiveInputValue = 1e50;
   const double kExcessivelySmallInputValue = 1e-50;
@@ -844,6 +844,17 @@ std::optional<SolverResult> CheckProblemStats(
                  << " and smallest non-zero absolute value "
                  << problem_stats.variable_bound_gaps_min()
                  << "; performance may suffer.";
+  }
+  if (std::isnan(objective_offset)) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Objective offset is NAN.");
+  }
+  if (std::abs(objective_offset) > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Objective offset ", objective_offset,
+                     " has absolute value which exceeds limit of ",
+                     kExcessiveInputValue, "."));
   }
   if (std::isnan(problem_stats.objective_vector_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
@@ -981,8 +992,9 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   *solve_log.mutable_original_problem_stats() = ComputeStats(sharded_qp_);
   const QuadraticProgramStats& original_problem_stats =
       solve_log.original_problem_stats();
-  if (auto maybe_result = CheckProblemStats(
-          original_problem_stats, params.presolve_options().use_glop());
+  if (auto maybe_result =
+          CheckProblemStats(original_problem_stats, Qp().objective_offset,
+                            params.presolve_options().use_glop());
       maybe_result.has_value()) {
     return *maybe_result;
   }

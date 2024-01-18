@@ -1209,6 +1209,24 @@ TEST(PrimalDualHybridGradientTest,
             TERMINATION_REASON_INVALID_PROBLEM);
 }
 
+TEST(PrimalDualHybridGradientTest, DetectsNanObjectiveOffset) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_offset = std::numeric_limits<double>::quiet_NaN();
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
+TEST(PrimalDualHybridGradientTest, DetectsExcessiveObjectiveOffset) {
+  QuadraticProgram qp = TestLp();
+  qp.objective_offset = -1.0e60;
+  SolverResult output =
+      PrimalDualHybridGradient(qp, PrimalDualHybridGradientParams());
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INVALID_PROBLEM);
+}
+
 TEST(PrimalDualHybridGradientTest, DetectsNanInObjectiveVector) {
   QuadraticProgram qp = TestLp();
   qp.objective_vector[3] = std::numeric_limits<double>::quiet_NaN();
