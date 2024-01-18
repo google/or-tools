@@ -15,7 +15,7 @@
 import datetime
 import math
 
-import unittest
+from absl.testing import absltest
 from google3.third_party.pybind11_abseil.status import StatusNotOk
 from ortools.math_opt import infeasible_subsystem_pb2
 from ortools.math_opt import model_pb2
@@ -94,7 +94,7 @@ def _expected_iis_success() -> (
 
 
 class PybindComputeInfeasibleSubsystemTest(
-    compare_proto.MathOptProtoAssertions, unittest.TestCase
+    compare_proto.MathOptProtoAssertions, absltest.TestCase
 ):
     def test_compute_infeasible_subsystem_infeasible(self) -> None:
         iis_result = solver.compute_infeasible_subsystem(
@@ -177,4 +177,4 @@ class PybindComputeInfeasibleSubsystemTest(
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

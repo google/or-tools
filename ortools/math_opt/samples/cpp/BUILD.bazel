@@ -22,7 +22,6 @@ cc_binary(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -36,7 +35,10 @@ cc_binary(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "//ortools/util:status_macros",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -51,7 +53,7 @@ cc_binary(
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
     ],
@@ -65,7 +67,7 @@ cc_binary(
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
     ],
@@ -79,7 +81,7 @@ cc_binary(
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
-        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/time",
     ],
 )
@@ -93,8 +95,10 @@ cc_binary(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -112,6 +116,7 @@ cc_binary(
         "//ortools/util:status_macros",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/random:seed_sequences",
@@ -120,6 +125,7 @@ cc_binary(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -135,7 +141,7 @@ cc_binary(
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
         "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -153,8 +159,12 @@ cc_binary(
         "//ortools/math_opt/solvers:gurobi_solver",
         "//ortools/math_opt/solvers:pdlp_solver",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -181,12 +191,16 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:gscip_solver",
         "//ortools/math_opt/solvers:gurobi_solver",
-        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -198,8 +212,10 @@ cc_binary(
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -214,9 +230,12 @@ cc_binary(
         "//ortools/math_opt/solvers:gscip_solver",
         "//ortools/math_opt/solvers:gurobi_solver",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -227,6 +246,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/status",
     ],
 )
