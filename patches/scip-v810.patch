@@ -20,3 +20,4 @@ index 2471778a8f..17fd1e8c34 100644
     {
        SCIPerrorMessage("Could not write <%s>\n", fname);
        return SCIP_READERROR;
+
