@@ -186,67 +186,91 @@ endif()
 #################
 ##  .Net Test  ##
 #################
-if(BUILD_TESTING)
-  # add_dotnet_test()
-  # CMake function to generate and build dotnet test.
-  # Parameters:
-  #  the dotnet filename
-  # e.g.:
-  # add_dotnet_test(FooTests.cs)
-  function(add_dotnet_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME} ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+# add_dotnet_test()
+# CMake function to generate and build dotnet test.
+# Parameters:
+#  FILE_NAME: the .Net filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/dotnet/
+# e.g.:
+# add_dotnet_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/dotnet/BarTests.cs
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_dotnet_test)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/dotnet/
+    get_filename_component(WRAPPER_DIR ${TEST_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
     get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  endif()
 
-    set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
-    message(STATUS "build path: ${DOTNET_TEST_DIR}")
+  set(DOTNET_TEST_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
+  message(STATUS "build path: ${DOTNET_TEST_DIR}")
 
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-      @ONLY)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
+    ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+    @ONLY)
 
-    add_custom_command(
-      OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
-      COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${DOTNET_TEST_DIR}/
-      MAIN_DEPENDENCY ${FILE_NAME}
-      VERBATIM
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+  add_custom_command(
+    OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy ${TEST_FILE_NAME} ${DOTNET_TEST_DIR}/
+    MAIN_DEPENDENCY ${TEST_FILE_NAME}
+    VERBATIM
+    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
-    add_custom_command(
-      OUTPUT ${DOTNET_TEST_DIR}/timestamp
-      COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-        ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
-      COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
-      DEPENDS
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-      dotnet_package
-      BYPRODUCTS
-      ${DOTNET_TEST_DIR}/bin
-      ${DOTNET_TEST_DIR}/obj
-      VERBATIM
-      COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+  add_custom_command(
+    OUTPUT ${DOTNET_TEST_DIR}/timestamp
+    COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
+    ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
+    COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
+    DEPENDS
+    ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+    ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+    dotnet_package
+    BYPRODUCTS
+    ${DOTNET_TEST_DIR}/bin
+    ${DOTNET_TEST_DIR}/obj
+    VERBATIM
+    COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
+    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
-    add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
-      DEPENDS
-      ${DOTNET_TEST_DIR}/timestamp
-      WORKING_DIRECTORY ${DOTNET_TEST_DIR})
+  add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
+    DEPENDS
+    ${DOTNET_TEST_DIR}/timestamp
+    WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
+  if(BUILD_TESTING)
     add_test(
       NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${CMAKE_COMMAND} -E env --unset=TARGETNAME
-        ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
+      ${DOTNET_EXECUTABLE} test --nologo -c Release ${TEST_NAME}.csproj
       WORKING_DIRECTORY ${DOTNET_TEST_DIR})
-    message(STATUS "Configuring test ${FILE_NAME} done")
-  endfunction()
-endif()
+  endif()
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+endfunction()
 
 #######################
 ##  DOTNET WRAPPERS  ##
@@ -429,15 +453,41 @@ endif()
 # add_dotnet_sample()
 # CMake function to generate and build dotnet sample.
 # Parameters:
-#  the dotnet filename
+#  FILE_NAME: the .Net filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_dotnet_sample(FooApp.cs)
-function(add_dotnet_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME} ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_dotnet_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/Bar.cs
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_dotnet_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+  endif()
 
   set(DOTNET_SAMPLE_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${SAMPLE_NAME})
   message(STATUS "build path: ${DOTNET_SAMPLE_DIR}")
@@ -450,10 +500,8 @@ function(add_dotnet_sample FILE_NAME)
   add_custom_command(
     OUTPUT ${DOTNET_SAMPLE_DIR}/${SAMPLE_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_SAMPLE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${DOTNET_SAMPLE_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SAMPLE_FILE_NAME} ${DOTNET_SAMPLE_DIR}/
+      MAIN_DEPENDENCY ${SAMPLE_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
@@ -509,7 +557,7 @@ function(add_dotnet_sample FILE_NAME)
         WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
     endif()
   endif()
-  message(STATUS "Configuring sample ${FILE_NAME} done")
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
 
 ####################
@@ -518,31 +566,55 @@ endfunction()
 # add_dotnet_example()
 # CMake function to generate and build dotnet example.
 # Parameters:
-#  the dotnet filename
+#  FILE_NAME: the .Net filename
+#  COMPONENT_NAME: name of the example/ subdir where the test is located
+#  note: automatically determined if located in examples/<component>/
 # e.g.:
-# add_dotnet_example(Foo.cs)
-function(add_dotnet_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME} ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_dotnet_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/examples/foo/Bar.cs
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_dotnet_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # sample is located in examples/<component_name>/
+    get_filename_component(COMPONENT_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
+  endif()
 
   set(DOTNET_EXAMPLE_DIR ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${EXAMPLE_NAME})
   message(STATUS "build path: ${DOTNET_EXAMPLE_DIR}")
 
   set(SAMPLE_NAME ${EXAMPLE_NAME})
   configure_file(
-    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Sample.csproj.in
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Example.csproj.in
     ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.csproj
     @ONLY)
 
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_EXAMPLE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${DOTNET_EXAMPLE_DIR}/
-    MAIN_DEPENDENCY ${FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_FILE_NAME} ${DOTNET_EXAMPLE_DIR}/
+      MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
@@ -598,5 +670,5 @@ function(add_dotnet_example FILE_NAME)
         WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
     endif()
   endif()
-  message(STATUS "Configuring example ${FILE_NAME} done")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

@@ -8,7 +8,7 @@
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <AssemblyName>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@</AssemblyName>
+    <AssemblyName>@DOTNET_PROJECT@.@COMPONENT_NAME@.@EXAMPLE_NAME@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
@@ -16,8 +16,8 @@
 
     <!-- Pack Option -->
     <IsPackable>true</IsPackable>
-    <Title>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@ v@PROJECT_VERSION@</Title>
-    <PackageId>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@</PackageId>
+    <Title>@DOTNET_PROJECT@.@COMPONENT_NAME@.@EXAMPLE_NAME@ v@PROJECT_VERSION@</Title>
+    <PackageId>@DOTNET_PROJECT@.@COMPONENT_NAME@.@EXAMPLE_NAME@</PackageId>
     <PackageTags>sample</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -41,7 +41,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="@SAMPLE_FILE_NAME@" />
+    <Compile Include="@EXAMPLE_FILE_NAME@" />
+
     <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
   </ItemGroup>
 </Project>
