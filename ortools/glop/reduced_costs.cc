@@ -17,6 +17,20 @@
 #include <cstdlib>
 #include <random>
 
+#include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "ortools/base/logging.h"
+#include "ortools/glop/basis_representation.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/primal_edge_norms.h"
+#include "ortools/glop/update_row.h"
+#include "ortools/glop/variables_info.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/scattered_vector.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/util/bitset.h"
+#include "ortools/util/stats.h"
+
 #ifdef OMP
 #include <omp.h>
 #endif

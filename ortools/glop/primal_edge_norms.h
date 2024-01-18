@@ -25,6 +25,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
+#include "ortools/lp_data/sparse.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
