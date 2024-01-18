@@ -95,11 +95,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"
+#include "ortools/glop/lu_factorization.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/pricing.h"
 #include "ortools/glop/primal_edge_norms.h"
@@ -112,9 +116,12 @@
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/lp_data/sparse_row.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

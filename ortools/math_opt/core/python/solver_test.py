@@ -14,7 +14,7 @@
 
 import threading
 from typing import Callable, Optional, Sequence
-import unittest
+from absl.testing import absltest
 from absl.testing import parameterized
 from pybind11_abseil.status import StatusNotOk
 from ortools.math_opt import callback_pb2
@@ -270,4 +270,4 @@ class PybindSolveInterrupterTest(parameterized.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

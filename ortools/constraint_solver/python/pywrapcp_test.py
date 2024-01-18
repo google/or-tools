@@ -15,7 +15,7 @@
 """Test Constraint Solver API."""
 
 import sys
-import unittest
+from absl.testing import absltest
 from ortools.constraint_solver import search_limit_pb2
 from ortools.constraint_solver import solver_parameters_pb2
 from ortools.constraint_solver import pywrapcp
@@ -33,7 +33,7 @@ class ClassIncCallback:
         return i + self.__increment
 
 
-class TestIntVarContainerAPI(unittest.TestCase):
+class TestIntVarContainerAPI(absltest.TestCase):
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.IntVarContainer, "Contains"),
@@ -64,7 +64,7 @@ class TestIntVarContainerAPI(unittest.TestCase):
         )
 
 
-class TestIntervalVarContainerAPI(unittest.TestCase):
+class TestIntervalVarContainerAPI(absltest.TestCase):
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.IntervalVarContainer, "Contains"),
@@ -96,7 +96,7 @@ class TestIntervalVarContainerAPI(unittest.TestCase):
         )
 
 
-class TestSequenceVarContainerAPI(unittest.TestCase):
+class TestSequenceVarContainerAPI(absltest.TestCase):
     def test_contains(self):
         self.assertTrue(
             hasattr(pywrapcp.SequenceVarContainer, "Contains"),
@@ -128,7 +128,7 @@ class TestSequenceVarContainerAPI(unittest.TestCase):
         )
 
 
-class PyWrapCPTest(unittest.TestCase):
+class PyWrapCPTest(absltest.TestCase):
     def testRabbitPheasant(self):
         # Create the solver.
         solver = pywrapcp.Solver("testRabbitPheasant")
@@ -538,7 +538,7 @@ class CustomSearchMonitor(pywrapcp.SearchMonitor):
         print(self._nexts)
 
 
-class SearchMonitorTest(unittest.TestCase):
+class SearchMonitorTest(absltest.TestCase):
     def test_search_monitor(self):
         print("test_search_monitor")
         solver = pywrapcp.Solver("test search monitor")
@@ -560,7 +560,7 @@ class CustomDemon(pywrapcp.PyDemon):
         print("in Run(), saw " + str(self._x))
 
 
-class DemonTest(unittest.TestCase):
+class DemonTest(absltest.TestCase):
     def test_demon(self):
         print("test_demon")
         solver = pywrapcp.Solver("test export")
@@ -660,7 +660,7 @@ class BinarySum(pywrapcp.PyConstraint):
         self._y.SetRange(self._z.Min() - self._x.Max(), self._z.Max() - self._x.Min())
 
 
-class ConstraintTest(unittest.TestCase):
+class ConstraintTest(absltest.TestCase):
     def test_member(self):
         print("test_member")
         solver = pywrapcp.Solver("test member")
@@ -810,7 +810,7 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
         return "CustomDecisionBuilderCustomDecision"
 
 
-class DecisionTest(unittest.TestCase):
+class DecisionTest(absltest.TestCase):
     def test_custom_decision_builder(self):
         solver = pywrapcp.Solver("test_custom_decision_builder")
         db = CustomDecisionBuilder()
@@ -826,7 +826,7 @@ class DecisionTest(unittest.TestCase):
         self.assertEqual(db._counter, 2)
 
 
-class LocalSearchTest(unittest.TestCase):
+class LocalSearchTest(absltest.TestCase):
     class OneVarLNS(pywrapcp.BaseLns):
         """One Var LNS."""
 
@@ -1027,7 +1027,7 @@ class MyDecisionBuilderThatFailsWithRev(pywrapcp.PyDecisionBuilder):
         return None
 
 
-class PyWrapCPSearchTest(unittest.TestCase):
+class PyWrapCPSearchTest(absltest.TestCase):
     NUMBER_OF_VARIABLES = 10
     VARIABLE_MIN = 0
     VARIABLE_MAX = 10
@@ -1274,7 +1274,7 @@ class SplitDomainDecisionBuilder(pywrapcp.PyDecisionBuilder):
         return solver.SplitVariableDomain(self.__var, self.__value, self.__lower)
 
 
-class PyWrapCPDecisionTest(unittest.TestCase):
+class PyWrapCPDecisionTest(absltest.TestCase):
     def testSplitDomainLower(self):
         solver = pywrapcp.Solver("testSplitDomainLower")
         x = solver.IntVar(0, 10, "x")
@@ -1330,7 +1330,7 @@ class PyWrapCPDecisionTest(unittest.TestCase):
         solver.EndSearch()
 
 
-class IntVarLocalSearchOperatorTest(unittest.TestCase):
+class IntVarLocalSearchOperatorTest(absltest.TestCase):
     def test_ctor(self):
         solver = pywrapcp.Solver("Solve")
         int_vars = [solver.IntVar(0, 4) for _ in range(4)]
@@ -1359,4 +1359,4 @@ class IntVarLocalSearchOperatorTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

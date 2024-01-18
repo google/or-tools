@@ -14,7 +14,7 @@
 """Solve MathOpt models via HTTP request to the OR API."""
 
 import json
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 from google.protobuf import json_format
 import requests
 from ortools.service.v1 import optimization_pb2
@@ -24,6 +24,7 @@ from ortools.math_opt.python.ipc import proto_converter
 
 _DEFAULT_DEADLINE_SEC = 10
 _DEFAULT_ENDPOINT = "https://optimization.googleapis.com/v1/mathopt:solveMathOptModel"
+_RELATIVE_TIME_BUFFER = 0.05
 
 
 class OptimizationServiceError(Exception):
@@ -47,7 +48,7 @@ def remote_http_solve(
       params: Optional configuration of the underlying solver.
       model_params: Optional configuration of the solver that is model specific.
       endpoint: An URI identifying the service for remote solves.
-      api_key: Tey to the OR API.
+      api_key: Key to the OR API.
       deadline_sec: The number of seconds before the request times out.
 
     Returns:
@@ -64,8 +65,9 @@ def remote_http_solve(
 
     payload = _build_json_payload(model, solver_type, params, model_params)
 
-    response = requests.post(
-        url=f"{endpoint}?key={api_key}",
+    session = create_optimization_service_session(api_key, deadline_sec)
+    response = session.post(
+        url=endpoint,
         json=payload,
         timeout=deadline_sec,
     )
@@ -77,6 +79,35 @@ def remote_http_solve(
         ) from None
 
     return _build_solve_result(response.content, model)
+
+
+def create_optimization_service_session(
+    api_key: str,
+    deadline_sec: float,
+) -> requests.Session:
+    """Creates a session with the appropriate headers.
+
+    This function sets headers for authentication via an API key, and it sets
+    deadlines set for the server and the connection.
+
+    Args:
+      api_key: Key to the OR API.
+      deadline_sec: The number of seconds before the request times out.
+
+    Returns:
+      requests.Session a session with the necessary headers to call the
+      optimization serive.
+    """
+    session = requests.Session()
+    server_timeout = deadline_sec * (1 - _RELATIVE_TIME_BUFFER)
+    session.headers = {
+        "Content-Type": "application/json",
+        "Connection": "keep-alive",
+        "Keep-Alive": f"timeout={deadline_sec}, max=1",
+        "X-Server-Timeout": f"{server_timeout}",
+        "X-Goog-Api-Key": api_key,
+    }
+    return session
 
 
 def _build_json_payload(
@@ -140,7 +171,7 @@ def _build_solve_result(
         )
     except json_format.ParseError as json_err:
         raise ValueError(
-            "api response is not a valid SolveMathOptModelResponse JSON"
+            "API response is not a valid SolveMathOptModelResponse JSON"
         ) from json_err
 
     response = proto_converter.convert_response(api_response)

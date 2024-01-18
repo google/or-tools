@@ -24,6 +24,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "ortools/base/logging.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/util/logging.h"
 

@@ -16,7 +16,7 @@
 
 import functools
 
-import unittest
+from absl.testing import absltest
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
@@ -54,7 +54,7 @@ class Callback:
         self.costs.append(self.model.CostVar().Max())
 
 
-class TestPyWrapRoutingIndexManager(unittest.TestCase):
+class TestPyWrapRoutingIndexManager(absltest.TestCase):
     def testCtor(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
@@ -86,7 +86,7 @@ class TestPyWrapRoutingIndexManager(unittest.TestCase):
             self.assertEqual(i + 4, manager.IndexToNode(manager.GetEndIndex(i)))
 
 
-class TestPyWrapRoutingModel(unittest.TestCase):
+class TestPyWrapRoutingModel(absltest.TestCase):
     def testCtor(self):
         manager = pywrapcp.RoutingIndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
@@ -791,7 +791,7 @@ class TestPyWrapRoutingModel(unittest.TestCase):
         )
 
 
-class TestBoundCost(unittest.TestCase):
+class TestBoundCost(absltest.TestCase):
     def testCtor(self):
         bound_cost = pywrapcp.BoundCost()
         self.assertIsNotNone(bound_cost)
@@ -804,7 +804,7 @@ class TestBoundCost(unittest.TestCase):
         self.assertEqual(43, bound_cost.cost)
 
 
-class TestRoutingDimension(unittest.TestCase):
+class TestRoutingDimension(absltest.TestCase):
     def testCtor(self):
         manager = pywrapcp.RoutingIndexManager(31, 7, 3)
         self.assertIsNotNone(manager)
@@ -864,4 +864,4 @@ class TestRoutingDimension(unittest.TestCase):
 # TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

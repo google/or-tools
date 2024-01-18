@@ -16,6 +16,10 @@
 #include <cstdlib>
 #include <utility>
 
+#include "absl/log/check.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
+
 namespace operations_research {
 namespace glop {
 

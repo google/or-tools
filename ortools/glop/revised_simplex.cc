@@ -23,22 +23,35 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
+#include "absl/random/seed_sequences.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
+#include "ortools/glop/basis_representation.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/status.h"
+#include "ortools/glop/variables_info.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
 #include "ortools/lp_data/permutation.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/lp_data/sparse_row.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/return_macros.h"
+#include "ortools/util/stats.h"
+#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, simplex_display_numbers_as_fractions, false,
           "Display numbers as fractions.");
