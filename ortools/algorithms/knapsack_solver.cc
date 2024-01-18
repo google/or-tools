@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/bitset.h"
@@ -677,7 +678,7 @@ struct KnapsackItemWithEfficiency {
 // than KnapsackGenericSolver.
 class Knapsack64ItemsSolver : public BaseKnapsackSolver {
  public:
-  explicit Knapsack64ItemsSolver(const std::string& solver_name);
+  explicit Knapsack64ItemsSolver(absl::string_view solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
@@ -725,7 +726,7 @@ bool CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder(
 }
 
 // ----- Knapsack64ItemsSolver -----
-Knapsack64ItemsSolver::Knapsack64ItemsSolver(const std::string& solver_name)
+Knapsack64ItemsSolver::Knapsack64ItemsSolver(absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       sorted_items_(),
       sum_profits_(),
@@ -1040,7 +1041,7 @@ int64_t KnapsackDynamicProgrammingSolver::Solve(TimeLimit* /*time_limit*/,
 // (DOI 10.1007/978-3-540-24777-7)].
 class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackDivideAndConquerSolver(const std::string& solver_name);
+  explicit KnapsackDivideAndConquerSolver(absl::string_view solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
@@ -1073,7 +1074,7 @@ class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
 
 // ----- KnapsackDivideAndConquerSolver -----
 KnapsackDivideAndConquerSolver::KnapsackDivideAndConquerSolver(
-    const std::string& solver_name)
+    absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       profits_(),
       weights_(),
