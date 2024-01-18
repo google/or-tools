@@ -16,7 +16,10 @@
 #include <cstdio>
 #include <string>
 
+#include "ortools/base/logging.h"
+#include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.tab.hh"
+#include "ortools/flatzinc/parser_util.h"
 
 // Declare external functions in the flatzinc.tab.cc generated file.
 extern int orfz_parse(operations_research::fz::ParserContext* parser,

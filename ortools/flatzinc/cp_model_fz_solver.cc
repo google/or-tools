@@ -38,6 +38,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
