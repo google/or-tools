@@ -45,7 +45,7 @@ endif()
 if(BUILD_JAVA_EXAMPLES)
   file(GLOB JAVA_SRCS "*.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
-    add_java_example(${FILE_NAME})
+    add_java_example(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
 

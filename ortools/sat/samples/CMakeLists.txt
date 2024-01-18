@@ -32,7 +32,7 @@ endif()
 if(BUILD_JAVA_SAMPLES)
   file(GLOB JAVA_SRCS "*.java")
   foreach(SAMPLE IN LISTS JAVA_SRCS)
-    add_java_sample(${SAMPLE})
+    add_java_sample(FILE_NAME ${SAMPLE})
   endforeach()
 endif()
 

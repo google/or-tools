@@ -17,5 +17,5 @@ endif()
 
 file(GLOB JAVA_SRCS "*.java")
 foreach(SAMPLE IN LISTS JAVA_SRCS)
-  add_java_example(${SAMPLE})
+  add_java_example(FILE_NAME ${SAMPLE})
 endforeach()
