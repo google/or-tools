@@ -218,7 +218,7 @@ endif()
 # Parameters:
 #  FILE_NAME: the python filename
 #  COMPONENT_NAME: name of the ortools/ subdir where the test is located
-#  note: automatically determined if located in ortools/<component>/python/test.py
+#  note: automatically determined if located in ortools/<component>/python/
 # e.g.:
 # add_python_test(
 #   FILE_NAME
@@ -247,12 +247,14 @@ function(add_python_test)
     # test is located in ortools/<component_name>/python/
     get_filename_component(WRAPPER_DIR ${TEST_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
-    get_filename_component(TEST_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
   endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_${TEST_COMPONENT_NAME}_${TEST_NAME}
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
@@ -666,12 +668,14 @@ function(add_python_sample)
     # sample is located in ortools/<component_name>/sample/
     get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-    get_filename_component(SAMPLE_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_${SAMPLE_COMPONENT_NAME}_${SAMPLE_NAME}
+      NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
@@ -714,12 +718,14 @@ if(NOT EXAMPLE_FILE_NAME)
   if(NOT EXAMPLE_COMPONENT_NAME)
     # example is located in example/<component_name>/
     get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
-    get_filename_component(EXAMPLE_COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
   endif()
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_${EXAMPLE_COMPONENT_NAME}_${EXAMPLE_NAME}
+      NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
