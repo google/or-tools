@@ -541,7 +541,9 @@ if(NOT TEST_FILE_NAME)
   if(NOT TEST_COMPONENT_NAME)
     # test is located in ortools/<component_name>/
     get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
-    get_filename_component(TEST_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
   endif()
 
   add_executable(${TEST_NAME} ${TEST_FILE_NAME})
@@ -563,7 +565,7 @@ if(NOT TEST_FILE_NAME)
 
   if(BUILD_TESTING)
     add_test(
-      NAME cxx_${TEST_COMPONENT_NAME}_${TEST_NAME}
+      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${TEST_NAME})
   endif()
   message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
@@ -606,7 +608,9 @@ function(add_cxx_sample)
     # sample is located in ortools/<component_name>/sample/
     get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-    get_filename_component(SAMPLE_COMPONENT_NAME ${COMPONENT_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   endif()
 
   add_executable(${SAMPLE_NAME} ${SAMPLE_FILE_NAME})
@@ -629,7 +633,7 @@ function(add_cxx_sample)
 
   if(BUILD_TESTING)
     add_test(
-      NAME cxx_${SAMPLE_COMPONENT_NAME}_${SAMPLE_NAME}
+      NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${SAMPLE_NAME})
   endif()
   message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
@@ -671,7 +675,9 @@ function(add_cxx_example)
   if(NOT EXAMPLE_COMPONENT_NAME)
     # example is located in examples/<component_name>/
     get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
-    get_filename_component(EXAMPLE_COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+    get_filename_component(COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
   endif()
 
   add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE_NAME})
@@ -694,7 +700,7 @@ function(add_cxx_example)
 
   if(BUILD_TESTING)
     add_test(
-      NAME cxx_${EXAMPLE_COMPONENT_NAME}_${EXAMPLE_NAME}
+      NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${EXAMPLE_NAME})
   endif()
   message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
