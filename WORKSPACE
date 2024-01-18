@@ -129,7 +129,7 @@ new_git_repository(
     build_file = "//bazel:scip.BUILD.bazel",
     patches = ["//bazel:scip.patch"],
     patch_args = ["-p1"],
-    tag = "v804",
+    tag = "v810",
     remote = "https://github.com/scipopt/scip.git",
 )
 

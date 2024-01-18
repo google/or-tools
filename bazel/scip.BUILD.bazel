@@ -77,12 +77,14 @@ cc_library(
         ],
         exclude = [
             "src/lpi/lpi_*.c",
+            "src/nauty/*",
             "src/scip/exprinterpret_*.c",
             "src/scip/nlpi_filtersqp.c",
             "src/scip/nlpi_worhp.c",
             "src/scip/compr_xyz.c",
             "src/scip/sorttpl.c",
             "src/symmetry/compute_symmetry_*.cpp",
+            "src/symmetry/*nauty*",
             "src/tpi/tpi_*.c",
         ],
     ) + BLISS_FILE + [
