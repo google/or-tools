@@ -21,11 +21,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_search.h"
+#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

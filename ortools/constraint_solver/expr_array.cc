@@ -2868,7 +2868,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
 
 Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
                                        const std::vector<IntVar*>& pre_vars,
-                                       const std::vector<int64_t>& pre_coefs,
+                                       absl::Span<const int64_t> pre_coefs,
                                        IntVar* const target) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -2898,7 +2898,7 @@ Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
 
 Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
                                           const std::vector<IntVar*>& pre_vars,
-                                          const std::vector<int64_t>& pre_coefs,
+                                          absl::Span<const int64_t> pre_coefs,
                                           int64_t cst) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -2933,7 +2933,7 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
 
 Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
                                        const std::vector<IntVar*>& pre_vars,
-                                       const std::vector<int64_t>& pre_coefs,
+                                       absl::Span<const int64_t> pre_coefs,
                                        int64_t upper_bound) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -3200,7 +3200,7 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
 }
 
 IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
-                         const std::vector<int64_t>& pre_coefs) {
+                         absl::Span<const int64_t> pre_coefs) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
   std::vector<int64_t> coefs;

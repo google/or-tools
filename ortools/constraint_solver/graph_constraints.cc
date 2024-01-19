@@ -1607,7 +1607,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
 
 Constraint* MakePathTransitTypedPrecedenceConstraint(
     Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-    const std::vector<std::pair<int, int>>& precedences,
+    absl::Span<const std::pair<int, int>> precedences,
     absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
         precedence_types) {
   if (precedences.empty()) {

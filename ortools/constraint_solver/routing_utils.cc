@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

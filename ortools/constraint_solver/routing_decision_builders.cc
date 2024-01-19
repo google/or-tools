@@ -135,18 +135,21 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 
 // Concatenates cumul_values and break_values into 'values', and generates the
 // corresponding 'variables' vector.
-void ConcatenateRouteCumulAndBreakVarAndValues(
+void AppendRouteCumulAndBreakVarAndValues(
     const RoutingDimension& dimension, int vehicle,
     const std::vector<int64_t>& cumul_values,
     absl::Span<const int64_t> break_values, std::vector<IntVar*>* variables,
     std::vector<int64_t>* values) {
-  *values = cumul_values;
-  variables->clear();
+  auto& vars = *variables;
+  auto& vals = *values;
+  DCHECK_EQ(vars.size(), vals.size());
+  const int old_num_values = vals.size();
+  vals.insert(vals.end(), cumul_values.begin(), cumul_values.end());
   const RoutingModel& model = *dimension.model();
   {
     int current = model.Start(vehicle);
     while (true) {
-      variables->push_back(dimension.CumulVar(current));
+      vars.push_back(dimension.CumulVar(current));
       if (!model.IsEnd(current)) {
         current = model.NextVar(current)->Value();
       } else {
@@ -154,28 +157,27 @@ void ConcatenateRouteCumulAndBreakVarAndValues(
       }
     }
   }
-  // Setting the cumuls of path start/end first is more efficient than
-  // setting the cumuls in order of path appearance, because setting start
-  // and end cumuls gives an opportunity to fix all cumuls with two
-  // decisions instead of |path| decisions.
-  // To this effect, we put end cumul just after the start cumul.
-  std::swap(variables->at(1), variables->back());
-  std::swap(values->at(1), values->back());
   if (dimension.HasBreakConstraints()) {
     for (IntervalVar* interval :
          dimension.GetBreakIntervalsOfVehicle(vehicle)) {
-      variables->push_back(interval->SafeStartExpr(0)->Var());
-      variables->push_back(interval->SafeEndExpr(0)->Var());
+      vars.push_back(interval->SafeStartExpr(0)->Var());
+      vars.push_back(interval->SafeEndExpr(0)->Var());
     }
-    values->insert(values->end(), break_values.begin(), break_values.end());
+    vals.insert(vals.end(), break_values.begin(), break_values.end());
   }
-  // Value kint64min signals an unoptimized variable, set to min instead.
-  for (int j = 0; j < values->size(); ++j) {
-    if (values->at(j) == std::numeric_limits<int64_t>::min()) {
-      values->at(j) = variables->at(j)->Min();
+  DCHECK_EQ(vars.size(), vals.size());
+  int new_num_values = old_num_values;
+  for (int j = old_num_values; j < vals.size(); ++j) {
+    // Value kint64min signals an unoptimized variable, skip setting those.
+    if (vals[j] == std::numeric_limits<int64_t>::min()) continue;
+    // Skip variables that are not bound.
+    if (vars[j]->Bound()) continue;
+    vals[new_num_values] = vals[j];
+    vars[new_num_values] = vars[j];
+    ++new_num_values;
     }
-  }
-  DCHECK_EQ(variables->size(), values->size());
+  vars.resize(new_num_values);
+  vals.resize(new_num_values);
 }
 
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
@@ -191,7 +193,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         monitor_(monitor),
         optimize_and_pack_(optimize_and_pack),
         dimension_travel_info_per_route_(
-            std::move(dimension_travel_info_per_route)) {
+            std::move(dimension_travel_info_per_route)),
+        decision_level_(0) {
     DCHECK(dimension_travel_info_per_route_.empty() ||
            dimension_travel_info_per_route_.size() ==
                local_optimizer_->dimension()->model()->vehicles());
@@ -203,12 +206,23 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
   Decision* Next(Solver* solver) override {
+    if (decision_level_.Value() == 2) return nullptr;
+    if (decision_level_.Value() == 1) {
+      Decision* d = set_values_from_targets_->Next(solver);
+      if (d == nullptr) decision_level_.SetValue(solver, 2);
+      return d;
+    }
+    decision_level_.SetValue(solver, 1);
     const RoutingDimension& dimension = *local_optimizer_->dimension();
     RoutingModel* const model = dimension.model();
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the for loop, so there are
     // no memory leaks related to the cumul_values vector.
     bool should_fail = false;
+    // Append cumul_values and break_start_end_values to cp_values,
+    // generate corresponding cp_variables vector.
+    cp_variables_.clear();
+    cp_values_.clear();
     for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
       solver->TopPeriodicCheck();
       // TODO(user): Investigate if we should skip unused vehicles.
@@ -229,7 +243,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         should_fail = true;
         break;
       }
-      // If relaxation is not feasible, try the MILP optimizer.
+      // If relaxation is not feasible, try the MP optimizer.
       if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
         DCHECK(local_mp_optimizer_ != nullptr);
         if (ComputeCumulAndBreakValuesForVehicle(local_mp_optimizer_, vehicle,
@@ -242,25 +256,15 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       } else {
         DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
       }
-      // Concatenate cumul_values and break_start_end_values into cp_values,
-      // generate corresponding cp_variables vector.
-      std::vector<IntVar*> cp_variables;
-      std::vector<int64_t> cp_values;
-      ConcatenateRouteCumulAndBreakVarAndValues(
-          dimension, vehicle, cumul_values, break_start_end_values,
-          &cp_variables, &cp_values);
-      if (!solver->SolveAndCommit(
-              MakeSetValuesFromTargets(solver, std::move(cp_variables),
-                                       std::move(cp_values)),
-              monitor_)) {
-        should_fail = true;
-        break;
+      AppendRouteCumulAndBreakVarAndValues(dimension, vehicle, cumul_values,
+                                           break_start_end_values,
+                                           &cp_variables_, &cp_values_);
       }
-    }
-    if (should_fail) {
-      solver->Fail();
-    }
-    return nullptr;
+    if (should_fail) solver->Fail();
+    set_values_from_targets_ =
+        MakeSetValuesFromTargets(solver, cp_variables_, cp_values_);
+    return solver->MakeAssignVariablesValuesOrDoNothing(cp_variables_,
+                                                        cp_values_);
   }
 
  private:
@@ -305,6 +309,13 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
   const std::vector<RouteDimensionTravelInfo> dimension_travel_info_per_route_;
+  std::vector<IntVar*> cp_variables_;
+  std::vector<int64_t> cp_values_;
+  // Decision level of this decision builder:
+  // - level 0: set remaining dimension values at once.
+  // - level 1: set remaining dimension values one by one.
+  Rev<int> decision_level_;
+  DecisionBuilder* set_values_from_targets_ = nullptr;
 };
 
 }  // namespace
@@ -339,14 +350,34 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     DCHECK(dimension_travel_info_per_route_.empty() ||
            dimension_travel_info_per_route_.size() ==
                global_optimizer_->dimension()->model()->vehicles());
+    // Store the cp variables used to set values on in Next().
+    // NOTE: The order is important as we use the same order to add values
+    // in cp_values_.
+    const RoutingDimension* dimension = global_optimizer_->dimension();
+    const RoutingModel* model = dimension->model();
+    cp_variables_ = dimension->cumuls();
+    if (dimension->HasBreakConstraints()) {
+      for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
+        for (IntervalVar* interval :
+             dimension->GetBreakIntervalsOfVehicle(vehicle)) {
+          cp_variables_.push_back(interval->SafeStartExpr(0)->Var());
+          cp_variables_.push_back(interval->SafeEndExpr(0)->Var());
+        }
+      }
+    }
+    // NOTE: When packing, the resource variables should already have a bound
+    // value which is taken into account by the optimizer, so we don't set them
+    // in MakeSetValuesFromTargets().
+    if (!optimize_and_pack_) {
+      for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
+        const std::vector<IntVar*>& res_vars = model->ResourceVars(rg_index);
+        cp_variables_.insert(cp_variables_.end(), res_vars.begin(),
+                             res_vars.end());
+      }
+    }
   }
 
   Decision* Next(Solver* solver) override {
-    // The following boolean variable indicates if the solver should fail, in
-    // order to postpone the Fail() call until after the scope, so there are
-    // no memory leaks related to the cumul_values vector.
-    bool should_fail = false;
-    {
       const RoutingDimension* dimension = global_optimizer_->dimension();
       DCHECK(DimensionFixedTransitsEqualTransitEvaluators(*dimension));
       RoutingModel* const model = dimension->model();
@@ -355,74 +386,63 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
           model->GetDimensionResourceGroupIndices(dimension).empty()
               ? global_optimizer_
               : global_mp_optimizer_;
-      std::vector<int64_t> cumul_values;
-      std::vector<int64_t> break_start_end_values;
-      std::vector<std::vector<int>> resource_indices_per_group;
-      const DimensionSchedulingStatus status =
-          ComputeCumulBreakAndResourceValues(optimizer, &cumul_values,
-                                             &break_start_end_values,
-                                             &resource_indices_per_group);
+    const DimensionSchedulingStatus status = ComputeCumulBreakAndResourceValues(
+        optimizer, &cumul_values_, &break_start_end_values_,
+        &resource_indices_per_group_);
 
       if (status == DimensionSchedulingStatus::INFEASIBLE) {
-        should_fail = true;
+      solver->Fail();
       } else if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
         // If relaxation is not feasible, try the MILP optimizer.
         const DimensionSchedulingStatus mp_status =
             ComputeCumulBreakAndResourceValues(
-                global_mp_optimizer_, &cumul_values, &break_start_end_values,
-                &resource_indices_per_group);
+              global_mp_optimizer_, &cumul_values_, &break_start_end_values_,
+              &resource_indices_per_group_);
         if (mp_status != DimensionSchedulingStatus::OPTIMAL) {
-          should_fail = true;
+        solver->Fail();
         }
       } else {
         DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
       }
-      if (!should_fail) {
-        // Concatenate cumul_values and break_start_end_values into cp_values,
-        // generate corresponding cp_variables vector.
-        std::vector<IntVar*> cp_variables = dimension->cumuls();
-        std::vector<int64_t> cp_values;
-        std::swap(cp_values, cumul_values);
+    // Concatenate cumul_values_, break_start_end_values_ and all
+    // resource_indices_per_group_ into cp_values_.
+    // NOTE: The order is important as it corresponds to the order of
+    // variables in cp_variables_.
+    cp_values_ = std::move(cumul_values_);
         if (dimension->HasBreakConstraints()) {
-          const int num_vehicles = model->vehicles();
-          for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
-            for (IntervalVar* interval :
-                 dimension->GetBreakIntervalsOfVehicle(vehicle)) {
-              cp_variables.push_back(interval->SafeStartExpr(0)->Var());
-              cp_variables.push_back(interval->SafeEndExpr(0)->Var());
+      cp_values_.insert(cp_values_.end(), break_start_end_values_.begin(),
+                        break_start_end_values_.end());
             }
+    if (optimize_and_pack_) {
+// Resource variables should be bound when packing, so we don't need
+// to restore them again.
+#ifndef NDEBUG
+      for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
+        for (IntVar* res_var : model->ResourceVars(rg_index)) {
+          DCHECK(res_var->Bound());
           }
-          cp_values.insert(cp_values.end(), break_start_end_values.begin(),
-                           break_start_end_values.end());
         }
-        for (int rg_index :
-             model->GetDimensionResourceGroupIndices(dimension)) {
+#endif
+    } else {
+      // Add resource values to cp_values_.
+      for (int rg_index : model->GetDimensionResourceGroupIndices(dimension)) {
           const std::vector<int>& resource_values =
-              resource_indices_per_group[rg_index];
+            resource_indices_per_group_[rg_index];
           DCHECK(!resource_values.empty());
-          cp_values.insert(cp_values.end(), resource_values.begin(),
+        cp_values_.insert(cp_values_.end(), resource_values.begin(),
                            resource_values.end());
-          const std::vector<IntVar*>& resource_vars =
-              model->ResourceVars(rg_index);
-          DCHECK_EQ(resource_vars.size(), resource_values.size());
-          cp_variables.insert(cp_variables.end(), resource_vars.begin(),
-                              resource_vars.end());
         }
+    }
+    DCHECK_EQ(cp_variables_.size(), cp_values_.size());
         // Value kint64min signals an unoptimized variable, set to min instead.
-        for (int j = 0; j < cp_values.size(); ++j) {
-          if (cp_values[j] == std::numeric_limits<int64_t>::min()) {
-            cp_values[j] = cp_variables[j]->Min();
+    for (int j = 0; j < cp_values_.size(); ++j) {
+      if (cp_values_[j] == std::numeric_limits<int64_t>::min()) {
+        cp_values_[j] = cp_variables_[j]->Min();
           }
         }
-        if (!solver->SolveAndCommit(
-                MakeSetValuesFromTargets(solver, std::move(cp_variables),
-                                         std::move(cp_values)),
+    if (!solver->SolveAndCommit(MakeSetValuesFromTargets(solver, cp_variables_,
+                                                         std::move(cp_values_)),
                 monitor_)) {
-          should_fail = true;
-        }
-      }
-    }
-    if (should_fail) {
       solver->Fail();
     }
     return nullptr;
@@ -443,7 +463,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     return optimize_and_pack_
                ? optimizer->ComputePackedCumuls(
                      next, dimension_travel_info_per_route_, cumul_values,
-                     break_start_end_values, resource_indices_per_group)
+                     break_start_end_values)
                : optimizer->ComputeCumuls(
                      next, dimension_travel_info_per_route_, cumul_values,
                      break_start_end_values, resource_indices_per_group);
@@ -453,6 +473,13 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
+  // The following 5 members are stored internally to avoid unnecessary memory
+  // reallocations.
+  std::vector<int64_t> cumul_values_;
+  std::vector<int64_t> break_start_end_values_;
+  std::vector<std::vector<int>> resource_indices_per_group_;
+  std::vector<int64_t> cp_values_;
+  std::vector<IntVar*> cp_variables_;
   const std::vector<RoutingModel::RouteDimensionTravelInfo>
       dimension_travel_info_per_route_;
 };
@@ -483,59 +510,65 @@ class SetCumulsFromResourceAssignmentCosts : public DecisionBuilder {
         mp_optimizer_(mp_optimizer),
         rg_index_(model_.GetDimensionResourceGroupIndex(&dimension_)),
         resource_group_(*model_.GetResourceGroup(rg_index_)),
+        vehicle_resource_class_values_(model_.vehicles()),
         monitor_(monitor) {}
 
   Decision* Next(Solver* const solver) override {
     bool should_fail = false;
     {
-      const int num_vehicles = model_.vehicles();
-      std::vector<std::vector<int64_t>> assignment_costs(num_vehicles);
-      std::vector<std::vector<std::vector<int64_t>>> cumul_values(num_vehicles);
-      std::vector<std::vector<std::vector<int64_t>>> break_values(num_vehicles);
-
       const auto next = [&model = model_](int64_t n) {
         return model.NextVar(n)->Value();
       };
       DCHECK(DimensionFixedTransitsEqualTransitEvaluators(dimension_));
 
       for (int v : resource_group_.GetVehiclesRequiringAResource()) {
-        if (!ComputeVehicleToResourcesAssignmentCosts(
+        auto& [assignment_costs, cumul_values, break_values] =
+            vehicle_resource_class_values_[v];
+        if (!ComputeVehicleToResourceClassAssignmentCosts(
                 v, resource_group_, next, dimension_.transit_evaluator(v),
                 /*optimize_vehicle_costs*/ true, lp_optimizer_, mp_optimizer_,
-                &assignment_costs[v], &cumul_values[v], &break_values[v])) {
+                &assignment_costs, &cumul_values, &break_values)) {
           should_fail = true;
           break;
         }
       }
 
+      const int num_vehicles = model_.vehicles();
       std::vector<int> resource_indices(num_vehicles);
       should_fail =
           should_fail ||
           ComputeBestVehicleToResourceAssignment(
               resource_group_.GetVehiclesRequiringAResource(),
-              resource_group_.Size(),
-              [&assignment_costs](int v) { return &assignment_costs[v]; },
+              resource_group_.GetResourceIndicesPerClass(),
+              [&vehicle_rc_values = vehicle_resource_class_values_](int v) {
+                return &vehicle_rc_values[v].assignment_costs;
+              },
               &resource_indices) < 0;
 
       if (!should_fail) {
         DCHECK_EQ(resource_indices.size(), num_vehicles);
-        const int num_resources = resource_group_.Size();
+        const int num_resource_classes =
+            resource_group_.GetResourceClassesCount();
         for (int v : resource_group_.GetVehiclesRequiringAResource()) {
           if (next(model_.Start(v)) == model_.End(v) &&
               !model_.IsVehicleUsedWhenEmpty(v)) {
             continue;
           }
+          const auto& [unused, cumul_values, break_values] =
+              vehicle_resource_class_values_[v];
           const int resource_index = resource_indices[v];
           DCHECK_GE(resource_index, 0);
-          DCHECK_EQ(cumul_values[v].size(), num_resources);
-          DCHECK_EQ(break_values[v].size(), num_resources);
+          DCHECK_EQ(cumul_values.size(), num_resource_classes);
+          DCHECK_EQ(break_values.size(), num_resource_classes);
+          const int rc_index =
+              resource_group_.GetResourceClassIndex(resource_index).value();
           const std::vector<int64_t>& optimal_cumul_values =
-              cumul_values[v][resource_index];
+              cumul_values[rc_index];
           const std::vector<int64_t>& optimal_break_values =
-              break_values[v][resource_index];
+              break_values[rc_index];
           std::vector<IntVar*> cp_variables;
           std::vector<int64_t> cp_values;
-          ConcatenateRouteCumulAndBreakVarAndValues(
+          AppendRouteCumulAndBreakVarAndValues(
               dimension_, v, optimal_cumul_values, optimal_break_values,
               &cp_variables, &cp_values);
 
@@ -569,6 +602,15 @@ class SetCumulsFromResourceAssignmentCosts : public DecisionBuilder {
   LocalDimensionCumulOptimizer* mp_optimizer_;
   const int rg_index_;
   const RoutingModel::ResourceGroup& resource_group_;
+  // Stores the information related to assigning a given vehicle to resource
+  // classes. We keep these as class members to avoid unnecessary memory
+  // reallocations.
+  struct VehicleResourceClassValues {
+    std::vector<int64_t> assignment_costs;
+    std::vector<std::vector<int64_t>> cumul_values;
+    std::vector<std::vector<int64_t>> break_values;
+  };
+  std::vector<VehicleResourceClassValues> vehicle_resource_class_values_;
   SearchMonitor* const monitor_;
 };
 

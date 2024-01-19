@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"

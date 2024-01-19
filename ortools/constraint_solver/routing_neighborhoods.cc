@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -1188,7 +1189,7 @@ void ExchangeSubtrip::SetPath(const std::vector<int64_t>& path, int path_id) {
 }
 
 namespace {
-bool VectorContains(const std::vector<int64_t>& values, int64_t target) {
+bool VectorContains(absl::Span<const int64_t> values, int64_t target) {
   return std::find(values.begin(), values.end(), target) != values.end();
 }
 }  // namespace

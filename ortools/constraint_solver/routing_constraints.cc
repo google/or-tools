@@ -195,7 +195,7 @@ class ResourceAssignmentConstraint : public Constraint {
 
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {
-      if (!ComputeVehicleToResourcesAssignmentCosts(
+      if (!ComputeVehicleToResourceClassAssignmentCosts(
               v, resource_group_, next, transit,
               /*optimize_vehicle_costs*/ false,
               model_.GetMutableLocalCumulLPOptimizer(dimension),
@@ -208,7 +208,7 @@ class ResourceAssignmentConstraint : public Constraint {
     // of running the full min-cost flow.
     return ComputeBestVehicleToResourceAssignment(
                resource_group_.GetVehiclesRequiringAResource(),
-               resource_group_.Size(),
+               resource_group_.GetResourceIndicesPerClass(),
                [&assignment_costs](int v) { return &assignment_costs[v]; },
                nullptr) >= 0;
   }
@@ -614,13 +614,20 @@ class PathSpansAndTotalSlacks : public Constraint {
     // Then arrival time - departure time is a valid lower bound of span.
     // First reasoning: start - end - start
     {
+      // At each iteration, arrival time is a lower bound of path[i]'s cumul,
+      // so we opportunistically tighten the variable.
+      // This helps reduce the amount of inter-constraint propagation.
       int64_t arrival_time = dimension_->CumulVar(start)->Min();
       for (int i = 1; i < path_.size(); ++i) {
         arrival_time =
             std::max(CapAdd(arrival_time,
                             dimension_->FixedTransitVar(path_[i - 1])->Min()),
                      dimension_->CumulVar(path_[i])->Min());
+        dimension_->CumulVar(path_[i])->SetMin(arrival_time);
       }
+      // At each iteration, departure_time is the latest time at each the
+      // vehicle can leave to reach the earliest feasible vehicle end. Thus it
+      // is not an upper bound of the cumul, we cannot tighten the variable.
       int64_t departure_time = arrival_time;
       for (int i = path_.size() - 2; i >= 0; --i) {
         departure_time =
@@ -637,14 +644,18 @@ class PathSpansAndTotalSlacks : public Constraint {
     }
     // Second reasoning: end - start - end
     {
+      // At each iteration, use departure time to tighten opportunistically.
       int64_t departure_time = dimension_->CumulVar(end)->Max();
       for (int i = path_.size() - 2; i >= 0; --i) {
-        const int curr_node = path_[i];
         departure_time =
             std::min(CapSub(departure_time,
-                            dimension_->FixedTransitVar(curr_node)->Min()),
-                     dimension_->CumulVar(curr_node)->Max());
+                            dimension_->FixedTransitVar(path_[i])->Min()),
+                     dimension_->CumulVar(path_[i])->Max());
+        dimension_->CumulVar(path_[i])->SetMax(departure_time);
       }
+      // Symmetrically to the first reasoning, arrival_time is the earliest
+      // possible arrival for the latest departure of vehicle start.
+      // It cannot be used to tighten the successive cumul variables.
       int arrival_time = departure_time;
       for (int i = 1; i < path_.size(); ++i) {
         arrival_time =

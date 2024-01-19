@@ -170,13 +170,11 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
   // original_assignment.
   Assignment* packed_assignment = solver_->MakeAssignment();
   packed_assignment->Add(Nexts());
-  // Also keep the Resource values for dimensions with a single resource group.
+  // Also keep the Resource values to avoid unnecessary re-optimizations.
   for (const RoutingDimension* const dimension : dimensions_) {
-    const std::vector<int>& resource_groups =
-        GetDimensionResourceGroupIndices(dimension);
-    if (resource_groups.size() == 1) {
+    for (int rg_index : GetDimensionResourceGroupIndices(dimension)) {
       DCHECK(HasLocalCumulOptimizer(*dimension));
-      packed_assignment->Add(resource_vars_[resource_groups[0]]);
+      packed_assignment->Add(resource_vars_[rg_index]);
     }
   }
   packed_assignment->CopyIntersection(original_assignment);

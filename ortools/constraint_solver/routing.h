@@ -177,6 +177,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -527,6 +528,17 @@ class RoutingModel {
     int GetResourceClassesCount() const {
       return resource_indices_per_class_.size();
     }
+    const std::vector<int>& GetResourceIndicesInClass(
+        ResourceClassIndex resource_class) const {
+      DCHECK_LT(resource_class, resource_indices_per_class_.size());
+      return resource_indices_per_class_[resource_class];
+    }
+    // clang-format off
+    const absl::StrongVector<ResourceClassIndex, std::vector<int> >&
+        GetResourceIndicesPerClass() const {
+      return resource_indices_per_class_;
+    }
+    // clang-format on
     ResourceClassIndex GetResourceClassIndex(int resource_index) const {
       DCHECK_LT(resource_index, resource_class_indices_.size());
       return resource_class_indices_[resource_index];
@@ -2681,7 +2693,7 @@ struct TravelBounds {
   std::vector<int64_t> post_travels;
 };
 
-void AppendTasksFromPath(const std::vector<int64_t>& path,
+void AppendTasksFromPath(absl::Span<const int64_t> path,
                          const TravelBounds& travel_bounds,
                          const RoutingDimension& dimension,
                          DisjunctivePropagator::Tasks* tasks);
@@ -2729,7 +2741,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   /// _ Next(path_[i-1]) is Bound() and has value path_[i],
   /// followed by the end of the vehicle if the last node was not an end.
   void FillPartialPathOfVehicle(int vehicle);
-  void FillPathTravels(const std::vector<int64_t>& path);
+  void FillPathTravels(absl::Span<const int64_t> path);
 
   /// This translates pruning information to solver variables.
   /// If constructed with an IntervalVar*, it follows the usual semantics of
