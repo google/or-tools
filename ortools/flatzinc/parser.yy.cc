@@ -2323,8 +2323,7 @@ static void yy_flex_strncpy(char* s1, const char* s2, int n,
 #ifdef YY_NEED_STRLEN
 static int yy_flex_strlen(const char* s, yyscan_t yyscanner) {
   int n;
-  for (n = 0; s[n]; ++n)
-    ;
+  for (n = 0; s[n]; ++n);
 
   return n;
 }
