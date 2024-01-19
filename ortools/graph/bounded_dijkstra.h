@@ -25,7 +25,6 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/threadlocal.h"
 #include "ortools/base/top_n.h"
 #include "ortools/graph/graph.h"
 
@@ -256,11 +255,9 @@ class BoundedDijkstraWrapper {
   }
 
  private:
-  // We define a private copy constructor to be used by ThreadLocal<>,
-  // exclusively. The default copy constructor is problematic in a
-  // multi-threaded environment.
+  // The default copy constructor is problematic in a multi-threaded
+  // environment.
   BoundedDijkstraWrapper(const BoundedDijkstraWrapper& other);
-  friend class ThreadLocal<BoundedDijkstraWrapper>;
 
   // The Graph and length of each arc.
   const GraphType* const graph_;
@@ -425,7 +422,7 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
       sources_with_distance_offsets, settled_node_callback, distance_limit);
 
   // Clean up, sparsely, for the next call.
-  for (const int node : gtl::key_view(destinations_with_distance_offsets)) {
+  for (const auto& [node, _] : destinations_with_distance_offsets) {
     is_destination_[node] = false;
   }
 

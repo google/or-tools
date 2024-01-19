@@ -52,6 +52,15 @@ cc_library(
 )
 
 cc_library(
+    name = "bfs",
+    hdrs = ["bfs.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
     name = "bounded_dijkstra",
     hdrs = ["bounded_dijkstra.h"],
     deps = [
