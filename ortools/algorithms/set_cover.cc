@@ -279,10 +279,9 @@ bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
              << ledger_->cost() << ", best cost = ," << best_cost
              << ", penalized cost = ," << augmented_cost;
     if (ledger_->cost() < best_cost) {
-      LOG(INFO) << "Updated best cost, "
-                << "Iteration, " << iteration << ", current cost = ,"
-                << ledger_->cost() << ", best cost = ," << best_cost
-                << ", penalized cost = ," << augmented_cost;
+      LOG(INFO) << "Updated best cost, " << "Iteration, " << iteration
+                << ", current cost = ," << ledger_->cost() << ", best cost = ,"
+                << best_cost << ", penalized cost = ," << augmented_cost;
       best_cost = ledger_->cost();
       best_choices = ledger_->is_selected();
     }
