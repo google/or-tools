@@ -71,13 +71,13 @@ You must compile OR-Tools using at least C++17 (C++20 on windows):
 *   on UNIX:
 
     ```sh
-    bazel build --cxxopt=-std=c++17 ...
+    bazel build -c opt --cxxopt=-std=c++17 ...
     ```
 
 *   on Windows when using MSVC:
 
     ```sh
-    bazel build --cxxopt="/std:c++20" ...
+    bazel build -c opt --cxxopt="/std:c++20" ...
     ```
 
 ## Testing
@@ -87,13 +87,13 @@ You may run tests using:
 *   on UNIX:
 
     ```sh
-    bazel test --cxxopt=-std=c++17 ...
+    bazel test -c opt --cxxopt=-std=c++17 ...
     ```
 
 *   on Windows when using MSVC:
 
     ```sh
-    bazel test --cxxopt="/std:c++20" ...
+    bazel test -c opt --cxxopt="/std:c++20" ...
     ```
 
 ## Integration
