@@ -130,7 +130,7 @@ jupyter-events==0.9.0
     # via jupyter-server
 jupyter-lsp==2.2.0
     # via jupyterlab
-jupyter-server==2.11.2
+jupyter-server==2.12.5
     # via
     #   -r bazel/notebook_requirements.in
     #   jupyter-lsp
