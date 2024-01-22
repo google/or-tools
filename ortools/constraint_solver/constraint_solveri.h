@@ -3416,9 +3416,7 @@ class PathState {
   // State-dependent accessors.
 
   // Returns the committed path of a given node, -1 if it is a loop.
-  int Path(int node) const {
-    return committed_nodes_[committed_index_[node]].path;
-  }
+  int Path(int node) const { return committed_paths_[node]; }
   // Returns the set of paths that actually changed,
   // i.e. that have more than one chain.
   const std::vector<int>& ChangedPaths() const { return changed_paths_; }
@@ -3476,14 +3474,6 @@ class PathState {
     int begin_index;
     int end_index;
   };
-  struct CommittedNode {
-    CommittedNode(int node, int path) : node(node), path(path) {}
-    int node;
-    // Path of node in the committed state, -1 for loop nodes.
-    // TODO(user): check if path would be better stored
-    // with committed_index_, or in its own vector, or just recomputed.
-    int path;
-  };
 
   // Copies nodes in chains of path at the end of nodes,
   // and sets those nodes' path member to value path.
@@ -3526,7 +3516,10 @@ class PathState {
   //   Those chains do not overlap with one another or with committed chains.
   // - committed_nodes_ are not modified, and still represent the committed
   //   paths. committed_index_ is not modified either.
-  std::vector<CommittedNode> committed_nodes_;
+  std::vector<int> committed_nodes_;
+  // Maps nodes to their path in the latest committed state.
+  std::vector<int> committed_paths_;
+  // Maps nodes to their index in the latest committed state.
   std::vector<int> committed_index_;
   const int num_nodes_threshold_;
   std::vector<ChainBounds> chains_;
@@ -3549,7 +3542,7 @@ class PathState::Chain {
       ++current_node_;
       return *this;
     }
-    int operator*() const { return current_node_->node; }
+    int operator*() const { return *current_node_; }
     bool operator!=(Iterator other) const {
       return current_node_ != other.current_node_;
     }
@@ -3557,26 +3550,26 @@ class PathState::Chain {
    private:
     // Only a Chain can construct its iterator.
     friend class PathState::Chain;
-    explicit Iterator(const CommittedNode* node) : current_node_(node) {}
-    const CommittedNode* current_node_;
+    explicit Iterator(const int* node) : current_node_(node) {}
+    const int* current_node_;
   };
 
   // Chains hold CommittedNode* values, a Chain may be invalidated
   // if the underlying vector is modified.
-  Chain(const CommittedNode* begin_node, const CommittedNode* end_node)
+  Chain(const int* begin_node, const int* end_node)
       : begin_(begin_node), end_(end_node) {}
 
   int NumNodes() const { return end_ - begin_; }
-  int First() const { return begin_->node; }
-  int Last() const { return (end_ - 1)->node; }
+  int First() const { return *begin_; }
+  int Last() const { return *(end_ - 1); }
   Iterator begin() const { return Iterator(begin_); }
   Iterator end() const { return Iterator(end_); }
 
   Chain WithoutFirstNode() const { return Chain(begin_ + 1, end_); }
 
  private:
-  const CommittedNode* const begin_;
-  const CommittedNode* const end_;
+  const int* const begin_;
+  const int* const end_;
 };
 
 // A ChainRange is a range of Chains, committed or not.
@@ -3599,17 +3592,16 @@ class PathState::ChainRange {
    private:
     // Only a ChainRange can construct its Iterator.
     friend class ChainRange;
-    Iterator(const ChainBounds* chain, const CommittedNode* const first_node)
+    Iterator(const ChainBounds* chain, const int* const first_node)
         : current_chain_(chain), first_node_(first_node) {}
     const ChainBounds* current_chain_;
-    const CommittedNode* const first_node_;
+    const int* const first_node_;
   };
 
   // ChainRanges hold ChainBounds* and CommittedNode*,
   // a ChainRange may be invalidated if on of the underlying vector is modified.
   ChainRange(const ChainBounds* const begin_chain,
-             const ChainBounds* const end_chain,
-             const CommittedNode* const first_node)
+             const ChainBounds* const end_chain, const int* const first_node)
       : begin_(begin_chain), end_(end_chain), first_node_(first_node) {}
 
   Iterator begin() const { return {begin_, first_node_}; }
@@ -3618,7 +3610,7 @@ class PathState::ChainRange {
  private:
   const ChainBounds* const begin_;
   const ChainBounds* const end_;
-  const CommittedNode* const first_node_;
+  const int* const first_node_;
 };
 
 // A NodeRange allows to iterate on all nodes of a path,
@@ -3639,7 +3631,7 @@ class PathState::NodeRange {
       }
       return *this;
     }
-    int operator*() const { return current_node_->node; }
+    int operator*() const { return *current_node_; }
     bool operator!=(Iterator other) const {
       return current_chain_ != other.current_chain_;
     }
@@ -3647,22 +3639,21 @@ class PathState::NodeRange {
    private:
     // Only a NodeRange can construct its Iterator.
     friend class NodeRange;
-    Iterator(const ChainBounds* current_chain,
-             const CommittedNode* const first_node)
+    Iterator(const ChainBounds* current_chain, const int* const first_node)
         : current_node_(first_node + current_chain->begin_index),
           end_node_(first_node + current_chain->end_index),
           current_chain_(current_chain),
           first_node_(first_node) {}
-    const CommittedNode* current_node_;
-    const CommittedNode* end_node_;
+    const int* current_node_;
+    const int* end_node_;
     const ChainBounds* current_chain_;
-    const CommittedNode* const first_node_;
+    const int* const first_node_;
   };
 
-  // NodeRanges hold ChainBounds* and CommittedNode*,
+  // NodeRanges hold ChainBounds* and int* (first committed node),
   // a NodeRange may be invalidated if on of the underlying vector is modified.
   NodeRange(const ChainBounds* begin_chain, const ChainBounds* end_chain,
-            const CommittedNode* first_node)
+            const int* first_node)
       : begin_chain_(begin_chain),
         end_chain_(end_chain),
         first_node_(first_node) {}
@@ -3674,7 +3665,7 @@ class PathState::NodeRange {
  private:
   const ChainBounds* begin_chain_;
   const ChainBounds* end_chain_;
-  const CommittedNode* const first_node_;
+  const int* const first_node_;
 };
 
 // This checker enforces dimension requirements.

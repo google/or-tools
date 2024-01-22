@@ -191,8 +191,7 @@ void SolveNursesExample() {
     for (const auto day : days) {
       LOG(INFO) << "Day " << day << ":";
       for (const auto nurse : nurses) {
-        LOG(INFO) << "Nurse " << nurse << " assigned to "
-                  << "Task "
+        LOG(INFO) << "Nurse " << nurse << " assigned to Task "
                   << collector->Value(solution,
                                       shifts_flat[nurse * days.size() + day]);
       }

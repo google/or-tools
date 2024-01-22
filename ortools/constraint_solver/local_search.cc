@@ -2663,17 +2663,21 @@ PathState::PathState(int num_nodes, std::vector<int> path_start,
   }
   // Initial state is all unperformed: paths go from start to end directly.
   committed_index_.assign(num_nodes_, -1);
-  committed_nodes_.assign(2 * num_paths_, {-1, -1});
+  committed_paths_.assign(num_nodes_, -1);
+  committed_nodes_.assign(2 * num_paths_, -1);
   chains_.assign(num_paths_ + 1, {-1, -1});  // Reserve 1 more for sentinel.
   paths_.assign(num_paths_, {-1, -1});
   for (int path = 0; path < num_paths_; ++path) {
     const int index = 2 * path;
-    const PathStartEnd start_end = path_start_end_[path];
-    committed_index_[start_end.start] = index;
-    committed_index_[start_end.end] = index + 1;
+    const auto& [start, end] = path_start_end_[path];
+    committed_index_[start] = index;
+    committed_index_[end] = index + 1;
 
-    committed_nodes_[index] = {start_end.start, path};
-    committed_nodes_[index + 1] = {start_end.end, path};
+    committed_nodes_[index] = start;
+    committed_nodes_[index + 1] = end;
+
+    committed_paths_[start] = path;
+    committed_paths_[end] = path;
 
     chains_[path] = {index, index + 2};
     paths_[path] = {path, path + 1};
@@ -2683,7 +2687,7 @@ PathState::PathState(int num_nodes, std::vector<int> path_start,
   for (int node = 0; node < num_nodes_; ++node) {
     if (committed_index_[node] != -1) continue;  // node is start or end.
     committed_index_[node] = committed_nodes_.size();
-    committed_nodes_.push_back({node, -1});
+    committed_nodes_.push_back(node);
   }
 }
 
@@ -2738,18 +2742,17 @@ void PathState::Revert() {
 
 void PathState::CopyNewPathAtEndOfNodes(int path) {
   // Copy path's nodes, chain by chain.
-  const int new_path_begin_index = committed_nodes_.size();
   const PathBounds path_bounds = paths_[path];
   for (int i = path_bounds.begin_index; i < path_bounds.end_index; ++i) {
     const ChainBounds chain_bounds = chains_[i];
     committed_nodes_.insert(committed_nodes_.end(),
                             committed_nodes_.data() + chain_bounds.begin_index,
                             committed_nodes_.data() + chain_bounds.end_index);
+    if (committed_paths_[committed_nodes_.back()] == path) continue;
+    for (int i = chain_bounds.begin_index; i < chain_bounds.end_index; ++i) {
+      const int node = committed_nodes_[i];
+      committed_paths_[node] = path;
   }
-  const int new_path_end_index = committed_nodes_.size();
-  // Set new nodes' path member to path.
-  for (int i = new_path_begin_index; i < new_path_end_index; ++i) {
-    committed_nodes_[i].path = path;
   }
 }
 
@@ -2766,13 +2769,13 @@ void PathState::IncrementalCommit() {
   // Re-index all copied nodes.
   const int new_nodes_end = committed_nodes_.size();
   for (int i = new_nodes_begin; i < new_nodes_end; ++i) {
-    committed_index_[committed_nodes_[i].node] = i;
+    const int node = committed_nodes_[i];
+    committed_index_[node] = i;
   }
   // New loops stay in place: only change their path to -1,
   // committed_index_ does not change.
   for (const int loop : ChangedLoops()) {
-    const int index = committed_index_[loop];
-    committed_nodes_[index].path = -1;
+    committed_paths_[loop] = -1;
   }
   // Committed part of the state is set up, erase incremental changes.
   Revert();
@@ -2795,13 +2798,14 @@ void PathState::FullCommit() {
   constexpr int kUnindexed = -1;
   committed_index_.assign(num_nodes_, kUnindexed);
   int index = 0;
-  for (const CommittedNode committed_node : committed_nodes_) {
-    committed_index_[committed_node.node] = index++;
+  for (const int node : committed_nodes_) {
+    committed_index_[node] = index++;
   }
   for (int node = 0; node < num_nodes_; ++node) {
     if (committed_index_[node] != kUnindexed) continue;
     committed_index_[node] = index++;
-    committed_nodes_.push_back({node, -1});
+    committed_nodes_.push_back(node);
+    committed_paths_[node] = -1;
   }
   // Committed part of the state is set up, erase incremental changes.
   Revert();
