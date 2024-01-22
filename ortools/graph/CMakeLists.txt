@@ -14,6 +14,8 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/assignment_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/bidirectional_dijkstra_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/bounded_dijkstra_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/christofides_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/cliques_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/dag_constrained_shortest_path_test.cc
@@ -22,6 +24,12 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_path_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/hamiltonian_path_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/linear_assignment_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/max_flow_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/min_cost_flow_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/minimum_spanning_tree_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/multi_dijkstra_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/one_tree_lower_bound_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/perfect_matching_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
