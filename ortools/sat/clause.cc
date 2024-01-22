@@ -1614,8 +1614,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
                          << num_new_redundant_implications << " literals. "
                          << num_fixed << " fixed. " << num_implications_
                          << " implications left. " << implications_.size()
-                         << " literals."
-                         << " dtime: " << dtime
+                         << " literals." << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get()
                          << (aborted ? " Aborted." : "");
   return true;

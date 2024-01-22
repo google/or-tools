@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -165,7 +166,7 @@ class IntVar {
   BoolVar ToBoolVar() const;
 
   /// Sets the name of the variable.
-  IntVar WithName(const std::string& name);
+  IntVar WithName(absl::string_view name);
 
   /// Returns the name of the variable (or the empty string if not set).
   std::string Name() const;
@@ -732,7 +733,7 @@ class CumulativeConstraint : public Constraint {
 class CpModelBuilder {
  public:
   /// Sets the name of the model.
-  void SetName(const std::string& name);
+  void SetName(absl::string_view name);
 
   /// Creates an integer variable with the given domain.
   IntVar NewIntVar(const Domain& domain);
@@ -1109,7 +1110,7 @@ class CpModelBuilder {
   CpModelProto* MutableProto() { return &cp_model_; }
 
   /// Export the model to file.
-  bool ExportToFile(const std::string& filename) const;
+  bool ExportToFile(absl::string_view filename) const;
 
   /// Returns a cloned version of the current model.
   CpModelBuilder Clone() const;

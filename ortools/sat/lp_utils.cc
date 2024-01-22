@@ -230,12 +230,78 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
       return false;
     }
   }
-
-  if (num_changes > 0) {
-    SOLVER_LOG(logger, "Changed ", num_changes,
-               " bounds of integer variables to integer values");
-  }
   return true;
+}
+
+void ChangeLargeBoundsToInfinity(double max_magnitude, MPModelProto* mp_model,
+                                 SolverLogger* logger) {
+  const int num_variables = mp_model->variable_size();
+  int64_t num_variable_bounds_pushed_to_infinity = 0;
+  const double infinity = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < num_variables; ++i) {
+    MPVariableProto* mp_var = mp_model->mutable_variable(i);
+    const double lb = mp_var->lower_bound();
+    if (std::isfinite(lb) && lb < -max_magnitude) {
+      ++num_variable_bounds_pushed_to_infinity;
+      mp_var->set_lower_bound(-infinity);
+    }
+
+    const double ub = mp_var->upper_bound();
+    if (std::isfinite(ub) && ub > max_magnitude) {
+      ++num_variable_bounds_pushed_to_infinity;
+      mp_var->set_upper_bound(infinity);
+    }
+  }
+
+  if (num_variable_bounds_pushed_to_infinity > 0) {
+    SOLVER_LOG(logger, "Pushed ", num_variable_bounds_pushed_to_infinity,
+               " variable bounds to +/-infinity");
+  }
+
+  const int num_constraints = mp_model->constraint_size();
+  int64_t num_constraint_bounds_pushed_to_infinity = 0;
+
+  for (int i = 0; i < num_constraints; ++i) {
+    MPConstraintProto* mp_ct = mp_model->mutable_constraint(i);
+    const double lb = mp_ct->lower_bound();
+    if (std::isfinite(lb) && lb < -max_magnitude) {
+      ++num_constraint_bounds_pushed_to_infinity;
+      mp_ct->set_lower_bound(-infinity);
+    }
+
+    const double ub = mp_ct->upper_bound();
+    if (std::isfinite(ub) && ub > max_magnitude) {
+      ++num_constraint_bounds_pushed_to_infinity;
+      mp_ct->set_upper_bound(infinity);
+    }
+  }
+
+  for (int i = 0; i < mp_model->general_constraint_size(); ++i) {
+    if (mp_model->general_constraint(i).general_constraint_case() !=
+        MPGeneralConstraintProto::kIndicatorConstraint) {
+      continue;
+    }
+
+    MPConstraintProto* mp_ct = mp_model->mutable_general_constraint(i)
+                                   ->mutable_indicator_constraint()
+                                   ->mutable_constraint();
+    const double lb = mp_ct->lower_bound();
+    if (std::isfinite(lb) && lb < -max_magnitude) {
+      ++num_constraint_bounds_pushed_to_infinity;
+      mp_ct->set_lower_bound(-infinity);
+    }
+
+    const double ub = mp_ct->upper_bound();
+    if (std::isfinite(ub) && ub > max_magnitude) {
+      ++num_constraint_bounds_pushed_to_infinity;
+      mp_ct->set_upper_bound(infinity);
+    }
+  }
+
+  if (num_constraint_bounds_pushed_to_infinity > 0) {
+    SOLVER_LOG(logger, "Pushed ", num_constraint_bounds_pushed_to_infinity,
+               " constraint bounds to +/-infinity");
+  }
 }
 
 void RemoveNearZeroTerms(const SatParameters& params, MPModelProto* mp_model,
@@ -1432,8 +1498,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     // Abort if the variable is not binary.
     if (!is_binary) {
       LOG(WARNING) << "The variable #" << var_id << " with name "
-                   << mp_var.name() << " is not binary. "
-                   << "lb: " << lb << " ub: " << ub;
+                   << mp_var.name() << " is not binary. " << "lb: " << lb
+                   << " ub: " << ub;
       return false;
     }
   }

@@ -89,8 +89,7 @@ bool JumpTable::JumpIsUpToDate(int var) {
   if (abs(score - scores_[var]) / std::max(abs(score), 1.0) > 1e-2) {
     score_ok = false;
     LOG(ERROR) << "Incorrect score for var " << var << ": " << scores_[var]
-               << " (should be " << score << ") "
-               << " delta = " << delta;
+               << " (should be " << score << ") " << " delta = " << delta;
   }
   return delta == deltas_[var] && score_ok;
 }

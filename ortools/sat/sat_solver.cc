@@ -1834,8 +1834,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // Note that we will only delete the clauses during the next database cleanup.
   clauses_propagator_->CleanUpWatchers();
   if (num_detached_clauses > 0 || num_binary > 0) {
-    VLOG(1) << trail_->Index() << " fixed variables at level 0. "
-            << "Detached " << num_detached_clauses << " clauses. " << num_binary
+    VLOG(1) << trail_->Index() << " fixed variables at level 0. " << "Detached "
+            << num_detached_clauses << " clauses. " << num_binary
             << " converted to binary.";
   }
 

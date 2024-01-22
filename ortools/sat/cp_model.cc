@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -115,7 +116,7 @@ BoolVar IntVar::ToBoolVar() const {
   return BoolVar(index_, builder_);
 }
 
-IntVar IntVar::WithName(const std::string& name) {
+IntVar IntVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_variables(index_)->set_name(name);
@@ -642,7 +643,7 @@ std::ostream& operator<<(std::ostream& os, const IntervalVar& var) {
   return os;
 }
 
-void CpModelBuilder::SetName(const std::string& name) {
+void CpModelBuilder::SetName(absl::string_view name) {
   cp_model_.set_name(name);
 }
 
@@ -1386,7 +1387,7 @@ IntervalVar CpModelBuilder::GetIntervalVarFromProtoIndex(int index) {
   return IntervalVar(index, this);
 }
 
-bool CpModelBuilder::ExportToFile(const std::string& filename) const {
+bool CpModelBuilder::ExportToFile(absl::string_view filename) const {
   return WriteModelProtoToFile(cp_model_, filename);
 }
 

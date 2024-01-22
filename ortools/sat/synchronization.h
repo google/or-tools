@@ -727,8 +727,7 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   }
 
   if (!solutions_.empty()) {
-    VLOG(2) << "Solution pool update:"
-            << " num_solutions=" << solutions_.size()
+    VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
             << " min_rank=" << solutions_[0].rank
             << " max_rank=" << solutions_.back().rank;
   }

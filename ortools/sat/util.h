@@ -32,6 +32,8 @@
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
