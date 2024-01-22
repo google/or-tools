@@ -15,8 +15,8 @@
 import math
 from typing import Type
 
-import unittest
-from google3.testing.pybase import parameterized
+from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt import model_pb2
 from ortools.math_opt import model_update_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -1076,7 +1076,7 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
             mod.remove_update_tracker(t1)
 
 
-class WrongAttributeTest(unittest.TestCase):
+class WrongAttributeTest(absltest.TestCase):
     """Test case that verifies that wrong attributes are detected.
 
     In some the tests below we have to disable pytype checks since it also detects
@@ -1107,4 +1107,4 @@ class WrongAttributeTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

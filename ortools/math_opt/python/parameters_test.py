@@ -15,8 +15,8 @@
 import datetime
 from typing import Any
 
-import unittest
-from google3.testing.pybase import parameterized
+from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.gscip import gscip_pb2
@@ -30,7 +30,7 @@ from ortools.math_opt.solvers import osqp_pb2
 from ortools.sat import sat_parameters_pb2
 
 
-class GurobiParameters(unittest.TestCase):
+class GurobiParameters(absltest.TestCase):
     def test_to_proto(self) -> None:
         gurobi_proto = parameters.GurobiParameters(
             param_values={"x": "dog", "ab": "7"}
@@ -44,7 +44,7 @@ class GurobiParameters(unittest.TestCase):
         self.assertEqual(expected_proto, gurobi_proto)
 
 
-class GlpkParameters(unittest.TestCase):
+class GlpkParameters(absltest.TestCase):
     def test_to_proto(self) -> None:
         # Test with `optional bool` set to true.
         glpk_proto = parameters.GlpkParameters(
@@ -70,7 +70,7 @@ class GlpkParameters(unittest.TestCase):
         self.assertEqual(glpk_proto, expected_proto)
 
 
-class ProtoRoundTrip(unittest.TestCase):
+class ProtoRoundTrip(absltest.TestCase):
     def test_solver_type_round_trip(self) -> None:
         for solver_type in parameters.SolverType:
             self.assertEqual(
@@ -227,4 +227,4 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

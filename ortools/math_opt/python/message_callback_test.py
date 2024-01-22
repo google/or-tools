@@ -19,11 +19,11 @@ import os
 
 from absl import logging
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import message_callback
 
 
-class PrinterMessageCallbackTest(unittest.TestCase):
+class PrinterMessageCallbackTest(absltest.TestCase):
     def test_no_prefix(self):
         class FlushCountingStringIO(io.StringIO):
             def __init__(self):
@@ -53,7 +53,7 @@ class PrinterMessageCallbackTest(unittest.TestCase):
         )
 
 
-class LogMessagesTest(unittest.TestCase):
+class LogMessagesTest(absltest.TestCase):
     def test_defaults(self):
         with self.assertLogs(logger="absl", level="INFO") as logs:
             message_callback.log_messages(["line 1", "line 2"])
@@ -82,7 +82,7 @@ class LogMessagesTest(unittest.TestCase):
         )
 
 
-class VLogMessagesTest(unittest.TestCase):
+class VLogMessagesTest(absltest.TestCase):
     """Tests of vlog_messages().
 
     In the tests we abuse the logging level 0 since there is not API in the
@@ -110,7 +110,7 @@ class VLogMessagesTest(unittest.TestCase):
         )
 
 
-class ListMessageCallbackTest(unittest.TestCase):
+class ListMessageCallbackTest(absltest.TestCase):
     def test_empty(self):
         msgs = []
         cb = message_callback.list_message_callback(msgs)
@@ -131,4 +131,4 @@ class ListMessageCallbackTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

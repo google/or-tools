@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(default_visibility = ["//ortools:__subpackages__"])
 
 cc_library(
     name = "ids_validator",
@@ -200,6 +200,7 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "@com_google_absl//absl/status",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

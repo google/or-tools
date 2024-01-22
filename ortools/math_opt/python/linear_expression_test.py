@@ -16,8 +16,8 @@ import math
 from typing import Any, List, NamedTuple, Union
 from unittest import mock
 
-import unittest
-from google3.testing.pybase import parameterized
+from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt.python import model
 
 _LINEAR_TYPES = (
@@ -36,7 +36,7 @@ _QUADRATIC_TYPES = (
 )
 
 
-class BoundedExprTest(unittest.TestCase):
+class BoundedExprTest(absltest.TestCase):
     def test_eq_float(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -333,7 +333,7 @@ class BoundedExprTest(unittest.TestCase):
         self.assertEqual(bounded_expr.upper_bound, math.inf)
 
 
-class BoundedExprErrorTest(unittest.TestCase):
+class BoundedExprErrorTest(absltest.TestCase):
     def test_ne(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -588,7 +588,7 @@ class BoundedExprErrorTest(unittest.TestCase):
         # pylint: enable=pointless-statement
 
 
-class BoundedExprStrAndReprTest(unittest.TestCase):
+class BoundedExprStrAndReprTest(absltest.TestCase):
     def test_upper_bounded_expr(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -1086,7 +1086,7 @@ class LinearNumberOpTests(parameterized.TestCase):
             self.assertDictEqual(dict(e_inplace.terms), expected_terms)
 
 
-class QuadraticTermKey(unittest.TestCase):
+class QuadraticTermKey(absltest.TestCase):
     # Mock QuadraticTermKey.__hash__ to have a collision in the dictionary lookup
     # so that a correct behavior of term1 == term2 is needed to recover the
     # values. For instance, if QuadraticTermKey.__eq__ only compared equality of
@@ -2738,7 +2738,7 @@ class AstTest(parameterized.TestCase):
 
 # Test behavior of LinearExpression and as_flat_linear_expression that is
 # not covered by other tests.
-class LinearExpressionTest(unittest.TestCase):
+class LinearExpressionTest(absltest.TestCase):
     def test_init_to_zero(self) -> None:
         expression = model.LinearExpression()
         self.assertEqual(expression.offset, 0.0)
@@ -2774,7 +2774,7 @@ class LinearExpressionTest(unittest.TestCase):
 
 # Test behavior of QuadraticExpression and as_flat_quadratic_expression that is
 # not covered by other tests.
-class QuadraticExpressionTest(unittest.TestCase):
+class QuadraticExpressionTest(absltest.TestCase):
     def test_terms_read_only(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -2809,4 +2809,4 @@ class QuadraticExpressionTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

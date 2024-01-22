@@ -14,7 +14,7 @@
 
 """Tests for compute_infeasible_subsystem_result.py."""
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import infeasible_subsystem_pb2
 from ortools.math_opt.python import compute_infeasible_subsystem_result
 from ortools.math_opt.python import model
@@ -28,7 +28,7 @@ _ComputeInfeasibleSubsystemResult = (
 )
 
 
-class ModelSubsetBoundsTest(unittest.TestCase, compare_proto.MathOptProtoAssertions):
+class ModelSubsetBoundsTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
     def test_empty(self) -> None:
         self.assertTrue(_ModelSubsetBounds().empty())
         self.assertFalse(_ModelSubsetBounds(lower=True).empty())
@@ -60,7 +60,7 @@ class ModelSubsetBoundsTest(unittest.TestCase, compare_proto.MathOptProtoAsserti
         )
 
 
-class ModelSubsetTest(unittest.TestCase, compare_proto.MathOptProtoAssertions):
+class ModelSubsetTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
     def test_empty(self) -> None:
         m = model.Model()
         x = m.add_binary_variable()
@@ -167,7 +167,7 @@ class ModelSubsetTest(unittest.TestCase, compare_proto.MathOptProtoAssertions):
             compute_infeasible_subsystem_result.parse_model_subset(model_subset, m)
 
 
-class ComputeInfeasibleSubsystemResultTest(unittest.TestCase):
+class ComputeInfeasibleSubsystemResultTest(absltest.TestCase):
     def test_to_proto_round_trip(self) -> None:
         m = model.Model()
         x = m.add_binary_variable()
@@ -197,4 +197,4 @@ class ComputeInfeasibleSubsystemResultTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

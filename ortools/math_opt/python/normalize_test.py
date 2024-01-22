@@ -15,7 +15,7 @@
 """Test normalize for mathopt protos."""
 
 from google3.net.proto2.contrib.pyutil import compare
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import model_pb2
 from ortools.math_opt import model_update_pb2
@@ -25,7 +25,7 @@ from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import normalize
 
 
-class MathOptProtoAssertionsTest(unittest.TestCase, compare.Proto2Assertions):
+class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
     def test_removes_empty_message(self) -> None:
         model_with_empty_vars = model_pb2.ModelProto()
         model_with_empty_vars.variables.SetInParent()
@@ -124,4 +124,4 @@ class MathOptProtoAssertionsTest(unittest.TestCase, compare.Proto2Assertions):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

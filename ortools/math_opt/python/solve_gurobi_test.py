@@ -18,7 +18,7 @@ These tests are in a separate file because Gurobi can only run on a licensed
 machine.
 """
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import compute_infeasible_subsystem_result
 from ortools.math_opt.python import model
@@ -30,7 +30,7 @@ from ortools.math_opt.python import solve
 _Bounds = compute_infeasible_subsystem_result.ModelSubsetBounds
 
 
-class SolveTest(unittest.TestCase):
+class SolveTest(absltest.TestCase):
     def test_callback(self) -> None:
         mod = model.Model(name="test_model")
         # Solve the problem:
@@ -90,4 +90,4 @@ class SolveTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

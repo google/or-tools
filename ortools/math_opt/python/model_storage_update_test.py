@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from google3.testing.pybase import parameterized
+from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt import model_pb2
 from ortools.math_opt import model_update_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -1171,4 +1171,4 @@ class ModelStorageTest(compare_proto.MathOptProtoAssertions, parameterized.TestC
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

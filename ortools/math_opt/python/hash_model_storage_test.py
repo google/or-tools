@@ -14,11 +14,11 @@
 
 """Tests for hash_model_storage that cannot be covered by model_storage_(update)_test."""
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import hash_model_storage
 
 
-class HashModelStorageTest(unittest.TestCase):
+class HashModelStorageTest(absltest.TestCase):
     def test_quadratic_term_storage(self):
         storage = hash_model_storage._QuadraticTermStorage()
         storage.set_coefficient(0, 1, 1.0)
@@ -27,4 +27,4 @@ class HashModelStorageTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

@@ -311,6 +311,7 @@ if(BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
 endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
@@ -352,6 +353,10 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/sparse_containers.py
     ortools/math_opt/python/statistics.py
     DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)
+  file(COPY
+    ortools/math_opt/python/testing/compare_proto.py
+    ortools/math_opt/python/testing/proto_matcher.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python/testing)
 endif()
 file(COPY
   ortools/sat/python/cp_model.py
