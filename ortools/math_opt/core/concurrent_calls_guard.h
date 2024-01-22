@@ -71,7 +71,7 @@ class ConcurrentCallsGuard {
   ConcurrentCallsGuard& operator=(const ConcurrentCallsGuard&) = delete;
   ConcurrentCallsGuard& operator=(ConcurrentCallsGuard&&) = delete;
 
-  ConcurrentCallsGuard(ConcurrentCallsGuard&& other)
+  ConcurrentCallsGuard(ConcurrentCallsGuard&& other) noexcept
       : tracker_(std::exchange(other.tracker_, nullptr)) {}
 
   // Release the guard.

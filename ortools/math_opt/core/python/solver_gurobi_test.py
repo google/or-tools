@@ -16,7 +16,7 @@ import datetime
 import math
 
 from absl.testing import absltest
-from google3.third_party.pybind11_abseil.status import StatusNotOk
+from pybind11_abseil.status import StatusNotOk
 from ortools.math_opt import infeasible_subsystem_pb2
 from ortools.math_opt import model_pb2
 from ortools.math_opt import parameters_pb2
