@@ -322,10 +322,14 @@ int64_t PresolveContext::SizeMax(int ct_ref) const {
 // representative) and appear in just one constraint, then this constraint must
 // be the affine defining one. And in this case the code using this function
 // should do the proper stuff.
-bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
+bool PresolveContext::VariableIsUnique(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
-  return var_to_constraints_[var].size() == 1 && !keep_all_feasible_solutions;
+  return var_to_constraints_[var].size() == 1;
+}
+
+bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
+  return !keep_all_feasible_solutions && VariableIsUnique(ref);
 }
 
 bool PresolveContext::VariableWithCostIsUnique(int ref) const {

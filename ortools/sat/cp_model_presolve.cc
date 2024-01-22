@@ -10529,15 +10529,13 @@ void CpModelPresolver::EncodeAllAffineRelations() {
     const AffineRelation::Relation r = context_->GetAffineRelation(var);
     if (r.representative == var) continue;
 
-    if (!context_->keep_all_feasible_solutions) {
-      // TODO(user): It seems some affine relation are still removable at this
-      // stage even though they should be removed inside PresolveToFixPoint().
-      // Investigate. For now, we just remove such relations.
-      if (context_->VariableIsNotUsedAnymore(var)) continue;
-      if (!PresolveAffineRelationIfAny(var)) break;
-      if (context_->VariableIsNotUsedAnymore(var)) continue;
-      if (context_->IsFixed(var)) continue;
-    }
+    // TODO(user): It seems some affine relation are still removable at this
+    // stage even though they should be removed inside PresolveToFixPoint().
+    // Investigate. For now, we just remove such relations.
+    if (context_->VariableIsNotUsedAnymore(var)) continue;
+    if (!PresolveAffineRelationIfAny(var)) break;
+    if (context_->VariableIsNotUsedAnymore(var)) continue;
+    if (context_->IsFixed(var)) continue;
 
     ++num_added;
     ConstraintProto* ct = context_->working_model->add_constraints();
@@ -10579,7 +10577,7 @@ bool CpModelPresolver::PresolveAffineRelationIfAny(int var) {
   // If var is no longer used, remove. Note that we can always do that since we
   // propagated the domain above and so we can find a feasible value for a for
   // any value of the representative.
-  if (context_->VariableIsUniqueAndRemovable(var)) {
+  if (context_->VariableIsUnique(var)) {
     // Add relation with current representative to the mapping model.
     ConstraintProto* ct = context_->mapping_model->add_constraints();
     auto* arg = ct->mutable_linear();
@@ -11978,30 +11976,31 @@ CpSolverStatus CpModelPresolver::Presolve() {
       continue;
     }
 
-    // TODO(user): we could still remove unused constant even if
-    // keep_all_feasible_solutions is true.
-    if (!context_->keep_all_feasible_solutions) {
-      if (context_->VariableIsNotUsedAnymore(i)) {
-        // Tricky. Variables that where not removed by a presolve rule should be
-        // fixed first during postsolve, so that more complex postsolve rules
-        // can use their values. One way to do that is to fix them here.
-        //
-        // We prefer to fix them to zero if possible.
-        ++num_unused_variables;
-        FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
-                          context_->mapping_model->mutable_variables(i));
-        continue;
-      }
+    // Deal with unused variables.
+    //
+    // If the variable is not fixed, we have multiple feasible solution for
+    // this variable, so we can't remove it if we want all of them.
+    if (context_->VariableIsNotUsedAnymore(i) &&
+        (!context_->keep_all_feasible_solutions || context_->IsFixed(i))) {
+      // Tricky. Variables that where not removed by a presolve rule should be
+      // fixed first during postsolve, so that more complex postsolve rules
+      // can use their values. One way to do that is to fix them here.
+      //
+      // We prefer to fix them to zero if possible.
+      ++num_unused_variables;
+      FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
+                        context_->mapping_model->mutable_variables(i));
+      continue;
+    }
 
-      // Merge identical constant. Note that the only place were constant are
-      // still left are in the circuit and route constraint for fixed arcs.
-      if (context_->IsFixed(i)) {
-        auto [it, inserted] = constant_to_index.insert(
-            {context_->FixedValue(i), postsolve_mapping_->size()});
-        if (!inserted) {
-          mapping[i] = it->second;
-          continue;
-        }
+    // Merge identical constant. Note that the only place were constant are
+    // still left are in the circuit and route constraint for fixed arcs.
+    if (context_->IsFixed(i)) {
+      auto [it, inserted] = constant_to_index.insert(
+          {context_->FixedValue(i), postsolve_mapping_->size()});
+      if (!inserted) {
+        mapping[i] = it->second;
+        continue;
       }
     }
 

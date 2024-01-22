@@ -199,6 +199,7 @@ class PresolveContext {
   }
 
   // Returns true if this ref only appear in one constraint.
+  bool VariableIsUnique(int ref) const;
   bool VariableIsUniqueAndRemovable(int ref) const;
 
   // Returns true if this ref no longer appears in the model.
