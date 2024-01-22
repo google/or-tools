@@ -28,11 +28,11 @@ SolveResultProto ResultForIntegerInfeasible(const bool is_maximize,
                                             const double lb, const double ub) {
   SolveResultProto result;
   result.mutable_termination()->set_reason(TERMINATION_REASON_INFEASIBLE);
-  result.mutable_termination()->set_detail(absl::StrCat(
-      "Problem had one or more integer variables with no integers "
+  result.mutable_termination()->set_detail(
+      absl::StrCat("Problem had one or more integer variables with no integers "
       "in domain, e.g. integer variable with id: ",
-      bad_variable_id, " had bounds: [", RoundTripDoubleFormat::ToString(lb),
-      ", ", RoundTripDoubleFormat::ToString(ub), "]."));
+                   bad_variable_id, " had bounds: [", RoundTripDoubleFormat(lb),
+                   ", ", RoundTripDoubleFormat(ub), "]."));
   result.mutable_solve_stats()->mutable_problem_status()->set_primal_status(
       FEASIBILITY_STATUS_INFEASIBLE);
   result.mutable_solve_stats()->mutable_problem_status()->set_dual_status(

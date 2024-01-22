@@ -14,31 +14,43 @@
 load(":code_samples.bzl", "code_sample_cc", "code_sample_cc_py", "code_sample_java")
 
 code_sample_java(name = "AssignmentLinearSumAssignment")
+
 code_sample_cc_py(name = "assignment_linear_sum_assignment")
 
 code_sample_java(name = "AssignmentMinFlow")
+
 code_sample_cc_py(name = "assignment_min_flow")
 
 code_sample_java(name = "BalanceMinFlow")
+
 code_sample_cc_py(name = "balance_min_flow")
 
 code_sample_cc(name = "bfs_directed")
+
 code_sample_cc(name = "bfs_one_to_all")
+
 code_sample_cc(name = "bfs_undirected")
 
 code_sample_cc(name = "dag_shortest_path_one_to_all")
+
 code_sample_cc(name = "dag_shortest_path_sequential")
+
 code_sample_cc(name = "dag_simple_shortest_path")
 
 code_sample_cc(name = "dijkstra_all_pairs_shortest_paths")
+
 code_sample_cc(name = "dijkstra_directed")
+
 code_sample_cc(name = "dijkstra_one_to_all")
+
 code_sample_cc(name = "dijkstra_sequential")
+
 code_sample_cc(name = "dijkstra_undirected")
 
 code_sample_java(name = "SimpleMaxFlowProgram")
+
 code_sample_cc_py(name = "simple_max_flow_program")
 
 code_sample_java(name = "SimpleMinCostFlowProgram")
-code_sample_cc_py(name = "simple_min_cost_flow_program")
 
+code_sample_cc_py(name = "simple_min_cost_flow_program")
