@@ -24,6 +24,7 @@
 #include <optional>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -185,8 +186,17 @@ struct ModelSolveParameters {
   // Parameters for individual objectives in a multi-objective model.
   ObjectiveMap<ObjectiveParameters> objective_parameters;
 
-  // Returns a failure if the referenced variables don't belong to the input
-  // expected_storage (which must not be nullptr).
+  // Optional lazy constraint annotations. Included linear constraints will be
+  // marked as "lazy" with supporting solvers, meaning that they will only be
+  // added to the working model as-needed as the solver runs.
+  //
+  // Note that this an algorithmic hint that does not affect the model's
+  // feasible region; solvers not supporting these annotations will simply
+  // ignore it.
+  absl::flat_hash_set<LinearConstraint> lazy_linear_constraints;
+
+  // Returns a failure if the referenced variables and constraints do not belong
+  // to the input expected_storage (which must not be nullptr).
   absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
 
   // Returns the proto equivalent of this object.

@@ -23,10 +23,22 @@
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/status/statusor.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_debug.h"
+#include "ortools/math_opt/infeasible_subsystem.pb.h"
+#include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/model_parameters.pb.h"
+#include "ortools/math_opt/model_update.pb.h"
+#include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "pybind11/attr.h"
 #include "pybind11/cast.h"
+#include "pybind11/gil.h"
+#include "pybind11_abseil/import_status_module.h"
 #include "pybind11_abseil/status_casters.h"  // IWYU pragma: keep
 #include "pybind11_protobuf/native_proto_caster.h"
 

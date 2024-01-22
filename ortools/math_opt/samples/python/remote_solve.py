@@ -63,9 +63,9 @@ def main(argv: Sequence[str]) -> None:
         stub,
         model,
         _SOLVER.value,
+        deadline=datetime.timedelta(minutes=1),
         mode=_MODE.value,
         msg_cb=msg_cb,
-        rpc_time_limit=datetime.timedelta(minutes=1),
     )
 
     if result.termination.reason not in (

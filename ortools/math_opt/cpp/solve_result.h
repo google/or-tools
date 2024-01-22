@@ -443,10 +443,16 @@ struct Termination {
   static absl::StatusOr<Termination> FromProto(
       const TerminationProto& termination_proto);
   TerminationProto Proto() const;
+
   std::string ToString() const;
 };
 
 std::ostream& operator<<(std::ostream& ostr, const Termination& termination);
+
+template <typename Sink>
+void AbslStringify(Sink& sink, const Termination& termination) {
+  sink.Append(termination.ToString());
+}
 
 // The result of solving an optimization problem with Solve().
 struct SolveResult {

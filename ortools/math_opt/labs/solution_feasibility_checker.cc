@@ -291,12 +291,11 @@ std::string VariableValuesAsString(std::vector<Variable> variables,
   });
   return absl::StrCat(
       "{",
-      absl::StrJoin(
-          variables, ", ",
+      absl::StrJoin(variables, ", ",
           [&](std::string* const out, const Variable variable) {
             absl::StrAppendFormat(
-                out, "{%s, %s}", absl::FormatStreamed(variable),
-                RoundTripDoubleFormat::ToString(variable_values.at(variable)));
+                          out, "{%s, %v}", absl::FormatStreamed(variable),
+                          RoundTripDoubleFormat(variable_values.at(variable)));
           }),
       "}");
 }
@@ -338,18 +337,18 @@ absl::StatusOr<std::vector<std::string>> ViolatedConstraintsAsStrings(
   for (const Variable variable :
        SortedKeys(violated_constraints.variable_bounds)) {
     result.push_back(absl::StrFormat(
-        "violated variable bound: %s ≤ %s ≤ %s, with variable value %s",
-        RoundTripDoubleFormat::ToString(variable.lower_bound()),
+        "violated variable bound: %v ≤ %s ≤ %v, with variable value %v",
+        RoundTripDoubleFormat(variable.lower_bound()),
         absl::FormatStreamed(variable),
-        RoundTripDoubleFormat::ToString(variable.upper_bound()),
-        RoundTripDoubleFormat::ToString(variable_values.at(variable))));
+        RoundTripDoubleFormat(variable.upper_bound()),
+        RoundTripDoubleFormat(variable_values.at(variable))));
   }
   for (const Variable variable :
        SortedElements(violated_constraints.variable_integrality)) {
     result.push_back(absl::StrFormat(
-        "violated variable integrality: %s, with variable value %s",
+        "violated variable integrality: %s, with variable value %v",
         absl::FormatStreamed(variable),
-        RoundTripDoubleFormat::ToString(variable_values.at(variable))));
+        RoundTripDoubleFormat(variable_values.at(variable))));
   }
   for (const LinearConstraint linear_constraint :
        SortedKeys(violated_constraints.linear_constraints)) {
