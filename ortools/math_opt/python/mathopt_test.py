@@ -18,7 +18,7 @@ import types
 import typing
 from typing import Any, List, Set, Tuple
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import callback
 from ortools.math_opt.python import expressions
 from ortools.math_opt.python import hash_model_storage
@@ -81,7 +81,7 @@ def _get_public_api(module: types.ModuleType) -> List[Tuple[str, Any]]:
     return [(name, obj) for name, obj in tuple_list if not name.startswith("_")]
 
 
-class MathoptTest(unittest.TestCase):
+class MathoptTest(absltest.TestCase):
     def test_imports(self) -> None:
         missing_imports: List[str] = []
         for module in _MODULES_TO_CHECK:
@@ -107,4 +107,4 @@ class MathoptTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

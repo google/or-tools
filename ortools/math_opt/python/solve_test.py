@@ -15,7 +15,7 @@
 import io
 from typing import Dict, List, Union
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.core.python import solver as core_solver
 from ortools.math_opt.python import message_callback
 from ortools.math_opt.python import model
@@ -45,7 +45,7 @@ def _list_is_near(v1: List[float], v2: List[float], tolerance: float = 1e-5) -> 
     return True
 
 
-class SolveTest(unittest.TestCase):
+class SolveTest(absltest.TestCase):
     def _assert_dict_almost_equal(
         self, expected: VarOrConstraintDict, actual: VarOrConstraintDict, places=5
     ):
@@ -555,4 +555,4 @@ class SolveTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

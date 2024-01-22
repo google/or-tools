@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import expressions
 from ortools.math_opt.python import model
 
@@ -22,7 +22,7 @@ def _type_check_linear_sum(x: model.LinearSum) -> None:
     del x  # Unused.
 
 
-class FastSumTest(unittest.TestCase):
+class FastSumTest(absltest.TestCase):
     def test_variables(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable()
@@ -78,7 +78,7 @@ class FastSumTest(unittest.TestCase):
         )
 
 
-class EvaluateExpressionTest(unittest.TestCase):
+class EvaluateExpressionTest(absltest.TestCase):
     def test_scalar_expression(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable()
@@ -108,4 +108,4 @@ class EvaluateExpressionTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

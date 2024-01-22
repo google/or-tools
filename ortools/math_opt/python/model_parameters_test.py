@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -23,7 +23,7 @@ from ortools.math_opt.python import sparse_containers
 from ortools.math_opt.python.testing import compare_proto
 
 
-class ModelParametersTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_solution_hint_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -106,4 +106,4 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, unittest.TestCas
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import model
 from ortools.math_opt.python import sparse_containers
 from ortools.math_opt.python.testing import compare_proto
 
 
-class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_to_proto_empty(self) -> None:
         actual = sparse_containers.to_sparse_double_vector_proto({})
         self.assert_protos_equiv(
@@ -96,7 +96,7 @@ class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, unittest.Test
         self.assertDictEqual(actual, {})
 
 
-class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_to_proto_empty(self) -> None:
         self.assert_protos_equiv(
             sparse_containers.to_sparse_int32_vector_proto({}),
@@ -123,7 +123,7 @@ class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, unittest.TestC
         )
 
 
-class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_is_none(self) -> None:
         f = sparse_containers.SparseVectorFilter(skip_zero_values=True)
         self.assertTrue(f.skip_zero_values)
@@ -172,4 +172,4 @@ class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, unittest.Test
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

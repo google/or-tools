@@ -13,7 +13,10 @@
 
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 
+#include <cstdint>
+
 #include "absl/status/status.h"
+#include "google/protobuf/repeated_field.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -80,6 +83,17 @@ absl::Status ValidateObjectiveParameters(
   return absl::OkStatus();
 }
 
+absl::Status ValidateLazyLinearConstraints(
+    const google::protobuf::RepeatedField<int64_t>& lazy_linear_constraint_ids,
+    const ModelSummary& model_summary) {
+  RETURN_IF_ERROR(
+      CheckIdsRangeAndStrictlyIncreasing(lazy_linear_constraint_ids));
+  RETURN_IF_ERROR(CheckIdsSubset(
+      lazy_linear_constraint_ids, model_summary.linear_constraints,
+      "lazy_linear_constraint ids", "model linear constraint IDs"));
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
@@ -133,6 +147,9 @@ absl::Status ValidateModelSolveParameters(
         << "invalid auxiliary_objective_parameters entry for objective: "
         << objective;
   }
+  RETURN_IF_ERROR(ValidateLazyLinearConstraints(
+      parameters.lazy_linear_constraint_ids(), model_summary))
+      << "invalid lazy_linear_constraint_ids";
   return absl::OkStatus();
 }
 

@@ -15,8 +15,8 @@
 import math
 from typing import Any, Callable
 
-import unittest
-from google3.testing.pybase import parameterized
+from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt import model_pb2
 from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import hash_model_storage
@@ -925,4 +925,4 @@ class ModelStorageTest(compare_proto.MathOptProtoAssertions, parameterized.TestC
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

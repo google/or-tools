@@ -146,4 +146,17 @@ message ModelSolveParametersProto {
   // Requirements:
   //  * Map keys must also be map keys of ModelProto.auxiliary_objectives.
   map<int64, ObjectiveParametersProto> auxiliary_objective_parameters = 8;
+
+  // Optional lazy constraint annotations. Included linear constraints will be
+  // marked as "lazy" with supporting solvers, meaning that they will only be
+  // added to the working model as-needed as the solver runs.
+  //
+  // Note that this an algorithmic hint that does not affect the model's
+  // feasible region; solvers not supporting these annotations will simply
+  // ignore it.
+  //
+  // Requirements:
+  //  * Each entry must be an element of VariablesProto.ids.
+  //  * Entries must be in strictly increasing order (i.e., sorted, no repeats).
+  repeated int64 lazy_linear_constraint_ids = 9;
 }

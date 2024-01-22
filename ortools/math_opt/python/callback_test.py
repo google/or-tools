@@ -15,7 +15,7 @@
 import datetime
 import math
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import callback_pb2
 from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import callback
@@ -24,7 +24,7 @@ from ortools.math_opt.python import sparse_containers
 from ortools.math_opt.python.testing import compare_proto
 
 
-class CallbackDataTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class CallbackDataTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_parse_callback_data_no_solution(self) -> None:
         mod = model.Model(name="test_model")
         cb_data_proto = callback_pb2.CallbackDataProto(
@@ -85,7 +85,7 @@ class CallbackDataTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
         )
 
 
-class CallbackRegistrationTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class CallbackRegistrationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -121,7 +121,7 @@ class CallbackRegistrationTest(compare_proto.MathOptProtoAssertions, unittest.Te
 
 
 class GeneratedLinearConstraintTest(
-    compare_proto.MathOptProtoAssertions, unittest.TestCase
+    compare_proto.MathOptProtoAssertions, absltest.TestCase
 ):
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
@@ -147,7 +147,7 @@ class GeneratedLinearConstraintTest(
         )
 
 
-class CallbackResultTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class CallbackResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -250,4 +250,4 @@ class CallbackResultTest(compare_proto.MathOptProtoAssertions, unittest.TestCase
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

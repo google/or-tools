@@ -16,12 +16,12 @@
 
 import math
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.python import model
 from ortools.math_opt.python import statistics
 
 
-class RangeTest(unittest.TestCase):
+class RangeTest(absltest.TestCase):
     def test_merge_optional_ranges(self) -> None:
         self.assertIsNone(statistics.merge_optional_ranges(None, None))
         r = statistics.Range(1.0, 3.0)
@@ -51,7 +51,7 @@ class RangeTest(unittest.TestCase):
         )
 
 
-class ModelRangesTest(unittest.TestCase):
+class ModelRangesTest(absltest.TestCase):
     def test_printing(self) -> None:
         self.assertMultiLineEqual(
             str(
@@ -129,7 +129,7 @@ class ModelRangesTest(unittest.TestCase):
         )
 
 
-class ComputeModelRangesTest(unittest.TestCase):
+class ComputeModelRangesTest(absltest.TestCase):
     def test_empty(self) -> None:
         mdl = model.Model(name="model")
         self.assertEqual(
@@ -194,4 +194,4 @@ class ComputeModelRangesTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

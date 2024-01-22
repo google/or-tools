@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt import solution_pb2
 from ortools.math_opt.python import model
 from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
 
 
-class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_empty_primal_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_solution = solution.PrimalSolution(
@@ -63,7 +63,7 @@ class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, unittest.Tes
             solution.parse_primal_solution(proto, mod)
 
 
-class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_parse(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -75,7 +75,7 @@ class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, unittest.TestCase
         self.assertDictEqual({x: 1.0, y: 1.0}, actual.variable_values)
 
 
-class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_empty_primal_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_solution = solution.DualSolution(
@@ -136,7 +136,7 @@ class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, unittest.TestC
             solution.parse_dual_solution(proto, mod)
 
 
-class ParseDualRayTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ParseDualRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_parse(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -153,7 +153,7 @@ class ParseDualRayTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
         self.assertDictEqual({c: 0.0, d: 1.0}, actual.dual_values)
 
 
-class BasisTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_empty_basis_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_basis = solution.Basis()
@@ -267,7 +267,7 @@ class BasisTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
             solution.parse_basis(basis_proto, mod)
 
 
-class ParseSolutionTest(compare_proto.MathOptProtoAssertions, unittest.TestCase):
+class ParseSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_variable()
@@ -310,4 +310,4 @@ class ParseSolutionTest(compare_proto.MathOptProtoAssertions, unittest.TestCase)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()
