@@ -492,7 +492,7 @@ std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e) {
 
 Constraint::Constraint(ConstraintProto* proto) : proto_(proto) {}
 
-Constraint Constraint::WithName(const std::string& name) {
+Constraint Constraint::WithName(absl::string_view name) {
   proto_->set_name(name);
   return *this;
 }
@@ -579,7 +579,7 @@ IntervalVar::IntervalVar() : builder_(nullptr), index_() {}
 IntervalVar::IntervalVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
-IntervalVar IntervalVar::WithName(const std::string& name) {
+IntervalVar IntervalVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_constraints(index_)->set_name(name);

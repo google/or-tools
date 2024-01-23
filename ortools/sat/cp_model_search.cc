@@ -65,11 +65,6 @@ bool CpModelView::IsFixed(int var) const {
   return true;  // Default.
 }
 
-bool CpModelView::IsCurrentlyFree(int var) const {
-  return mapping_.IsInteger(var) &&
-         integer_trail_.IsCurrentlyIgnored(mapping_.Integer(var));
-}
-
 int64_t CpModelView::Min(int var) const {
   if (mapping_.IsBoolean(var)) {
     const Literal l = mapping_.Literal(var);
@@ -217,7 +212,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
 
       for (const LinearExpressionProto& expr : strategy.exprs()) {
         const int var = expr.vars(0);
-        if (view.IsFixed(var) || view.IsCurrentlyFree(var)) continue;
+        if (view.IsFixed(var)) continue;
 
         int64_t coeff = expr.coeffs(0);
         int64_t offset = expr.offset();

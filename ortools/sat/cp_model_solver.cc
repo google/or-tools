@@ -1915,7 +1915,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
       if (status != SatSolver::Status::FEASIBLE) break;
       solution_observer();
       if (!parameters.enumerate_all_solutions()) break;
-      model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
+      model->Add(ExcludeCurrentSolutionAndBacktrack());
     }
     if (status == SatSolver::INFEASIBLE) {
       shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
@@ -2023,7 +2023,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 
     if (!model_proto.has_objective()) {
       if (parameters->enumerate_all_solutions()) {
-        model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
+        model->Add(ExcludeCurrentSolutionAndBacktrack());
       }
     } else {
       // Restrict the objective.

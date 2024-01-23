@@ -553,7 +553,6 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
         some_bound_were_tightened = true;
         const IntegerValue new_ub = var_lb + gap / term.weight;
         DCHECK_LT(new_ub, var_ub);
-        DCHECK(!integer_trail_->IsCurrentlyIgnored(term.var));
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
           return false;

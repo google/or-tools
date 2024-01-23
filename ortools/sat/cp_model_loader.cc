@@ -889,7 +889,6 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
 }
 
 void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(m->GetOrCreate<SatParameters>());
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
@@ -946,7 +945,6 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
 
   // Auto-detect optional variables.
   int num_optionals = 0;
-  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int var = 0; var < num_proto_variables; ++var) {
     const IntegerVariableProto& var_proto = model_proto.variables(var);
     const int64_t min = var_proto.domain(0);
@@ -956,14 +954,12 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
     if (enforcement_intersection[var].empty()) continue;
 
     ++num_optionals;
-    integer_trail->MarkIntegerVariableAsOptional(
-        mapping->Integer(var),
-        mapping->Literal(enforcement_intersection[var].front()));
   }
 
   if (num_optionals > 0) {
     SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Auto-detected ", num_optionals,
-               " optional variables.");
+               " optional variables. Note that for now we DO NOT do anything "
+               "with this information.");
   }
 }
 

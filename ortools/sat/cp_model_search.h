@@ -52,16 +52,6 @@ class CpModelView {
   int64_t Min(int var) const;
   int64_t Max(int var) const;
 
-  // If under a given partial assignment, the value of a variable has no impact,
-  // this might returns true, and there is no point trying to branch on this
-  // variable.
-  //
-  // This might for example be the case for the start of an unperformed interval
-  // which will not impact the rest of the problem in any way. Note that it is
-  // still possible to branch on ignored variable, this will just not change
-  // anything.
-  bool IsCurrentlyFree(int var) const;
-
   // Helpers to generate a decision.
   BooleanOrIntegerLiteral GreaterOrEqual(int var, int64_t value) const;
   BooleanOrIntegerLiteral LowerOrEqual(int var, int64_t value) const;

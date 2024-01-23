@@ -140,16 +140,6 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
   }
 
-  // While the code above deal correctly with optionality, we cannot just
-  // register a literal => bound for an optional variable, because the equation
-  // might end up in the LP which do not handle them correctly.
-  //
-  // TODO(user): Maybe we can handle this case somehow, as long as every
-  // constraint using this bound is protected by the variable optional literal.
-  // Alternativelly we could disable optional variable when we are at
-  // linearization level 2.
-  if (integer_trail_->IsOptional(var)) return true;
-
   // The information below is currently only used for cuts.
   // So no need to store it if we aren't going to use it.
   if (parameters_.linearization_level() == 0) return true;

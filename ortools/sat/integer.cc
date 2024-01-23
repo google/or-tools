@@ -716,8 +716,6 @@ bool IntegerTrail::Propagate(Trail* trail) {
   // a big chunk of work.
   if (level == 0) {
     for (const IntegerLiteral i_lit : delayed_to_fix_->integer_literal_to_fix) {
-      if (IsCurrentlyIgnored(i_lit.var)) continue;
-
       // Note that we do not call Enqueue here but directly the update domain
       // function so that we do not abort even if the level zero bounds were
       // up to date.
@@ -747,8 +745,6 @@ bool IntegerTrail::Propagate(Trail* trail) {
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
     for (const IntegerLiteral i_lit : encoder_->GetIntegerLiterals(literal)) {
-      if (IsCurrentlyIgnored(i_lit.var)) continue;
-
       // The reason is simply the associated literal.
       if (!EnqueueAssociatedIntegerLiteral(i_lit, literal)) {
         return false;
@@ -816,7 +812,6 @@ void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
   // Because we always create both a variable and its negation.
   const int size = 2 * num_vars;
   vars_.reserve(size);
-  is_ignored_literals_.reserve(size);
   integer_trail_.reserve(size);
   var_trail_index_cache_.reserve(size);
   tmp_var_to_trail_index_in_queue_.reserve(size);
@@ -833,16 +828,11 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   DCHECK_EQ(vars_.size(), integer_trail_.size());
 
   const IntegerVariable i(vars_.size());
-  is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({lower_bound, static_cast<int>(integer_trail_.size())});
   integer_trail_.push_back({lower_bound, i});
   domains_->push_back(Domain(lower_bound.value(), upper_bound.value()));
 
-  // TODO(user): the is_ignored_literals_ Booleans are currently always the same
-  // for a variable and its negation. So it may be better not to store it twice
-  // so that we don't have to be careful when setting them.
   CHECK_EQ(NegationOf(i).value(), vars_.size());
-  is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({-upper_bound, static_cast<int>(integer_trail_.size())});
   integer_trail_.push_back({-upper_bound, NegationOf(i)});
 
@@ -1260,13 +1250,6 @@ bool IntegerTrail::ConditionalEnqueue(
   const VariablesAssignment& assignment = trail_->Assignment();
   if (assignment.LiteralIsFalse(lit)) return true;
 
-  // We can always push var if the optional literal is the same.
-  //
-  // TODO(user): we can also push lit.var if its presence implies lit.
-  if (lit.Index() == OptionalLiteralIndex(i_lit.var)) {
-    return Enqueue(i_lit, *literal_reason, *integer_reason);
-  }
-
   if (assignment.LiteralIsTrue(lit)) {
     literal_reason->push_back(lit.Negated());
     return Enqueue(i_lit, *literal_reason, *integer_reason);
@@ -1325,18 +1308,9 @@ bool IntegerTrail::ReasonIsValid(
       return false;
     }
     if (i_lit.bound > vars_[i_lit.var].current_bound) {
-      if (IsOptional(i_lit.var)) {
-        const Literal is_ignored = IsIgnoredLiteral(i_lit.var);
-        LOG(INFO) << "Reason " << i_lit << " is not true!"
-                  << " optional variable:" << i_lit.var
-                  << " present:" << assignment.LiteralIsFalse(is_ignored)
-                  << " absent:" << assignment.LiteralIsTrue(is_ignored)
-                  << " current_lb:" << vars_[i_lit.var].current_bound;
-      } else {
-        LOG(INFO) << "Reason " << i_lit << " is not true!"
-                  << " non-optional variable:" << i_lit.var
-                  << " current_lb:" << vars_[i_lit.var].current_bound;
-      }
+      LOG(INFO) << "Reason " << i_lit << " is not true!"
+                << " non-optional variable:" << i_lit.var
+                << " current_lb:" << vars_[i_lit.var].current_bound;
       return false;
     }
   }
@@ -1519,7 +1493,6 @@ bool IntegerTrail::CurrentBranchHadAnIncompletePropagation() {
 
 IntegerVariable IntegerTrail::FirstUnassignedVariable() const {
   for (IntegerVariable var(0); var < vars_.size(); var += 2) {
-    if (IsCurrentlyIgnored(var)) continue;
     if (!IsFixed(var)) return var;
   }
   return kNoIntegerVariable;
@@ -1545,9 +1518,6 @@ bool IntegerTrail::EnqueueInternal(
          ReasonIsValid(i_lit, literal_reason, integer_reason));
   const IntegerVariable var(i_lit.var);
 
-  // No point doing work if the variable is already ignored.
-  if (IsCurrentlyIgnored(var)) return true;
-
   // Nothing to do if the bound is not better than the current one.
   // TODO(user): Change this to a CHECK? propagator shouldn't try to push such
   // bound and waste time explaining it.
@@ -1567,53 +1537,17 @@ bool IntegerTrail::EnqueueInternal(
     // We relax the upper bound as much as possible to still have a conflict.
     const auto ub_reason = IntegerLiteral::LowerOrEqual(var, i_lit.bound - 1);
 
-    if (!IsOptional(var) || trail_->Assignment().LiteralIsFalse(
-                                Literal(is_ignored_literals_[var]))) {
-      // Note that we want only one call to MergeReasonIntoInternal() for
-      // efficiency and a potential smaller reason.
-      auto* conflict = InitializeConflict(i_lit, lazy_reason, literal_reason,
-                                          integer_reason);
-      if (IsOptional(var)) {
-        conflict->push_back(Literal(is_ignored_literals_[var]));
-      }
-      {
-        const int trail_index = FindLowestTrailIndexThatExplainBound(ub_reason);
-        const int num_vars = vars_.size();  // must be signed.
-        if (trail_index >= num_vars) tmp_queue_.push_back(trail_index);
-      }
-      MergeReasonIntoInternal(conflict);
-      return false;
-    } else {
-      // Note(user): We never make the bound of an optional literal cross. We
-      // used to have a bug where we propagated these bounds and their
-      // associated literals, and we were reaching a conflict while propagating
-      // the associated literal instead of setting is_ignored below to false.
-      const Literal is_ignored = Literal(is_ignored_literals_[var]);
-      if (integer_search_levels_.empty()) {
-        trail_->EnqueueWithUnitReason(is_ignored);
-      } else {
-        // Here we currently expand any lazy reason because we need to add
-        // to it the reason for the upper bound.
-        // TODO(user): A possible solution would be to support the two types
-        // of reason (lazy and not) at the same time and use the union of both?
-        if (lazy_reason != nullptr) {
-          lazy_reason(i_lit, integer_trail_.size(), &lazy_reason_literals_,
-                      &lazy_reason_trail_indices_);
-          std::vector<IntegerLiteral> temp;
-          for (const int trail_index : lazy_reason_trail_indices_) {
-            const TrailEntry& entry = integer_trail_[trail_index];
-            temp.push_back(IntegerLiteral(entry.var, entry.bound));
-          }
-          EnqueueLiteral(is_ignored, lazy_reason_literals_, temp);
-        } else {
-          EnqueueLiteral(is_ignored, literal_reason, integer_reason);
-        }
-
-        // Hack, we add the upper bound reason here.
-        bounds_reason_buffer_.push_back(ub_reason);
-      }
-      return true;
+    // Note that we want only one call to MergeReasonIntoInternal() for
+    // efficiency and a potential smaller reason.
+    auto* conflict =
+        InitializeConflict(i_lit, lazy_reason, literal_reason, integer_reason);
+    {
+      const int trail_index = FindLowestTrailIndexThatExplainBound(ub_reason);
+      const int num_vars = vars_.size();  // must be signed.
+      if (trail_index >= num_vars) tmp_queue_.push_back(trail_index);
     }
+    MergeReasonIntoInternal(conflict);
+    return false;
   }
 
   // Stop propagating if we detect a propagation loop. The search heuristic will
@@ -1761,7 +1695,6 @@ bool IntegerTrail::EnqueueInternal(
 bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
                                                    Literal literal_reason) {
   DCHECK(ReasonIsValid(i_lit, {literal_reason.Negated()}, {}));
-  DCHECK(!IsCurrentlyIgnored(i_lit.var));
 
   // Nothing to do if the bound is not better than the current one.
   if (i_lit.bound <= vars_[i_lit.var].current_bound) return true;
@@ -2375,50 +2308,6 @@ void GenericLiteralWatcher::RegisterReversibleClass(int id,
 
 void GenericLiteralWatcher::RegisterReversibleInt(int id, int* rev) {
   id_to_reversible_ints_[id].push_back(rev);
-}
-
-// This is really close to ExcludeCurrentSolutionAndBacktrack().
-std::function<void(Model*)>
-ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack() {
-  return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-
-    const int current_level = sat_solver->CurrentDecisionLevel();
-    std::vector<Literal> clause_to_exclude_solution;
-    clause_to_exclude_solution.reserve(current_level);
-    for (int i = 0; i < current_level; ++i) {
-      bool include_decision = true;
-      const Literal decision = sat_solver->Decisions()[i].literal;
-
-      // Tests if this decision is associated to a bound of an ignored variable
-      // in the current assignment.
-      const InlinedIntegerLiteralVector& associated_literals =
-          encoder->GetIntegerLiterals(decision);
-      for (const IntegerLiteral bound : associated_literals) {
-        if (integer_trail->IsCurrentlyIgnored(bound.var)) {
-          // In this case we replace the decision (which is a bound on an
-          // ignored variable) with the fact that the integer variable was
-          // ignored. This works because the only impact a bound of an ignored
-          // variable can have on the rest of the model is through the
-          // is_ignored literal.
-          clause_to_exclude_solution.push_back(
-              integer_trail->IsIgnoredLiteral(bound.var).Negated());
-          include_decision = false;
-        }
-      }
-
-      if (include_decision) {
-        clause_to_exclude_solution.push_back(decision.Negated());
-      }
-    }
-
-    // Note that it is okay to add duplicates literals in ClauseConstraint(),
-    // the clause will be preprocessed correctly.
-    sat_solver->Backtrack(0);
-    model->Add(ClauseConstraint(clause_to_exclude_solution));
-  };
 }
 
 }  // namespace sat

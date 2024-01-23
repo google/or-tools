@@ -712,8 +712,6 @@ void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
   CHECK(!sat_solver_->Assignment().LiteralIsAssigned(node.literal));
   for (const IntegerLiteral integer_literal :
        integer_encoder_->GetIntegerLiterals(node.literal)) {
-    if (integer_trail_->IsCurrentlyIgnored(integer_literal.var)) continue;
-
     // To avoid bad corner case. Not sure it ever triggers.
     if (++num_tests > 10) break;
 

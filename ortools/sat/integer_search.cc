@@ -54,7 +54,6 @@ namespace operations_research {
 namespace sat {
 
 IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail) {
-  DCHECK(!integer_trail->IsCurrentlyIgnored(var));
   const IntegerValue lb = integer_trail->LowerBound(var);
   DCHECK_LE(lb, integer_trail->UpperBound(var));
   if (lb == integer_trail->UpperBound(var)) return IntegerLiteral();
@@ -114,9 +113,7 @@ IntegerLiteral SplitAroundGivenValue(IntegerVariable var, IntegerValue value,
 
 IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   auto* parameters = model->GetOrCreate<SatParameters>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
-  DCHECK(!integer_trail->IsCurrentlyIgnored(var));
 
   const IntegerVariable positive_var = PositiveVariable(var);
   const auto& it = lp_dispatcher->find(positive_var);
@@ -173,8 +170,6 @@ std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   return [/*copy*/ vars, integer_trail]() {
     for (const IntegerVariable var : vars) {
-      // Note that there is no point trying to fix a currently ignored variable.
-      if (integer_trail->IsCurrentlyIgnored(var)) continue;
       const IntegerLiteral decision = AtMinValue(var, integer_trail);
       if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
     }
@@ -190,7 +185,6 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
     IntegerVariable candidate = kNoIntegerVariable;
     IntegerValue candidate_lb;
     for (const IntegerVariable var : vars) {
-      if (integer_trail->IsCurrentlyIgnored(var)) continue;
       const IntegerValue lb = integer_trail->LowerBound(var);
       if (lb < integer_trail->UpperBound(var) &&
           (candidate == kNoIntegerVariable || lb < candidate_lb)) {
@@ -220,7 +214,6 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
     std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
     Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* sat_policy = model->GetOrCreate<SatDecisionPolicy>();
   return [=]() {
     // Get the current decision.
@@ -250,8 +243,6 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
     // TODO(user): we will likely stop at the first non-fixed variable.
     for (const IntegerVariable var : encoder->GetAllAssociatedVariables(
              Literal(current_decision.boolean_literal_index))) {
-      if (integer_trail->IsCurrentlyIgnored(var)) continue;
-
       // Sequentially try the value selection heuristics.
       for (const auto& value_heuristic : value_selection_heuristics) {
         const IntegerLiteral decision = value_heuristic(var);
@@ -1015,8 +1006,6 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     // Decode the decision and get the variable.
     for (const IntegerVariable var : encoder->GetAllAssociatedVariables(
              Literal(current_decision.boolean_literal_index))) {
-      if (integer_trail->IsCurrentlyIgnored(var)) continue;
-
       // Try the selected policy.
       const IntegerLiteral new_decision =
           value_selection_heuristics[val_policy_index](var);
@@ -1056,7 +1045,6 @@ std::function<BooleanOrIntegerLiteral()> FollowHint(
             Literal(vars[i].bool_var, value == 1).Index());
       } else {
         const IntegerVariable integer_var = vars[i].int_var;
-        if (integer_trail->IsCurrentlyIgnored(integer_var)) continue;
         if (integer_trail->IsFixed(integer_var)) continue;
 
         const IntegerVariable positive_var = PositiveVariable(integer_var);
@@ -1614,10 +1602,7 @@ SatSolver::Status ContinuousProber::Probe() {
     // TODO(user): Probe optional variables.
     for (; current_int_var_ < int_vars_.size(); ++current_int_var_) {
       const IntegerVariable int_var = int_vars_[current_int_var_];
-      if (integer_trail_->IsFixed(int_var) ||
-          integer_trail_->IsOptional(int_var)) {
-        continue;
-      }
+      if (integer_trail_->IsFixed(int_var)) continue;
 
       const Literal shave_lb_literal =
           encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(

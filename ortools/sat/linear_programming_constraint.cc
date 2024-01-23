@@ -1915,9 +1915,6 @@ bool LinearProgrammingConstraint::Propagate() {
         continue;
       }
 
-      // Skip ignored variables.
-      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
-
       // We can use any metric to select a variable to branch on. Reduced cost
       // average is one of the most promissing metric. It captures the history
       // of the objective bound improvement in LP due to changes in the given
@@ -2520,8 +2517,7 @@ void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable var = integer_variables_[i];
 
-    // Skip ignored and fixed variables.
-    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    // Skip fixed variables.
     if (integer_trail_->IsFixed(var)) continue;
 
     // Skip reduced costs that are zero or close.
@@ -2584,7 +2580,6 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   for (int i = rev_rc_start_; i < size; ++i) {
     const int index = positions_by_decreasing_rc_score_[i].second;
     const IntegerVariable var = integer_variables_[index];
-    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
     if (integer_trail_->IsFixed(var)) continue;
     selected_index = index;
     rev_rc_start_ = i;
@@ -2650,8 +2645,7 @@ LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary() {
     IntegerVariable fractional_var = kNoIntegerVariable;
     double fractional_distance_best = -1.0;
     for (const IntegerVariable var : variables) {
-      // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      // Skip fixed variables.
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
       if (lb == ub) continue;
@@ -2714,8 +2708,7 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary() {
     // Accumulate pseudo-costs of all unassigned variables.
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
-      // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      // Skip fixed variables.
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
       if (lb == ub) continue;
@@ -2736,8 +2729,7 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary() {
     double best_cost = 0.0;
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
-      // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      // Skip fixed variables.
       if (integer_trail_->IsFixed(var)) continue;
 
       if (num_cost_to_zero[i] > 0 &&

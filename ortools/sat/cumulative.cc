@@ -319,14 +319,16 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
         std::vector<Literal> consume_condition;
         const Literal consume = Literal(model->Add(NewBooleanVariable()), true);
 
-        // Task t overlaps time.
-        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
-            start_exprs[t].LowerOrEqual(time)));
-        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
-            end_exprs[t].GreaterOrEqual(time + 1)));
+        // Task t consumes the resource at time if it is present.
         if (repository->IsOptional(vars[t])) {
           consume_condition.push_back(repository->PresenceLiteral(vars[t]));
         }
+
+        // Task t overlaps time.
+        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
+            start_exprs[t].LowerOrEqual(IntegerValue(time))));
+        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
+            end_exprs[t].GreaterOrEqual(IntegerValue(time + 1))));
 
         model->Add(ReifiedBoolAnd(consume_condition, consume));
 

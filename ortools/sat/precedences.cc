@@ -307,7 +307,6 @@ bool PrecedencesPropagator::Propagate() {
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (arc_counts_[arc_index] > 0) continue;
       const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
       const IntegerValue new_head_lb =
           integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc);
       if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
@@ -344,7 +343,6 @@ bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
   if (var >= impacted_arcs_.size()) return true;
   for (const ArcIndex arc_index : impacted_arcs_[var]) {
     const ArcInfo& arc = arcs_[arc_index];
-    if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
     const IntegerValue new_head_lb =
         integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc);
     if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
@@ -420,8 +418,6 @@ void PrecedencesPropagator::ComputePrecedences(
     if (var >= impacted_arcs_.size()) continue;
     for (const ArcIndex arc_index : impacted_arcs_[var]) {
       const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
-
       IntegerValue offset = arc.offset;
       if (arc.offset_var != kNoIntegerVariable) {
         offset += integer_trail_->LowerBound(arc.offset_var);
@@ -553,19 +549,6 @@ void PrecedencesPropagator::AddArc(
     for (const Literal l : presence_literals) {
       enforcement_literals.push_back(l);
     }
-    if (integer_trail_->IsOptional(tail)) {
-      enforcement_literals.push_back(
-          integer_trail_->IsIgnoredLiteral(tail).Negated());
-    }
-    if (integer_trail_->IsOptional(head)) {
-      enforcement_literals.push_back(
-          integer_trail_->IsIgnoredLiteral(head).Negated());
-    }
-    if (offset_var != kNoIntegerVariable &&
-        integer_trail_->IsOptional(offset_var)) {
-      enforcement_literals.push_back(
-          integer_trail_->IsIgnoredLiteral(offset_var).Negated());
-    }
     gtl::STLSortAndRemoveDuplicates(&enforcement_literals);
 
     if (trail_->CurrentDecisionLevel() == 0) {
@@ -659,15 +642,6 @@ void PrecedencesPropagator::AddArc(
     arcs_.push_back(
         {a.tail_var, a.head_var, offset, a.offset_var, enforcement_literals});
     auto& presence_literals = arcs_.back().presence_literals;
-    if (integer_trail_->IsOptional(a.head_var)) {
-      // TODO(user): More generally, we can remove any literal that is implied
-      // by to_remove.
-      const Literal to_remove =
-          integer_trail_->IsIgnoredLiteral(a.head_var).Negated();
-      const auto it = std::find(presence_literals.begin(),
-                                presence_literals.end(), to_remove);
-      if (it != presence_literals.end()) presence_literals.erase(it);
-    }
 
     if (presence_literals.empty()) {
       impacted_arcs_[a.tail_var].push_back(arc_index);
@@ -808,20 +782,7 @@ bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
         integer_trail_->UpperBoundAsLiteral(arc.head_var));
     std::vector<IntegerValue> coeffs(integer_reason_.size(), IntegerValue(1));
     integer_trail_->RelaxLinearReason(slack, coeffs, &integer_reason_);
-
-    if (!integer_trail_->IsOptional(arc.head_var)) {
-      return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
-    } else {
-      CHECK(!integer_trail_->IsCurrentlyIgnored(arc.head_var));
-      const Literal l = integer_trail_->IsIgnoredLiteral(arc.head_var);
-      if (trail->Assignment().LiteralIsFalse(l)) {
-        literal_reason_.push_back(l);
-        return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
-      } else {
-        integer_trail_->EnqueueLiteral(l, literal_reason_, integer_reason_);
-        return true;
-      }
-    }
+    return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
   }
 
   return integer_trail_->Enqueue(
@@ -834,7 +795,6 @@ bool PrecedencesPropagator::NoPropagationLeft(const Trail& trail) const {
   for (IntegerVariable var(0); var < num_nodes; ++var) {
     for (const ArcIndex arc_index : impacted_arcs_[var]) {
       const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
       if (integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc) >
           integer_trail_->LowerBound(arc.head_var)) {
         return false;
@@ -939,16 +899,6 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
     for (const Literal l : arc.presence_literals) {
       literal_reason->push_back(l.Negated());
     }
-
-    // If the cycle happens to contain optional variable not yet ignored, then
-    // it is not a conflict anymore, but we can infer that these variable must
-    // all be ignored. This is because since we propagated them even if they
-    // where not present for sure, their presence literal must form a cycle
-    // together (i.e. they are all absent or present at the same time).
-    if (integer_trail_->IsOptional(arc.head_var)) {
-      must_be_all_true->push_back(
-          integer_trail_->IsIgnoredLiteral(arc.head_var));
-    }
   }
 
   // TODO(user): what if the sum overflow? this is just a check so I guess
@@ -997,7 +947,6 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
       DCHECK_EQ(arc.tail_var, node);
       const IntegerValue candidate = tail_lb + ArcOffset(arc);
       if (candidate > integer_trail_->LowerBound(arc.head_var)) {
-        if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
         if (!EnqueueAndCheck(arc, candidate, trail)) return false;
 
         // This is the Tarjan contribution to Bellman-Ford. This code detect

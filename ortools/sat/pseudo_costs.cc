@@ -49,7 +49,6 @@ void PseudoCosts::UpdateCost(
 
   const double epsilon = 1e-6;
   for (const auto [var, lb_change] : bound_changes) {
-    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
     if (lb_change == IntegerValue(0)) continue;
 
     if (var >= pseudo_costs_.size()) {
@@ -90,7 +89,6 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
   // In practice since a variable only become relevant after 100 records, this
   // list might be small compared to the number of variable though.
   for (const IntegerVariable positive_var : relevant_variables_) {
-    if (integer_trail_->IsCurrentlyIgnored(positive_var)) continue;
     const IntegerValue lb = integer_trail_->LowerBound(positive_var);
     const IntegerValue ub = integer_trail_->UpperBound(positive_var);
     if (lb >= ub) continue;
@@ -113,7 +111,6 @@ std::vector<PseudoCosts::VariableBoundChange> PseudoCosts::GetBoundChanges(
   std::vector<PseudoCosts::VariableBoundChange> bound_changes;
 
   for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
-    if (integer_trail_->IsCurrentlyIgnored(l.var)) continue;
     PseudoCosts::VariableBoundChange var_bound_change;
     var_bound_change.var = l.var;
     var_bound_change.lower_bound_change =
@@ -123,7 +120,6 @@ std::vector<PseudoCosts::VariableBoundChange> PseudoCosts::GetBoundChanges(
 
   // NOTE: We ignore literal associated to var != value.
   for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
-    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
     {
       PseudoCosts::VariableBoundChange var_bound_change;
       var_bound_change.var = var;

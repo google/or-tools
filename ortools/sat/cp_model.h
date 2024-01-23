@@ -454,7 +454,7 @@ class IntervalVar {
   IntervalVar();
 
   /// Sets the name of the variable.
-  IntervalVar WithName(const std::string& name);
+  IntervalVar WithName(absl::string_view name);
 
   /// Returns the name of the interval (or the empty string if not set).
   std::string Name() const;
@@ -553,7 +553,7 @@ class Constraint {
   Constraint OnlyEnforceIf(BoolVar literal);
 
   /// Sets the name of the constraint.
-  Constraint WithName(const std::string& name);
+  Constraint WithName(absl::string_view name);
 
   /// Returns the name of the constraint (or the empty string if not set).
   const std::string& Name() const;

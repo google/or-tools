@@ -984,7 +984,6 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
                                   helper_->SizeMin(task_time.task_index)});
     }
     DCHECK_GE(task_set_.SortedTasks().size(), 2);
-    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
 
     // TODO(user): Only use the min_offset of the critical task? Or maybe do a
     // more general computation to find by how much we can push var?

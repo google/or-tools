@@ -809,35 +809,6 @@ class IntegerTrail : public SatPropagator {
     return AddIntegerVariable(kMinIntegerValue, kMaxIntegerValue);
   }
 
-  // For an optional variable, both its lb and ub must be valid bound assuming
-  // the fact that the variable is "present". However, the domain [lb, ub] is
-  // allowed to be empty (i.e. ub < lb) if the given is_ignored literal is true.
-  // Moreover, if is_ignored is true, then the bound of such variable should NOT
-  // impact any non-ignored variable in any way (but the reverse is not true).
-  bool IsOptional(IntegerVariable i) const {
-    return is_ignored_literals_[i] != kNoLiteralIndex;
-  }
-  bool IsCurrentlyIgnored(IntegerVariable i) const {
-    const LiteralIndex is_ignored_literal = is_ignored_literals_[i];
-    return is_ignored_literal != kNoLiteralIndex &&
-           trail_->Assignment().LiteralIsTrue(Literal(is_ignored_literal));
-  }
-  Literal IsIgnoredLiteral(IntegerVariable i) const {
-    DCHECK(IsOptional(i));
-    return Literal(is_ignored_literals_[i]);
-  }
-  LiteralIndex OptionalLiteralIndex(IntegerVariable i) const {
-    return is_ignored_literals_[i] == kNoLiteralIndex
-               ? kNoLiteralIndex
-               : Literal(is_ignored_literals_[i]).NegatedIndex();
-  }
-  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_considered) {
-    DCHECK(is_ignored_literals_[i] == kNoLiteralIndex ||
-           is_ignored_literals_[i] == is_considered.NegatedIndex());
-    is_ignored_literals_[i] = is_considered.NegatedIndex();
-    is_ignored_literals_[NegationOf(i)] = is_considered.NegatedIndex();
-  }
-
   // Returns the current lower/upper bound of the given integer variable.
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
@@ -1259,9 +1230,6 @@ class IntegerTrail : public SatPropagator {
   // Temporary vector filled by calls to LazyReasonFunction().
   mutable std::vector<Literal> lazy_reason_literals_;
   mutable std::vector<int> lazy_reason_trail_indices_;
-
-  // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
-  absl::StrongVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // Temporary data used by MergeReasonInto().
   mutable bool has_dependency_ = false;
@@ -1980,14 +1948,6 @@ inline std::function<std::vector<ValueLiteralPair>(Model*)> FullyEncodeVariable(
     return encoder->FullDomainEncoding(var);
   };
 }
-
-// Same as ExcludeCurrentSolutionAndBacktrack() but this version works for an
-// integer problem with optional variables. The issue is that an optional
-// variable that is ignored can basically take any value, and we don't really
-// want to enumerate them. This function should exclude all solutions where
-// only the ignored variable values change.
-std::function<void(Model*)>
-ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack();
 
 }  // namespace sat
 }  // namespace operations_research
