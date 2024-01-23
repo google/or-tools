@@ -11,7 +11,8 @@ RUN pacman -Syu --noconfirm \
  abseil-cpp protobuf re2 eigen \
  coin-or-cbc coin-or-clp \
  glpk \
- scip
+ scip \
+ gtest
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD [ "/bin/bash" ]
