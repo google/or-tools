@@ -141,7 +141,7 @@ bool SteepestSearch::NextSolution(int num_iterations) {
   return NextSolution(ledger_->model()->all_subsets(), num_iterations);
 }
 
-bool SteepestSearch::NextSolution(const std::vector<SubsetIndex>& focus,
+bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                   int num_iterations) {
   // Return false if ledger_ contains no solution.
   if (!ledger_->CheckSolution()) return false;
@@ -188,7 +188,7 @@ bool FlipCoin() {
 }
 }  // namespace
 
-void GuidedTabuSearch::UpdatePenalties(const std::vector<SubsetIndex>& focus) {
+void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
   const SubsetCostVector& subset_costs = ledger_->model()->subset_costs();
   Cost max_utility = -1.0;
   for (const SubsetIndex subset : focus) {
@@ -307,9 +307,9 @@ std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
                             ledger);
 }
 
-std::vector<SubsetIndex> ClearRandomSubsets(
-    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
-    SetCoverLedger* ledger) {
+std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
+                                            std::size_t num_subsets,
+                                            SetCoverLedger* ledger) {
   num_subsets = std::min(num_subsets, focus.size());
   CHECK_GE(num_subsets, 0);
   std::vector<SubsetIndex> chosen_indices;

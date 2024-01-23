@@ -85,7 +85,7 @@ class DataWrapper<LinearProgram> {
   }
 
   int FindOrCreateVariable(absl::string_view name) {
-    return data_->FindOrCreateVariable(std::string(name)).value();
+    return data_->FindOrCreateVariable(name).value();
   }
   void SetVariableTypeToInteger(int index) {
     data_->SetVariableType(ColIndex(index),

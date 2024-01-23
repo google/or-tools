@@ -935,7 +935,7 @@ void Knapsack64ItemsSolver::BuildBestSolution() {
 // Ulrich Pferschy and David Pisinger, Springer book (ISBN 978-3540402862).
 class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackDynamicProgrammingSolver(const std::string& solver_name);
+  explicit KnapsackDynamicProgrammingSolver(absl::string_view solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
@@ -963,7 +963,7 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
 
 // ----- KnapsackDynamicProgrammingSolver -----
 KnapsackDynamicProgrammingSolver::KnapsackDynamicProgrammingSolver(
-    const std::string& solver_name)
+    absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       profits_(),
       weights_(),

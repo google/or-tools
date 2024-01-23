@@ -220,6 +220,10 @@ MPSolutionResponse SatSolveProto(
   // We start by some extra validation since our code do not accept any kind
   // of input.
   MPModelProto* const mp_model = request.mutable_model();
+  if (params.mip_treat_high_magnitude_bounds_as_infinity()) {
+    sat::ChangeLargeBoundsToInfinity(params.mip_max_valid_magnitude(), mp_model,
+                                     &logger);
+  }
   if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
                                                    &logger)) {
     return InvalidModelResponse(logger, "Extra CP-SAT validation failed.");

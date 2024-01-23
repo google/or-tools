@@ -102,7 +102,7 @@ class SetCoverLedger {
   void UpdateIsRemovable(absl::Span<const SubsetIndex> impacted_subsets);
 
   // Updates marginal_impacts_ for each subset in impacted_subsets.
-  void UpdateMarginalImpacts(const std::vector<SubsetIndex>& impacted_subsets);
+  void UpdateMarginalImpacts(absl::Span<const SubsetIndex> impacted_subsets);
 
   // Toggles is_selected_[subset] to value, and incrementally updates the
   // ledger.

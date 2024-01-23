@@ -326,7 +326,7 @@ bool SetCoverLedger::CheckIsRemovable() const {
 }
 
 void SetCoverLedger::UpdateMarginalImpacts(
-    const std::vector<SubsetIndex>& impacted_subsets) {
+    absl::Span<const SubsetIndex> impacted_subsets) {
   const SparseColumnView& columns = model_->columns();
   for (const SubsetIndex subset : impacted_subsets) {
     ElementIndex impact(0);

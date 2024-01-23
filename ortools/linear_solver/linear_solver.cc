@@ -1528,8 +1528,8 @@ bool MPSolver::HasInfeasibleConstraints() const {
   for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     if (constraints_[i]->lb() > constraints_[i]->ub()) {
       LOG(WARNING) << "Constraint " << constraints_[i]->name() << " (" << i
-                   << ") has contradictory bounds:"
-                   << " lower bound = " << constraints_[i]->lb()
+                   << ") has contradictory bounds:" << " lower bound = "
+                   << constraints_[i]->lb()
                    << " upper bound = " << constraints_[i]->ub();
       hasInfeasibleConstraints = true;
     }

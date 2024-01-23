@@ -150,7 +150,7 @@ class SteepestSearch {
   // TODO(user): Add time-outs and exit with a partial solution.
   bool NextSolution(int num_iterations);
 
-  bool NextSolution(const std::vector<SubsetIndex>& focus, int num_iterations);
+  bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
 
  private:
   // Updates the priorities on the impacted_subsets.
@@ -229,7 +229,7 @@ class GuidedTabuSearch {
 
  private:
   // Updates the penalties on the subsets in focus.
-  void UpdatePenalties(const std::vector<SubsetIndex>& focus);
+  void UpdatePenalties(absl::Span<const SubsetIndex> focus);
 
   // The ledger on which the algorithm will run.
   SetCoverLedger* ledger_;
@@ -273,9 +273,9 @@ std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
                                             SetCoverLedger* ledger);
 
 // Same as above, but clears the subset indices in focus.
-std::vector<SubsetIndex> ClearRandomSubsets(
-    const std::vector<SubsetIndex>& focus, std::size_t num_subsets,
-    SetCoverLedger* ledger);
+std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
+                                            std::size_t num_subsets,
+                                            SetCoverLedger* ledger);
 
 // Clears the variables that cover the most covered elements. This is capped
 // by num_subsets.
