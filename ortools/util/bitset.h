@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -452,7 +453,14 @@ class Bitset64 {
   void resize(int size) { Resize(IndexType(size)); }
   void Resize(IndexType size) {
     DCHECK_GE(Value(size), 0);
-    size_ = Value(size) > 0 ? size : IndexType(0);
+    IndexType new_size = Value(size) > 0 ? size : IndexType(0);
+    if (new_size < size_ && Value(new_size) > 0) {
+      const int64_t new_data_size = BitLength64(Value(new_size));
+      const uint64_t bitmask = kAllBitsButLsb64
+                               << BitPos64(Value(new_size) - 1);
+      data_[new_data_size - 1] &= ~bitmask;
+    }
+    size_ = new_size;
     data_.resize(BitLength64(Value(size_)), 0);
   }
 
