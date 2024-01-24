@@ -974,10 +974,14 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const int num_nodes = fz_ct.arguments[1].values.size();
     std::vector<std::vector<int>> flows_per_node(num_nodes);
     std::vector<std::vector<int>> coeffs_per_node(num_nodes);
+    int min_node = std::numeric_limits<int>::max();
+    for (const int node : fz_ct.arguments[0].values) {
+      min_node = std::min(min_node, node);
+    }
     const int num_arcs = fz_ct.arguments[0].values.size() / 2;
     for (int arc = 0; arc < num_arcs; arc++) {
-      const int tail = fz_ct.arguments[0].values[2 * arc] - 1;
-      const int head = fz_ct.arguments[0].values[2 * arc + 1] - 1;
+      const int tail = fz_ct.arguments[0].values[2 * arc] - min_node;
+      const int head = fz_ct.arguments[0].values[2 * arc + 1] - min_node;
       if (tail == head) continue;
 
       flows_per_node[tail].push_back(flow[arc]);

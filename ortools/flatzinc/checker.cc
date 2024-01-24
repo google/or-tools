@@ -993,11 +993,15 @@ bool CheckNetworkFlowConservation(
     const Argument& flow_vars,
     const std::function<int64_t(Variable*)>& evaluator) {
   std::vector<int64_t> balance(balance_input.values);
+  int min_node = std::numeric_limits<int>::max();
+  for (const int node : arcs.values) {
+    min_node = std::min(min_node, node);
+  }
 
   const int num_arcs = Size(arcs) / 2;
   for (int arc = 0; arc < num_arcs; arc++) {
-    const int tail = arcs.values[arc * 2] - 1;
-    const int head = arcs.values[arc * 2 + 1] - 1;
+    const int tail = arcs.values[arc * 2] - min_node;
+    const int head = arcs.values[arc * 2 + 1] - min_node;
     const int64_t flow = EvalAt(flow_vars, arc, evaluator);
     balance[tail] -= flow;
     balance[head] += flow;
