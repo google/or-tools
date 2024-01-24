@@ -101,12 +101,12 @@ if(BUILD_Protobuf)
   set(protobuf_BUILD_EXPORT OFF)
   set(protobuf_MSVC_STATIC_RUNTIME OFF)
   FetchContent_Declare(
-    protobuf
+    Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
     GIT_TAG "v25.1"
     GIT_SUBMODULES ""
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v25.1.patch")
-  FetchContent_MakeAvailable(protobuf)
+  FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -153,10 +153,12 @@ endif()
 # ##############################################################################
 # pybind11
 # ##############################################################################
-if(BUILD_PYTHON AND BUILD_pybind11)
+if(BUILD_PYTHON)
   # Find Python 3
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+endif()
 
+if(BUILD_PYTHON AND BUILD_pybind11)
   message(CHECK_START "Fetching pybind11")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(PYBIND11_INSTALL ON)
