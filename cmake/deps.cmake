@@ -145,6 +145,16 @@ if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
 endif()
 
+# CXX Test
+if(BUILD_TESTING)
+  if(NOT BUILD_googletest)
+    find_package(GTest REQUIRED)
+  endif()
+  if(NOT TARGET GTest::gtest_main)
+    message(FATAL_ERROR "Target GTest::gtest_main not available.")
+  endif()
+endif()
+
 # Check language Dependencies
 if(BUILD_PYTHON)
   if(NOT BUILD_pybind11)
