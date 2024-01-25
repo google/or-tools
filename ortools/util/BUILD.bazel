@@ -67,15 +67,6 @@ cc_library(
 )
 
 cc_library(
-    name = "vector_map",
-    hdrs = ["vector_map.h"],
-    deps = [
-        "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
     deps = [],
