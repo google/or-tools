@@ -895,6 +895,7 @@ cc_library(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -1817,7 +1818,11 @@ cc_library(
     deps = [
         ":integer",
         ":synchronization",
+        ":util",
+        "//ortools/util:bitset",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/types:span",
     ],
 )

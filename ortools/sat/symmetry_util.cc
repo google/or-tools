@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/logging.h"
@@ -27,7 +28,7 @@ namespace operations_research {
 namespace sat {
 
 std::vector<std::vector<int>> BasicOrbitopeExtraction(
-    const std::vector<std::unique_ptr<SparsePermutation>>& generators) {
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
   // Count the number of permutations that are compositions of 2-cycle and
   // regroup them according to the number of cycles.
   std::vector<std::vector<int>> num_cycles_to_2cyclers;
@@ -150,7 +151,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
 }
 
 std::vector<int> GetOrbits(
-    int n, const std::vector<std::unique_ptr<SparsePermutation>>& generators) {
+    int n, absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
   MergingPartition union_find;
   union_find.Reset(n);
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {

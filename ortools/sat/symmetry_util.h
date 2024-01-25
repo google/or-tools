@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 
 namespace operations_research {
@@ -45,7 +46,7 @@ namespace sat {
 // graph20-20-1rand.mps.gz. I suspect the generators provided by the detection
 // code follow our preconditions.
 std::vector<std::vector<int>> BasicOrbitopeExtraction(
-    const std::vector<std::unique_ptr<SparsePermutation>>& generators);
+    absl::Span<const std::unique_ptr<SparsePermutation>> generators);
 
 // Returns a vector of size n such that
 // - orbits[i] == -1 iff i is never touched by the generators (singleton orbit).
@@ -53,7 +54,7 @@ std::vector<std::vector<int>> BasicOrbitopeExtraction(
 //
 // TODO(user): We could reuse the internal memory if needed.
 std::vector<int> GetOrbits(
-    int n, const std::vector<std::unique_ptr<SparsePermutation>>& generators);
+    int n, absl::Span<const std::unique_ptr<SparsePermutation>> generators);
 
 // Returns the orbits under the given orbitope action.
 // Same results format as in GetOrbits(). Note that here, the orbit index
