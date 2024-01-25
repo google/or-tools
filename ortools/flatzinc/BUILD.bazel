@@ -120,7 +120,6 @@ cc_library(
         "//ortools/graph:cliques",
         "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
-        "//ortools/util:vector_map",
         "@com_google_absl//absl/strings",
     ],
 )

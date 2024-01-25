@@ -968,20 +968,18 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     // Note that we leave ct empty here (with just the name set).
     // We simply do a linear encoding of this constraint.
     const bool has_cost = fz_ct.type == "ortools_network_flow_cost";
-    const std::vector<int> flow = LookupVars(fz_ct.arguments[has_cost ? 3 : 2]);
+    const std::vector<int> flow = LookupVars(fz_ct.arguments[3]);
 
     // Flow conservation constraints.
     const int num_nodes = fz_ct.arguments[1].values.size();
+    const int base_node = fz_ct.arguments[2].Value();
     std::vector<std::vector<int>> flows_per_node(num_nodes);
     std::vector<std::vector<int>> coeffs_per_node(num_nodes);
-    int min_node = std::numeric_limits<int>::max();
-    for (const int node : fz_ct.arguments[0].values) {
-      min_node = std::min(min_node, node);
-    }
+
     const int num_arcs = fz_ct.arguments[0].values.size() / 2;
     for (int arc = 0; arc < num_arcs; arc++) {
-      const int tail = fz_ct.arguments[0].values[2 * arc] - min_node;
-      const int head = fz_ct.arguments[0].values[2 * arc + 1] - min_node;
+      const int tail = fz_ct.arguments[0].values[2 * arc] - base_node;
+      const int head = fz_ct.arguments[0].values[2 * arc + 1] - base_node;
       if (tail == head) continue;
 
       flows_per_node[tail].push_back(flow[arc]);
@@ -1004,19 +1002,19 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_domain(0);
       arg->add_domain(0);
       for (int arc = 0; arc < num_arcs; arc++) {
-        const int64_t weight = fz_ct.arguments[2].values[arc];
+        const int64_t weight = fz_ct.arguments[4].values[arc];
         if (weight != 0) {
           arg->add_vars(flow[arc]);
           arg->add_coeffs(weight);
         }
       }
-      arg->add_vars(LookupVar(fz_ct.arguments[4]));
+      arg->add_vars(LookupVar(fz_ct.arguments[5]));
       arg->add_coeffs(-1);
     }
   } else {
     LOG(FATAL) << " Not supported " << fz_ct.type;
   }
-}
+}  // NOLINT(readability/fn_size)
 
 void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {

@@ -989,19 +989,14 @@ bool CheckMinimumInt(const Constraint& ct,
 }
 
 bool CheckNetworkFlowConservation(
-    const Argument& arcs, const Argument& balance_input,
+    const Argument& arcs, const Argument& balance_input, int base_node,
     const Argument& flow_vars,
     const std::function<int64_t(Variable*)>& evaluator) {
   std::vector<int64_t> balance(balance_input.values);
-  int min_node = std::numeric_limits<int>::max();
-  for (const int node : arcs.values) {
-    min_node = std::min(min_node, node);
-  }
-
   const int num_arcs = Size(arcs) / 2;
   for (int arc = 0; arc < num_arcs; arc++) {
-    const int tail = arcs.values[arc * 2] - min_node;
-    const int head = arcs.values[arc * 2 + 1] - min_node;
+    const int tail = arcs.values[arc * 2] - base_node;
+    const int head = arcs.values[arc * 2 + 1] - base_node;
     const int64_t flow = EvalAt(flow_vars, arc, evaluator);
     balance[tail] -= flow;
     balance[head] += flow;
@@ -1017,13 +1012,15 @@ bool CheckNetworkFlowConservation(
 bool CheckNetworkFlow(const Constraint& ct,
                       const std::function<int64_t(Variable*)>& evaluator) {
   return CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
-                                      ct.arguments[2], evaluator);
+                                      ct.arguments[2].Value(), ct.arguments[3],
+                                      evaluator);
 }
 
 bool CheckNetworkFlowCost(const Constraint& ct,
                           const std::function<int64_t(Variable*)>& evaluator) {
   if (!CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
-                                    ct.arguments[3], evaluator)) {
+                                    ct.arguments[2].Value(), ct.arguments[3],
+                                    evaluator)) {
     return false;
   }
 
@@ -1031,11 +1028,11 @@ bool CheckNetworkFlowCost(const Constraint& ct,
   const int num_arcs = Size(ct.arguments[3]);
   for (int arc = 0; arc < num_arcs; arc++) {
     const int64_t flow = EvalAt(ct.arguments[3], arc, evaluator);
-    const int64_t cost = EvalAt(ct.arguments[2], arc, evaluator);
-    total_cost += flow * cost;
+    const int64_t unit_cost = ct.arguments[4].ValueAt(arc);
+    total_cost += flow * unit_cost;
   }
 
-  return total_cost == Eval(ct.arguments[4], evaluator);
+  return total_cost == Eval(ct.arguments[5], evaluator);
 }
 
 bool CheckNvalue(const Constraint& ct,
