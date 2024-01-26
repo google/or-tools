@@ -5383,6 +5383,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
 
   bool x_constant = true;
   bool y_constant = true;
+  bool has_zero_sized_interval = false;
 
   // Filter absent boxes.
   int new_size = 0;
@@ -5413,6 +5414,10 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     if (y_constant && !context_->IntervalIsConstant(y_interval_index)) {
       y_constant = false;
     }
+    if (context_->SizeMax(x_interval_index) == 0 ||
+        context_->SizeMax(y_interval_index) == 0) {
+      has_zero_sized_interval = true;
+    }
   }
 
   std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
@@ -5433,10 +5438,10 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  if (x_constant || y_constant) {
+  if (!has_zero_sized_interval && (x_constant || y_constant)) {
     context_->UpdateRuleStats(
-        "no_overlap_2d: a dimension is constant, splitting into many no "
-        "overlaps");
+        "no_overlap_2d: a dimension is constant, splitting into many "
+        "no_overlaps");
     std::vector<IndexedInterval> indexed_intervals;
     for (int i = 0; i < new_size; ++i) {
       int x = proto.x_intervals(i);

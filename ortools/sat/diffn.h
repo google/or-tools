@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -60,8 +61,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
     int opp_problem_size;
   };
   std::optional<Conflict> FindConflict(
-      std::vector<RectangleInRange> active_box_ranges,
-      const IntegerValue& max_x_item_size, const IntegerValue& max_y_item_size);
+      std::vector<RectangleInRange> active_box_ranges);
 
   std::vector<RectangleInRange> GeneralizeExplanation(const Conflict& conflict);
 

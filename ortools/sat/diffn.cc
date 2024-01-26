@@ -272,8 +272,6 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
                             .x_max = std::numeric_limits<IntegerValue>::min(),
                             .y_min = std::numeric_limits<IntegerValue>::max(),
                             .y_max = std::numeric_limits<IntegerValue>::min()};
-  IntegerValue max_x_item_size = IntegerValue(0);
-  IntegerValue max_y_item_size = IntegerValue(0);
   std::vector<RectangleInRange> active_box_ranges;
   active_box_ranges.reserve(num_boxes);
   for (int box = 0; box < num_boxes; ++box) {
@@ -293,8 +291,6 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
                           .y_max = y_.StartMax(box) + y_.SizeMin(box)},
         .x_size = x_.SizeMin(box),
         .y_size = y_.SizeMin(box)});
-    max_x_item_size = std::max(max_x_item_size, x_.SizeMin(box));
-    max_y_item_size = std::max(max_y_item_size, y_.SizeMin(box));
   }
 
   if (active_box_ranges.size() < 2) {
@@ -314,8 +310,8 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
     return true;
   }
 
-  std::optional<Conflict> best_conflict = FindConflict(
-      std::move(active_box_ranges), max_x_item_size, max_y_item_size);
+  std::optional<Conflict> best_conflict =
+      FindConflict(std::move(active_box_ranges));
   if (!best_conflict.has_value()) {
     return true;
   }
@@ -328,8 +324,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   IntegerValue best_explanation_size = best_conflict->items.size();
   bool refined = false;
   while (true) {
-    const std::optional<Conflict> conflict =
-        FindConflict(best_conflict->items, max_x_item_size, max_y_item_size);
+    const std::optional<Conflict> conflict = FindConflict(best_conflict->items);
     if (!conflict.has_value()) break;
     // We prefer an explanation with the least number of boxes.
     if (conflict->items.size() >= best_explanation_size) {
@@ -356,8 +351,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 
 std::optional<NonOverlappingRectanglesEnergyPropagator::Conflict>
 NonOverlappingRectanglesEnergyPropagator::FindConflict(
-    std::vector<RectangleInRange> active_box_ranges,
-    const IntegerValue& max_x_item_size, const IntegerValue& max_y_item_size) {
+    std::vector<RectangleInRange> active_box_ranges) {
   const auto rectangles_with_too_much_energy =
       FindRectanglesWithEnergyConflictMC(active_box_ranges, *random_, 1.0, 0.8);
 
@@ -385,25 +379,35 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
   int opp_problem_size = 0;
   // Also try the DFF on known conflicts, hopefully we will get a smaller
   // explanation.
-  std::vector<Rectangle> filtered_rectangles;
-  filtered_rectangles.reserve(
-      rectangles_with_too_much_energy.conflicts.size() +
-      rectangles_with_too_much_energy.candidates.size());
-  filtered_rectangles = rectangles_with_too_much_energy.conflicts;
-  // Our current DFF does nothing if all elements are smaller than half of the
-  // size of the rectangle. So we filter all rectangles that are twice the
-  // dimensions of the largest item of our problem.
-  for (const Rectangle& r : rectangles_with_too_much_energy.candidates) {
-    if (r.SizeX() <= 2 * max_x_item_size || r.SizeY() <= 2 * max_y_item_size) {
-      filtered_rectangles.push_back(r);
-    }
-  }
   // Sample 10 rectangles for looking for a conflict with DFF. This avoids
   // making this heuristic too costly.
   constexpr int kSampleSize = 10;
   absl::InlinedVector<Rectangle, kSampleSize> sampled_rectangles;
-  std::sample(filtered_rectangles.begin(), filtered_rectangles.end(),
-              std::back_inserter(sampled_rectangles), kSampleSize, *random_);
+  std::sample(rectangles_with_too_much_energy.conflicts.begin(),
+              rectangles_with_too_much_energy.conflicts.end(),
+              std::back_inserter(sampled_rectangles), 5, *random_);
+  std::sample(rectangles_with_too_much_energy.candidates.begin(),
+              rectangles_with_too_much_energy.candidates.end(),
+              std::back_inserter(sampled_rectangles),
+              kSampleSize - sampled_rectangles.size(), *random_);
+  std::sort(sampled_rectangles.begin(), sampled_rectangles.end(),
+            [](const Rectangle& a, const Rectangle& b) {
+              const bool larger = std::make_pair(a.SizeX(), a.SizeY()) >
+                                  std::make_pair(b.SizeX(), b.SizeY());
+              // Double-check the invariant from
+              // FindRectanglesWithEnergyConflictMC() that given two returned
+              // rectangles there is one that is fully inside the other.
+              if (larger) {
+                // Rectangle b is fully contained inside a
+                DCHECK(a.x_min <= b.x_min && a.x_max >= b.x_max &&
+                       a.y_min <= b.y_min && a.y_max >= b.y_max);
+              } else {
+                // Rectangle a is fully contained inside b
+                DCHECK(a.x_min >= b.x_min && a.x_max <= b.x_max &&
+                       a.y_min >= b.y_min && a.y_max <= b.y_max);
+              }
+              return larger;
+            });
   std::vector<IntegerValue> sizes_x, sizes_y;
   sizes_x.reserve(active_box_ranges.size());
   sizes_y.reserve(active_box_ranges.size());
