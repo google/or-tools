@@ -74,7 +74,7 @@ index d1b7483..44da017 100644
  # ok_status_singleton =======================================================
  
 -add_library(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
-+pybind11_add_module(ok_status_singleton MODULE ok_status_singleton_py_extension_stub.cc)
++pybind11_add_module(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
  add_library(pybind11_abseil::ok_status_singleton ALIAS ok_status_singleton)
  
 +# note: macOS is APPLE and also UNIX !
