@@ -66,17 +66,48 @@ index 0000000..ffe4d38
 +
 +FetchContent_MakeAvailable(abseil-cpp pybind11)
 diff --git a/pybind11_abseil/CMakeLists.txt b/pybind11_abseil/CMakeLists.txt
-index d1b7483..f0bfe32 100644
+index d1b7483..44da017 100644
 --- a/pybind11_abseil/CMakeLists.txt
 +++ b/pybind11_abseil/CMakeLists.txt
-@@ -150,14 +150,15 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
+@@ -42,14 +42,19 @@ target_link_libraries(ok_status_singleton_pyinit_google3
+ 
+ # ok_status_singleton =======================================================
+ 
+-add_library(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
++pybind11_add_module(ok_status_singleton MODULE ok_status_singleton_py_extension_stub.cc)
+ add_library(pybind11_abseil::ok_status_singleton ALIAS ok_status_singleton)
+ 
++# note: macOS is APPLE and also UNIX !
++if(APPLE)
++  set_target_properties(ok_status_singleton PROPERTIES SUFFIX ".so")
++  set_property(TARGET ok_status_singleton APPEND PROPERTY
++    LINK_FLAGS "-flat_namespace -undefined suppress")
++endif()
++
+ target_include_directories(ok_status_singleton
+                            INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-set_target_properties(ok_status_singleton PROPERTIES PREFIX "")
+-
+ target_link_libraries(ok_status_singleton
+                       PUBLIC ok_status_singleton_pyinit_google3)
+ 
+@@ -150,14 +155,23 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
  
  # status ====================================================================
  
 -add_library(status SHARED status_py_extension_stub.cc)
 -add_library(pybind11_abseil::status ALIAS status)
-+add_library(status_py_extension_stub SHARED status_py_extension_stub.cc)
++pybind11_add_module(status_py_extension_stub SHARED status_py_extension_stub.cc)
++
 +set_target_properties(status_py_extension_stub PROPERTIES LIBRARY_OUTPUT_NAME "status")
++# note: macOS is APPLE and also UNIX !
++if(APPLE)
++  set_target_properties(status_py_extension_stub PROPERTIES SUFFIX ".so")
++  set_property(TARGET status_py_extension_stub APPEND PROPERTY
++    LINK_FLAGS "-flat_namespace -undefined suppress")
++endif()
++
 +add_library(pybind11_abseil::status ALIAS status_py_extension_stub)
  
 -target_include_directories(status INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
@@ -90,7 +121,7 @@ index d1b7483..f0bfe32 100644
  
  # import_status_module =========================================================
  
-@@ -167,7 +168,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
+@@ -167,7 +181,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
  target_include_directories(import_status_module
                             INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
  
@@ -99,7 +130,7 @@ index d1b7483..f0bfe32 100644
  
  # status_casters ===============================================================
  
-@@ -175,25 +176,27 @@ add_library(status_casters INTERFACE)
+@@ -175,25 +189,27 @@ add_library(status_casters INTERFACE)
  add_library(pybind11_abseil::status_casters ALIAS status_casters)
  
  target_include_directories(status_casters
