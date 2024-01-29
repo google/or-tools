@@ -26,6 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
@@ -407,7 +408,7 @@ QuadraticConstraint Model::AddQuadraticConstraint(
 // --------------------- Second-order cone constraints -------------------------
 
 SecondOrderConeConstraint Model::AddSecondOrderConeConstraint(
-    const std::vector<LinearExpression>& arguments_to_norm,
+    absl::Span<const LinearExpression> arguments_to_norm,
     const LinearExpression& upper_bound, const absl::string_view name) {
   CheckOptionalModel(upper_bound.storage());
   std::vector<LinearExpressionData> arguments_to_norm_data;
