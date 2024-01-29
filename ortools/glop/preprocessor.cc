@@ -2673,6 +2673,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     return false;
   }
 
+  // The code below do not work as is for integer variable.
+  if (in_mip_context_ && lp->IsVariableInteger(e.col)) return false;
+
   // To be efficient, we only process a row once and cache the domain that an
   // "artificial" extra variable x with coefficient 1.0 could take while still
   // making the constraint feasible. The domain bounds for the constraint e.row
