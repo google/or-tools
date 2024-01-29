@@ -50,6 +50,8 @@
 %unignore operations_research::KnapsackSolver::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER;
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER;  // untested
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER;  // untested
+%unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER;  // untested
+%unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER;  // untested
 %unignore operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER;
 
 %include "ortools/algorithms/knapsack_solver.h"

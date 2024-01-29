@@ -19,6 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/macros.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace {
@@ -127,6 +128,14 @@ int64_t SolveKnapsackProblem(
       number_of_dimensions,
       KnapsackSolver::KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER);
   if (scip_profit != generic_profit) {
+    return kInvalidSolution;
+  }
+
+  const int64_t cpsat_profit = SolveKnapsackProblemUsingSpecificSolver(
+      profit_array, number_of_items, weight_array, capacity_array,
+      number_of_dimensions,
+      KnapsackSolver::KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER);
+  if (cpsat_profit != generic_profit) {
     return kInvalidSolution;
   }
 
@@ -483,9 +492,9 @@ TEST(KnapsackSolverTest, SolveTwoDimensionsSettingPrimaryPropagator) {
   solver.Init(profits, weights, capacities);
   solver.set_primary_propagator_id(1);
   bool is_solution_optimal = false;
-  operations_research::TimeLimit time_limit(
-      std::numeric_limits<double>::infinity());
-  int64_t profit = solver.Solve(&time_limit, &is_solution_optimal);
+  const double inf = std::numeric_limits<double>::infinity();
+  operations_research::TimeLimit time_limit(inf);
+  int64_t profit = solver.Solve(&time_limit, inf, &is_solution_optimal);
   EXPECT_TRUE(is_solution_optimal);
 
   std::vector<bool> best_solution(kArraySize, false);

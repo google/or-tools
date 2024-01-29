@@ -221,6 +221,12 @@ static const char*
 
 This solver can deal with both large number of items and several
 dimensions. This solver is based on Integer Programming solver SCIP.)doc";
+static const char*
+    __doc_operations_research_KnapsackSolver_SolverType_KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER =  // NOLINT
+    R"doc(CP_SAT based solver
+
+This solver can deal with both large number of items and several
+dimensions. This solver is based on the CP-SAT solver.)doc";
 static const char* __doc_operations_research_KnapsackSolver_additional_profit =
     R"doc()doc";
 

@@ -84,5 +84,9 @@ PYBIND11_MODULE(knapsack_solver, m) {
              KnapsackSolver::SolverType::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
              DOC(operations_research, KnapsackSolver, SolverType,
                  KNAPSACK_DIVIDE_AND_CONQUER_SOLVER))
+      .value("KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER",
+             KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER))
       .export_values();
 }

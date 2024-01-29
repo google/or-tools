@@ -21,9 +21,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
@@ -395,6 +400,7 @@ void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(
 }
 
 int64_t KnapsackGenericSolver::Solve(TimeLimit* time_limit,
+                                     double time_limit_in_second,
                                      bool* is_solution_optimal) {
   DCHECK(time_limit != nullptr);
   DCHECK(is_solution_optimal != nullptr);
@@ -558,7 +564,8 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
+                bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -605,6 +612,7 @@ void KnapsackBruteForceSolver::Init(
 }
 
 int64_t KnapsackBruteForceSolver::Solve(TimeLimit* /*time_limit*/,
+                                        double time_limit_in_second,
                                         bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
@@ -686,7 +694,8 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
+                bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -783,6 +792,7 @@ void Knapsack64ItemsSolver::Init(
 }
 
 int64_t Knapsack64ItemsSolver::Solve(TimeLimit* /*time_limit*/,
+                                     double time_limit_in_second,
                                      bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
@@ -943,7 +953,8 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
+                bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -1008,6 +1019,7 @@ int64_t KnapsackDynamicProgrammingSolver::SolveSubProblem(int64_t capacity,
 }
 
 int64_t KnapsackDynamicProgrammingSolver::Solve(TimeLimit* /*time_limit*/,
+                                                double time_limit_in_second,
                                                 bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
@@ -1049,7 +1061,8 @@ class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
+                bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -1155,6 +1168,7 @@ int64_t KnapsackDivideAndConquerSolver::DivideAndConquer(int64_t capacity,
 }
 
 int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* /*time_limit*/,
+                                              double time_limit_in_second,
                                               bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
@@ -1177,7 +1191,8 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
+                bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
@@ -1211,6 +1226,7 @@ void KnapsackMIPSolver::Init(const std::vector<int64_t>& profits,
 }
 
 int64_t KnapsackMIPSolver::Solve(TimeLimit* /*time_limit*/,
+                                 double time_limit_in_second,
                                  bool* is_solution_optimal) {
   DCHECK(is_solution_optimal != nullptr);
   *is_solution_optimal = true;
@@ -1242,17 +1258,125 @@ int64_t KnapsackMIPSolver::Solve(TimeLimit* /*time_limit*/,
   objective->SetMinimization();
 
   solver.SuppressOutput();
-  solver.Solve();
+  solver.SetTimeLimit(absl::Seconds(time_limit_in_second));
+  const MPSolver::ResultStatus status = solver.Solve();
 
+  best_solution_.assign(num_items, false);
+  if (status == MPSolver::OPTIMAL || status == MPSolver::FEASIBLE) {
   // Store best solution.
   const float kRoundNear = 0.5;
-  best_solution_.assign(num_items, false);
   for (int j = 0; j < num_items; ++j) {
     const double value = variables.at(j)->solution_value();
     best_solution_.at(j) = value >= kRoundNear;
   }
 
+    *is_solution_optimal = status == MPSolver::OPTIMAL;
+
   return -objective->Value() + kRoundNear;
+  } else {
+    *is_solution_optimal = false;
+    return 0;
+  }
+}
+
+// ----- KnapsackCpSat -----
+class KnapsackCpSat : public BaseKnapsackSolver {
+ public:
+  explicit KnapsackCpSat(const std::string& solver_name);
+
+  // Initializes the solver and enters the problem to be solved.
+  void Init(const std::vector<int64_t>& profits,
+            const std::vector<std::vector<int64_t>>& weights,
+            const std::vector<int64_t>& capacities) override;
+
+  // Solves the problem and returns the profit of the optimal solution.
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_seconds,
+                bool* is_solution_optimal) override;
+
+  // Returns true if the item 'item_id' is packed in the optimal knapsack.
+  bool best_solution(int item_id) const override {
+    return best_solution_.at(item_id);
+  }
+
+ private:
+  std::vector<int64_t> profits_;
+  std::vector<std::vector<int64_t>> weights_;
+  std::vector<int64_t> capacities_;
+  std::vector<bool> best_solution_;
+};
+
+KnapsackCpSat::KnapsackCpSat(const std::string& solver_name)
+    : BaseKnapsackSolver(solver_name),
+      profits_(),
+      weights_(),
+      capacities_(),
+      best_solution_() {}
+
+void KnapsackCpSat::Init(const std::vector<int64_t>& profits,
+                         const std::vector<std::vector<int64_t>>& weights,
+                         const std::vector<int64_t>& capacities) {
+  profits_ = profits;
+  weights_ = weights;
+  capacities_ = capacities;
+}
+
+int64_t KnapsackCpSat::Solve(TimeLimit* /*time_limit*/,
+                             double time_limit_in_seconds,
+                             bool* is_solution_optimal) {
+  DCHECK(is_solution_optimal != nullptr);
+  *is_solution_optimal = true;
+
+  sat::CpModelBuilder model;
+  model.SetName(GetName());
+
+  const int num_items = profits_.size();
+  std::vector<sat::BoolVar> variables;
+  variables.reserve(num_items);
+  for (int i = 0; i < num_items; ++i) {
+    variables.push_back(model.NewBoolVar());
+  }
+
+  // Add constraints.
+  const int num_dimensions = capacities_.size();
+  CHECK(weights_.size() == num_dimensions)
+      << "Weights should be vector of num_dimensions (" << num_dimensions
+      << ") vectors of size num_items (" << num_items << ").";
+  for (int i = 0; i < num_dimensions; ++i) {
+    sat::LinearExpr expr;
+    for (int j = 0; j < num_items; ++j) {
+      expr += variables.at(j) * weights_.at(i).at(j);
+    }
+    model.AddLessOrEqual(expr, capacities_.at(i));
+  }
+
+  // Define objective to maximize.
+  sat::LinearExpr objective;
+  for (int j = 0; j < num_items; ++j) {
+    objective += variables.at(j) * profits_.at(j);
+  }
+  model.Maximize(objective);
+
+  sat::SatParameters parameters;
+  parameters.set_num_workers(num_items > 100 ? 16 : 8);
+  parameters.set_max_time_in_seconds(time_limit_in_seconds);
+
+  const sat::CpSolverResponse response =
+      sat::SolveWithParameters(model.Build(), parameters);
+
+  // Store best solution.
+  best_solution_.assign(num_items, false);
+  if (response.status() == sat::CpSolverStatus::OPTIMAL ||
+      response.status() == sat::CpSolverStatus::FEASIBLE) {
+    for (int j = 0; j < num_items; ++j) {
+      best_solution_.at(j) = SolutionBooleanValue(response, variables.at(j));
+    }
+    *is_solution_optimal = response.status() == sat::CpSolverStatus::OPTIMAL;
+
+    return response.objective_value();
+  } else {
+    *is_solution_optimal = false;
+    return 0;
+  }
 }
 
 // ----- KnapsackSolver -----
@@ -1310,6 +1434,9 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
           MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
 #endif
+    case KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER:
+      solver_ = std::make_unique<KnapsackCpSat>(solver_name);
+      break;
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";
   }
@@ -1505,7 +1632,8 @@ int64_t KnapsackSolver::Solve() {
   return additional_profit_ +
          ((is_problem_solved_)
               ? 0
-              : solver_->Solve(time_limit_.get(), &is_solution_optimal_));
+              : solver_->Solve(time_limit_.get(), time_limit_seconds_,
+                               &is_solution_optimal_));
 }
 
 bool KnapsackSolver::BestSolutionContains(int item_id) const {

@@ -191,6 +191,12 @@ class KnapsackSolver {
      * space complexity is O(capacity + number_of_items).
      */
     KNAPSACK_DIVIDE_AND_CONQUER_SOLVER = 9,
+    /** CP-SAT based solver
+     *
+     * This solver can deal with both large number of items and several
+     * dimensions. This solver is based on the CP-SAT solver
+     */
+    KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER = 10,
   };
 
   explicit KnapsackSolver(const std::string& solver_name);
@@ -616,7 +622,8 @@ class BaseKnapsackSolver {
                                              int64_t* upper_bound);
 
   // Solves the problem and returns the profit of the optimal solution.
-  virtual int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) = 0;
+  virtual int64_t Solve(TimeLimit* time_limit, double time_limit_in_seconds,
+                        bool* is_solution_optimal) = 0;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   virtual bool best_solution(int item_id) const = 0;
@@ -665,7 +672,8 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   }
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_seconds,
+                bool* is_solution_optimal) override;
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
     return best_solution_.at(item_id);
