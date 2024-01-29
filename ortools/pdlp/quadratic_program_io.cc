@@ -268,10 +268,10 @@ class MpsReaderQpDataWrapper {
           std::vector<std::string>(dimension_and_names_.NumVariables());
       quadratic_program_.constraint_names =
           std::vector<std::string>(dimension_and_names_.NumConstraints());
-      for (auto [name, index] : dimension_and_names_.ColNameIndexMap()) {
+      for (const auto& [name, index] : dimension_and_names_.ColNameIndexMap()) {
         (*quadratic_program_.variable_names)[index] = name;
       }
-      for (auto [name, index] : dimension_and_names_.RowNameIndexMap()) {
+      for (const auto& [name, index] : dimension_and_names_.RowNameIndexMap()) {
         (*quadratic_program_.constraint_names)[index] = name;
       }
     }
