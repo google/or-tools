@@ -93,6 +93,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/linear_solver",
+        "//ortools/sat:cp_model",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
     ],
