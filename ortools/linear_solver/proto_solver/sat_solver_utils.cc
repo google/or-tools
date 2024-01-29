@@ -18,10 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
+#include "absl/log/check.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research {
 
