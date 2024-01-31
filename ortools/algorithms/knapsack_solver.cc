@@ -1263,16 +1263,16 @@ int64_t KnapsackMIPSolver::Solve(TimeLimit* /*time_limit*/,
 
   best_solution_.assign(num_items, false);
   if (status == MPSolver::OPTIMAL || status == MPSolver::FEASIBLE) {
-  // Store best solution.
-  const float kRoundNear = 0.5;
-  for (int j = 0; j < num_items; ++j) {
-    const double value = variables.at(j)->solution_value();
-    best_solution_.at(j) = value >= kRoundNear;
-  }
+    // Store best solution.
+    const float kRoundNear = 0.5;
+    for (int j = 0; j < num_items; ++j) {
+      const double value = variables.at(j)->solution_value();
+      best_solution_.at(j) = value >= kRoundNear;
+    }
 
     *is_solution_optimal = status == MPSolver::OPTIMAL;
 
-  return -objective->Value() + kRoundNear;
+    return -objective->Value() + kRoundNear;
   } else {
     *is_solution_optimal = false;
     return 0;
