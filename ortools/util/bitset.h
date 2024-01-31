@@ -625,7 +625,7 @@ class Bitset64 {
       return Iterator(bitset.data_.data());
     }
 
-    bool operator==(const Iterator& other) const { return !(*this == other); }
+    bool operator==(const Iterator& other) const { return !(*this != other); }
     bool operator!=(const Iterator& other) const {
       if (other.size_ == 0) {
         return size_ != 0;
@@ -638,7 +638,7 @@ class Bitset64 {
 
     Iterator operator++(int) {
       Iterator other = *this;
-      (*this)++;
+      ++(*this);
       return other;
     }
 
