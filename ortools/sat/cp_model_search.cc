@@ -34,6 +34,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -327,12 +328,25 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
   if (ModelHasSchedulingConstraints(cp_model_proto)) {
     std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
     const auto& params = *model->GetOrCreate<SatParameters>();
+    bool possible_new_constraints = false;
     if (params.use_dynamic_precedence_in_disjunctive()) {
+      possible_new_constraints = true;
       heuristics.push_back(DisjunctivePrecedenceSearchHeuristic(model));
     }
     if (params.use_dynamic_precedence_in_cumulative()) {
+      possible_new_constraints = true;
       heuristics.push_back(CumulativePrecedenceSearchHeuristic(model));
     }
+
+    // Tricky: we need to create this at level zero in case there are no linear
+    // constraint in the model at the beginning.
+    //
+    // TODO(user): Alternatively, support creation of SatPropagator at positive
+    // level.
+    if (possible_new_constraints && params.new_linear_propagation()) {
+      model->GetOrCreate<LinearPropagator>();
+    }
+
     heuristics.push_back(SchedulingSearchHeuristic(model));
     return SequentialSearch(std::move(heuristics));
   }

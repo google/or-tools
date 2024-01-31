@@ -23,9 +23,9 @@
 
 #include "absl/log/check.h"
 #include "absl/numeric/bits.h"
+#include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/vlog_is_on.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -220,47 +220,19 @@ std::vector<int> GetDffConflict(
   return result;
 }
 
-// Check for conflict all combinations of the two Dual Feasible Functions f_0
-// (see documentation for GetDffConflict()) and f_2 (see documentation for
-// RoundingDualFeasibleFunction). More precisely, check whether there exist `l`
-// and `k` so that
-//
-// sum_i f_2^k(f_0^l(sizes_x[i])) * sizes_y[i] > f_2^k(f_0^l(x_bb_size)) *
-//                                                 y_bb_size
-//
-// The function returns the smallest subset of items enough to make the
-// inequality above true or an empty vector if impossible.
-std::vector<int> CheckFeasibilityWithDualFunction2(
-    absl::Span<const IntegerValue> sizes_x,
-    absl::Span<const IntegerValue> sizes_y,
-    absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
-    IntegerValue y_bb_size) {
-  if (x_bb_size == 1) {
-    return {};
-  }
-  std::vector<IntegerValue> sizes_x_rescaled;
-  if (x_bb_size >= std::numeric_limits<uint16_t>::max()) {
-    // To do fast division we want our sizes to fit in a uint16_t. The simplest
-    // way of doing that is to just first apply this DFF with the right
-    // power-of-two value of the parameter.
-    const int log2_k =
-        absl::bit_width(static_cast<uint64_t>(x_bb_size.value() + 1)) - 16 + 1;
-    const RoundingDualFeasibleFunctionPowerOfTwo dff(x_bb_size, log2_k);
-    sizes_x_rescaled.resize(sizes_x.size());
-    for (int i = 0; i < sizes_x.size(); i++) {
-      sizes_x_rescaled[i] = dff(sizes_x[i]);
-    }
-    x_bb_size = dff(x_bb_size);
-    CHECK_LT(x_bb_size, std::numeric_limits<uint16_t>::max());
-    sizes_x = sizes_x_rescaled;
-  }
+}  // namespace
 
-  // We now want to find the minimum set of values of `k` that would always
-  // find a conflict if there is a `k` for which it exists. In the literature
-  // it is often implied (but not stated) that it is sufficient to test the
-  // values of `k` that correspond to the size of an item. This is not true. To
-  // find the minimum set of values of `k` we look for all values of `k` that
-  // are "extreme": ie., the rounding on the division truncates the most (or the
+void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
+    absl::Span<const IntegerValue> sizes_x,
+    absl::Span<const IntegerValue> sizes_y, IntegerValue x_bb_size,
+    IntegerValue sqrt_bb_size, IntegerValue y_bb_size,
+    Bitset64<IntegerValue>& candidates) {
+  // We want to find the minimum set of values of `k` that would always find a
+  // conflict if there is a `k` for which it exists. In the literature it is
+  // often implied (but not stated) that it is sufficient to test the values of
+  // `k` that correspond to the size of an item. This is not true. To find the
+  // minimum set of values of `k` we look for all values of `k` that are
+  // "extreme": ie., the rounding on the division truncates the most (or the
   // least) amount, depending on the sign it appears in the formula.
   IntegerValue sum_widths = 0;
   for (int i = 0; i < sizes_x.size(); i++) {
@@ -273,10 +245,9 @@ std::vector<int> CheckFeasibilityWithDualFunction2(
   }
   const IntegerValue round_up = sum_widths > 2 * y_bb_size ? 0 : 1;
   // x_bb_size is less than 65536, so this fits in only 4kib.
-  Bitset64<IntegerValue> candidates(x_bb_size / 2 + 2);
+  candidates.ClearAndResize(x_bb_size / 2 + 2);
 
   // `sqrt_bb_size` is lower than 256.
-  const IntegerValue sqrt_bb_size = FloorSquareRoot(x_bb_size.value());
   for (IntegerValue i = 2; i <= sqrt_bb_size; i++) {
     candidates.Set(i);
   }
@@ -295,9 +266,6 @@ std::vector<int> CheckFeasibilityWithDualFunction2(
       }
     }
   }
-
-  std::vector<int> result;
-  int num_items = sizes_x.size();
 
   // Remove some bogus candidates added by the logic above.
   candidates.Clear(0);
@@ -318,6 +286,89 @@ std::vector<int> CheckFeasibilityWithDualFunction2(
   if (x_bb_size > 3) {
     candidates.Set(x_bb_size / 3 + 1);
   }
+}
+
+// Check for conflict all combinations of the two Dual Feasible Functions f_0
+// (see documentation for GetDffConflict()) and f_2 (see documentation for
+// RoundingDualFeasibleFunction). More precisely, check whether there exist `l`
+// and `k` so that
+//
+// sum_i f_2^k(f_0^l(sizes_x[i])) * sizes_y[i] > f_2^k(f_0^l(x_bb_size)) *
+//                                                 y_bb_size
+//
+// The function returns the smallest subset of items enough to make the
+// inequality above true or an empty vector if impossible.
+std::vector<int>
+OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
+    absl::Span<const IntegerValue> sizes_x,
+    absl::Span<const IntegerValue> sizes_y,
+    absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
+    IntegerValue y_bb_size, int max_number_of_parameters_to_check) {
+  if (x_bb_size == 1) {
+    return {};
+  }
+  std::vector<IntegerValue> sizes_x_rescaled;
+  if (x_bb_size >= std::numeric_limits<uint16_t>::max()) {
+    // To do fast division we want our sizes to fit in a uint16_t. The simplest
+    // way of doing that is to just first apply this DFF with the right
+    // power-of-two value of the parameter.
+    const int log2_k =
+        absl::bit_width(static_cast<uint64_t>(x_bb_size.value() + 1)) - 16 + 1;
+    const RoundingDualFeasibleFunctionPowerOfTwo dff(x_bb_size, log2_k);
+    sizes_x_rescaled.resize(sizes_x.size());
+    for (int i = 0; i < sizes_x.size(); i++) {
+      sizes_x_rescaled[i] = dff(sizes_x[i]);
+    }
+    x_bb_size = dff(x_bb_size);
+    CHECK_LT(x_bb_size, std::numeric_limits<uint16_t>::max());
+    sizes_x = sizes_x_rescaled;
+  }
+
+  Bitset64<IntegerValue> candidates;
+  const IntegerValue sqrt_bb_size = FloorSquareRoot(x_bb_size.value());
+  int num_items = sizes_x.size();
+  const IntegerValue max_possible_number_of_parameters =
+      std::min(x_bb_size / 4 + 1, sqrt_bb_size * num_items);
+  if (5ull * max_number_of_parameters_to_check <
+      max_possible_number_of_parameters) {
+    // There are many more possible values than what we want to sample. It is
+    // not worth to pay the price of computing all optimal values to drop most
+    // of them, so let's just pick it randomly.
+    candidates.Resize(x_bb_size / 4 + 1);
+    int num_candidates = 0;
+    while (num_candidates < max_number_of_parameters_to_check) {
+      const IntegerValue pick =
+          absl::Uniform(random_, 1, x_bb_size.value() / 4);
+      if (!candidates.IsSet(pick)) {
+        candidates.Set(pick);
+        num_candidates++;
+      }
+    }
+  } else {
+    GetAllCandidatesForKForDff2(sizes_x, sizes_y, x_bb_size, sqrt_bb_size,
+                                y_bb_size, candidates);
+
+    if (max_number_of_parameters_to_check < max_possible_number_of_parameters) {
+      // We might have produced too many candidates. Let's count them and if it
+      // is the case, sample them.
+      int count = 0;
+      for (auto it = candidates.begin(); it != candidates.end(); ++it) {
+        count++;
+      }
+      if (count > max_number_of_parameters_to_check) {
+        std::vector<IntegerValue> sampled_candidates(
+            max_number_of_parameters_to_check);
+        std::sample(candidates.begin(), candidates.end(),
+                    sampled_candidates.begin(),
+                    max_number_of_parameters_to_check, random_);
+        candidates.ClearAll();
+        for (const IntegerValue k : sampled_candidates) {
+          candidates.Set(k);
+        }
+      }
+    }
+  }
+  std::vector<int> result;
 
   // Finally run our small loop to look for the conflict!
   std::vector<IntegerValue> modified_sizes(num_items);
@@ -341,27 +392,24 @@ std::vector<int> CheckFeasibilityWithDualFunction2(
   return result;
 }
 
-}  // namespace
-
-OrthogonalPackingInfeasibilityDetector::Result
-OrthogonalPackingInfeasibilityDetector::TestFeasibility(
+OrthogonalPackingResult
+OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
-  enum class ConflictType {
-    NO_CONFLICT,
-    TRIVIAL,
-    DFF_F0,
-    DFF_F2,
-  };
-  ConflictType conflict_type = ConflictType::NO_CONFLICT;
-  num_calls_++;
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    const OrthogonalPackingOptions& options) {
+  using ConflictType = OrthogonalPackingResult::ConflictType;
 
   const int num_items = sizes_x.size();
   DCHECK_EQ(num_items, sizes_y.size());
   const IntegerValue bb_area =
       bounding_box_size.first * bounding_box_size.second;
   IntegerValue total_energy = 0;
+
+  auto make_item = [sizes_x, sizes_y](int i) {
+    return OrthogonalPackingResult::Item{
+        .index = i, .size_x = sizes_x[i], .size_y = sizes_y[i]};
+  };
 
   index_by_decreasing_x_size_.resize(num_items);
   index_by_decreasing_y_size_.resize(num_items);
@@ -371,14 +419,16 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibility(
     index_by_decreasing_y_size_[i] = i;
     if (sizes_x[i] > bounding_box_size.first ||
         sizes_y[i] > bounding_box_size.second) {
-      num_conflicts_++;
-      return Result{.result = Status::INFEASIBLE,
-                    .minimum_unfeasible_subproblem = {i}};
+      OrthogonalPackingResult result(
+          OrthogonalPackingResult::Status::INFEASIBLE);
+      result.conflict_type_ = ConflictType::TRIVIAL;
+      result.items_participating_on_conflict_ = {make_item(i)};
+      return result;
     }
   }
 
   if (num_items <= 1) {
-    return Result{.result = Status::FEASIBLE};
+    return OrthogonalPackingResult(OrthogonalPackingResult::Status::FEASIBLE);
   }
 
   std::sort(index_by_decreasing_x_size_.begin(),
@@ -389,25 +439,27 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibility(
             [&sizes_y](int a, int b) { return sizes_y[a] > sizes_y[b]; });
 
   // First look for pairwise incompatible pairs.
-  if (options_.use_pairwise) {
+  if (options.use_pairwise) {
     if (auto pair = FindPairwiseConflict(sizes_x, sizes_y, bounding_box_size,
                                          index_by_decreasing_x_size_,
                                          index_by_decreasing_y_size_);
         pair.has_value()) {
-      num_conflicts_++;
-      num_conflicts_two_items_++;
-      return Result{.result = Status::INFEASIBLE,
-                    .minimum_unfeasible_subproblem = {pair.value().first,
-                                                      pair.value().second}};
+      OrthogonalPackingResult result(
+          OrthogonalPackingResult::Status::INFEASIBLE);
+      result.conflict_type_ = ConflictType::PAIRWISE;
+      result.items_participating_on_conflict_ = {
+          make_item(pair.value().first), make_item(pair.value().second)};
+      return result;
     }
     if (num_items == 2) {
-      return Result{.result = Status::FEASIBLE};
+      return OrthogonalPackingResult(OrthogonalPackingResult::Status::FEASIBLE);
     }
   }
 
-  std::vector<int> result;
+  OrthogonalPackingResult result(OrthogonalPackingResult::Status::UNKNOWN);
   if (total_energy > bb_area) {
-    conflict_type = ConflictType::TRIVIAL;
+    result.conflict_type_ = ConflictType::TRIVIAL;
+    result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
     std::vector<std::pair<int, IntegerValue>> index_to_energy;
     index_to_energy.reserve(num_items);
     for (int i = 0; i < num_items; i++) {
@@ -422,26 +474,39 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibility(
     for (int i = 0; i < index_to_energy.size(); i++) {
       recomputed_energy += index_to_energy[i].second;
       if (recomputed_energy > bb_area) {
-        result.resize(i + 1);
+        result.items_participating_on_conflict_.resize(i + 1);
         for (int j = 0; j <= i; j++) {
-          result[j] = index_to_energy[j].first;
+          result.items_participating_on_conflict_[j] =
+              make_item(index_to_energy[j].first);
         }
+        result.slack_ = recomputed_energy - bb_area - 1;
         break;
       }
     }
   }
 
-  auto set_conflict_if_better = [&result, &conflict_type](
+  const int minimum_conflict_size = options.use_pairwise ? 3 : 2;
+  if (result.items_participating_on_conflict_.size() == minimum_conflict_size) {
+    return result;
+  }
+
+  auto set_conflict_if_better = [&result, &make_item](
                                     const std::vector<int>& conflict,
                                     ConflictType type) {
     if (!conflict.empty() &&
-        (result.empty() || conflict.size() < result.size())) {
-      conflict_type = type;
-      result = conflict;
+        (result.result_ != OrthogonalPackingResult::Status::INFEASIBLE ||
+         conflict.size() < result.items_participating_on_conflict_.size())) {
+      result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
+      result.conflict_type_ = type;
+      result.items_participating_on_conflict_.clear();
+      for (int i : conflict) {
+        result.items_participating_on_conflict_.push_back(make_item(i));
+      }
+      result.slack_ = 0;  // Only supported for trivial for now.
     }
   };
 
-  if (options_.use_dff_f0) {
+  if (options.use_dff_f0) {
     // If there is no pairwise incompatible pairs, this DFF cannot find a
     // conflict by enlarging a item on both x and y directions: this would
     // create an item as long as the whole box and another item as high as the
@@ -460,28 +525,55 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibility(
     set_conflict_if_better(conflict, ConflictType::DFF_F0);
   }
 
-  if (options_.use_dff_f2) {
+  if (result.items_participating_on_conflict_.size() == minimum_conflict_size) {
+    return result;
+  }
+
+  if (options.use_dff_f2) {
     // We only check for conflicts applying this DFF on heights and widths, but
     // not on both, which would be too expensive if done naively.
     auto conflict = CheckFeasibilityWithDualFunction2(
         sizes_x, sizes_y, index_by_decreasing_x_size_, bounding_box_size.first,
-        bounding_box_size.second);
+        bounding_box_size.second,
+        options.dff2_max_number_of_parameters_to_check);
     set_conflict_if_better(conflict, ConflictType::DFF_F2);
 
+    if (result.items_participating_on_conflict_.size() ==
+        minimum_conflict_size) {
+      return result;
+    }
     conflict = CheckFeasibilityWithDualFunction2(
         sizes_y, sizes_x, index_by_decreasing_y_size_, bounding_box_size.second,
-        bounding_box_size.first);
+        bounding_box_size.first,
+        options.dff2_max_number_of_parameters_to_check);
     set_conflict_if_better(conflict, ConflictType::DFF_F2);
   }
 
-  if (!result.empty()) {
+  return result;
+}
+
+OrthogonalPackingResult OrthogonalPackingInfeasibilityDetector::TestFeasibility(
+    absl::Span<const IntegerValue> sizes_x,
+    absl::Span<const IntegerValue> sizes_y,
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    const OrthogonalPackingOptions& options) {
+  using ConflictType = OrthogonalPackingResult::ConflictType;
+
+  num_calls_++;
+  OrthogonalPackingResult result =
+      TestFeasibilityImpl(sizes_x, sizes_y, bounding_box_size, options);
+
+  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE) {
     num_conflicts_++;
-    switch (conflict_type) {
+    switch (result.conflict_type_) {
       case ConflictType::DFF_F0:
         num_conflicts_dff0_++;
         break;
       case ConflictType::DFF_F2:
         num_conflicts_dff2_++;
+        break;
+      case ConflictType::PAIRWISE:
+        num_conflicts_two_items_++;
         break;
       case ConflictType::TRIVIAL:
         // The total area of the items was larger than the area of the box.
@@ -491,10 +583,27 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibility(
         LOG(FATAL) << "Should never happen";
         break;
     }
-    return Result{.result = Status::INFEASIBLE,
-                  .minimum_unfeasible_subproblem = result};
   }
-  return Result{.result = Status::UNKNOWN};
+  return result;
+}
+
+bool OrthogonalPackingResult::TryUseSlackToReduceItemSize(
+    int i, Coord coord, IntegerValue lower_bound) {
+  Item& item = items_participating_on_conflict_[i];
+  IntegerValue& size = coord == Coord::kCoordX ? item.size_x : item.size_y;
+  const IntegerValue orthogonal_size =
+      coord == Coord::kCoordX ? item.size_y : item.size_x;
+
+  if (size <= lower_bound || orthogonal_size > slack_) {
+    return false;
+  }
+  const IntegerValue new_size =
+      std::max(lower_bound, size - slack_ / orthogonal_size);
+  slack_ -= (size - new_size) * orthogonal_size;
+  DCHECK_NE(size, new_size);
+  DCHECK_GE(slack_, 0);
+  size = new_size;
+  return true;
 }
 
 }  // namespace sat

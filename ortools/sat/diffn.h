@@ -45,7 +45,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
         y_(*y),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        orthogonal_packing_checker_(shared_stats_) {}
+        orthogonal_packing_checker_(*random_, shared_stats_) {}
 
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
@@ -54,11 +54,10 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
  private:
   struct Conflict {
-    std::vector<RectangleInRange> items;
+    // The Orthogonal Packing subproblem we used.
+    std::vector<RectangleInRange> items_for_opp;
     Rectangle rectangle_with_too_much_energy;
-    // Size of the Orthogonal Packing Problem we used. Can be smaller than
-    // `items.size()` if we found a OPP conflict that didn't need all items.
-    int opp_problem_size;
+    OrthogonalPackingResult opp_result;
   };
   std::optional<Conflict> FindConflict(
       std::vector<RectangleInRange> active_box_ranges);
@@ -67,11 +66,6 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   bool BuildAndReportEnergyTooLarge(
       const std::vector<RectangleInRange>& ranges);
-  void CheckPropagationIsValid(const std::vector<RectangleInRange>& ranges,
-                               const Rectangle& rectangle_with_too_much_energy);
-  std::vector<RectangleInRange> GetEnergyConflictForRectangle(
-      const Rectangle& rectangle,
-      const std::vector<RectangleInRange>& active_box_ranges);
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
@@ -81,10 +75,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
   int64_t num_calls_ = 0;
   int64_t num_conflicts_ = 0;
-  int64_t num_multiple_conflicts_ = 0;
   int64_t num_conflicts_two_boxes_ = 0;
   int64_t num_refined_conflicts_ = 0;
-  int64_t num_orthogonal_packing_conflict_ = 0;
+  int64_t num_conflicts_with_slack_ = 0;
 
   NonOverlappingRectanglesEnergyPropagator(
       const NonOverlappingRectanglesEnergyPropagator&) = delete;

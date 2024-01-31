@@ -5438,6 +5438,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
+  // TODO(user): handle this case. See issue #4068.
   if (!has_zero_sized_interval && (x_constant || y_constant)) {
     context_->UpdateRuleStats(
         "no_overlap_2d: a dimension is constant, splitting into many "

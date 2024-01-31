@@ -455,10 +455,19 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     }
 
     if (params.new_linear_propagation()) {
-      model->GetOrCreate<LinearPropagator>()->AddConstraint(
+      const bool ok = model->GetOrCreate<LinearPropagator>()->AddConstraint(
           {}, vars,
           std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
           IntegerValue(upper_bound));
+      if (!ok) {
+        auto* sat_solver = model->GetOrCreate<SatSolver>();
+        if (sat_solver->CurrentDecisionLevel() == 0) {
+          sat_solver->NotifyThatModelIsUnsat();
+        } else {
+          LOG(FATAL) << "We currently do not support adding conflicting "
+                        "constraint at positive level.";
+        }
+      }
     } else {
       IntegerSumLE* constraint = new IntegerSumLE(
           {}, vars,
@@ -544,8 +553,8 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     for (int i = 0; i < vars.size(); ++i) {
       expression_min +=
           coefficients[i] * (coefficients[i] >= 0
-                                 ? integer_trail->LowerBound(vars[i])
-                                 : integer_trail->UpperBound(vars[i]));
+                                 ? integer_trail->LevelZeroLowerBound(vars[i])
+                                 : integer_trail->LevelZeroUpperBound(vars[i]));
     }
     if (expression_min == upper_bound) {
       // Tricky: as we create integer literal, we might propagate stuff and
@@ -554,12 +563,12 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
       IntegerValue non_cached_min;
       for (int i = 0; i < vars.size(); ++i) {
         if (coefficients[i] > 0) {
-          const IntegerValue lb = integer_trail->LowerBound(vars[i]);
+          const IntegerValue lb = integer_trail->LevelZeroLowerBound(vars[i]);
           non_cached_min += coefficients[i] * lb;
           model->Add(Implication(enforcement_literals,
                                  IntegerLiteral::LowerOrEqual(vars[i], lb)));
         } else if (coefficients[i] < 0) {
-          const IntegerValue ub = integer_trail->UpperBound(vars[i]);
+          const IntegerValue ub = integer_trail->LevelZeroUpperBound(vars[i]);
           non_cached_min += coefficients[i] * ub;
           model->Add(Implication(enforcement_literals,
                                  IntegerLiteral::GreaterOrEqual(vars[i], ub)));
@@ -574,10 +583,19 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
       }
     } else {
       if (params.new_linear_propagation()) {
-        model->GetOrCreate<LinearPropagator>()->AddConstraint(
+        const bool ok = model->GetOrCreate<LinearPropagator>()->AddConstraint(
             enforcement_literals, vars,
             std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
             IntegerValue(upper_bound));
+        if (!ok) {
+          auto* sat_solver = model->GetOrCreate<SatSolver>();
+          if (sat_solver->CurrentDecisionLevel() == 0) {
+            sat_solver->NotifyThatModelIsUnsat();
+          } else {
+            LOG(FATAL) << "We currently do not support adding conflicting "
+                          "constraint at positive level.";
+          }
+        }
       } else {
         IntegerSumLE* constraint = new IntegerSumLE(
             enforcement_literals, vars,

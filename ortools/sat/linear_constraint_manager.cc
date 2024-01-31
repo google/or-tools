@@ -447,8 +447,6 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
       {CeilRatio(threshold, IntegerValue(2)), threshold - min_magnitude,
        std::min(threshold_lb, threshold_ub)});
   if (max_magnitude > second_threshold) {
-    term_changed = true;
-    ++num_coeff_strenghtening_;
     const int num_terms = ct->num_terms;
     for (int i = 0; i < num_terms; ++i) {
       // In all cases, we reason on a transformed constraint where the term
@@ -460,18 +458,26 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
       const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
       const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
       if (coeff > threshold) {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
         ct->coeffs[i] = threshold;
         ct->ub -= (coeff - threshold) * ub;
         ct->lb -= (coeff - threshold) * lb;
       } else if (coeff > second_threshold && coeff < threshold) {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
         ct->coeffs[i] = second_threshold;
         ct->ub -= (coeff - second_threshold) * ub;
         ct->lb -= (coeff - second_threshold) * lb;
       } else if (coeff < -threshold) {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
         ct->coeffs[i] = -threshold;
         ct->ub -= (coeff + threshold) * lb;
         ct->lb -= (coeff + threshold) * ub;
       } else if (coeff < -second_threshold && coeff > -threshold) {
+        term_changed = true;
+        ++num_coeff_strenghtening_;
         ct->coeffs[i] = -second_threshold;
         ct->ub -= (coeff + second_threshold) * lb;
         ct->lb -= (coeff + second_threshold) * ub;

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/synchronization.h"
@@ -31,6 +32,60 @@ struct OrthogonalPackingOptions {
   bool use_pairwise = true;
   bool use_dff_f0 = true;
   bool use_dff_f2 = true;
+  int dff2_max_number_of_parameters_to_check = std::numeric_limits<int>::max();
+};
+
+class OrthogonalPackingResult {
+ public:
+  explicit OrthogonalPackingResult() : result_(Status::UNKNOWN) {}
+  enum class Status {
+    INFEASIBLE,
+    FEASIBLE,
+    UNKNOWN,
+  };
+
+  Status GetResult() const { return result_; }
+
+  struct Item {
+    // Index of the item on the original sizes_x/sizes_y input.
+    int index;
+    // New size for item of index `i` which is smaller or equal to the initial
+    // size. The subproblem remain infeasible if every item is shrinked to its
+    // new size.
+    IntegerValue size_x;
+    IntegerValue size_y;
+  };
+  const std::vector<Item>& GetItemsParticipatingOnConflict() const {
+    return items_participating_on_conflict_;
+  }
+
+  bool HasSlack() const { return slack_ > IntegerValue(0); }
+
+  enum class Coord { kCoordX, kCoordY };
+  // Use an eventual slack to reduce the size of item corresponding to the
+  // `i`-th element on GetItemsParticipatingOnConflict(). It will not use any
+  // slack to reduce it beyond lower_bound. This is a no-op if HasSlack() is
+  // false.
+  bool TryUseSlackToReduceItemSize(int i, Coord coord,
+                                   IntegerValue lower_bound = 0);
+
+ private:
+  friend class OrthogonalPackingInfeasibilityDetector;
+
+  explicit OrthogonalPackingResult(Status result) : result_(result) {}
+
+  enum class ConflictType {
+    NO_CONFLICT,
+    TRIVIAL,
+    PAIRWISE,
+    DFF_F0,
+    DFF_F2,
+  };
+
+  Status result_;
+  ConflictType conflict_type_ = ConflictType::NO_CONFLICT;
+  IntegerValue slack_ = 0;
+  std::vector<Item> items_participating_on_conflict_;
 };
 
 // Class for solving the orthogonal packing problem when it can be done
@@ -38,29 +93,43 @@ struct OrthogonalPackingOptions {
 class OrthogonalPackingInfeasibilityDetector {
  public:
   explicit OrthogonalPackingInfeasibilityDetector(
-      SharedStatistics* shared_stats,
-      const OrthogonalPackingOptions& options = OrthogonalPackingOptions())
-      : options_(options), shared_stats_(shared_stats) {}
+      absl::BitGenRef random, SharedStatistics* shared_stats)
+      : random_(random), shared_stats_(shared_stats) {}
 
   ~OrthogonalPackingInfeasibilityDetector();
 
-  enum class Status {
-    INFEASIBLE,
-    FEASIBLE,
-    UNKNOWN,
-  };
-  struct Result {
-    Status result;
-    std::vector<int> minimum_unfeasible_subproblem;
-  };
-
-  Result TestFeasibility(
+  OrthogonalPackingResult TestFeasibility(
       absl::Span<const IntegerValue> sizes_x,
       absl::Span<const IntegerValue> sizes_y,
-      std::pair<IntegerValue, IntegerValue> bounding_box_size);
+      std::pair<IntegerValue, IntegerValue> bounding_box_size,
+      const OrthogonalPackingOptions& options = OrthogonalPackingOptions());
 
  private:
-  const OrthogonalPackingOptions options_;
+  OrthogonalPackingResult TestFeasibilityImpl(
+      absl::Span<const IntegerValue> sizes_x,
+      absl::Span<const IntegerValue> sizes_y,
+      std::pair<IntegerValue, IntegerValue> bounding_box_size,
+      const OrthogonalPackingOptions& options);
+
+  // Returns a minimum set of values of the parameter `k` of f_2^k that is
+  // sufficient to find a conflict. This function runs in
+  // O(num_items * sqrt(bb_size)) operations.
+  // All sizes must be positive values less than UINT16_MAX.
+  // The returned bitset will contain less elements than
+  // min(sqrt_bb_size * num_items, x_bb_size/4+1).
+  void GetAllCandidatesForKForDff2(absl::Span<const IntegerValue> sizes_x,
+                                   absl::Span<const IntegerValue> sizes_y,
+                                   IntegerValue x_bb_size,
+                                   IntegerValue sqrt_bb_size,
+                                   IntegerValue y_bb_size,
+                                   Bitset64<IntegerValue>& candidates);
+
+  std::vector<int> CheckFeasibilityWithDualFunction2(
+      absl::Span<const IntegerValue> sizes_x,
+      absl::Span<const IntegerValue> sizes_y,
+      absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
+      IntegerValue y_bb_size, int max_number_of_parameters_to_check);
+
   std::vector<int> index_by_decreasing_x_size_;
   std::vector<int> index_by_decreasing_y_size_;
 
@@ -71,6 +140,7 @@ class OrthogonalPackingInfeasibilityDetector {
   int64_t num_conflicts_dff2_ = 0;
   int64_t num_conflicts_dff0_ = 0;
 
+  absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
 };
 
