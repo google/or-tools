@@ -132,7 +132,7 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<fz::Variable*, int> fz_var_to_index;
   absl::flat_hash_map<int64_t, int> constant_value_to_index;
   absl::flat_hash_map<std::tuple<int, int64_t, int, int64_t, int>, int>
-      start_size_opt_tuple_to_interval;
+      interval_key_to_index;
   absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
 };
 
@@ -242,7 +242,7 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(VarOrValue start,
   const std::tuple<int, int64_t, int, int64_t, int> key =
       std::make_tuple(start.var, start.value, size.var, size.value, opt_var);
   const auto [it, inserted] =
-      start_size_opt_tuple_to_interval.insert({key, interval_index});
+      interval_key_to_index.insert({key, interval_index});
   if (!inserted) {
     return it->second;
   }
