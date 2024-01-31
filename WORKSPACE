@@ -88,9 +88,7 @@ git_repository(
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20230802.1",
-    patches = ["//patches:abseil-cpp-20230802.1.patch"],
-    patch_args = ["-p1"],
+    tag = "20240116.0",
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
@@ -100,9 +98,9 @@ git_repository(
 # This statement defines the @com_google_protobuf repo.
 git_repository(
     name = "com_google_protobuf",
-    patches = ["//patches:protobuf-v25.1.patch"],
+    patches = ["//patches:protobuf-v25.2.patch"],
     patch_args = ["-p1"],
-    tag = "v25.1",
+    tag = "v25.2",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.

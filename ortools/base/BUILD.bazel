@@ -293,7 +293,6 @@ cc_library(
     hdrs = ["logging.h"],
     deps = [
         ":macros",
-        ":vlog",
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:usage",
@@ -317,20 +316,6 @@ cc_library(
 cc_library(
     name = "types",
     hdrs = ["types.h"],
-)
-
-cc_library(
-    name = "vlog",
-    srcs = ["vlog_is_on.cc"],
-    hdrs = [
-        "vlog.h",
-        "vlog_is_on.h",
-    ],
-    deps = [
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-    ],
 )
 
 cc_library(
