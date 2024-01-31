@@ -158,15 +158,16 @@ class PyWrapLpTest(unittest.TestCase):
 
         print('Advanced usage:')
         print(('Problem solved in %d iterations' % solver.iterations()))
-        for variable in variable_list:
-            print(('%s: reduced cost = %f' % (variable.name(),
+        if not solver.IsMip():
+            for variable in variable_list:
+                print(('%s: reduced cost = %f' % (variable.name(),
                                               variable.reduced_cost())))
-        activities = solver.ComputeConstraintActivities()
-        for i, constraint in enumerate(constraint_list):
-            print(
-                ('constraint %d: dual value = %f\n'
-                 '               activity = %f' %
-                 (i, constraint.dual_value(), activities[constraint.index()])))
+            activities = solver.ComputeConstraintActivities()
+            for i, constraint in enumerate(constraint_list):
+                print(
+                    ('constraint %d: dual value = %f\n'
+                     '               activity = %f' %
+                     (i, constraint.dual_value(), activities[constraint.index()])))
 
     def testApi(self):
         print('testApi', flush=True)
