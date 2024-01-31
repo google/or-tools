@@ -67,7 +67,6 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 template <class I, class T>
 double Average(const absl::StrongVector<I, T>& v) {
   const size_t size = v.size();
-  if (size == 0) return 0.0;
   double sum = 0.0;
   double n = 0.0;  // n is used in a calculation involving doubles.
   for (I i(0); i < size; ++i) {
