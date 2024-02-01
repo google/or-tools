@@ -315,8 +315,6 @@ install(FILES
   ortools/base/timer.h
   ortools/base/types.h
   ortools/base/version.h
-  ortools/base/vlog.h
-  ortools/base/vlog_is_on.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/base
   COMPONENT Devel)
 install(FILES
