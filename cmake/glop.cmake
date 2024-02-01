@@ -95,9 +95,6 @@ target_sources(glop PRIVATE
   ortools/base/types.h
   ortools/base/version.cc
   ortools/base/version.h
-  ortools/base/vlog.h
-  ortools/base/vlog_is_on.cc
-  ortools/base/vlog_is_on.h
   ortools/glop/basis_representation.cc
   ortools/glop/basis_representation.h
   ortools/glop/dual_edge_norms.cc
