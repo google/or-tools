@@ -15,13 +15,13 @@ index 2471778a8f..17fd1e8c34 100644
        if ( ival == 0 )
        {
 -         (void) google::SetVLOGLevel("*", google::GLOG_INFO);
-+   	 absl::SetFlag(&FLAGS_stderrthreshold, 2);
++   	      absl::SetFlag(&FLAGS_stderrthreshold, 2);
           lpi->lp_info = false;
        }
        else
        {
 -         (void) google::SetVLOGLevel("*", google::GLOG_ERROR);
-+   	 absl::SetFlag(&FLAGS_stderrthreshold, 0);
++           absl::SetFlag(&FLAGS_stderrthreshold, 0);
           lpi->lp_info = true;
        }
        break;

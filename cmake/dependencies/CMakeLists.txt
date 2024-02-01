@@ -83,6 +83,7 @@ if(BUILD_absl)
     abseil-cpp
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
     GIT_TAG "20240116.0"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20240116.0.patch"
   )
   FetchContent_MakeAvailable(abseil-cpp)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
