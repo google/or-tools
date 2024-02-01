@@ -53,13 +53,6 @@
 namespace operations_research {
 namespace sat {
 
-// Helper struct to combine info generated from solving LP.
-struct LPSolveInfo {
-  glop::ProblemStatus status;
-  double lp_objective = -std::numeric_limits<double>::infinity();
-  IntegerValue new_obj_bound = kMinIntegerValue;
-};
-
 // Simple class to combine linear expression efficiently. First in a sparse
 // way that switch to dense when the number of non-zeros grows.
 class ScatteredIntegerVector {
@@ -192,37 +185,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
-  // This looks at all unassigned 0-1 variables, takes the one with
-  // a support value closest to 0.5, and tries to assign it to 1.
-  // If all 0-1 variables have an integer support, returns kNoLiteralIndex.
-  // Tie-breaking is done using the variable natural order.
-  //
-  // TODO(user): This fixes to 1, but for some problems fixing to 0
-  // or to the std::round(support value) might work better. When this is the
-  // case, change behaviour automatically?
-  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary();
-
-  // Returns a IntegerLiteral guided by the underlying LP constraints.
-  //
-  // This computes the mean of reduced costs over successive calls,
-  // and tries to fix the variable which has the highest reduced cost.
-  // Tie-breaking is done using the variable natural order.
-  // Only works for 0/1 variables.
-  //
-  // TODO(user): Try to get better pseudocosts than averaging every time
-  // the heuristic is called. MIP solvers initialize this with strong branching,
-  // then keep track of the pseudocosts when doing tree search. Also, this
-  // version only branches on var >= 1 and keeps track of reduced costs from var
-  // = 1 to var = 0. This works better than the conventional MIP where the
-  // chosen variable will be argmax_var min(pseudocost_var(0->1),
-  // pseudocost_var(1->0)), probably because we are doing DFS search where MIP
-  // does BFS. This might depend on the model, more trials are necessary. We
-  // could also do exponential smoothing instead of decaying every N calls, i.e.
-  // pseudo = a * pseudo + (1-a) reduced.
-  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary();
-
-  // Returns a IntegerLiteral guided by the underlying LP constraints.
-  //
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
   // Tie-breaking is done using the variable natural order.
@@ -274,11 +236,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool PropagationIsEnabled() const { return enabled_; }
 
  private:
-  // Helper methods for branching. Returns true if branching on the given
-  // variable helps with more propagation or finds a conflict.
-  bool BranchOnVar(IntegerVariable var);
-  LPSolveInfo SolveLpForBranching();
-
   // Helper method to fill reduced cost / dual ray reason in 'integer_reason'.
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for
@@ -596,10 +553,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Defined as average number of nonbasic variables with zero reduced costs.
   IncrementalAverage average_degeneracy_;
   bool is_degenerate_ = false;
-
-  // Used by the strong branching heuristic.
-  int branching_frequency_ = 1;
-  int64_t count_since_last_branching_ = 0;
 
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.

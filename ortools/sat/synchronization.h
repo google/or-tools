@@ -361,7 +361,7 @@ class SharedResponseManager {
   void DisplayImprovementStatistics();
 
   // Wrapper around our SolverLogger, but protected by mutex.
-  void LogMessage(const std::string& prefix, const std::string& message);
+  void LogMessage(absl::string_view prefix, absl::string_view message);
   void LogMessageWithThrottling(const std::string& prefix,
                                 const std::string& message);
   bool LoggingIsEnabled() const;

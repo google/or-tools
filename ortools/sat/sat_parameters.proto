@@ -1172,11 +1172,6 @@ message SatParameters {
   // numerical imprecision issues.
   optional bool use_exact_lp_reason = 109 [default = true];
 
-  // If true, the solver attemts to generate more info inside lp propagator by
-  // branching on some variables if certain criteria are met during the search
-  // tree exploration.
-  optional bool use_branching_in_lp = 139 [default = false];
-
   // This can be beneficial if there is a lot of no-overlap constraints but a
   // relatively low number of different intervals in the problem. Like 1000
   // intervals, but 1M intervals in the no-overlap constraints covering them.

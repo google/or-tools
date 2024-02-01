@@ -161,8 +161,8 @@ void FillSolveStatsInResponse(Model* model, CpSolverResponse* response) {
   }
 }
 
-void SharedResponseManager::LogMessage(const std::string& prefix,
-                                       const std::string& message) {
+void SharedResponseManager::LogMessage(absl::string_view prefix,
+                                       absl::string_view message) {
   absl::MutexLock mutex_lock(&mutex_);
   SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
                                       wall_timer_.Get(), message));
