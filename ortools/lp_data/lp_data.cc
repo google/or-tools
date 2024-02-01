@@ -223,7 +223,7 @@ ColIndex LinearProgram::FindOrCreateVariable(absl::string_view variable_id) {
 }
 
 RowIndex LinearProgram::FindOrCreateConstraint(
-    const std::string& constraint_id) {
+    absl::string_view constraint_id) {
   const absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
