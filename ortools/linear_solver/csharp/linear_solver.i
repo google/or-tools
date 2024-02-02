@@ -151,6 +151,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::EnableOutput;
 %unignore operations_research::MPSolver::SuppressOutput;
+%rename (IsMip) operations_research::MPSolver::IsMIP;
 %unignore operations_research::MPSolver::LookupConstraintOrNull;
 %unignore operations_research::MPSolver::LookupVariableOrNull;
 
