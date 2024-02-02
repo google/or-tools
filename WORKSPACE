@@ -47,25 +47,25 @@ git_repository(
 
 git_repository(
     name = "rules_java",
-    tag = "7.3.1",
+    tag = "7.3.2",
     remote = "https://github.com/bazelbuild/rules_java.git",
 )
 
 git_repository(
     name = "rules_jvm_external",
-    tag = "5.3",
+    tag = "6.0",
     remote = "https://github.com/bazelbuild/rules_jvm_external.git",
 )
 
 git_repository(
     name = "contrib_rules_jvm",
-    tag = "v0.19.0",
+    tag = "v0.24.0",
     remote = "https://github.com/bazel-contrib/rules_jvm.git",
 )
 
 git_repository(
     name = "rules_python",
-    tag = "0.27.1",
+    tag = "0.29.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
