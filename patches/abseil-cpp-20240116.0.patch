@@ -77,4 +77,3 @@ index 47f3beeb..43217c85 100644
  endif()
 
  function(absl_internal_dll_contains)
-
