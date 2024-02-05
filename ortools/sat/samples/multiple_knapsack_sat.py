@@ -86,7 +86,7 @@ def main() -> None:
             for i in all_items:
                 if solver.value(x[i, b]) > 0:
                     print(
-                        f"Item:{i} weight:{data['weights'][i]} value:{data['values'][i]}"
+                        f'Item:{i} weight:{data["weights"][i]} value:{data["values"][i]}'
                     )
                     bin_weight += data["weights"][i]
                     bin_value += data["values"][i]

@@ -82,7 +82,7 @@ class BoolVar {
 
   /// Sets the name of the variable.
   /// Note that this will always set the "positive" version of this Boolean.
-  BoolVar WithName(const std::string& name);
+  BoolVar WithName(absl::string_view name);
 
   /// Returns the name of the variable.
   std::string Name() const;

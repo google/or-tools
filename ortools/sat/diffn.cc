@@ -422,20 +422,13 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
     // our rectangle is the bounding box, and we need to fit inside it a set of
     // items corresponding to the minimum intersection of the original items
     // with this bounding box.
-    const bool use_expensive_heuristics =
-        (sizes_x.size() < 10) ||
-        // Propagating a large conflict is expensive, so it's worth running an
-        // expensive heuristic to make it smaller.
-        best_conflict.opp_result.GetResult() ==
-            OrthogonalPackingResult::Status::INFEASIBLE ||
-        !rectangles_with_too_much_energy.conflicts.empty();
     const auto opp_result = orthogonal_packing_checker_.TestFeasibility(
         sizes_x, sizes_y, {r.SizeX(), r.SizeY()},
-        OrthogonalPackingOptions{.use_pairwise = true,
+        OrthogonalPackingOptions{
+            .use_pairwise = true,
                                  .use_dff_f0 = true,
                                  .use_dff_f2 = true,
-                                 .dff2_max_number_of_parameters_to_check =
-                                     use_expensive_heuristics ? 25 : 3});
+            .dff2_max_number_of_parameters_to_check = 100});
     if (opp_result.GetResult() == OrthogonalPackingResult::Status::INFEASIBLE &&
         (best_conflict.opp_result.GetResult() !=
              OrthogonalPackingResult::Status::INFEASIBLE ||
