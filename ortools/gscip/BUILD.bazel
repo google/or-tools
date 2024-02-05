@@ -126,3 +126,27 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "gscip_callback_result",
+    srcs = ["gscip_callback_result.cc"],
+    hdrs = ["gscip_callback_result.h"],
+    deps = ["@scip//:libscip"],
+)
+
+cc_library(
+    name = "gscip_constraint_handler",
+    srcs = ["gscip_constraint_handler.cc"],
+    hdrs = ["gscip_constraint_handler.h"],
+    deps = [
+        ":gscip",
+        ":gscip_callback_result",
+        "//ortools/linear_solver:scip_helper_macros",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
+        "@scip//:libscip",
+    ],
+)
