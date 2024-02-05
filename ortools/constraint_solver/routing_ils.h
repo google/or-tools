@@ -22,7 +22,7 @@
 
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_search.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -57,11 +57,25 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
   SparseBitset<int64_t> removed_routes_;
 };
 
-// Returns a DecisionBuilder implementing a ruin and recreate approach.
-DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
-    RoutingModel* model, const Assignment* assignment,
-    std::unique_ptr<RuinProcedure> ruin,
-    std::unique_ptr<RoutingFilteredHeuristic> recreate);
+// Returns a DecisionBuilder implementing a perturbation step of an Iterated
+// Local Search approach.
+DecisionBuilder* MakePerturbationDecisionBuilder(
+    const RoutingSearchParameters& parameters, RoutingModel* model,
+    const Assignment* assignment, std::function<bool()> stop_search,
+    LocalSearchFilterManager* filter_manager);
+
+// Neighbor acceptance criterion interface.
+class NeighborAcceptanceCriterion {
+ public:
+  virtual ~NeighborAcceptanceCriterion() = default;
+  // Returns whether `candidate` should replace `reference`.
+  virtual bool Accept(const Assignment* candidate,
+                      const Assignment* reference) const = 0;
+};
+
+// Returns a neighbor acceptance criterion based on the given parameters.
+std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
+    const RoutingSearchParameters& parameters);
 
 }  // namespace operations_research
 

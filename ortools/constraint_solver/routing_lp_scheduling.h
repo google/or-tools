@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -226,7 +227,7 @@ class RoutingLinearSolverWrapper {
   // and returns the identifier of that variable.
   int AddReifiedLinearConstraint(
       int64_t lower_bound, int64_t upper_bound,
-      const std::vector<std::pair<int, double>>& weighted_variables) {
+      absl::Span<const std::pair<int, double>> weighted_variables) {
     const int reification_ct = AddLinearConstraint(1, 1, {});
     if (std::numeric_limits<int64_t>::min() < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
@@ -379,7 +380,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
                             std::vector<int> /*vars*/) override {}
   void AddProductConstraint(int /*product_var*/,
                             std::vector<int> /*vars*/) override {}
-  void SetEnforcementLiteral(int /*ct*/, int /*condition*/) override{};
+  void SetEnforcementLiteral(int /*ct*/, int /*condition*/) override {};
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     lp_solver_.GetMutableParameters()->set_max_time_in_seconds(
         absl::ToDoubleSeconds(duration_limit));
@@ -718,7 +719,7 @@ class DimensionCumulOptimizerCore {
 
   // Computes the minimum/maximum of cumuls for nodes on "route", and sets them
   // in current_route_[min|max]_cumuls_ respectively.
-  bool ExtractRouteCumulBounds(const std::vector<int64_t>& route,
+  bool ExtractRouteCumulBounds(absl::Span<const int64_t> route,
                                int64_t cumul_offset);
 
   // Tighten the minimum/maximum of cumuls for nodes on "route"
@@ -972,6 +973,9 @@ int64_t ComputeBestVehicleToResourceAssignment(
     const std::vector<int>& vehicles,
     const absl::StrongVector<RoutingModel::ResourceClassIndex,
                              std::vector<int>>& resource_indices_per_class,
+    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+                             absl::flat_hash_set<int>>&
+        ignored_resources_per_class,
     std::function<const std::vector<int64_t>*(int)>
         vehicle_to_resource_class_assignment_costs,
     std::vector<int>* resource_indices);
@@ -987,6 +991,9 @@ int64_t ComputeBestVehicleToResourceAssignment(
 // are also set in cumul_values and break_values, if non-null.
 bool ComputeVehicleToResourceClassAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
+    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+                             absl::flat_hash_set<int>>&
+        ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
     bool optimize_vehicle_costs, LocalDimensionCumulOptimizer* lp_optimizer,

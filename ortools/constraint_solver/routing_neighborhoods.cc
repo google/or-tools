@@ -773,46 +773,46 @@ bool SwapIndexPairOperator::MakeNextNeighbor(Assignment* delta,
     RevertChanges(true);
 
     if (pair_index_ >= pairs_.size()) return false;
-      const int64_t path =
-          ignore_path_vars_ ? 0LL : Value(first_active_ + number_of_nexts_);
-      const int64_t prev_first = prevs_[first_active_];
-      const int64_t next_first = Value(first_active_);
-      // Making current active "pickup" unperformed.
-      SetNext(first_active_, first_active_, kNoPath);
-      // Inserting "pickup" alternative at the same position.
-      const auto& [pickup_alternatives, delivery_alternatives] =
-          pairs_[pair_index_];
-      const int64_t insert_first = pickup_alternatives[first_index_];
-      SetNext(prev_first, insert_first, path);
-      SetNext(insert_first, next_first, path);
-      int64_t prev_second = prevs_[second_active_];
-      if (prev_second == first_active_) {
-        prev_second = insert_first;
-      }
-      DCHECK_EQ(path, ignore_path_vars_
-                          ? int64_t{0}
-                          : Value(second_active_ + number_of_nexts_));
-      const int64_t next_second = Value(second_active_);
-      // Making current active "delivery" unperformed.
-      SetNext(second_active_, second_active_, kNoPath);
-      // Inserting "delivery" alternative at the same position.
-      const int64_t insert_second = delivery_alternatives[second_index_];
-      SetNext(prev_second, insert_second, path);
-      SetNext(insert_second, next_second, path);
-      // Move to next "pickup/delivery" alternative.
-      ++second_index_;
-      if (second_index_ >= delivery_alternatives.size()) {
-        second_index_ = 0;
-        ++first_index_;
-        if (first_index_ >= pickup_alternatives.size()) {
-          first_index_ = 0;
+    const int64_t path =
+        ignore_path_vars_ ? 0LL : Value(first_active_ + number_of_nexts_);
+    const int64_t prev_first = prevs_[first_active_];
+    const int64_t next_first = Value(first_active_);
+    // Making current active "pickup" unperformed.
+    SetNext(first_active_, first_active_, kNoPath);
+    // Inserting "pickup" alternative at the same position.
+    const auto& [pickup_alternatives, delivery_alternatives] =
+        pairs_[pair_index_];
+    const int64_t insert_first = pickup_alternatives[first_index_];
+    SetNext(prev_first, insert_first, path);
+    SetNext(insert_first, next_first, path);
+    int64_t prev_second = prevs_[second_active_];
+    if (prev_second == first_active_) {
+      prev_second = insert_first;
+    }
+    DCHECK_EQ(path, ignore_path_vars_
+                        ? int64_t{0}
+                        : Value(second_active_ + number_of_nexts_));
+    const int64_t next_second = Value(second_active_);
+    // Making current active "delivery" unperformed.
+    SetNext(second_active_, second_active_, kNoPath);
+    // Inserting "delivery" alternative at the same position.
+    const int64_t insert_second = delivery_alternatives[second_index_];
+    SetNext(prev_second, insert_second, path);
+    SetNext(insert_second, next_second, path);
+    // Move to next "pickup/delivery" alternative.
+    ++second_index_;
+    if (second_index_ >= delivery_alternatives.size()) {
+      second_index_ = 0;
+      ++first_index_;
+      if (first_index_ >= pickup_alternatives.size()) {
+        first_index_ = 0;
         while (true) {
           ++pair_index_;
           if (!UpdateActiveNodes()) break;
           if (first_active_ != -1 && second_active_ != -1) {
             break;
+          }
         }
-      }
       }
     }
 
@@ -1023,7 +1023,7 @@ bool RelocateExpensiveChain::FindMostExpensiveChainsOnRemainingPaths() {
 }
 
 PickupAndDeliveryData::PickupAndDeliveryData(
-    int num_nodes, const std::vector<PickupDeliveryPair>& pairs)
+    int num_nodes, absl::Span<const PickupDeliveryPair> pairs)
     : is_pickup_node_(num_nodes, false),
       is_delivery_node_(num_nodes, false),
       pair_of_node_(num_nodes, -1) {
@@ -1054,7 +1054,7 @@ RelocateSubtrip::RelocateSubtrip(
   opened_pairs_set_.resize(pairs.size(), false);
 }
 
-void RelocateSubtrip::SetPath(const std::vector<int64_t>& path, int path_id) {
+void RelocateSubtrip::SetPath(absl::Span<const int64_t> path, int path_id) {
   for (int i = 1; i < path.size(); ++i) {
     SetNext(path[i - 1], path[i], path_id);
   }

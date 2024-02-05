@@ -47,6 +47,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
@@ -63,6 +64,7 @@
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_filters.h"
 #include "ortools/constraint_solver/routing_ils.h"
+#include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_insertion_lns.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
@@ -189,7 +191,7 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
       continue;
     }
     decision_builders.push_back(MakeSetCumulsFromLocalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(), cumulative_limit,
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
         /*optimize_and_pack=*/true));
   }
   for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
@@ -1294,11 +1296,14 @@ void RoutingModel::ComputeCostClasses(
 
     // Insert the dimension data in a canonical way.
     for (const RoutingDimension* const dimension : dimensions_) {
-      const int64_t coeff =
+      const int64_t span_coeff =
           dimension->vehicle_span_cost_coefficients()[vehicle];
-      if (coeff == 0) continue;
+      const int64_t slack_coeff =
+          dimension->vehicle_slack_cost_coefficients()[vehicle];
+      if (span_coeff == 0 && slack_coeff == 0) continue;
       cost_class.dimension_transit_evaluator_class_and_cost_coefficient
-          .push_back({dimension->vehicle_to_class(vehicle), coeff, dimension});
+          .push_back({dimension->vehicle_to_class(vehicle), span_coeff,
+                      slack_coeff, dimension});
     }
     absl::c_sort(
         cost_class.dimension_transit_evaluator_class_and_cost_coefficient);
@@ -2358,10 +2363,14 @@ void RoutingModel::CloseModelWithParameters(
     dimension->SetupSlackAndDependentTransitCosts();
     const std::vector<int64_t>& span_costs =
         dimension->vehicle_span_cost_coefficients();
+    const std::vector<int64_t>& slack_costs =
+        dimension->vehicle_slack_cost_coefficients();
     const std::vector<int64_t>& span_ubs =
         dimension->vehicle_span_upper_bounds();
     const bool has_span_constraint =
         std::any_of(span_costs.begin(), span_costs.end(),
+                    [](int64_t coeff) { return coeff != 0; }) ||
+        std::any_of(slack_costs.begin(), slack_costs.end(),
                     [](int64_t coeff) { return coeff != 0; }) ||
         std::any_of(span_ubs.begin(), span_ubs.end(),
                     [](int64_t value) {
@@ -2377,7 +2386,7 @@ void RoutingModel::CloseModelWithParameters(
         if (span_ubs[vehicle] < std::numeric_limits<int64_t>::max()) {
           spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
         }
-        if (span_costs[vehicle] != 0) {
+        if (span_costs[vehicle] != 0 || slack_costs[vehicle] != 0) {
           total_slacks[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
         }
       }
@@ -2416,18 +2425,20 @@ void RoutingModel::CloseModelWithParameters(
       }
       // Add costs of variables.
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (span_costs[vehicle] == 0) continue;
+        if (span_costs[vehicle] == 0 && slack_costs[vehicle] == 0) continue;
         DCHECK(total_slacks[vehicle] != nullptr);
         IntVar* const slack_amount =
             solver_
                 ->MakeProd(vehicle_route_considered_[vehicle],
                            total_slacks[vehicle])
                 ->Var();
+        const int64_t slack_cost_coefficient =
+            CapAdd(slack_costs[vehicle], span_costs[vehicle]);
         IntVar* const slack_cost =
-            solver_->MakeProd(slack_amount, span_costs[vehicle])->Var();
+            solver_->MakeProd(slack_amount, slack_cost_coefficient)->Var();
         cost_elements.push_back(slack_cost);
         AddWeightedVariableMinimizedByFinalizer(slack_amount,
-                                                span_costs[vehicle]);
+                                                slack_cost_coefficient);
       }
       if (dimension->HasSoftSpanUpperBounds()) {
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
@@ -2777,11 +2788,6 @@ const Assignment* RoutingModel::FastSolveFromAssignmentWithParameters(
                 << search_parameters.local_search_metaheuristic();
     return nullptr;
   }
-  absl::flat_hash_set<RoutingLocalSearchOperator> operators_to_consider;
-  // Consider all operators for the primary LS phase.
-  for (int op = 0; op < LOCAL_SEARCH_OPERATOR_COUNTER; ++op) {
-    operators_to_consider.insert(RoutingLocalSearchOperator(op));
-  }
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(search_parameters);
   if (status_ == ROUTING_INVALID) return nullptr;
@@ -2797,8 +2803,7 @@ const Assignment* RoutingModel::FastSolveFromAssignmentWithParameters(
       GetOrCreateLocalSearchFilterManager(search_parameters,
                                           {/*filter_objective=*/true,
                                            /*filter_with_cp_solver=*/false}),
-      GetNeighborhoodOperators(search_parameters, operators_to_consider),
-      monitors, limit_, touched);
+      primary_ls_operator_, monitors, limit_, touched);
   const absl::Duration elapsed_time =
       absl::Milliseconds(solver_->wall_time() - start_time_ms);
   if (solution != nullptr) {
@@ -3067,21 +3072,14 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     return nullptr;
   }
 
-  auto ruin = std::make_unique<CloseRoutesRemovalRuinProcedure>(
-      this, /*TODO(user): use a parameter*/ 2);
-
-  // Heuristic used for the recreate step.
-  auto recreate = std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
-      this, [this]() { return CheckLimit(time_buffer_); },
-      absl::bind_front(&RoutingModel::GetArcCostForVehicle, this),
-      parameters.local_cheapest_insertion_pickup_delivery_strategy(),
+  LocalSearchFilterManager* filter_manager =
       GetOrCreateLocalSearchFilterManager(parameters,
                                           {/*filter_objective=*/false,
-                                           /*filter_with_cp_solver=*/false}),
-      bin_capacities_.get());
+                                           /*filter_with_cp_solver=*/false});
 
-  DecisionBuilder* ruin_and_recreate_db = MakeRuinAndRecreateDecisionBuilder(
-      this, best_solution, std::move(ruin), std::move(recreate));
+  DecisionBuilder* perturbation_db = MakePerturbationDecisionBuilder(
+      parameters, this, best_solution,
+      [this]() { return CheckLimit(time_buffer_); }, filter_manager);
 
   // TODO(user): This lambda can probably be refactored into a function as a
   // similar version in used in another place.
@@ -3104,9 +3102,16 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     return true;
   };
 
+  std::unique_ptr<NeighborAcceptanceCriterion> acceptance_criterion =
+      MakeNeighborAcceptanceCriterion(parameters);
+
+  const bool improve_perturbed_solution =
+      parameters.iterated_local_search_parameters()
+          .improve_perturbed_solution();
+
   while (update_time_limits() &&
          explored_solutions < parameters.solution_limit()) {
-    solver_->Solve(ruin_and_recreate_db, monitors_);
+    solver_->Solve(perturbation_db, monitors_);
     explored_solutions += solver_->solutions();
 
     Assignment* neighbor = collect_assignments_->last_solution_or_null();
@@ -3114,6 +3119,7 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
       continue;
     }
 
+    if (improve_perturbed_solution) {
     assignment_->CopyIntersection(neighbor);
 
     solver_->Solve(improve_db_, monitors_);
@@ -3122,8 +3128,9 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     if (!neighbor) {
       continue;
     }
+    }
 
-    if (neighbor->ObjectiveValue() < best_solution->ObjectiveValue()) {
+    if (acceptance_criterion->Accept(best_solution, neighbor)) {
       // Note that the ruin_and_recreate_db is using best_solution as reference
       // assignment. By updating best_solution here we thus also keep the
       // ruin_and_recreate_db reference assignment up to date.
@@ -3772,14 +3779,15 @@ int64_t RoutingModel::GetArcCostForFirstSolution(int64_t from_index,
 int64_t RoutingModel::GetDimensionTransitCostSum(
     int64_t i, int64_t j, const CostClass& cost_class) const {
   int64_t cost = 0;
-  for (const auto& evaluator_and_coefficient :
+  for ([[maybe_unused]] const auto [transit_evaluator_class,
+                                    span_cost_coefficient,
+                                    unused_slack_cost_coefficient, dimension] :
        cost_class.dimension_transit_evaluator_class_and_cost_coefficient) {
-    DCHECK_GT(evaluator_and_coefficient.cost_coefficient, 0);
-    cost = CapAdd(
-        cost,
-        CapProd(evaluator_and_coefficient.cost_coefficient,
-                evaluator_and_coefficient.dimension->GetTransitValueFromClass(
-                    i, j, evaluator_and_coefficient.transit_evaluator_class)));
+    DCHECK_GE(span_cost_coefficient, 0);
+    if (span_cost_coefficient == 0) continue;
+    cost = CapAdd(cost, CapProd(span_cost_coefficient,
+                                dimension->GetTransitValueFromClass(
+                                    i, j, transit_evaluator_class)));
   }
   return cost;
 }
@@ -5124,32 +5132,13 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer(
          can_use_dimension_cumul_optimizers);
   for (auto& [lp_optimizer, mp_optimizer] : local_dimension_optimizers_) {
     const RoutingDimension* const dim = lp_optimizer->dimension();
-    if (!GetDimensionResourceGroupIndices(dim).empty() ||
-        HasGlobalCumulOptimizer(*dim)) {
-      // Don't set cumuls of dimensions with resources or having a global
-      // optimizer.
+    if (HasGlobalCumulOptimizer(*dim)) {
+      // Don't set cumuls of dimensions having a global optimizer.
       continue;
     }
+    DCHECK_LE(GetDimensionResourceGroupIndices(dim).size(), 1);
     decision_builders.push_back(MakeSetCumulsFromLocalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(), lns_limit));
-  }
-  // Add a specific DB for setting cumuls of dimensions with a single resource
-  // and no global optimizer.
-  if (can_use_dimension_cumul_optimizers) {
-    for (const RoutingDimension* const dim : dimensions_) {
-      if (HasGlobalCumulOptimizer(*dim)) continue;
-      DCHECK_LE(GetDimensionResourceGroupIndices(dim).size(), 1);
-      if (GetDimensionResourceGroupIndices(dim).size() != 1) continue;
-
-      LocalDimensionCumulOptimizer* const optimizer =
-          GetMutableLocalCumulLPOptimizer(*dim);
-      DCHECK_NE(optimizer, nullptr);
-      LocalDimensionCumulOptimizer* const mp_optimizer =
-          GetMutableLocalCumulMPOptimizer(*dim);
-      DCHECK_NE(mp_optimizer, nullptr);
-      decision_builders.push_back(MakeSetCumulsFromResourceAssignmentCosts(
-          solver_.get(), optimizer, mp_optimizer, lns_limit));
-    }
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get()));
   }
 
   DCHECK(global_dimension_optimizers_.empty() ||
@@ -5537,22 +5526,32 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
     const RoutingSearchParameters& search_parameters, bool secondary_ls) {
   SearchLimit* lns_limit = GetOrCreateLargeNeighborhoodSearchLimit();
   absl::flat_hash_set<RoutingLocalSearchOperator> operators_to_consider;
+  LocalSearchOperator* ls_operator = nullptr;
   if (secondary_ls) {
+    if (secondary_ls_operator_ == nullptr) {
     operators_to_consider = {TWO_OPT,
                              OR_OPT,
                              LIN_KERNIGHAN,
                              MAKE_INACTIVE,
                              MAKE_CHAIN_INACTIVE,
                              SHORTEST_PATH_SWAP_ACTIVE};
+      secondary_ls_operator_ =
+          GetNeighborhoodOperators(search_parameters, operators_to_consider);
+    }
+    ls_operator = secondary_ls_operator_;
   } else {
+    if (primary_ls_operator_ == nullptr) {
     // Consider all operators for the primary LS phase.
     for (int op = 0; op < LOCAL_SEARCH_OPERATOR_COUNTER; ++op) {
       operators_to_consider.insert(RoutingLocalSearchOperator(op));
     }
+      primary_ls_operator_ =
+          GetNeighborhoodOperators(search_parameters, operators_to_consider);
+    }
+    ls_operator = primary_ls_operator_;
   }
   return solver_->MakeLocalSearchPhaseParameters(
-      CostVar(),
-      GetNeighborhoodOperators(search_parameters, operators_to_consider),
+      CostVar(), ls_operator,
       solver_->MakeSolveOnce(
           CreateSolutionFinalizer(search_parameters, lns_limit), lns_limit),
       GetOrCreateLocalSearchLimit(),
@@ -5901,6 +5900,7 @@ RoutingDimension::RoutingDimension(RoutingModel* model,
   vehicle_span_upper_bounds_.assign(model->vehicles(),
                                     std::numeric_limits<int64_t>::max());
   vehicle_span_cost_coefficients_.assign(model->vehicles(), 0);
+  vehicle_slack_cost_coefficients_.assign(model->vehicles(), 0);
 }
 
 RoutingDimension::RoutingDimension(RoutingModel* model,
@@ -5959,7 +5959,7 @@ void RoutingDimension::InitializeCumuls() {
 }
 
 namespace {
-void ComputeTransitClasses(const std::vector<int>& evaluator_indices,
+void ComputeTransitClasses(absl::Span<const int> evaluator_indices,
                            std::vector<int>* class_evaluators,
                            std::vector<int64_t>* vehicle_to_class) {
   CHECK(class_evaluators != nullptr);
@@ -6502,6 +6502,19 @@ void RoutingDimension::SetGlobalSpanCostCoefficient(int64_t coefficient) {
   global_span_cost_coefficient_ = coefficient;
 }
 
+void RoutingDimension::SetSlackCostCoefficientForVehicle(int64_t coefficient,
+                                                         int vehicle) {
+  CHECK_GE(vehicle, 0);
+  CHECK_LT(vehicle, vehicle_slack_cost_coefficients_.size());
+  CHECK_GE(coefficient, 0);
+  vehicle_slack_cost_coefficients_[vehicle] = coefficient;
+}
+void RoutingDimension::SetSlackCostCoefficientForAllVehicles(
+    int64_t coefficient) {
+  CHECK_GE(coefficient, 0);
+  vehicle_slack_cost_coefficients_.assign(model_->vehicles(), coefficient);
+}
+
 void RoutingDimension::SetCumulVarPiecewiseLinearCost(
     int64_t index, const PiecewiseLinearFunction& cost) {
   if (!cost.IsNonDecreasing()) {
@@ -6877,15 +6890,11 @@ int64_t RoutingDimension::GetPickupToDeliveryLimitForPair(
 void RoutingDimension::SetupSlackAndDependentTransitCosts() const {
   if (model_->vehicles() == 0) return;
   // Figure out whether all vehicles have the same span cost coefficient or not.
-  bool all_vehicle_span_costs_are_equal = true;
-  for (int i = 1; i < model_->vehicles(); ++i) {
-    all_vehicle_span_costs_are_equal &= vehicle_span_cost_coefficients_[i] ==
-                                        vehicle_span_cost_coefficients_[0];
-  }
-
-  if (all_vehicle_span_costs_are_equal &&
-      vehicle_span_cost_coefficients_[0] == 0) {
-    return;  // No vehicle span cost.
+  if (absl::c_all_of(vehicle_span_cost_coefficients_,
+                     [](int64_t c) { return c == 0; }) &&
+      absl::c_all_of(vehicle_slack_cost_coefficients_,
+                     [](int64_t c) { return c == 0; })) {
+    return;  // No vehicle span/slack costs.
   }
 
   // Make sure that the vehicle's start cumul will be maximized in the end;

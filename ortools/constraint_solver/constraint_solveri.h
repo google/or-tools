@@ -3683,14 +3683,10 @@ class DimensionChecker {
     int64_t max;
   };
 
-  // TODO(user): benchmark different implementation details for this class:
-  // - num_negative/positive_infinity to int32_t
-  // - use int128_t or absl's int128 to avoid counting infinities.
-  // - use Interval instead of min/max.
   struct ExtendedInterval {
     int64_t min;
-    int64_t num_negative_infinity;
     int64_t max;
+    int64_t num_negative_infinity;
     int64_t num_positive_infinity;
   };
 
@@ -3715,29 +3711,9 @@ class DimensionChecker {
   static constexpr int kOptimalMinRangeSizeForRIQ = 4;
 
  private:
-  // Returns the feasible cumul interval at first_node_index, under all
-  // path capacity and dimension constraints of the chain formed by the
-  // [first_node_index, last_node_index] range of indices.
-  ExtendedInterval FirstIndexCumulsFromPathCapacity(
-      int first_node_index, int last_node_index,
-      const ExtendedInterval& path_capacity) const;
-
-  // Returns the feasible cumul interval at first_node_index, under all
-  // node capacity and dimension constraints of the chain formed by the
-  // [first_node_index, last_node_index] range of indices.
-  ExtendedInterval FirstIndexCumulsFromNodeCapacities(
-      int first_node_index, int last_node_index) const;
-
-  // Returns the feasible cumul interval at last_node_index, under all
-  // node capacity and dimension constraints of the chain formed by the
-  // [first_node_index, last_node_index] range of indices.
-  ExtendedInterval LastIndexCumulsFromNodeCapacities(int first_node_index,
-                                                     int last_node_index) const;
-
-  // Returns the total transit to go from first_node to last_node, which
-  // must be a subchain of the committed solution.
-  ExtendedInterval TotalTransit(int first_node_index,
-                                int last_node_index) const;
+  inline void UpdateCumulUsingChainRIQ(int first_index, int last_index,
+                                       const ExtendedInterval& path_capacity,
+                                       ExtendedInterval& cumul) const;
 
   // Commits to the current solution and rebuilds structures from scratch.
   void FullCommit();
@@ -3768,18 +3744,27 @@ class DimensionChecker {
   // Only valid for nodes that are in some path in the committed state.
   std::vector<int> index_;
   // Range intersection query in <O(n log n), O(1)>, with n = #nodes.
-  // forwards_demand_sums_riq_[0][index_[node]] contains the sum of demands
-  // from the start of the node's path to the node,
-  // forwards_demand_sums_riq_[l][i] contains the intersection
-  // of forwards_demand_sums_riq_[0][i'] for i' in (s, i] where s is the max of
-  // i - 2**l + 1 and the index of the start node before or at i.
-  std::vector<std::vector<ExtendedInterval>> forwards_demand_sums_riq_;
-  // Range intersection query on node capacity + demand constraint, for
-  // queries on last node.
-  std::vector<std::vector<ExtendedInterval>> forwards_node_capacity_riq_;
-  // Range intersection query on node capacity + demand constraint, for
-  // queries on first node.
-  std::vector<std::vector<ExtendedInterval>> backwards_node_capacity_riq_;
+  // Let node be in a path, i = index_[node], start the start of node's path.
+  // Let l such that index_[start] <= i - 2**l.
+  // - riq_[l][i].tsum_at_lst contains the sum of demands from start to node.
+  // - riq_[l][i].tsum_at_fst contains the sum of demands from start to the
+  //   node at i - 2**l.
+  // - riq_[l][i].tightest_tsum contains the intersection of
+  //   riq_[0][j].tsum_at_lst for all j in (i - 2**l, i].
+  // - riq_[0][i].cumuls_to_lst and riq_[0][i].cumuls_to_fst contain
+  //   the node's capacity.
+  // - riq_[l][i].cumuls_to_lst is the intersection, for j in (i - 2**l, i], of
+  //   riq_[0][j].cumuls_to_lst + sum_{k in [j, i)} demand(k, k+1)
+  // - riq_[l][i].cumuls_to_fst is the intersection, for j in (i - 2**l, i], of
+  //   riq_[0][j].cumuls_to_fst - sum_{k in (i-2**l, j)} demand(k, k+1)
+  struct RIQNode {
+    ExtendedInterval cumuls_to_fst;
+    ExtendedInterval tightest_tsum;
+    ExtendedInterval cumuls_to_lst;
+    ExtendedInterval tsum_at_fst;
+    ExtendedInterval tsum_at_lst;
+  };
+  std::vector<std::vector<RIQNode>> riq_;
   // The incremental branch of Commit() may waste space in the layers of the
   // RIQ structure. This is the upper limit of a layer's size.
   const int maximum_riq_layer_size_;

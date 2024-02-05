@@ -36,6 +36,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -3096,13 +3097,18 @@ using EInterval = DimensionChecker::ExtendedInterval;
 constexpr int64_t kint64min = std::numeric_limits<int64_t>::min();
 constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
-EInterval Intersect(const EInterval& i1, const EInterval& i2) {
+EInterval operator&(const EInterval& i1, const EInterval& i2) {
   return {std::max(i1.num_negative_infinity == 0 ? i1.min : kint64min,
                    i2.num_negative_infinity == 0 ? i2.min : kint64min),
-          std::min(i1.num_negative_infinity, i2.num_negative_infinity),
           std::min(i1.num_positive_infinity == 0 ? i1.max : kint64max,
                    i2.num_positive_infinity == 0 ? i2.max : kint64max),
+          std::min(i1.num_negative_infinity, i2.num_negative_infinity),
           std::min(i1.num_positive_infinity, i2.num_positive_infinity)};
+}
+
+EInterval operator&=(EInterval& i1, const EInterval& i2) {
+  i1 = i1 & i2;
+  return i1;
 }
 
 bool IsEmpty(const EInterval& interval) {
@@ -3114,10 +3120,9 @@ bool IsEmpty(const EInterval& interval) {
 }
 
 EInterval operator+(const EInterval& i1, const EInterval& i2) {
-  return {CapAdd(i1.min, i2.min),
-          CapAdd(i1.num_negative_infinity, i2.num_negative_infinity),
-          CapAdd(i1.max, i2.max),
-          CapAdd(i1.num_positive_infinity, i2.num_positive_infinity)};
+  return {CapAdd(i1.min, i2.min), CapAdd(i1.max, i2.max),
+          i1.num_negative_infinity + i2.num_negative_infinity,
+          i1.num_positive_infinity + i2.num_positive_infinity};
 }
 
 EInterval& operator+=(EInterval& i1, const EInterval& i2) {
@@ -3126,30 +3131,29 @@ EInterval& operator+=(EInterval& i1, const EInterval& i2) {
 }
 
 EInterval operator-(const EInterval& i1, const EInterval& i2) {
-  return {CapSub(i1.min, i2.max),
-          CapAdd(i1.num_negative_infinity, i2.num_positive_infinity),
-          CapSub(i1.max, i2.min),
-          CapAdd(i1.num_positive_infinity, i2.num_negative_infinity)};
+  return {CapSub(i1.min, i2.max), CapSub(i1.max, i2.min),
+          i1.num_negative_infinity + i2.num_positive_infinity,
+          i1.num_positive_infinity + i2.num_negative_infinity};
 }
 
 // Return the interval delta such that from + delta = to.
 // Note that the result is not the same as "to + (-from)".
 EInterval Delta(const EInterval& from, const EInterval& to) {
-  return {CapSub(to.min, from.min),
-          CapSub(to.num_negative_infinity, from.num_negative_infinity),
-          CapSub(to.max, from.max),
-          CapSub(to.num_positive_infinity, from.num_positive_infinity)};
+  return {CapSub(to.min, from.min), CapSub(to.max, from.max),
+          to.num_negative_infinity - from.num_negative_infinity,
+          to.num_positive_infinity - from.num_positive_infinity};
 }
 
 EInterval ToExtendedInterval(DimensionChecker::Interval interval) {
   const bool is_neg_infinity = interval.min == kint64min;
   const bool is_pos_infinity = interval.max == kint64max;
-  return {is_neg_infinity ? 0 : interval.min, is_neg_infinity ? 1 : 0,
-          is_pos_infinity ? 0 : interval.max, is_pos_infinity ? 1 : 0};
+  return {is_neg_infinity ? 0 : interval.min,
+          is_pos_infinity ? 0 : interval.max, is_neg_infinity ? 1 : 0,
+          is_pos_infinity ? 1 : 0};
 }
 
 std::vector<EInterval> ToExtendedIntervals(
-    const std::vector<DimensionChecker::Interval>& intervals) {
+    absl::Span<const DimensionChecker::Interval> intervals) {
   std::vector<EInterval> extended_intervals;
   extended_intervals.reserve(intervals.size());
   for (const auto& interval : intervals) {
@@ -3180,9 +3184,7 @@ DimensionChecker::DimensionChecker(
   DCHECK_EQ(num_paths, path_capacity_.size());
   DCHECK_EQ(num_paths, path_class_.size());
   const int maximum_riq_exponent = MostSignificantBitPosition32(num_nodes);
-  forwards_demand_sums_riq_.resize(maximum_riq_exponent + 1);
-  forwards_node_capacity_riq_.resize(maximum_riq_exponent + 1);
-  backwards_node_capacity_riq_.resize(maximum_riq_exponent + 1);
+  riq_.resize(maximum_riq_exponent + 1);
   FullCommit();
 }
 
@@ -3194,7 +3196,7 @@ bool DimensionChecker::Check() const {
     // Loop invariant: except for the first chain, cumul represents the cumul
     // state of the last node of the previous chain, and it is nonempty.
     int prev_node = path_state_->Start(path);
-    EInterval cumul = Intersect(node_capacity_[prev_node], path_capacity);
+    EInterval cumul = node_capacity_[prev_node] & path_capacity;
     if (IsEmpty(cumul)) return false;
 
     for (const auto chain : path_state_->Chains(path)) {
@@ -3207,8 +3209,8 @@ bool DimensionChecker::Check() const {
         const EInterval demand = ToExtendedInterval(
             demand_per_path_class_[path_class](prev_node, first_node));
         cumul += demand;
-        cumul = Intersect(cumul, path_capacity);
-        cumul = Intersect(cumul, node_capacity_[first_node]);
+        cumul &= path_capacity;
+        cumul &= node_capacity_[first_node];
         if (IsEmpty(cumul)) return false;
         prev_node = first_node;
       }
@@ -3225,19 +3227,7 @@ bool DimensionChecker::Check() const {
       const bool chain_is_cached = chain_path_class == path_class;
       if (last_index - first_index > min_range_size_for_riq_ &&
           chain_is_cached) {
-        // Propagate only node capacity from chain to first node.
-        cumul = Intersect(
-            cumul, FirstIndexCumulsFromNodeCapacities(first_index, last_index));
-        cumul = Intersect(cumul, FirstIndexCumulsFromPathCapacity(
-                                     first_index, last_index, path_capacity));
-        if (IsEmpty(cumul)) return false;
-
-        // Transit to last node.
-        cumul += TotalTransit(first_index, last_index);
-
-        // Propagate node and path capacity from chain to last node.
-        cumul = Intersect(
-            cumul, LastIndexCumulsFromNodeCapacities(first_index, last_index));
+        UpdateCumulUsingChainRIQ(first_index, last_index, path_capacity, cumul);
         if (IsEmpty(cumul)) return false;
         prev_node = chain.Last();
       } else {
@@ -3248,8 +3238,8 @@ bool DimensionChecker::Check() const {
                   : ToExtendedInterval(
                         demand_per_path_class_[path_class](prev_node, node));
           cumul += demand;
-          cumul = Intersect(cumul, node_capacity_[node]);
-          cumul = Intersect(cumul, path_capacity);
+          cumul &= node_capacity_[node];
+          cumul &= path_capacity;
           if (IsEmpty(cumul)) return false;
           prev_node = node;
         }
@@ -3260,7 +3250,7 @@ bool DimensionChecker::Check() const {
 }
 
 void DimensionChecker::Commit() {
-  const int current_layer_size = forwards_demand_sums_riq_[0].size();
+  const int current_layer_size = riq_[0].size();
   int change_size = path_state_->ChangedPaths().size();
   for (const int path : path_state_->ChangedPaths()) {
     for (const auto chain : path_state_->Chains(path)) {
@@ -3276,23 +3266,21 @@ void DimensionChecker::Commit() {
 
 void DimensionChecker::IncrementalCommit() {
   for (const int path : path_state_->ChangedPaths()) {
-    const int begin_index = forwards_demand_sums_riq_[0].size();
+    const int begin_index = riq_[0].size();
     AppendPathDemandsToSums(path);
-    UpdateRIQStructure(begin_index, forwards_demand_sums_riq_[0].size());
+    UpdateRIQStructure(begin_index, riq_[0].size());
   }
 }
 
 void DimensionChecker::FullCommit() {
   // Clear all structures.
-  for (auto& layer : forwards_demand_sums_riq_) layer.clear();
-  for (auto& layer : forwards_node_capacity_riq_) layer.clear();
-  for (auto& layer : backwards_node_capacity_riq_) layer.clear();
+  for (auto& layer : riq_) layer.clear();
   // Append all paths.
   const int num_paths = path_state_->NumPaths();
   for (int path = 0; path < num_paths; ++path) {
-    const int begin_index = forwards_demand_sums_riq_[0].size();
+    const int begin_index = riq_[0].size();
     AppendPathDemandsToSums(path);
-    UpdateRIQStructure(begin_index, forwards_demand_sums_riq_[0].size());
+    UpdateRIQStructure(begin_index, riq_[0].size());
   }
 }
 
@@ -3302,7 +3290,7 @@ void DimensionChecker::AppendPathDemandsToSums(int path) {
   const int path_class = path_class_[path];
   EInterval demand_sum = {0, 0, 0, 0};
   int prev = path_state_->Start(path);
-  int index = forwards_demand_sums_riq_[0].size();
+  int index = riq_[0].size();
   for (const int node : path_state_->Nodes(path)) {
     // Transition to current node.
     const EInterval demand =
@@ -3314,9 +3302,11 @@ void DimensionChecker::AppendPathDemandsToSums(int path) {
     prev = node;
     // Store all data of current node.
     index_[node] = index++;
-    forwards_demand_sums_riq_[0].push_back(demand_sum);
-    forwards_node_capacity_riq_[0].push_back(node_capacity_[node]);
-    backwards_node_capacity_riq_[0].push_back(node_capacity_[node]);
+    riq_[0].push_back({.cumuls_to_fst = node_capacity_[node],
+                       .tightest_tsum = demand_sum,
+                       .cumuls_to_lst = node_capacity_[node],
+                       .tsum_at_fst = demand_sum,
+                       .tsum_at_lst = demand_sum});
   }
   cached_demand_[path_state_->End(path)] = {0, 0, 0, 0};
 }
@@ -3326,107 +3316,60 @@ void DimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
   // (begin_index, end_index - 1).
   const int max_layer =
       MostSignificantBitPosition32(end_index - begin_index - 1);
-  for (int layer = 1, window = 1; layer <= max_layer; ++layer, window *= 2) {
-    forwards_demand_sums_riq_[layer].resize(end_index);
-    std::copy(
-        forwards_demand_sums_riq_[layer - 1].begin() + begin_index,
-        forwards_demand_sums_riq_[layer - 1].begin() + begin_index + window,
-        forwards_demand_sums_riq_[layer].begin() + begin_index);
-    for (int i = begin_index + window; i < end_index; ++i) {
-      forwards_demand_sums_riq_[layer][i] =
-          Intersect(forwards_demand_sums_riq_[layer - 1][i - window],
-                    forwards_demand_sums_riq_[layer - 1][i]);
+  for (int layer = 1, half_window = 1; layer <= max_layer;
+       ++layer, half_window *= 2) {
+    riq_[layer].resize(end_index);
+    for (int i = begin_index + 2 * half_window - 1; i < end_index; ++i) {
+      // The window covered by riq_[layer][i] goes from
+      // first = i - 2 * half_window + 1 to last = i, inclusive.
+      // Values are computed from two half-windows of the layer below,
+      // the F-window = (i - 2 * half_window, i - half_window], and
+      // the L-window - (i - half_window, i].
+      const RIQNode& fw = riq_[layer - 1][i - half_window];
+      const RIQNode& lw = riq_[layer - 1][i];
+      const EInterval lst_to_lst = Delta(fw.tsum_at_lst, lw.tsum_at_lst);
+      const EInterval fst_to_fst = Delta(fw.tsum_at_fst, lw.tsum_at_fst);
+
+      riq_[layer][i] = {
+          .cumuls_to_fst = fw.cumuls_to_fst & lw.cumuls_to_fst - fst_to_fst,
+          .tightest_tsum = fw.tightest_tsum & lw.tightest_tsum,
+          .cumuls_to_lst = fw.cumuls_to_lst + lst_to_lst & lw.cumuls_to_lst,
+          .tsum_at_fst = fw.tsum_at_fst,
+          .tsum_at_lst = lw.tsum_at_lst};
     }
   }
-  for (int layer = 1, window = 1; layer <= max_layer; ++layer, window *= 2) {
-    forwards_node_capacity_riq_[layer].resize(end_index);
-    std::copy(
-        forwards_node_capacity_riq_[layer - 1].begin() + begin_index,
-        forwards_node_capacity_riq_[layer - 1].begin() + begin_index + window,
-        forwards_node_capacity_riq_[layer].begin() + begin_index);
-    for (int i = begin_index + window; i < end_index; ++i) {
-      const EInterval transition =
-          Delta(forwards_demand_sums_riq_[0][i - window],
-                forwards_demand_sums_riq_[0][i]);
-      forwards_node_capacity_riq_[layer][i] = Intersect(
-          forwards_node_capacity_riq_[layer - 1][i - window] + transition,
-          forwards_node_capacity_riq_[layer - 1][i]);
-    }
-  }
-  for (int layer = 1, window = 1; layer <= max_layer; ++layer, window *= 2) {
-    backwards_node_capacity_riq_[layer].resize(end_index);
-    for (int i = begin_index; i < end_index - window; ++i) {
-      const EInterval transition =
-          Delta(forwards_demand_sums_riq_[0][i],
-                forwards_demand_sums_riq_[0][i + window]);
-      backwards_node_capacity_riq_[layer][i] = Intersect(
-          backwards_node_capacity_riq_[layer - 1][i],
-          backwards_node_capacity_riq_[layer - 1][i + window] - transition);
-    }
-    std::copy(
-        backwards_node_capacity_riq_[layer - 1].begin() + end_index - window,
-        backwards_node_capacity_riq_[layer - 1].begin() + end_index,
-        backwards_node_capacity_riq_[layer].begin() + end_index - window);
-  }
 }
 
-EInterval DimensionChecker::FirstIndexCumulsFromPathCapacity(
-    int first_node_index, int last_node_index,
-    const EInterval& path_capacity) const {
-  DCHECK_LE(0, first_node_index);
-  DCHECK_LT(first_node_index, last_node_index);
-  DCHECK_LT(last_node_index, forwards_demand_sums_riq_[0].size());
-  // Find largest window = 2^layer such that
-  // first_node_index < last_node_index - window + 1.
-  const int layer =
-      MostSignificantBitPosition32(last_node_index - first_node_index);
+// The RIQ schema decomposes the request into two windows:
+// - the F window covers indices [first_index, first_index + window)
+// - the L window covers indices (last_index - window, last_index]
+// The decomposition uses the first and last nodes of these windows.
+void DimensionChecker::UpdateCumulUsingChainRIQ(
+    int first_index, int last_index, const ExtendedInterval& path_capacity,
+    ExtendedInterval& cumul) const {
+  DCHECK_LE(0, first_index);
+  DCHECK_LT(first_index, last_index);
+  DCHECK_LT(last_index, riq_[0].size());
+  const int layer = MostSignificantBitPosition32(last_index - first_index);
   const int window = 1 << layer;
-  const EInterval tightest_sum =
-      Intersect(forwards_demand_sums_riq_[layer][first_node_index + window - 1],
-                forwards_demand_sums_riq_[layer][last_node_index]);
-  const EInterval first_sum = forwards_demand_sums_riq_[0][first_node_index];
-  return path_capacity - Delta(first_sum, tightest_sum);
-}
+  const RIQNode& fw = riq_[layer][first_index + window - 1];
+  const RIQNode& lw = riq_[layer][last_index];
 
-EInterval DimensionChecker::TotalTransit(int first_node_index,
-                                         int last_node_index) const {
-  const EInterval first_sum = forwards_demand_sums_riq_[0][first_node_index];
-  const EInterval last_sum = forwards_demand_sums_riq_[0][last_node_index];
-  return Delta(first_sum, last_sum);
-}
+  // Compute the set of cumul values that can reach the last node.
+  cumul &= fw.cumuls_to_fst;
+  cumul &= lw.cumuls_to_fst - Delta(fw.tsum_at_fst, lw.tsum_at_fst);
+  cumul &= path_capacity -
+           Delta(fw.tsum_at_fst, fw.tightest_tsum & lw.tightest_tsum);
 
-EInterval DimensionChecker::FirstIndexCumulsFromNodeCapacities(
-    int first_node_index, int last_node_index) const {
-  const int layer =
-      MostSignificantBitPosition32(last_node_index - first_node_index);
-  const int window = 1 << layer;
-  // Adaptation of the conventional O(1) Range Max Query scheme.
-  const int right_index = last_node_index - window + 1;
-  const EInterval transition =
-      Delta(forwards_demand_sums_riq_[0][first_node_index],
-            forwards_demand_sums_riq_[0][right_index]);
-  return Intersect(
-      backwards_node_capacity_riq_[layer][right_index] - transition,
-      backwards_node_capacity_riq_[layer][first_node_index]);
-}
+  // We need to check for emptiness before widening the interval with transit.
+  if (IsEmpty(cumul)) return;
 
-EInterval DimensionChecker::LastIndexCumulsFromNodeCapacities(
-    int first_node_index, int last_node_index) const {
-  DCHECK_LE(0, first_node_index);
-  DCHECK_LT(first_node_index, last_node_index);
-  DCHECK_LT(last_node_index, forwards_demand_sums_riq_[0].size());
-  // Find largest window_size = 2^layer such that
-  // first_node_index < last_node_index - window + 1.
-  const int layer =
-      MostSignificantBitPosition32(last_node_index - first_node_index);
-  const int window = 1 << layer;
-  // Adaptation of the conventional O(1) Range Max Query scheme.
-  const int left_index = first_node_index + window - 1;
-  const EInterval transition =
-      Delta(forwards_demand_sums_riq_[0][left_index],
-            forwards_demand_sums_riq_[0][last_node_index]);
-  return Intersect(forwards_node_capacity_riq_[layer][left_index] + transition,
-                   forwards_node_capacity_riq_[layer][last_node_index]);
+  // Transit to last node.
+  cumul += Delta(fw.tsum_at_fst, lw.tsum_at_lst);
+
+  // Compute the set of cumul values that are reached from first node.
+  cumul &= fw.cumuls_to_lst + Delta(fw.tsum_at_lst, lw.tsum_at_lst);
+  cumul &= lw.cumuls_to_lst;
 }
 
 namespace {
@@ -4395,7 +4338,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   LocalSearchStatistics ExportToLocalSearchStatistics() const {
     LocalSearchStatistics statistics_proto;
     ParseFirstSolutionStatistics(
-        [&statistics_proto](const std::string& name, double duration_seconds) {
+        [&statistics_proto](absl::string_view name, double duration_seconds) {
           LocalSearchStatistics::FirstSolutionStatistics* const
               first_solution_statistics =
                   statistics_proto.add_first_solution_statistics();
@@ -4446,7 +4389,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     std::string overview;
     size_t max_name_size = 0;
     ParseFirstSolutionStatistics(
-        [&max_name_size](const std::string& name, double) {
+        [&max_name_size](absl::string_view name, double) {
           max_name_size = std::max(max_name_size, name.length());
         });
     if (max_name_size > 0) {
@@ -4461,7 +4404,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
           });
     }
     max_name_size = 0;
-    ParseLocalSearchOperatorStatistics([&max_name_size](const std::string& name,
+    ParseLocalSearchOperatorStatistics([&max_name_size](absl::string_view name,
                                                         int64_t, int64_t,
                                                         int64_t, double) {
       max_name_size = std::max(max_name_size, name.length());
@@ -4475,7 +4418,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       OperatorStats total_stats;
       ParseLocalSearchOperatorStatistics(
           [&overview, &total_stats, max_name_size](
-              const std::string& name, int64_t num_neighbors,
+              absl::string_view name, int64_t num_neighbors,
               int64_t num_filtered_neighbors, int64_t num_accepted_neighbors,
               double duration_seconds) {
             absl::StrAppendFormat(

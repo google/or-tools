@@ -29,6 +29,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -50,6 +51,18 @@ RoutingModelParameters DefaultRoutingModelParameters() {
 }
 
 namespace {
+IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
+  IteratedLocalSearchParameters ils;
+  ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
+  RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
+  rr->set_ruin_strategy(RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL);
+  rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
+  rr->set_num_ruined_routes(2);
+  ils.set_improve_perturbed_solution(true);
+  ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
+  return ils;
+}
+
 RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   RoutingSearchParameters p;
   p.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
@@ -141,6 +154,9 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_log_search(false);
   p.set_log_cost_scaling_factor(1.0);
   p.set_log_cost_offset(0.0);
+  p.set_use_iterated_local_search(false);
+  *p.mutable_iterated_local_search_parameters() =
+      CreateDefaultIteratedLocalSearchParameters();
 
   const std::string error = FindErrorInRoutingSearchParameters(p);
   LOG_IF(DFATAL, !error.empty())
@@ -151,6 +167,9 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
 RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   RoutingSearchParameters p = CreateDefaultRoutingSearchParameters();
   p.set_local_search_metaheuristic(LocalSearchMetaheuristic::GREEDY_DESCENT);
+  p.set_use_iterated_local_search(false);
+  *p.mutable_iterated_local_search_parameters() =
+      CreateDefaultIteratedLocalSearchParameters();
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
       p.mutable_local_search_operators();
   o->set_use_relocate(BOOL_TRUE);
