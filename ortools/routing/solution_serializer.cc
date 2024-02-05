@@ -22,6 +22,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -39,7 +40,7 @@ RoutingOutputFormat RoutingOutputFormatFromString(std::string_view format) {
 // Helper for FromSplitRoutes.
 namespace {
 std::vector<RoutingSolution::Route> RoutesFromVector(
-    const std::vector<std::vector<int64_t>>& routes,
+    absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot = std::nullopt);
 }  // namespace
 
@@ -343,7 +344,7 @@ RoutingSolution::Route RouteFromVector(
     std::optional<int64_t> depot = std::nullopt);
 
 std::vector<RoutingSolution::Route> RoutesFromVector(
-    const std::vector<std::vector<int64_t>>& routes,
+    absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot) {
   std::vector<RoutingSolution::Route> solution_routes;
   solution_routes.reserve(routes.size());

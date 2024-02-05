@@ -27,6 +27,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
@@ -213,8 +214,7 @@ void TspLibParser::ParseExplicitFullMatrix(
   }
 }
 
-void TspLibParser::ParseExplicitUpperRow(
-    const std::vector<std::string>& words) {
+void TspLibParser::ParseExplicitUpperRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -246,7 +246,7 @@ void TspLibParser::ParseExplicitLowerRow(
 }
 
 void TspLibParser::ParseExplicitUpperDiagRow(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -261,7 +261,7 @@ void TspLibParser::ParseExplicitUpperDiagRow(
 }
 
 void TspLibParser::ParseExplicitLowerDiagRow(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -275,7 +275,7 @@ void TspLibParser::ParseExplicitLowerDiagRow(
   }
 }
 
-void TspLibParser::ParseNodeCoord(const std::vector<std::string>& words) {
+void TspLibParser::ParseNodeCoord(absl::Span<const std::string> words) {
   CHECK_LE(3, words.size()) << words[0];
   CHECK_GE(4, words.size()) << words[4];
   const int node(atoi32(words[0]) - 1);
@@ -660,7 +660,7 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
 }
 
 std::string TspLibParser::BuildTourFromRoutes(
-    const std::vector<std::vector<int>>& routes) const {
+    absl::Span<const std::vector<int>> routes) const {
   std::string tours = absl::StrCat(
       "NAME : ", name_, "\nCOMMENT :\nTYPE : TOUR\nDIMENSION : ", size(),
       "\nTOUR_SECTION\n");

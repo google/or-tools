@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/routing/simple_graph.h"
 
@@ -78,7 +79,7 @@ class TspLibParser final {
   // Build a tour output in TSPLIB95 format from a vector of routes, a route
   // being a sequence of node indices.
   std::string BuildTourFromRoutes(
-      const std::vector<std::vector<int>>& routes) const;
+      absl::Span<const std::vector<int>> routes) const;
 
  private:
   enum Sections {
@@ -141,11 +142,11 @@ class TspLibParser final {
 #endif
 
   void ParseExplicitFullMatrix(const std::vector<std::string>& words);
-  void ParseExplicitUpperRow(const std::vector<std::string>& words);
+  void ParseExplicitUpperRow(absl::Span<const std::string> words);
   void ParseExplicitLowerRow(const std::vector<std::string>& words);
-  void ParseExplicitUpperDiagRow(const std::vector<std::string>& words);
-  void ParseExplicitLowerDiagRow(const std::vector<std::string>& words);
-  void ParseNodeCoord(const std::vector<std::string>& words);
+  void ParseExplicitUpperDiagRow(absl::Span<const std::string> words);
+  void ParseExplicitLowerDiagRow(absl::Span<const std::string> words);
+  void ParseNodeCoord(absl::Span<const std::string> words);
   void SetUpEdgeWeightSection();
   void FinalizeEdgeWeights();
   void ParseSections(const std::vector<std::string>& words);
