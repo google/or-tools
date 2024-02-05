@@ -469,7 +469,7 @@ constexpr int kUnsetIndex = -2;
 // are contiguous starting at 0. The elements in the output point to the new
 // shifted index, or `kDeletedIndex` if the starting index was deleted.
 std::vector<int> IndexUpdateMap(const int size_before_delete,
-                                const std::vector<int>& deletes) {
+                                absl::Span<const int> deletes) {
   std::vector<int> result(size_before_delete, kUnsetIndex);
   for (const int del : deletes) {
     result[del] = kDeletedIndex;
@@ -1158,7 +1158,12 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
         }
       }
     }
-    primal_solution.set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
+    // Gurobi v9 provides a feasibility status for the instance as a whole but
+    // not for each solution, and pool entries may be infeasible. To be
+    // conservative, we only label the first ("best") solution as primal
+    // feasible.
+    primal_solution.set_feasibility_status(
+        i == 0 ? SOLUTION_STATUS_FEASIBLE : SOLUTION_STATUS_UNDETERMINED);
     ASSIGN_OR_RETURN(
         const std::vector<double> grb_var_values,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_XN, num_gurobi_variables_));
@@ -2853,6 +2858,29 @@ absl::Status GurobiSolver::SetMultiObjectiveTolerances(
   return absl::OkStatus();
 }
 
+absl::Status GurobiSolver::ResetModelParameters(
+    const ModelSolveParametersProto& model_parameters) {
+  for (int i = 0; i < model_parameters.branching_priorities().ids_size(); ++i) {
+    const int64_t var_id = model_parameters.branching_priorities().ids(i);
+    const GurobiVariableIndex grb_index = variables_map_.at(var_id);
+    RETURN_IF_ERROR(
+        gurobi_->SetIntAttrElement(GRB_INT_ATTR_BRANCHPRIORITY, grb_index, 0))
+        << "failed to reset branching priority for variable ID " << var_id
+        << " (Gurobi index = " << grb_index << ")";
+  }
+  for (const int64_t lazy_constraint_id :
+       model_parameters.lazy_linear_constraint_ids()) {
+    const GurobiLinearConstraintIndex lazy_constraint_index =
+        linear_constraints_map_.at(lazy_constraint_id).constraint_index;
+    RETURN_IF_ERROR(
+        gurobi_->SetIntAttrElement(GRB_INT_ATTR_LAZY, lazy_constraint_index, 0))
+        << "failed to reset lazy constraint for lazy constraint ID "
+        << lazy_constraint_id << " (Gurobi index = " << lazy_constraint_index
+        << ")";
+  }
+  return absl::OkStatus();
+}
+
 absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
@@ -2933,6 +2961,18 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   if (is_multi_objective_mode()) {
     RETURN_IF_ERROR(SetMultiObjectiveTolerances(model_parameters));
   }
+  for (const int64_t lazy_constraint_id :
+       model_parameters.lazy_linear_constraint_ids()) {
+    const GurobiLinearConstraintIndex lazy_constraint_index =
+        linear_constraints_map_.at(lazy_constraint_id).constraint_index;
+    // We select a value of "1" here, which means that the lazy constraints will
+    // be separated at feasible solutions, and that Gurobi has latitude to
+    // select which violated constraints to add to the model if multiple are
+    // violated. This seems like a reasonable default choice for us, but we may
+    // want to revisit later (or expose this choice to the user).
+    RETURN_IF_ERROR(gurobi_->SetIntAttrElement(GRB_INT_ATTR_LAZY,
+                                               lazy_constraint_index, 1));
+  }
 
   // Here we register the callback when we either have a user callback or a
   // local interrupter. The rationale for doing so when we have only an
@@ -2966,6 +3006,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   // TODO(b/277246682): ensure that resetting parameters does not degrade
   // incrementalism performance.
   RETURN_IF_ERROR(gurobi_->ResetParameters());
+  RETURN_IF_ERROR(ResetModelParameters(model_parameters));
 
   return solve_result;
 }

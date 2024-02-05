@@ -387,6 +387,9 @@ class GurobiSolver : public SolverInterface {
   absl::Status SetMultiObjectiveTolerances(
       const ModelSolveParametersProto& model_parameters);
 
+  absl::Status ResetModelParameters(
+      const ModelSolveParametersProto& model_parameters);
+
   const std::unique_ptr<Gurobi> gurobi_;
 
   // Note that we use linked_hash_map for the indices of the gurobi_model_

@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "google/protobuf/map.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
@@ -205,7 +206,7 @@ class ObjectiveStorage {
     std::optional<ObjectiveUpdatesProto> Update(
         const Diff::SingleObjective& diff_data,
         const absl::flat_hash_set<VariableId>& deleted_variables,
-        const std::vector<VariableId>& new_variables) const;
+        absl::Span<const VariableId> new_variables) const;
 
     inline void DeleteVariable(VariableId variable);
 

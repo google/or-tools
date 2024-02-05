@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/status/statusor.h"
+#include "ortools/gurobi/isv/public/gurobi_isv.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 

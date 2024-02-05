@@ -48,11 +48,15 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/flags/flag.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
@@ -107,7 +111,7 @@ std::vector<Job> TestInstance() {
           {.processing_time = 5, .release_time = 0}};
 }
 
-int TimeHorizon(const std::vector<Job>& jobs) {
+int TimeHorizon(absl::Span<const Job> jobs) {
   int max_release = 0;
   int sum_processing = 0;
   for (const Job& job : jobs) {
@@ -122,7 +126,7 @@ struct Schedule {
   int sum_of_completion_times = 0;
 };
 
-absl::StatusOr<Schedule> Solve(const std::vector<Job>& jobs,
+absl::StatusOr<Schedule> Solve(absl::Span<const Job> jobs,
                                const math_opt::SolverType solver_type) {
   const int kTimeHorizon = TimeHorizon(jobs);
   math_opt::Model model;
@@ -176,7 +180,7 @@ absl::StatusOr<Schedule> Solve(const std::vector<Job>& jobs,
   return schedule;
 }
 
-void PrintSchedule(const std::vector<Job>& jobs, const Schedule& schedule) {
+void PrintSchedule(absl::Span<const Job> jobs, const Schedule& schedule) {
   std::cout << "sum of completion times: " << schedule.sum_of_completion_times
             << std::endl;
   std::vector<std::pair<int, Job>> jobs_by_start_time;

@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -41,7 +42,7 @@ constexpr SupportedProblemStructures kPdlpSupportedStructures = {
     .quadratic_objectives = SupportType::kSupported};
 
 absl::StatusOr<SparseDoubleVectorProto> ExtractSolution(
-    const Eigen::VectorXd& values, const std::vector<int64_t>& pdlp_index_to_id,
+    const Eigen::VectorXd& values, absl::Span<const int64_t> pdlp_index_to_id,
     const SparseVectorFilterProto& filter, const double scale) {
   if (values.size() != pdlp_index_to_id.size()) {
     return absl::InternalError(

@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -63,7 +62,7 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solvers/gscip_solver_callback.h"
+#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
@@ -991,7 +990,7 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
   RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
   RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
-
+  RETURN_IF_ERROR(solver->constraint_handler_.Register(solver->gscip_.get()));
   RETURN_IF_ERROR(solver->AddVariables(
       model.variables(),
       SparseDoubleVectorAsMap(model.objective().linear_coefficients())));
@@ -1006,7 +1005,6 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
       solver->AddIndicatorConstraints(model.indicator_constraints()));
   RETURN_IF_ERROR(solver->AddSos1Constraints(model.sos1_constraints()));
   RETURN_IF_ERROR(solver->AddSos2Constraints(model.sos2_constraints()));
-
   return solver;
 }
 
@@ -1014,16 +1012,52 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
-    const CallbackRegistrationProto& callback_registration, const Callback cb,
+    const CallbackRegistrationProto& callback_registration, Callback cb,
     SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                /*supported_events=*/{}));
+  GScip::Interrupter gscip_interrupter;
+  const ScopedSolveInterrupterCallback scoped_interrupt_cb(
+      interrupter, [&]() { gscip_interrupter.Interrupt(); });
+  const bool use_interrupter = interrupter != nullptr || cb != nullptr;
 
-  const std::unique_ptr<GScipSolverCallbackHandler> callback_handler =
-      GScipSolverCallbackHandler::RegisterIfNeeded(callback_registration, cb,
-                                                   start, gscip_->scip());
+  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+      callback_registration,
+      /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION,
+                            CALLBACK_EVENT_MIP_NODE}));
+  if (constraint_data_ != nullptr) {
+    return absl::InternalError(
+        "constraint_data_ should always be null at the start of "
+        "GScipSolver::Solver()");
+  }
+  SCIP_CONS* callback_cons = nullptr;
+  if (cb != nullptr) {
+    // NOTE: we must meet the invariant on GScipSolverConstraintData, that when
+    // user_callback != nullptr, all fields are filled in.
+    constraint_data_ = std::make_unique<GScipSolverConstraintData>();
+    constraint_data_->user_callback = std::move(cb);
+    constraint_data_->SetWhenRunAndAdds(callback_registration);
+    constraint_data_->solve_start_time = absl::Now();
+    constraint_data_->variables = &variables_;
+    constraint_data_->variable_node_filter =
+        &callback_registration.mip_node_filter();
+    constraint_data_->variable_solution_filter =
+        &callback_registration.mip_solution_filter();
+    constraint_data_->interrupter = &gscip_interrupter;
+    // NOTE: it is critical that this constraint is added after all other
+    // constraints, as otherwise, due to what appears to be a bug in SCIP, we
+    // may run our callback before checking all the constraints in the model,
+    // see https://listserv.zib.de/pipermail/scip/2023-November/004785.html.
+    ASSIGN_OR_RETURN(callback_cons,
+                     constraint_handler_.AddCallbackConstraint(
+                         gscip_.get(), "mathopt_callback_constraint",
+                         constraint_data_.get()));
+  }
+  const auto cleanup_constraint_data = absl::Cleanup([this]() {
+    if (constraint_data_ != nullptr) {
+      *constraint_data_ = {};
+    }
+  });
 
   BufferedMessageCallback buffered_message_callback(std::move(message_cb));
   auto message_cb_cleanup = absl::MakeCleanup(
@@ -1043,12 +1077,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), value));
   }
 
-  // Before calling solve, set the interrupter on the event handler that calls
-  // SCIPinterruptSolve().
-  GScip::Interrupter gscip_interrupter;
-  const ScopedSolveInterrupterCallback scoped_interrupt_cb(
-      interrupter, [&]() { gscip_interrupter.Interrupt(); });
-
   // SCIP returns "infeasible" when the model contain invalid bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
@@ -1065,13 +1093,14 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
       GScipResult gscip_result,
       gscip_->Solve(gscip_parameters,
                     /*legacy_params=*/"", std::move(gscip_msg_cb),
-                    interrupter == nullptr ? nullptr : &gscip_interrupter));
+                    use_interrupter ? &gscip_interrupter : nullptr));
 
   // Flush the potential last unfinished line.
   std::move(message_cb_cleanup).Invoke();
 
-  if (callback_handler) {
-    RETURN_IF_ERROR(callback_handler->Flush());
+  if (callback_cons != nullptr) {
+    RETURN_IF_ERROR(gscip_->DeleteConstraint(callback_cons));
+    constraint_data_.reset();
   }
 
   ASSIGN_OR_RETURN(
@@ -1080,6 +1109,14 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
                              parameters.has_cutoff_limit()
                                  ? std::make_optional(parameters.cutoff_limit())
                                  : std::nullopt));
+
+  // Reset solve-specific model parameters so that they do not leak into the
+  // next solve. Note that 0 is the default branching priority.
+  for (const auto [id, unused] :
+       MakeView(model_parameters.branching_priorities())) {
+    RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), 0));
+  }
+
   CHECK_OK(util_time::EncodeGoogleApiProto(
       absl::Now() - start, result.mutable_solve_stats()->mutable_solve_time()));
   return result;

@@ -459,7 +459,7 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
 
 template <typename IndexType>
 SparseDoubleVectorProto FillSparseDoubleVector(
-    const std::vector<int64_t>& ids_in_order,
+    absl::Span<const int64_t> ids_in_order,
     const absl::flat_hash_map<int64_t, IndexType>& id_map,
     const glop::StrictITIVector<IndexType, glop::Fractional>& values,
     const SparseVectorFilterProto& filter) {
@@ -495,7 +495,7 @@ BasisStatusProto FromGlopBasisStatus(const ValueType glop_basis_status) {
 
 template <typename IndexType, typename ValueType>
 SparseBasisStatusVector FillSparseBasisStatusVector(
-    const std::vector<int64_t>& ids_in_order,
+    absl::Span<const int64_t> ids_in_order,
     const absl::flat_hash_map<int64_t, IndexType>& id_map,
     const glop::StrictITIVector<IndexType, ValueType>& values) {
   SparseBasisStatusVector result;
