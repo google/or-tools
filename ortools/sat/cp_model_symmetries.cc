@@ -136,7 +136,9 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
-    initial_equivalence_classes->push_back(color_id_generator.GetId(color));
+    const int node_color = color_id_generator.GetId(color);
+    CHECK_LE(node_color, node);
+    initial_equivalence_classes->push_back(node_color);
 
     // In some corner cases, we create a node but never uses it. We still
     // want it to be there.
