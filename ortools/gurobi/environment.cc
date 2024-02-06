@@ -223,6 +223,7 @@ std::function<int(GRBenv* dest, GRBenv* src)> GRBcopyparams = nullptr;
 std::function<int(GRBenv* env)> GRBgetnumparams = nullptr;
 std::function<int(GRBenv** envP)> GRBemptyenv = nullptr;
 std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv = nullptr;
+std::function<int(GRBenv* env)> GRBstartenv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
 std::function<void(GRBenv* env)> GRBfreeenv = nullptr;
 std::function<const char*(GRBenv* env)> GRBgeterrormsg = nullptr;
@@ -323,6 +324,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBresetparams, "GRBresetparams");
   gurobi_dynamic_library->GetFunction(&GRBcopyparams, "GRBcopyparams");
   gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
+  gurobi_dynamic_library->GetFunction(&GRBstartenv, "GRBstartenv");
   gurobi_dynamic_library->GetFunction(&GRBemptyenv, "GRBemptyenv");
   gurobi_dynamic_library->GetFunction(&GRBgetnumparams, "GRBgetnumparams");
   gurobi_dynamic_library->GetFunction(&GRBgetparamname, "GRBgetparamname");
