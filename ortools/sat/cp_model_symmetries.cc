@@ -73,7 +73,7 @@ class IdGenerator {
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.
   int GetId(const std::vector<int64_t>& color) {
-    return id_map_.emplace(color, id_map_.size()).first->second;
+    return id_map_.insert({color, id_map_.size()}).first->second;
   }
 
   int NextFreeId() const { return id_map_.size(); }
@@ -137,7 +137,6 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
     const int node_color = color_id_generator.GetId(color);
-    CHECK_LE(node_color, node);
     initial_equivalence_classes->push_back(node_color);
 
     // In some corner cases, we create a node but never uses it. We still
