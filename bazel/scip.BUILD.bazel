@@ -81,7 +81,7 @@ cc_library(
             "src/scip/exprinterpret_*.c",
             "src/scip/nlpi_filtersqp.c",
             "src/scip/nlpi_worhp.c",
-            "src/scip/compr_xyz.c",
+            "src/scip/*_xyz.c",
             "src/scip/sorttpl.c",
             "src/symmetry/compute_symmetry_*.cpp",
             "src/symmetry/*nauty*",
@@ -102,6 +102,7 @@ cc_library(
         exclude =
         [
             #"src/scip/prop_symmetry.h",
+            "src/scip/*_xyz.h",
         ]),
         copts = [
         "$(STACK_FRAME_UNLIMITED)",  # src/scip/reader_cnf.c
