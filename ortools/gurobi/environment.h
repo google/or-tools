@@ -714,6 +714,7 @@ extern std::function<int(GRBenv *env, const char *paramname, const char *value)>
 extern std::function<int(GRBenv *env)> GRBresetparams;
 extern std::function<int(GRBenv *dest, GRBenv *src)> GRBcopyparams;
 extern std::function<int(GRBenv **envP, const char *logfilename)> GRBloadenv;
+extern std::function<int(GRBenv *env)> GRBstartenv;
 extern std::function<int(GRBenv **envP)> GRBemptyenv;
 extern std::function<int(GRBenv *envP)> GRBgetnumparams;
 extern std::function<int(GRBenv *envP, int i, char **paramnameP)> GRBgetparamname;

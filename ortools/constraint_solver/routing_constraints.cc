@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
@@ -93,9 +94,7 @@ class ResourceAssignmentConstraint : public Constraint {
       : Constraint(model->solver()),
         model_(*model),
         resource_group_(*resource_group),
-        vehicle_resource_vars_(*vehicle_resource_vars),
-        vehicle_to_start_bound_vars_per_dimension_(model->vehicles()),
-        vehicle_to_end_bound_vars_per_dimension_(model->vehicles()) {
+        vehicle_resource_vars_(*vehicle_resource_vars) {
     DCHECK_EQ(vehicle_resource_vars_.size(), model_.vehicles());
 
     const std::vector<RoutingDimension*>& dimensions = model_.GetDimensions();
@@ -108,26 +107,12 @@ class ResourceAssignmentConstraint : public Constraint {
       if (!resource_group_.VehicleRequiresAResource(v)) {
         continue;
       }
-
-      vehicle_to_start_bound_vars_per_dimension_[v].resize(dimensions.size());
-      vehicle_to_end_bound_vars_per_dimension_[v].resize(dimensions.size());
-
       for (const RoutingModel::DimensionIndex d :
            resource_group_.GetAffectedDimensionIndices()) {
         const RoutingDimension* const dim = dimensions[d.value()];
         // The vehicle's start/end cumuls must be fixed by the search.
         model->AddVariableMinimizedByFinalizer(dim->CumulVar(model_.End(v)));
         model->AddVariableMaximizedByFinalizer(dim->CumulVar(model_.Start(v)));
-        for (ResourceBoundVars* bound_vars :
-             {&vehicle_to_start_bound_vars_per_dimension_[v][d.value()],
-              &vehicle_to_end_bound_vars_per_dimension_[v][d.value()]}) {
-          bound_vars->lower_bound =
-              solver()->MakeIntVar(std::numeric_limits<int64_t>::min(),
-                                   std::numeric_limits<int64_t>::max());
-          bound_vars->upper_bound =
-              solver()->MakeIntVar(std::numeric_limits<int64_t>::min(),
-                                   std::numeric_limits<int64_t>::max());
-        }
       }
     }
   }
@@ -193,10 +178,13 @@ class ResourceAssignmentConstraint : public Constraint {
       return std::max<int64_t>(dimension.FixedTransitVar(node)->Min(), 0);
     };
 
+    using RCIndex = RoutingModel::ResourceClassIndex;
+    const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+        ignored_resources_per_class(resource_group_.GetResourceClassesCount());
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {
       if (!ComputeVehicleToResourceClassAssignmentCosts(
-              v, resource_group_, next, transit,
+              v, resource_group_, ignored_resources_per_class, next, transit,
               /*optimize_vehicle_costs*/ false,
               model_.GetMutableLocalCumulLPOptimizer(dimension),
               model_.GetMutableLocalCumulMPOptimizer(dimension),
@@ -209,6 +197,7 @@ class ResourceAssignmentConstraint : public Constraint {
     return ComputeBestVehicleToResourceAssignment(
                resource_group_.GetVehiclesRequiringAResource(),
                resource_group_.GetResourceIndicesPerClass(),
+               ignored_resources_per_class,
                [&assignment_costs](int v) { return &assignment_costs[v]; },
                nullptr) >= 0;
   }
@@ -218,7 +207,6 @@ class ResourceAssignmentConstraint : public Constraint {
     // Resources cannot be shared, so assigned resources must all be different
     // (note that resource_var == -1 means no resource assigned).
     s->AddConstraint(s->MakeAllDifferentExcept(vehicle_resource_vars_, -1));
-    const std::vector<RoutingDimension*>& dimensions = model_.GetDimensions();
     for (int v = 0; v < model_.vehicles(); v++) {
       IntVar* const resource_var = vehicle_resource_vars_[v];
       if (!resource_group_.VehicleRequiresAResource(v)) {
@@ -240,81 +228,38 @@ class ResourceAssignmentConstraint : public Constraint {
         s->AddConstraint(s->MakeMemberCt(resource_var, allowed_resources));
       }
 
-      // Add dimension cumul constraints.
-      for (const RoutingModel::DimensionIndex dim_index :
-           resource_group_.GetAffectedDimensionIndices()) {
-        const int d = dim_index.value();
-        const RoutingDimension* const dim = dimensions[d];
-
-        // resource_start_lb_var <= cumul[start(v)] <= resource_start_ub_var,
-        // resource_end_lb_var <= cumul[end(v)] <= resource_end_ub_var
-        for (bool start_cumul : {true, false}) {
-          IntVar* const cumul_var = start_cumul ? dim->CumulVar(model_.Start(v))
-                                                : dim->CumulVar(model_.End(v));
-
-          IntVar* const resource_lb_var =
-              start_cumul
-                  ? vehicle_to_start_bound_vars_per_dimension_[v][d].lower_bound
-                  : vehicle_to_end_bound_vars_per_dimension_[v][d].lower_bound;
-          s->AddConstraint(s->MakeLightElement(
-              [dim, start_cumul, &resource_group = resource_group_](int r) {
-                if (r < 0) return std::numeric_limits<int64_t>::min();
-                return start_cumul ? resource_group.GetResources()[r]
-                                         .GetDimensionAttributes(dim)
-                                         .start_domain()
-                                         .Min()
-                                   : resource_group.GetResources()[r]
-                                         .GetDimensionAttributes(dim)
-                                         .end_domain()
-                                         .Min();
-              },
-              resource_lb_var, resource_var,
-              [&model = model_]() {
-                return model.enable_deep_serialization();
-              }));
-          s->AddConstraint(s->MakeGreaterOrEqual(cumul_var, resource_lb_var));
-
-          IntVar* const resource_ub_var =
-              start_cumul
-                  ? vehicle_to_start_bound_vars_per_dimension_[v][d].upper_bound
-                  : vehicle_to_end_bound_vars_per_dimension_[v][d].upper_bound;
-          s->AddConstraint(s->MakeLightElement(
-              [dim, start_cumul, &resource_group = resource_group_](int r) {
-                if (r < 0) return std::numeric_limits<int64_t>::max();
-                return start_cumul ? resource_group.GetResources()[r]
-                                         .GetDimensionAttributes(dim)
-                                         .start_domain()
-                                         .Max()
-                                   : resource_group.GetResources()[r]
-                                         .GetDimensionAttributes(dim)
-                                         .end_domain()
-                                         .Max();
-              },
-              resource_ub_var, resource_var,
-              [&model = model_]() {
-                return model.enable_deep_serialization();
-              }));
-          s->AddConstraint(s->MakeLessOrEqual(cumul_var, resource_ub_var));
+      if (resource_var->Bound()) {
+        ResourceBound(v);
+      } else {
+        Demon* const demon = MakeConstraintDemon1(
+            s, this, &ResourceAssignmentConstraint::ResourceBound,
+            "ResourceBound", v);
+        resource_var->WhenBound(demon);
         }
       }
     }
+  void ResourceBound(int vehicle) {
+    const int64_t resource = vehicle_resource_vars_[vehicle]->Value();
+    if (resource < 0) return;
+    for (const RoutingModel::DimensionIndex d :
+         resource_group_.GetAffectedDimensionIndices()) {
+      const RoutingDimension* const dim = model_.GetDimensions()[d.value()];
+      const RoutingModel::ResourceGroup::Attributes& attributes =
+          resource_group_.GetResources()[resource].GetDimensionAttributes(dim);
+      // resource_start_lb <= cumul[start(vehicle)] <= resource_start_ub
+      // resource_end_lb <= cumul[end(vehicle)] <= resource_end_ub
+      dim->CumulVar(model_.Start(vehicle))
+          ->SetRange(attributes.start_domain().Min(),
+                     attributes.start_domain().Max());
+      dim->CumulVar(model_.End(vehicle))
+          ->SetRange(attributes.end_domain().Min(),
+                     attributes.end_domain().Max());
   }
-
-  struct ResourceBoundVars {
-    IntVar* lower_bound;
-    IntVar* upper_bound;
-  };
+  }
 
   const RoutingModel& model_;
   const RoutingModel::ResourceGroup& resource_group_;
   const std::vector<IntVar*>& vehicle_resource_vars_;
-  // The following vectors store the IntVars keeping track of the lower and
-  // upper bound on the cumul start/end of every vehicle (requiring a resource)
-  // based on its assigned resource (determined by vehicle_resource_vars_).
-  std::vector<std::vector<ResourceBoundVars>>
-      vehicle_to_start_bound_vars_per_dimension_;
-  std::vector<std::vector<ResourceBoundVars>>
-      vehicle_to_end_bound_vars_per_dimension_;
 };
 }  // namespace
 

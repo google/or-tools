@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
+file(GLOB_RECURSE _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_gurobi)
 
 # Will be merge in libortools.so

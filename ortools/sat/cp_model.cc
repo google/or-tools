@@ -36,7 +36,7 @@ namespace sat {
 BoolVar::BoolVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
-BoolVar BoolVar::WithName(const std::string& name) {
+BoolVar BoolVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()

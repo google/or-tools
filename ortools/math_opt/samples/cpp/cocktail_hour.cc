@@ -37,12 +37,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -270,8 +275,7 @@ absl::StatusOr<Menu> SolveForMenu(
   return menu;
 }
 
-absl::flat_hash_set<std::string> SetFromVec(
-    const std::vector<std::string>& vec) {
+absl::flat_hash_set<std::string> SetFromVec(absl::Span<const std::string> vec) {
   return {vec.begin(), vec.end()};
 }
 
@@ -294,7 +298,7 @@ absl::Status AnalysisMode() {
   return absl::OkStatus();
 }
 
-std::string ExportToLaTeX(const std::vector<Cocktail>& cocktails,
+std::string ExportToLaTeX(absl::Span<const Cocktail> cocktails,
                           absl::string_view title = "Cocktail Hour") {
   std::vector<std::string> lines;
   lines.push_back("\\documentclass{article}");

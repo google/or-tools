@@ -2724,7 +2724,7 @@ void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
 
 Constraint* MakeScalProdEqualityFct(Solver* const solver,
                                     const std::vector<IntVar*>& pre_vars,
-                                    const std::vector<int64_t>& pre_coefs,
+                                    absl::Span<const int64_t> pre_coefs,
                                     int64_t cst) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;

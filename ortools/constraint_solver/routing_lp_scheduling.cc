@@ -217,11 +217,11 @@ DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
   int64_t transit_cost = 0;
   const DimensionSchedulingStatus status =
       optimizer_core_.OptimizeSingleRouteWithResource(
-      vehicle, next_accessor,
-      /*dimension_travel_info=*/{},
+          vehicle, next_accessor,
+          /*dimension_travel_info=*/{},
           /*resource=*/nullptr,
           /*optimize_vehicle_costs=*/optimal_cost != nullptr,
-      solver_[vehicle].get(), /*cumul_values=*/nullptr,
+          solver_[vehicle].get(), /*cumul_values=*/nullptr,
           /*break_values=*/nullptr, optimal_cost, &transit_cost);
   if (status != DimensionSchedulingStatus::INFEASIBLE &&
       optimal_cost != nullptr) {
@@ -236,11 +236,11 @@ LocalDimensionCumulOptimizer::ComputeRouteCumulCostWithoutFixedTransits(
     int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
     int64_t* optimal_cost_without_transits) {
   return optimizer_core_.OptimizeSingleRouteWithResource(
-          vehicle, next_accessor,
-          /*dimension_travel_info=*/{},
-          /*resource=*/nullptr,
-          /*optimize_vehicle_costs=*/optimal_cost_without_transits != nullptr,
-          solver_[vehicle].get(), /*cumul_values=*/nullptr,
+      vehicle, next_accessor,
+      /*dimension_travel_info=*/{},
+      /*resource=*/nullptr,
+      /*optimize_vehicle_costs=*/optimal_cost_without_transits != nullptr,
+      solver_[vehicle].get(), /*cumul_values=*/nullptr,
       /*break_values=*/nullptr, optimal_cost_without_transits, nullptr);
 }
 
@@ -905,8 +905,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     if (costs_without_transits != nullptr) {
       costs_without_transits->at(i) =
           optimize_vehicle_costs
-                         ? CapAdd(cost_offset, solver->GetObjectiveValue())
-                         : 0;
+              ? CapAdd(cost_offset, solver->GetObjectiveValue())
+              : 0;
     }
 
     if (cumul_values != nullptr) {
@@ -1196,7 +1196,7 @@ void DimensionCumulOptimizerCore::InitOptimizer(
 }
 
 bool DimensionCumulOptimizerCore::ExtractRouteCumulBounds(
-    const std::vector<int64_t>& route, int64_t cumul_offset) {
+    absl::Span<const int64_t> route, int64_t cumul_offset) {
   const int route_size = route.size();
   current_route_min_cumuls_.resize(route_size);
   current_route_max_cumuls_.resize(route_size);
@@ -1906,12 +1906,14 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     solver->SetCoefficient(ct, lp_cumuls.back(), 1);
     solver->SetCoefficient(ct, lp_cumuls.front(), -1);
   }
-  // Add span cost.
+  // Add span and slack costs.
   // NOTE: The fixed transit is removed from the span cost since it doesn't
   // affect the optimization of the scheduling of the route.
   const int64_t span_cost_coef =
       dimension_->GetSpanCostCoefficientForVehicle(vehicle);
-  if (optimize_costs && span_cost_coef > 0) {
+  const int64_t slack_cost_coef = CapAdd(
+      span_cost_coef, dimension_->GetSlackCostCoefficientForVehicle(vehicle));
+  if (optimize_costs && slack_cost_coef > 0) {
     // span_without_fixed_transit_var =
     //                  end_cumul - start_cumul - total_fixed_transit
     const int span_without_fixed_transit_var =
@@ -1923,7 +1925,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
                                  {lp_cumuls.front(), -1},
                                  {span_without_fixed_transit_var, -1}});
     solver->SetObjectiveCoefficient(span_without_fixed_transit_var,
-                                    span_cost_coef);
+                                    slack_cost_coef);
   }
   // Add soft span cost.
   if (optimize_costs && dimension_->HasSoftSpanUpperBounds()) {
@@ -2442,8 +2444,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
     // and
     // A(r).end_domain.Min() <= cumul[End(v)] <= A(r).end_domain.Max().
     DCHECK_EQ(resource_group.Index(), rg_index);
-      for (int v : resource_group.GetVehiclesRequiringAResource()) {
-        if (vehicle_constraints[v] == kNoConstraint) continue;
+    for (int v : resource_group.GetVehiclesRequiringAResource()) {
+      if (vehicle_constraints[v] == kNoConstraint) continue;
       IntVar* const resource_var = model.ResourceVar(v, rg_index);
       std::unique_ptr<IntVarIterator> it(
           resource_var->MakeDomainIterator(false));
@@ -2614,9 +2616,10 @@ DimensionSchedulingStatus GlobalDimensionCumulOptimizer::ComputePackedCumuls(
 
 namespace {
 
-bool AllValuesContained(const IntVar& var, const std::vector<int>& values) {
+bool AllValuesContainedExcept(const IntVar& var, const std::vector<int>& values,
+                              const absl::flat_hash_set<int>& ignored_values) {
   for (int val : values) {
-    if (!var.Contains(val)) return false;
+    if (!ignored_values.contains(val) && !var.Contains(val)) return false;
   }
   return true;
 }
@@ -2642,6 +2645,9 @@ void MoveValuesToIndicesFrom(std::vector<T>* out_values,
 
 bool ComputeVehicleToResourceClassAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
+    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+                             absl::flat_hash_set<int>>&
+        ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
     bool optimize_vehicle_costs, LocalDimensionCumulOptimizer* lp_optimizer,
@@ -2683,7 +2689,10 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
     const RoutingModel::ResourceClassIndex resource_class =
         resource_group.GetResourceClassIndex(res);
     const int rc_index = resource_class.value();
-    if (resource_class_considered[rc_index]) {
+    const absl::flat_hash_set<int>& ignored_resources =
+        ignored_resources_per_class[resource_class];
+    if (resource_class_considered[rc_index] ||
+        ignored_resources.contains(res)) {
       continue;
     }
     resource_class_considered[rc_index] = true;
@@ -2691,9 +2700,9 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
     // all incompatibility reasons between vehicles and resources. If the
     // following DCHECK fails, the resource classes should be adapted
     // accordingly.
-    DCHECK(AllValuesContained(
-        *resource_var,
-        resource_group.GetResourceIndicesInClass(resource_class)));
+    DCHECK(AllValuesContainedExcept(
+        *resource_var, resource_group.GetResourceIndicesInClass(resource_class),
+        ignored_resources));
     considered_resource_indices.push_back(res);
   }
   const bool use_mp_optimizer =
@@ -2784,13 +2793,22 @@ int64_t ComputeBestVehicleToResourceAssignment(
     const std::vector<int>& vehicles,
     const absl::StrongVector<RoutingModel::ResourceClassIndex,
                              std::vector<int>>& resource_indices_per_class,
+    const absl::StrongVector<RoutingModel::ResourceClassIndex,
+                             absl::flat_hash_set<int>>&
+        ignored_resources_per_class,
     std::function<const std::vector<int64_t>*(int)>
         vehicle_to_resource_class_assignment_costs,
     std::vector<int>* resource_indices) {
-  const int num_resources = absl::c_accumulate(
+  const int total_num_resources = absl::c_accumulate(
       resource_indices_per_class, 0,
       [](int acc, const std::vector<int>& res) { return acc + res.size(); });
-  DCHECK_GE(num_resources, 1);  // Else this whole function doesn't make sense.
+  DCHECK_GE(total_num_resources, 1);
+  const int num_ignored_resources =
+      absl::c_accumulate(ignored_resources_per_class, 0,
+                         [](int acc, const absl::flat_hash_set<int>& res) {
+                           return acc + res.size();
+                         });
+  const int num_resources = total_num_resources - num_ignored_resources;
   const int num_vehicles = vehicles.size();
   int num_total_vehicles = -1;
   if (resource_indices != nullptr) {
@@ -2898,12 +2916,15 @@ int64_t ComputeBestVehicleToResourceAssignment(
   }
 
   // Add resource-class->sink arcs to the flow. The capacity on these arcs is
-  // the number of resources for the corresponding class.
+  // the number of available resources for the corresponding class.
   using RCIndex = RoutingModel::ResourceClassIndex;
   for (int rc = 0; rc < num_resource_classes; rc++) {
-    flow.AddArcWithCapacityAndUnitCost(
-        flow_rc_index(rc), sink_index,
-        resource_indices_per_class[RCIndex(rc)].size(), 0);
+    const RCIndex rci(rc);
+    const int num_available_res = resource_indices_per_class[rci].size() -
+                                  ignored_resources_per_class[rci].size();
+    DCHECK_GE(num_available_res, 0);
+    flow.AddArcWithCapacityAndUnitCost(flow_rc_index(rc), sink_index,
+                                       num_available_res, 0);
   }
 
   // Set the flow supply.
@@ -2928,11 +2949,18 @@ int64_t ComputeBestVehicleToResourceAssignment(
       for (int rc = 0; rc < num_resource_classes; rc++) {
         const ArcIndex arc = vehicle_to_rc_arc_index[vi][rc];
         if (arc >= 0 && flow.Flow(arc) > 0) {
+          const RCIndex rci(rc);
           const std::vector<int>& class_resource_indices =
-              resource_indices_per_class[RCIndex(rc)];
-          const int pos = current_resource_pos_for_class[rc]++;
+              resource_indices_per_class[rci];
+          const absl::flat_hash_set<int>& ignored_resources =
+              ignored_resources_per_class[rci];
+          int& pos = current_resource_pos_for_class[rc];
           DCHECK_LT(pos, class_resource_indices.size());
-          resource_indices->at(vehicles[vi]) = class_resource_indices[pos];
+          while (ignored_resources.contains(class_resource_indices[pos])) {
+            pos++;
+            DCHECK_LT(pos, class_resource_indices.size());
+          }
+          resource_indices->at(vehicles[vi]) = class_resource_indices[pos++];
           break;
         }
       }

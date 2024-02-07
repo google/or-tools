@@ -18,6 +18,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -49,6 +50,8 @@ OrthogonalPackingInfeasibilityDetector::
                    num_trivial_conflicts_});
   stats.push_back({"OrthogonalPackingInfeasibilityDetector/conflicts_two_items",
                    num_conflicts_two_items_});
+  stats.push_back({"OrthogonalPackingInfeasibilityDetector/no_energy_conflict",
+                   num_scheduling_possible_});
 
   shared_stats_->AddStats(stats);
 }
@@ -218,6 +221,94 @@ std::vector<int> GetDffConflict(
     }
   }
   return result;
+}
+
+// Tries a simple heuristic to find a solution for the Resource-Constrained
+// Project Scheduling Problem (RCPSP). The RCPSP can be mapped to a
+// 2d bin packing where one dimension (say, x) is chosen to represent the time,
+// and every item is cut into items with size_x = 1 that must remain consecutive
+// in the x-axis but do not need to be aligned on the y axis. This is often
+// called the cumulative relaxation of the 2d bin packing problem.
+//
+//  Bin-packing solution     RCPSP solution
+//    ---------------       ---------------
+//    | **********  |       |   *****     |
+//    | **********  |       |   *****     |
+//    |   #####     |       | **#####***  |
+//    |   #####     |       | **#####***  |
+//    ---------------       ---------------
+//
+// One interesting property is if we find an energy conflict using a
+// superadditive function it means the problem is infeasible both interpreted as
+// a 2d bin packing and as a RCPSP problem. In practice, that means that if we
+// find a RCPSP solution for a 2d bin packing problem, there is no point on
+// using Maximal DFFs to search for energy conflicts.
+//
+// Returns true if it found a feasible solution to the RCPSP problem.
+bool FindHeuristicSchedulingSolution(
+    absl::Span<const IntegerValue> sizes,
+    absl::Span<const IntegerValue> demands,
+    absl::Span<const int> heuristic_order, IntegerValue global_end_max,
+    IntegerValue capacity_max,
+    std::vector<std::pair<IntegerValue, IntegerValue>>& profile,
+    std::vector<std::pair<IntegerValue, IntegerValue>>& new_profile) {
+  // The profile (and new profile) is a set of (time, capa_left) pairs, ordered
+  // by increasing time and capa_left.
+  profile.clear();
+  profile.emplace_back(kMinIntegerValue, capacity_max);
+  profile.emplace_back(kMaxIntegerValue, capacity_max);
+  IntegerValue start_of_previous_task = kMinIntegerValue;
+  for (int i = 0; i < heuristic_order.size(); i++) {
+    const IntegerValue event_size = sizes[heuristic_order[i]];
+    const IntegerValue event_demand = demands[heuristic_order[i]];
+    const IntegerValue event_start_min = 0;
+    const IntegerValue event_start_max = global_end_max - event_size;
+    const IntegerValue start_min =
+        std::max(event_start_min, start_of_previous_task);
+
+    // Iterate on the profile to find the step that contains start_min.
+    // Then push until we find a step with enough capacity.
+    int current = 0;
+    while (profile[current + 1].first <= start_min ||
+           profile[current].second < event_demand) {
+      ++current;
+    }
+
+    const IntegerValue actual_start =
+        std::max(start_min, profile[current].first);
+    start_of_previous_task = actual_start;
+
+    // Compatible with the event.start_max ?
+    if (actual_start > event_start_max) return false;
+
+    const IntegerValue actual_end = actual_start + event_size;
+
+    // No need to update the profile on the last loop.
+    if (i == heuristic_order.size() - 1) break;
+
+    // Update the profile.
+    new_profile.clear();
+    new_profile.push_back(
+        {actual_start, profile[current].second - event_demand});
+    ++current;
+
+    while (profile[current].first < actual_end) {
+      new_profile.push_back(
+          {profile[current].first, profile[current].second - event_demand});
+      ++current;
+    }
+
+    if (profile[current].first > actual_end) {
+      new_profile.push_back(
+          {actual_end, new_profile.back().second + event_demand});
+    }
+    while (current < profile.size()) {
+      new_profile.push_back(profile[current]);
+      ++current;
+    }
+    profile.swap(new_profile);
+  }
+  return true;
 }
 
 }  // namespace
@@ -433,10 +524,17 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
 
   std::sort(index_by_decreasing_x_size_.begin(),
             index_by_decreasing_x_size_.end(),
-            [&sizes_x](int a, int b) { return sizes_x[a] > sizes_x[b]; });
+            [&sizes_x, &sizes_y](int a, int b) {
+              // Break ties with y-size
+              return std::tie(sizes_x[a], sizes_y[a]) >
+                     std::tie(sizes_x[b], sizes_y[b]);
+            });
   std::sort(index_by_decreasing_y_size_.begin(),
             index_by_decreasing_y_size_.end(),
-            [&sizes_y](int a, int b) { return sizes_y[a] > sizes_y[b]; });
+            [&sizes_y, &sizes_x](int a, int b) {
+              return std::tie(sizes_y[a], sizes_x[a]) >
+                     std::tie(sizes_y[b], sizes_x[b]);
+            });
 
   // First look for pairwise incompatible pairs.
   if (options.use_pairwise) {
@@ -530,6 +628,22 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
   }
 
   if (options.use_dff_f2) {
+    // Checking for conflicts using f_2 is expensive, so first try a quick
+    // algorithm to check if there is no conflict to be found. See the comments
+    // on top of FindHeuristicSchedulingSolution().
+    if (FindHeuristicSchedulingSolution(
+            sizes_x, sizes_y, index_by_decreasing_x_size_,
+            bounding_box_size.first, bounding_box_size.second,
+            scheduling_profile_, new_scheduling_profile_) ||
+        FindHeuristicSchedulingSolution(
+            sizes_y, sizes_x, index_by_decreasing_y_size_,
+            bounding_box_size.second, bounding_box_size.first,
+            scheduling_profile_, new_scheduling_profile_)) {
+      num_scheduling_possible_++;
+      CHECK(result.result_ != OrthogonalPackingResult::Status::INFEASIBLE);
+      return result;
+    }
+
     // We only check for conflicts applying this DFF on heights and widths, but
     // not on both, which would be too expensive if done naively.
     auto conflict = CheckFeasibilityWithDualFunction2(

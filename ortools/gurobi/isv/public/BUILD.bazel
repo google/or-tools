@@ -11,37 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(
-    default_visibility = [
-        "//ortools/math_opt:__subpackages__",
-    ],
-)
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "g_gurobi",
-    srcs = [
-        "g_gurobi.cc",
-    ],
-    hdrs = [
-        "g_gurobi.h",
-    ],
-    visibility = [
-        "//ortools/gurobi:__subpackages__",
-        "//ortools/math_opt:__subpackages__",
-    ],
+    name = "gurobi_isv",
+    srcs = ["gurobi_isv.cc"],
+    hdrs = ["gurobi_isv.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:source_location",
-        "//ortools/base:status_macros",
         "//ortools/gurobi:environment",
-        "//ortools/gurobi/isv/public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/log:die_if_null",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/strings",
     ],
 )

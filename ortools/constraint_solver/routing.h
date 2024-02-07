@@ -342,23 +342,29 @@ class RoutingModel {
     /// This is sorted by the natural operator < (and *not* by DimensionIndex).
     struct DimensionCost {
       int64_t transit_evaluator_class;
-      int64_t cost_coefficient;
+      // TODO(user): replace span_cost_coefficient by
+      // transit_cost_coefficient and add the span coefficient to the slack one.
+      int64_t span_cost_coefficient;
+      int64_t slack_cost_coefficient;
       const RoutingDimension* dimension;
       bool operator<(const DimensionCost& cost) const {
-        if (transit_evaluator_class != cost.transit_evaluator_class) {
-          return transit_evaluator_class < cost.transit_evaluator_class;
-        }
-        return cost_coefficient < cost.cost_coefficient;
+        return std::tie(transit_evaluator_class, span_cost_coefficient,
+                        slack_cost_coefficient) <
+               std::tie(cost.transit_evaluator_class,
+                        cost.span_cost_coefficient,
+                        cost.slack_cost_coefficient);
       }
 
       friend bool operator==(const DimensionCost& c1, const DimensionCost& c2) {
         return c1.transit_evaluator_class == c2.transit_evaluator_class &&
-               c1.cost_coefficient == c2.cost_coefficient;
+               c1.span_cost_coefficient == c2.span_cost_coefficient &&
+               c1.slack_cost_coefficient == c2.slack_cost_coefficient;
       }
       template <typename H>
       friend H AbslHashValue(H h, const DimensionCost& cost) {
         return H::combine(std::move(h), cost.transit_evaluator_class,
-                          cost.cost_coefficient);
+                          cost.span_cost_coefficient,
+                          cost.slack_cost_coefficient);
       }
     };
     std::vector<DimensionCost>
@@ -371,7 +377,7 @@ class RoutingModel {
       return c1.evaluator_index == c2.evaluator_index &&
              c1.dimension_transit_evaluator_class_and_cost_coefficient ==
                  c2.dimension_transit_evaluator_class_and_cost_coefficient;
-      }
+    }
     template <typename H>
     friend H AbslHashValue(H h, const CostClass& c) {
       return H::combine(
@@ -2529,6 +2535,8 @@ class RoutingModel {
   Assignment* assignment_ = nullptr;
   Assignment* preassignment_ = nullptr;
   Assignment* tmp_assignment_ = nullptr;
+  LocalSearchOperator* primary_ls_operator_ = nullptr;
+  LocalSearchOperator* secondary_ls_operator_ = nullptr;
   std::vector<IntVar*> extra_vars_;
   std::vector<IntervalVar*> extra_intervals_;
   std::vector<LocalSearchOperator*> extra_operators_;
@@ -3178,6 +3186,15 @@ class RoutingDimension {
   ///   span_cost = coefficient * (dimension end value - dimension start value).
   void SetSpanCostCoefficientForVehicle(int64_t coefficient, int vehicle);
   void SetSpanCostCoefficientForAllVehicles(int64_t coefficient);
+  /// Sets a cost proportional to the dimension total slack on a given vehicle,
+  /// or on all vehicles at once. "coefficient" must be nonnegative.
+  /// This is handy to model costs only proportional to idle time when the
+  /// dimension represents time.
+  /// The cost for a vehicle is
+  ///   slack_cost = coefficient *
+  ///         (dimension end value - dimension start value - total_transit).
+  void SetSlackCostCoefficientForVehicle(int64_t coefficient, int vehicle);
+  void SetSlackCostCoefficientForAllVehicles(int64_t coefficient);
   /// Sets a cost proportional to the *global* dimension span, that is the
   /// difference between the largest value of route end cumul variables and
   /// the smallest value of route start cumul variables.
@@ -3388,6 +3405,22 @@ class RoutingDimension {
     return vehicle_span_cost_coefficients_;
   }
 #endif  // SWIG
+#ifndef SWIG
+  const std::vector<int64_t>& vehicle_slack_cost_coefficients() const {
+    return vehicle_slack_cost_coefficients_;
+  }
+#endif  // SWIG
+  int64_t GetSlackCostCoefficientForVehicle(int vehicle) const {
+    return vehicle_slack_cost_coefficients_[vehicle];
+  }
+#ifndef SWIG
+  int64_t GetSlackCostCoefficientForVehicleClass(
+      RoutingVehicleClassIndex vehicle_class) const {
+    const int vehicle = model_->GetVehicleOfClass(vehicle_class);
+    DCHECK_NE(vehicle, -1);
+    return GetSlackCostCoefficientForVehicle(vehicle);
+  }
+#endif  // SWIG
   int64_t global_span_cost_coefficient() const {
     return global_span_cost_coefficient_;
   }
@@ -3548,6 +3581,7 @@ class RoutingDimension {
   std::vector<int64_t> vehicle_span_upper_bounds_;
   int64_t global_span_cost_coefficient_;
   std::vector<int64_t> vehicle_span_cost_coefficients_;
+  std::vector<int64_t> vehicle_slack_cost_coefficients_;
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
   std::vector<SoftBound> cumul_var_soft_lower_bound_;
   std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;

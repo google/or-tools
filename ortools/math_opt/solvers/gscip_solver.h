@@ -40,6 +40,7 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "scip/type_cons.h"
 #include "scip/type_var.h"
@@ -155,7 +156,13 @@ class GScipSolver : public SolverInterface {
   // Returns the indicator constraints with non-binary indicator variables.
   InvalidIndicators ListInvalidIndicators() const;
 
+  // Warning: it is critical that GScipConstraintHandlerData outlive its
+  // associated SCIP_CONS*. When GScip fails, we want this to be cleaned up
+  // after gscip_. See documentation on
+  // GScipConstraintHandler::AddCallbackConstraint().
+  std::unique_ptr<GScipSolverConstraintData> constraint_data_;
   const std::unique_ptr<GScip> gscip_;
+  GScipSolverConstraintHandler constraint_handler_;
 
   gtl::linked_hash_map<int64_t, SCIP_VAR*> variables_;
   bool has_quadratic_objective_ = false;

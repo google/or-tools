@@ -20,12 +20,122 @@
 #include <utility>
 #include <vector>
 
+#include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_ils.pb.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {
+namespace {
+
+GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
+MakeGlobalCheapestInsertionParameters(
+    const RoutingSearchParameters& search_parameters, bool is_sequential) {
+  GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
+      gci_parameters;
+  gci_parameters.is_sequential = is_sequential;
+  gci_parameters.farthest_seeds_ratio =
+      search_parameters.cheapest_insertion_farthest_seeds_ratio();
+  gci_parameters.neighbors_ratio =
+      search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
+  gci_parameters.min_neighbors =
+      search_parameters.cheapest_insertion_first_solution_min_neighbors();
+  gci_parameters.use_neighbors_ratio_for_initialization =
+      search_parameters
+          .cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization();  // NOLINT
+  gci_parameters.add_unperformed_entries =
+      search_parameters.cheapest_insertion_add_unperformed_entries();
+  return gci_parameters;
+}
+
+// Returns a ruin procedure based to the given parameters.
+std::unique_ptr<RuinProcedure> MakeRuinProcedure(
+    const RuinRecreateParameters& parameters, RoutingModel* model) {
+  switch (parameters.ruin_strategy()) {
+    case RuinStrategy::UNSET:
+      LOG(ERROR) << "Unset ruin procedure, using "
+                    "RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL.";
+      [[fallthrough]];
+    case RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL:
+      return std::make_unique<CloseRoutesRemovalRuinProcedure>(
+          model, parameters.num_ruined_routes());
+      break;
+    default:
+      LOG(ERROR) << "Unsupported ruin procedure.";
+      return nullptr;
+  }
+}
+
+// Returns a recreate procedure based on the given parameters.
+std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
+    const RoutingSearchParameters& parameters, RoutingModel* model,
+    std::function<bool()> stop_search,
+    LocalSearchFilterManager* filter_manager) {
+  switch (parameters.iterated_local_search_parameters()
+              .ruin_recreate_parameters()
+              .recreate_strategy()) {
+    case FirstSolutionStrategy::UNSET:
+      LOG(ERROR) << "Unset recreate procedure, using "
+                    "FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION";
+      [[fallthrough]];
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
+      return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
+          model, std::move(stop_search),
+          absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
+          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          filter_manager, model->GetBinCapacities());
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
+      return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
+          model, std::move(stop_search),
+          /*evaluator=*/nullptr,
+          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          filter_manager, model->GetBinCapacities());
+    case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
+      GlobalCheapestInsertionFilteredHeuristic::
+          GlobalCheapestInsertionParameters gci_parameters =
+              MakeGlobalCheapestInsertionParameters(parameters,
+                                                    /*is_sequential=*/true);
+      return std::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
+          model, std::move(stop_search),
+          absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
+          [model](int64_t i) { return model->UnperformedPenaltyOrValue(0, i); },
+          filter_manager, gci_parameters);
+    }
+    case FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION: {
+      GlobalCheapestInsertionFilteredHeuristic::
+          GlobalCheapestInsertionParameters gci_parameters =
+              MakeGlobalCheapestInsertionParameters(parameters,
+                                                    /*is_sequential=*/false);
+      return std::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
+          model, std::move(stop_search),
+          absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
+          [model](int64_t i) { return model->UnperformedPenaltyOrValue(0, i); },
+          filter_manager, gci_parameters);
+    }
+    default:
+      LOG(ERROR) << "Unsupported recreate procedure.";
+      return nullptr;
+  }
+
+  return nullptr;
+}
+
+// Greedy criterion in which the reference assignment is only replaced by an
+// improving candidate assignment.
+class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
+ public:
+  bool Accept(const Assignment* candidate,
+              const Assignment* reference) const override {
+    return candidate->ObjectiveValue() < reference->ObjectiveValue();
+  }
+};
+
+}  // namespace
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
     RoutingModel* model, size_t num_routes)
@@ -123,11 +233,54 @@ class RuinAndRecreateDecisionBuilder : public DecisionBuilder {
 };
 
 DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
-    RoutingModel* model, const Assignment* assignment,
-    std::unique_ptr<RuinProcedure> ruin,
-    std::unique_ptr<RoutingFilteredHeuristic> recreate) {
+    const RoutingSearchParameters& parameters, RoutingModel* model,
+    const Assignment* assignment, std::function<bool()> stop_search,
+    LocalSearchFilterManager* filter_manager) {
+  std::unique_ptr<RuinProcedure> ruin = MakeRuinProcedure(
+      parameters.iterated_local_search_parameters().ruin_recreate_parameters(),
+      model);
+
+  std::unique_ptr<RoutingFilteredHeuristic> recreate = MakeRecreateProcedure(
+      parameters, model, std::move(stop_search), filter_manager);
+
   return model->solver()->RevAlloc(new RuinAndRecreateDecisionBuilder(
       assignment, std::move(ruin), std::move(recreate)));
+}
+
+DecisionBuilder* MakePerturbationDecisionBuilder(
+    const RoutingSearchParameters& parameters, RoutingModel* model,
+    const Assignment* assignment, std::function<bool()> stop_search,
+    LocalSearchFilterManager* filter_manager) {
+  switch (
+      parameters.iterated_local_search_parameters().perturbation_strategy()) {
+    case PerturbationStrategy::UNSET:
+      LOG(ERROR) << "Unset perturbation strategy, using "
+                    "PerturbationStrategy::RUIN_AND_RECREATE.";
+      [[fallthrough]];
+    case PerturbationStrategy::RUIN_AND_RECREATE:
+      return MakeRuinAndRecreateDecisionBuilder(parameters, model, assignment,
+                                                std::move(stop_search),
+                                                filter_manager);
+    default:
+      LOG(ERROR) << "Unsupported perturbation strategy.";
+      return nullptr;
+  }
+}
+
+std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
+    const RoutingSearchParameters& parameters) {
+  CHECK(parameters.has_iterated_local_search_parameters());
+  switch (parameters.iterated_local_search_parameters().acceptance_strategy()) {
+    case AcceptanceStrategy::UNSET:
+      LOG(ERROR) << "Unset acceptance strategy, using "
+                    "AcceptanceStrategy::GREEDY_DESCENT.";
+      [[fallthrough]];
+    case AcceptanceStrategy::GREEDY_DESCENT:
+      return std::make_unique<GreedyDescentAcceptanceCriterion>();
+    default:
+      LOG(ERROR) << "Unsupported acceptance strategy.";
+      return nullptr;
+  }
 }
 
 }  // namespace operations_research

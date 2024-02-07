@@ -56,6 +56,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
+#include "absl/memory/memory.h"
 #include "absl/random/random.h"
 #include "absl/random/seed_sequences.h"
 #include "absl/random/uniform_int_distribution.h"
@@ -65,6 +66,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
@@ -317,7 +319,7 @@ class SecondStageSolver {
       FacilityLocationInstance instance, math_opt::SolverType solver_type);
 
   absl::StatusOr<std::pair<double, Cut>> Solve(
-      const std::vector<double>& z_values, double w_value,
+      absl::Span<const double> z_values, double w_value,
       double fist_stage_objective);
 
  private:
@@ -428,7 +430,7 @@ SecondStageSolver::SecondStageSolver(
 }
 
 absl::StatusOr<std::pair<double, Cut>> SecondStageSolver::Solve(
-    const std::vector<double>& z_values, const double w_value,
+    absl::Span<const double> z_values, const double w_value,
     const double fist_stage_objective) {
   const int num_facilities = network_.num_facilities();
 

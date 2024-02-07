@@ -47,11 +47,15 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -133,8 +137,7 @@ double L2Loss(const LinearModel& model,
 // Computes and returns the linear function minimizing L2Loss on train_data by
 // solving a quadratic optimization problem, or returns a Status error if the
 // solver fails to find an optimal solution.
-absl::StatusOr<LinearModel> Train(
-    const std::vector<LabeledExample>& train_data) {
+absl::StatusOr<LinearModel> Train(absl::Span<const LabeledExample> train_data) {
   const int num_features = static_cast<int>(train_data[0].xs.size());
   const int num_train = static_cast<int>(train_data.size());
   math_opt::Model model("linear_regression");

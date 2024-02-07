@@ -1,13 +1,13 @@
 diff --git a/src/lpi/lpi_glop.cpp b/src/lpi/lpi_glop.cpp
-index 2471778a8f..17fd1e8c34 100644
+index 2471778a8f..3326ac7292 100644
 --- a/src/lpi/lpi_glop.cpp
 +++ b/src/lpi/lpi_glop.cpp
 @@ -51,7 +51,6 @@
  #include "ortools/util/time_limit.h"
-
+ 
  #include "ortools/base/logging.h"
 -#include "ortools/base/vlog_is_on.h"
-
+ 
  #include "lpi/lpi.h"
  #include "scip/pub_message.h"
 @@ -2942,12 +2941,12 @@ SCIP_RETCODE SCIPlpiSetIntpar(
@@ -26,7 +26,7 @@ index 2471778a8f..17fd1e8c34 100644
        }
        break;
 @@ -3190,7 +3189,7 @@ SCIP_RETCODE SCIPlpiReadLP(
-
+ 
     const std::string filespec(fname);
     MPModelProto proto;
 -   if ( ! ReadFileToProto(filespec, &proto) )
@@ -34,7 +34,7 @@ index 2471778a8f..17fd1e8c34 100644
     {
        SCIPerrorMessage("Could not read <%s>\n", fname);
        return SCIP_READERROR;
-@@ -3214,6 +3213,6 @@ SCIP_RETCODE SCIPlpiWriteLP(
+@@ -3214,7 +3213,7 @@ SCIP_RETCODE SCIPlpiWriteLP(
     MPModelProto proto;
     LinearProgramToMPModelProto(*lpi->linear_program, &proto);
     const std::string filespec(fname);

@@ -69,6 +69,17 @@ cc_proto_library(
 )
 
 proto_library(
+    name = "routing_ils_proto",
+    srcs = ["routing_ils.proto"],
+    deps = [":routing_enums_proto"],
+)
+
+cc_proto_library(
+    name = "routing_ils_cc_proto",
+    deps = ["routing_ils_proto"],
+)
+
+proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
 )
@@ -229,6 +240,7 @@ proto_library(
     srcs = ["routing_parameters.proto"],
     deps = [
         ":routing_enums_proto",
+        ":routing_ils_proto",
         ":solver_parameters_proto",
         "//ortools/sat:sat_parameters_proto",
         "//ortools/util:optional_boolean_proto",

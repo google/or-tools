@@ -130,8 +130,11 @@ class OrthogonalPackingInfeasibilityDetector {
       absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
       IntegerValue y_bb_size, int max_number_of_parameters_to_check);
 
+  // Buffers cleared and reused at each call of TestFeasibility()
   std::vector<int> index_by_decreasing_x_size_;
   std::vector<int> index_by_decreasing_y_size_;
+  std::vector<std::pair<IntegerValue, IntegerValue>> scheduling_profile_;
+  std::vector<std::pair<IntegerValue, IntegerValue>> new_scheduling_profile_;
 
   int64_t num_calls_ = 0;
   int64_t num_conflicts_ = 0;
@@ -139,6 +142,7 @@ class OrthogonalPackingInfeasibilityDetector {
   int64_t num_trivial_conflicts_ = 0;
   int64_t num_conflicts_dff2_ = 0;
   int64_t num_conflicts_dff0_ = 0;
+  int64_t num_scheduling_possible_ = 0;
 
   absl::BitGenRef random_;
   SharedStatistics* shared_stats_;

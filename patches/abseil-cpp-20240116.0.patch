@@ -3,9 +3,9 @@ index 47f3beeb..43217c85 100644
 --- a/CMake/AbseilDll.cmake
 +++ b/CMake/AbseilDll.cmake
 @@ -624,31 +624,44 @@ set(ABSL_INTERNAL_TEST_DLL_TARGETS
-
+ 
  include(CheckCXXSourceCompiles)
-
+ 
 -check_cxx_source_compiles(
 -  [==[
 -#ifdef _MSC_VER
@@ -38,7 +38,7 @@ index 47f3beeb..43217c85 100644
 +  ]==]
    ABSL_INTERNAL_AT_LEAST_CXX17)
 +endif()
-
+ 
 -check_cxx_source_compiles(
 -  [==[
 -#ifdef _MSC_VER
@@ -66,7 +66,7 @@ index 47f3beeb..43217c85 100644
 +  ]==]
    ABSL_INTERNAL_AT_LEAST_CXX20)
 +endif()
-
+ 
  if(ABSL_INTERNAL_AT_LEAST_CXX20)
    set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_20)
 @@ -656,6 +669,7 @@ elseif(ABSL_INTERNAL_AT_LEAST_CXX17)
@@ -75,6 +75,5 @@ index 47f3beeb..43217c85 100644
    set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_14)
 +  message(FATAL_ERROR "Should not pass here !!!")
  endif()
-
+ 
  function(absl_internal_dll_contains)
-

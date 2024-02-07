@@ -61,18 +61,21 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/random/random.h"
-#include "absl/random/uniform_real_distribution.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status_builder.h"
+#include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/port/proto_utils.h"
 
 ABSL_FLAG(int, num_cities, 50, "Number of cities in random TSP.");
 ABSL_FLAG(std::string, output, "",
@@ -83,6 +86,9 @@ ABSL_FLAG(int, threads, 0,
           "How many threads to solve with, or solver default if <= 0.");
 ABSL_FLAG(bool, solve_logs, false,
           "Have the solver print logs to standard out.");
+ABSL_FLAG(operations_research::math_opt::SolverType, solver,
+          operations_research::math_opt::SolverType::kGscip,
+          "What underlying MIP solver to use (must support callbacks).");
 
 namespace {
 
@@ -113,7 +119,7 @@ class EdgeVariables {
     return i > j ? variables_[i][j] : variables_[j][i];
   }
 
-  int num_cities() const { return variables_.size(); }
+  int num_cities() const { return static_cast<int>(variables_.size()); }
 
  private:
   std::vector<std::vector<math_opt::Variable>> variables_;
@@ -139,8 +145,8 @@ std::vector<std::pair<double, double>> TestCities() {
 // Given an n city TSP instance, computes the n by n distance matrix using the
 // Euclidean distance.
 std::vector<std::vector<double>> DistanceMatrix(
-    const std::vector<std::pair<double, double>>& cities) {
-  const int num_cities = cities.size();
+    absl::Span<const std::pair<double, double>> cities) {
+  const int num_cities = static_cast<int>(cities.size());
   std::vector<std::vector<double>> distance_matrix(
       num_cities, std::vector<double>(num_cities, 0.0));
   for (int i = 0; i < num_cities; ++i) {
@@ -178,8 +184,7 @@ std::vector<std::vector<bool>> EdgeValues(
 // it is assumed that edge values respects the degree constraints (each row has
 // only two true entries). Each cycle is represented as a list of cities with
 // no repeats.
-std::vector<Cycle> FindCycles(
-    const std::vector<std::vector<bool>>& edge_values) {
+std::vector<Cycle> FindCycles(absl::Span<const std::vector<bool>> edge_values) {
   // Algorithm: maintain a "visited" bit for each city indicating if we have
   // formed a cycle containing this city. Consider the cities in order. When you
   // find an unvisited city, start a new cycle beginning at this city. Then,
@@ -191,7 +196,7 @@ std::vector<Cycle> FindCycles(
   // Note that for this algorithm, in each cycle, the city with lowest index
   // will be first, and the cycles will be sorted by their city of lowest index.
   // This is an implementation detail and should not be relied upon.
-  const int n = edge_values.size();
+  const int n = static_cast<int>(edge_values.size());
   std::vector<Cycle> result;
   std::vector<bool> visited(n, false);
   for (int i = 0; i < n; ++i) {
@@ -221,7 +226,7 @@ std::vector<Cycle> FindCycles(
 
 // Returns the cutset constraint for the given set of nodes.
 math_opt::BoundedLinearExpression CutsetConstraint(
-    const std::vector<int>& nodes, const EdgeVariables& edge_vars) {
+    absl::Span<const int> nodes, const EdgeVariables& edge_vars) {
   const int n = edge_vars.num_cities();
   const absl::flat_hash_set<int> node_set(nodes.begin(), nodes.end());
   std::vector<int> not_in_set;
@@ -242,8 +247,9 @@ math_opt::BoundedLinearExpression CutsetConstraint(
 // Solves the TSP by returning the ordering of the cities that minimizes travel
 // distance.
 absl::StatusOr<Cycle> SolveTsp(
-    const std::vector<std::pair<double, double>>& cities) {
-  const int n = cities.size();
+    const std::vector<std::pair<double, double>>& cities,
+    const math_opt::SolverType solver) {
+  const int n = static_cast<int>(cities.size());
   const std::vector<std::vector<double>> distance_matrix =
       DistanceMatrix(cities);
   CHECK_GE(n, 3);
@@ -290,7 +296,7 @@ absl::StatusOr<Cycle> SolveTsp(
     return result;
   };
   ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, math_opt::SolverType::kGurobi, args));
+                   math_opt::Solve(model, solver, args));
   RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Route length: " << result.objective_value() << std::endl;
   const std::vector<Cycle> cycles =
@@ -301,7 +307,7 @@ absl::StatusOr<Cycle> SolveTsp(
 }
 
 // Produces an SVG to draw a route for a TSP.
-std::string RouteSvg(const std::vector<std::pair<double, double>>& cities,
+std::string RouteSvg(absl::Span<const std::pair<double, double>> cities,
                      const Cycle& cycle) {
   constexpr int image_px = 1000;
   constexpr int r = 5;
@@ -327,30 +333,32 @@ std::string RouteSvg(const std::vector<std::pair<double, double>>& cities,
   return absl::StrJoin(svg_lines, "\n");
 }
 
-void RealMain() {
+absl::Status RealMain() {
   std::vector<std::pair<double, double>> cities;
   if (absl::GetFlag(FLAGS_test_instance)) {
     cities = TestCities();
   } else {
     cities = RandomCities(absl::GetFlag(FLAGS_num_cities));
   }
-  absl::StatusOr<Cycle> solution = SolveTsp(cities);
-  if (!solution.ok()) {
-    LOG(QFATAL) << solution.status();
-  }
-  const std::string svg = RouteSvg(cities, *solution);
+  ASSIGN_OR_RETURN(const Cycle solution,
+                   SolveTsp(cities, absl::GetFlag(FLAGS_solver)));
+  const std::string svg = RouteSvg(cities, solution);
   if (absl::GetFlag(FLAGS_output).empty()) {
     std::cout << svg << std::endl;
   } else {
-    QCHECK_OK(
+    RETURN_IF_ERROR(
         file::SetContents(absl::GetFlag(FLAGS_output), svg, file::Defaults()));
   }
+  return absl::OkStatus();
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  RealMain();
+  const absl::Status status = RealMain();
+  if (!status.ok()) {
+    LOG(QFATAL) << status;
+  }
   return 0;
 }
