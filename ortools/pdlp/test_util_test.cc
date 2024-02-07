@@ -13,6 +13,7 @@
 
 #include "ortools/pdlp/test_util.h"
 
+#define _USE_MATH_DEFINES  // Needed for visual studio for M_PI.
 #include <cmath>
 #include <deque>
 #include <limits>
