@@ -4,7 +4,8 @@ name: amd64 Web
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  Distros:
+  emscripten:
+    name: Linux • Emscripten
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
