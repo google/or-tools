@@ -155,7 +155,7 @@ endif()
 # ##############################################################################
 if(BUILD_PYTHON)
   # Find Python 3
-  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module OPTIONAL_COMPONENTS Development.Embed)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 
 if(BUILD_PYTHON AND BUILD_pybind11)
