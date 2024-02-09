@@ -213,6 +213,15 @@ class ActivityBoundHelper {
   bool PresolveEnforcement(absl::Span<const int> refs, ConstraintProto* ct,
                            absl::flat_hash_set<int>* literals_at_true);
 
+  // For each enforcement literal enf, if not(enf) implies that the constraint
+  // is trivial, then we can just remove not(enf) from the list.
+  //
+  // Actually, we could even "lift" such enforcement so that if it is negative
+  // the constraint is still trivial but tighter.
+  int RemoveEnforcementThatMakesConstraintTrivial(
+      absl::Span<const std::pair<int, int64_t>> boolean_terms,
+      const Domain& other_terms, const Domain& rhs, ConstraintProto* ct);
+
   // Partition the list of literals into disjoint at most ones. The returned
   // spans are only valid until another function from this class is used.
   std::vector<absl::Span<const int>> PartitionLiteralsIntoAmo(
@@ -221,11 +230,21 @@ class ActivityBoundHelper {
   // Returns true iff the given literal are in at most one relationship.
   bool IsAmo(absl::Span<const int> literals);
 
+  // Returns in how many amo var or Not(var) are part of.
+  int NumAmoForVariable(int var) const {
+    const Index i = IndexFromLiteral(var);
+    const Index j = IndexFromLiteral(NegatedRef(var));
+    return (i < amo_indices_.size() ? amo_indices_[i].size() : 0) +
+           (j < amo_indices_.size() ? amo_indices_[j].size() : 0);
+  }
+
  private:
   DEFINE_STRONG_INDEX_TYPE(Index);
   Index IndexFromLiteral(int ref) const {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
+
+  bool AppearInTriggeredAmo(int literal);
 
   int64_t ComputeActivity(
       bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
@@ -258,6 +277,7 @@ class ActivityBoundHelper {
   CompactVectorVector<int, int> part_to_literals_;
 
   absl::flat_hash_set<int> triggered_amo_;
+  absl::flat_hash_set<int> tmp_set_;
 };
 
 // Class to help detects clauses that differ on a single literal.

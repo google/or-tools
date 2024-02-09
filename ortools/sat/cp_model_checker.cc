@@ -506,8 +506,7 @@ std::string ValidateGraphInput(bool is_route, const GraphProto& graph) {
   return "";
 }
 
-std::string ValidateRoutesConstraint(const CpModelProto& model,
-                                     const ConstraintProto& ct) {
+std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
   int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
@@ -530,25 +529,6 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
   }
 
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
-}
-
-std::string ValidateDomainIsPositive(const CpModelProto& model, int ref,
-                                     absl::string_view ref_name) {
-  if (ref < 0) {
-    const IntegerVariableProto& var_proto = model.variables(NegatedRef(ref));
-    if (var_proto.domain(var_proto.domain_size() - 1) > 0) {
-      return absl::StrCat("Negative value in ", ref_name,
-                          " domain: negation of ",
-                          ProtobufDebugString(var_proto));
-    }
-  } else {
-    const IntegerVariableProto& var_proto = model.variables(ref);
-    if (var_proto.domain(0) < 0) {
-      return absl::StrCat("Negative value in ", ref_name,
-                          " domain: ", ProtobufDebugString(var_proto));
-    }
-  }
-  return "";
 }
 
 void AppendToOverflowValidator(const LinearExpressionProto& input,
@@ -1024,7 +1004,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
+        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
@@ -1609,11 +1589,91 @@ class ConstraintChecker {
     return true;
   }
 
+  bool ConstraintIsFeasible(const CpModelProto& model,
+                            const ConstraintProto& ct) {
+    // A non-enforced constraint is always feasible.
+    if (!ConstraintIsEnforced(ct)) return true;
+
+    const ConstraintProto::ConstraintCase type = ct.constraint_case();
+    switch (type) {
+      case ConstraintProto::ConstraintCase::kBoolOr:
+        return BoolOrConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kBoolAnd:
+        return BoolAndConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+        return AtMostOneConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+        return ExactlyOneConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kBoolXor:
+        return BoolXorConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kLinear:
+        return LinearConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kIntProd:
+        return IntProdConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kIntDiv:
+        return IntDivConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kIntMod:
+        return IntModConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kLinMax:
+        return LinMaxConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        return AllDiffConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kInterval:
+        if (!IntervalConstraintIsFeasible(ct)) {
+          if (ct.interval().has_start()) {
+            // Tricky: For simplified presolve, we require that a separate
+            // constraint is added to the model to enforce the "interval".
+            // This indicates that such a constraint was not added to the model.
+            // It should probably be a validation error, but it is hard to
+            // detect beforehand.
+            LOG(ERROR) << "Warning, an interval constraint was likely used "
+                          "without a corresponding linear constraint linking "
+                          "its start, size and end.";
+          }
+          return false;
+        }
+        return true;
+      case ConstraintProto::ConstraintCase::kNoOverlap:
+        return NoOverlapConstraintIsFeasible(model, ct);
+      case ConstraintProto::ConstraintCase::kNoOverlap2D:
+        return NoOverlap2DConstraintIsFeasible(model, ct);
+      case ConstraintProto::ConstraintCase::kCumulative:
+        return CumulativeConstraintIsFeasible(model, ct);
+      case ConstraintProto::ConstraintCase::kElement:
+        return ElementConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kTable:
+        return TableConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        return AutomatonConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kCircuit:
+        return CircuitConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kRoutes:
+        return RoutesConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kInverse:
+        return InverseConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kReservoir:
+        return ReservoirConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+        // Empty constraint is always feasible.
+        return true;
+      default:
+        LOG(FATAL) << "Unuspported constraint: " << ConstraintCaseName(type);
+        return false;
+    }
+  }
+
  private:
   const std::vector<int64_t> variable_values_;
 };
 
 }  // namespace
+
+bool ConstraintIsFeasible(const CpModelProto& model,
+                          const ConstraintProto& constraint,
+                          absl::Span<const int64_t> variable_values) {
+  ConstraintChecker checker(variable_values);
+  return checker.ConstraintIsFeasible(model, constraint);
+}
 
 bool SolutionIsFeasible(const CpModelProto& model,
                         absl::Span<const int64_t> variable_values,
@@ -1641,121 +1701,29 @@ bool SolutionIsFeasible(const CpModelProto& model,
 
   for (int c = 0; c < model.constraints_size(); ++c) {
     const ConstraintProto& ct = model.constraints(c);
-
-    if (!checker.ConstraintIsEnforced(ct)) continue;
-
-    bool is_feasible = true;
-    const ConstraintProto::ConstraintCase type = ct.constraint_case();
-    switch (type) {
-      case ConstraintProto::ConstraintCase::kBoolOr:
-        is_feasible = checker.BoolOrConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kBoolAnd:
-        is_feasible = checker.BoolAndConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kAtMostOne:
-        is_feasible = checker.AtMostOneConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kExactlyOne:
-        is_feasible = checker.ExactlyOneConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kBoolXor:
-        is_feasible = checker.BoolXorConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kLinear:
-        is_feasible = checker.LinearConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntProd:
-        is_feasible = checker.IntProdConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntDiv:
-        is_feasible = checker.IntDivConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kIntMod:
-        is_feasible = checker.IntModConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kLinMax:
-        is_feasible = checker.LinMaxConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kAllDiff:
-        is_feasible = checker.AllDiffConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kInterval:
-        if (!checker.IntervalConstraintIsFeasible(ct)) {
-          if (ct.interval().has_start()) {
-            // Tricky: For simplified presolve, we require that a separate
-            // constraint is added to the model to enforce the "interval".
-            // This indicates that such a constraint was not added to the model.
-            // It should probably be a validation error, but it is hard to
-            // detect beforehand.
-            LOG(ERROR) << "Warning, an interval constraint was likely used "
-                          "without a corresponding linear constraint linking "
-                          "its start, size and end.";
-          } else {
-            is_feasible = false;
-          }
-        }
-        break;
-      case ConstraintProto::ConstraintCase::kNoOverlap:
-        is_feasible = checker.NoOverlapConstraintIsFeasible(model, ct);
-        break;
-      case ConstraintProto::ConstraintCase::kNoOverlap2D:
-        is_feasible = checker.NoOverlap2DConstraintIsFeasible(model, ct);
-        break;
-      case ConstraintProto::ConstraintCase::kCumulative:
-        is_feasible = checker.CumulativeConstraintIsFeasible(model, ct);
-        break;
-      case ConstraintProto::ConstraintCase::kElement:
-        is_feasible = checker.ElementConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kTable:
-        is_feasible = checker.TableConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kAutomaton:
-        is_feasible = checker.AutomatonConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kCircuit:
-        is_feasible = checker.CircuitConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kRoutes:
-        is_feasible = checker.RoutesConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kInverse:
-        is_feasible = checker.InverseConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::kReservoir:
-        is_feasible = checker.ReservoirConstraintIsFeasible(ct);
-        break;
-      case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
-        // Empty constraint is always feasible.
-        break;
-      default:
-        LOG(FATAL) << "Unuspported constraint: " << ConstraintCaseName(type);
-    }
+    if (checker.ConstraintIsFeasible(model, ct)) continue;
 
     // Display a message to help debugging.
-    if (!is_feasible) {
-      VLOG(1) << "Failing constraint #" << c << " : "
-              << ProtobufShortDebugString(model.constraints(c));
-      if (mapping_proto != nullptr && postsolve_mapping != nullptr) {
-        std::vector<int> reverse_map(mapping_proto->variables().size(), -1);
-        for (int var = 0; var < postsolve_mapping->size(); ++var) {
-          reverse_map[(*postsolve_mapping)[var]] = var;
-        }
-        for (const int var : UsedVariables(model.constraints(c))) {
-          VLOG(1) << "var: " << var << " mapped_to: " << reverse_map[var]
-                  << " value: " << variable_values[var] << " initial_domain: "
-                  << ReadDomainFromProto(model.variables(var))
-                  << " postsolved_domain: "
-                  << ReadDomainFromProto(mapping_proto->variables(var));
-        }
-      } else {
-        for (const int var : UsedVariables(model.constraints(c))) {
-          VLOG(1) << "var: " << var << " value: " << variable_values[var];
-        }
+    VLOG(1) << "Failing constraint #" << c << " : "
+            << ProtobufShortDebugString(model.constraints(c));
+    if (mapping_proto != nullptr && postsolve_mapping != nullptr) {
+      std::vector<int> reverse_map(mapping_proto->variables().size(), -1);
+      for (int var = 0; var < postsolve_mapping->size(); ++var) {
+        reverse_map[(*postsolve_mapping)[var]] = var;
       }
-      return false;
+      for (const int var : UsedVariables(model.constraints(c))) {
+        VLOG(1) << "var: " << var << " mapped_to: " << reverse_map[var]
+                << " value: " << variable_values[var] << " initial_domain: "
+                << ReadDomainFromProto(model.variables(var))
+                << " postsolved_domain: "
+                << ReadDomainFromProto(mapping_proto->variables(var));
+      }
+    } else {
+      for (const int var : UsedVariables(model.constraints(c))) {
+        VLOG(1) << "var: " << var << " value: " << variable_values[var];
+      }
     }
+    return false;
   }
 
   // Check that the objective is within its domain.

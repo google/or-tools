@@ -1691,6 +1691,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
         ++num_added;
         context->AddImplication(ref, dom_ref);
+        implications.insert({ref, dom_ref});
+        implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
 
         // dom-- or var++ are now forbidden.
         increase_is_forbidden[var] = true;

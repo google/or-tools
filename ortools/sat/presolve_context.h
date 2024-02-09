@@ -99,6 +99,16 @@ class PresolveContext {
   int NewIntVar(const Domain& domain);
   int NewBoolVar();
 
+  // This should replace NewIntVar() eventually in order to be able to crush
+  // primal solution or just update the hint.
+  int NewIntVarWithDefinition(
+      const Domain& domain,
+      absl::Span<const std::pair<int, int64_t>> definition);
+
+  // Create a new bool var.
+  // Its hint value will be the same as the value of the given clause.
+  int NewBoolVarWithClause(absl::Span<const int> clause);
+
   // Some expansion code use constant literal to be simpler to write. This will
   // create a NewBoolVar() the first time, but later call will just returns it.
   int GetTrueLiteral();
@@ -554,6 +564,14 @@ class PresolveContext {
   // Return the given index, or the index of an interval with the same data.
   int GetIntervalRepresentative(int index);
 
+  // This should be called only once after InitializeNewDomains() to load
+  // the hint, in order to maintain it as best as possible during presolve.
+  void LoadSolutionHint();
+
+  // Solution hint accessor.
+  bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
+  int64_t SolutionHint(int var) const { return hint_[var]; }
+
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
@@ -634,6 +652,14 @@ class PresolveContext {
 
   // The current domain of each variables.
   std::vector<Domain> domains;
+
+  // Parallel to domains.
+  //
+  // This contains all the hinted value or zero if the hint wasn't specified.
+  // We try to maintain this as we create new variable.
+  bool hint_is_loaded_ = false;
+  std::vector<bool> hint_has_value_;
+  std::vector<int64_t> hint_;
 
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution

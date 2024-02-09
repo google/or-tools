@@ -406,7 +406,7 @@ bool Prober::ProbeDnf(absl::string_view name,
       num_new_literals_fixed_ > previous_num_literals_fixed) {
     VLOG(1) << "ProbeDnf(" << name << ", num_fixed_literals="
             << num_new_literals_fixed_ - previous_num_literals_fixed
-            << ", num_fixed_integer_bounds="
+            << ", num_pushed_integer_bounds="
             << num_new_integer_bounds_ - previous_num_integer_bounds
             << ", num_valid_conjunctions=" << num_valid_conjunctions << "/"
             << dnf.size() << ")";
@@ -498,7 +498,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
-  options.log_info |= VLOG_IS_ON(1);
+  options.log_info |= VLOG_IS_ON(2);
 
   // Reset the solver in case it was already used.
   auto* sat_solver = model->GetOrCreate<SatSolver>();

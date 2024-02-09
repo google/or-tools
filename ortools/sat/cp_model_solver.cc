@@ -1251,13 +1251,14 @@ void RegisterVariableBoundsLevelZeroImport(
   CHECK(shared_bounds_manager != nullptr);
   const std::string name = model->Name();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* trail = model->GetOrCreate<Trail>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   const int id = shared_bounds_manager->RegisterNewId();
 
   const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          name, sat_solver, integer_trail, id,
-                                          mapping]() {
+                                          name, sat_solver, integer_trail,
+                                          trail, id, mapping]() {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
     std::vector<int64_t> new_upper_bounds;
@@ -1268,13 +1269,18 @@ void RegisterVariableBoundsLevelZeroImport(
       const int model_var = model_variables[i];
 
       // If this is a Boolean, fix it if not already done.
+      // Note that it is important not to use AddUnitClause() as we do not
+      // want to propagate after each addition.
       if (mapping->IsBoolean(model_var)) {
         Literal lit = mapping->Literal(model_var);
         if (new_upper_bounds[i] == 0) lit = lit.Negated();
-        if (!sat_solver->Assignment().LiteralIsAssigned(lit)) {
-          new_bounds_have_been_imported = true;
+        if (trail->Assignment().LiteralIsTrue(lit)) continue;
+        if (trail->Assignment().LiteralIsFalse(lit)) {
+          sat_solver->NotifyThatModelIsUnsat();
+          return false;
         }
-        if (!sat_solver->AddUnitClause(lit)) return false;
+        new_bounds_have_been_imported = true;
+        trail->EnqueueWithUnitReason(lit);
         continue;
       }
 

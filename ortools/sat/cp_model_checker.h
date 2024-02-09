@@ -67,6 +67,13 @@ bool SolutionIsFeasible(const CpModelProto& model,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
 
+// Checks a single constraint for feasibility.
+// This has some overhead, and should only be used for debugging.
+// The full model is needed for scheduling constraints that refers to intervals.
+bool ConstraintIsFeasible(const CpModelProto& model,
+                          const ConstraintProto& constraint,
+                          absl::Span<const int64_t> variable_values);
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -486,6 +486,7 @@ cc_library(
     hdrs = ["presolve_context.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_checker",
         ":cp_model_loader",
         ":cp_model_mapping",
         ":cp_model_utils",
