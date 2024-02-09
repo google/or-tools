@@ -305,25 +305,25 @@ target_sources(${PROJECT_NAME} PRIVATE
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
 
 foreach(SUBPROJECT IN ITEMS
- algorithms
  base
- bop
- constraint_solver
- ${GLPK_DIR}
- ${PDLP_DIR}
- ${GSCIP_DIR}
- glop
- graph
- ${GUROBI_DIR}
  init
+ algorithms
+ graph
+ constraint_solver
  linear_solver
+ bop
+ glop
+ ${GLPK_DIR}
+ ${GSCIP_DIR}
+ ${GUROBI_DIR}
+ ${PDLP_DIR}
+ sat
+ xpress
  lp_data
  packing
- port
- sat
  scheduling
- util
- xpress)
+ port
+ util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)

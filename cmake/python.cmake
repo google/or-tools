@@ -272,7 +272,16 @@ set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
 # SWIG/Pybind11 wrap all libraries
-foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver pdlp sat scheduling util)
+foreach(SUBPROJECT IN ITEMS
+ init
+ algorithms
+ graph
+ constraint_solver
+ linear_solver
+ ${PDLP_DIR}
+ sat
+ scheduling
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
 
@@ -439,8 +448,9 @@ add_custom_command(
    $<TARGET_FILE:math_opt_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:status_py_extension_stub> ${PYTHON_PROJECT}/../pybind11_abseil
-  COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
+   $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
@@ -460,7 +470,7 @@ add_custom_command(
     pywraplp
     model_builder_helper_pybind11
     math_opt_pybind11
-    pdlp_pybind11
+    $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
     swig_helper_pybind11
     rcpsp_pybind11
     sorted_interval_list_pybind11

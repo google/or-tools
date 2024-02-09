@@ -155,7 +155,7 @@ endif()
 # ##############################################################################
 if(BUILD_PYTHON)
   # Find Python 3
-  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module OPTIONAL_COMPONENTS Development.Embed)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 
 if(BUILD_PYTHON AND BUILD_pybind11)
@@ -374,8 +374,9 @@ if(BUILD_googletest)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.13.0)
+    GIT_TAG v1.14.0)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(GTEST_HAS_ABSL ON)
   FetchContent_MakeAvailable(googletest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
