@@ -28,7 +28,6 @@
 #include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "ortools/util/testing_utils.h"
 
 namespace operations_research {
 
@@ -43,11 +42,14 @@ int BinarySearchMidpoint(int x, int y) {
 namespace {
 
 TEST(BinarySearchTest, DoubleExample) {
+  // M_PI is problematic on windows.
+  // std::numbers::pi is C++20 (incompatible with OR-Tools).
+  const double kPi = 3.14159265358979323846;
   const double x =
-      BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/M_PI / 2,
+      BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/kPi / 2,
                            [](double x) { return cos(x) >= 2 * sin(x); });
   EXPECT_GE(x, 0);
-  EXPECT_LE(x, M_PI / 2);
+  EXPECT_LE(x, kPi / 2);
   EXPECT_EQ(cos(x), 2 * sin(x)) << x;
 }
 

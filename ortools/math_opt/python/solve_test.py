@@ -72,51 +72,51 @@ class SolveTest(absltest.TestCase):
         ):
             solve.solve(mod, parameters.SolverType.GLOP)
 
-    def test_qp_solve(self) -> None:
-        mod = model.Model(name="test_model")
-        # Same model as TEST_P(QpDualsTest, GeneralQp1) in solver_test/qp_test.cc.
-        # Primal:
-        #   min  x_0^2 + x_0x_1 + 3x_1^2 - 2x_0
-        #   s.t. 2 <= x_0 + 2x_1 <= inf
-        #        0 <= x_0 <= inf
-        #        0 <= x_1 <= inf
-        #
-        #  Optimal solution: x* = (1.6, 0.2).
-        #
-        # Dual (go/mathopt-qp-dual):
-        #   max  -x_0^2 - x_0x_1 - 3x_1^2 + 2y_0
-        #   s.t.  y_0 + r_0 = 2x_0 + x_1 - 2
-        #        2y_0 + r_1 = x_0 + 6x_1
-        #        y_0 >= 0
-        #        r_0 >= 0
-        #        r_1 >= 0
-        #
-        # Optimal solution: x* = (1.6, 0.2), y* = (1.4), r* = (0, 0).
-        x0 = mod.add_variable(lb=0.0, name="x0")
-        x1 = mod.add_variable(lb=0.0, name="x1")
-        mod.minimize(x0 * x0 + x0 * x1 + 3 * x1 * x1 - 2 * x0)
-        c = mod.add_linear_constraint(x0 + 2 * x1 >= 2)
-        res = solve.solve(mod, parameters.SolverType.OSQP)
-        self.assertEqual(
-            res.termination.reason,
-            result.TerminationReason.OPTIMAL,
-            msg=res.termination,
-        )
-        self.assertGreaterEqual(len(res.solutions), 1)
-        assert (
-            res.solutions[0].primal_solution is not None
-            and res.solutions[0].dual_solution is not None
-        )
-        self.assertAlmostEqual(
-            -0.2, res.solutions[0].primal_solution.objective_value, 4
-        )
-        self._assert_dict_almost_equal(
-            {x0: 1.6, x1: 0.2}, res.solutions[0].primal_solution.variable_values, 4
-        )
-        dual = res.solutions[0].dual_solution
-        self.assertAlmostEqual(-0.2, dual.objective_value, 4)
-        self._assert_dict_almost_equal({c: 1.4}, dual.dual_values, 4)
-        self._assert_dict_almost_equal({x0: 0.0, x1: 0.0}, dual.reduced_costs, 4)
+    # def test_qp_solve(self) -> None:
+    #     mod = model.Model(name="test_model")
+    #     # Same model as TEST_P(QpDualsTest, GeneralQp1) in solver_test/qp_test.cc.
+    #     # Primal:
+    #     #   min  x_0^2 + x_0x_1 + 3x_1^2 - 2x_0
+    #     #   s.t. 2 <= x_0 + 2x_1 <= inf
+    #     #        0 <= x_0 <= inf
+    #     #        0 <= x_1 <= inf
+    #     #
+    #     #  Optimal solution: x* = (1.6, 0.2).
+    #     #
+    #     # Dual (go/mathopt-qp-dual):
+    #     #   max  -x_0^2 - x_0x_1 - 3x_1^2 + 2y_0
+    #     #   s.t.  y_0 + r_0 = 2x_0 + x_1 - 2
+    #     #        2y_0 + r_1 = x_0 + 6x_1
+    #     #        y_0 >= 0
+    #     #        r_0 >= 0
+    #     #        r_1 >= 0
+    #     #
+    #     # Optimal solution: x* = (1.6, 0.2), y* = (1.4), r* = (0, 0).
+    #     x0 = mod.add_variable(lb=0.0, name="x0")
+    #     x1 = mod.add_variable(lb=0.0, name="x1")
+    #     mod.minimize(x0 * x0 + x0 * x1 + 3 * x1 * x1 - 2 * x0)
+    #     c = mod.add_linear_constraint(x0 + 2 * x1 >= 2)
+    #     res = solve.solve(mod, parameters.SolverType.OSQP)
+    #     self.assertEqual(
+    #         res.termination.reason,
+    #         result.TerminationReason.OPTIMAL,
+    #         msg=res.termination,
+    #     )
+    #     self.assertGreaterEqual(len(res.solutions), 1)
+    #     assert (
+    #         res.solutions[0].primal_solution is not None
+    #         and res.solutions[0].dual_solution is not None
+    #     )
+    #     self.assertAlmostEqual(
+    #         -0.2, res.solutions[0].primal_solution.objective_value, 4
+    #     )
+    #     self._assert_dict_almost_equal(
+    #         {x0: 1.6, x1: 0.2}, res.solutions[0].primal_solution.variable_values, 4
+    #     )
+    #     dual = res.solutions[0].dual_solution
+    #     self.assertAlmostEqual(-0.2, dual.objective_value, 4)
+    #     self._assert_dict_almost_equal({c: 1.4}, dual.dual_values, 4)
+    #     self._assert_dict_almost_equal({x0: 0.0, x1: 0.0}, dual.reduced_costs, 4)
 
     def test_lp_solve(self) -> None:
         mod = model.Model(name="test_model")

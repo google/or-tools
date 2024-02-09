@@ -367,7 +367,6 @@ cc_library(
 cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
-    defines = ["_USE_MATH_DEFINES"],
     deps = [
         ":gtest_main",
         ":test_util",
