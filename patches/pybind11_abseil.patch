@@ -15,7 +15,7 @@ index 2a7b42e..c2a37f0 100644
  tmp_build
 +.*.swp
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index ceb65a8..aaff3d6 100644
+index ceb65a8..e142837 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,14 +1,11 @@
@@ -33,7 +33,7 @@ index ceb65a8..aaff3d6 100644
  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
  
-@@ -16,17 +13,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+@@ -16,17 +13,8 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
    cmake_policy(SET CMP0135 NEW)
  endif()
  
@@ -48,6 +48,7 @@ index ceb65a8..aaff3d6 100644
 -  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
 -
 -FetchContent_MakeAvailable(abseil-cpp pybind11)
++find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 +add_subdirectory(cmake/dependencies dependencies)
  
  set(TOP_LEVEL_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -153,7 +154,7 @@ index 4cff8b7..33e614a 100644
  )
  
 diff --git a/pybind11_abseil/CMakeLists.txt b/pybind11_abseil/CMakeLists.txt
-index d1b7483..96d462f 100644
+index d1b7483..ce7fd72 100644
 --- a/pybind11_abseil/CMakeLists.txt
 +++ b/pybind11_abseil/CMakeLists.txt
 @@ -42,14 +42,19 @@ target_link_libraries(ok_status_singleton_pyinit_google3
@@ -161,7 +162,7 @@ index d1b7483..96d462f 100644
  # ok_status_singleton =======================================================
  
 -add_library(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
-+pybind11_add_module(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
++pybind11_add_module(ok_status_singleton MODULE ok_status_singleton_py_extension_stub.cc)
  add_library(pybind11_abseil::ok_status_singleton ALIAS ok_status_singleton)
  
 +# note: macOS is APPLE and also UNIX !
@@ -185,7 +186,7 @@ index d1b7483..96d462f 100644
  
 -add_library(status SHARED status_py_extension_stub.cc)
 -add_library(pybind11_abseil::status ALIAS status)
-+pybind11_add_module(status_py_extension_stub SHARED status_py_extension_stub.cc)
++pybind11_add_module(status_py_extension_stub MODULE status_py_extension_stub.cc)
 +
 +set_target_properties(status_py_extension_stub PROPERTIES LIBRARY_OUTPUT_NAME "status")
 +# note: macOS is APPLE and also UNIX !
@@ -213,7 +214,7 @@ index d1b7483..96d462f 100644
                             INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
  
 -target_link_libraries(import_status_module PUBLIC status)
-+target_link_libraries(import_status_module PUBLIC status_py_extension_stub)
++add_dependencies(import_status_module status_py_extension_stub)
  
  # status_casters ===============================================================
  
@@ -250,3 +251,42 @@ index d1b7483..96d462f 100644
      EXPORT pybind11_abseil_cppTargets
      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+diff --git a/pybind11_abseil/tests/CMakeLists.txt b/pybind11_abseil/tests/CMakeLists.txt
+index a423c30..ae22a48 100644
+--- a/pybind11_abseil/tests/CMakeLists.txt
++++ b/pybind11_abseil/tests/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ # cpp_capsule_tools_testing ====================================================
+ 
+-pybind11_add_module(cpp_capsule_tools_testing SHARED
++pybind11_add_module(cpp_capsule_tools_testing MODULE
+                     cpp_capsule_tools_testing.cc)
+ 
+ target_link_libraries(
+@@ -26,7 +26,7 @@ add_test(
+ 
+ # absl_example =================================================================
+ 
+-pybind11_add_module(absl_example SHARED absl_example.cc)
++pybind11_add_module(absl_example MODULE absl_example.cc)
+ 
+ target_link_libraries(
+   absl_example
+@@ -57,7 +57,7 @@ add_test(
+ 
+ # missing_import ===============================================================
+ 
+-pybind11_add_module(missing_import SHARED missing_import.cc)
++pybind11_add_module(missing_import MODULE missing_import.cc)
+ 
+ target_compile_options(missing_import PUBLIC -UNDEBUG)
+ 
+@@ -83,7 +83,7 @@ add_test(
+ 
+ # status_example ===============================================================
+ 
+-pybind11_add_module(status_example SHARED status_example.cc)
++pybind11_add_module(status_example MODULE status_example.cc)
+ 
+ target_link_libraries(status_example PRIVATE status_casters absl::status
+                                              absl::statusor)
