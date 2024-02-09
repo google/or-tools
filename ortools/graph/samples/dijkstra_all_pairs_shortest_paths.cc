@@ -25,7 +25,7 @@
 // The problem is naturally modeled on an undirected graph, but our APSP is
 // implemented for directed graphs, so we include each edge as two arcs.
 
-#define _USE_MATH_DEFINES  // Needed for visual studio.
+#define _USE_MATH_DEFINES  // Needed for visual studio for M_PI.
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
