@@ -74,7 +74,7 @@ if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
-if(BUILD_LP_PARSER)
+if(BUILD_LP_PARSER OR BUILD_TESTING)
   if(NOT BUILD_re2)
     find_package(re2 REQUIRED)
   endif()
