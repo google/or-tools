@@ -71,6 +71,7 @@ endif()
 target_link_libraries(model_builder_helper_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
+  Eigen3::Eigen
 )
 add_library(${PROJECT_NAMESPACE}::model_builder_helper_pybind11 ALIAS model_builder_helper_pybind11)
 
