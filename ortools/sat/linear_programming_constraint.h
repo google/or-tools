@@ -34,6 +34,7 @@
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -480,12 +481,18 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
+  //
+  // TODO(user): ObjectiveDefinition and SharedResponseManager are only needed
+  // to report the objective bounds during propagation, find a better way to
+  // avoid some of these dependencies?
   const SatParameters& parameters_;
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
+  ObjectiveDefinition* objective_definition_;
+  SharedResponseManager* shared_response_manager_;
   ModelRandomGenerator* random_;
 
   // Used while deriving cuts.

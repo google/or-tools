@@ -259,6 +259,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      objective_definition_(model->GetOrCreate<ObjectiveDefinition>()),
+      shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
@@ -807,6 +809,22 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
       UpdateAverageReducedCosts();
     }
   }
+
+  // On some problem, LP solves and cut rounds can be slow, so we report
+  // the current possible objective improvement in the middle of the
+  // propagation, not just at the end.
+  //
+  // Note that we currently only do that if the LP is "full" and its objective
+  // is the same as the one of the whole problem.
+  if (objective_is_defined_ &&
+      objective_definition_->objective_var == objective_cp_ &&
+      trail_->CurrentDecisionLevel() == 0) {
+    shared_response_manager_->UpdateInnerObjectiveBounds(
+        absl::StrCat(model_->Name(), " (after lp)"),
+        integer_trail_->LowerBound(objective_cp_),
+        integer_trail_->UpperBound(objective_cp_));
+  }
+
   return true;
 }
 
@@ -1392,11 +1410,18 @@ void LinearProgrammingConstraint::AddMirCuts() {
     row_weights[row] = std::max(1e-8, std::abs(simplex_.GetDualValue(row)));
   }
 
+  // The code here can be really slow, so we put a limit on the number of
+  // entries we process. We randomize the base_rows so that on the next calls
+  // we do not do exactly the same if we can't process many base row.
+  int64_t dtime_num_entries = 0;
+  std::shuffle(base_rows.begin(), base_rows.end(), *random_);
+
   std::vector<double> weights;
   absl::StrongVector<RowIndex, bool> used_rows;
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
     if (time_limit_->LimitReached()) break;
+    if (dtime_num_entries > 1e7) break;
 
     const glop::RowIndex base_row = entry.first;
     const IntegerValue multiplier = entry.second;
@@ -1551,8 +1576,10 @@ void LinearProgrammingConstraint::AddMirCuts() {
       }
 
       for (std::pair<RowIndex, IntegerValue>& entry : integer_multipliers) {
+        dtime_num_entries += integer_lp_[entry.first].num_terms;
         entry.second *= mult1;
       }
+      dtime_num_entries += integer_lp_[row_to_combine].num_terms;
       integer_multipliers.push_back({row_to_combine, mult2});
 
       // TODO(user): Not supper efficient to recombine the rows.
