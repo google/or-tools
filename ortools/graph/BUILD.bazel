@@ -186,7 +186,6 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
-        "//ortools/util:zvector",
         "@com_google_absl//absl/functional:bind_front",
     ],
 )
