@@ -1388,6 +1388,7 @@ cc_library(
     hdrs = ["linear_programming_constraint.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_mapping",
         ":cuts",
         ":implied_bounds",
         ":integer",
