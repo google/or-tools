@@ -186,7 +186,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build eigen3: ${BUILD_Eigen3}")
 
-if(BUILD_LP_PARSER)
+if(BUILD_LP_PARSER OR BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build re2: ${BUILD_re2}")
