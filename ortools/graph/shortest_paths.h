@@ -71,7 +71,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
-#include "ortools/util/zvector.h"
 
 namespace operations_research {
 
