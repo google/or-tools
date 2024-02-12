@@ -79,6 +79,7 @@ if(BUILD_absl)
   set(ABSL_ENABLE_INSTALL ON)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
   set(ABSL_PROPAGATE_CXX_STD ON)
+  set(ABSL_BUILD_TESTING OFF)
   FetchContent_Declare(
     abseil-cpp
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
@@ -376,6 +377,7 @@ if(BUILD_googletest)
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG v1.14.0)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF)
   set(GTEST_HAS_ABSL ON)
   FetchContent_MakeAvailable(googletest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
