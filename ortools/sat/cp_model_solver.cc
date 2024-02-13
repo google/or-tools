@@ -4013,7 +4013,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "
-        "supported setting.\nWe will assumes these assumptions true while "
+        "supported setting.\nWe will assume these assumptions true while "
         "solving, but if the model is infeasible, you will not get a useful "
         "'sufficient_assumptions_for_infeasibility' field in the response, it "
         "will include all assumptions.");
