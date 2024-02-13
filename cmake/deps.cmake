@@ -88,6 +88,9 @@ if(BUILD_LP_PARSER OR BUILD_TESTING)
   if(NOT TARGET re2::re2)
     message(FATAL_ERROR "Target re2::re2 not available.")
   endif()
+endif()
+
+if(BUILD_LP_PARSER)
   set(RE2_DEPS re2::re2)
 endif()
 
