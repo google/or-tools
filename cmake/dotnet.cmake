@@ -287,6 +287,13 @@ target_link_libraries(google-ortools-native PRIVATE dotnet_model_builder)
 
 file(COPY ${PROJECT_SOURCE_DIR}/tools/doc/orLogo.png DESTINATION ${PROJECT_BINARY_DIR}/dotnet)
 set(DOTNET_LOGO_DIR "${PROJECT_BINARY_DIR}/dotnet")
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/ortools/dotnet/README.dotnet.md
+  ${PROJECT_BINARY_DIR}/dotnet/README.md
+  COPYONLY)
+set(DOTNET_README_DIR "${PROJECT_BINARY_DIR}/dotnet")
+
 configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Directory.Build.props.in ${PROJECT_BINARY_DIR}/dotnet/Directory.Build.props)
 
 ############################
