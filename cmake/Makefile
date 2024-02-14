@@ -133,16 +133,14 @@ help:
 	@echo -e "\te.g. 'make web_build'"
 	@echo
 	@echo -e "\tBuild using a vagrant machine."
-	@echo -e "\t${BOLD}<vm>_<vms_stage>${RESET}: build the vagrant <vm> virtual machine."
+	@echo -e "\t${BOLD}<vm>_<lang>${RESET}: build the vagrant <vm> virtual machine."
 	@echo -e "\t${BOLD}sh_<vm>_<lang>${RESET}: ssh to the vagrant machine specified (debug purpose)."
 	@echo -e "\t${BOLD}clean_<vm>${RESET}: Remove virtual machine for the specified vm."
 	@echo -e "\t${BOLD}clean_vms${RESET}: Remove ALL vagrant box."
 	@echo
 	@echo -e "\tWith ${BOLD}<vm>${RESET}:"
 	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
-	@echo
-	@echo -e "\tWith ${BOLD}<vms_stage>${RESET}:"
-	@echo -e "\t\t${BOLD}build${RESET}"
+	@echo -e "\te.g. 'make freebsd_cpp'"
 	@echo
 	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
 	@echo -e "\t${BOLD}save_glop_<stage>${RESET}: Save Glop <stage> using an Ubuntu:rolling docker image."
