@@ -4,6 +4,7 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   docker:
+    name: Docker • CMake • Glop
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
