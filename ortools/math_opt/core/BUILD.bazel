@@ -140,9 +140,9 @@ cc_library(
     srcs = ["solve_interrupter.cc"],
     hdrs = ["solve_interrupter.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:intops",
         "//ortools/base:linked_hash_map",
+        "//ortools/base:logging",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
@@ -179,7 +179,7 @@ cc_library(
     deps = [
         ":sparse_vector",
         ":sparse_vector_view",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/types:span",

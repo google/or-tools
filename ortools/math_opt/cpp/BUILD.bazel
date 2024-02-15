@@ -48,7 +48,7 @@ cc_library(
         ":linear_constraint",
         ":objective",
         ":variable_and_expressions",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -291,7 +291,7 @@ cc_library(
     srcs = ["update_tracker.cc"],
     hdrs = ["update_tracker.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt/storage:model_storage",
@@ -306,7 +306,7 @@ cc_library(
     srcs = ["message_callback.cc"],
     hdrs = ["message_callback.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:source_location",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",

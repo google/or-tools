@@ -30,7 +30,7 @@ cc_library(
         "//ortools/math_opt:__subpackages__",
     ],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:source_location",
         "//ortools/base:status_macros",
         "//ortools/gurobi:environment",

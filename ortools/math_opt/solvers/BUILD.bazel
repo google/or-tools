@@ -75,8 +75,8 @@ cc_library(
     hdrs = ["gurobi_callback.h"],
     deps = [
         ":message_callback_data",
-        "//ortools/base",
         "//ortools/base:linked_hash_map",
+        "//ortools/base:logging",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/gurobi:environment",

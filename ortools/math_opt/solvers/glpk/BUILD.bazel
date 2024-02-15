@@ -19,7 +19,7 @@ cc_library(
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/glpk:glpk_computational_form",
         "//ortools/glpk:glpk_formatters",
@@ -36,7 +36,7 @@ cc_library(
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "@com_google_absl//absl/log:check",
     ],
 )

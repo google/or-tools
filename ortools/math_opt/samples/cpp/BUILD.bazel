@@ -246,6 +246,7 @@ cc_binary(
     srcs = ["area_socp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/flags:flag",

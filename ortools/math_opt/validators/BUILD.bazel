@@ -170,7 +170,7 @@ cc_library(
         ":scalar_validator",
         ":solution_validator",
         ":sparse_vector_validator",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
