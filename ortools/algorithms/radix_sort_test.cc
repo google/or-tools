@@ -146,9 +146,9 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortSmallSizes) {
     std::vector<TypeParam> expected_values = unsorted_values;
     absl::c_sort(expected_values);
     ASSERT_TRUE(sorted_values == expected_values)
-    /*    << DUMP_VARS(test, use_main_radix_sort, radix_width, num_passes, size,
+        << DUMP_VARS(test, use_main_radix_sort, radix_width, num_passes, size,
                      allow_negative, val_bits, max_abs_val, unsorted_values,
-                     sorted_values, expected_values)*/;
+                     sorted_values, expected_values);
   }
 }
 

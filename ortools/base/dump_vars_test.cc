@@ -13,6 +13,7 @@
 
 #include "ortools/base/dump_vars.h"
 
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -115,6 +116,22 @@ TEST(DumpVars, ManyArgs) {
             ToString(DUMP_VARS(a, b, c, d, e, f)));
   EXPECT_EQ("a = 1, b = 2, c = 3, d = 5, e = 7, f = 11",
             DUMP_VARS(a, b, c, d, e, f).str());
+}
+
+TEST(DumpVars, Vector) {
+  std::vector<float> vec = {49.3, 3.14};
+  EXPECT_EQ("vec = 49.299999,3.140000,", ToString(DUMP_VARS(vec)));
+  EXPECT_EQ("vec = 49.299999,3.140000,", DUMP_VARS(vec).str());
+}
+
+TEST(DumpVars, Optional) {
+  std::optional<float> of = {};
+  EXPECT_EQ("of = (none)", ToString(DUMP_VARS(of)));
+  EXPECT_EQ("of = (none)", DUMP_VARS(of).str());
+
+  of = 49.3f;
+  EXPECT_EQ("of = 49.299999", ToString(DUMP_VARS(of)));
+  EXPECT_EQ("of = 49.299999", DUMP_VARS(of).str());
 }
 
 TEST(DumpVars, LazyEvaluation) {
