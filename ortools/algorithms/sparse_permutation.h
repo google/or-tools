@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -66,7 +67,7 @@ class SparsePermutation {
 
   // Removes the cycles with given indices from the permutation. This
   // works in O(K) for a permutation displacing K elements.
-  void RemoveCycles(const std::vector<int>& cycle_indices);
+  void RemoveCycles(absl::Span<const int> cycle_indices);
 
   // Output all non-identity cycles of the permutation, sorted
   // lexicographically (each cycle is described starting by its smallest

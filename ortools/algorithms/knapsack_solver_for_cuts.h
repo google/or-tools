@@ -307,8 +307,8 @@ class KnapsackSolverForCuts {
   KnapsackSolverForCuts& operator=(const KnapsackSolverForCuts&) = delete;
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, double capacity);
+  void Init(absl::Span<const double> profits, absl::Span<const double> weights,
+            double capacity);
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
 
   // Gets the lower and the upper bound when the item is in or out of the

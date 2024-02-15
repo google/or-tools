@@ -21,7 +21,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/set_cover.h"
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_reader.h"
@@ -33,39 +33,39 @@
 namespace operations_research {
 
 double RunSolver(std::string name, SetCoverModel* model) {
-  SetCoverLedger ledger(model);
+  SetCoverInvariant inv(model);
 
-  GreedySolutionGenerator greedy(&ledger);
+  GreedySolutionGenerator greedy(&inv);
   WallTimer global_timer;
   WallTimer timer;
   global_timer.Start();
   timer.Start();
   CHECK(greedy.NextSolution());
-  DCHECK(ledger.CheckSolution());
-  LOG(INFO) << name << "_GreedySolutionGenerator_cost, " << ledger.cost()
-            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  DCHECK(inv.CheckSolution());
+  LOG(INFO) << name << "_GreedySolutionGenerator_cost, " << inv.cost() << ", "
+            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   timer.Stop();
   timer.Reset();
   timer.Start();
-  operations_research::SteepestSearch steepest(&ledger);
+  operations_research::SteepestSearch steepest(&inv);
   steepest.NextSolution(100000);
-  LOG(INFO) << name << "_SteepestSearch_cost, " << ledger.cost() << ", "
+  LOG(INFO) << name << "_SteepestSearch_cost, " << inv.cost() << ", "
             << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
-  double best_cost = ledger.cost();
-  DCHECK(ledger.CheckSolution());
-  SubsetBoolVector best_choices = ledger.is_selected();
+  double best_cost = inv.cost();
+  DCHECK(inv.CheckSolution());
+  SubsetBoolVector best_choices = inv.is_selected();
   std::vector<SubsetIndex> focus = model->all_subsets();
   timer.Stop();
   timer.Reset();
   timer.Start();
   for (int i = 0; i < 10; ++i) {
     std::vector<SubsetIndex> range =
-        ClearMostCoveredElements(std::min(100UL, focus.size()), &ledger);
-    SetCoverMip mip(&ledger);
+        ClearMostCoveredElements(std::min(100UL, focus.size()), &inv);
+    SetCoverMip mip(&inv);
     mip.NextSolution(range);
-    if (ledger.cost() < best_cost) {
-      best_cost = ledger.cost();
-      best_choices = ledger.is_selected();
+    if (inv.cost() < best_cost) {
+      best_cost = inv.cost();
+      best_choices = inv.is_selected();
     }
   }
   timer.Stop();

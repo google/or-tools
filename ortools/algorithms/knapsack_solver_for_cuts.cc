@@ -288,8 +288,8 @@ KnapsackSolverForCuts::KnapsackSolverForCuts(std::string solver_name)
       best_solution_profit_(0),
       solver_name_(std::move(solver_name)) {}
 
-void KnapsackSolverForCuts::Init(const std::vector<double>& profits,
-                                 const std::vector<double>& weights,
+void KnapsackSolverForCuts::Init(absl::Span<const double> profits,
+                                 absl::Span<const double> weights,
                                  const double capacity) {
   const int number_of_items(profits.size());
   state_.Init(number_of_items);

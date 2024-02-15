@@ -107,7 +107,7 @@ class DynamicPartition {
   // keeping track of one additional bit of information for each part that
   // remains unchanged by a Refine() operation: was that part entirely *in*
   // the distinguished subset or entirely *out*?
-  void Refine(const std::vector<int>& distinguished_subset);
+  void Refine(absl::Span<const int> distinguished_subset);
 
   // Undo one or several Refine() operations, until the number of parts
   // becomes equal to "original_num_parts".

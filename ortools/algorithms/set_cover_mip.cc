@@ -14,11 +14,9 @@
 #include "ortools/algorithms/set_cover_mip.h"
 
 #include <cstdint>
-#include <limits>
-#include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -30,14 +28,14 @@ template <typename IndexType, typename ValueType>
 using StrictVector = glop::StrictITIVector<IndexType, ValueType>;
 
 bool SetCoverMip::NextSolution() {
-  return NextSolution(ledger_->model()->all_subsets());
+  return NextSolution(inv_->model()->all_subsets());
 }
 
 bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
-  SetCoverModel* model = ledger_->model();
+  SetCoverModel* model = inv_->model();
   const SubsetIndex num_subsets(model->num_subsets());
   const ElementIndex num_elements(model->num_elements());
-  SubsetBoolVector choices = ledger_->is_selected();
+  SubsetBoolVector choices = inv_->is_selected();
   MPSolver::OptimizationProblemType problem_type;
   switch (mip_solver_) {
     case SetCoverMipSolver::SCIP:
@@ -56,8 +54,8 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   // We are using MPSolver, which is deprecated, because MathOpt does not
   // provide an interface without using protobufs.
   // We construct a restricted MIP, omitting all the parts of the problem
-  // that are already fixed in the ledger. The goal is to not spend time sending
-  // data, and having the MIP solver re-discover the fixed variables.
+  // that are already fixed in the invariant. The goal is to not spend time
+  // sending data, and having the MIP solver re-discover fixed variables.
   MPSolver solver("set cover mip", problem_type);
   solver.SuppressOutput();
   MPObjective* const objective = solver.MutableObjective();
@@ -69,7 +67,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
     vars[subset] = solver.MakeBoolVar("");
     objective->SetCoefficient(vars[subset], model->subset_costs()[subset]);
     for (ElementIndex element : model->columns()[subset]) {
-      if (ledger_->coverage()[element] > 0) continue;
+      if (inv_->coverage()[element] > 0) continue;
       if (constraints[element] == nullptr) {
         constexpr double kInfinity = std::numeric_limits<double>::infinity();
         constraints[element] = solver.MakeRowConstraint(1.0, kInfinity);
@@ -100,7 +98,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   for (const SubsetIndex subset : focus) {
     choices[subset] = (vars[subset]->solution_value() > 0.9);
   }
-  ledger_->LoadSolution(choices);
+  inv_->LoadSolution(choices);
   return true;
 }
 

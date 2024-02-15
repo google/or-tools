@@ -37,6 +37,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/dynamic_partition.h"
@@ -167,7 +168,7 @@ class IsGraphAutomorphismTest : public testing::Test {
  protected:
   void ExpectIsGraphAutomorphism(
       int num_nodes, const std::vector<std::pair<int, int>>& graph_arcs,
-      const std::vector<std::vector<int>>& permutation_cycles,
+      absl::Span<const std::vector<int>> permutation_cycles,
       bool expected_is_automorphism) {
     Graph graph(num_nodes, graph_arcs.size());
     for (const std::pair<int, int>& arc : graph_arcs) {

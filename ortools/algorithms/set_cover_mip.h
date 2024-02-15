@@ -14,10 +14,8 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MIP_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MIP_H_
 
-#include <vector>
-
 #include "absl/types/span.h"
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
 
 namespace operations_research {
@@ -25,8 +23,8 @@ enum class SetCoverMipSolver : int { SCIP = 0, SAT = 1, GUROBI = 2 };
 
 class SetCoverMip {
  public:
-  explicit SetCoverMip(SetCoverLedger* ledger)
-      : ledger_(ledger),
+  explicit SetCoverMip(SetCoverInvariant* inv)
+      : inv_(inv),
         mip_solver_(SetCoverMipSolver::SCIP),
         time_limit_in_seconds_(0.02) {}
 
@@ -46,8 +44,8 @@ class SetCoverMip {
   void SetTimeLimitInSeconds(double limit) { time_limit_in_seconds_ = limit; }
 
  private:
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The invariant used to maintain the state of the problem.
+  SetCoverInvariant* inv_;
 
   // The MIP solver flavor used by the instance.
   SetCoverMipSolver mip_solver_;

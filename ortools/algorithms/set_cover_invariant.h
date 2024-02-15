@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_LEDGER_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_LEDGER_H_
+#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
+#define OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_
 
 #include <sys/types.h>
 
@@ -27,12 +27,16 @@ namespace operations_research {
 using SubsetCountVector = glop::StrictITIVector<SubsetIndex, int>;
 using SubsetBoolVector = glop::StrictITIVector<SubsetIndex, bool>;
 
-// SetCoverLedger does the bookkeeping for a solution to the
+// SetCoverInvariant does the bookkeeping for a solution to the
 // SetCoverModel passed as argument.
-// The state of a SetCoverLedger instance is uniquely defined by a
+// The state of a SetCoverInvariant instance is uniquely defined by a
 // SubsetBoolVector representing whether a subset is selected in the solution
 // or not.
-// A SetCoverLedger is (relatively) small:
+//
+// See https://cs.brown.edu/research/pubs/pdfs/1999/Michel-1999-LML.pdf
+// for an explanation of the terminology.
+//
+// A SetCoverInvariant is (relatively) small:
 //   is_selected_,      a partial solution, vector of Booleans of size #subsets.
 // From this, the following can be computed:
 //   coverage_,         the number of times an elememt is covered;
@@ -40,11 +44,11 @@ using SubsetBoolVector = glop::StrictITIVector<SubsetIndex, bool>;
 //   is_removable_,     whether a subset can be removed from the solution.
 // Note that is_removable_[subset] implies is_selected_[subset], and thus
 // (is_removable_[subset] <= is_selected_[subset]) == true.
-class SetCoverLedger {
+class SetCoverInvariant {
  public:
   // Constructs an empty weighted set covering solver state.
   // The model may not change after the ledger was built.
-  explicit SetCoverLedger(SetCoverModel* m) : model_(m) { Initialize(); }
+  explicit SetCoverInvariant(SetCoverModel* m) : model_(m) { Initialize(); }
 
   // Initializes the solver once the data is set. The model cannot be changed
   // afterwards.
@@ -202,4 +206,4 @@ class SetCoverLedger {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_LEDGER_H_
+#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_

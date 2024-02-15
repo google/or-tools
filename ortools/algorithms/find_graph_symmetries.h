@@ -31,6 +31,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/graph/graph.h"
@@ -105,7 +106,7 @@ class GraphSymmetryFinder {
   //   elements are valid factors of the automorphism group size.
   absl::Status FindSymmetries(
       std::vector<int>* node_equivalence_classes_io,
-      std::vector<std::unique_ptr<SparsePermutation> >* generators,
+      std::vector<std::unique_ptr<SparsePermutation>>* generators,
       std::vector<int>* factorized_automorphism_group_size,
       TimeLimit* time_limit = nullptr);
 
@@ -171,9 +172,9 @@ class GraphSymmetryFinder {
   std::unique_ptr<SparsePermutation> FindOneSuitablePermutation(
       int root_node, int root_image_node, DynamicPartition* base_partition,
       DynamicPartition* image_partition,
-      const std::vector<std::unique_ptr<SparsePermutation> >&
+      const std::vector<std::unique_ptr<SparsePermutation>>&
           generators_found_so_far,
-      const std::vector<std::vector<int> >& permutations_displacing_node);
+      absl::Span<const std::vector<int>> permutations_displacing_node);
 
   // Data structure used by FindOneSuitablePermutation(). See the .cc
   struct SearchState {
@@ -231,18 +232,18 @@ class GraphSymmetryFinder {
   // For each orbit, keep the first node that appears in "nodes".
   void PruneOrbitsUnderPermutationsCompatibleWithPartition(
       const DynamicPartition& partition,
-      const std::vector<std::unique_ptr<SparsePermutation> >& all_permutations,
-      const std::vector<int>& permutation_indices, std::vector<int>* nodes);
+      absl::Span<const std::unique_ptr<SparsePermutation>> all_permutations,
+      absl::Span<const int> permutation_indices, std::vector<int>* nodes);
 
   // Temporary objects used by some of the class methods, and owned by the
   // class to avoid (costly) re-allocation. Their resting states are described
   // in the side comments; with N = NumNodes().
-  DynamicPermutation tmp_dynamic_permutation_;            // Identity(N)
-  mutable std::vector<bool> tmp_node_mask_;               // [0..N-1] = false
-  std::vector<int> tmp_degree_;                           // [0..N-1] = 0.
-  std::vector<int> tmp_stack_;                            // Empty.
-  std::vector<std::vector<int> > tmp_nodes_with_degree_;  // [0..N-1] = [].
-  MergingPartition tmp_partition_;                        // Reset(N).
+  DynamicPermutation tmp_dynamic_permutation_;           // Identity(N)
+  mutable std::vector<bool> tmp_node_mask_;              // [0..N-1] = false
+  std::vector<int> tmp_degree_;                          // [0..N-1] = 0.
+  std::vector<int> tmp_stack_;                           // Empty.
+  std::vector<std::vector<int>> tmp_nodes_with_degree_;  // [0..N-1] = [].
+  MergingPartition tmp_partition_;                       // Reset(N).
   std::vector<const SparsePermutation*> tmp_compatible_permutations_;  // Empty.
 
   // Internal statistics, used for performance tuning and debugging.
