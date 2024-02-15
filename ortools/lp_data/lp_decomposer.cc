@@ -18,6 +18,7 @@
 
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -139,7 +140,7 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
 }
 
 DenseRow LPDecomposer::AggregateAssignments(
-    const std::vector<DenseRow>& assignments) const {
+    absl::Span<const DenseRow> assignments) const {
   CHECK_EQ(assignments.size(), clusters_.size());
 
   absl::MutexLock mutex_lock(&mutex_);
