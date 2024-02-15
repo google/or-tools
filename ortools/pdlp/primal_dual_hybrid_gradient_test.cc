@@ -47,6 +47,7 @@
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/pdlp/termination.h"
 #include "ortools/pdlp/test_util.h"
+#include "testing/base/public/googletest.h"
 
 namespace operations_research::pdlp {
 namespace {
@@ -441,6 +442,36 @@ TEST_P(PrimalDualHybridGradientLPTest, InfeasibleDual) {
               DoubleNear(1, 1.0e-6));
   EXPECT_GT(output.primal_solution[1], 0.0);
   EXPECT_LE(output.solve_log.iteration_count(), iteration_upperbound);
+}
+
+TEST_P(PrimalDualHybridGradientLPTest, InfeasiblePrimalWithReducedCosts) {
+  // A trivial LP that has reduced costs within the dual ray.
+  //     min x
+  //     Constraint: 2 <= x
+  //     Variable: 0 <= x <= 1
+  QuadraticProgram lp(1, 1);
+  lp.objective_vector = Eigen::VectorXd{{1}};
+  lp.constraint_lower_bounds = Eigen::VectorXd{{2}};
+  lp.constraint_upper_bounds =
+      Eigen::VectorXd{{std::numeric_limits<double>::infinity()}};
+  lp.variable_lower_bounds = Eigen::VectorXd{{0}};
+  lp.variable_upper_bounds = Eigen::VectorXd{{1}};
+  lp.constraint_matrix.coeffRef(0, 0) = 1.0;
+  lp.constraint_matrix.makeCompressed();
+  const int iteration_upperbound = 100;
+  PrimalDualHybridGradientParams params =
+      CreateSolverParamsForFixture(iteration_upperbound,
+                                   /*eps_optimal_absolute=*/1.0e-6);
+  params.set_major_iteration_frequency(5);
+  params.mutable_termination_criteria()->set_eps_primal_infeasible(1.0e-6);
+
+  SolverResult output = PrimalDualHybridGradient(lp, params);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_PRIMAL_INFEASIBLE);
+  const auto& dual = output.dual_solution;
+  EXPECT_GT(dual[0], 0.0);
+  EXPECT_EQ(output.reduced_costs[0], -dual[0]);
+  EXPECT_LT(output.solve_log.iteration_count(), iteration_upperbound);
 }
 
 TEST_P(PrimalDualHybridGradientLPTest, InfeasiblePrimalDual) {
@@ -1425,6 +1456,7 @@ TEST(PrimalDualHybridGradientTest, CallsCallback) {
   int callback_count = 0;
   SolverResult output = PrimalDualHybridGradient(
       TestLp(), params, /*interrupt_solve=*/nullptr,
+      /*message_callback=*/nullptr,
       [&callback_count](const IterationCallbackInfo& callback_info) {
         ++callback_count;
       });
@@ -1525,7 +1557,8 @@ TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
   };
 
   const SolverResult output =
-      PrimalDualHybridGradient(TestLp(), params, &interrupt_solve, callback);
+      PrimalDualHybridGradient(TestLp(), params, &interrupt_solve,
+                               /*message_callback=*/nullptr, callback);
   EXPECT_EQ(output.solve_log.termination_reason(),
             TERMINATION_REASON_INTERRUPTED_BY_USER);
   EXPECT_GE(output.solve_log.iteration_count(), 10);
@@ -1921,6 +1954,7 @@ TEST_F(FeasibilityPolishingPrimalTest, CallsCallbackForAllThreePhases) {
   bool polishing_termination_is_last = false;
   SolverResult output = PrimalDualHybridGradient(
       lp_, params_, /*interrupt_solve=*/nullptr,
+      /*message_callback=*/nullptr,
       [&](const IterationCallbackInfo& callback_info) {
         ++callback_count[callback_info.iteration_type];
         polishing_termination_is_last =
@@ -2059,6 +2093,36 @@ TEST(PresolveTest, PresolveInfeasible) {
             TERMINATION_REASON_PRIMAL_OR_DUAL_INFEASIBLE);
   EXPECT_EQ(output.solve_log.solution_type(), POINT_TYPE_PRESOLVER_SOLUTION);
   EXPECT_EQ(output.solve_log.iteration_count(), 0);
+}
+
+TEST(PresolveTest, WarnsInitialSolution) {
+  PrimalAndDualSolution initial_solution;
+  initial_solution.primal_solution.setZero(6);
+  initial_solution.dual_solution.setZero(3);
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  CaptureTestStdout();
+  SolverResult output = PrimalDualHybridGradient(CorrelationClusteringStarLp(),
+                                                 params, initial_solution);
+  EXPECT_THAT(GetCapturedTestStdout(),
+              AllOf(HasSubstr("initial solution"), HasSubstr("presolve")));
+}
+
+TEST(PresolveTest, WarnsInitialSolutionViaCallback) {
+  PrimalAndDualSolution initial_solution;
+  initial_solution.primal_solution.setZero(6);
+  initial_solution.dual_solution.setZero(3);
+  PrimalDualHybridGradientParams params;
+  params.mutable_presolve_options()->set_use_glop(true);
+  std::vector<std::string> message_output;
+  SolverResult output = PrimalDualHybridGradient(
+      CorrelationClusteringStarLp(), params, initial_solution,
+      /*interrupt_solve=*/nullptr,
+      [&message_output](const std::string& message) {
+        message_output.push_back(message);
+      });
+  EXPECT_THAT(message_output, Contains(AllOf(HasSubstr("initial solution"),
+                                             HasSubstr("presolve"))));
 }
 
 TEST_P(PresolveDualScalingTest, Dualize) {

@@ -14,6 +14,7 @@
 #include "ortools/pdlp/iteration_stats.h"
 
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <utility>
 

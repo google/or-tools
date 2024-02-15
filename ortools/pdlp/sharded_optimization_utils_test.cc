@@ -631,6 +631,14 @@ TEST(ProjectToPrimalVariableBoundsTest, TestLp) {
   EXPECT_THAT(primal, ElementsAre(-3, -2, 5, 3.5));
 }
 
+TEST(ProjectToPrimalVariableBoundsTest, TestLpWithFeasibility) {
+  ShardedQuadraticProgram qp(TestLp(), /*num_threads=*/2,
+                             /*num_shards=*/2);
+  Eigen::VectorXd primal{{-3, -3, 5, 5}};
+  ProjectToPrimalVariableBounds(qp, primal, /*use_feasibility_bounds=*/true);
+  EXPECT_THAT(primal, ElementsAre(-3, 0, 0, 0));
+}
+
 TEST(ProjectToDualVariableBoundsTest, TestLp) {
   ShardedQuadraticProgram qp(TestLp(), /*num_threads=*/2,
                              /*num_shards=*/2);

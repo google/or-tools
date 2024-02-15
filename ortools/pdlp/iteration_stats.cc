@@ -60,8 +60,7 @@ struct ResidualNorms {
 // any corrections (so the returned `.objective_correction == 0` and
 // `.objective_full_correction == 0`). `sharded_qp` is assumed to be the scaled
 // problem. If `use_homogeneous_constraint_bounds` is set to true the residuals
-// are computed with upper and lower bounds zeroed out (note that we only zero
-// out the bounds that are finite in the original problem).
+// are computed with all finite bounds mapped to zero.
 // NOTE: `componentwise_residual_offset` only affects the value of
 // `l_inf_componentwise_residual` in the returned `ResidualNorms`.
 ResidualNorms PrimalResidualNorms(
@@ -221,13 +220,13 @@ ResidualNorms DualResidualNorms(const PrimalDualHybridGradientParams& params,
           // unscaled_primal_gradient = primal_gradient / scale, so the scales
           // cancel out.
           if (primal_gradient_shard[i] == 0.0) continue;
-          const double bound_for_rc = primal_gradient_shard[i] > 0.0
-                                          ? lower_bound_shard[i]
-                                          : upper_bound_shard[i];
+          const double upper_bound = upper_bound_shard[i];
+          const double lower_bound = lower_bound_shard[i];
+          const double bound_for_rc =
+              primal_gradient_shard[i] > 0.0 ? lower_bound : upper_bound;
           dual_full_correction += bound_for_rc * primal_gradient_shard[i];
           VariableBounds effective_bounds = EffectiveVariableBounds(
-              params, primal_solution_shard[i], lower_bound_shard[i],
-              upper_bound_shard[i]);
+              params, primal_solution_shard[i], lower_bound, upper_bound);
           // The dual correction (using the appropriate bound) is applied even
           // if the gradient is handled as a residual, so that the dual
           // objective is convex.
@@ -453,13 +452,46 @@ ConvergenceInformation ComputeConvergenceInformation(
   return result;
 }
 
+namespace {
+
+double PrimalRayMaxSignViolation(const ShardedQuadraticProgram& sharded_qp,
+                                 const VectorXd& col_scaling_vec,
+                                 const VectorXd& scaled_primal_ray) {
+  VectorXd primal_ray_local_max_sign_violation(
+      sharded_qp.PrimalSharder().NumShards());
+  sharded_qp.PrimalSharder().ParallelForEachShard(
+      [&](const Sharder::Shard& shard) {
+        const auto lower_bound_shard =
+            shard(sharded_qp.Qp().variable_lower_bounds);
+        const auto upper_bound_shard =
+            shard(sharded_qp.Qp().variable_upper_bounds);
+        const auto ray_shard = shard(scaled_primal_ray);
+        const auto scale_shard = shard(col_scaling_vec);
+        double local_max = 0.0;
+        for (int64_t i = 0; i < ray_shard.size(); ++i) {
+          if (std::isfinite(lower_bound_shard[i])) {
+            local_max = std::max(local_max, -ray_shard[i] * scale_shard[i]);
+          }
+          if (std::isfinite(upper_bound_shard[i])) {
+            local_max = std::max(local_max, ray_shard[i] * scale_shard[i]);
+          }
+        }
+        primal_ray_local_max_sign_violation[shard.Index()] = local_max;
+      });
+  return primal_ray_local_max_sign_violation.lpNorm<Eigen::Infinity>();
+}
+
+}  // namespace
+
 InfeasibilityInformation ComputeInfeasibilityInformation(
     const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& scaled_primal_ray,
-    const Eigen::VectorXd& scaled_dual_ray, PointType candidate_type) {
+    const Eigen::VectorXd& scaled_dual_ray,
+    const Eigen::VectorXd& primal_solution_for_residual_tests,
+    PointType candidate_type) {
   const QuadraticProgram& qp = scaled_sharded_qp.Qp();
   CHECK_EQ(col_scaling_vec.size(), scaled_sharded_qp.PrimalSize());
   CHECK_EQ(row_scaling_vec.size(), scaled_sharded_qp.DualSize());
@@ -479,8 +511,9 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
   // We don't use `dual_residuals.l_inf_componentwise_residual`, so don't need
   // to set `componentwise_residual_offset` to a meaningful value.
   ResidualNorms dual_residuals = DualResidualNorms(
-      params, scaled_sharded_qp, col_scaling_vec, scaled_primal_ray,
-      scaled_primal_gradient, /*componentwise_residual_offset=*/0.0);
+      params, scaled_sharded_qp, col_scaling_vec,
+      primal_solution_for_residual_tests, scaled_primal_gradient,
+      /*componentwise_residual_offset=*/0.0);
 
   double dual_ray_objective =
       DualObjectiveBoundsTerm(scaled_sharded_qp, scaled_dual_ray) +
@@ -501,32 +534,12 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
       PrimalResidualNorms(scaled_sharded_qp, row_scaling_vec, scaled_primal_ray,
                           /*componentwise_residual_offset=*/0.0,
                           /*use_homogeneous_constraint_bounds=*/true);
-  // `primal_residuals` contains the violations of the linear constraints. The
-  // signs of the components are also constrained by the presence or absence
-  // of variable bounds.
-  VectorXd primal_ray_local_sign_max_violation(
-      scaled_sharded_qp.PrimalSharder().NumShards());
-  scaled_sharded_qp.PrimalSharder().ParallelForEachShard(
-      [&](const Sharder::Shard& shard) {
-        const auto lower_bound_shard =
-            shard(scaled_sharded_qp.Qp().variable_lower_bounds);
-        const auto upper_bound_shard =
-            shard(scaled_sharded_qp.Qp().variable_upper_bounds);
-        const auto ray_shard = shard(scaled_primal_ray);
-        const auto scale_shard = shard(col_scaling_vec);
-        double local_max = 0.0;
-        for (int64_t i = 0; i < ray_shard.size(); ++i) {
-          if (std::isfinite(lower_bound_shard[i])) {
-            local_max = std::max(local_max, -ray_shard[i] * scale_shard[i]);
-          }
-          if (std::isfinite(upper_bound_shard[i])) {
-            local_max = std::max(local_max, ray_shard[i] * scale_shard[i]);
-          }
-        }
-        primal_ray_local_sign_max_violation[shard.Index()] = local_max;
-      });
-  const double primal_ray_sign_max_violation =
-      primal_ray_local_sign_max_violation.lpNorm<Eigen::Infinity>();
+
+  // The primal ray should have been projected onto the feasibility bounds, so
+  // that it has the correct signs.
+  DCHECK_EQ(PrimalRayMaxSignViolation(scaled_sharded_qp, col_scaling_vec,
+                                      scaled_primal_ray),
+            0.0);
 
   if (l_inf_primal > 0.0) {
     VectorXd scaled_objective_product =
@@ -534,10 +547,8 @@ InfeasibilityInformation ComputeInfeasibilityInformation(
     result.set_primal_ray_quadratic_norm(
         LInfNorm(scaled_objective_product, scaled_sharded_qp.PrimalSharder()) /
         l_inf_primal);
-    result.set_max_primal_ray_infeasibility(
-        std::max(primal_residuals.l_inf_residual,
-                 primal_ray_sign_max_violation) /
-        l_inf_primal);
+    result.set_max_primal_ray_infeasibility(primal_residuals.l_inf_residual /
+                                            l_inf_primal);
     result.set_primal_ray_linear_objective(
         Dot(scaled_primal_ray, qp.objective_vector,
             scaled_sharded_qp.PrimalSharder()) /

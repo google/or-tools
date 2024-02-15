@@ -190,8 +190,11 @@ SingularValueAndIterations EstimateMaximumSingularValueOfConstraintMatrix(
 bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp);
 
 // Projects `primal` onto the variable bounds constraints.
+// If `use_feasibility_bounds == true`, all finite variable bounds are replaced
+// by zero.
 void ProjectToPrimalVariableBounds(const ShardedQuadraticProgram& sharded_qp,
-                                   Eigen::VectorXd& primal);
+                                   Eigen::VectorXd& primal,
+                                   bool use_feasibility_bounds = false);
 
 // Projects `dual` onto the dual variable bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.

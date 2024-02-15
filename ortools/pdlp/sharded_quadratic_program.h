@@ -24,6 +24,7 @@
 #include "ortools/base/threadpool.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research::pdlp {
 
@@ -37,7 +38,10 @@ class ShardedQuadraticProgram {
  public:
   // Requires `num_shards` >= `num_threads` >= 1.
   // Note that the `qp` is intentionally passed by value.
-  ShardedQuadraticProgram(QuadraticProgram qp, int num_threads, int num_shards);
+  // If `logger` is not nullptr, warns about unbalanced matrices using it;
+  // otherwise warns via Google standard logging.
+  ShardedQuadraticProgram(QuadraticProgram qp, int num_threads, int num_shards,
+                          operations_research::SolverLogger* logger = nullptr);
 
   // Movable but not copyable.
   ShardedQuadraticProgram(const ShardedQuadraticProgram&) = delete;
