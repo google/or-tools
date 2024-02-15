@@ -18,7 +18,7 @@
 
 namespace util_hash {
 // In the or-tools project, MurmurHash64 is just a redirection towards
-// fash_hash.
+// fast_hash.
 inline uint64_t MurmurHash64(const char* buf, const size_t len) {
   return operations_research::fasthash64(buf, len,
                                          uint64_t{0xa5b85c5e198ed849});
