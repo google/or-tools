@@ -9806,7 +9806,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
       // Skip bad constraint.
       if (common_part.size() < 2) continue;
 
-      // Update common part.
+      // Update coeff_map.
       block.push_back({c, x_coeff});
       coeff_map.clear();
       for (const auto [var, coeff] : common_part) {
@@ -9816,8 +9816,8 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
 
     // We have a candidate.
     const int64_t saved_nz =
-        ComputeNonZeroReduction(block.size(), common_part.size());
-    if (saved_nz < 100) continue;
+        ComputeNonZeroReduction(block.size(), coeff_map.size());
+    if (saved_nz < 30) continue;
 
     // Fix multiples, currently this contain the coeff of x for each constraint.
     const int64_t base_x = coeff_map.at(x);
@@ -9826,7 +9826,7 @@ void CpModelPresolver::FindBigVerticalLinearOverlap(
       multipier /= base_x;
     }
 
-    // Introduce new_var = common_part and perform the substitution.
+    // Introduce new_var = coeff_map and perform the substitution.
     if (!RemoveCommonPart(coeff_map, block, helper)) continue;
     ++num_blocks;
     nz_reduction += saved_nz;
@@ -12306,8 +12306,12 @@ CpSolverStatus CpModelPresolver::Presolve() {
       ActivityBoundHelper activity_amo_helper;
       activity_amo_helper.AddAllAtMostOnes(*context_->working_model);
       FindBigAtMostOneAndLinearOverlap(&activity_amo_helper);
-      FindBigHorizontalLinearOverlap(&activity_amo_helper);
+
+      // Heuristic: vertical introduce smaller defining constraint and appear in
+      // many constraints, so might be more constrained. We might also still
+      // make horizontal rectangle with the variable introduced.
       FindBigVerticalLinearOverlap(&activity_amo_helper);
+      FindBigHorizontalLinearOverlap(&activity_amo_helper);
     }
     if (context_->ModelIsUnsat()) return InfeasibleStatus();
 

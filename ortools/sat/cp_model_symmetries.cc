@@ -323,6 +323,40 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
         break;
       }
+      case ConstraintProto::kLinMax: {
+        const LinearExpressionProto& target_expr =
+            constraint.lin_max().target();
+
+        std::vector<int64_t> target_color = color;
+        target_color.push_back(target_expr.offset());
+        const int target_node = new_node(target_color);
+
+        for (int j = 0; j < target_expr.vars_size(); ++j) {
+          const int var = target_expr.vars(j);
+          DCHECK(RefIsPositive(var));
+          const int64_t coeff = target_expr.coeffs(j);
+          graph->AddArc(get_coefficient_node(var, coeff), target_node);
+        }
+
+        for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
+          const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
+
+          std::vector<int64_t> local_color = color;
+          local_color.push_back(expr.offset());
+          const int local_node = new_node(local_color);
+
+          for (int j = 0; j < expr.vars().size(); ++j) {
+            const int var = expr.vars(j);
+            DCHECK(RefIsPositive(var));
+            const int64_t coeff = expr.coeffs(j);
+            graph->AddArc(get_coefficient_node(var, coeff), local_node);
+          }
+
+          graph->AddArc(local_node, target_node);
+        }
+
+        break;
+      }
       case ConstraintProto::kInterval: {
         // We create 3 constraint nodes (for start, size and end) including the
         // offset. We connect these to their terms like for a linear constraint.

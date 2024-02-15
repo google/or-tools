@@ -498,6 +498,7 @@ void ClauseManager::DeleteRemovedClauses() {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
+  implies_something_.resize(num_variables << 1);
   might_have_dups_.resize(num_variables << 1);
   is_redundant_.resize(implications_.size());
   is_removed_.resize(implications_.size(), false);
@@ -550,6 +551,8 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   estimated_sizes_[b.NegatedIndex()]++;
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
+  implies_something_.Set(a.NegatedIndex());
+  implies_something_.Set(b.NegatedIndex());
   NotifyPossibleDuplicate(a);
   NotifyPossibleDuplicate(b);
   is_dag_ = false;
@@ -724,6 +727,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
         for (const Literal b : at_most_one) {
           if (a == b) continue;
           implications_[a].push_back(b.Negated());
+          implies_something_.Set(a);
           NotifyPossibleDuplicate(a);
         }
       }
@@ -741,6 +745,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
       }
       DCHECK(!is_redundant_[l]);
       at_most_ones_[l].push_back(local_start);
+      implies_something_.Set(l);
     }
 
     // Add sentinel.
@@ -2056,6 +2061,8 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
   is_marked_.Set(root);
   for (int j = 0; j < stack_size; ++j) {
     const Literal current = stack[j];
+    if (!implies_something_[current]) continue;
+
     for (const Literal l : implications_[current]) {
       if (!is_marked[l] && !is_redundant[l]) {
         is_marked_.SetUnsafe(l);

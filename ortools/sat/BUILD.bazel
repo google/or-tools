@@ -969,6 +969,7 @@ cc_library(
         ":implied_bounds",
         ":integer",
         ":intervals",
+        ":linear_constraint_manager",
         ":linear_programming_constraint",
         ":model",
         ":probing",

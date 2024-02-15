@@ -80,9 +80,10 @@ LbTreeSearch::LbTreeSearch(Model* model)
   // We use the normal SAT search but we will bump the variable activity
   // slightly differently. In addition to the conflicts, we also bump it each
   // time the objective lower bound increase in a sub-node.
-  search_heuristic_ =
-      SequentialSearch({SatSolverHeuristic(model),
-                        model->GetOrCreate<SearchHeuristics>()->fixed_search});
+  search_heuristic_ = SequentialSearch(
+      {SatSolverHeuristic(model), MostFractionalHeuristic(model),
+       IntegerValueSelectionHeuristic(
+           model->GetOrCreate<SearchHeuristics>()->fixed_search, model)});
 }
 
 void LbTreeSearch::UpdateParentObjective(int level) {

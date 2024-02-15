@@ -862,6 +862,14 @@ class BinaryImplicationGraph : public SatPropagator {
   const int at_most_one_max_expansion_size_;
   int at_most_one_iterator_ = 0;
 
+  // Invariant: implies_something_[l] should be true iff implications_[l] or
+  // at_most_ones_[l] might be non-empty.
+  //
+  // For problems with a large number of variables and sparse implications_ or
+  // at_most_ones_ entries, checking this is way faster during
+  // MarkDescendants(). See for instance proteindesign122trx11p8.pb.gz.
+  Bitset64<LiteralIndex> implies_something_;
+
   // Used by GenerateAtMostOnesWithLargeWeight().
   std::vector<std::vector<Literal>> tmp_cuts_;
 

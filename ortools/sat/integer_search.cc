@@ -34,6 +34,7 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
@@ -174,6 +175,28 @@ std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
       if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
     }
     return BooleanOrIntegerLiteral();
+  };
+}
+
+std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {
+  auto* lp_values = model->GetOrCreate<ModelLpValues>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [lp_values, integer_trail, model]() {
+    double best_fractionality = 0.0;
+    BooleanOrIntegerLiteral decision;
+    for (IntegerVariable var(0); var < lp_values->size(); var += 2) {
+      if (integer_trail->IsFixed(var)) continue;
+      const double lp_value = (*lp_values)[var];
+      const double fractionality = std::abs(lp_value - std::round(lp_value));
+      if (fractionality > best_fractionality) {
+        best_fractionality = fractionality;
+
+        // This choose <= value if possible.
+        decision = BooleanOrIntegerLiteral(SplitAroundGivenValue(
+            var, IntegerValue(std::floor(lp_value)), model));
+      }
+    }
+    return decision;
   };
 }
 
