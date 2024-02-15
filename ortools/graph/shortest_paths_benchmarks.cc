@@ -143,7 +143,7 @@ static void BM_MultiThreadAllPairsOn2DGrid(benchmark::State& state) {
     cost = absl::Uniform(random, 0, 100000);
   }
   for (auto _ : state) {
-    ::testing::DoNotOptimize(
+    ::benchmark::DoNotOptimize(
         AllPairsShortestPaths<implementation>(*graph, arc_costs, num_threads));
   }
   // "byte" = pair of nodes for which we computed the shortest path distance.
@@ -201,7 +201,7 @@ static void BM_WindowedAllPairsOn2DGrid(benchmark::State& state) {
     }
   }
   for (auto _ : state) {
-    ::testing::DoNotOptimize(ManyToManyShortestPaths<implementation>(
+    ::benchmark::DoNotOptimize(ManyToManyShortestPaths<implementation>(
         *graph, arc_costs, window_nodes, window_nodes, num_threads));
   }
   // "byte" = pair of nodes for which we computed the shortest path distance.
