@@ -21,6 +21,7 @@ py_library(
     srcs = ["compare_proto.py"],
     deps = [
         "//ortools/math_opt/python:normalize",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -30,5 +31,6 @@ py_library(
     srcs = ["proto_matcher.py"],
     deps = [
         "//ortools/math_opt/python:normalize",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
