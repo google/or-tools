@@ -28,7 +28,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
-#include "testing/base/public/googletest.h"
 
 namespace operations_research {
 

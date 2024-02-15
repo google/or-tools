@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -45,7 +46,7 @@ class DynamicPermutation {
   // - For all i, dst[i] must not already be the image of something.
   //
   // Complexity: amortized O(src.size()).
-  void AddMappings(const std::vector<int>& src, const std::vector<int>& dst);
+  void AddMappings(absl::Span<const int> src, absl::Span<const int> dst);
 
   // Undoes the last AddMappings() operation, and fills the "undone_mapping_src"
   // vector with the src of that last operation. This works like an undo stack.

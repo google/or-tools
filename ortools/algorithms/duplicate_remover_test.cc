@@ -146,8 +146,8 @@ void BM_AppendAndLazilyRemoveDuplicates(benchmark::State& state) {
       }
     }
     if (!use_flat_hash_set) deduper.RemoveDuplicates(&v);
-    testing::DoNotOptimize(v);
-    testing::DoNotOptimize(set);
+    benchmark::DoNotOptimize(v);
+    benchmark::DoNotOptimize(set);
   }
   state.SetItemsProcessed(state.iterations() * num_inserts);
 }

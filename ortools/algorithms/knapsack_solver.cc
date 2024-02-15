@@ -552,7 +552,7 @@ void KnapsackGenericSolver::UpdateBestSolution() {
 // number of items is less than 15.
 class KnapsackBruteForceSolver : public BaseKnapsackSolver {
  public:
-  explicit KnapsackBruteForceSolver(const std::string& solver_name);
+  explicit KnapsackBruteForceSolver(absl::string_view solver_name);
 
   // This type is neither copyable nor movable.
   KnapsackBruteForceSolver(const KnapsackBruteForceSolver&) = delete;
@@ -581,7 +581,7 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
 };
 
 KnapsackBruteForceSolver::KnapsackBruteForceSolver(
-    const std::string& solver_name)
+    absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       num_items_(0),
       capacity_(0LL),
@@ -1183,7 +1183,7 @@ int64_t KnapsackDivideAndConquerSolver::Solve(TimeLimit* /*time_limit*/,
 class KnapsackMIPSolver : public BaseKnapsackSolver {
  public:
   KnapsackMIPSolver(MPSolver::OptimizationProblemType problem_type,
-                    const std::string& solver_name);
+                    absl::string_view solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
@@ -1209,7 +1209,7 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
 
 KnapsackMIPSolver::KnapsackMIPSolver(
     MPSolver::OptimizationProblemType problem_type,
-    const std::string& solver_name)
+    absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       problem_type_(problem_type),
       profits_(),

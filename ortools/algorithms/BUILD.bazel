@@ -85,6 +85,7 @@ cc_test(
     srcs = ["radix_sort_test.cc"],
     deps = [
         ":radix_sort",
+        "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
@@ -94,7 +95,6 @@ cc_test(
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
         "@com_google_googletest//:gtest_main",
-        "//ortools/base:dump_vars",
     ],
 )
 

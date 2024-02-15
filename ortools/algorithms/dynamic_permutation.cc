@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 
 namespace operations_research {
@@ -27,8 +28,8 @@ DynamicPermutation::DynamicPermutation(int n)
   for (int i = 0; i < Size(); ++i) image_[i] = ancestor_[i] = i;
 }
 
-void DynamicPermutation::AddMappings(const std::vector<int>& src,
-                                     const std::vector<int>& dst) {
+void DynamicPermutation::AddMappings(absl::Span<const int> src,
+                                     absl::Span<const int> dst) {
   DCHECK_EQ(src.size(), dst.size());
   mapping_src_size_stack_.push_back(mapping_src_stack_.size());
   mapping_src_stack_.reserve(mapping_src_stack_.size() + src.size());

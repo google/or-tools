@@ -640,7 +640,7 @@ void HungarianOptimizer::AugmentPath() {
   state_ = &HungarianOptimizer::PrimeZeroes;
 }
 
-bool InputContainsNan(const std::vector<std::vector<double>>& input) {
+bool InputContainsNan(absl::Span<const std::vector<double>> input) {
   for (const auto& subvector : input) {
     for (const auto& num : subvector) {
       if (std::isnan(num)) {
