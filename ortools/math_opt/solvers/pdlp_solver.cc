@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -28,6 +29,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
@@ -73,7 +75,7 @@ absl::StatusOr<PrimalDualHybridGradientParams> PdlpSolver::MergeParameters(
     const SolveParametersProto& parameters, const bool has_message_callback) {
   PrimalDualHybridGradientParams result;
   std::vector<std::string> warnings;
-  if (parameters.enable_output() && !has_message_callback) {
+  if (parameters.enable_output() || has_message_callback) {
     result.set_verbosity_level(3);
   }
   if (parameters.has_threads()) {
@@ -354,8 +356,16 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
         model_parameters.solution_hints(0));
   }
 
-  const SolverResult pdlp_result = PrimalDualHybridGradient(
-      pdlp_bridge_.pdlp_lp(), pdlp_params, initial_solution, &interrupt);
+  std::function<void(const std::string&)> pdlp_callback = nullptr;
+  if (message_cb != nullptr) {
+    pdlp_callback = [&message_cb](const std::string& message) {
+      message_cb(absl::StrSplit(message, '\n'));
+    };
+  }
+
+  const SolverResult pdlp_result =
+      PrimalDualHybridGradient(pdlp_bridge_.pdlp_lp(), pdlp_params,
+                               initial_solution, &interrupt, pdlp_callback);
   return MakeSolveResult(pdlp_result, model_parameters);
 }
 

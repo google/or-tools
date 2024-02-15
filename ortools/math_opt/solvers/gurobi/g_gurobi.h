@@ -44,7 +44,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/source_location.h"
 #include "ortools/gurobi/environment.h"
-#include "ortools/gurobi/isv/public/gurobi_isv.h"
+#include "ortools/gurobi/isv_public/gurobi_isv.h"
 
 namespace operations_research::math_opt {
 

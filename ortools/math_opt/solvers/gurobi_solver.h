@@ -203,7 +203,7 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<double> GetBestDualBound(
       const std::vector<SolutionProto>& solutions) const;
   absl::StatusOr<double> GetBestPrimalBound(
-      const std::vector<SolutionProto>& solutions) const;
+      absl::Span<const SolutionProto> solutions) const;
 
   bool PrimalSolutionQualityAvailable() const;
   absl::StatusOr<double> GetPrimalSolutionQuality() const;

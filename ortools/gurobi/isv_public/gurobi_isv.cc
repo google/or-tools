@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gurobi/isv/public/gurobi_isv.h"
+#include "ortools/gurobi/isv_public/gurobi_isv.h"
 
 #include <string>
 #include <utility>

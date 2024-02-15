@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research::math_opt {
@@ -81,7 +82,7 @@ struct MoveVariablesToTheirBestFeasibleValueOptions {
 // (either the gap or the time limit) the solver did not do it.
 absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     const Model& model, const VariableMap<double>& input_solution,
-    const std::vector<Variable>& variables,
+    absl::Span<const Variable> variables,
     const MoveVariablesToTheirBestFeasibleValueOptions& options = {});
 
 // Returns the lower bound of the variable, rounding it up when the variable is

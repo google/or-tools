@@ -123,7 +123,7 @@ std::vector<LabeledExample> RandomData(const LinearModel& ground_truth,
 
 // Computes the average squared error between model(example.xs) and example.y.
 double L2Loss(const LinearModel& model,
-              const std::vector<LabeledExample>& examples) {
+              absl::Span<const LabeledExample> examples) {
   double result = 0.0;
   for (const LabeledExample& example : examples) {
     CHECK_EQ(example.xs.size(), model.betas.size());

@@ -336,7 +336,7 @@ bool IsEmpty(glp_prob* const problem) {
 // ids and taking into account the provided filter.
 SparseDoubleVectorProto FilteredVector(glp_prob* const problem,
                                        const SparseVectorFilterProto& filter,
-                                       const std::vector<int64_t>& ids,
+                                       absl::Span<const int64_t> ids,
                                        double (*const getter)(glp_prob*, int)) {
   SparseDoubleVectorProto vec;
   vec.mutable_ids()->Reserve(ids.size());

@@ -34,7 +34,7 @@ cc_library(
         "//ortools/base:source_location",
         "//ortools/base:status_macros",
         "//ortools/gurobi:environment",
-        "//ortools/gurobi/isv/public:gurobi_isv",
+        "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/log:die_if_null",

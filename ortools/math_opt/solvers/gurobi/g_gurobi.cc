@@ -31,7 +31,7 @@
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gurobi/environment.h"
-#include "ortools/gurobi/isv/public/gurobi_isv.h"
+#include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
 namespace operations_research::math_opt {

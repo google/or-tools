@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -85,7 +86,7 @@ absl::Status ValidateOptions(
 
 absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     const Model& model, const VariableMap<double>& input_solution,
-    const std::vector<Variable>& variables,
+    absl::Span<const Variable> variables,
     const MoveVariablesToTheirBestFeasibleValueOptions& options) {
   // Validate the inputs.
   {

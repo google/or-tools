@@ -20,6 +20,7 @@ cc_library(
     deps = [
         "//ortools/base:linked_hash_map",
         "//ortools/base:protoutil",
+        "//ortools/base:status_macros",
         "//ortools/gscip",
         "//ortools/gscip:gscip_callback_result",
         "//ortools/gscip:gscip_constraint_handler",

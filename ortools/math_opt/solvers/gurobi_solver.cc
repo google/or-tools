@@ -1304,7 +1304,7 @@ absl::StatusOr<double> GurobiSolver::GetPrimalSolutionQuality() const {
 }
 
 absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
-    const std::vector<SolutionProto>& solutions) const {
+    absl::Span<const SolutionProto> solutions) const {
   // We avoid using GRB_DBL_ATTR_OBJVAL because it may be incorrect on early
   // termination and for infeasible solutions (as of Gurobi 9.0.1).
   // Note that for (primal) unbounded problems the primal_bound is correctly
