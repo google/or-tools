@@ -306,6 +306,6 @@ git_repository(
 
 git_repository(
     name = "com_google_benchmark",
-    tag = "v1.8.1",
+    tag = "v1.8.3",
     remote = "https://github.com/google/benchmark.git",
 )
