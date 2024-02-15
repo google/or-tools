@@ -62,7 +62,7 @@ class DataWrapper<LinearProgram> {
   }
 
   int FindOrCreateConstraint(absl::string_view name) {
-    return data_->FindOrCreateConstraint(std::string(name)).value();
+    return data_->FindOrCreateConstraint(name).value();
   }
   void SetConstraintBounds(int index, double lower_bound, double upper_bound) {
     data_->SetConstraintBounds(RowIndex(index), lower_bound, upper_bound);

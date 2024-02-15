@@ -145,7 +145,7 @@ std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
 bool IsSubsetOf0N(absl::Span<const int> v, int n);
 
 // Returns true iff the given vector is a permutation of [0..size()-1].
-inline bool IsValidPermutation(const std::vector<int>& v) {
+inline bool IsValidPermutation(absl::Span<const int> v) {
   return IsSubsetOf0N(v, v.size());
 }
 
@@ -168,7 +168,7 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path);
 
 // Returns true iff the given path contains a cycle.
 template <class Graph>
-bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
+bool PathHasCycle(const Graph& graph, absl::Span<const int> arc_path);
 
 // Returns a vector representing a mapping from arcs to arcs such that each arc
 // is mapped to another arc with its (tail, head) flipped, if such an arc
@@ -376,7 +376,7 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
 }
 
 template <class Graph>
-bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path) {
+bool PathHasCycle(const Graph& graph, absl::Span<const int> arc_path) {
   if (arc_path.empty()) return false;
   std::set<int> seen;
   seen.insert(graph.Tail(arc_path.front()));

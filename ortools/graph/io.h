@@ -30,6 +30,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "ortools/base/numbers.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/filelineiter.h"
@@ -66,7 +67,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 template <class Graph>
 absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color);
+                              absl::Span<const int> num_nodes_with_color);
 
 // Implementations of the templated methods.
 
@@ -100,7 +101,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
 template <class Graph>
 absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color) {
+                              absl::Span<const int> num_nodes_with_color) {
   FILE* f = fopen(filename.c_str(), "w");
   if (f == nullptr) {
     return absl::Status(absl::StatusCode::kInvalidArgument,
