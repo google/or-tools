@@ -74,6 +74,45 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "vector_bin_packing",
+    srcs = [
+        "vector_bin_packing_main.cc",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/packing:arc_flow_builder",
+        "//ortools/packing:arc_flow_solver",
+        "//ortools/packing:vector_bin_packing_cc_proto",
+        "//ortools/packing:vector_bin_packing_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "vector_bin_packing_test",
+    size = "medium",
+    srcs = [
+        "vector_bin_packing_main.cc",
+    ],
+    args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
+    data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/packing:arc_flow_builder",
+        "//ortools/packing:arc_flow_solver",
+        "//ortools/packing:vector_bin_packing_cc_proto",
+        "//ortools/packing:vector_bin_packing_parser",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 ### Multiple Dimension (non vector) Bin Packing ###
 
 proto_library(

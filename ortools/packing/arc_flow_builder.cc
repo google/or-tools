@@ -22,6 +22,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
@@ -35,8 +36,8 @@ class ArcFlowBuilder {
  public:
   // Same arguments as BuildArcFlowGraph(): see the .h.
   ArcFlowBuilder(const std::vector<int>& bin_dimensions,
-                 const std::vector<std::vector<int>>& item_dimensions_by_type,
-                 const std::vector<int>& demand_by_type);
+                 absl::Span<const std::vector<int>> item_dimensions_by_type,
+                 absl::Span<const int> demand_by_type);
 
   // Builds the arc-flow graph.
   ArcFlowGraph BuildVectorBinPackingGraph();
@@ -53,7 +54,7 @@ class ArcFlowBuilder {
     int original_index;
 
     // Used to sort items by relative size.
-    double NormalizedSize(const std::vector<int>& bin_dimensions) const;
+    double NormalizedSize(absl::Span<const int> bin_dimensions) const;
   };
 
   // State of the dynamic programming algorithm.
@@ -109,7 +110,7 @@ class ArcFlowBuilder {
 };
 
 double ArcFlowBuilder::Item::NormalizedSize(
-    const std::vector<int>& bin_dimensions) const {
+    absl::Span<const int> bin_dimensions) const {
   double size = 0.0;
   for (int i = 0; i < bin_dimensions.size(); ++i) {
     size += static_cast<double>(dimensions[i]) / bin_dimensions[i];
@@ -129,8 +130,8 @@ int64_t ArcFlowBuilder::NumDpStates() const {
 
 ArcFlowBuilder::ArcFlowBuilder(
     const std::vector<int>& bin_dimensions,
-    const std::vector<std::vector<int>>& item_dimensions_by_type,
-    const std::vector<int>& demand_by_type)
+    absl::Span<const std::vector<int>> item_dimensions_by_type,
+    absl::Span<const int> demand_by_type)
     : bin_dimensions_(bin_dimensions) {
   // Checks dimensions.
   for (int i = 0; i < bin_dimensions.size(); ++i) {
