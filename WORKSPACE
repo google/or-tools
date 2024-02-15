@@ -88,8 +88,8 @@ git_repository(
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20240116.0",
-    patches = ["//patches:abseil-cpp-20240116.0.patch"],
+    tag = "20240116.1",
+    patches = ["//patches:abseil-cpp-20240116.1.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
