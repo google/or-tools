@@ -121,8 +121,7 @@ std::ostream& operator<<(std::ostream& os,
 
 // needed by algorithms tests
 template <typename T>
-std::ostream& operator<<(std::ostream& os,
-                         const ::std::vector<T>& vec) {
+std::ostream& operator<<(std::ostream& os, const ::std::vector<T>& vec) {
   for (T it : vec) {
     os << ::std::to_string(it) << ',';
   }
@@ -130,8 +129,7 @@ std::ostream& operator<<(std::ostream& os,
 }
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os,
-                         const ::std::optional<T>& opt) {
+std::ostream& operator<<(std::ostream& os, const ::std::optional<T>& opt) {
   if (opt.has_value())
     os << ::std::to_string(opt.value());
   else
