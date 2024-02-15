@@ -255,7 +255,7 @@ ElementEncodings::GetElementEncodedVariables() const {
 // the size2 affine.
 std::vector<LiteralValueValue> TryToReconcileEncodings(
     const AffineExpression& size2_affine, const AffineExpression& affine,
-    const std::vector<ValueLiteralPair>& affine_var_encoding,
+    absl::Span<const ValueLiteralPair> affine_var_encoding,
     bool put_affine_left_in_result, IntegerEncoder* integer_encoder) {
   IntegerVariable binary = size2_affine.var;
   std::vector<LiteralValueValue> terms;

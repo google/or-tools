@@ -127,8 +127,7 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
                                        Coefficient max_value);
 
 // Returns true iff the Boolean linear expression is in canonical form.
-bool BooleanLinearExpressionIsCanonical(
-    const std::vector<LiteralWithCoeff>& cst);
+bool BooleanLinearExpressionIsCanonical(absl::Span<const LiteralWithCoeff> cst);
 
 // Given a Boolean linear constraint in canonical form, simplify its
 // coefficients using simple heuristics.
@@ -391,7 +390,7 @@ class UpperBoundedLinearConstraint {
       const std::vector<LiteralWithCoeff>& cst);
 
   // Returns true if the given terms are the same as the one in this constraint.
-  bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
+  bool HasIdenticalTerms(absl::Span<const LiteralWithCoeff> cst);
   Coefficient Rhs() const { return rhs_; }
 
   // Sets the rhs of this constraint. Compute the initial threshold value using

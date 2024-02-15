@@ -183,7 +183,7 @@ std::vector<int> GetOrbits(
 }
 
 std::vector<int> GetOrbitopeOrbits(
-    int n, const std::vector<std::vector<int>>& orbitope) {
+    int n, absl::Span<const std::vector<int>> orbitope) {
   std::vector<int> orbits(n, -1);
   for (int i = 0; i < orbitope.size(); ++i) {
     for (int j = 0; j < orbitope[i].size(); ++j) {

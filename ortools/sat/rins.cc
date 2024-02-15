@@ -25,6 +25,7 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -132,7 +133,7 @@ void FillRinsNeighborhood(const std::vector<int64_t>& solution,
   }
 }
 
-void FillRensNeighborhood(const std::vector<double>& relaxation_values,
+void FillRensNeighborhood(absl::Span<const double> relaxation_values,
                           double difficulty, absl::BitGenRef random,
                           ReducedDomainNeighborhood& reduced_domains) {
   std::vector<VarWeight> var_fractionality_pairs;

@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
@@ -46,8 +47,8 @@ class ZeroHalfCutHelper {
   // TODO(user): This is a first implementation, both the heuristic and the
   // code performance can probably be improved uppon.
   void ProcessVariables(const std::vector<double>& lp_values,
-                        const std::vector<IntegerValue>& lower_bounds,
-                        const std::vector<IntegerValue>& upper_bounds);
+                        absl::Span<const IntegerValue> lower_bounds,
+                        absl::Span<const IntegerValue> upper_bounds);
   void AddOneConstraint(glop::RowIndex, absl::Span<const glop::ColIndex> cols,
                         absl::Span<const IntegerValue> coeffs, IntegerValue lb,
                         IntegerValue ub);

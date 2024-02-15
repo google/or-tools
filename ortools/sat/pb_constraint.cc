@@ -147,7 +147,7 @@ bool ApplyLiteralMapping(
 
 // TODO(user): Also check for no duplicates literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(
-    const std::vector<LiteralWithCoeff>& cst) {
+    absl::Span<const LiteralWithCoeff> cst) {
   Coefficient previous(1);
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
@@ -453,7 +453,7 @@ void UpperBoundedLinearConstraint::AddToConflict(
 }
 
 bool UpperBoundedLinearConstraint::HasIdenticalTerms(
-    const std::vector<LiteralWithCoeff>& cst) {
+    absl::Span<const LiteralWithCoeff> cst) {
   if (cst.size() != literals_.size()) return false;
   int literal_index = 0;
   int coeff_index = 0;

@@ -327,9 +327,10 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const LinearExpressionProto& target_expr =
             constraint.lin_max().target();
 
-        std::vector<int64_t> target_color = color;
-        target_color.push_back(target_expr.offset());
-        const int target_node = new_node(target_color);
+        std::vector<int64_t> local_color = color;
+        local_color.push_back(target_expr.offset());
+        const int target_node = new_node(local_color);
+        local_color.pop_back();
 
         for (int j = 0; j < target_expr.vars_size(); ++j) {
           const int var = target_expr.vars(j);
@@ -339,11 +340,14 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         }
 
         for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
+          // TODO(user): We can create a node per LinearExpressionProto instead.
+          // This will allow to reuse node between constraint, if they share a
+          // common expression.
           const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
 
-          std::vector<int64_t> local_color = color;
           local_color.push_back(expr.offset());
           const int local_node = new_node(local_color);
+          local_color.pop_back();
 
           for (int j = 0; j < expr.vars().size(); ++j) {
             const int var = expr.vars(j);

@@ -39,8 +39,8 @@ void ZeroHalfCutHelper::Reset(int size) {
 
 void ZeroHalfCutHelper::ProcessVariables(
     const std::vector<double>& lp_values,
-    const std::vector<IntegerValue>& lower_bounds,
-    const std::vector<IntegerValue>& upper_bounds) {
+    absl::Span<const IntegerValue> lower_bounds,
+    absl::Span<const IntegerValue> upper_bounds) {
   Reset(lp_values.size());
 
   // Shift all variables to their closest bound.

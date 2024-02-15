@@ -59,8 +59,8 @@ std::vector<int> GetOrbits(
 // Returns the orbits under the given orbitope action.
 // Same results format as in GetOrbits(). Note that here, the orbit index
 // is simply the row index of an element in the orbitope matrix.
-std::vector<int> GetOrbitopeOrbits(
-    int n, const std::vector<std::vector<int>>& orbitope);
+std::vector<int> GetOrbitopeOrbits(int n,
+                                   absl::Span<const std::vector<int>> orbitope);
 
 // Given the generators for a permutation group of [0, n-1], update it to
 // a set of generators of the group stabilizing the given element.

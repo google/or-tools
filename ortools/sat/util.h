@@ -251,9 +251,9 @@ std::vector<absl::Span<int>> AtMostOneDecomposition(
 // Preconditions: All coeffs are assumed to be positive. You can easily negate
 // all the negative coeffs and corresponding bounds before calling this.
 bool LinearInequalityCanBeReducedWithClosestMultiple(
-    int64_t base, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
-    int64_t rhs, int64_t* new_rhs);
+    int64_t base, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> lbs, absl::Span<const int64_t> ubs, int64_t rhs,
+    int64_t* new_rhs);
 
 // The model "singleton" random engine used in the solver.
 //

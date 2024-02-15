@@ -277,9 +277,9 @@ int64_t ClosestMultiple(int64_t value, int64_t base) {
 }
 
 bool LinearInequalityCanBeReducedWithClosestMultiple(
-    int64_t base, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
-    int64_t rhs, int64_t* new_rhs) {
+    int64_t base, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> lbs, absl::Span<const int64_t> ubs, int64_t rhs,
+    int64_t* new_rhs) {
   // Precompute some bounds for the equation base * X + error <= rhs.
   int64_t max_activity = 0;
   int64_t max_x = 0;

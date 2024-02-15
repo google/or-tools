@@ -243,7 +243,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 // This generates the actual cut and compute its activity vs the
 // available_energy_lp.
 bool CutIsEfficient(
-    const std::vector<EnergyEvent>& events, IntegerValue window_start,
+    absl::Span<const EnergyEvent> events, IntegerValue window_start,
     IntegerValue window_end, double available_energy_lp,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintBuilder* temp_builder) {
@@ -1026,7 +1026,7 @@ namespace {
 //
 // It returns false if one event cannot start before event.start_max.
 bool ComputeWeightedSumOfEndMinsForOnePermutation(
-    const std::vector<PermutableEvent>& events, IntegerValue capacity_max,
+    absl::Span<const PermutableEvent> events, IntegerValue capacity_max,
     IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
     std::vector<std::pair<IntegerValue, IntegerValue>>& profile,
     std::vector<std::pair<IntegerValue, IntegerValue>>& new_profile) {
