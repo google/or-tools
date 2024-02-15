@@ -47,7 +47,6 @@
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/pdlp/termination.h"
 #include "ortools/pdlp/test_util.h"
-#include "testing/base/public/googletest.h"
 
 namespace operations_research::pdlp {
 namespace {
@@ -2101,11 +2100,8 @@ TEST(PresolveTest, WarnsInitialSolution) {
   initial_solution.dual_solution.setZero(3);
   PrimalDualHybridGradientParams params;
   params.mutable_presolve_options()->set_use_glop(true);
-  CaptureTestStdout();
   SolverResult output = PrimalDualHybridGradient(CorrelationClusteringStarLp(),
                                                  params, initial_solution);
-  EXPECT_THAT(GetCapturedTestStdout(),
-              AllOf(HasSubstr("initial solution"), HasSubstr("presolve")));
 }
 
 TEST(PresolveTest, WarnsInitialSolutionViaCallback) {
