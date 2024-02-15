@@ -413,6 +413,28 @@ cc_library(
 )
 
 cc_library(
+    name = "matchers",
+    testonly = 1,
+    srcs = ["matchers.cc"],
+    hdrs = ["matchers.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_constraint",
+        ":math_opt",
+        ":update_result",
+        ":variable_and_expressions",
+        "//ortools/base:logging",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_library(
     name = "enums",
     hdrs = ["enums.h"],
     deps = [
