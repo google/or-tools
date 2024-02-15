@@ -196,7 +196,7 @@ int TspLibParser::SizeFromFile(const std::string& file_name) const {
 }
 
 void TspLibParser::ParseExplicitFullMatrix(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   if (type_ == Types::SOP && to_read_ == size_ * size_) {
     // Matrix size is present in SOP which is redundant with dimension and must
@@ -229,8 +229,7 @@ void TspLibParser::ParseExplicitUpperRow(absl::Span<const std::string> words) {
   }
 }
 
-void TspLibParser::ParseExplicitLowerRow(
-    const std::vector<std::string>& words) {
+void TspLibParser::ParseExplicitLowerRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));

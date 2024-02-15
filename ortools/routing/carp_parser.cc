@@ -21,6 +21,7 @@
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
@@ -115,7 +116,7 @@ namespace {
 std::optional<int64_t> ParseNodeIndex(std::string_view text);
 }  // namespace
 
-bool CarpParser::ParseMetadataLine(const std::vector<std::string>& words) {
+bool CarpParser::ParseMetadataLine(absl::Span<const std::string> words) {
   if (words[0] == "NOMBRE") {
     name_ = absl::StrJoin(words.begin() + 1, words.end(), " ");
   } else if (words[0] == "COMENTARIO") {

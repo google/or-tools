@@ -26,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
@@ -142,7 +143,7 @@ class RoutingSolution {
   // as a vector of nodes being traversed. All the routes are supposed to start
   // and end at the depot if specified.
   static RoutingSolution FromSplitRoutes(
-      const std::vector<std::vector<int64_t>>& routes,
+      absl::Span<const std::vector<int64_t>> routes,
       std::optional<int64_t> depot = std::nullopt);
 
   // Serializes the bare solution to a string, i.e. only the routes for the

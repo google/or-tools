@@ -141,9 +141,9 @@ class TspLibParser final {
   void operator=(const TspLibParser&) = delete;
 #endif
 
-  void ParseExplicitFullMatrix(const std::vector<std::string>& words);
+  void ParseExplicitFullMatrix(absl::Span<const std::string> words);
   void ParseExplicitUpperRow(absl::Span<const std::string> words);
-  void ParseExplicitLowerRow(const std::vector<std::string>& words);
+  void ParseExplicitLowerRow(absl::Span<const std::string> words);
   void ParseExplicitUpperDiagRow(absl::Span<const std::string> words);
   void ParseExplicitLowerDiagRow(absl::Span<const std::string> words);
   void ParseNodeCoord(absl::Span<const std::string> words);

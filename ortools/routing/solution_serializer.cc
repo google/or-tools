@@ -66,7 +66,7 @@ std::vector<std::vector<int64_t>> RoutingSolution::SplitRoutes(
 }
 
 RoutingSolution RoutingSolution::FromSplitRoutes(
-    const std::vector<std::vector<int64_t>>& routes,
+    absl::Span<const std::vector<int64_t>> routes,
     std::optional<int64_t> depot) {
   std::vector<int64_t> total_demands(routes.size(), -1);
   std::vector<int64_t> total_distances(routes.size(), -1);
