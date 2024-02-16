@@ -12,6 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX "/vector_bin_packing_main\\.cc")
+
 set(NAME ${PROJECT_NAME}_packing)
 
 # Will be merge in libortools.so
