@@ -1347,6 +1347,7 @@ cc_library(
         ":scheduling_cuts",
         ":util",
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
@@ -1914,6 +1915,7 @@ cc_library(
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -2154,6 +2156,7 @@ cc_library(
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
 )

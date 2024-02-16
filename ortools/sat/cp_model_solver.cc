@@ -940,6 +940,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
                                  const CpModelProto& model_proto, Model* m) {
   // Non const as we will std::move() stuff out of there.
   LinearRelaxation relaxation = ComputeLinearRelaxation(model_proto, m);
+  if (m->GetOrCreate<SatSolver>()->ModelIsUnsat()) return kNoIntegerVariable;
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -1590,6 +1591,8 @@ void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
   // Add linear constraints to Feasibility Pump.
   const LinearRelaxation relaxation =
       ComputeLinearRelaxation(model_proto, model);
+  if (model->GetOrCreate<SatSolver>()->ModelIsUnsat()) return;
+
   const int num_lp_constraints =
       static_cast<int>(relaxation.linear_constraints.size());
   if (num_lp_constraints == 0) return;
@@ -1701,6 +1704,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     // Linearize some part of the problem and register LP constraint(s).
     objective_var =
         AddLPConstraints(objective_need_to_be_tight, model_proto, model);
+    if (sat_solver->ModelIsUnsat()) return unsat();
   } else if (model_proto.has_objective()) {
     const CpObjectiveProto& obj = model_proto.objective();
     std::vector<std::pair<IntegerVariable, int64_t>> terms;

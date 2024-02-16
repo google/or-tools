@@ -30,6 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
@@ -55,7 +56,7 @@ namespace sat {
 
 namespace {
 struct VectorHash {
-  std::size_t operator()(const std::vector<int64_t>& values) const {
+  std::size_t operator()(absl::Span<const int64_t> values) const {
     size_t hash = 0;
     for (const int64_t value : values) {
       hash = util_hash::Hash(value, hash);

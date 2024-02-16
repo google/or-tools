@@ -1627,8 +1627,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
 
 namespace {
 
-int ElementInIntersectionOrMinusOne(const std::vector<int>& a,
-                                    const std::vector<int>& b) {
+int ElementInIntersectionOrMinusOne(absl::Span<const int> a,
+                                    absl::Span<const int> b) {
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b.begin(), b.end()));
   if (a.empty() || b.empty()) return -1;

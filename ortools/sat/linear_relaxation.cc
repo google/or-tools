@@ -28,6 +28,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/circuit.h"  // for ReindexArcs.
@@ -820,15 +821,39 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   IntegerValue max_of_ends = kMinIntegerValue;
   int num_variable_energies = 0;
   int num_optionals = 0;
+  int64_t sizes_gcd = 0;
+  int64_t demands_gcd = 0;
+  int64_t num_active_intervals = 0;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
-    if (helper->IsOptional(index) && demands_helper->EnergyMin(index) >= 0) {
-      num_optionals++;
+    if (helper->IsOptional(index)) {
+      if (demands_helper->EnergyMin(index) >= 0) {
+        num_optionals++;
+      } else {
+        continue;
+      }
     }
+
     if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
+    if (sizes_gcd != 1) {
+      if (helper->SizeIsFixed(index)) {
+        sizes_gcd = MathUtil::GCD64(helper->SizeMin(index).value(), sizes_gcd);
+      } else {
+        sizes_gcd = 1;
+      }
+    }
+    if (demands_gcd != 1) {
+      if (demands_helper->DemandIsFixed(index)) {
+        demands_gcd = MathUtil::GCD64(demands_helper->DemandMin(index).value(),
+                                      demands_gcd);
+      } else {
+        demands_gcd = 1;
+      }
+    }
+    num_active_intervals++;
     min_of_starts = std::min(min_of_starts, helper->StartMin(index));
     max_of_ends = std::max(max_of_ends, helper->EndMax(index));
   }
@@ -836,15 +861,88 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "
           << num_optionals << " optional intervals, and "
           << num_variable_energies << " variable energy tasks out of "
-          << num_intervals << " intervals"
-          << (makespan.has_value() ? ", and 1 makespan" : "");
+          << num_active_intervals << "/" << num_intervals << " intervals"
+          << (makespan.has_value() ? ", and 1 makespan" : "")
+          << " sizes_gcd: " << sizes_gcd << " demands_gcd: " << demands_gcd;
 
-  // If nothing is variable, the linear relaxation will already be enforced
-  // by the scheduling propagators.
-  if (num_variable_energies + num_optionals == 0) return;
+  // There are no active intervals, no need to add the relaxation.
+  if (num_active_intervals == 0) return;
+
+  // If nothing is variable, and the coefficients cannot be reduced, the linear
+  // relaxation will already be enforced by the scheduling propagators.
+  if (num_variable_energies + num_optionals == 0 && sizes_gcd == 1 &&
+      demands_gcd == 1) {
+    return;
+  }
+
+  // Specialized case 1: sizes are fixed with a non 1 gcd and no makespan.
+  if (sizes_gcd != 1 && !makespan.has_value()) {
+    VLOG(2) << "Cumulative relaxation: sizes_gcd = " << sizes_gcd
+            << ", demands_gcd = " << demands_gcd
+            << ", no makespan, capacity is " << capacity.DebugString();
+    // We can simplify the capacity only if it is fixed.
+    // TODO(user): We could use (capacity / demands_gcd) * demands_gcd.
+    const int64_t active_demand_gcd =
+        integer_trail->IsFixed(capacity) ? demands_gcd : 1;
+    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+    for (int index = 0; index < num_intervals; ++index) {
+      if (helper->IsAbsent(index)) continue;
+      if (helper->IsOptional(index)) {
+        const IntegerValue energy_min = demands_helper->EnergyMin(index);
+        if (energy_min == 0) continue;
+        DCHECK_EQ(energy_min % (sizes_gcd * active_demand_gcd), 0);
+        if (!lc.AddLiteralTerm(helper->PresenceLiteral(index),
+                               energy_min / sizes_gcd / active_demand_gcd)) {
+          return;
+        }
+      } else {
+        // Copy the decomposed energy.
+        std::vector<LiteralValueValue> product =
+            demands_helper->DecomposedEnergies()[index];
+        if (!product.empty()) {
+          // The energy is defined if the vector is not empty.
+          // Let's reduce the coefficients.
+          for (LiteralValueValue& entry : product) {
+            DCHECK_EQ(entry.left_value % sizes_gcd, 0);
+            entry.left_value /= sizes_gcd;
+            DCHECK_EQ(entry.right_value % demands_gcd, 0);
+            entry.right_value /= demands_gcd;
+          }
+          if (!lc.AddDecomposedProduct(product)) return;
+        } else {
+          // We know the size is fixed.
+          const IntegerValue local_size =
+              integer_trail->FixedValue(helper->Sizes()[index]);
+          DCHECK_EQ(local_size % sizes_gcd, 0);
+          if (active_demand_gcd == 1) {
+            lc.AddTerm(demands_helper->Demands()[index],
+                       local_size / sizes_gcd);
+          } else {
+            const IntegerValue local_demand =
+                integer_trail->FixedValue(demands_helper->Demands()[index]);
+            DCHECK_EQ(local_demand % active_demand_gcd, 0);
+            lc.AddConstant(local_size * local_demand / sizes_gcd /
+                           active_demand_gcd);
+          }
+        }
+      }
+    }
+
+    // Add the available energy of the cumulative.
+    if (active_demand_gcd == 1) {
+      lc.AddTerm(capacity, -(max_of_ends - min_of_starts) / sizes_gcd);
+    } else {
+      const IntegerValue fixed_capacity = integer_trail->FixedValue(capacity);
+      lc.AddConstant(-fixed_capacity * (max_of_ends - min_of_starts) /
+                     sizes_gcd / active_demand_gcd);
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+    return;
+  }
+
+  // TODO(user): Implement demands_gcd != 1 && capacity is fixed.
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  int num_intervals_added = 0;
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
     if (helper->IsOptional(index)) {
@@ -868,9 +966,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
                                   integer_trail);
       }
     }
-    ++num_intervals_added;
   }
-  if (num_intervals_added == 0) return;
 
   // Create and link span_start and span_end to the starts and ends of the
   // tasks.
@@ -1839,7 +1935,19 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // so that we don't do extra work in the connected component computation.
   relaxation.at_most_ones.clear();
 
-  // Remove size one LP constraints, they are not useful.
+  // Propagate unary constraints.
+  {
+    SatSolver* sat_solver = m->GetOrCreate<SatSolver>();
+    for (const LinearConstraint& lc : relaxation.linear_constraints) {
+      if (lc.num_terms > 1) continue;
+      LoadLinearConstraint(lc, m);
+      if (sat_solver->ModelIsUnsat()) return relaxation;
+    }
+    if (!sat_solver->FinishPropagation()) return relaxation;
+  }
+
+  // Remove size one LP constraints from the main algorithms, they are not
+  // useful.
   relaxation.linear_constraints.erase(
       std::remove_if(
           relaxation.linear_constraints.begin(),

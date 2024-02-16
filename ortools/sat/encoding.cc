@@ -26,6 +26,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
@@ -582,7 +583,7 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
   return result;
 }
 
-bool ObjectiveEncoder::ProcessCore(const std::vector<Literal>& core,
+bool ObjectiveEncoder::ProcessCore(absl::Span<const Literal> core,
                                    Coefficient min_weight, Coefficient gap,
                                    std::string* info) {
   // Backtrack to be able to add new constraints.
