@@ -2216,7 +2216,9 @@ class CpModel:
           An `IntervalVar` object.
         """
 
-        self.add(start + size == end)
+        lin = self.add(start + size == end)
+        if name:
+            lin.with_name('lin_' + name)
 
         start_expr = self.parse_linear_expression(start)
         size_expr = self.parse_linear_expression(size)
@@ -2393,7 +2395,9 @@ class CpModel:
         """
 
         # add the linear constraint.
-        self.add(start + size == end).only_enforce_if(is_present)
+        lin = self.add(start + size == end).only_enforce_if(is_present)
+        if name:
+            lin.with_name('lin_opt_' + name)
 
         # Creates the IntervalConstraintProto object.
         is_present_index = self.get_or_make_boolean_index(is_present)
