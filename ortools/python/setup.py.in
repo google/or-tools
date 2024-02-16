@@ -91,6 +91,8 @@ setup(
         ],
         '@PYTHON_PROJECT@.math_opt.python':['*.pyi'],
         '@PYTHON_PROJECT@.math_opt.solvers':['*.pyi'],
+        '@PYTHON_PROJECT@.service.v1':['*.pyi'],
+        '@PYTHON_PROJECT@.service.v1.mathopt':['*.pyi'],
         '@PYTHON_PROJECT@.packing':['*.pyi'],
         '@PYTHON_PROJECT@.pdlp':['*.pyi'],
         '@PYTHON_PROJECT@.pdlp.python':[

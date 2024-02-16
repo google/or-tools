@@ -152,12 +152,18 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   )
 list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
+
 if(BUILD_MATH_OPT)
   file(GLOB_RECURSE MATH_OPT_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
     "ortools/math_opt/*.proto"
     "ortools/math_opt/solver/*.proto")
   list(APPEND OR_TOOLS_PROTO_PY_FILES ${MATH_OPT_PROTO_PY_FILES})
+
+  file(GLOB_RECURSE SERVICE_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/service/v1/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${SERVICE_PROTO_PY_FILES})
 endif()
+
 if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_PY_FILES ${PDLP_PROTO_PY_FILES})
@@ -320,8 +326,13 @@ if(BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/ipc/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
+
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/mathopt/__init__.py CONTENT "")
 endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
 if(USE_PDLP OR BUILD_MATH_OPT)
@@ -362,6 +373,10 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/sparse_containers.py
     ortools/math_opt/python/statistics.py
     DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)
+  file(COPY
+    ortools/math_opt/python/ipc/proto_converter.py
+    ortools/math_opt/python/ipc/remote_http_solve.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python/ipc)
   file(COPY
     ortools/math_opt/python/testing/compare_proto.py
     ortools/math_opt/python/testing/proto_matcher.py
