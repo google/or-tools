@@ -17,7 +17,6 @@
 #include <limits>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -224,7 +223,7 @@ std::vector<SubsetIndex> SetCoverInvariant::UnsafeToggle(SubsetIndex subset,
   // Toggle should be a real change.
   DCHECK_NE(is_selected_[subset], value);
   // If selected, then marginal_impact == 0.
-  DCHECK((is_selected_[subset] <= (marginal_impacts_[subset] == 0)));
+  DCHECK(is_selected_[subset] <= (marginal_impacts_[subset] == 0));
   DVLOG(1) << (value ? "S" : "Des") << "electing subset " << subset;
   const SubsetCostVector& subset_costs = model_->subset_costs();
   cost_ += value ? subset_costs[subset] : -subset_costs[subset];
@@ -258,24 +257,24 @@ void SetCoverInvariant::UpdateCoverage(SubsetIndex subset, bool value) {
 }
 
 // Compute the impact of the change in the assignment for each subset
-// containing element. Store this in a flat_hash_set so as to buffer the
-// change.
+// containing element. Be careful to add the elements only once.
 std::vector<SubsetIndex> SetCoverInvariant::ComputeImpactedSubsets(
     SubsetIndex subset) const {
   const SparseColumnView& columns = model_->columns();
   const SparseRowView& rows = model_->rows();
-  absl::flat_hash_set<SubsetIndex> impacted_subsets_collection;
+  SubsetBoolVector subset_seen(columns.size(), false);
+  std::vector<SubsetIndex> impacted_subsets;
+  impacted_subsets.reserve(columns.size().value());
   for (const ElementIndex element : columns[subset]) {
     for (const SubsetIndex subset : rows[element]) {
-      impacted_subsets_collection.insert(subset);
+      if (!subset_seen[subset]) {
+        subset_seen[subset] = true;
+        impacted_subsets.push_back(subset);
+      }
     }
   }
-  DCHECK(impacted_subsets_collection.find(subset) !=
-         impacted_subsets_collection.end());
-  std::vector<SubsetIndex> impacted_subsets(impacted_subsets_collection.begin(),
-                                            impacted_subsets_collection.end());
   DCHECK_LE(impacted_subsets.size(), model_->num_subsets());
-  std::sort(impacted_subsets.begin(), impacted_subsets.end());
+  // Testing has shown there is no gain in sorting impacted_subsets.
   return impacted_subsets;
 }
 
@@ -345,34 +344,40 @@ void SetCoverInvariant::UpdateMarginalImpacts(
 }
 
 std::vector<SubsetIndex> SetCoverInvariant::ComputeSettableSubsets() const {
+  SubsetBoolVector subset_seen(model_->num_subsets(), false);
+  std::vector<SubsetIndex> focus;
+  focus.reserve(model_->num_subsets().value());
   const SparseRowView& rows = model_->rows();
-  absl::flat_hash_set<SubsetIndex> collection;
   for (ElementIndex element(0); element < rows.size(); ++element) {
     if (coverage_[element] >= 1) continue;
     for (const SubsetIndex subset : rows[element]) {
-      if (is_selected_[subset]) continue;
-      collection.insert(subset);
+      if (!is_selected_[subset]) continue;
+      if (subset_seen[subset]) continue;
+      subset_seen[subset] = true;
+      focus.push_back(subset);
     }
   }
-  std::vector<SubsetIndex> focus(collection.begin(), collection.end());
   DCHECK_LE(focus.size(), model_->num_subsets());
-  std::sort(focus.begin(), focus.end());
+  // Testing has shown there is no gain in sorting focus.
   return focus;
 }
 
 std::vector<SubsetIndex> SetCoverInvariant::ComputeResettableSubsets() const {
+  SubsetBoolVector subset_seen(model_->num_subsets(), false);
+  std::vector<SubsetIndex> focus;
+  focus.reserve(model_->num_subsets().value());
   const SparseRowView& rows = model_->rows();
-  absl::flat_hash_set<SubsetIndex> collection;
   for (ElementIndex element(0); element < rows.size(); ++element) {
     if (coverage_[element] < 1) continue;
     for (const SubsetIndex subset : rows[element]) {
       if (!is_selected_[subset]) continue;
-      collection.insert(subset);
+      if (subset_seen[subset]) continue;
+      subset_seen[subset] = true;
+      focus.push_back(subset);
     }
   }
-  std::vector<SubsetIndex> focus(collection.begin(), collection.end());
   DCHECK_LE(focus.size(), model_->num_subsets());
-  std::sort(focus.begin(), focus.end());
+  // Testing has shown there is no gain in sorting focus.
   return focus;
 }
 

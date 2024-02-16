@@ -102,12 +102,6 @@ class SetCoverInvariant {
   // TODO(user): is it worth to precompute this?
   std::vector<SubsetIndex> ComputeImpactedSubsets(SubsetIndex subset) const;
 
-  // Updates is_removable_ for each subset in impacted_subsets.
-  void UpdateIsRemovable(absl::Span<const SubsetIndex> impacted_subsets);
-
-  // Updates marginal_impacts_ for each subset in impacted_subsets.
-  void UpdateMarginalImpacts(absl::Span<const SubsetIndex> impacted_subsets);
-
   // Toggles is_selected_[subset] to value, and incrementally updates the
   // ledger.
   // Returns a vector of subsets impacted by the change, in case they need
@@ -156,6 +150,9 @@ class SetCoverInvariant {
   SubsetToElementVector ComputeMarginalImpacts(
       const ElementToSubsetVector& cvrg) const;
 
+  // Updates marginal_impacts_ for each subset in impacted_subsets.
+  void UpdateMarginalImpacts(absl::Span<const SubsetIndex> impacted_subsets);
+
   // Computes the number of elements covered based on coverage vector 'cvrg'.
   ElementIndex ComputeNumElementsCovered(
       const ElementToSubsetVector& cvrg) const;
@@ -164,6 +161,9 @@ class SetCoverInvariant {
   // redundant to cover all the elements.
   // This function is used to check that is_removable[subset] is consistent.
   bool ComputeIsRemovable(SubsetIndex subset) const;
+
+  // Updates is_removable_ for each subset in impacted_subsets.
+  void UpdateIsRemovable(absl::Span<const SubsetIndex> impacted_subsets);
 
   // Returns the number of elements currently covered by subset.
   ElementToSubsetVector ComputeSingleSubsetCoverage(SubsetIndex subset) const;
