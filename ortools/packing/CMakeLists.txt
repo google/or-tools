@@ -30,3 +30,30 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
 #add_library(${PROJECT_NAMESPACE}::packing ALIAS ${NAME})
+
+# Vector Bin Packing
+add_executable(vector_bin_packing)
+target_sources(vector_bin_packing PRIVATE "vector_bin_packing_main.cc")
+target_include_directories(vector_bin_packing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(vector_bin_packing PRIVATE cxx_std_17)
+target_link_libraries(vector_bin_packing PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+include(GNUInstallDirs)
+if(APPLE)
+  set_target_properties(vector_bin_packing PROPERTIES INSTALL_RPATH
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+             OUTPUT_VARIABLE libdir_relative_path)
+  set_target_properties(vector_bin_packing PROPERTIES
+                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+endif()
+
+if(BUILD_TESTING)
+  add_test(
+    NAME cxx_packing_vector_bin_packing
+    COMMAND vector_bin_packing --input ${CMAKE_CURRENT_SOURCE_DIR}/testdata/1D__bpp_scholl__bin2data.N2W2B1R0.vbp)
+endif()
+
+install(TARGETS vector_bin_packing)
