@@ -1938,10 +1938,28 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // Propagate unary constraints.
   {
     SatSolver* sat_solver = m->GetOrCreate<SatSolver>();
+    IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
     for (const LinearConstraint& lc : relaxation.linear_constraints) {
-      if (lc.num_terms > 1) continue;
-      LoadLinearConstraint(lc, m);
-      if (sat_solver->ModelIsUnsat()) return relaxation;
+      if (lc.num_terms == 0) {
+        if (lc.lb > 0 || lc.ub < 0) {
+          sat_solver->NotifyThatModelIsUnsat();
+          return relaxation;
+        }
+      } else if (lc.num_terms == 1) {
+        const AffineExpression expr =
+            AffineExpression(lc.vars[0], lc.coeffs[0]);
+        if (lc.lb > integer_trail->LevelZeroLowerBound(expr)) {
+          if (!integer_trail->Enqueue(expr.GreaterOrEqual(lc.lb), {}, {})) {
+            return relaxation;
+          }
+        }
+        if (lc.ub < integer_trail->LevelZeroUpperBound(expr)) {
+          if (!integer_trail->Enqueue(expr.LowerOrEqual(lc.ub), {}, {})) {
+            return relaxation;
+          }
+        }
+        break;
+      }
     }
     if (!sat_solver->FinishPropagation()) return relaxation;
   }
