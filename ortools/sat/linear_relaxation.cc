@@ -27,6 +27,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
+#include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
@@ -1438,7 +1439,7 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
           PossibleOverflow(integer_trail, relaxation->linear_constraints[i]);
       if (issue) {
         LOG(INFO) << "Possible overflow in linearization of: "
-                  << ct.ShortDebugString();
+                  << google::protobuf::ShortFormat(ct);
       }
     }
   }
@@ -1946,8 +1947,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
           return relaxation;
         }
       } else if (lc.num_terms == 1) {
-        const AffineExpression expr =
-            AffineExpression(lc.vars[0], lc.coeffs[0]);
+        const AffineExpression expr(lc.vars[0], lc.coeffs[0]);
         if (lc.lb > integer_trail->LevelZeroLowerBound(expr)) {
           if (!integer_trail->Enqueue(expr.GreaterOrEqual(lc.lb), {}, {})) {
             return relaxation;
@@ -1958,7 +1958,6 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
             return relaxation;
           }
         }
-        break;
       }
     }
     if (!sat_solver->FinishPropagation()) return relaxation;

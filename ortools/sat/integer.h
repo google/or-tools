@@ -1413,7 +1413,7 @@ class GenericLiteralWatcher : public SatPropagator {
   void WatchUpperBound(IntegerVariable var, int id, int watch_index = -1);
   void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
 
-  // Because the coeff is always positive, whatching an affine expression is
+  // Because the coeff is always positive, watching an affine expression is
   // the same as watching its var.
   void WatchLowerBound(AffineExpression e, int id) {
     WatchLowerBound(e.var, id);
