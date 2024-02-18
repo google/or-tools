@@ -1347,7 +1347,6 @@ cc_library(
         ":scheduling_cuts",
         ":util",
         "//ortools/base",
-        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
