@@ -40,11 +40,10 @@ def rank_tasks_with_circuit(
     Each task i will be associated with id i + 1, and an arc between i + 1 and j +
     1 indicates that j is the immediate successor of i.
 
-    The circuit constraint ensures there is at most 1 hamiltonian path of
+    The circuit constraint ensures there is at most 1 hamiltonian cycle of
     length > 1. If no such path exists, then no tasks are active.
-
-    The multiple enforced linear constraints are meant to ensure the compatibility
-    between the order of starts and the order of ranks,
+    We also need to enforce that any hamiltonian cycle of size > 1 must contain
+    the node 0. And thus, there is a self loop on node 0 iff the circuit is empty.
 
     Args:
       model: The CpModel to add the constraints to.
