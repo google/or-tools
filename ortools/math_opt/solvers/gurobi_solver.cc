@@ -69,6 +69,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/testing_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -86,6 +87,12 @@ constexpr SupportedProblemStructures kGurobiSupportedStructures = {
 
 absl::StatusOr<std::unique_ptr<Gurobi>> GurobiFromInitArgs(
     const SolverInterface::InitArgs& init_args) {
+  if (kAnyXsanEnabled) {
+    return absl::FailedPreconditionError(
+        "the Gurobi library is not compatible with any sanitizer (MSAN, ASAN "
+        "or TSAN)");
+  }
+
   // We don't test or return an error for incorrect non streamable arguments
   // type since it is already tested by the Solver class.
   const NonStreamableGurobiInitArguments* const non_streamable_args =

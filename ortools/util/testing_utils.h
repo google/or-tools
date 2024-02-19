@@ -16,7 +16,13 @@
 
 namespace operations_research {
 
+inline constexpr bool kAsanEnabled = false;
+inline constexpr bool kMsanEnabled = false;
+inline constexpr bool kTsanEnabled = false;
 inline bool ProbablyRunningInsideUnitTest() { return false; }
+
+inline constexpr bool kAnyXsanEnabled =
+    kAsanEnabled || kMsanEnabled || kTsanEnabled;
 
 }  // namespace operations_research
 
