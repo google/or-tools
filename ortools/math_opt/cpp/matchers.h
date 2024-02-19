@@ -95,7 +95,6 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -107,16 +106,6 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/update_result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
-
-#define ASSERT_OK_AND_ASSIGN(lhs, rexpr)        \
-  ASSERT_OK_AND_ASSIGN_IMPL(CONCAT_MACRO(       \
-      _status_or, __COUNTER__), lhs, rexpr)
-
-#define ASSERT_OK_AND_ASSIGN_IMPL(statusor, lhs, rexpr)  \
-  auto statusor = (rexpr);                               \
-  ASSERT_TRUE(statusor.status().ok()) <<                 \
-      statusor.status();                                 \
-  lhs = std::move(statusor.value())
 
 namespace operations_research {
 namespace math_opt {
