@@ -30,6 +30,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/message_matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/update_result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -941,7 +942,6 @@ testing::Matcher<ComputeInfeasibleSubsystemResult> IsInfeasible(
                              &ComputeInfeasibleSubsystemResult::is_minimal,
                              Eq(expected_is_minimal.value())));
   }
-  /* TODO(user) implement EqualsProto
   if (expected_infeasible_subsystem.has_value()) {
     matchers.push_back(
         Field("infeasible_subsystem",
@@ -950,7 +950,6 @@ testing::Matcher<ComputeInfeasibleSubsystemResult> IsInfeasible(
                        testing::EqualsProto(
                            expected_infeasible_subsystem.value().Proto()))));
   }
-  */
   return AllOfArray(matchers);
 }
 
