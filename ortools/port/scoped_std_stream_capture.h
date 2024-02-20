@@ -11,19 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_TESTING_UTILS_H_
-#define OR_TOOLS_UTIL_TESTING_UTILS_H_
+#ifndef OR_TOOLS_PORT_SCOPED_STD_STREAM_CAPTURE_H_
+#define OR_TOOLS_PORT_SCOPED_STD_STREAM_CAPTURE_H_
 
-namespace operations_research {
-
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
-
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled;
-
-}  // namespace operations_research
-
-#endif  // OR_TOOLS_UTIL_TESTING_UTILS_H_
+#endif  // OR_TOOLS_PORT_SCOPED_STD_STREAM_CAPTURE_H_

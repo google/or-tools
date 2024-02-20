@@ -279,6 +279,8 @@ void ModelStorage::AddAuxiliaryObjectives(
   }
 }
 
+// TODO: b/315974557 - Return an error if any of the Proto() methods called
+// tries to create a very long RepeatedField.
 ModelProto ModelStorage::ExportModel(const bool remove_names) const {
   ModelProto result;
   result.set_name(name_);

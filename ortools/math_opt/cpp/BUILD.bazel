@@ -424,6 +424,7 @@ cc_library(
         ":update_result",
         ":variable_and_expressions",
         "//ortools/base:logging",
+        "//ortools/base:status_matchers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
