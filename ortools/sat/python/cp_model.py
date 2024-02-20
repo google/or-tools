@@ -1852,10 +1852,10 @@ class CpModel:
              sum(level_changes[i] if times[i] <= t) in [min_level, max_level]
 
         Args:
-          times: A list of affine expressions which specify the time of the filling
-            or emptying the reservoir.
+          times: A list of 1-var affine expressions (a * x + b) which specify the
+            time of the filling or emptying the reservoir.
           level_changes: A list of integer values that specifies the amount of the
-            emptying or filling.
+            emptying or filling. Currently, variable demands are not supported.
           min_level: At any time, the level of the reservoir must be greater or
             equal than the min level.
           max_level: At any time, the level of the reservoir must be less or equal
@@ -1923,10 +1923,10 @@ class CpModel:
         actions are actually performed.
 
         Args:
-          times: A list of affine expressions which specify the time of the filling
-            or emptying the reservoir.
+          times: A list of 1-var affine expressions (a * x + b) which specify the
+            time of the filling or emptying the reservoir.
           level_changes: A list of integer values that specifies the amount of the
-            emptying or filling.
+            emptying or filling. Currently, variable demands are not supported.
           actives: a list of boolean variables. They indicates if the
             emptying/refilling events actually take place.
           min_level: At any time, the level of the reservoir must be greater or
@@ -2156,7 +2156,7 @@ class CpModel:
         return ct
 
     def add_abs_equality(self, target: LinearExprT, expr: LinearExprT) -> Constraint:
-        """Adds `target == Abs(var)`."""
+        """Adds `target == Abs(expr)`."""
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
         model_ct.lin_max.exprs.append(self.parse_linear_expression(expr))
@@ -2165,12 +2165,12 @@ class CpModel:
         return ct
 
     def add_modulo_equality(
-        self, target: LinearExprT, var: LinearExprT, mod: LinearExprT
+        self, target: LinearExprT, expr: LinearExprT, mod: LinearExprT
     ) -> Constraint:
-        """Adds `target = var % mod`."""
+        """Adds `target = expr % mod`."""
         ct = Constraint(self)
         model_ct = self.__model.constraints[ct.index]
-        model_ct.int_mod.exprs.append(self.parse_linear_expression(var))
+        model_ct.int_mod.exprs.append(self.parse_linear_expression(expr))
         model_ct.int_mod.exprs.append(self.parse_linear_expression(mod))
         model_ct.int_mod.target.CopyFrom(self.parse_linear_expression(target))
         return ct
@@ -2205,11 +2205,9 @@ class CpModel:
         Internally, it ensures that `start + size == end`.
 
         Args:
-          start: The start of the interval. It can be an affine or constant
-            expression.
-          size: The size of the interval. It can be an affine or constant
-            expression.
-          end: The end of the interval. It can be an affine or constant expression.
+          start: The start of the interval. It must be of the form a * var + b.
+          size: The size of the interval. It must be of the form a * var + b.
+          end: The end of the interval. It must be of the form a * var + b.
           name: The name of the interval variable.
 
         Returns:
@@ -2218,22 +2216,22 @@ class CpModel:
 
         lin = self.add(start + size == end)
         if name:
-            lin.with_name('lin_' + name)
+            lin.with_name("lin_" + name)
 
         start_expr = self.parse_linear_expression(start)
         size_expr = self.parse_linear_expression(size)
         end_expr = self.parse_linear_expression(end)
         if len(start_expr.vars) > 1:
             raise TypeError(
-                "cp_model.new_interval_var: start must be affine or constant."
+                "cp_model.new_interval_var: start must be 1-var affine or constant."
             )
         if len(size_expr.vars) > 1:
             raise TypeError(
-                "cp_model.new_interval_var: size must be affine or constant."
+                "cp_model.new_interval_var: size must be 1-var affine or constant."
             )
         if len(end_expr.vars) > 1:
             raise TypeError(
-                "cp_model.new_interval_var: end must be affine or constant."
+                "cp_model.new_interval_var: end must be 1-var affine or constant."
             )
         return IntervalVar(self.__model, start_expr, size_expr, end_expr, None, name)
 
@@ -2298,8 +2296,7 @@ class CpModel:
         constraints like NoOverlap.
 
         Args:
-          start: The start of the interval. It can be an affine or constant
-            expression.
+          start: The start of the interval. It must be of the form a * var + b.
           size: The size of the interval. It must be an integer value.
           name: The name of the interval variable.
 
@@ -2380,12 +2377,9 @@ class CpModel:
         end`.
 
         Args:
-          start: The start of the interval. It can be an integer value, or an
-            integer variable.
-          size: The size of the interval. It can be an integer value, or an integer
-            variable.
-          end: The end of the interval. It can be an integer value, or an integer
-            variable.
+          start: The start of the interval. It must be of the form a * var + b.
+          size: The size of the interval. It must be of the form a * var + b.
+          end: The end of the interval. It must be of the form a * var + b.
           is_present: A literal that indicates if the interval is active or not. A
             inactive interval is simply ignored by all constraints.
           name: The name of the interval variable.
@@ -2397,7 +2391,7 @@ class CpModel:
         # add the linear constraint.
         lin = self.add(start + size == end).only_enforce_if(is_present)
         if name:
-            lin.with_name('lin_opt_' + name)
+            lin.with_name("lin_opt_" + name)
 
         # Creates the IntervalConstraintProto object.
         is_present_index = self.get_or_make_boolean_index(is_present)
@@ -2492,8 +2486,7 @@ class CpModel:
         constraints like NoOverlap.
 
         Args:
-          start: The start of the interval. It can be an affine or constant
-            expression.
+          start: The start of the interval. It must be of the form a * var + b.
           size: The size of the interval. It must be an integer value.
           is_present: A literal that indicates if the interval is active or not. A
             inactive interval is simply ignored by all constraints.
@@ -2640,22 +2633,22 @@ class CpModel:
         Args:
           intervals: The list of intervals.
           demands: The list of demands for each interval. Each demand must be >= 0.
-            Each demand can be an integer value, or an integer variable.
-          capacity: The maximum capacity of the cumulative constraint. It must be a
-            positive integer value or variable.
+            Each demand can be a 1-var affine expression (a * x + b).
+          capacity: The maximum capacity of the cumulative constraint. It can be a
+            1-var affine expression (a * x + b).
 
         Returns:
           An instance of the `Constraint` class.
         """
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
+        cumulative = Constraint(self)
+        model_ct = self.__model.constraints[cumulative.index]
         model_ct.cumulative.intervals.extend(
             [self.get_interval_index(x) for x in intervals]
         )
         for d in demands:
             model_ct.cumulative.demands.append(self.parse_linear_expression(d))
         model_ct.cumulative.capacity.CopyFrom(self.parse_linear_expression(capacity))
-        return ct
+        return cumulative
 
     # Support for model cloning.
     def clone(self) -> "CpModel":
