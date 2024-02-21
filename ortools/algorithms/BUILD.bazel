@@ -334,6 +334,7 @@ cc_test(
         "//ortools/base:dump_vars",
         "//ortools/base:map_util",
         "//ortools/base:path",
+        "//ortools/base:status_matchers",
         "//ortools/graph:io",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status",

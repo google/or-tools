@@ -43,6 +43,7 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/status_matchers.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
