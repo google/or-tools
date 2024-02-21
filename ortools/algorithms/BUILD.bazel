@@ -62,6 +62,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:dump_vars",
+        "//ortools/base:gmock",
         "@com_google_absl//absl/numeric:int128",
     ],
 )
@@ -107,6 +108,7 @@ cc_test(
     deps = [
         ":radix_sort",
         "//ortools/base:dump_vars",
+        "//ortools/base:gmock",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
@@ -332,9 +334,9 @@ cc_test(
         ":sparse_permutation",
         "//ortools/base",
         "//ortools/base:dump_vars",
+        "//ortools/base:gmock",
         "//ortools/base:map_util",
         "//ortools/base:path",
-        "//ortools/base:status_matchers",
         "//ortools/graph:io",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status",

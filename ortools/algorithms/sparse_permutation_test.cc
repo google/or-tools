@@ -19,8 +19,8 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/distributions.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 
 namespace operations_research {
 namespace {

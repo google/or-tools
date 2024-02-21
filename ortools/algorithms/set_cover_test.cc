@@ -19,12 +19,12 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {

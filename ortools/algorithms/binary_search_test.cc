@@ -27,8 +27,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/hash.h"
 
 namespace operations_research {

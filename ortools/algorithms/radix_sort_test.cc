@@ -29,9 +29,9 @@
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 

@@ -15,8 +15,8 @@
 
 #include <vector>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 
 namespace operations_research {
 namespace {

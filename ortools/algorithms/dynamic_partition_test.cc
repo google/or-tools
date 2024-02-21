@@ -23,8 +23,8 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
