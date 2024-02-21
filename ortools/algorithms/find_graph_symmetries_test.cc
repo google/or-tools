@@ -149,7 +149,7 @@ TEST(GraphSymmetryFinderTest, EmptyGraph) {
     std::vector<int> node_equivalence_classes_io;
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     std::vector<int> factorized_automorphism_group_size;
-    CHECK_OK(symmetry_finder.FindSymmetries(
+    ASSERT_OK(symmetry_finder.FindSymmetries(
         &node_equivalence_classes_io, &generators,
         &factorized_automorphism_group_size));
     EXPECT_THAT(node_equivalence_classes_io, IsEmpty());
@@ -329,7 +329,7 @@ class FindSymmetriesTest : public ::testing::Test {
     std::vector<int> node_equivalence_classes(graph.num_nodes(), 0);
     std::vector<int> orbit_sizes;
     TimeLimit time_limit(kDefaultTimeLimitSeconds);
-    CHECK_OK(symmetry_finder.FindSymmetries(
+    ASSERT_OK(symmetry_finder.FindSymmetries(
         &node_equivalence_classes, &generators, &orbit_sizes, &time_limit));
     std::vector<std::string> permutations_str;
     for (const std::unique_ptr<SparsePermutation>& permutation : generators) {
