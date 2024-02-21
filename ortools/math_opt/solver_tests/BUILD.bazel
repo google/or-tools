@@ -338,7 +338,6 @@ cc_library(
     srcs = ["infeasible_subsystem_tests.cc"],
     hdrs = ["infeasible_subsystem_tests.h"],
     deps = [
-        "//ortools/base:message_matchers",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",

@@ -25,7 +25,6 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "ortools/base/message_matchers.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -34,10 +33,7 @@
 namespace operations_research::math_opt {
 
 using ::testing::AnyOf;
-using ::testing::Eq;
-using ::testing::Field;
 using ::testing::HasSubstr;
-using ::testing::Property;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
 
