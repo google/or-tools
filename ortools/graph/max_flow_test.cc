@@ -26,19 +26,22 @@
 #include "absl/strings/str_format.h"
 #include "benchmark/benchmark.h"
 #include "gmock/gmock.h"
+#include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
-#include "net/proto2/contrib/parse_proto/testing.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/message_matchers.h"
 #include "ortools/base/path.h"
+#include "ortools/base/status_matchers.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/file_util.h"
 
+ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
+
 namespace operations_research {
 namespace {
 
-using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ContainerEq;
 using ::testing::WhenSorted;
 
@@ -165,28 +168,31 @@ TEST(SimpleMaxFlowTest, CreateFlowModelProto) {
               ::testing::EqualsProto(solver2.CreateFlowModelProto(0, 3)));
 
   // Check that the proto is what we expect it is.
-  const FlowModelProto expected = ParseTestProto(R"pb(
-    problem_type: MAX_FLOW
-    nodes { id: 0 supply: 1 }
-    nodes { id: 1 }
-    nodes { id: 2 }
-    nodes { id: 3 supply: -1 }
-    arcs { tail: 0 head: 1 capacity: 10 }
-    arcs { tail: 0 head: 2 capacity: 10 }
-    arcs { tail: 1 head: 2 capacity: 5 }
-    arcs { tail: 2 head: 3 capacity: 15 }
-  )pb");
+  FlowModelProto expected;
+  google::protobuf::TextFormat::ParseFromString(
+      R"pb(
+        problem_type: MAX_FLOW
+        nodes { id: 0 supply: 1 }
+        nodes { id: 1 }
+        nodes { id: 2 }
+        nodes { id: 3 supply: -1 }
+        arcs { tail: 0 head: 1 capacity: 10 }
+        arcs { tail: 0 head: 2 capacity: 10 }
+        arcs { tail: 1 head: 2 capacity: 5 }
+        arcs { tail: 2 head: 3 capacity: 15 }
+      )pb",
+      &expected);
   EXPECT_THAT(model_proto, testing::EqualsProto(expected));
 }
 
 // A problem that was triggering a issue on 28/11/2014 (now fixed).
 TEST(SimpleMaxFlowTest, ProblematicProblemWithMaxCapacity) {
-  CHECK_OK_AND_ASSIGN(
+  ASSERT_OK_AND_ASSIGN(
       FlowModelProto model,
       ReadFileToProto<FlowModelProto>(
-          file::JoinPathRespectAbsolute(absl::GetFlag(testing::SrcDir()),
-                                        "ortools/graph/"
-                                        "testdata/max_flow_test1.pb.txt")));
+          file::JoinPathRespectAbsolute(absl::GetFlag(FLAGS_test_srcdir),
+          "ortools/graph/"
+          "testdata/max_flow_test1.pb.txt")));
   SimpleMaxFlow solver;
   EXPECT_EQ(SimpleMaxFlow::OPTIMAL, LoadAndSolveFlowModel(model, &solver));
   EXPECT_EQ(10290243, solver.OptimalFlow());

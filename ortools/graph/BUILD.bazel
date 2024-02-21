@@ -218,6 +218,29 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "max_flow_test",
+    size = "medium",
+    srcs = ["max_flow_test.cc"],
+    data = ["//ortools/graph/testdata:max_flow_test1.pb.txt"],
+    deps = [
+        ":graph",
+        ":graphs",
+        ":max_flow",
+        "//ortools/base",
+        "//ortools/base:message_matchers",
+        "//ortools/base:path",
+        "//ortools/base:status_matchers",
+        "//ortools/linear_solver",
+        "//ortools/util:file_util",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 # Min Cost Flow
 cc_library(
     name = "min_cost_flow",
