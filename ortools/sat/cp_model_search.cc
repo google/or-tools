@@ -883,14 +883,24 @@ std::vector<SatParameters> GetFirstSolutionParams(
       new_params.set_search_branching(SatParameters::RANDOMIZED_SEARCH);
       new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
-      new_params.set_name("random");
+      if (num_random % 2 == 1) {
+        new_params.set_name("random_no_lp");
+        new_params.set_linearization_level(0);
+      } else {
+        new_params.set_name("random");
+      }
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
-      new_params.set_name("random_quick_restart");
+      if (num_random_qr % 2 == 1) {
+        new_params.set_name("random_quick_restart_no_lp");
+        new_params.set_linearization_level(0);
+      } else {
+        new_params.set_name("random_quick_restart");
+      }
       num_random_qr++;
     }
     result.push_back(new_params);
