@@ -16,8 +16,8 @@
 
 #include <string>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/parameters.pb.h"
 

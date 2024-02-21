@@ -51,6 +51,28 @@ using MessageCallback = std::function<void(const std::vector<std::string>&)>;
 MessageCallback PrinterMessageCallback(std::ostream& output_stream = std::cout,
                                        absl::string_view prefix = "");
 
+// Returns a message callback function that prints each line to LOG(INFO),
+// prefixing each line with the given prefix.
+//
+// Usage:
+//
+//   SolveArguments args;
+//   args.message_callback = InfoLoggerMessageCallback("[solver] ");
+MessageCallback InfoLoggerMessageCallback(
+    absl::string_view prefix = "",
+    absl::SourceLocation loc = absl::SourceLocation::current());
+
+// Returns a message callback function that prints each line to VLOG(level),
+// prefixing each line with the given prefix.
+//
+// Usage:
+//
+//   SolveArguments args;
+//   args.message_callback = VLoggerMessageCallback(1, "[solver] ");
+MessageCallback VLoggerMessageCallback(
+    int level, absl::string_view prefix = "",
+    absl::SourceLocation loc = absl::SourceLocation::current());
+
 // Returns a message callback function that aggregates all messages in the
 // provided vector.
 //

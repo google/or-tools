@@ -22,8 +22,8 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model_update.pb.h"

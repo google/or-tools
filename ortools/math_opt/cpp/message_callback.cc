@@ -90,6 +90,24 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
 
+MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
+                                          const absl::SourceLocation loc) {
+  return [=](const std::vector<std::string>& messages) {
+    for (const std::string& message : messages) {
+      LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
+    }
+  };
+}
+
+MessageCallback VLoggerMessageCallback(int level, absl::string_view prefix,
+                                       absl::SourceLocation loc) {
+  return [=](const std::vector<std::string>& messages) {
+    for (const std::string& message : messages) {
+      VLOG(level).AtLocation(loc.file_name(), loc.line()) << prefix << message;
+    }
+  };
+}
+
 MessageCallback VectorMessageCallback(std::vector<std::string>* sink) {
   CHECK(sink != nullptr);
   // Here we must use an std::shared_ptr since std::function requires that its

@@ -423,6 +423,7 @@ cc_library(
         ":math_opt",
         ":update_result",
         ":variable_and_expressions",
+        "//ortools/base:gmock",
         "//ortools/base:logging",
         "//ortools/base:message_matchers",
         "//ortools/base:status_matchers",
@@ -432,7 +433,6 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest",
     ],
 )
 

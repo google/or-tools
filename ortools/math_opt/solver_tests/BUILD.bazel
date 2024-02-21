@@ -19,10 +19,10 @@ cc_library(
     srcs = ["base_solver_test.cc"],
     hdrs = ["base_solver_test.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/base:linked_hash_map",
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/log",
-        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -33,6 +33,7 @@ cc_library(
     hdrs = ["lp_tests.h"],
     deps = [
         ":base_solver_test",
+        "//ortools/base:gmock",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/core:solver",
         "//ortools/math_opt/cpp:matchers",
@@ -40,7 +41,6 @@ cc_library(
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -54,13 +54,13 @@ cc_library(
     deps = [
         ":test_models",
         "//ortools/base",
+        "//ortools/base:gmock",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -73,6 +73,7 @@ cc_library(
     hdrs = ["invalid_input_tests.h"],
     deps = [
         ":base_solver_test",
+        "//ortools/base:gmock",
         "//ortools/base:status_matchers",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -84,7 +85,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -98,11 +98,11 @@ cc_library(
     deps = [
         ":base_solver_test",
         "//ortools/base",
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -115,13 +115,13 @@ cc_library(
     hdrs = ["ip_model_solve_parameters_tests.h"],
     deps = [
         ":base_solver_test",
+        "//ortools/base:gmock",
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -133,11 +133,11 @@ cc_library(
     srcs = ["ip_multiple_solutions_tests.cc"],
     hdrs = ["ip_multiple_solutions_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -151,10 +151,10 @@ cc_library(
     deps = [
         ":base_solver_test",
         ":test_models",
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -166,6 +166,7 @@ cc_library(
     srcs = ["lp_parameter_tests.cc"],
     hdrs = ["lp_parameter_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
@@ -175,7 +176,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -188,11 +188,11 @@ cc_library(
     hdrs = ["lp_initial_basis_tests.h"],
     deps = [
         ":base_solver_test",
+        "//ortools/base:gmock",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -204,6 +204,7 @@ cc_library(
     srcs = ["multi_objective_tests.cc"],
     hdrs = ["multi_objective_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -214,7 +215,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -227,12 +227,12 @@ cc_library(
     hdrs = ["qp_tests.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -244,13 +244,13 @@ cc_library(
     srcs = ["qc_tests.cc"],
     hdrs = ["qc_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -262,13 +262,13 @@ cc_library(
     srcs = ["second_order_cone_tests.cc"],
     hdrs = ["second_order_cone_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -280,6 +280,7 @@ cc_library(
     srcs = ["logical_constraint_tests.cc"],
     hdrs = ["logical_constraint_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/cpp:matchers",
@@ -288,7 +289,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -306,31 +306,31 @@ cc_library(
     ],
 )
 
-# missing InfoLoggerMessageCallback
-#cc_library(
-#    name = "generic_tests",
-#    testonly = True,
-#    srcs = ["generic_tests.cc"],
-#    hdrs = ["generic_tests.h"],
-#    deps = [
-#        ":test_models",
-#        "//ortools/base:logging",
-#        "//ortools/math_opt/core:inverted_bounds",
-#        "//ortools/math_opt/cpp:matchers",
-#        "//ortools/math_opt/cpp:math_opt",
-#        "//ortools/port:proto_utils",
-#        "@com_google_absl//absl/base:log_severity",
-#        "@com_google_absl//absl/container:flat_hash_set",
-#        "@com_google_absl//absl/log",
-#        "@com_google_absl//absl/status:statusor",
-#        "@com_google_absl//absl/strings",
-#        "@com_google_absl//absl/synchronization",
-#        "@com_google_absl//absl/time",
-#        "@com_google_googletest//:gtest",
-#    ],
-#    # Make sure the tests are included when using --dynamic_mode=off.
-#    alwayslink = 1,
-#)
+cc_library(
+    name = "generic_tests",
+    testonly = True,
+    srcs = ["generic_tests.cc"],
+    hdrs = ["generic_tests.h"],
+    deps = [
+        ":test_models",
+        "//ortools/base:gmock",
+        "//ortools/base:logging",
+        "//ortools/math_opt/core:inverted_bounds",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/port:proto_utils",
+        "//ortools/port:scoped_std_stream_capture",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
 
 cc_library(
     name = "infeasible_subsystem_tests",
@@ -338,6 +338,7 @@ cc_library(
     srcs = ["infeasible_subsystem_tests.cc"],
     hdrs = ["infeasible_subsystem_tests.h"],
     deps = [
+        "//ortools/base:gmock",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
@@ -346,7 +347,6 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "@com_google_googletest//:gtest",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
