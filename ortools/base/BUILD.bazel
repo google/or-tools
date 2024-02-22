@@ -247,6 +247,7 @@ cc_library(
     name = "gmock",
     hdrs = ["gmock.h"],
     deps = [
+        ":message_matchers",
         ":status_matchers",
         "@com_google_googletest//:gtest",
     ],
