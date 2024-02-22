@@ -292,11 +292,11 @@ std::string VariableValuesAsString(std::vector<Variable> variables,
   return absl::StrCat(
       "{",
       absl::StrJoin(variables, ", ",
-          [&](std::string* const out, const Variable variable) {
-            absl::StrAppendFormat(
+                    [&](std::string* const out, const Variable variable) {
+                      absl::StrAppendFormat(
                           out, "{%s, %v}", absl::FormatStreamed(variable),
                           RoundTripDoubleFormat(variable_values.at(variable)));
-          }),
+                    }),
       "}");
 }
 

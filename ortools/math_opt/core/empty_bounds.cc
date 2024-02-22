@@ -30,7 +30,7 @@ SolveResultProto ResultForIntegerInfeasible(const bool is_maximize,
   result.mutable_termination()->set_reason(TERMINATION_REASON_INFEASIBLE);
   result.mutable_termination()->set_detail(
       absl::StrCat("Problem had one or more integer variables with no integers "
-      "in domain, e.g. integer variable with id: ",
+                   "in domain, e.g. integer variable with id: ",
                    bad_variable_id, " had bounds: [", RoundTripDoubleFormat(lb),
                    ", ", RoundTripDoubleFormat(ub), "]."));
   result.mutable_solve_stats()->mutable_problem_status()->set_primal_status(

@@ -161,8 +161,8 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
              ->mutable_ids();
     RepeatedField<int>& constraint_status_values =
         *ret.mutable_initial_basis()
-            ->mutable_constraint_status()
-            ->mutable_values();
+             ->mutable_constraint_status()
+             ->mutable_values();
     constraint_status_ids.Reserve(
         static_cast<int>(initial_basis->constraint_status.size()));
     constraint_status_values.Reserve(
@@ -177,8 +177,8 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
         *ret.mutable_initial_basis()->mutable_variable_status()->mutable_ids();
     RepeatedField<int>& variable_status_values =
         *ret.mutable_initial_basis()
-            ->mutable_variable_status()
-            ->mutable_values();
+             ->mutable_variable_status()
+             ->mutable_values();
     variable_status_ids.Reserve(
         static_cast<int>(initial_basis->variable_status.size()));
     variable_status_values.Reserve(
