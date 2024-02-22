@@ -214,10 +214,14 @@ cc_library(
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
-        "scip_callback.h",
-        "scip_helper_macros.h",
     ] + select({
         ":use_glop": ["glop_utils.h"],
+        "//conditions:default": [],
+    }) + select({
+        ":use_scip": [
+            "scip_callback.h",
+            "scip_helper_macros.h",
+        ],
         "//conditions:default": [],
     }),
     copts = [] + select({
