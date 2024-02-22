@@ -69,7 +69,7 @@ endif()
 
 install(TARGETS solve)
 
-if (BUILD_CXX_EXAMPLES)
+if(BUILD_TESTING)
   if (APPLE)
     set(CMAKE_INSTALL_RPATH
             "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
