@@ -173,7 +173,6 @@ cc_library(
         "linear_expr.cc",
         "linear_solver.cc",
         "linear_solver_callback.cc",
-        "lpi_glop.cpp",
         "sat_interface.cc",
         "xpress_interface.cc",
     ] + select({
@@ -202,6 +201,7 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
+            "lpi_glop.cpp",
             "scip_callback.cc",
             "scip_interface.cc",
         ],
