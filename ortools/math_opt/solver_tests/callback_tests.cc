@@ -96,9 +96,9 @@ struct EnumFormatter {
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     const absl::string_view name) {
   ASSIGN_OR_RETURN(const ModelProto model_proto,
-                   ReadMpsFile(absl::StrCat("operations_research_data/"
-                                    "MIP_MIPLIB/miplib2017/",
-                                            name, ".mps.gz")));
+                   ReadMpsFile(absl::StrCat(
+                       "ortools/math_opt/solver_tests/testdata/",
+                       name, ".mps.gz")));
   return Model::FromModelProto(model_proto);
 }
 
@@ -127,13 +127,10 @@ namespace {
 
 using ::testing::_;
 using ::testing::AllOf;
-using ::testing::AnyNumber;
 using ::testing::AnyOf;
-using ::testing::AtLeast;
 using ::testing::Each;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::Mock;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 using ::testing::status::IsOkAndHolds;
@@ -456,7 +453,7 @@ TEST_P(CallbackTest, EventSolutionInterrupt) {
       // Don't prove optimality in presolve.
       .parameters = {.presolve = Emphasis::kOff},
       .callback_registration = {.events = {CallbackEvent::kMipSolution}},
-      .callback = [&](const CallbackData& callback_data) {
+      .callback = [&](const CallbackData& /*callback_data*/) {
         return CallbackResult{.terminate = true};
       }};
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
@@ -807,7 +804,7 @@ TEST_P(CallbackTest, StatusPropagation) {
                                 .add_lazy_constraints = true}};
   absl::Mutex mutex;
   bool added_cut = false;  // Guarded by mutex.
-  args.callback = [&](const CallbackData& callback_data) {
+  args.callback = [&](const CallbackData& /*callback_data*/) {
     const absl::MutexLock lock(&mutex);
     CallbackResult result;
     if (!added_cut) {

@@ -127,7 +127,6 @@ cc_library(
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
-        "//ortools/base:status_matchers",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
@@ -149,10 +148,10 @@ cc_test(
     srcs = ["unregistered_solver_test.cc"],
     deps = [
         "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/solvers:gscip_solver",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -403,11 +402,11 @@ cc_test(
     srcs = ["test_models_test.cc"],
     deps = [
         ":test_models",
+        "//ortools/base:gmock_main",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 

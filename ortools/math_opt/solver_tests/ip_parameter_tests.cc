@@ -1027,9 +1027,9 @@ namespace {
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     absl::string_view name) {
   ASSIGN_OR_RETURN(const ModelProto model_proto,
-                   ReadMpsFile(absl::StrCat("operations_research_data/"
-                                    "MIP_MIPLIB/miplib2017/",
-                                            name, ".mps.gz")));
+                   ReadMpsFile(absl::StrCat(
+                       "ortools/math_opt/solver_tests/testdata/",
+                       name, ".mps.gz")));
   return Model::FromModelProto(model_proto);
 }
 

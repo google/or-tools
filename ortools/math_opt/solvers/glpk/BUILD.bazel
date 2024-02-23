@@ -46,8 +46,7 @@ cc_test(
     srcs = ["glpk_sparse_vector_test.cc"],
     deps = [
         ":glpk_sparse_vector",
-        "//ortools/base:gmock",
-        "@com_google_googletest//:gtest_main",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -62,8 +61,7 @@ cc_test(
     srcs = ["gap_test.cc"],
     deps = [
         ":gap",
-        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
         "//ortools/util:fp_roundtrip_conv",
-        "@com_google_googletest//:gtest_main",
     ],
 )

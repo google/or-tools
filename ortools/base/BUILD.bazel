@@ -254,6 +254,14 @@ cc_library(
 )
 
 cc_library(
+    name = "gmock_main",
+    deps = [
+        ":gmock",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "gzipfile",
     srcs = ["gzipfile.cc"],
     hdrs = ["gzipfile.h"],
