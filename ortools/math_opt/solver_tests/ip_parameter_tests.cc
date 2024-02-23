@@ -406,9 +406,10 @@ TEST_P(IpParameterTest, PresolveOff) {
     // We test presolve being unsupported in IpParameterTest.PresolveOn
     return;
   }
-  ASSERT_OK_AND_ASSIGN(
-      (const auto [solve_stats, logs]),
-      SolveForIPPresolve(TestedSolver(), /*do_presolve=*/false));
+  absl::StatusOr<std::pair<SolveStats, std::string>> stats_and_logs =
+      SolveForIPPresolve(TestedSolver(), /*do_presolve=*/false);
+  ASSERT_OK(stats_and_logs);
+  const auto [solve_stats, logs] = stats_and_logs.value();
   if (GetParam().solve_result_support.iteration_stats) {
     EXPECT_GE(solve_stats.barrier_iterations + solve_stats.simplex_iterations +
                   solve_stats.first_order_iterations,
@@ -425,7 +426,8 @@ TEST_P(IpParameterTest, PresolveOn) {
                                          HasSubstr("presolve")));
     return;
   }
-  ASSERT_OK_AND_ASSIGN((const auto [solve_stats, logs]), stats_and_logs);
+  ASSERT_OK(stats_and_logs);
+  const auto [solve_stats, logs] = stats_and_logs.value();
   if (!GetParam().solve_result_support.iteration_stats) {
     EXPECT_EQ(solve_stats.barrier_iterations, 0);
     EXPECT_EQ(solve_stats.simplex_iterations, 0);

@@ -133,10 +133,8 @@ using ::testing::AtLeast;
 using ::testing::Each;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::kDoNotCaptureLogsYet;
 using ::testing::Mock;
 using ::testing::Pair;
-using ::testing::ScopedMockLog;
 using ::testing::UnorderedElementsAre;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
@@ -183,10 +181,6 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
             }
           },
   };
-
-  // Some solvers (e.g. PDLP) use logs instead of printing to stdout with
-  // enable_output. We thus use mock logging to test that.
-  ScopedMockLog log(kDoNotCaptureLogsYet);
 
   // First test with enable_output being false.
   args.parameters.enable_output = false;

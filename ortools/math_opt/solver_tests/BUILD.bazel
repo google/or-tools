@@ -27,6 +27,59 @@ cc_library(
 )
 
 cc_library(
+    name = "callback_tests",
+    testonly = 1,
+    srcs = ["callback_tests.cc"],
+    hdrs = ["callback_tests.h"],
+    deps = [
+        ":base_solver_test",
+        ":test_models",
+        "//ortools/base",
+        "//ortools/base:gmock",
+        "//ortools/base:map_util",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/io:mps_converter",
+        "//ortools/port:proto_utils",
+        "//ortools/port:scoped_std_stream_capture",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:span",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "status_tests",
+    testonly = 1,
+    srcs = ["status_tests.cc"],
+    hdrs = ["status_tests.h"],
+    deps = [
+        ":test_models",
+        "//ortools/base",
+        "//ortools/base:gmock",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/io:mps_converter",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
     name = "lp_tests",
     testonly = 1,
     srcs = ["lp_tests.cc"],
@@ -88,6 +141,19 @@ cc_library(
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
+)
+
+cc_test(
+    name = "unregistered_solver_test",
+    size = "small",
+    srcs = ["unregistered_solver_test.cc"],
+    deps = [
+        "//ortools/base:gmock",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/core:solver_interface",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
@@ -199,6 +265,32 @@ cc_library(
 )
 
 cc_library(
+    name = "ip_parameter_tests",
+    testonly = 1,
+    srcs = ["ip_parameter_tests.cc"],
+    hdrs = ["ip_parameter_tests.h"],
+    deps = [
+        ":test_models",
+        "//ortools/base",
+        "//ortools/base:gmock",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/io:mps_converter",
+        "//ortools/port:proto_utils",
+        "//ortools/util:testing_utils",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
     name = "multi_objective_tests",
     testonly = 1,
     srcs = ["multi_objective_tests.cc"],
@@ -303,6 +395,19 @@ cc_library(
         "//ortools/math_opt/cpp:math_opt",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "test_models_test",
+    srcs = ["test_models_test.cc"],
+    deps = [
+        ":test_models",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
