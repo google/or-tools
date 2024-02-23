@@ -25,9 +25,8 @@ cc_library(
 
 cc_library(
     name = "proto_utils",
-    hdrs = [
-        "proto_utils.h",
-    ],
+    srcs = ["proto_utils.cc"],
+    hdrs = ["proto_utils.h"],
     deps = [
         "//ortools/base",
         "//ortools/util:parse_proto",

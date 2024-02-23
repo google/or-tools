@@ -17,13 +17,14 @@
 #include <string>
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/generated_enum_reflection.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/util/parse_proto.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/message_lite.h"
+#include "google/protobuf/text_format.h"
 
 namespace operations_research {
 
@@ -99,19 +100,14 @@ bool ProtobufParseTextProtoForFlag(absl::string_view text,
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
-template <typename ProtoType>
-std::string ProtobufTextFormatPrintToString(const ProtoType proto) {
-#if defined(__PORTABLE_PLATFORM__)
-  return absl::StrCat(
-      "<text protos not supported with lite protobuf, cannot print proto "
-      "message of type ",
-      proto.GetTypeName(), ">");
-#else   // defined(__PORTABLE_PLATFORM__)
-  std::string result;
-  google::protobuf::TextFormat::PrintToString(proto, &result);
-  return result;
-#endif  // !defined(__PORTABLE_PLATFORM__)
-}
+// Prints the input proto to a string on a single line in a format compatible
+// with ProtobufParseTextProtoForFlag().
+std::string ProtobufTextFormatPrintToStringForFlag(
+    const google::protobuf::Message& proto);
+
+// Prints an error message when compiling with lite protos.
+std::string ProtobufTextFormatPrintToStringForFlag(
+    const google::protobuf::MessageLite& proto);
 
 }  // namespace operations_research
 
