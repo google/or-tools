@@ -112,7 +112,10 @@ cc_library(
     name = "scip_proto_solver",
     srcs = ["scip_proto_solver.cc"],
     hdrs = ["scip_proto_solver.h"],
-    defines = ["USE_SCIP"],
+    defines = select({
+        "//ortools/linear_solver:use_scip": ["USE_SCIP"],
+        "//conditions:default": [],
+    }),
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
@@ -129,8 +132,10 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
-        "@scip//:libscip",
-    ],
+    ] + select({
+        "//ortools/linear_solver:use_scip": ["@scip//:libscip"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
