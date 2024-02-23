@@ -267,11 +267,8 @@ cc_library(
         "//ortools/base:timer",
         "//ortools/gurobi:environment",
         "//ortools/gurobi:gurobi_util",
-        "//ortools/linear_solver/proto_solver:glop_proto_solver",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
-        "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
-        "//ortools/linear_solver/proto_solver:scip_proto_solver",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
@@ -295,6 +292,7 @@ cc_library(
         ":use_glop": [
             "//ortools/glop:lp_solver",
             "//ortools/glop:parameters_cc_proto",
+            "//ortools/linear_solver/proto_solver:glop_proto_solver",
         ],
         "//conditions:default": [],
     }) + select({
@@ -305,6 +303,7 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_pdlp": [
+            "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
             "//ortools/pdlp:primal_dual_hybrid_gradient",
             "//ortools/pdlp:solve_log_cc_proto",
             "//ortools/pdlp:solvers_cc_proto",
@@ -314,6 +313,7 @@ cc_library(
         ":use_scip": [
             ":scip_with_glop",
             "//ortools/gscip:legacy_scip_params",
+            "//ortools/linear_solver/proto_solver:scip_proto_solver",
         ],
         "//conditions:default": [],
     }),
