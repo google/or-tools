@@ -95,10 +95,10 @@ struct EnumFormatter {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     const absl::string_view name) {
-  ASSIGN_OR_RETURN(const ModelProto model_proto,
-                   ReadMpsFile(absl::StrCat(
-                       "ortools/math_opt/solver_tests/testdata/",
-                       name, ".mps.gz")));
+  ASSIGN_OR_RETURN(
+      const ModelProto model_proto,
+      ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
+                               ".mps")));
   return Model::FromModelProto(model_proto);
 }
 

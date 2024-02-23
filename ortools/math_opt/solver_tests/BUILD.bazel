@@ -32,7 +32,7 @@ cc_library(
     srcs = ["callback_tests.cc"],
     hdrs = ["callback_tests.h"],
     data = [
-        "//ortools/math_opt/solver_tests/testdata:23588.mps.gz",
+        "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
     deps = [
         ":base_solver_test",
@@ -66,7 +66,7 @@ cc_library(
     srcs = ["status_tests.cc"],
     hdrs = ["status_tests.h"],
     data = [
-        "//ortools/math_opt/solver_tests/testdata:23588.mps.gz",
+        "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
     deps = [
         ":test_models",
@@ -275,8 +275,8 @@ cc_library(
     srcs = ["ip_parameter_tests.cc"],
     hdrs = ["ip_parameter_tests.h"],
     data = [
-        "//ortools/math_opt/solver_tests/testdata:23588.mps.gz",
-        "//ortools/math_opt/solver_tests/testdata:beavma.mps.gz",
+        "//ortools/math_opt/solver_tests/testdata:23588.mps",
+        "//ortools/math_opt/solver_tests/testdata:beavma.mps",
     ],
     deps = [
         ":test_models",
