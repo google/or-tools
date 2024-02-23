@@ -3035,8 +3035,9 @@ class LnsSolver : public SubSolver {
             LOG(INFO) << "Dumping problematic LNS model to '" << name << "'.";
             CHECK(WriteModelProtoToFile(debug_copy, name));
           }
-          LOG(FATAL) << "Infeasible LNS solution! " << solution_info
+          LOG(ERROR) << "Infeasible LNS solution! " << solution_info
                      << " solved with params " << local_params;
+          return;
         }
 
         // Special case if we solved a part of the full problem!
