@@ -41,8 +41,29 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "glpk_sparse_vector_test",
+    srcs = ["glpk_sparse_vector_test.cc"],
+    deps = [
+        ":glpk_sparse_vector",
+        "//ortools/base:gmock",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
+)
+
+cc_test(
+    name = "gap_test",
+    srcs = ["gap_test.cc"],
+    deps = [
+        ":gap",
+        "//ortools/base:gmock",
+        "//ortools/util:fp_roundtrip_conv",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
