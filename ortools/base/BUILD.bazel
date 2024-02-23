@@ -391,6 +391,15 @@ cc_library(
 )
 
 cc_library(
+    name = "parse_text_proto",
+    hdrs = ["parse_text_proto.h"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "path",
     srcs = ["path.cc"],
     hdrs = ["path.h"],
