@@ -345,7 +345,7 @@ bool AbslParseFlag(absl::string_view text, SolveParameters* solve_parameters,
 }
 
 std::string AbslUnparseFlag(SolveParameters solve_parameters) {
-  return ProtobufTextFormatPrintToString(solve_parameters.Proto());
+  return ProtobufTextFormatPrintToStringForFlag(solve_parameters.Proto());
 }
 
 }  // namespace math_opt

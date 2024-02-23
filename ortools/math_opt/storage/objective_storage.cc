@@ -157,7 +157,7 @@ std::optional<ObjectiveUpdatesProto> ObjectiveStorage::ObjectiveData::Update(
 std::pair<ObjectiveUpdatesProto, AuxiliaryObjectivesUpdatesProto>
 ObjectiveStorage::Update(
     const Diff& diff, const absl::flat_hash_set<VariableId>& deleted_variables,
-    const std::vector<VariableId>& new_variables) const {
+    absl::Span<const VariableId> new_variables) const {
   AuxiliaryObjectivesUpdatesProto auxiliary_result;
 
   for (const AuxiliaryObjectiveId id : diff.deleted) {

@@ -158,6 +158,7 @@ from ortools.math_opt.python.solve import compute_infeasible_subsystem
 from ortools.math_opt.python.solve import IncrementalSolver
 from ortools.math_opt.python.solve import solve
 from ortools.math_opt.python.solve import SolveCallback
+from ortools.math_opt.python.solver_resources import SolverResources
 from ortools.math_opt.python.sparse_containers import LinearConstraintFilter
 from ortools.math_opt.python.sparse_containers import parse_linear_constraint_map
 from ortools.math_opt.python.sparse_containers import parse_variable_map

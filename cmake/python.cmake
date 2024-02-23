@@ -370,6 +370,7 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/result.py
     ortools/math_opt/python/solution.py
     ortools/math_opt/python/solve.py
+    ortools/math_opt/python/solver_resources.py
     ortools/math_opt/python/sparse_containers.py
     ortools/math_opt/python/statistics.py
     DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)

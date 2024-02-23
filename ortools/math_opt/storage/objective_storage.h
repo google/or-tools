@@ -192,7 +192,7 @@ class ObjectiveStorage {
   std::pair<ObjectiveUpdatesProto, AuxiliaryObjectivesUpdatesProto> Update(
       const Diff& diff,
       const absl::flat_hash_set<VariableId>& deleted_variables,
-      const std::vector<VariableId>& new_variables) const;
+      absl::Span<const VariableId> new_variables) const;
 
   // Updates the checkpoint and clears all stored changes in diff.
   void AdvanceCheckpointInDiff(VariableId variable_checkpoint,

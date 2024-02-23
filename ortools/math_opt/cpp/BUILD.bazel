@@ -508,3 +508,16 @@ cc_library(
         "//ortools/math_opt/core:solve_interrupter",
     ],
 )
+
+cc_library(
+    name = "solver_resources",
+    srcs = ["solver_resources.cc"],
+    hdrs = ["solver_resources.h"],
+    deps = [
+        "//ortools/math_opt:rpc_cc_proto",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)

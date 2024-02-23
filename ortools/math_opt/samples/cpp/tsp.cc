@@ -247,7 +247,7 @@ math_opt::BoundedLinearExpression CutsetConstraint(
 // Solves the TSP by returning the ordering of the cities that minimizes travel
 // distance.
 absl::StatusOr<Cycle> SolveTsp(
-    const std::vector<std::pair<double, double>>& cities,
+    absl::Span<const std::pair<double, double>> cities,
     const math_opt::SolverType solver) {
   const int n = static_cast<int>(cities.size());
   const std::vector<std::vector<double>> distance_matrix =

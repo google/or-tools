@@ -35,6 +35,7 @@ py_library(
         ":result",
         ":solution",
         ":solve",
+        ":solver_resources",
         ":sparse_containers",
     ],
 )
@@ -193,4 +194,10 @@ py_library(
     deps = [
         ":model",
     ],
+)
+
+py_library(
+    name = "solver_resources",
+    srcs = ["solver_resources.py"],
+    deps = ["//ortools/math_opt:rpc_py_pb2"],
 )

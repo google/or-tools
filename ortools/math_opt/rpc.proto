@@ -28,7 +28,7 @@ option java_multiple_files = true;
 
 // This message is used to specify some hints on the resources a remote solve is
 // expected to use. These parameters are hints and may be ignored by the remote
-// server (in particular in case of solve in a local subprocess for example).
+// server (in particular in case of solve in a local subprocess, for example).
 //
 // When using SolveService.Solve and SolveService.ComputeInfeasibleSubsystem,
 // these hints are mostly optional as some defaults will be computed based on
@@ -43,10 +43,10 @@ message SolverResourcesProto {
   // parallel. Must be finite and >0.0.
   //
   // For example a value of 3.0 means that if the solver has 5 threads that can
-  // execute we expect at least 3 of these threads to be schedule in parallel
+  // execute we expect at least 3 of these threads to be scheduled in parallel
   // for any given time slice of the operating system scheduler.
   //
-  // A fractional value indicate that we don't expect the operating system to
+  // A fractional value indicates that we don't expect the operating system to
   // constantly schedule the solver's work. For example with 0.5 we would expect
   // the solver's threads to be scheduled half the time.
   //

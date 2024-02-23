@@ -31,6 +31,7 @@ from ortools.math_opt.python import parameters
 from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python import solve
+from ortools.math_opt.python import solver_resources
 from ortools.math_opt.python import sparse_containers
 
 # This list does not contain some modules intentionally:
@@ -56,6 +57,7 @@ _MODULES_TO_CHECK: List[types.ModuleType] = [
     sparse_containers,
     solution,
     solve,
+    solver_resources,
 ]
 
 # Some symbols are not meant to be exported; we exclude them here.
