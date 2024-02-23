@@ -340,16 +340,6 @@ cc_library(
 )
 
 cc_library(
-    name = "top_n",
-    hdrs = ["top_n.h"],
-)
-
-cc_library(
-    name = "types",
-    hdrs = ["types.h"],
-)
-
-cc_library(
     name = "macros",
     hdrs = ["macros.h"],
 )
@@ -535,8 +525,18 @@ cc_library(
 )
 
 cc_library(
+    name = "top_n",
+    hdrs = ["top_n.h"],
+)
+
+cc_library(
     name = "typeid",
     hdrs = ["typeid.h"],
+)
+
+cc_library(
+    name = "types",
+    hdrs = ["types.h"],
 )
 
 cc_library(
