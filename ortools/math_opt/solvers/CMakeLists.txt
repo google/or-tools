@@ -15,6 +15,8 @@ set(NAME ${PROJECT_NAME}_math_opt_solvers)
 add_library(${NAME} OBJECT)
 
 file(GLOB_RECURSE _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+
 if(NOT USE_GLPK)
   list(FILTER _SRCS EXCLUDE REGEX "/glpk/")
   list(FILTER _SRCS EXCLUDE REGEX "/glpk_.*.h$")
