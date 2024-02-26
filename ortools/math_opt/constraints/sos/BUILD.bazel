@@ -29,6 +29,23 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sos1_constraint_test",
+    srcs = ["sos1_constraint_test.cc"],
+    deps = [
+        ":sos1_constraint",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "sos2_constraint",
     srcs = ["sos2_constraint.cc"],
@@ -45,6 +62,23 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sos2_constraint_test",
+    srcs = ["sos2_constraint_test.cc"],
+    deps = [
+        ":sos2_constraint",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "storage",
     hdrs = ["storage.h"],
@@ -57,6 +91,21 @@ cc_library(
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "storage_test",
+    srcs = ["storage_test.cc"],
+    deps = [
+        ":storage",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -83,5 +132,21 @@ cc_library(
         "//ortools/math_opt/validators:scalar_validator",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
+    ],
+)
+
+cc_test(
+    name = "validator_test",
+    srcs = ["validator_test.cc"],
+    deps = [
+        ":validator",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
     ],
 )

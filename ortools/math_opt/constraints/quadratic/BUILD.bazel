@@ -30,6 +30,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "quadratic_constraint_test",
+    srcs = ["quadratic_constraint_test.cc"],
+    deps = [
+        ":quadratic_constraint",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "//ortools/math_opt/storage:sparse_matrix",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "storage",
     srcs = ["storage.cc"],
@@ -43,6 +59,21 @@ cc_library(
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/math_opt/storage:sparse_matrix",
         "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "storage_test",
+    srcs = ["storage_test.cc"],
+    deps = [
+        ":storage",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "//ortools/math_opt/storage:sparse_matrix",
     ],
 )
 
@@ -61,5 +92,20 @@ cc_library(
         "//ortools/math_opt/validators:sparse_matrix_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "@com_google_absl//absl/status",
+    ],
+)
+
+cc_test(
+    name = "validator_test",
+    srcs = ["validator_test.cc"],
+    deps = [
+        ":validator",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
     ],
 )

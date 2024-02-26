@@ -27,3 +27,18 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_test(
+    name = "model_util_test",
+    srcs = ["model_util_test.cc"],
+    deps = [
+        ":model_util",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/quadratic:storage",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+    ],
+)

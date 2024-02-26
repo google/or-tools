@@ -26,6 +26,21 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "indicator_constraint_test",
+    srcs = ["indicator_constraint_test.cc"],
+    deps = [
+        ":indicator_constraint",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "storage",
     srcs = ["storage.cc"],
@@ -42,6 +57,20 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "storage_test",
+    srcs = ["storage_test.cc"],
+    deps = [
+        ":storage",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+    ],
+)
+
 cc_library(
     name = "validator",
     srcs = ["validator.cc"],
@@ -53,5 +82,20 @@ cc_library(
         "//ortools/math_opt/validators:scalar_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "@com_google_absl//absl/status",
+    ],
+)
+
+cc_test(
+    name = "validator_test",
+    srcs = ["validator_test.cc"],
+    deps = [
+        ":validator",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
     ],
 )
