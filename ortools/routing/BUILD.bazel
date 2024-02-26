@@ -127,12 +127,12 @@ cc_test(
     ],
     deps = [
         ":carp_parser",
+        "//ortools/base:gmock_main",
         "//ortools/base:path",
         "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/hash:hash_testing",
         "@com_google_absl//absl/log:scoped_mock_log",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -310,8 +310,8 @@ cc_test(
     deps = [
         ":solution_serializer",
         "//ortools/base",
+        "//ortools/base:gmock_main",
         "//ortools/base:mutable_memfile",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
