@@ -23,8 +23,8 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/types.h"
 #include "ortools/graph/graph.h"
 

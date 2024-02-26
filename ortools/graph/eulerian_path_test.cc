@@ -16,8 +16,8 @@
 #include <vector>
 
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/graph/graph.h"

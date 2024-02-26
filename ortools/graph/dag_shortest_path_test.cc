@@ -26,9 +26,9 @@
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
+#include "ortools/base/gmock.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/io.h"
 #include "ortools/util/flat_matrix.h"
@@ -507,13 +507,13 @@ void BM_RandomDag(benchmark::State& state) {
   for (int _ = 0; _ < num_scenarios; ++_) {
     arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));
   }
-  std::vector<double>* arc_lengths = &arc_lengths_scenarios.front();
+  std::vector<double> arc_lengths = arc_lengths_scenarios.front();
   ShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_path_on_dag(
-      &graph, arc_lengths, topological_order);
+      &graph, &arc_lengths, topological_order);
   for (auto _ : state) {
     // Pick a arc lengths scenario at random.
     arc_lengths =
-        &(arc_lengths_scenarios[absl::Uniform(bit_gen, 0, num_scenarios)]);
+        arc_lengths_scenarios[absl::Uniform(bit_gen, 0, num_scenarios)];
     shortest_path_on_dag.RunShortestPathOnDag({0});
     CHECK(shortest_path_on_dag.IsReachable(num_nodes - 1));
     const double minimum_length = shortest_path_on_dag.LengthTo(num_nodes - 1);

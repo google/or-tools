@@ -123,6 +123,7 @@ class ShortestPathsOnDagWrapper {
 
   // Returns the length of the shortest path from `node`'s source to `node`.
   double LengthTo(NodeIndex node) const { return length_from_sources_[node]; }
+  std::vector<double> LengthTo() const { return length_from_sources_; }
 
   // Returns the list of all the arcs in the shortest path from `node`'s
   // source to `node`. CHECKs if the node is reachable.
