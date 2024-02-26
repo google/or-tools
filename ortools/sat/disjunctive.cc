@@ -19,6 +19,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
@@ -321,7 +322,7 @@ CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model* model)
 
 template <bool time_direction>
 void CombinedDisjunctive<time_direction>::AddNoOverlap(
-    const std::vector<IntervalVariable>& vars) {
+    absl::Span<const IntervalVariable> vars) {
   const int index = task_sets_.size();
   task_sets_.emplace_back(vars.size());
   end_mins_.push_back(kMinIntegerValue);

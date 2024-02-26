@@ -28,6 +28,7 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -916,6 +917,13 @@ std::vector<SatParameters> GetWorkSharingParams(
   if (!cp_model.assumptions().empty()) return result;
   if (num_params_to_generate <= 0) return result;
   int num_workers = 0;
+
+  SatParameters extra_params;
+  if (!base_params.shared_tree_extra_parameters_as_string().empty()) {
+    CHECK(google::protobuf::TextFormat::ParseFromString(
+        base_params.shared_tree_extra_parameters_as_string(), &extra_params));
+  }
+
   while (result.size() < num_params_to_generate) {
     // TODO(user): Make the base parameters configurable.
     SatParameters new_params = base_params;
@@ -930,6 +938,8 @@ std::vector<SatParameters> GetWorkSharingParams(
     new_params.set_optimize_with_core(false);
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
+
+    new_params.MergeFrom(extra_params);
 
     std::string lp_tags[] = {"no", "default", "max"};
     absl::StrAppend(&name,

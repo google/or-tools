@@ -136,7 +136,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
 };
 
 void GenerateNoOverlap2dEnergyCut(
-    const std::vector<std::vector<LiteralValueValue>>& energies,
+    absl::Span<const std::vector<LiteralValueValue>> energies,
     absl::Span<int> rectangles, absl::string_view cut_name, Model* model,
     LinearConstraintManager* manager, SchedulingConstraintHelper* x_helper,
     SchedulingConstraintHelper* y_helper,

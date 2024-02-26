@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -196,7 +197,7 @@ class CombinedDisjunctive : public PropagatorInterface {
 
   // After creation, this must be called for all the disjunctive constraints
   // in the model.
-  void AddNoOverlap(const std::vector<IntervalVariable>& var);
+  void AddNoOverlap(absl::Span<const IntervalVariable> var);
 
   bool Propagate() final;
 

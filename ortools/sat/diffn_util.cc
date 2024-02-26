@@ -49,8 +49,7 @@ bool Rectangle::IsDisjoint(const Rectangle& other) const {
 }
 
 std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
-    const std::vector<Rectangle>& rectangles,
-    absl::Span<int> active_rectangles) {
+    absl::Span<const Rectangle> rectangles, absl::Span<int> active_rectangles) {
   if (active_rectangles.empty()) return {};
 
   std::vector<absl::Span<int>> result;
@@ -174,8 +173,8 @@ bool BoxesAreInEnergyConflict(const std::vector<Rectangle>& rectangles,
 }
 
 bool AnalyzeIntervals(bool transpose, absl::Span<const int> local_boxes,
-                      const std::vector<Rectangle>& rectangles,
-                      const std::vector<IntegerValue>& rectangle_energies,
+                      absl::Span<const Rectangle> rectangles,
+                      absl::Span<const IntegerValue> rectangle_energies,
                       IntegerValue* x_threshold, IntegerValue* y_threshold,
                       Rectangle* conflict) {
   // First, we compute the possible x_min values (removing duplicates).
@@ -326,7 +325,7 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> local_boxes,
 }
 
 absl::Span<int> FilterBoxesAndRandomize(
-    const std::vector<Rectangle>& cached_rectangles, absl::Span<int> boxes,
+    absl::Span<const Rectangle> cached_rectangles, absl::Span<int> boxes,
     IntegerValue threshold_x, IntegerValue threshold_y,
     absl::BitGenRef random) {
   size_t new_size = 0;
@@ -581,8 +580,8 @@ void AppendPairwiseRestrictions(
 }
 
 void AppendPairwiseRestrictions(
-    const std::vector<ItemForPairwiseRestriction>& items,
-    const std::vector<ItemForPairwiseRestriction>& other_items,
+    absl::Span<const ItemForPairwiseRestriction> items,
+    absl::Span<const ItemForPairwiseRestriction> other_items,
     std::vector<PairwiseRestriction>* result) {
   for (int i1 = 0; i1 < items.size(); ++i1) {
     for (int i2 = 0; i2 < other_items.size(); ++i2) {

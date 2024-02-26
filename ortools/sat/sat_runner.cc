@@ -152,7 +152,7 @@ int Run() {
   // Read the problem.
   google::protobuf::Arena arena;
   CpModelProto* cp_model =
-      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
+      google::protobuf::Arena::Create<CpModelProto>(&arena);
   if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
                    cp_model)) {
     CpSolverResponse response;

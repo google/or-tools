@@ -829,7 +829,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
     if (helper->IsOptional(index)) {
-      if (demands_helper->EnergyMin(index) >= 0) {
+      if (demands_helper->EnergyMin(index) > 0) {
         num_optionals++;
       } else {
         continue;
@@ -1230,8 +1230,13 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
   if (!linearize_enforced_constraints) return;
 
   // We linearize fully reified constraints of size 1 all together for a given
-  // variable. But we need to process half-reified ones.
-  if (!mapping->IsHalfEncodingConstraint(&ct) && ct.linear().vars_size() <= 1) {
+  // variable. But we need to process half-reified ones or constraint with
+  // more than one enforcement.
+  //
+  // TODO(user): Use cleaner "already loaded" logic, and mark as such constraint
+  // already encoded by code like AppendRelaxationForEqualityEncoding().
+  if (!mapping->IsHalfEncodingConstraint(&ct) && ct.linear().vars_size() <= 1 &&
+      ct.enforcement_literal().size() <= 1) {
     return;
   }
 

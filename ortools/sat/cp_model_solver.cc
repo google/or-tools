@@ -3885,9 +3885,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // large messages.
   google::protobuf::Arena arena;
   CpModelProto* new_cp_model_proto =
-      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
+      google::protobuf::Arena::Create<CpModelProto>(&arena);
   CpModelProto* mapping_proto =
-      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
+      google::protobuf::Arena::Create<CpModelProto>(&arena);
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 

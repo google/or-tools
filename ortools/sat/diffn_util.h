@@ -113,8 +113,7 @@ inline IntegerValue Rectangle::IntersectArea(const Rectangle& other) const {
 // This method removes all singleton components. It will modify the
 // active_rectangle span in place.
 std::vector<absl::Span<int>> GetOverlappingRectangleComponents(
-    const std::vector<Rectangle>& rectangles,
-    absl::Span<int> active_rectangles);
+    absl::Span<const Rectangle> rectangles, absl::Span<int> active_rectangles);
 
 // Visible for testing. The algo is in O(n^4) so shouldn't be used directly.
 // Returns true if there exist a bounding box with too much energy.
@@ -142,8 +141,8 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
 //
 // If transpose is true, we analyze the relevant Y intervals instead.
 bool AnalyzeIntervals(bool transpose, absl::Span<const int> boxes,
-                      const std::vector<Rectangle>& rectangles,
-                      const std::vector<IntegerValue>& rectangle_energies,
+                      absl::Span<const Rectangle> rectangles,
+                      absl::Span<const IntegerValue> rectangle_energies,
                       IntegerValue* x_threshold, IntegerValue* y_threshold,
                       Rectangle* conflict = nullptr);
 
@@ -151,7 +150,7 @@ bool AnalyzeIntervals(bool transpose, absl::Span<const int> boxes,
 // Because we rely on various heuristic, this allow to change the order from
 // one call to the next.
 absl::Span<int> FilterBoxesAndRandomize(
-    const std::vector<Rectangle>& cached_rectangles, absl::Span<int> boxes,
+    absl::Span<const Rectangle> cached_rectangles, absl::Span<int> boxes,
     IntegerValue threshold_x, IntegerValue threshold_y, absl::BitGenRef random);
 
 // Given the total energy of all rectangles (sum of energies[box]) we know that
@@ -254,8 +253,8 @@ void AppendPairwiseRestrictions(
 // Same as above, but test `items` against `other_items` and append the
 // restrictions found to `result`.
 void AppendPairwiseRestrictions(
-    const std::vector<ItemForPairwiseRestriction>& items,
-    const std::vector<ItemForPairwiseRestriction>& other_items,
+    absl::Span<const ItemForPairwiseRestriction> items,
+    absl::Span<const ItemForPairwiseRestriction> other_items,
     std::vector<PairwiseRestriction>* result);
 
 // This class is used by the no_overlap_2d constraint to maintain the envelope
