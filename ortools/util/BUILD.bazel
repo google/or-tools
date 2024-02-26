@@ -489,6 +489,15 @@ cc_library(
 )
 
 cc_library(
+    name = "fp_roundtrip_conv_testing",
+    hdrs = ["fp_roundtrip_conv_testing.h"],
+    testonly = 1,
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "parse_proto",
     srcs = ["parse_proto.cc"],
     hdrs = ["parse_proto.h"],
