@@ -24,8 +24,8 @@
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/pdlp/quadratic_program.h"
 
 namespace operations_research::pdlp {

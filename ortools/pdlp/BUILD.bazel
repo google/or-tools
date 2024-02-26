@@ -56,7 +56,7 @@ cc_library(
     srcs = ["gtest_main.cc"],
     deps = [
         "//ortools/base",
-        "@com_google_googletest//:gtest",
+        "//ortools/base:gmock",
     ],
 )
 
@@ -360,8 +360,8 @@ cc_library(
     deps = [
         ":quadratic_program",
         "//ortools/base",
+        "//ortools/base:gmock",
         "@com_google_absl//absl/types:span",
-        "@com_google_googletest//:gtest",
         "@eigen//:eigen3",
     ],
 )

@@ -23,8 +23,8 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
 #include "ortools/pdlp/sharder.h"

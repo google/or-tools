@@ -18,8 +18,8 @@
 #include <limits>
 #include <optional>
 
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"

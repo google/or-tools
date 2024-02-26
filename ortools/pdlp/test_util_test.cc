@@ -22,8 +22,8 @@
 #include "Eigen/Core"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 
 namespace operations_research::pdlp {
 namespace {

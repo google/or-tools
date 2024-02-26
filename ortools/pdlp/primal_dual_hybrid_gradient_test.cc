@@ -32,8 +32,8 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -54,8 +54,6 @@ namespace {
 using ::Eigen::VectorXd;
 using ::operations_research::glop::ConstraintStatus;
 using ::operations_research::glop::VariableStatus;
-using ::testing::_;
-using ::testing::AnyNumber;
 using ::testing::AnyOf;
 using ::testing::DoubleNear;
 using ::testing::ElementsAre;

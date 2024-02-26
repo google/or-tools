@@ -17,8 +17,8 @@
 #include <optional>
 
 #include "Eigen/Core"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
 #include "ortools/pdlp/test_util.h"

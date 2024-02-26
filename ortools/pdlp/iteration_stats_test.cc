@@ -19,8 +19,8 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_quadratic_program.h"
