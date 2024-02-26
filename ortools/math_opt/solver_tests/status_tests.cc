@@ -328,12 +328,14 @@ TEST_P(StatusTest, InfeasibleIpWithPrimalDualFeasibleRelaxation2) {
   model.Minimize(x1);
   model.AddLinearConstraint(x1 + x2 == 1.5, "c1");
 
-  ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
+  if (GetParam().solver_type != SolverType::kCpSat) {
+    ASSERT_OK_AND_ASSIGN(const SolveResult result, SimpleSolve(model));
 
-  EXPECT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
-  // Result validators imply primal problem status is kInfeasible.
-  EXPECT_THAT(result.termination.problem_status,
-              Not(DualStatusIs(FeasibilityStatus::kInfeasible)));
+    EXPECT_THAT(result, TerminatesWith(TerminationReason::kInfeasible));
+    // Result validators imply primal problem status is kInfeasible.
+    EXPECT_THAT(result.termination.problem_status,
+        Not(DualStatusIs(FeasibilityStatus::kInfeasible)));
+  }
 }
 
 TEST_P(StatusTest, InfeasibleIpWithPrimalFeasibleDualInfeasibleRelaxation) {

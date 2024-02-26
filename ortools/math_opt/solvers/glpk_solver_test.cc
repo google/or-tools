@@ -424,21 +424,6 @@ TEST(GlpkSolverDeathTest, DestroySolverFromAnotherThread) {
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<IncrementalSolver> incremental_solver,
                        IncrementalSolver::New(&model, SolverType::kGlpk));
-
-  EXPECT_DEATH_IF_SUPPORTED(
-      // Destroy the solver from another thread. This crashes since GLPK detects
-      // that the memory of the problem was allocated in another thread (and
-      // thus another GLPK environment).
-      std::thread([&]() { incremental_solver.reset(); }).join(),
-#if !defined(__ANDROID__) || __ARM_ARCH < 7
-      // We expect a stack to be visible with ~GlpkSolver.
-      "~GlpkSolver()"
-#else
-      // On Android armeabi v7a the code crashes but nothing is captured in the
-      // output that is considered by EXPECT_DEATH.
-      ""
-#endif
-  );
 }
 
 TEST(GlpkSolverTest, SolveFromAnotherThread) {

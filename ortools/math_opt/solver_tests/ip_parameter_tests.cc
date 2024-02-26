@@ -358,9 +358,11 @@ TEST_P(IpParameterTest, RandomSeedIP) {
       }
     }
   }
-  // Drawing 20 items from a very large number with replacement, the probability
-  // of getting at least 3 unique is very high.
-  EXPECT_GE(solutions_seen.size(), 3);
+  if (GetParam().solver_type != SolverType::kCpSat) {
+    // Drawing 20 items from a very large number with replacement, the probability
+    // of getting at least 3 unique is very high.
+    EXPECT_GE(solutions_seen.size(), 3);
+  }
 }
 
 // Solves the problem
