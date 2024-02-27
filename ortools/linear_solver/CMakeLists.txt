@@ -83,3 +83,7 @@ if (BUILD_CXX_EXAMPLES)
 
   add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
 endif ()
+
+if (USE_SIRIUS)
+   add_subdirectory(sirius)
+endif()

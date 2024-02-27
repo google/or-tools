@@ -953,8 +953,9 @@ public:
   //
   // TODO(user): replace by two vectors, a std::vector<bool> to indicate if a
   // hint is provided and a std::vector<double> for the hint value.
+public:
   std::vector<std::pair<const MPVariable*, double> > solution_hint_;
-
+private:
   absl::Duration time_limit_ = absl::InfiniteDuration();  // Default = No limit.
 
   const absl::Time construction_time_;
@@ -1255,6 +1256,7 @@ class MPVariable {
         reduced_cost_(0.0),
         interface_(interface_in) {}
 
+public:
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
@@ -1404,6 +1406,7 @@ class MPConstraint {
         dual_value_(0.0),
         interface_(interface_in) {}
 
+public:
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
  private:

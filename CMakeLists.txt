@@ -277,6 +277,12 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
 CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
 
+## SIRIUS
+option(USE_SIRIUS "Use the SIRIUS 3rd party solver" OFF)
+message(STATUS "SIRIUS support: ${USE_SIRIUS}")
+
+
+
 # Language specific options
 if(BUILD_CXX)
   CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
