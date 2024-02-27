@@ -255,7 +255,6 @@ function build_python() {
     "ortools/sat/python/swig_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
     "ortools/util/python/sorted_interval_list.pyi"
-    "ortools/test/test.pyi"
   )
 
   for PY_VERSION in "${PY[@]}"; do
@@ -279,7 +278,7 @@ function build_python() {
 
     # Check mypy files
     for FILE in "${MYPY_FILES[@]}"; do
-      if [[ ! -f "temp_python${PY_VERSION}/build/python/${FILE}" ]]; then
+      if [[ ! -f "temp_python${PY_VERSION}/python/${FILE}" ]]; then
         echo "error: ${FILE} missing in the python project" | tee -a build.log
         exit 2
       fi
