@@ -1409,10 +1409,6 @@ namespace operations_research {
 		}
 	}
 
-	MPSolverInterface *BuildSiriusInterface(bool mip, MPSolver *const solver) {
-		return new SiriusInterface(solver, mip);
-	}
-
 	MPSolverInterface *BuildSiriusInterfaceLP(MPSolver *const solver) {
 		return new SiriusInterface(solver, false);
 	}
