@@ -1,11 +1,18 @@
-Protobuf=v25.3
 abseil-cpp=20240116.1
-Cbc=2.10.7
-Cgl=0.60.5
-Clp=1.17.7
-Osi=0.108.7
-CoinUtils=2.11.6
+Protobuf=v25.3
 Eigen=3.4.0
 Re2=2024-02-01
+CoinUtils=2.11.6
+Osi=0.108.7
+Clp=1.17.7
+Cgl=0.60.5
+Cbc=2.10.7
+GLPK=5.0
 HiGHS=v1.6.0
 Scip=v810
+# Python
+pybind11=v2.11.1
+pybind11_abseil=52f2739
+pybind11_protobuf=3b11990
+# Testing
+googletest=v1.14.0
