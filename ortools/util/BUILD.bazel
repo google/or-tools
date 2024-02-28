@@ -490,8 +490,8 @@ cc_library(
 
 cc_library(
     name = "fp_roundtrip_conv_testing",
-    hdrs = ["fp_roundtrip_conv_testing.h"],
     testonly = 1,
+    hdrs = ["fp_roundtrip_conv_testing.h"],
     deps = [
         "@com_google_absl//absl/strings",
     ],
