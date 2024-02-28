@@ -13,7 +13,6 @@
 
 #include "ortools/graph/dag_constrained_shortest_path.h"
 
-#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -82,22 +81,12 @@ PathWithLength ConstrainedShortestPathsOnDag(
                                        &(*topological_order), &sources,
                                        &destinations, &max_resources);
 
-  constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
+  PathWithLength path_with_length =
+      constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
 
-  if (!constrained_shortest_path_on_dag.IsReachable(destination)) {
-    return PathWithLength{.length = std::numeric_limits<double>::infinity(),
-                          .arc_path = std::vector<int>(),
-                          .node_path = std::vector<int>()};
-  }
+  ApplyMapping(inverse_permutation, path_with_length.arc_path);
 
-  std::vector<ArcIndex> arc_path =
-      constrained_shortest_path_on_dag.ArcPathTo(destination);
-  ApplyMapping(inverse_permutation, arc_path);
-
-  return PathWithLength{
-      .length = constrained_shortest_path_on_dag.LengthTo(destination),
-      .arc_path = arc_path,
-      .node_path = constrained_shortest_path_on_dag.NodePathTo(destination)};
+  return path_with_length;
 }
 
 std::vector<int> GetInversePermutation(absl::Span<const int> permutation) {

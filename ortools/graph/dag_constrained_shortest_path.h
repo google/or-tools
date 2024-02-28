@@ -57,8 +57,8 @@ struct ArcWithLengthAndResources {
   std::vector<double> resources;
 };
 
-// Returns {+inf, {}} if there is no path of finite length from the source to
-// the destination. Dies if `arcs_with_length_and_resources` has a cycle.
+// Returns {+inf, {}, {}} if there is no path of finite length from the source
+// to the destination. Dies if `arcs_with_length_and_resources` has a cycle.
 PathWithLength ConstrainedShortestPathsOnDag(
     int num_nodes,
     absl::Span<const ArcWithLengthAndResources> arcs_with_length_and_resources,
@@ -114,7 +114,7 @@ class ConstrainedShortestPathsOnDagWrapper {
   //
   // Validity of arcs and topological order are DCHECKed.
   //
-  // If the number of labels in memory exceeds `max_num_created_label` at any
+  // If the number of labels in memory exceeds `max_num_created_labels` at any
   // point in the algorithm, it returns the best path found so far, most
   // particularly the empty path if none were found.
   //
@@ -130,31 +130,21 @@ class ConstrainedShortestPathsOnDagWrapper {
       const std::vector<NodeIndex>* sources,
       const std::vector<NodeIndex>* destinations,
       const std::vector<double>* max_resources,
-      int max_num_created_label = 1e9);
+      int max_num_created_labels = 1e9);
 
-  // Returns the destination of the constrained shortest path from one node in
-  // `sources` to one node in `destinations`.
-  void RunConstrainedShortestPathOnDag();
-
-  // Returns true if a node in `destinations` is reachable from at least one
-  // node from `sources` of last `RunConstrainedShortestPathOnDag()`. A node is
-  // reachable if there is a path with finite length that uses resources within
-  // the maximum resources allowed.
-  bool IsReachable(NodeIndex node) const { return node_num_labels_[node] > 0; }
-
-  // Returns the length of the constrained shortest path from the node source to
-  // `node`. CHECKs if the node is reachable.
-  double LengthTo(NodeIndex node) const;
-
-  // Returns the list of all the arcs in the shortest path from the node source
-  // to `node`. CHECKs if the node is reachable.
-  std::vector<ArcIndex> ArcPathTo(NodeIndex node) const;
-
-  // Returns the list of all the nodes in the constrained shortest path from the
-  // node source to `node`. CHECKs if the node is reachable.
-  std::vector<NodeIndex> NodePathTo(NodeIndex node) const;
+  // Returns {+inf, {}, {}} if there is no constrained path of finite length
+  // from one node in `sources` to one node in `destinations`.
+  PathWithLength RunConstrainedShortestPathOnDag();
 
  private:
+  // Returns the list of all the arcs of the shortest path from one node in
+  // `sources` ending by the arc from a given `label_index` if and only if
+  // `label_index` is between 0 and `labels_from_sources_.size() - 1`.
+  std::vector<ArcIndex> BestArcPathEndingWith(int label_index) const;
+  // Returns the list of all the nodes implied by a given `arc_path`.
+  std::vector<NodeIndex> NodePathImpliedBy(
+      const std::vector<ArcIndex>& arc_path) const;
+
   const GraphType* const graph_;
   const std::vector<double>* const arc_lengths_;
   const std::vector<std::vector<double>>* const arc_resources_;
@@ -162,7 +152,7 @@ class ConstrainedShortestPathsOnDagWrapper {
   const std::vector<NodeIndex>* const sources_;
   const std::vector<NodeIndex>* const destinations_;
   const std::vector<double>* const max_resources_;
-  int max_num_created_label_;
+  int max_num_created_labels_;
 
   std::vector<bool> node_is_source_;
   std::vector<bool> node_is_destination_;
@@ -182,14 +172,9 @@ class ConstrainedShortestPathsOnDagWrapper {
     // TODO(b/315786885): Optimize resources in Label struct.
     std::vector<double> resources;
     ArcIndex incoming_arc;
-
-    // Returns true if `this` can be obtained by adding the length and resources
-    // of `arc` to `other`'s length and resources.
-    bool IsLinkedTo(
-        const Label& other, ArcIndex arc,
-        const std::vector<double>* arc_lengths,
-        const std::vector<std::vector<double>>* arc_resources) const;
   };
+  // A label is present in `labels_from_sources_` if and only if it is feasible
+  // with respect to all resources.
   std::vector<Label> labels_from_sources_;
   std::vector<int> node_first_label_;
   std::vector<int> node_num_labels_;
@@ -212,7 +197,7 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
         const std::vector<NodeIndex>* topological_order,
         const std::vector<NodeIndex>* sources,
         const std::vector<NodeIndex>* destinations,
-        const std::vector<double>* max_resources, int max_num_created_label)
+        const std::vector<double>* max_resources, int max_num_created_labels)
     : graph_(graph),
       arc_lengths_(arc_lengths),
       arc_resources_(arc_resources),
@@ -220,12 +205,11 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
       sources_(sources),
       destinations_(destinations),
       max_resources_(max_resources),
-      max_num_created_label_(max_num_created_label) {
+      max_num_created_labels_(max_num_created_labels) {
   CHECK(graph_ != nullptr);
   CHECK(arc_lengths_ != nullptr);
   CHECK(arc_resources_ != nullptr);
   CHECK(topological_order_ != nullptr);
-  CHECK_EQ(topological_order_->size(), graph_->num_nodes());
   CHECK(sources_ != nullptr);
   CHECK(destinations_ != nullptr);
   CHECK(max_resources_ != nullptr);
@@ -290,115 +274,11 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   node_num_labels_.resize(graph_->num_nodes());
 }
 
-template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
-double ConstrainedShortestPathsOnDagWrapper<GraphType>::LengthTo(
-    NodeIndex node) const {
-  CHECK(IsReachable(node));
-  double length = std::numeric_limits<double>::infinity();
-  for (int i = node_first_label_[node];
-       i < node_first_label_[node] + node_num_labels_[node]; ++i) {
-    if (length > labels_from_sources_[i].length) {
-      length = labels_from_sources_[i].length;
-    }
-  }
-  return length;
-}
-
-template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
-bool ConstrainedShortestPathsOnDagWrapper<GraphType>::Label::IsLinkedTo(
-    const Label& other, ArcIndex arc, const std::vector<double>* arc_lengths,
-    const std::vector<std::vector<double>>* arc_resources) const {
-  if (other.length + (*arc_lengths)[arc] != this->length) {
-    return false;
-  }
-  for (int r = 0; r < (*arc_resources).size(); ++r) {
-    if (other.resources[r] + (*arc_resources)[r][arc] != this->resources[r]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
-std::vector<typename GraphType::ArcIndex>
-ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
-    NodeIndex node) const {
-  CHECK(IsReachable(node));
-  int label_index = node_first_label_[node];
-  for (int i = node_first_label_[node] + 1;
-       i < node_first_label_[node] + node_num_labels_[node]; ++i) {
-    if (labels_from_sources_[label_index].length >
-        labels_from_sources_[i].length) {
-      label_index = i;
-    }
-  }
-  std::vector<ArcIndex> arc_path;
-  while (labels_from_sources_[label_index].incoming_arc != -1) {
-    const Label& label = labels_from_sources_[label_index];
-    const NodeIndex node = graph_->Tail(label.incoming_arc);
-    arc_path.push_back(label.incoming_arc);
-    for (int i = node_first_label_[node];
-         i < node_first_label_[node] + node_num_labels_[node]; ++i) {
-      if (label.IsLinkedTo(labels_from_sources_[i], label.incoming_arc,
-                           arc_lengths_, arc_resources_)) {
-        label_index = i;
-        break;
-      }
-    }
-  }
-  absl::c_reverse(arc_path);
-  return arc_path;
-}
-
-template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
-std::vector<typename GraphType::NodeIndex>
-ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathTo(
-    NodeIndex node) const {
-  CHECK(IsReachable(node));
-  int label_index = node_first_label_[node];
-  for (int i = node_first_label_[node] + 1;
-       i < node_first_label_[node] + node_num_labels_[node]; ++i) {
-    if (labels_from_sources_[label_index].length >
-        labels_from_sources_[i].length) {
-      label_index = i;
-    }
-  }
-  std::vector<NodeIndex> node_path;
-  node_path.push_back(node);
-  while (labels_from_sources_[label_index].incoming_arc != -1) {
-    const Label& label = labels_from_sources_[label_index];
-    const NodeIndex node = graph_->Tail(label.incoming_arc);
-    node_path.push_back(node);
-    for (int i = node_first_label_[node];
-         i < node_first_label_[node] + node_num_labels_[node]; ++i) {
-      if (label.IsLinkedTo(labels_from_sources_[i], label.incoming_arc,
-                           arc_lengths_, arc_resources_)) {
-        label_index = i;
-        break;
-      }
-    }
-  }
-  absl::c_reverse(node_path);
-  return node_path;
-}
-
 template <class GraphType>
 #if __cplusplus >= 202002L
   requires DagGraphType<GraphType>
 #endif
-void ConstrainedShortestPathsOnDagWrapper<
+PathWithLength ConstrainedShortestPathsOnDagWrapper<
     GraphType>::RunConstrainedShortestPathOnDag() {
   // Caching the vector addresses allow to not fetch it on each access.
   const absl::Span<const double> arc_lengths = *arc_lengths_;
@@ -407,6 +287,8 @@ void ConstrainedShortestPathsOnDagWrapper<
   // Clear all labels from previous run.
   labels_from_sources_.clear();
 
+  double best_length = std::numeric_limits<double>::infinity();
+  int best_label_index = -1;
   for (const NodeIndex to : *topological_order_) {
     node_first_label_[to] = labels_from_sources_.size();
     int& num_labels = node_num_labels_[to];
@@ -420,8 +302,12 @@ void ConstrainedShortestPathsOnDagWrapper<
            .resources = std::vector<double>(max_resources.size()),
            .incoming_arc = -1});
       ++num_labels;
-      if (labels_from_sources_.size() > max_num_created_label_) {
-        return;
+      if (labels_from_sources_.size() >= max_num_created_labels_) {
+        const std::vector<ArcIndex> arc_path =
+            BestArcPathEndingWith(best_label_index);
+        return {.length = best_length,
+                .arc_path = arc_path,
+                .node_path = NodePathImpliedBy(arc_path)};
       }
     }
     for (const ArcIndex reverse_arc_index : reverse_graph_.OutgoingArcs(to)) {
@@ -460,12 +346,79 @@ void ConstrainedShortestPathsOnDagWrapper<
         label_to.incoming_arc = arc_index;
         labels_from_sources_.push_back(label_to);
         ++num_labels;
-        if (labels_from_sources_.size() > max_num_created_label_) {
-          return;
+        if (node_is_destination_[to]) {
+          if (best_length > label_to.length) {
+            best_length = label_to.length;
+            best_label_index = labels_from_sources_.size() - 1;
+          }
+        }
+        if (labels_from_sources_.size() >= max_num_created_labels_) {
+          const std::vector<ArcIndex> arc_path =
+              BestArcPathEndingWith(best_label_index);
+          return {.length = best_length,
+                  .arc_path = arc_path,
+                  .node_path = NodePathImpliedBy(arc_path)};
         }
       }
     }
   }
+  const std::vector<ArcIndex> arc_path =
+      BestArcPathEndingWith(best_label_index);
+  return {.length = best_length,
+          .arc_path = arc_path,
+          .node_path = NodePathImpliedBy(arc_path)};
+}
+
+template <typename GraphType>
+#if __cplusplus >= 202002L
+  requires DagGraphType<GraphType>
+#endif
+std::vector<typename GraphType::ArcIndex>
+ConstrainedShortestPathsOnDagWrapper<GraphType>::BestArcPathEndingWith(
+    const int label_index) const {
+  if (label_index < 0 || label_index >= labels_from_sources_.size()) {
+    return {};
+  }
+  int current_label_index = label_index;
+  std::vector<ArcIndex> arc_path;
+  while (labels_from_sources_[current_label_index].incoming_arc != -1) {
+    const Label& label = labels_from_sources_[current_label_index];
+    const NodeIndex node = graph_->Tail(label.incoming_arc);
+    arc_path.push_back(label.incoming_arc);
+    for (int i = node_first_label_[node];
+         i < node_first_label_[node] + node_num_labels_[node]; ++i) {
+      // Since all labels of `labels_from_sources_` are feasible, we can pick
+      // any previous label which satisfies the length equality (irrespective of
+      // the resources it consumes).
+      if (labels_from_sources_[i].length +
+              (*arc_lengths_)[label.incoming_arc] ==
+          label.length) {
+        current_label_index = i;
+        break;
+      }
+    }
+  }
+  absl::c_reverse(arc_path);
+  return arc_path;
+}
+
+template <typename GraphType>
+#if __cplusplus >= 202002L
+  requires DagGraphType<GraphType>
+#endif
+std::vector<typename GraphType::NodeIndex>
+ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathImpliedBy(
+    const std::vector<ArcIndex>& arc_path) const {
+  if (arc_path.empty()) {
+    return {};
+  }
+  std::vector<NodeIndex> node_path;
+  node_path.reserve(arc_path.size() + 1);
+  for (const ArcIndex arc_index : arc_path) {
+    node_path.push_back(graph_->Tail(arc_index));
+  }
+  node_path.push_back(graph_->Head(arc_path.back()));
+  return node_path;
 }
 
 }  // namespace operations_research
