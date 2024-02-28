@@ -2928,14 +2928,12 @@ class LnsSolver : public SubSolver {
           neighborhood.num_relaxed_variables_in_objective == 0) {
         // If we didn't relax the objective, there can be no improving solution.
         // However, we might have some diversity if they are multiple feasible
-        // solution. Note that removing the objective might slightly speed up
-        // presolving.
+        // solution.
         //
         // TODO(user): How can we teak the search to favor diversity.
         if (generator_->num_consecutive_non_improving_calls() > 10) {
           // We have been staling, try to find diverse solution?
           lns_fragment.clear_solution_hint();
-          lns_fragment.clear_objective();
         } else {
           // Just regenerate.
           // Note that we do not change the difficulty.
