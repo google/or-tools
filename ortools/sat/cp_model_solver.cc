@@ -2772,6 +2772,7 @@ class LnsSolver : public SubSolver {
         generator_(std::move(generator)),
         helper_(helper),
         parameters_(parameters),
+        base_lns_parameters_(GetNamedParameters(parameters_).at("lns")),
         shared_(shared) {}
 
   ~LnsSolver() override {
@@ -2836,14 +2837,9 @@ class LnsSolver : public SubSolver {
 
       if (!neighborhood.is_generated) return;
 
-      SatParameters local_params(parameters_);
+      SatParameters local_params = base_lns_parameters_;
       local_params.set_max_deterministic_time(data.deterministic_limit);
-      local_params.set_stop_after_first_solution(false);
-      local_params.set_cp_model_presolve(true);
       local_params.set_log_search_progress(false);
-      local_params.set_cp_model_probing_level(0);
-      local_params.set_symmetry_level(0);
-      local_params.set_find_big_linear_overlap(false);
       local_params.set_solution_pool_size(1);  // Keep the best solution found.
 
       // TODO(user): Tune these.
@@ -3140,6 +3136,7 @@ class LnsSolver : public SubSolver {
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
   const SatParameters parameters_;
+  const SatParameters base_lns_parameters_;
   SharedClasses* shared_;
 };
 

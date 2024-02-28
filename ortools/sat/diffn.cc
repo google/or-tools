@@ -491,7 +491,16 @@ NonOverlappingRectanglesEnergyPropagator::GeneralizeExplanation(
 
   std::vector<RectangleInRange> ranges_for_explanation;
   ranges_for_explanation.reserve(conflict.items_for_opp.size());
-  for (const auto& item : relaxed_result.GetItemsParticipatingOnConflict()) {
+  std::vector<OrthogonalPackingResult::Item> sorted_items =
+      relaxed_result.GetItemsParticipatingOnConflict();
+  // TODO(user) understand why sorting high-impact items first improves the
+  // benchmarks
+  std::sort(sorted_items.begin(), sorted_items.end(),
+            [](const OrthogonalPackingResult::Item& a,
+               const OrthogonalPackingResult::Item& b) {
+              return a.size_x * a.size_y > b.size_x * b.size_y;
+            });
+  for (const auto& item : sorted_items) {
     const RectangleInRange& range = conflict.items_for_opp[item.index];
     ranges_for_explanation.push_back(
         RectangleInRange::BiggestWithMinIntersection(rectangle, range,

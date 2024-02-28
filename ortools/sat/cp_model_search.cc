@@ -28,7 +28,6 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -672,6 +671,24 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["less_encoding"] = new_params;
   }
 
+  // Base parameters for shared tree worker.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    strategies["shared_tree"] = new_params;
+  }
+
+  // Base parameters for LNS worker.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_stop_after_first_solution(false);
+    new_params.set_cp_model_presolve(true);
+    new_params.set_cp_model_probing_level(0);
+    new_params.set_symmetry_level(0);
+    new_params.set_find_big_linear_overlap(false);
+    strategies["lns"] = new_params;
+  }
+
   // Add user defined ones.
   // Note that this might overwrite our default ones.
   for (const SatParameters& params : base_params.subsolver_params()) {
@@ -916,21 +933,16 @@ std::vector<SatParameters> GetWorkSharingParams(
   // TODO(user): We could support assumptions, it's just not implemented.
   if (!cp_model.assumptions().empty()) return result;
   if (num_params_to_generate <= 0) return result;
+
+  const auto strategies = GetNamedParameters(base_params);
+  const SatParameters& shared_tree_base_params = strategies.at("shared_tree");
   int num_workers = 0;
-
-  SatParameters extra_params;
-  if (!base_params.shared_tree_extra_parameters_as_string().empty()) {
-    CHECK(google::protobuf::TextFormat::ParseFromString(
-        base_params.shared_tree_extra_parameters_as_string(), &extra_params));
-  }
-
   while (result.size() < num_params_to_generate) {
-    // TODO(user): Make the base parameters configurable.
-    SatParameters new_params = base_params;
-    std::string name = "shared_";
+    SatParameters new_params = shared_tree_base_params;
     const int base_seed = base_params.random_seed();
     new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_workers + 1));
-    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    // We force this parameter as it could have been forgotten when set
+    // manually.
     new_params.set_use_shared_tree_search(true);
 
     // These settings don't make sense with shared tree search, turn them off as
@@ -939,16 +951,14 @@ std::vector<SatParameters> GetWorkSharingParams(
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
 
-    new_params.MergeFrom(extra_params);
-
-    std::string lp_tags[] = {"no", "default", "max"};
-    absl::StrAppend(&name,
-                    lp_tags[std::min(new_params.linearization_level(), 2)],
-                    "_lp_", num_workers);
-    new_params.set_name(name);
+    absl::string_view lp_tags[] = {"no", "default", "max"};
+    new_params.set_name(absl::StrCat(
+        "shared_", lp_tags[std::min(new_params.linearization_level(), 2)],
+        "_lp_", num_workers));
     num_workers++;
     result.push_back(new_params);
   }
+
   return result;
 }
 }  // namespace sat

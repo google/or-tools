@@ -259,9 +259,12 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      product_detector_(model->GetOrCreate<ProductDetector>()),
       objective_definition_(model->GetOrCreate<ObjectiveDefinition>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
+      rlt_cut_helper_(model),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
@@ -726,6 +729,7 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
 
   // Optimality deductions if problem has an objective.
+  // If there is no objective, then all duals will just be zero.
   if (objective_is_defined_ &&
       (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
        simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
@@ -820,8 +824,7 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
       objective_definition_->objective_var == objective_cp_ &&
       trail_->CurrentDecisionLevel() == 0) {
     shared_response_manager_->UpdateInnerObjectiveBounds(
-        absl::StrCat(model_->Name(), " (after lp)"),
-        integer_trail_->LowerBound(objective_cp_),
+        model_->Name(), integer_trail_->LowerBound(objective_cp_),
         integer_trail_->UpperBound(objective_cp_));
   }
 
@@ -1058,6 +1061,17 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
 
   bool at_least_one_added = false;
   DCHECK(base_ct_.AllCoefficientsArePositive());
+
+  // Try RLT cuts.
+  //
+  // TODO(user): try this for more than just "base" constraints?
+  if (integer_multipliers.size() == 1 && parameters_.add_rlt_cuts()) {
+    if (rlt_cut_helper_.TrySimpleSeparation(base_ct_)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_RLT"), rlt_cut_helper_.Info(), first_slack,
+          rlt_cut_helper_.cut());
+    }
+  }
 
   // Try cover approach to find cut.
   // TODO(user): Share common computation between kinds.
@@ -1492,8 +1506,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       if (col_candidates.empty()) break;
 
       const ColIndex var_to_eliminate =
-          col_candidates[std::discrete_distribution<>(weights.begin(),
-                                                      weights.end())(*random_)];
+          col_candidates[WeightedPick(weights, *random_)];
 
       // What rows can we add to eliminate var_to_eliminate?
       std::vector<RowIndex> possible_rows;
@@ -1531,8 +1544,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       if (possible_rows.empty()) break;
 
       const RowIndex row_to_combine =
-          possible_rows[std::discrete_distribution<>(weights.begin(),
-                                                     weights.end())(*random_)];
+          possible_rows[WeightedPick(weights, *random_)];
 
       // Find the coefficient of the variable to eliminate.
       IntegerValue to_combine_coeff = 0;
@@ -1726,6 +1738,9 @@ bool LinearProgrammingConstraint::Propagate() {
       // This must be called first.
       implied_bounds_processor_.RecomputeCacheAndSeparateSomeImpliedBoundCuts(
           expanded_lp_solution_);
+      if (parameters_.add_rlt_cuts()) {
+        rlt_cut_helper_.Initialize(mirror_lp_variable_);
+      }
 
       // The "generic" cuts are currently part of this class as they are using
       // data from the current LP.
@@ -2179,9 +2194,23 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   // their current best bound. There is no need to do more work here.
   if (tmp_lp_multipliers_.empty()) return true;
 
+  // For the corner case of an objective of size 1, we do not want or need
+  // to take it into account.
+  bool take_objective_into_account = true;
+  if (mirror_lp_variable_.contains(objective_cp_)) {
+    // The objective is part of the lp.
+    // This should only happen for objective with a single term.
+    CHECK_EQ(integer_objective_.size(), 1);
+    CHECK_EQ(integer_objective_[0].first,
+             mirror_lp_variable_.at(objective_cp_));
+    CHECK_EQ(integer_objective_[0].second, IntegerValue(1));
+
+    take_objective_into_account = false;
+  }
+
   IntegerValue scaling = 0;
   tmp_integer_multipliers_ = ScaleLpMultiplier(
-      /*take_objective_into_account=*/true,
+      take_objective_into_account,
       /*ignore_trivial_constraints=*/true, tmp_lp_multipliers_, &scaling);
   if (scaling == 0) {
     VLOG(1) << simplex_.GetProblemStatus();
@@ -2193,30 +2222,36 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
   CHECK(ComputeNewLinearConstraint</*check_overflow=*/false>(
       tmp_integer_multipliers_, &tmp_scattered_vector_, &rc_ub));
 
-  // The "objective constraint" behave like if the unscaled cp multiplier was
-  // 1.0, so we will multiply it by this number and add it to reduced_costs.
-  const IntegerValue obj_scale = scaling;
+  std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
+      std::nullopt;
+  if (take_objective_into_account) {
+    // The "objective constraint" behave like if the unscaled cp multiplier was
+    // 1.0, so we will multiply it by this number and add it to reduced_costs.
+    const IntegerValue obj_scale = scaling;
 
-  // TODO(user): Maybe avoid this conversion.
-  tmp_cols_.clear();
-  tmp_coeffs_.clear();
-  for (const auto [col, coeff] : integer_objective_) {
-    tmp_cols_.push_back(col);
-    tmp_coeffs_.push_back(coeff);
+    // TODO(user): Maybe avoid this conversion.
+    tmp_cols_.clear();
+    tmp_coeffs_.clear();
+    for (const auto [col, coeff] : integer_objective_) {
+      tmp_cols_.push_back(col);
+      tmp_coeffs_.push_back(coeff);
+    }
+    CHECK(tmp_scattered_vector_
+              .AddLinearExpressionMultiple</*check_overflow=*/false>(
+                  obj_scale, tmp_cols_, tmp_coeffs_));
+    CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
+
+    extra_term = {objective_cp_, -obj_scale};
   }
-  CHECK(tmp_scattered_vector_
-            .AddLinearExpressionMultiple</*check_overflow=*/false>(
-                obj_scale, tmp_cols_, tmp_coeffs_));
-  CHECK(AddProductTo(-obj_scale, integer_objective_offset_, &rc_ub));
+
   AdjustNewLinearConstraint(&tmp_integer_multipliers_, &tmp_scattered_vector_,
                             &rc_ub);
 
   // Create the IntegerSumLE that will allow to propagate the objective and more
   // generally do the reduced cost fixing.
   LinearConstraint explanation =
-      tmp_scattered_vector_.ConvertToLinearConstraint(
-          integer_variables_, rc_ub,
-          /*extra_term=*/{{objective_cp_, -obj_scale}});
+      tmp_scattered_vector_.ConvertToLinearConstraint(integer_variables_, rc_ub,
+                                                      extra_term);
 
   // Corner case where prevent overflow removed all terms.
   if (explanation.num_terms == 0) {

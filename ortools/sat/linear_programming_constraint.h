@@ -491,9 +491,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerTrail* integer_trail_;
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
+  ProductDetector* product_detector_;
   ObjectiveDefinition* objective_definition_;
+  SharedStatistics* shared_stats_;
   SharedResponseManager* shared_response_manager_;
   ModelRandomGenerator* random_;
+
+  BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.
   ImpliedBoundsProcessor implied_bounds_processor_;

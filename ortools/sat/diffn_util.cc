@@ -37,6 +37,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/strong_integers.h"
 
@@ -1427,27 +1428,6 @@ std::vector<double> GetExpTable() {
   return table;
 }
 
-// This is equivalent of
-// absl::discrete_distribution<std::size_t>(input.begin(), input.end())(random)
-// but does no allocations.
-std::size_t weighted_pick(absl::Span<const double> input,
-                          absl::BitGenRef random) {
-  double total_weight = 0;
-  for (double w : input) {
-    total_weight += w;
-  }
-
-  const double weight_point = absl::Uniform(random, 0.0f, total_weight);
-  double total_weight2 = 0;
-  for (int i = 0; i < input.size(); ++i) {
-    total_weight2 += input[i];
-    if (total_weight2 > weight_point) {
-      return i;
-    }
-  }
-  return input.size() - 1;
-}
-
 }  // namespace
 
 FindRectanglesResult FindRectanglesWithEnergyConflictMC(
@@ -1502,7 +1482,7 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
       weights.push_back((*cached_probabilities)[table_lookup]);
     }
     // Pick a change with a probability proportional to exp(- delta_E / Temp)
-    ranges.Shrink(candidates[weighted_pick(weights, random)]);
+    ranges.Shrink(candidates[WeightedPick(weights, random)]);
   }
   if (ranges.GetMinimumEnergy() > ranges.GetCurrentRectangleArea()) {
     result.conflicts.push_back(ranges.GetCurrentRectangle());

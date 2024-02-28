@@ -378,6 +378,25 @@ int MoveOneUnprocessedLiteralLast(
   return target_prefix_size;
 }
 
+int WeightedPick(absl::Span<const double> input, absl::BitGenRef random) {
+  DCHECK(!input.empty());
+
+  double total_weight = 0;
+  for (const double w : input) {
+    total_weight += w;
+  }
+
+  const double weight_point = absl::Uniform(random, 0.0f, total_weight);
+  double total_weight2 = 0;
+  for (int i = 0; i < input.size(); ++i) {
+    total_weight2 += input[i];
+    if (total_weight2 > weight_point) {
+      return i;
+    }
+  }
+  return input.size() - 1;
+}
+
 void IncrementalAverage::Reset(double reset_value) {
   num_records_ = 0;
   average_ = reset_value;

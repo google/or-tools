@@ -32,6 +32,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
@@ -488,6 +489,9 @@ ProductDetector::ProductDetector(Model* model)
     : enabled_(
           model->GetOrCreate<SatParameters>()->detect_linearized_product() &&
           model->GetOrCreate<SatParameters>()->linearization_level() > 1),
+      rlt_enabled_(model->GetOrCreate<SatParameters>()->add_rlt_cuts() &&
+                   model->GetOrCreate<SatParameters>()->linearization_level() >
+                       1),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -516,9 +520,12 @@ ProductDetector::~ProductDetector() {
 
 void ProductDetector::ProcessTernaryClause(
     absl::Span<const Literal> ternary_clause) {
-  if (!enabled_) return;
   if (ternary_clause.size() != 3) return;
   ++num_processed_ternary_;
+
+  if (rlt_enabled_) ProcessTernaryClauseForRLT(ternary_clause);
+  if (!enabled_) return;
+
   candidates_[GetKey(ternary_clause[0].Index(), ternary_clause[1].Index())]
       .push_back(ternary_clause[2].Index());
   candidates_[GetKey(ternary_clause[0].Index(), ternary_clause[2].Index())]
@@ -534,11 +541,30 @@ void ProductDetector::ProcessTernaryClause(
   }
 }
 
+// If all have view, add to flat representation.
+void ProductDetector::ProcessTernaryClauseForRLT(
+    absl::Span<const Literal> ternary_clause) {
+  const int old_size = ternary_clauses_with_view_.size();
+  for (const Literal l : ternary_clause) {
+    const IntegerVariable var =
+        integer_encoder_->GetLiteralView(Literal(l.Variable(), true));
+    if (var == kNoIntegerVariable || !VariableIsPositive(var)) {
+      ternary_clauses_with_view_.resize(old_size);
+      return;
+    }
+    ternary_clauses_with_view_.push_back(l.IsPositive() ? var
+                                                        : NegationOf(var));
+  }
+}
+
 void ProductDetector::ProcessTernaryExactlyOne(
     absl::Span<const Literal> ternary_exo) {
-  if (!enabled_) return;
   if (ternary_exo.size() != 3) return;
   ++num_processed_exo_;
+
+  if (rlt_enabled_) ProcessTernaryClauseForRLT(ternary_exo);
+  if (!enabled_) return;
+
   ProcessNewProduct(ternary_exo[0].Index(), ternary_exo[1].NegatedIndex(),
                     ternary_exo[2].NegatedIndex());
   ProcessNewProduct(ternary_exo[1].Index(), ternary_exo[0].NegatedIndex(),
@@ -726,6 +752,83 @@ void ProductDetector::ProcessConditionalZero(Literal l, IntegerVariable p) {
         ProcessNewProduct(p, l.Negated(), x);
       }
     }
+  }
+}
+
+namespace {
+
+std::pair<IntegerVariable, IntegerVariable> Canonicalize(IntegerVariable a,
+                                                         IntegerVariable b) {
+  if (a < b) return {a, b};
+  return {b, a};
+}
+
+double GetLiteralLpValue(
+    IntegerVariable var,
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+  return VariableIsPositive(var) ? lp_values[var]
+                                 : 1.0 - lp_values[PositiveVariable(var)];
+}
+
+}  // namespace
+
+void ProductDetector::UpdateRLTMaps(
+    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
+    IntegerVariable bound_var, double bound_lp) {
+  // we have var1 * var2 <= bound_var, and this is only useful if it is better
+  // than the trivial bound <= var1 or <= var2.
+  if (bound_lp > lp1 && bound_lp > lp2) return;
+
+  const auto [it, inserted] =
+      bool_rlt_ubs_.insert({Canonicalize(var1, var2), bound_var});
+
+  // Replace if better.
+  if (!inserted && bound_lp < GetLiteralLpValue(it->second, lp_values)) {
+    it->second = bound_var;
+  }
+
+  // This will increase a RLT cut violation and is a good candidate.
+  if (lp1 * lp2 > bound_lp + 1e-4) {
+    bool_rlt_candidates_[var1].push_back(var2);
+    bool_rlt_candidates_[var2].push_back(var1);
+  }
+}
+
+// TODO(user): limit work if too many ternary.
+void ProductDetector::InitializeBooleanRLTCuts(
+    const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
+    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+  // TODO(user): Maybe we shouldn't reconstruct this every time, but it is hard
+  // in case of multiple lps to make sure we don't use variables not in the lp
+  // otherwise.
+  bool_rlt_ubs_.clear();
+
+  // If we transform a linear constraint to sum positive_coeff * bool <= rhs.
+  // We will list all interesting multiplicative candidate for each variable.
+  bool_rlt_candidates_.clear();
+  const int size = ternary_clauses_with_view_.size();
+  for (int i = 0; i < size; i += 3) {
+    const IntegerVariable var1 = ternary_clauses_with_view_[i];
+    const IntegerVariable var2 = ternary_clauses_with_view_[i + 1];
+    const IntegerVariable var3 = ternary_clauses_with_view_[i + 2];
+
+    if (!lp_vars.contains(PositiveVariable(var1))) continue;
+    if (!lp_vars.contains(PositiveVariable(var2))) continue;
+    if (!lp_vars.contains(PositiveVariable(var3))) continue;
+
+    // If we have l1 + l2 + l3 >= 1, then for all (i, j) pair we have
+    // !li * !lj <= lk. We are looking for violation like this.
+    const double lp1 = GetLiteralLpValue(var1, lp_values);
+    const double lp2 = GetLiteralLpValue(var2, lp_values);
+    const double lp3 = GetLiteralLpValue(var3, lp_values);
+
+    UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var2),
+                  1.0 - lp2, var3, lp3);
+    UpdateRLTMaps(lp_values, NegationOf(var1), 1.0 - lp1, NegationOf(var3),
+                  1.0 - lp3, var2, lp2);
+    UpdateRLTMaps(lp_values, NegationOf(var2), 1.0 - lp2, NegationOf(var3),
+                  1.0 - lp3, var1, lp1);
   }
 }
 

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_H_
 #define OR_TOOLS_SAT_2D_ORTHOGONAL_PACKING_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <utility>
@@ -69,6 +70,44 @@ class OrthogonalPackingResult {
   bool TryUseSlackToReduceItemSize(int i, Coord coord,
                                    IntegerValue lower_bound = 0);
 
+  // If *this is identical or not easily comparable to other, returns false.
+  bool IsBetterThan(const OrthogonalPackingResult& other) const {
+    if (result_ == Status::UNKNOWN && other.result_ == Status::UNKNOWN) {
+      return false;
+    }
+    if (other.result_ == Status::UNKNOWN) {
+      return true;
+    }
+    if (result_ == Status::UNKNOWN) {
+      return false;
+    }
+    if (other.result_ == Status::FEASIBLE) {
+      CHECK(result_ != Status::INFEASIBLE);
+      return result_ == Status::FEASIBLE;
+    }
+
+    // other.result_ == Status::INFEASIBLE
+    CHECK(result_ == Status::INFEASIBLE);
+    if (other.items_participating_on_conflict_.size() <
+        items_participating_on_conflict_.size()) {
+      return false;
+    }
+    if (other.items_participating_on_conflict_.size() >
+        items_participating_on_conflict_.size()) {
+      return true;
+    }
+
+    IntegerValue total_area_this = 0;
+    IntegerValue total_area_other = 0;
+    for (int i = 0; i < items_participating_on_conflict_.size(); ++i) {
+      total_area_this += items_participating_on_conflict_[i].size_x *
+                         items_participating_on_conflict_[i].size_y;
+      total_area_other += other.items_participating_on_conflict_[i].size_x *
+                          other.items_participating_on_conflict_[i].size_y;
+    }
+    return total_area_this - slack_ < total_area_other - other.slack_;
+  }
+
  private:
   friend class OrthogonalPackingInfeasibilityDetector;
 
@@ -111,6 +150,14 @@ class OrthogonalPackingInfeasibilityDetector {
       std::pair<IntegerValue, IntegerValue> bounding_box_size,
       const OrthogonalPackingOptions& options);
 
+  OrthogonalPackingResult GetDffConflict(
+      absl::Span<const IntegerValue> sizes_x,
+      absl::Span<const IntegerValue> sizes_y,
+      absl::Span<const int> index_by_decreasing_x_size,
+      absl::Span<const IntegerValue> g_x, IntegerValue g_max,
+      IntegerValue x_bb_size, IntegerValue total_energy, IntegerValue bb_area,
+      IntegerValue* best_k);
+
   // Returns a minimum set of values of the parameter `k` of f_2^k that is
   // sufficient to find a conflict. This function runs in
   // O(num_items * sqrt(bb_size)) operations.
@@ -124,7 +171,7 @@ class OrthogonalPackingInfeasibilityDetector {
                                    IntegerValue y_bb_size,
                                    Bitset64<IntegerValue>& candidates);
 
-  std::vector<int> CheckFeasibilityWithDualFunction2(
+  OrthogonalPackingResult CheckFeasibilityWithDualFunction2(
       absl::Span<const IntegerValue> sizes_x,
       absl::Span<const IntegerValue> sizes_y,
       absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
@@ -146,6 +193,62 @@ class OrthogonalPackingInfeasibilityDetector {
 
   absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
+};
+
+// If we have a container of size `C` and a parameter `k` taking values in
+// [0, C/2], the Dual Feasible Function often named `f_0^k(x)` is equivalent to
+// the operation of removing all values of size less than `k`, and symmetrically
+// increasing to `C` the size of the large values. It is defined as:
+//
+//            / C, if x > C - k,
+// f_0^k(x) = | x, if k <= x <= C - k,
+//            \ 0, if x < k.
+//
+// This is a Maximal DFF. See for example [1] for some discussion about it.
+//
+// [1] Clautiaux, François, Cláudio Alves, and José Valério de Carvalho. "A
+// survey of dual-feasible and superadditive functions." Annals of Operations
+// Research 179 (2010): 317-342.
+class DualFeasibleFunctionF0 {
+ public:
+  DualFeasibleFunctionF0(IntegerValue max_x, IntegerValue k)
+      : k_(k), max_x_(max_x) {
+    DCHECK_GE(k_, 0);
+    DCHECK_LE(2 * k_, max_x_);
+  }
+
+  // `x` must be in [0, max_x].
+  IntegerValue operator()(IntegerValue x) const {
+    DCHECK_GE(x, 0);
+    DCHECK_LE(x, max_x_);
+    if (x > max_x_ - k_) {
+      return max_x_;
+    } else if (x < k_) {
+      return 0;
+    } else {
+      return x;
+    }
+  }
+
+  // Return the lowest integer y so that Dff(x) >= y.
+  // y must be in [0, Dff(max_x)].
+  IntegerValue LowestInverse(IntegerValue x) const {
+    DCHECK_GE(x, 0);
+    DCHECK_LE(x, max_x_);
+    if (x > max_x_ - k_) {
+      return max_x_ - k_ + 1;
+    } else if (x == 0) {
+      return 0;
+    } else if (x < k_) {
+      return k_;
+    } else {
+      return x;
+    }
+  }
+
+ private:
+  const IntegerValue k_;
+  const IntegerValue max_x_;
 };
 
 // Dual Feasible Function based on rounding. Called f_2 on [1].
@@ -172,7 +275,8 @@ class RoundingDualFeasibleFunction {
   RoundingDualFeasibleFunction(IntegerValue max_x, IntegerValue k)
       : div_(k.value()),
         max_x_(max_x),
-        c_k_(div_.DivideByDivisor(max_x_.value())) {
+        c_k_(div_.DivideByDivisor(max_x_.value())),
+        k_(k) {
     DCHECK_GT(k, 0);
     DCHECK_LE(2 * k, max_x_);
     DCHECK_LE(max_x_, std::numeric_limits<uint16_t>::max());
@@ -192,10 +296,15 @@ class RoundingDualFeasibleFunction {
     }
   }
 
+  // Return the lowest integer y so that Dff(x) >= y.
+  // y must be in [0, Dff(max_x)].
+  IntegerValue LowestInverse(IntegerValue y) const;
+
  private:
   const QuickSmallDivision div_;
   const IntegerValue max_x_;
   const IntegerValue c_k_;
+  const IntegerValue k_;
 };
 
 // Same as above for k = 2^log2_k.
@@ -223,10 +332,32 @@ class RoundingDualFeasibleFunctionPowerOfTwo {
     }
   }
 
+  // Return the lowest integer y so that Dff(x) >= y.
+  // y must be in [0, Dff(max_x)].
+  IntegerValue LowestInverse(IntegerValue y) const;
+
  private:
   const IntegerValue log2_k_;
   const IntegerValue max_x_;
   const IntegerValue c_k_;
+};
+
+// Using our definition for the inverse, composition produces a valid
+// DFF with a valid inverse. This class defines f2(f0(x)).
+class DFFComposedF2F0 {
+ public:
+  DFFComposedF2F0(IntegerValue max_x, IntegerValue k_f0, IntegerValue k_f2)
+      : f0_(max_x, k_f0), f2_(max_x, k_f2) {}
+
+  IntegerValue operator()(IntegerValue x) const { return f2_(f0_(x)); }
+
+  IntegerValue LowestInverse(IntegerValue x) const {
+    return f0_.LowestInverse(f2_.LowestInverse(x));
+  }
+
+ private:
+  const DualFeasibleFunctionF0 f0_;
+  const RoundingDualFeasibleFunction f2_;
 };
 
 }  // namespace sat

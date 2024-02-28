@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 281
+// NEXT TAG: 280
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1042,8 +1042,6 @@ message SatParameters {
   optional SharedTreeSplitStrategy shared_tree_split_strategy = 239
       [default = SPLIT_STRATEGY_AUTO];
 
-  optional string shared_tree_extra_parameters_as_string = 280 [default = ""];
-
   // Whether we enumerate all solutions of a problem without objective. Note
   // that setting this to true automatically disable some presolve reduction
   // that can remove feasible solution. That is it has the same effect as
@@ -1286,6 +1284,10 @@ message SatParameters {
   // that as the search goes on, this graph will contains new binary clauses
   // learned by the SAT engine.
   optional bool add_clique_cuts = 172 [default = true];
+
+  // Whether we generate RLT cuts. This is still experimental but can help on
+  // binary problem with a lot of clauses of size 3.
+  optional bool add_rlt_cuts = 279 [default = true];
 
   // Cut generator for all diffs can add too many cuts for large all_diff
   // constraints. This parameter restricts the large all_diff constraints to

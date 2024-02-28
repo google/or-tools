@@ -99,18 +99,58 @@ std::optional<std::pair<int, int>> FindPairwiseConflict(
   return std::nullopt;
 }
 
-// Check for conflict using the f_0 dual feasible function. See for example [1]
-// for some discussion. This function tries all possible values of the `k`
-// parameter and returns the conflict needing the least number of items.
-//
-// The `f_0^k(x)` function for a total bin width `C` and a parameter `k` taking
-// values in [0, C/2] is defined as:
-//
-//            / C, if x > C - k,
-// f_0^k(x) = | x, if k <= x <= C - k,
-//            \ 0, if x < k.
-//
-// If no conflict is found, returns an empty vector.
+IntegerValue RoundingLowestInverse(IntegerValue y, IntegerValue c_k,
+                                   IntegerValue max_x, IntegerValue k) {
+  DCHECK_GE(y, 0);
+  DCHECK_LE(y, 2 * c_k);
+  IntegerValue ret = std::numeric_limits<IntegerValue>::max();
+
+  // Are we in the case 2 * x == max_x_?
+  if (y <= c_k && (max_x.value() & 1) == 0) {
+    const IntegerValue inverse_mid = max_x / 2;
+    ret = std::min(ret, inverse_mid);
+    if (y == c_k && y.value() & 1) {
+      // This is the only valid case for odd x.
+      return ret;
+    }
+  }
+
+  // The "perfect odd" case is handled above, round up y to an even value.
+  y += y.value() & 1;
+
+  // Check the case 2 * x > max_x_.
+  const IntegerValue inverse_high = max_x - k * (c_k - y / 2);
+  if (2 * inverse_high > max_x) {
+    // We have an inverse in this domain, let's find its minimum value (when
+    // the division rounds down the most) but don't let it go outside the
+    // domain.
+    const IntegerValue lowest_inverse_high =
+        std::max(max_x / 2 + 1, inverse_high - k + 1);
+    ret = std::min(ret, lowest_inverse_high);
+  }
+
+  // Check the case 2 * x < max_x_.
+  const IntegerValue inverse_low = k * y / 2;
+  if (2 * inverse_low < max_x) {
+    ret = std::min(ret, inverse_low);
+  }
+  return ret;
+}
+}  // namespace
+
+IntegerValue RoundingDualFeasibleFunction::LowestInverse(IntegerValue y) const {
+  return RoundingLowestInverse(y, c_k_, max_x_, k_);
+}
+
+IntegerValue RoundingDualFeasibleFunctionPowerOfTwo::LowestInverse(
+    IntegerValue y) const {
+  return RoundingLowestInverse(y, c_k_, max_x_, IntegerValue(1) << log2_k_);
+}
+
+// Check for conflict using the `f_0^k` dual feasible function (see
+// documentation for DualFeasibleFunctionF0). This function tries all possible
+// values of the `k` parameter and returns the best conflict found (according to
+// OrthogonalPackingResult::IsBetterThan) if any.
 //
 // The current implementation is a bit more general than a simple check using
 // f_0 described above. This implementation can take a function g(x) that is
@@ -120,24 +160,19 @@ std::optional<std::pair<int, int>> FindPairwiseConflict(
 // vector g_x[i] = g(sizes_x[i]) and the variable g_max = g(x_bb_size).
 //
 // The algorithm is the same if we swap the x and y dimension.
-//
-// [1] Côté, Jean-François, Mohamed Haouari, and Manuel Iori. "A primal
-// decomposition algorithm for the two-dimensional bin packing problem." arXiv
-// preprint https://arxiv.org/abs/1909.06835 (2019).
-std::vector<int> GetDffConflict(
+OrthogonalPackingResult OrthogonalPackingInfeasibilityDetector::GetDffConflict(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
     absl::Span<const int> index_by_decreasing_x_size,
     absl::Span<const IntegerValue> g_x, IntegerValue g_max,
-    IntegerValue x_bb_size, IntegerValue total_energy, IntegerValue bb_area) {
-  std::vector<int> result;
+    IntegerValue x_bb_size, IntegerValue total_energy, IntegerValue bb_area,
+    IntegerValue* best_k) {
   // If we found a conflict for a k parameter, which is rare, recompute the
   // total used energy consumed by the items to find the minimal set of
   // conflicting items.
   int num_items = sizes_x.size();
-  auto add_result_if_better = [&result, &sizes_x, &sizes_y, num_items,
-                               &x_bb_size, &bb_area, &g_max,
-                               &g_x](const IntegerValue k) {
+  auto build_result = [&sizes_x, &sizes_y, num_items, &x_bb_size, &bb_area,
+                       &g_max, &g_x](const IntegerValue k) {
     std::vector<std::pair<int, IntegerValue>> index_to_energy;
     index_to_energy.reserve(num_items);
     for (int i = 0; i < num_items; i++) {
@@ -160,15 +195,22 @@ std::vector<int> GetDffConflict(
     for (int i = 0; i < index_to_energy.size(); i++) {
       recomputed_energy += index_to_energy[i].second;
       if (recomputed_energy > bb_area) {
-        if (result.empty() || i + 1 < result.size()) {
-          result.resize(i + 1);
-          for (int j = 0; j <= i; j++) {
-            result[j] = index_to_energy[j].first;
-          }
+        OrthogonalPackingResult result(
+            OrthogonalPackingResult::Status::INFEASIBLE);
+        result.conflict_type_ = OrthogonalPackingResult::ConflictType::DFF_F0;
+        result.items_participating_on_conflict_.resize(i + 1);
+        for (int j = 0; j <= i; j++) {
+          const int index = index_to_energy[j].first;
+          result.items_participating_on_conflict_[j] = {
+              .index = index,
+              .size_x = sizes_x[index],
+              .size_y = sizes_y[index]};
         }
-        break;
+        result.slack_ = 0;
+        return result;
       }
     }
+    LOG(FATAL) << "build_result called with no conflict";
   };
 
   // One thing we use in this implementation is that not all values of k are
@@ -179,8 +221,10 @@ std::vector<int> GetDffConflict(
   // large items and small ones are not symmetric with respect to what values of
   // k are important.
   IntegerValue current_energy = total_energy;
+  OrthogonalPackingResult best_result;
   if (current_energy > bb_area) {
-    add_result_if_better(0);
+    best_result = build_result(0);
+    *best_k = 0;
   }
   // We keep an index on the largest item yet-to-be enlarged and the smallest
   // one yet-to-be removed.
@@ -217,11 +261,17 @@ std::vector<int> GetDffConflict(
     }
 
     if (current_energy > bb_area) {
-      add_result_if_better(k);
+      OrthogonalPackingResult current_result = build_result(k);
+      if (current_result.IsBetterThan(best_result)) {
+        best_result = current_result;
+        *best_k = k;
+      }
     }
   }
-  return result;
+  return best_result;
 }
+
+namespace {
 
 // Tries a simple heuristic to find a solution for the Resource-Constrained
 // Project Scheduling Problem (RCPSP). The RCPSP can be mapped to a
@@ -389,14 +439,14 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
 //
 // The function returns the smallest subset of items enough to make the
 // inequality above true or an empty vector if impossible.
-std::vector<int>
+OrthogonalPackingResult
 OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
     absl::Span<const int> index_by_decreasing_x_size, IntegerValue x_bb_size,
     IntegerValue y_bb_size, int max_number_of_parameters_to_check) {
   if (x_bb_size == 1) {
-    return {};
+    return OrthogonalPackingResult();
   }
   std::vector<IntegerValue> sizes_x_rescaled;
   if (x_bb_size >= std::numeric_limits<uint16_t>::max()) {
@@ -459,7 +509,7 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
       }
     }
   }
-  std::vector<int> result;
+  OrthogonalPackingResult best_result;
 
   // Finally run our small loop to look for the conflict!
   std::vector<IntegerValue> modified_sizes(num_items);
@@ -471,16 +521,33 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
       energy += modified_sizes[i] * sizes_y[i];
     }
     const IntegerValue modified_x_bb_size = dff(x_bb_size);
-    auto dff0_res = GetDffConflict(
-        sizes_x, sizes_y, index_by_decreasing_x_size, modified_sizes,
-        modified_x_bb_size, x_bb_size, energy, modified_x_bb_size * y_bb_size);
-    if (!dff0_res.empty() &&
-        (result.empty() || dff0_res.size() < result.size())) {
-      result = dff0_res;
+    IntegerValue dff0_k;
+    auto dff0_res =
+        GetDffConflict(sizes_x, sizes_y, index_by_decreasing_x_size,
+                       modified_sizes, modified_x_bb_size, x_bb_size, energy,
+                       modified_x_bb_size * y_bb_size, &dff0_k);
+    if (dff0_res.result_ != OrthogonalPackingResult::Status::INFEASIBLE) {
+      continue;
+    }
+    DFFComposedF2F0 composed_dff(x_bb_size, dff0_k, k);
+    dff0_res.conflict_type_ = OrthogonalPackingResult::ConflictType::DFF_F2;
+    for (auto& item : dff0_res.items_participating_on_conflict_) {
+      item.size_x =
+          composed_dff.LowestInverse(composed_dff(sizes_x[item.index]));
+
+      // The new size should contribute by the same amount to the energy and
+      // correspond to smaller items.
+      DCHECK_EQ(composed_dff(item.size_x), composed_dff(sizes_x[item.index]));
+      DCHECK_LE(item.size_x, sizes_x[item.index]);
+
+      item.size_y = sizes_y[item.index];
+    }
+    if (dff0_res.IsBetterThan(best_result)) {
+      best_result = dff0_res;
     }
   }
 
-  return result;
+  return best_result;
 }
 
 OrthogonalPackingResult
@@ -588,22 +655,6 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     return result;
   }
 
-  auto set_conflict_if_better = [&result, &make_item](
-                                    const std::vector<int>& conflict,
-                                    ConflictType type) {
-    if (!conflict.empty() &&
-        (result.result_ != OrthogonalPackingResult::Status::INFEASIBLE ||
-         conflict.size() < result.items_participating_on_conflict_.size())) {
-      result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
-      result.conflict_type_ = type;
-      result.items_participating_on_conflict_.clear();
-      for (int i : conflict) {
-        result.items_participating_on_conflict_.push_back(make_item(i));
-      }
-      result.slack_ = 0;  // Only supported for trivial for now.
-    }
-  };
-
   if (options.use_dff_f0) {
     // If there is no pairwise incompatible pairs, this DFF cannot find a
     // conflict by enlarging a item on both x and y directions: this would
@@ -611,16 +662,25 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     // whole box, which is obviously incompatible, and this incompatibility
     // would be present already before enlarging the items since it is a DFF. So
     // it is enough to test making items wide or high, but no need to try both.
+    IntegerValue best_k;
     auto conflict =
         GetDffConflict(sizes_x, sizes_y, index_by_decreasing_x_size_, sizes_x,
                        bounding_box_size.first, bounding_box_size.first,
-                       total_energy, bb_area);
-    set_conflict_if_better(conflict, ConflictType::DFF_F0);
+                       total_energy, bb_area, &best_k);
+    if (conflict.IsBetterThan(result)) {
+      result = conflict;
+    }
 
-    conflict = GetDffConflict(sizes_y, sizes_x, index_by_decreasing_y_size_,
-                              sizes_y, bounding_box_size.second,
-                              bounding_box_size.second, total_energy, bb_area);
-    set_conflict_if_better(conflict, ConflictType::DFF_F0);
+    conflict =
+        GetDffConflict(sizes_y, sizes_x, index_by_decreasing_y_size_, sizes_y,
+                       bounding_box_size.second, bounding_box_size.second,
+                       total_energy, bb_area, &best_k);
+    for (auto& item : conflict.items_participating_on_conflict_) {
+      std::swap(item.size_x, item.size_y);
+    }
+    if (conflict.IsBetterThan(result)) {
+      result = conflict;
+    }
   }
 
   if (result.items_participating_on_conflict_.size() == minimum_conflict_size) {
@@ -650,7 +710,9 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
         sizes_x, sizes_y, index_by_decreasing_x_size_, bounding_box_size.first,
         bounding_box_size.second,
         options.dff2_max_number_of_parameters_to_check);
-    set_conflict_if_better(conflict, ConflictType::DFF_F2);
+    if (conflict.IsBetterThan(result)) {
+      result = conflict;
+    }
 
     if (result.items_participating_on_conflict_.size() ==
         minimum_conflict_size) {
@@ -660,7 +722,12 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
         sizes_y, sizes_x, index_by_decreasing_y_size_, bounding_box_size.second,
         bounding_box_size.first,
         options.dff2_max_number_of_parameters_to_check);
-    set_conflict_if_better(conflict, ConflictType::DFF_F2);
+    for (auto& item : conflict.items_participating_on_conflict_) {
+      std::swap(item.size_x, item.size_y);
+    }
+    if (conflict.IsBetterThan(result)) {
+      result = conflict;
+    }
   }
 
   return result;

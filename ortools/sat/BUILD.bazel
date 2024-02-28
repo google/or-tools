@@ -253,7 +253,6 @@ cc_library(
         ":cp_model_search",
         ":sat_parameters_cc_proto",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -281,7 +280,6 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -1479,6 +1477,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
+        "//ortools/lp_data:base",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
@@ -1805,6 +1804,7 @@ cc_library(
     deps = [
         ":integer",
         ":intervals",
+        ":util",
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/util:integer_pq",
@@ -2201,6 +2201,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
+        "//ortools/lp_data:base",
         "//ortools/util:bitset",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",

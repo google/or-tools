@@ -21,7 +21,6 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -170,14 +169,6 @@ std::string ValidateParameters(const SatParameters& params) {
 
   if (params.use_shared_tree_search()) {
     return "use_shared_tree_search must only be set on workers' parameters";
-  }
-
-  if (!params.shared_tree_extra_parameters_as_string().empty()) {
-    SatParameters extra_params;
-    if (!google::protobuf::TextFormat::ParseFromString(
-            params.shared_tree_extra_parameters_as_string(), &extra_params)) {
-      return "cannot parse shared_tree_extra_parameters_as_string parameter";
-    }
   }
 
   if (params.enumerate_all_solutions() && params.interleave_search()) {

@@ -301,6 +301,12 @@ class ModelSharedTimeLimit : public SharedTimeLimit {
 void RandomizeDecisionHeuristic(absl::BitGenRef random,
                                 SatParameters* parameters);
 
+// This is equivalent of
+// absl::discrete_distribution<std::size_t>(input.begin(), input.end())(random)
+// but does no allocations. It is a lot faster when you need to pick just one
+// elements from a distribution for instance.
+int WeightedPick(absl::Span<const double> input, absl::BitGenRef random);
+
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
 // the clause literals can be propagated by a subset of the other literal being
