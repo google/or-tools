@@ -17,8 +17,8 @@
 #include <memory>
 
 #include "absl/strings/string_view.h"
-#include "gmock/gmock.h"
 #include "gmock/gmock-matchers.h"
+#include "gmock/gmock.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/util/message_differencer.h"
 
@@ -26,7 +26,7 @@ namespace testing {
 namespace internal {
 // Utilities.
 // How to compare two fields (equal vs. equivalent).
-  typedef ::google::protobuf::util::MessageDifferencer::MessageFieldComparison
+typedef ::google::protobuf::util::MessageDifferencer::MessageFieldComparison
     ProtoFieldComparison;
 
 // How to compare two floating-points (exact vs. approximate).
@@ -39,7 +39,8 @@ typedef ::google::protobuf::util::MessageDifferencer::RepeatedFieldComparison
 
 // Whether to compare all fields (full) or only fields present in the
 // expected protobuf (partial).
-typedef ::google::protobuf::util::MessageDifferencer::Scope ProtoComparisonScope;
+typedef ::google::protobuf::util::MessageDifferencer::Scope
+    ProtoComparisonScope;
 
 const ProtoFieldComparison kProtoEqual =
     ::google::protobuf::util::MessageDifferencer::EQUAL;
@@ -53,7 +54,8 @@ const RepeatedFieldComparison kProtoCompareRepeatedFieldsRespectOrdering =
     ::google::protobuf::util::MessageDifferencer::AS_LIST;
 const RepeatedFieldComparison kProtoCompareRepeatedFieldsIgnoringOrdering =
     ::google::protobuf::util::MessageDifferencer::AS_SET;
-const ProtoComparisonScope kProtoFull = ::google::protobuf::util::MessageDifferencer::FULL;
+const ProtoComparisonScope kProtoFull =
+    ::google::protobuf::util::MessageDifferencer::FULL;
 const ProtoComparisonScope kProtoPartial =
     ::google::protobuf::util::MessageDifferencer::PARTIAL;
 
@@ -80,8 +82,8 @@ struct ProtoComparison {
   bool has_custom_fraction;  // only used when float_comp = APPROXIMATE
   RepeatedFieldComparison repeated_field_comp;
   ProtoComparisonScope scope;
-  double float_margin;       // only used when has_custom_margin is set.
-  double float_fraction;     // only used when has_custom_fraction is set.
+  double float_margin;    // only used when has_custom_margin is set.
+  double float_fraction;  // only used when has_custom_fraction is set.
   std::vector<std::string> ignore_fields;
   std::vector<std::string> ignore_field_paths;
   std::vector<std::string> unordered_fields;
@@ -102,8 +104,8 @@ class ProtoMatcher {
   explicit ProtoMatcher(const MessageType& message)
       : message_(CloneMessage(message)) {}
 
-  ProtoMatcher(const MessageType& message, bool, ProtoComparison&):
-    message_(CloneMessage(message)) {}
+  ProtoMatcher(const MessageType& message, bool, ProtoComparison&)
+      : message_(CloneMessage(message)) {}
 
   bool MatchAndExplain(const MessageType& m,
                        testing::MatchResultListener*) const {
@@ -146,9 +148,10 @@ class ProtoMatcher {
 };
 
 using PolymorphicProtoMatcher = PolymorphicMatcher<ProtoMatcher>;
-} // namespace internal
+}  // namespace internal
 
-inline internal::ProtoMatcher EqualsProto(const ::google::protobuf::Message& message) {
+inline internal::ProtoMatcher EqualsProto(
+    const ::google::protobuf::Message& message) {
   return internal::ProtoMatcher(message);
 }
 

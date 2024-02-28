@@ -23,6 +23,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/util/logging.h"
 
@@ -160,7 +161,7 @@ void Presolver::PresolveStoreFlatteningMapping(Constraint* ct) {
 }
 
 namespace {
-bool IsIncreasingAndContiguous(const std::vector<int64_t>& values) {
+bool IsIncreasingAndContiguous(absl::Span<const int64_t> values) {
   for (int i = 0; i < values.size() - 1; ++i) {
     if (values[i + 1] != values[i] + 1) {
       return false;
