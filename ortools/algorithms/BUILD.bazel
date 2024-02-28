@@ -12,8 +12,13 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
+
+# Description:
+# Home of algorithms used in OR solvers
 
 config_setting(
     name = "on_linux",
@@ -62,7 +67,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:dump_vars",
-        "//ortools/base:gmock",
+        "@com_google_absl//absl/functional:function_ref",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
     ],
 )
@@ -72,13 +78,15 @@ cc_test(
     srcs = ["binary_search_test.cc"],
     deps = [
         ":binary_search",
+        "//ortools/base:gmock_main",
         "//ortools/base:murmur",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
         "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -87,7 +95,6 @@ cc_library(
     srcs = [],
     hdrs = ["radix_sort.h"],
     deps = [
-        "//ortools/base",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
@@ -108,7 +115,7 @@ cc_test(
     deps = [
         ":radix_sort",
         "//ortools/base:dump_vars",
-        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/log",
@@ -117,19 +124,19 @@ cc_test(
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/types:span",
         "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
+# Hungarian algorithm
 cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:hash",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -137,14 +144,14 @@ cc_test(
     name = "hungarian_test",
     size = "medium",
     srcs = ["hungarian_test.cc"],
-    copts = ["-Iexternal/gtest/include"],
     deps = [
         ":hungarian",
         "//ortools/base",
+        "//ortools/base:gmock_main",
         "//ortools/base:map_util",
+        "//ortools/base:types",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -188,6 +195,7 @@ cc_library(
     deps = [
         ":set_cover_cc_proto",
         "//ortools/lp_data:base",
+        "//ortools/util:strong_integers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
     ],
@@ -198,24 +206,13 @@ cc_library(
     srcs = ["set_cover_invariant.cc"],
     hdrs = ["set_cover_invariant.h"],
     deps = [
+        ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-    ],
-)
-
-cc_library(
-    name = "set_cover_mip",
-    srcs = ["set_cover_mip.cc"],
-    hdrs = ["set_cover_mip.h"],
-    deps = [
-        ":set_cover_invariant",
-        "//ortools/linear_solver",
-        "//ortools/lp_data:base",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -235,30 +232,52 @@ cc_library(
     srcs = ["set_cover.cc"],
     hdrs = ["set_cover.h"],
     deps = [
-        ":set_cover_mip",
+        ":set_cover_invariant",
+        ":set_cover_model",
         ":set_cover_utils",
         "//ortools/base",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_mip",
+    srcs = ["set_cover_mip.cc"],
+    hdrs = ["set_cover_mip.h"],
+    deps = [
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/linear_solver",
+        "//ortools/lp_data:base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
 cc_test(
     name = "set_cover_test",
     size = "medium",
-    timeout = "long",
+    timeout = "eternal",
     srcs = ["set_cover_test.cc"],
     deps = [
         ":set_cover",
+        ":set_cover_cc_proto",
+        ":set_cover_invariant",
+        ":set_cover_mip",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
         "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
 # Graph automorphism libraries.
-
 cc_library(
     name = "dense_doubly_linked_list",
     hdrs = ["dense_doubly_linked_list.h"],
@@ -274,6 +293,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:murmur",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -297,7 +317,16 @@ cc_library(
     deps = [
         ":sparse_permutation",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "dynamic_permutation_test",
+    srcs = ["dynamic_permutation_test.cc"],
+    deps = [
+        ":dynamic_permutation",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -311,22 +340,29 @@ cc_library(
         ":dynamic_permutation",
         ":sparse_permutation",
         "//ortools/base",
+        "//ortools/base:dump_vars",
+        "//ortools/base:murmur",
         "//ortools/graph",
         "//ortools/graph:iterators",
         "//ortools/graph:util",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
 cc_test(
     name = "find_graph_symmetries_test",
-    size = "medium",
     srcs = ["find_graph_symmetries_test.cc"],
-    #copts = ["-Iexternal/gtest/include"],
     deps = [
         ":dynamic_partition",
         ":dynamic_permutation",
@@ -334,14 +370,16 @@ cc_test(
         ":sparse_permutation",
         "//ortools/base",
         "//ortools/base:dump_vars",
-        "//ortools/base:gmock",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
         "//ortools/base:map_util",
         "//ortools/base:path",
         "//ortools/graph:io",
         "@com_google_absl//absl/random",
-        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_absl//absl/types:span",
     ],
 )
