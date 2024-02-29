@@ -1,5 +1,5 @@
 diff --git a/src/lpi/lpi_glop.cpp b/src/lpi/lpi_glop.cpp
-index 2471778a8f..3326ac7292 100644
+index a90120188a..2c068e5e30 100644
 --- a/src/lpi/lpi_glop.cpp
 +++ b/src/lpi/lpi_glop.cpp
 @@ -51,7 +51,6 @@
@@ -15,7 +15,7 @@ index 2471778a8f..3326ac7292 100644
        if ( ival == 0 )
        {
 -         (void) google::SetVLOGLevel("*", google::GLOG_INFO);
-+   	      absl::SetFlag(&FLAGS_stderrthreshold, 2);
++           absl::SetFlag(&FLAGS_stderrthreshold, 2);
           lpi->lp_info = false;
        }
        else

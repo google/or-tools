@@ -82,6 +82,7 @@ cc_library(
             "src/scip/nlpi_filtersqp.c",
             "src/scip/nlpi_worhp.c",
             "src/scip/*_xyz.c",
+            "src/scip/scipbuildflags.c",
             "src/scip/sorttpl.c",
             "src/symmetry/compute_symmetry_*.cpp",
             "src/symmetry/*nauty*",
@@ -97,7 +98,6 @@ cc_library(
             "src/*/*.hpp",
             "src/scip/githash.c",
             "src/scip/sorttpl.c",
-            "src/scip/buildflags.c",
         ],
         exclude =
         [
