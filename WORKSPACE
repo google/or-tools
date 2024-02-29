@@ -129,9 +129,9 @@ http_archive(
 new_git_repository(
     name = "scip",
     build_file = "//bazel:scip.BUILD.bazel",
-    patches = ["//bazel:scip.patch"],
+    patches = ["//bazel:scip-v900.patch"],
     patch_args = ["-p1"],
-    tag = "v810",
+    tag = "v900",
     remote = "https://github.com/scipopt/scip.git",
 )
 
