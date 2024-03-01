@@ -828,6 +828,9 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
+    if (helper->SizeMax(index) == 0 || demands_helper->DemandMax(index) == 0) {
+      continue;
+    }
     if (helper->IsOptional(index)) {
       if (demands_helper->EnergyMin(index) > 0) {
         num_optionals++;
@@ -887,6 +890,10 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
     for (int index = 0; index < num_intervals; ++index) {
       if (helper->IsAbsent(index)) continue;
+      if (helper->SizeMax(index) == 0 ||
+          demands_helper->DemandMax(index) == 0) {
+        continue;
+      }
       if (helper->IsOptional(index)) {
         const IntegerValue energy_min = demands_helper->EnergyMin(index);
         if (energy_min == 0) continue;
