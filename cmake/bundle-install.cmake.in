@@ -13,7 +13,7 @@ execute_process(
   WORKING_DIRECTORY "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@"
 )
 
-set(DEPS absl_*.lib zlib.lib re2.lib *protobuf.lib)
+set(DEPS absl_*.lib zlib*.lib re2.lib *protobuf*.lib)
 if (@BUILD_Cbc@)
   set(DEPS ${DEPS} Cbc*.lib)
 endif()
