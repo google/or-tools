@@ -67,7 +67,9 @@ elseif(UNIX)
                         INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
 endif()
 
-install(TARGETS solve)
+install(TARGETS solve
+  EXPORT ${PROJECT_NAME}Targets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(BUILD_TESTING)
   if (APPLE)
