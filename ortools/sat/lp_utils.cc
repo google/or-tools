@@ -31,6 +31,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -789,7 +790,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
     // however that this likely indicate a coefficient of inf in the constraint,
     // so we should probably abort before reaching here.
     LOG(DFATAL) << "Scaling factor of zero while scaling constraint: "
-                << mp_constraint.ShortDebugString();
+                << ProtobufShortDebugString(mp_constraint);
     return nullptr;
   }
 
@@ -994,7 +995,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
     if (cp_var->domain(0) > cp_var->domain(1)) {
       LOG(WARNING) << "Variable #" << i << " cannot take integer value. "
-                   << mp_var.ShortDebugString();
+                   << ProtobufShortDebugString(mp_var);
       return false;
     }
 
@@ -1152,7 +1153,8 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
   const int num_vars = input.variables().size();
   for (int v = 0; v < num_vars; ++v) {
     if (input.variables(v).domain().size() != 2) {
-      VLOG(1) << "Cannot convert " << input.variables(v).ShortDebugString();
+      VLOG(1) << "Cannot convert "
+              << ProtobufShortDebugString(input.variables(v));
       return false;
     }
 
@@ -1175,6 +1177,9 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
           factor * input.objective().coeffs(i));
     }
     output->set_objective_offset(factor * input.objective().offset());
+    if (factor < 0) {
+      output->set_maximize(true);
+    }
   } else if (input.has_floating_point_objective()) {
     const int num_terms = input.floating_point_objective().vars().size();
     for (int i = 0; i < num_terms; ++i) {
@@ -1199,7 +1204,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         (ct.constraint_case() != ConstraintProto::kBoolAnd &&
          ct.constraint_case() != ConstraintProto::kLinear)) {
       // TODO(user): Support more constraints with enforcement.
-      VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+      VLOG(1) << "Cannot convert constraint: " << ProtobufDebugString(ct);
       return false;
     }
     switch (ct.constraint_case()) {
@@ -1241,7 +1246,8 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
       }
       case ConstraintProto::kLinear: {
         if (ct.linear().domain().size() != 2) {
-          VLOG(1) << "Cannot convert constraint: " << ct.ShortDebugString();
+          VLOG(1) << "Cannot convert constraint: "
+                  << ProtobufShortDebugString(ct);
           return false;
         }
 
@@ -1334,7 +1340,7 @@ bool ConvertCpModelProtoToMPModelProto(const CpModelProto& input,
         break;
       }
       default:
-        VLOG(1) << "Cannot convert constraint: " << ct.DebugString();
+        VLOG(1) << "Cannot convert constraint: " << ProtobufDebugString(ct);
         return false;
     }
   }

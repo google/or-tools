@@ -736,6 +736,11 @@ class BinaryImplicationGraph : public SatPropagator {
   // only need to consider this list and not the full reachability.
   const std::vector<Literal>& DirectImplications(Literal literal);
 
+  // Returns a random literal in DirectImplications(lhs). Note that this is
+  // biased if lhs appear in some most one, but it is constant time, which is a
+  // lot faster than computing DirectImplications() and then sampling from it.
+  LiteralIndex RandomImpliedLiteral(Literal lhs);
+
   // A proxy for DirectImplications().size(), However we currently do not
   // maintain it perfectly. It is exact each time DirectImplications() is
   // called, and we update it in some situation but we don't deal with fixed
@@ -821,6 +826,10 @@ class BinaryImplicationGraph : public SatPropagator {
   // To be used in DCHECKs().
   bool InvariantsAreOk();
 
+  // Return the at most one encoded at the given start.
+  // Important: this is only valid until a new at_most one is added.
+  absl::Span<const Literal> AtMostOne(int start) const;
+
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
@@ -850,8 +859,12 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> to_clean_;
 
   // Internal representation of at_most_one constraints. Each entry point to the
-  // start of a constraint in the buffer. Constraints are terminated by
-  // kNoLiteral. When LiteralIndex is true, then all entry in the at most one
+  // start of a constraint in the buffer.
+  //
+  // TRICKY: The first literal is actually the size of the at_most_one.
+  // Most users should just use AtMostOne(start).
+  //
+  // When LiteralIndex is true, then all entry in the at most one
   // constraint must be false except the one referring to LiteralIndex.
   //
   // TODO(user): We could be more cache efficient by combining this with

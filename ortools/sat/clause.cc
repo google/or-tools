@@ -592,9 +592,9 @@ bool BinaryImplicationGraph::AddAtMostOne(
   // at_most_one_buffer_. It will be cleaned up and added by
   // CleanUpAndAddAtMostOnes().
   const int base_index = at_most_one_buffer_.size();
+  at_most_one_buffer_.push_back(Literal(LiteralIndex(at_most_one.size())));
   at_most_one_buffer_.insert(at_most_one_buffer_.end(), at_most_one.begin(),
                              at_most_one.end());
-  at_most_one_buffer_.push_back(Literal(kNoLiteralIndex));
 
   is_dag_ = false;
   return CleanUpAndAddAtMostOnes(base_index);
@@ -624,11 +624,10 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
   const VariablesAssignment& assignment = trail_->Assignment();
   int local_end = base_index;
   const int buffer_size = at_most_one_buffer_.size();
-  for (int i = base_index; i < buffer_size; ++i) {
-    if (at_most_one_buffer_[i].Index() == kNoLiteralIndex) continue;
-
+  for (int i = base_index; i < buffer_size;) {
     // Process a new at most one.
-    // It will be copied into buffer[local_start, local_end].
+    // It will be copied into buffer[local_start + 1, local_end].
+    // With its size at buffer[local_start].
     const int local_start = local_end;
 
     // Update the iterator now. Even if the current at_most_one is reduced away,
@@ -636,15 +635,16 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // buffer.
     if (i == at_most_one_iterator_) {
       at_most_one_iterator_ = local_start;
-      DCHECK(at_most_one_iterator_ == 0 ||
-             at_most_one_buffer_[at_most_one_iterator_ - 1].Index() ==
-                 kNoLiteralIndex);
     }
 
+    // We have an at_most_one starting at i, and we increment i to the next one.
+    const absl::Span<const Literal> initial_amo = AtMostOne(i);
+    i += initial_amo.size() + 1;
+
+    // Reserve space for size.
+    local_end++;
     bool set_all_left_to_false = false;
-    for (;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : initial_amo) {
       if (assignment.LiteralIsFalse(l)) continue;
       if (is_removed_[l]) continue;
       if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
@@ -653,18 +653,22 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
       }
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
+    at_most_one_buffer_[local_start] =
+        Literal(LiteralIndex(local_end - local_start - 1));
 
     // Deal with duplicates.
     // Any duplicate in an "at most one" must be false.
     bool some_duplicates = false;
     if (!set_all_left_to_false) {
-      int new_local_end = local_start;
-      std::sort(&at_most_one_buffer_[local_start],
-                &at_most_one_buffer_[local_end]);
+      // Sort the copied amo.
+      // We only want to expose a const AtMostOne() so we sort directly here.
+      Literal* pt = &at_most_one_buffer_[local_start + 1];
+      std::sort(pt, pt + AtMostOne(local_start).size());
+
       LiteralIndex previous = kNoLiteralIndex;
       bool remove_previous = false;
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      int new_local_end = local_start + 1;
+      for (const Literal l : AtMostOne(local_start)) {
         if (l.Index() == previous) {
           if (assignment.LiteralIsTrue(l)) return false;
           if (!assignment.LiteralIsFalse(l)) {
@@ -685,15 +689,18 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
         at_most_one_buffer_[new_local_end++] = l;
       }
       if (remove_previous) --new_local_end;
+
+      // Update local end and the amo size.
       local_end = new_local_end;
+      at_most_one_buffer_[local_start] =
+          Literal(LiteralIndex(local_end - local_start - 1));
     }
 
     // If there was some duplicates, we need to rescan to see if a literal
     // didn't become true because its negation was appearing twice!
     if (some_duplicates) {
-      int new_local_end = local_start;
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      int new_local_end = local_start + 1;
+      for (const Literal l : AtMostOne(local_start)) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
           set_all_left_to_false = true;
@@ -701,24 +708,28 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
         }
         at_most_one_buffer_[new_local_end++] = l;
       }
+
+      // Update local end and the amo size.
       local_end = new_local_end;
+      at_most_one_buffer_[local_start] =
+          Literal(LiteralIndex(local_end - local_start - 1));
     }
 
     // Deal with all false.
     if (set_all_left_to_false) {
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      for (const Literal l : AtMostOne(local_start)) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (assignment.LiteralIsTrue(l)) return false;
         if (!FixLiteral(l.Negated())) return false;
       }
+
+      // Erase this at_most_one.
       local_end = local_start;
       continue;
     }
 
     // Create a Span<> to simplify the code below.
-    const absl::Span<const Literal> at_most_one(
-        &at_most_one_buffer_[local_start], local_end - local_start);
+    const absl::Span<const Literal> at_most_one = AtMostOne(local_start);
 
     // We expand small sizes into implications.
     // TODO(user): Investigate what the best threshold is.
@@ -747,9 +758,6 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
       at_most_ones_[l].push_back(local_start);
       implies_something_.Set(l);
     }
-
-    // Add sentinel.
-    at_most_one_buffer_[local_end++] = Literal(kNoLiteralIndex);
   }
 
   at_most_one_buffer_.resize(local_end);
@@ -794,10 +802,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
   if (true_literal.Index() < at_most_ones_.size()) {
     for (const int start : at_most_ones_[true_literal]) {
       bool seen = false;
-      for (int i = start;; ++i) {
-        const Literal literal = at_most_one_buffer_[i];
-        if (literal.Index() == kNoLiteralIndex) break;
-
+      for (const Literal literal : AtMostOne(start)) {
         ++num_inspections_;
         if (literal == true_literal) {
           if (DEBUG_MODE) {
@@ -1128,16 +1133,16 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
 
 class SccGraph {
  public:
-  using Implication =
+  using Implications =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
-  using AtMostOne =
+  using AtMostOnes =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
       StronglyConnectedComponentsFinder<int32_t, SccGraph,
                                         CompactVectorVector<int32_t, int32_t>>;
 
-  explicit SccGraph(SccFinder* finder, Implication* graph,
-                    AtMostOne* at_most_ones,
+  explicit SccGraph(SccFinder* finder, Implications* graph,
+                    AtMostOnes* at_most_ones,
                     std::vector<Literal>* at_most_one_buffer)
       : finder_(*finder),
         implications_(*graph),
@@ -1200,9 +1205,10 @@ class SccGraph {
           previous_node_to_explore_at_most_one_[start] = node;
         }
 
-        for (int i = start;; ++i) {
-          const Literal l = at_most_one_buffer_[i];
-          if (l.Index() == kNoLiteralIndex) break;
+        const absl::Span<const Literal> amo =
+            absl::MakeSpan(&at_most_one_buffer_[start + 1],
+                           at_most_one_buffer_[start].Index().value());
+        for (const Literal l : amo) {
           if (l.Index() == node) continue;
           tmp_.push_back(l.NegatedIndex().value());
           if (finder_.NodeIsInCurrentDfsPath(l.Index().value())) {
@@ -1223,8 +1229,8 @@ class SccGraph {
 
  private:
   const SccFinder& finder_;
-  const Implication& implications_;
-  const AtMostOne& at_most_ones_;
+  const Implications& implications_;
+  const AtMostOnes& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
 
   mutable std::vector<int32_t> tmp_;
@@ -1524,9 +1530,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     // Also mark all the ones reachable through the root AMOs.
     if (root < at_most_ones_.size()) {
       for (const int start : at_most_ones_[root]) {
-        for (int i = start;; ++i) {
-          const Literal l = at_most_one_buffer_[i];
-          if (l.Index() == kNoLiteralIndex) break;
+        for (const Literal l : AtMostOne(start)) {
           if (l.Index() == root) continue;
           if (!is_marked_[l.Negated()] && !is_redundant_[l.Negated()]) {
             is_marked_.SetUnsafe(l.Negated());
@@ -1991,9 +1995,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
       if (!inserted) continue;
 
       int intersection_size = 0;
-      for (int i = start;; ++i) {
-        const Literal l = at_most_one_buffer_[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (to_consider[l]) ++intersection_size;
       }
       if (intersection_size > 1) {
@@ -2013,9 +2015,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 
     // Recompute size.
     int intersection_size = 0;
-    for (int i = start;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : AtMostOne(start)) {
       if (to_consider[l]) ++intersection_size;
     }
     if (intersection_size != old_size) {
@@ -2027,9 +2027,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
     }
 
     // Mark the literal of that at most one at false.
-    for (int i = start;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : AtMostOne(start)) {
       to_consider[l] = false;
     }
 
@@ -2050,7 +2048,6 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 void BinaryImplicationGraph::MarkDescendants(Literal root) {
   bfs_stack_.resize(implications_.size());
   auto* const stack = bfs_stack_.data();
-  auto* const amo_buffer = at_most_one_buffer_.data();
   const int amo_size = static_cast<int>(at_most_ones_.size());
   auto is_marked = is_marked_.const_view();
   auto is_redundant = is_redundant_.const_view();
@@ -2072,9 +2069,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 
     if (current.Index() >= amo_size) continue;
     for (const int start : at_most_ones_[current]) {
-      for (int i = start;; ++i) {
-        const Literal l = amo_buffer[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (l == current) continue;
         if (!is_marked[l.NegatedIndex()] && !is_redundant[l.NegatedIndex()]) {
           is_marked_.SetUnsafe(l.NegatedIndex());
@@ -2161,9 +2156,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
       DCHECK(at_most_ones_[literal].empty());
     }
     for (const int start : at_most_ones_[literal]) {
-      for (int i = start;; ++i) {
-        const Literal l = at_most_one_buffer_[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (l == literal) continue;
         if (assignment.LiteralIsAssigned(l)) continue;
         if (!is_removed_[l] && !in_direct_implications_[l.NegatedIndex()]) {
@@ -2175,6 +2168,38 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
   }
   estimated_sizes_[literal] = direct_implications_.size();
   return direct_implications_;
+}
+
+absl::Span<const Literal> BinaryImplicationGraph::AtMostOne(int start) const {
+  const int size = at_most_one_buffer_[start].Index().value();
+  return absl::MakeSpan(&at_most_one_buffer_[start + 1], size);
+}
+
+LiteralIndex BinaryImplicationGraph::RandomImpliedLiteral(Literal lhs) {
+  const int size1 = implications_[lhs].size();
+  const int size2 =
+      lhs.Index() < at_most_ones_.size() ? at_most_ones_[lhs].size() : 0;
+  if (size1 + size2 == 0) return kNoLiteralIndex;
+
+  const int choice = absl::Uniform<int>(*random_, 0, size1 + size2);
+  if (choice < size1) {
+    return implications_[lhs][choice].Index();
+  }
+
+  const absl::Span<const Literal> amo =
+      AtMostOne(at_most_ones_[lhs][choice - size1]);
+  CHECK_GE(amo.size(), 2);
+  const int first_choice = absl::Uniform<int>(*random_, 0, amo.size());
+  const Literal lit = amo[first_choice];
+  if (lit != lhs) return lit.NegatedIndex();
+
+  // We are unlucky and just picked the wrong literal: take a different one.
+  int next_choice = absl::Uniform<int>(*random_, 0, amo.size() - 1);
+  if (next_choice >= first_choice) {
+    next_choice += 1;
+  }
+  CHECK_NE(amo[next_choice], lhs);
+  return amo[next_choice].NegatedIndex();
 }
 
 bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
@@ -2413,22 +2438,19 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
       lit_to_start.insert({i, start});
     }
   }
-  int index = 0;
-  int start = 0;
-  for (int i = 0; i < at_most_one_buffer_.size(); ++i) {
-    if (at_most_one_buffer_[i].Index() == kNoLiteralIndex) {
-      ++index;
-      start = i + 1;
-      continue;
+
+  for (int start = 0; start < at_most_one_buffer_.size();) {
+    const absl::Span<const Literal> amo = AtMostOne(start);
+    for (const Literal l : amo) {
+      if (is_removed_[l]) {
+        LOG(ERROR) << "A removed literal still appear in an amo " << l;
+        return false;
+      }
+      if (!lit_to_start.contains({l, start})) {
+        return false;
+      }
     }
-    if (is_removed_[at_most_one_buffer_[i]]) {
-      LOG(ERROR) << "A removed literal still appear in an amo "
-                 << at_most_one_buffer_[i];
-      return false;
-    }
-    if (!lit_to_start.contains({at_most_one_buffer_[i], start})) {
-      return false;
-    }
+    start += amo.size() + 1;
   }
 
   return true;
@@ -2438,19 +2460,10 @@ absl::Span<const Literal> BinaryImplicationGraph::NextAtMostOne() {
   if (at_most_one_iterator_ >= at_most_one_buffer_.size()) {
     return absl::Span<const Literal>();
   }
-  const int local_start = at_most_one_iterator_;
-  DCHECK_NE(at_most_one_buffer_[local_start].Index(), kNoLiteralIndex);
-  DCHECK(at_most_one_iterator_ == 0 ||
-         at_most_one_iterator_ >= at_most_one_buffer_.size() ||
-         at_most_one_buffer_[at_most_one_iterator_ - 1].Index() ==
-             kNoLiteralIndex);
-  int local_end = at_most_one_iterator_ + 1;
-  while (at_most_one_buffer_[local_end].Index() != kNoLiteralIndex) {
-    ++local_end;
-  }
-  at_most_one_iterator_ = local_end + 1;
-  return absl::MakeSpan(at_most_one_buffer_.data() + local_start,
-                        local_end - local_start);
+
+  const absl::Span<const Literal> result = AtMostOne(at_most_one_iterator_);
+  at_most_one_iterator_ += result.size() + 1;
+  return result;
 }
 
 // ----- SatClause -----

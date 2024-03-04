@@ -28,12 +28,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
-#include "absl/random/distributions.h"
-#include "google/protobuf/arena.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/sat/intervals.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -42,10 +38,11 @@
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -53,6 +50,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -76,6 +74,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_model.h"
@@ -89,7 +88,6 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/probing.h"
-#include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -2766,13 +2764,12 @@ class FeasibilityPumpSolver : public SubSolver {
 class LnsSolver : public SubSolver {
  public:
   LnsSolver(std::unique_ptr<NeighborhoodGenerator> generator,
-            const SatParameters& parameters,
+            const SatParameters& lns_parameters,
             NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
       : SubSolver(generator->name(), INCOMPLETE),
         generator_(std::move(generator)),
         helper_(helper),
-        parameters_(parameters),
-        base_lns_parameters_(GetNamedParameters(parameters_).at("lns")),
+        lns_parameters_(lns_parameters),
         shared_(shared) {}
 
   ~LnsSolver() override {
@@ -2794,7 +2791,7 @@ class LnsSolver : public SubSolver {
       // change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
       const int32_t high = static_cast<int32_t>(task_id >> 32);
-      std::seed_seq seed{low, high, parameters_.random_seed()};
+      std::seed_seq seed{low, high, lns_parameters_.random_seed()};
       random_engine_t random(seed);
 
       NeighborhoodGenerator::SolveData data;
@@ -2837,10 +2834,8 @@ class LnsSolver : public SubSolver {
 
       if (!neighborhood.is_generated) return;
 
-      SatParameters local_params = base_lns_parameters_;
+      SatParameters local_params(lns_parameters_);
       local_params.set_max_deterministic_time(data.deterministic_limit);
-      local_params.set_log_search_progress(false);
-      local_params.set_solution_pool_size(1);  // Keep the best solution found.
 
       // TODO(user): Tune these.
       // TODO(user): This could be a good candidate for bandits.
@@ -3135,8 +3130,7 @@ class LnsSolver : public SubSolver {
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
-  const SatParameters parameters_;
-  const SatParameters base_lns_parameters_;
+  const SatParameters lns_parameters_;
   SharedClasses* shared_;
 };
 
@@ -3258,6 +3252,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         std::make_unique<FeasibilityPumpSolver>(params, &shared));
   }
 
+  const SatParameters lns_params = GetNamedParameters(params).at("lns");
+
   // By default we use the user provided parameters.
   // TODO(user): for now this is not deterministic so we disable it on
   // interleave search. Fix.
@@ -3271,7 +3267,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         std::make_unique<RelaxationInducedNeighborhoodGenerator>(
             helper, shared.response, shared.lp_solutions.get(),
             shared.incomplete_solutions.get(), "rins/rens"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
   }
   const int num_incomplete_solvers =
       params.num_workers() - num_full_problem_solvers;
@@ -3401,27 +3397,27 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // Each will have their own metrics.
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxRandomVariablesGenerator>(helper, "rnd_var_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<RelaxRandomConstraintsGenerator>(helper,
                                                           "rnd_cst_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<VariableGraphNeighborhoodGenerator>(helper,
                                                              "graph_var_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<ArcGraphNeighborhoodGenerator>(helper,
                                                         "graph_arc_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<ConstraintGraphNeighborhoodGenerator>(helper,
                                                                "graph_cst_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
     subsolvers.push_back(std::make_unique<LnsSolver>(
         std::make_unique<DecompositionGraphNeighborhoodGenerator>(
             helper, "graph_dec_lns"),
-        params, helper, &shared));
+        lns_params, helper, &shared));
 
     if (params.use_lb_relax_lns()) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
@@ -3434,7 +3430,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                 SolveLoadedCpModel(cp_model, model);
               },
               shared.time_limit),
-          params, helper, &shared));
+          lns_params, helper, &shared));
     }
 
     const bool has_no_overlap_or_cumulative =
@@ -3446,11 +3442,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
               helper, "scheduling_intervals_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
               helper, "scheduling_time_window_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2) {
@@ -3458,7 +3454,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints,
                 "scheduling_resource_windows_lns"),
-            params, helper, &shared));
+            lns_params, helper, &shared));
       }
     }
 
@@ -3469,7 +3465,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
               helper, "packing_rectangles_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
               helper, "packing_precedences_lns"),
@@ -3477,7 +3473,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SlicePackingNeighborhoodGenerator>(
               helper, "packing_slice_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
     }
 
     // Generic scheduling/packing LNS.
@@ -3485,7 +3481,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
               helper, "scheduling_precedences_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
     }
 
     const int num_circuit = static_cast<int>(
@@ -3496,18 +3492,18 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingRandomNeighborhoodGenerator>(
               helper, "routing_random_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
 
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingPathNeighborhoodGenerator>(
               helper, "routing_path_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
     }
     if (num_routes > 0 || num_circuit > 1) {
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RoutingFullPathNeighborhoodGenerator>(
               helper, "routing_full_path_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
     }
   }
 
@@ -3826,7 +3822,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
-  SOLVER_LOG(logger, "Parameters: ", params.ShortDebugString());
+  SOLVER_LOG(logger, "Parameters: ", ProtobufShortDebugString(params));
 
   // Update params.num_workers() if the old field was used.
   if (params.num_workers() == 0) {

@@ -431,9 +431,10 @@ bool PresolveContext::VariableWasRemoved(int ref) const {
     SOLVER_LOG(logger_, "affine relation: ",
                AffineRelationDebugString(PositiveRef(ref)));
     for (const int c : var_to_constraints_[PositiveRef(ref)]) {
-      SOLVER_LOG(
-          logger_, "constraint #", c, " : ",
-          c >= 0 ? working_model->constraints(c).ShortDebugString() : "");
+      SOLVER_LOG(logger_, "constraint #", c, " : ",
+                 c >= 0
+                     ? ProtobufShortDebugString(working_model->constraints(c))
+                     : "");
     }
   }
   return true;
@@ -538,8 +539,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
       return true;
     } else {
       return NotifyThatModelIsUnsat(absl::StrCat(
-          expr.ShortDebugString(), " as empty domain after intersecting with ",
-          domain.ToString()));
+          ProtobufShortDebugString(expr),
+          " as empty domain after intersecting with ", domain.ToString()));
     }
   }
   if (expr.vars().size() == 1) {  // Affine
@@ -2280,8 +2281,9 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
     CHECK(LoadConstraint(ct, local_model));
     if (sat_solver->ModelIsUnsat()) {
-      return context->NotifyThatModelIsUnsat(absl::StrCat(
-          "after loading constraint during probing ", ct.ShortDebugString()));
+      return context->NotifyThatModelIsUnsat(
+          absl::StrCat("after loading constraint during probing ",
+                       ProtobufShortDebugString(ct)));
     }
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();

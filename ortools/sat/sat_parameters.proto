@@ -611,8 +611,9 @@ message SatParameters {
 
   // It is possible to specify additional subsolver configuration. These can be
   // referred by their params.name() in the fields above. Note that only the
-  // specified field will "overwrite" the ones of the base parameter. It is also
-  // possible to overwrite the default names above.
+  // specified field will "overwrite" the ones of the base parameter. If a
+  // subsolver_params has the name of an existing subsolver configuration, the
+  // named parameters will be merged into the subsolver configuration.
   repeated SatParameters subsolver_params = 210;
 
   // TODO(user): Also define like for subsolvers the list of "active"

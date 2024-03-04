@@ -686,13 +686,24 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
     new_params.set_find_big_linear_overlap(false);
+    new_params.set_log_search_progress(false);
+    new_params.set_solution_pool_size(1);  // Keep the best solution found.
     strategies["lns"] = new_params;
   }
 
   // Add user defined ones.
-  // Note that this might overwrite our default ones.
+  // Note that this might be merged to our default ones.
   for (const SatParameters& params : base_params.subsolver_params()) {
-    strategies[params.name()] = params;
+    auto it = strategies.find(params.name());
+    if (it != strategies.end()) {
+      it->second.MergeFrom(params);
+    } else {
+      // Merge the named parameters with the base parameters to create the new
+      // parameters.
+      SatParameters new_params = base_params;
+      new_params.MergeFrom(params);
+      strategies[params.name()] = new_params;
+    }
   }
 
   return strategies;

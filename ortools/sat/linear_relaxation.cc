@@ -831,6 +831,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
     if (helper->SizeMax(index) == 0 || demands_helper->DemandMax(index) == 0) {
       continue;
     }
+
     if (helper->IsOptional(index)) {
       if (demands_helper->EnergyMin(index) > 0) {
         num_optionals++;
@@ -894,6 +895,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
           demands_helper->DemandMax(index) == 0) {
         continue;
       }
+
       if (helper->IsOptional(index)) {
         const IntegerValue energy_min = demands_helper->EnergyMin(index);
         if (energy_min == 0) continue;

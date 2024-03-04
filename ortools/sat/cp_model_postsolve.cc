@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/logging.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -104,7 +105,7 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
   if (!has_free_enforcement_literal) {
     LOG(FATAL)
         << "Unsatisfied linear constraint with no free enforcement literal: "
-        << ct.ShortDebugString();
+        << ProtobufShortDebugString(ct);
   }
 }
 
@@ -182,7 +183,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
     // TODO(user): I am not 100% that the algo here might cover all the presolve
     // case, so if this fail, it might indicate an issue here and not in the
     // presolve/solver code.
-    CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
+    CHECK(!domain.IsEmpty()) << ProtobufShortDebugString(ct);
     const int64_t value = domain.SmallestValue();
     (*domains)[var] = Domain(value);
 
@@ -391,7 +392,8 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
       default:
         // This should never happen as we control what kind of constraint we
         // add to the mapping_proto;
-        LOG(FATAL) << "Unsupported constraint: " << ct.ShortDebugString();
+        LOG(FATAL) << "Unsupported constraint: "
+                   << ProtobufShortDebugString(ct);
     }
   }
 

@@ -50,6 +50,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/graph/topologicalsorter.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -11141,9 +11142,10 @@ void CpModelPresolver::PresolveToFixPoint() {
           context_->working_model->constraints_size();
       const bool changed = PresolveOneConstraint(c);
       if (context_->ModelIsUnsat()) {
-        SOLVER_LOG(logger_, "Unsat after presolving constraint #", c,
-                   " (warning, dump might be inconsistent): ",
-                   context_->working_model->constraints(c).ShortDebugString());
+        SOLVER_LOG(
+            logger_, "Unsat after presolving constraint #", c,
+            " (warning, dump might be inconsistent): ",
+            ProtobufShortDebugString(context_->working_model->constraints(c)));
       }
 
       // Add to the queue any newly created constraints.

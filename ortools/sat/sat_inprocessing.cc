@@ -722,14 +722,14 @@ void StampingSimplifier::SampleTreeAndFillParent() {
     // TODO(user): More generally, we could sample a parent while probing so
     // that we consider all hyper binary implications (in the case we don't add
     // them to the implication graph already).
-    const auto& children_of_not_l =
-        implication_graph_->DirectImplications(Literal(i).Negated());
-    if (children_of_not_l.empty()) continue;
     for (int num_tries = 0; num_tries < 10; ++num_tries) {
-      const Literal candidate =
-          children_of_not_l[absl::Uniform<int>(*random_, 0,
-                                               children_of_not_l.size())]
-              .Negated();
+      // We look for a random lit that implies i. For that we take a random
+      // literal in the direct implications of not(i) and reverse it.
+      const LiteralIndex index =
+          implication_graph_->RandomImpliedLiteral(Literal(i).Negated());
+      if (index == kNoLiteralIndex) break;
+
+      const Literal candidate = Literal(index).Negated();
       if (implication_graph_->IsRedundant(candidate)) continue;
       if (i == candidate.Index()) continue;
 
