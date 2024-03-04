@@ -228,6 +228,7 @@ cc_test(
         ":graphs",
         ":max_flow",
         "//ortools/base",
+        "//ortools/base:gmock",
         "//ortools/base:message_matchers",
         "//ortools/base:path",
         "//ortools/base:status_matchers",
