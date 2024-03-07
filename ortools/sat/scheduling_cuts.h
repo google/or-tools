@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -148,8 +148,8 @@ struct CtEvent : BaseEvent {
 };
 
 // Computes the minimum sum of the end min and the minimum sum of the end min
-// weighted by y_size_min of all events. It returns false if no permatutation is
-// valid w.r.t. the range of x_start.
+// weighted by weight of all events. It returns false if no permutation is
+// valid w.r.t. the range of starts.
 //
 // Note that this is an exhaustive algorithm, so the number of events should be
 // small, like <= 10. They should also starts in index order.
@@ -158,17 +158,20 @@ struct CtEvent : BaseEvent {
 struct PermutableEvent {
   PermutableEvent(int i, CtEvent e)
       : index(i),
-        x_start_min(e.x_start_min),
-        x_start_max(e.x_start_max),
-        x_size_min(e.x_size_min),
-        y_size_min(e.y_size_min) {}
+        start_min(e.x_start_min),
+        start_max(e.x_start_max),
+        size(e.x_size_min),
+        demand(e.y_size_min),
+        weight(e.y_size_min) {}
+
   bool operator<(const PermutableEvent& o) const { return index < o.index; }
 
   int index;  // for < to be used by std::next_permutation().
-  IntegerValue x_start_min;
-  IntegerValue x_start_max;
-  IntegerValue x_size_min;
-  IntegerValue y_size_min;
+  IntegerValue start_min;
+  IntegerValue start_max;
+  IntegerValue size;
+  IntegerValue demand;
+  IntegerValue weight;
 };
 bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
                                     IntegerValue capacity_max,

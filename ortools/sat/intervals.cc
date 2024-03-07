@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -530,7 +530,7 @@ void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
   if (after.var == kNoIntegerVariable) return;
   if (before.var == kNoIntegerVariable) return;
   const IntegerValue offset = before.constant - after.constant;
-  precedence_relations_->UpdateOffset(before.var, after.var, offset);
+  precedence_relations_->Add(before.var, after.var, offset);
   if (precedences_->AddPrecedenceWithOffsetIfNew(before.var, after.var,
                                                  offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
@@ -840,7 +840,7 @@ IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& filtered_energy,
+    absl::Span<const LiteralValueValue> filtered_energy,
     IntegerValue window_start, IntegerValue window_end) {
   if (window_end <= window_start) return IntegerValue(0);
 
@@ -1075,7 +1075,7 @@ bool SchedulingDemandHelper::AddLinearizedDemand(
 }
 
 void SchedulingDemandHelper::OverrideLinearizedEnergies(
-    const std::vector<LinearExpression>& energies) {
+    absl::Span<const LinearExpression> energies) {
   const int num_tasks = energies.size();
   DCHECK_EQ(num_tasks, helper_->NumTasks());
   linearized_energies_.resize(num_tasks);

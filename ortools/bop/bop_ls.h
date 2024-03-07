@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -40,6 +40,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
@@ -308,7 +309,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Note that the assignment of those literals can be reverted thanks to
   // AddBacktrackingLevel() and BacktrackOneLevel().
   // Note that a variable can't be assigned twice, even for the same literal.
-  void Assign(const std::vector<sat::Literal>& literals);
+  void Assign(absl::Span<const sat::Literal> literals);
 
   // Adds a new backtracking level to specify the state that will be restored
   // by BacktrackOneLevel().

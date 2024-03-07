@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -166,11 +166,6 @@ class CpModelPresolver {
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
 
-  // It can be interesting to know for a given linear constraint that a subset
-  // of its variables are in at most one relation.
-  void DetectAndProcessAtMostOneInLinear(int ct_index, ConstraintProto* ct,
-                                         ActivityBoundHelper* helper);
-
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
   // can be equivalent to a constraint on expr_X only.
@@ -200,6 +195,13 @@ class CpModelPresolver {
   // Detects if a linear constraint is "included" in another one, and do
   // related presolve.
   void DetectDominatedLinearConstraints();
+
+  // Precomputes info about at most one, and use it to presolve linear
+  // constraints. It can be interesting to know for a given linear constraint
+  // that a subset of its variables are in at most one relation.
+  void ProcessAtMostOneAndLinear();
+  void ProcessOneLinearWithAmo(int ct_index, ConstraintProto* ct,
+                               ActivityBoundHelper* helper);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -263,17 +265,25 @@ class CpModelPresolver {
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the
   // substitution.
-  void RemoveCommonPart(
+  //
+  // Returns false if the substitution cannot be performed because the equation
+  // common_part = new_variable is a linear equation with potential overflow.
+  //
+  // TODO(user): I would be great to change the overflow precondition so that
+  // this cannot happen by maybe taking the rhs into account?
+  bool RemoveCommonPart(
       const absl::flat_hash_map<int, int64_t>& common_var_coeff_map,
-      const std::vector<std::pair<int, int64_t>>& block);
+      const std::vector<std::pair<int, int64_t>>& block,
+      ActivityBoundHelper* helper);
 
   // Try to identify many linear constraints that share a common linear
   // expression. We have two slightly different heuristic.
   //
   // TODO(user): consolidate them.
   void FindAlmostIdenticalLinearConstraints();
-  void FindBigHorizontalLinearOverlap();
-  void FindBigVerticalLinearOverlap();
+  void FindBigAtMostOneAndLinearOverlap(ActivityBoundHelper* helper);
+  void FindBigHorizontalLinearOverlap(ActivityBoundHelper* helper);
+  void FindBigVerticalLinearOverlap(ActivityBoundHelper* helper);
 
   // Heuristic to merge clauses that differ in only one literal.
   // The idea is to regroup a bunch of clauses into a single bool_and.
@@ -360,7 +370,6 @@ class ModelCopy {
   // constraint so that they only use reference to previously defined intervals.
   // This allow to be more efficient later in a few preprocessing steps.
   bool ImportAndSimplifyConstraints(const CpModelProto& in_model,
-                                    const std::vector<int>& ignored_constraints,
                                     bool first_copy = false);
 
   // Copy variables from the in_model to the working model.

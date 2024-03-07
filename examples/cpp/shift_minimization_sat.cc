@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -215,7 +215,7 @@ void LoadAndSolve(const std::string& file_name) {
         if (Overlaps(jobs[job1], jobs[job2])) {
           const BoolVar v1 = worker_job_vars[w][i];
           const BoolVar v2 = worker_job_vars[w][j];
-          cp_model.AddBoolOr({Not(v1), Not(v2)});
+          cp_model.AddBoolOr({~v1, ~v2});
         }
       }
     }

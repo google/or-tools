@@ -14,6 +14,7 @@
        <!-- Pack Option -->
        <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
        <PackageIcon>content/orLogo.png</PackageIcon>
+       <PackageReadmeFile>content/README.md</PackageReadmeFile>
        <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -26,6 +27,10 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="@DOTNET_LOGO_DIR@/orLogo.png">
+      <Pack>True</Pack>
+      <PackagePath>content</PackagePath>
+    </None>
+    <None Include="@DOTNET_README_DIR@/README.md">
       <Pack>True</Pack>
       <PackagePath>content</PackagePath>
     </None>

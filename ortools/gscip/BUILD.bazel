@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -27,6 +28,11 @@ cc_proto_library(
     deps = [":gscip_proto"],
 )
 
+py_proto_library(
+    name = "gscip_proto_py_pb2",
+    deps = [":gscip_proto"],
+)
+
 # NOTE(user): this file should ideally not have a compile time dependency on
 # SCIP, so it can be used in client code.
 cc_library(
@@ -36,6 +42,7 @@ cc_library(
     deps = [
         ":gscip_cc_proto",
         "//ortools/base:status_macros",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
     ],
 )
@@ -68,8 +75,12 @@ cc_library(
     name = "gscip",
     srcs = [
         "gscip.cc",
+        "gscip_event_handler.cc",
     ],
-    hdrs = ["gscip.h"],
+    hdrs = [
+        "gscip.h",
+        "gscip_event_handler.h",
+    ],
     deps = [
         ":gscip_cc_proto",
         ":gscip_message_handler",
@@ -82,6 +93,7 @@ cc_library(
         "//ortools/linear_solver:scip_with_glop",
         "//ortools/port:proto_utils",
         "//ortools/util:status_macros",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
@@ -89,51 +101,6 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
-
-#gmock not supported
-#cc_library(
-#    name = "gscip_testing",
-#    testonly = 1,
-#    srcs = ["gscip_testing.cc"],
-#    hdrs = ["gscip_testing.h"],
-#    deps = [
-#        ":gscip",
-#        ":gscip_parameters",
-#        "@com_google_googletest//:gtest_main",
-#    ],
-#)
-
-# Status matchers not supported.
-# cc_test(
-#    name = "gscip_test",
-#    size = "small",
-#    srcs = ["gscip_test.cc"],
-#    deps = [
-#        ":gscip",
-#        ":gscip_cc_proto",
-#        ":gscip_parameters",
-#        ":gscip_testing",
-#        "@com_google_googletest//:gtest",
-#        "@com_google_googletest//:gtest_main",
-#        "@scip//:libscip",
-#    ],
-#)
-
-#cc_test(
-#    name = "gscip_io_test",
-#    size = "medium",
-#    srcs = ["gscip_io_test.cc"],
-#    deps = [
-#        ":gscip",
-#        ":gscip_cc_proto",
-#        ":gscip_testing",
-#        "//ortools/base/file",
-#        "//file/base:path", # Path is not supported?
-#        "@com_google_googletest//:gtest",
-#        "@com_google_googletest//:gtest_main",
-#        "@scip//:libscip",
-#    ],
-#)
 
 cc_library(
     name = "gscip_ext",
@@ -147,38 +114,6 @@ cc_library(
     ],
 )
 
-# Status matchers not supported.
-#cc_test(
-#    name = "gscip_ext_test",
-#    size = "small",
-#    srcs = ["gscip_ext_test.cc"],
-#    deps = [
-#        ":gscip",
-#        ":gscip_cc_proto",
-#        ":gscip_ext",
-#        ":gscip_parameters",
-#        ":gscip_testing",
-#        "//ortools/base:map_util",
-#        "@com_google_googletest//:gtest",
-#        "@com_google_googletest//:gtest_main",
-#        "@scip//:libscip",
-#    ],
-#)
-
-cc_library(
-    name = "gscip_event_handler",
-    srcs = ["gscip_event_handler.cc"],
-    hdrs = ["gscip_event_handler.h"],
-    deps = [
-        ":gscip",
-        "//ortools/base",
-        "//ortools/base:status_macros",
-        "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
 cc_library(
     name = "gscip_message_handler",
     srcs = ["gscip_message_handler.cc"],
@@ -189,5 +124,29 @@ cc_library(
         "//ortools/linear_solver:scip_with_glop",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "gscip_callback_result",
+    srcs = ["gscip_callback_result.cc"],
+    hdrs = ["gscip_callback_result.h"],
+    deps = ["@scip//:libscip"],
+)
+
+cc_library(
+    name = "gscip_constraint_handler",
+    srcs = ["gscip_constraint_handler.cc"],
+    hdrs = ["gscip_constraint_handler.h"],
+    deps = [
+        ":gscip",
+        ":gscip_callback_result",
+        "//ortools/linear_solver:scip_helper_macros",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
+        "@scip//:libscip",
     ],
 )

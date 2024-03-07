@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,9 +14,12 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_H_
 
+#include <cstddef>
 #include <vector>
 
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "absl/types/span.h"
+#include "ortools/algorithms/set_cover_invariant.h"
+#include "ortools/algorithms/set_cover_model.h"
 #include "ortools/algorithms/set_cover_utils.h"
 
 namespace operations_research {
@@ -40,14 +43,13 @@ namespace operations_research {
 //
 // TODO(user): make the different algorithms concurrent, solving independent
 // subproblems in different threads.
-// TODO(user): implement Large Neighborhood Search
 //
 // An obvious idea is to take all the T_j's (or equivalently to set all the
 // x_j's to 1). It's a bit silly but fast, and we can improve on it later using
 // local search.
 class TrivialSolutionGenerator {
  public:
-  explicit TrivialSolutionGenerator(SetCoverLedger* ledger) : ledger_(ledger) {}
+  explicit TrivialSolutionGenerator(SetCoverInvariant* inv) : inv_(inv) {}
 
   // Returns true if a solution was found.
   // TODO(user): Add time-outs and exit with a partial solution. This seems
@@ -56,11 +58,11 @@ class TrivialSolutionGenerator {
 
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(const std::vector<SubsetIndex>& focus);
+  bool NextSolution(absl::Span<const SubsetIndex> focus);
 
  private:
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 };
 
 // A slightly more complicated but better way to compute a first solution is to
@@ -70,7 +72,7 @@ class TrivialSolutionGenerator {
 // generator towards the columns with the least marginal costs.
 class RandomSolutionGenerator {
  public:
-  explicit RandomSolutionGenerator(SetCoverLedger* ledger) : ledger_(ledger) {}
+  explicit RandomSolutionGenerator(SetCoverInvariant* inv) : inv_(inv) {}
 
   // Returns true if a solution was found.
   bool NextSolution();
@@ -80,8 +82,8 @@ class RandomSolutionGenerator {
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
  private:
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 };
 
 // The first solution is obtained using the Chvatal heuristic, that guarantees
@@ -94,17 +96,20 @@ class RandomSolutionGenerator {
 // remaining uncovered elements as possible for the least possible cost per
 // element and iterate.
 //
-// The following paper dives into the details of this class of algorithms.
-// Neal E. Young, Greedy Set-Cover Algorithms (1974-1979, Chvatal,
-// Johnson, Lovasz, Stein), in Kao, ed., Encyclopedia of Algorithms. Draft at:
+// The following papers dive into the details of this class of algorithms.
+//
+// Young, Neal E. 2008. “Greedy Set-Cover Algorithms.” In Encyclopedia of
+// Algorithms, 379–81. Boston, MA: Springer US. Draft at:
 // http://www.cs.ucr.edu/~neal/non_arxiv/Young08SetCover.pdf
 //
-// G. Cormode, H. Karloff, A. Wirth (2010) "Set Cover Algorithms for Very Large
-// Datasets", CIKM'10, ACM, 2010.
+// Cormode, Graham, Howard Karloff, and Anthony Wirth. 2010. “Set Cover
+// Algorithms for Very Large Datasets.” In CIKM ’10. ACM Press.
+// https://doi.org/10.1145/1871437.1871501.
+
 class GreedySolutionGenerator {
  public:
-  explicit GreedySolutionGenerator(SetCoverLedger* ledger)
-      : ledger_(ledger), pq_(ledger_) {}
+  explicit GreedySolutionGenerator(SetCoverInvariant* inv)
+      : inv_(inv), pq_(inv_) {}
 
   // Returns true if a solution was found.
   // TODO(user): Add time-outs and exit with a partial solution.
@@ -114,12 +119,16 @@ class GreedySolutionGenerator {
   // indices are in focus.
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
+  bool NextSolution(const std::vector<SubsetIndex>& focus,
+                    const SubsetCostVector& costs);
+
  private:
   // Updates the priorities on the impacted_subsets.
-  void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets);
+  void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets,
+                        const SubsetCostVector& costs);
 
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 
   // The priority queue used for maintaining the subset with the lower marginal
   // cost.
@@ -134,21 +143,23 @@ class GreedySolutionGenerator {
 // the T_j with the largest total cost.
 class SteepestSearch {
  public:
-  explicit SteepestSearch(SetCoverLedger* ledger)
-      : ledger_(ledger), pq_(ledger_) {}
+  explicit SteepestSearch(SetCoverInvariant* inv) : inv_(inv), pq_(inv_) {}
 
   // Returns true if a solution was found within num_iterations.
   // TODO(user): Add time-outs and exit with a partial solution.
   bool NextSolution(int num_iterations);
 
-  bool NextSolution(const std::vector<SubsetIndex>& focus, int num_iterations);
+  bool NextSolution(absl::Span<const SubsetIndex> focus, int num_iterations);
+
+  bool NextSolution(absl::Span<const SubsetIndex> focus,
+                    const SubsetCostVector& costs, int num_iterations);
 
  private:
   // Updates the priorities on the impacted_subsets.
-  void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets);
+  void UpdatePriorities(absl::Span<const SubsetIndex> impacted_subsets);
 
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 
   // The priority queue used for maintaining the subset with the largest total
   // cost.
@@ -179,9 +190,9 @@ class SteepestSearch {
 // 2 (1): 4–32. doi:10.1287/ijoc.2.1.4.
 class GuidedTabuSearch {
  public:
-  explicit GuidedTabuSearch(SetCoverLedger* ledger)
-      : ledger_(ledger),
-        pq_(ledger_),
+  explicit GuidedTabuSearch(SetCoverInvariant* inv)
+      : inv_(inv),
+        pq_(inv_),
         lagrangian_factor_(kDefaultLagrangianFactor),
         penalty_factor_(kDefaultPenaltyFactor),
         epsilon_(kDefaultEpsilon),
@@ -220,10 +231,10 @@ class GuidedTabuSearch {
 
  private:
   // Updates the penalties on the subsets in focus.
-  void UpdatePenalties(const std::vector<SubsetIndex>& focus);
+  void UpdatePenalties(absl::Span<const SubsetIndex> focus);
 
-  // The ledger on which the algorithm will run.
-  SetCoverLedger* ledger_;
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 
   // The priority queue used ***
   SubsetPriorityQueue pq_;
@@ -258,13 +269,27 @@ class GuidedTabuSearch {
   TabuList<SubsetIndex> tabu_list_;
 };
 
-// Randomly clears a proportion (between 0 and 1) of the solution.
-std::vector<SubsetIndex> ClearProportionRandomly(double proportion,
-                                                 SetCoverLedger* ledger);
+// Randomly clears a proportion num_subsets variables in the solution.
+// Returns a list of subset indices to be potentially reused as a focus.
+std::vector<SubsetIndex> ClearRandomSubsets(std::size_t num_subsets,
+                                            SetCoverInvariant* inv);
 
-std::vector<SubsetIndex> ClearProportionRandomly(
-    const std::vector<SubsetIndex>& focus, double proportion,
-    SetCoverLedger* ledger);
+// Same as above, but clears the subset indices in focus.
+std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
+                                            std::size_t num_subsets,
+                                            SetCoverInvariant* inv);
+
+// Clears the variables that cover the most covered elements. This is capped
+// by num_subsets.
+// Return the list of chosen subset indices to be potentially reused as a focus.
+std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
+                                                  SetCoverInvariant* inv);
+
+// Same as above, but clears the subset indices in focus.
+std::vector<SubsetIndex> ClearMostCoveredElements(
+    absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
+    SetCoverInvariant* inv);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ALGORITHMS_SET_COVER_H_

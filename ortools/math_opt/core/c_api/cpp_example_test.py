@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,7 +17,7 @@ This is done by running the program in a subprocess and then asserting against
 what was printed to standard out.
 """
 
-import unittest
+from absl.testing import absltest
 from ortools.math_opt.examples import log_scraping
 from ortools.math_opt.testing import binary_testing
 
@@ -25,7 +25,7 @@ from ortools.math_opt.testing import binary_testing
 class CppExampleTest(
     binary_testing.BinaryAssertions,
     log_scraping.LogScraping,
-    unittest.TestCase,
+    absltest.TestCase,
 ):
     def test_regression(self):
         result = self.assert_binary_succeeds("ortools/math_opt/core/c_api/cpp_example")
@@ -40,4 +40,4 @@ class CppExampleTest(
 
 
 if __name__ == "__main__":
-    unittest.main()
+    absltest.main()

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
@@ -65,8 +66,8 @@ int AddVariable(CpModelProto* cp_model, int64_t lb, int64_t ub) {
 // enforcement_literals -> lower_bound <= sum variable * coeff <= upper_bound.
 void AddLinearConstraint(
     CpModelProto* cp_model, int64_t lower_bound, int64_t upper_bound,
-    const std::vector<std::pair<int, double>>& variable_coeffs,
-    const std::vector<int>& enforcement_literals) {
+    absl::Span<const std::pair<int, double>> variable_coeffs,
+    absl::Span<const int> enforcement_literals) {
   CHECK_LE(lower_bound, upper_bound);
   ConstraintProto* ct = cp_model->add_constraints();
   for (const int enforcement_literal : enforcement_literals) {
@@ -477,9 +478,8 @@ bool ConvertToSolution(const CpSolverResponse& response,
 // cumul constraints and cumul bounds.
 void AddGeneralizedDimensions(
     const RoutingModel& model, const ArcVarMap& arc_vars,
-    const std::vector<absl::flat_hash_map<int, int>>& vehicle_performs_node,
-    const std::vector<absl::flat_hash_map<int, int>>&
-        vehicle_class_performs_arc,
+    absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
+    absl::Span<const absl::flat_hash_map<int, int>> vehicle_class_performs_arc,
     CpModelProto* cp_model) {
   const int num_cp_nodes = model.Nexts().size() + model.vehicles() + 1;
   for (const RoutingDimension* dimension : model.GetDimensions()) {
@@ -514,8 +514,9 @@ void AddGeneralizedDimensions(
     for (auto vehicle_class = RoutingVehicleClassIndex(0);
          vehicle_class < model.GetVehicleClassesCount(); vehicle_class++) {
       std::vector<int> slack(num_cp_nodes, -1);
-      const int64_t span_cost =
-          dimension->GetSpanCostCoefficientForVehicleClass(vehicle_class);
+      const int64_t slack_cost = CapAdd(
+          dimension->GetSpanCostCoefficientForVehicleClass(vehicle_class),
+          dimension->GetSlackCostCoefficientForVehicleClass(vehicle_class));
       for (const auto [arc, arc_var] : arc_vars) {
         const auto [cp_tail, cp_head] = arc;
         if (cp_tail == cp_head || cp_tail == 0 || cp_head == 0) continue;
@@ -530,9 +531,9 @@ void AddGeneralizedDimensions(
                   ? dimension->slacks()[cp_tail - 1]->Max()
                   : 0;
           slack[cp_tail] = AddVariable(cp_model, 0, slack_max);
-          if (slack_max > 0 && span_cost > 0) {
+          if (slack_max > 0 && slack_cost > 0) {
             cp_model->mutable_objective()->add_vars(slack[cp_tail]);
-            cp_model->mutable_objective()->add_coeffs(span_cost);
+            cp_model->mutable_objective()->add_coeffs(slack_cost);
           }
         }
         const int64_t transit = dimension->class_transit_evaluator(

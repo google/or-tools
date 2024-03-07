@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,11 +25,6 @@ set(OR_TOOLS_LINK_OPTIONS)
 if(BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
 endif()
-# Mandatory built-in components
-list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
-  "USE_BOP" # enable BOP support
-  "USE_GLOP" # enable GLOP support
-  )
 # Optional built-in components
 if(BUILD_LP_PARSER)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
@@ -39,11 +34,17 @@ if(BUILD_MATH_OPT)
   set(MATH_OPT_DIR math_opt)
 endif()
 # Optional solvers
+if(USE_BOP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_BOP")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
     "USE_CLP" # enable COIN-OR CLP support
   )
+endif()
+if(USE_GLOP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLOP")
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
@@ -65,14 +66,6 @@ if(USE_SCIP)
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
-endif()
-if(USE_XPRESS)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")
-  if(MSVC)
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=\"${XPRESS_ROOT}\"")
-  else()
-    list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "XPRESS_PATH=${XPRESS_ROOT}")
-  endif()
 endif()
 
 if(WIN32)
@@ -147,6 +140,8 @@ endforeach()
 #   FILES
 #     ortools/foo/foo.proto
 #     ortools/bar/bar.proto
+#  LINK_LIBRARIES
+#     ortools::ortools_proto
 #   NO_ALIAS
 # )
 function(generate_proto_library)
@@ -216,6 +211,7 @@ endfunction()
 # Generate Protobuf cpp sources
 set(OR_TOOLS_PROTO_FILES)
 file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"
@@ -309,23 +305,24 @@ target_sources(${PROJECT_NAME} PRIVATE
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
 
 foreach(SUBPROJECT IN ITEMS
- algorithms
  base
- bop
- constraint_solver
- ${GLPK_DIR}
- ${PDLP_DIR}
- ${GSCIP_DIR}
- glop
- graph
- ${GUROBI_DIR}
  init
+ algorithms
+ graph
+ constraint_solver
  linear_solver
+ bop
+ glop
+ ${GLPK_DIR}
+ ${GSCIP_DIR}
+ ${GUROBI_DIR}
+ ${PDLP_DIR}
+ sat
+ xpress
  lp_data
  packing
- port
- sat
  scheduling
+ port
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
@@ -364,7 +361,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
   ${PDLP_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
-  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
@@ -509,23 +505,115 @@ install(DIRECTORY ortools/constraint_solver/docs/
   PATTERN "*.md")
 endif()
 
-############################
-## Samples/Examples/Tests ##
-############################
+################
+##  C++ Test  ##
+################
+# add_cxx_test()
+# CMake function to generate and build C++ test.
+# Parameters:
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/
+# e.g.:
+# add_cxx_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/foo_test.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_test)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/
+    get_filename_component(COMPONENT_DIR ${TEST_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  endif()
+
+  add_executable(${TEST_NAME} ${TEST_FILE_NAME})
+  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${TEST_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME cxx_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${TEST_NAME})
+  endif()
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+endfunction()
+
+##################
+##  C++ Sample  ##
+##################
 # add_cxx_sample()
 # CMake function to generate and build C++ sample.
 # Parameters:
-#  the C++ filename
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_cxx_sample(foo.cc)
-function(add_cxx_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME}: ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_cxx_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/bar.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
 
-  add_executable(${SAMPLE_NAME} ${FILE_NAME})
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+  endif()
+
+  add_executable(${SAMPLE_NAME} ${SAMPLE_FILE_NAME})
   target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
   target_link_libraries(${SAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
@@ -536,32 +624,63 @@ function(add_cxx_sample FILE_NAME)
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${SAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${SAMPLE_NAME})
 
   if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})
+    add_test(
+      NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${SAMPLE_NAME})
   endif()
-  message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
 
+###################
+##  C++ Example  ##
+###################
 # add_cxx_example()
 # CMake function to generate and build C++ example.
 # Parameters:
-#  the C++ filename
+#  FILE_NAME: the C++ filename
+#  COMPONENT_NAME: name of the examples/ subdir where the test is located
+#  note: automatically determined if located in examples/<subdir>/
 # e.g.:
-# add_cxx_example(foo.cc)
-function(add_cxx_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME}: ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_cxx_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/example/foo/bar.cc
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_cxx_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
 
-  add_executable(${EXAMPLE_NAME} ${FILE_NAME})
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # example is located in examples/<component_name>/
+    get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
+  endif()
+
+  add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE_NAME})
   target_include_directories(${EXAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
   target_compile_features(${EXAMPLE_NAME} PRIVATE cxx_std_17)
   target_link_libraries(${EXAMPLE_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools)
@@ -572,52 +691,17 @@ function(add_cxx_example FILE_NAME)
       "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${EXAMPLE_NAME})
 
   if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME} COMMAND ${EXAMPLE_NAME})
+    add_test(
+      NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${EXAMPLE_NAME})
   endif()
-  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
-endfunction()
-
-# add_cxx_test()
-# CMake function to generate and build C++ test.
-# Parameters:
-#  the C++ filename
-# e.g.:
-# add_cxx_test(foo_test.cc)
-function(add_cxx_test FILE_NAME)
-  message(STATUS "Configuring test ${FILE_NAME}: ...")
-  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-
-  add_executable(${TEST_NAME} ${FILE_NAME})
-  target_include_directories(${TEST_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-  target_link_libraries(${TEST_NAME} PRIVATE
-    ${PROJECT_NAMESPACE}::ortools
-  )
-
-  include(GNUInstallDirs)
-  if(APPLE)
-    set_target_properties(${TEST_NAME} PROPERTIES INSTALL_RPATH
-      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-  elseif(UNIX)
-    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-               BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-               OUTPUT_VARIABLE libdir_relative_path)
-             set_target_properties(${TEST_NAME} PROPERTIES
-                          INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-  endif()
-
-  if(BUILD_TESTING)
-    add_test(NAME cxx_${COMPONENT_NAME}_${TEST_NAME} COMMAND ${TEST_NAME})
-  endif()
-  message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,11 +15,23 @@
 
 #include <cstdint>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "google/protobuf/map.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
+#include "ortools/math_opt/cpp/basis_status.h"
+#include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/objective.h"
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
+#include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_types.h"
 
 namespace operations_research::math_opt {
 namespace {

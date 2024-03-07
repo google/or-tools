@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
@@ -55,7 +56,7 @@ namespace sat {
 
 namespace {
 struct VectorHash {
-  std::size_t operator()(const std::vector<int64_t>& values) const {
+  std::size_t operator()(absl::Span<const int64_t> values) const {
     size_t hash = 0;
     for (const int64_t value : values) {
       hash = util_hash::Hash(value, hash);
@@ -73,7 +74,8 @@ class IdGenerator {
   // If the color was never seen before, then generate a new id, otherwise
   // return the previously generated id.
   int GetId(const std::vector<int64_t>& color) {
-    return id_map_.emplace(color, id_map_.size()).first->second;
+    // Do not use try_emplace. It breaks with gcc13 on or-tools.
+    return id_map_.insert({color, id_map_.size()}).first->second;
   }
 
   int NextFreeId() const { return id_map_.size(); }
@@ -320,6 +322,44 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         for (const int ref_b : constraint.bool_and().literals()) {
           add_implication(ref_a, ref_b);
         }
+        break;
+      }
+      case ConstraintProto::kLinMax: {
+        const LinearExpressionProto& target_expr =
+            constraint.lin_max().target();
+
+        std::vector<int64_t> local_color = color;
+        local_color.push_back(target_expr.offset());
+        const int target_node = new_node(local_color);
+        local_color.pop_back();
+
+        for (int j = 0; j < target_expr.vars_size(); ++j) {
+          const int var = target_expr.vars(j);
+          DCHECK(RefIsPositive(var));
+          const int64_t coeff = target_expr.coeffs(j);
+          graph->AddArc(get_coefficient_node(var, coeff), target_node);
+        }
+
+        for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
+          // TODO(user): We can create a node per LinearExpressionProto instead.
+          // This will allow to reuse node between constraint, if they share a
+          // common expression.
+          const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
+
+          local_color.push_back(expr.offset());
+          const int local_node = new_node(local_color);
+          local_color.pop_back();
+
+          for (int j = 0; j < expr.vars().size(); ++j) {
+            const int var = expr.vars(j);
+            DCHECK(RefIsPositive(var));
+            const int64_t coeff = expr.coeffs(j);
+            graph->AddArc(get_coefficient_node(var, coeff), local_node);
+          }
+
+          graph->AddArc(local_node, target_node);
+        }
+
         break;
       }
       case ConstraintProto::kInterval: {

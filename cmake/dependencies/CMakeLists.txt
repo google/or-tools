@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -79,13 +79,14 @@ if(BUILD_absl)
   set(ABSL_ENABLE_INSTALL ON)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
   set(ABSL_PROPAGATE_CXX_STD ON)
+  set(ABSL_BUILD_TESTING OFF)
   FetchContent_Declare(
-    absl
+    abseil-cpp
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20230802.1"
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20230802.1.patch"
+    GIT_TAG "20240116.1"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20240116.1.patch"
   )
-  FetchContent_MakeAvailable(absl)
+  FetchContent_MakeAvailable(abseil-cpp)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -101,12 +102,12 @@ if(BUILD_Protobuf)
   set(protobuf_BUILD_EXPORT OFF)
   set(protobuf_MSVC_STATIC_RUNTIME OFF)
   FetchContent_Declare(
-    protobuf
+    Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v25.0"
+    GIT_TAG "v25.3"
     GIT_SUBMODULES ""
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v25.0.patch")
-  FetchContent_MakeAvailable(protobuf)
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v25.3.patch")
+  FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -121,8 +122,8 @@ if(BUILD_re2)
   FetchContent_Declare(
     re2
     GIT_REPOSITORY "https://github.com/google/re2.git"
-    GIT_TAG "2023-11-01"
-    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2023-11-01.patch"
+    GIT_TAG "2024-02-01"
+    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2024-02-01.patch"
   )
   FetchContent_MakeAvailable(re2)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -153,10 +154,12 @@ endif()
 # ##############################################################################
 # pybind11
 # ##############################################################################
-if(BUILD_PYTHON AND BUILD_pybind11)
+if(BUILD_PYTHON)
   # Find Python 3
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+endif()
 
+if(BUILD_PYTHON AND BUILD_pybind11)
   message(CHECK_START "Fetching pybind11")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(PYBIND11_INSTALL ON)
@@ -172,13 +175,27 @@ if(BUILD_PYTHON AND BUILD_pybind11)
   message(CHECK_PASS "fetched")
 endif()
 
+if(BUILD_PYTHON AND BUILD_pybind11_abseil)
+  message(CHECK_START "Fetching pybind11_abseil")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  FetchContent_Declare(
+    pybind11_abseil
+    GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git" # 2024/01/11
+    GIT_TAG "52f27398876a3177049977249e004770bd869e61"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
+  )
+  FetchContent_MakeAvailable(pybind11_abseil)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
 if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
   message(CHECK_START "Fetching pybind11_protobuf")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   FetchContent_Declare(
     pybind11_protobuf
     GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
-    GIT_TAG "b713501f1da56d9b76c42f89efd00b97c26c9eac" # 2023/11/29
+    GIT_TAG "3b11990a99dea5101799e61d98a82c4737d240cc" # 2024/01/04
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
   )
   FetchContent_MakeAvailable(pybind11_protobuf)
@@ -246,8 +263,8 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v804"
-    #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v804.patch"
+    GIT_TAG        "v810"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v810.patch"
   )
   FetchContent_MakeAvailable(scip)
   set(LPI_GLOP_SRC ${scip_SOURCE_DIR}/src/lpi/lpi_glop.cpp PARENT_SCOPE)
@@ -358,8 +375,10 @@ if(BUILD_googletest)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.13.0)
+    GIT_TAG v1.14.0)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF)
+  set(GTEST_HAS_ABSL ON)
   FetchContent_MakeAvailable(googletest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")

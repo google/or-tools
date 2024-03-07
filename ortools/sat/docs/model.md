@@ -25,6 +25,7 @@ model list of variables:
 -   **Python**: `var.Index()`
 -   **Java**: `var.getIndex()`
 -   **C#**: `var.Index` or `var.GetIndex()`
+-   **Go**: `var.Index()`
 
 The implementation of Boolean literals differs across languages.
 
@@ -44,6 +45,10 @@ The implementation of Boolean literals differs across languages.
 -   **C#**: Boolean variables are defined as an `IntVar` with a Boolean domain
     (0 or 1). Boolean variables and their negations implement the `ILiteral`
     interface. This interface defines `GetIndex()` and `Not()` methods.
+-   **Go**: The `BoolVar` class is a separate class from the `IntVar` class. A
+    `BoolVar` object has two important methods: `Not()` and `Index()`. `Not()`
+    returned another `BoolVar` with a different index: `b.Not.Index() =
+    -b.Index() - 1`
 
 ## Solution hinting
 
@@ -78,36 +83,36 @@ Some remarks:
 from ortools.sat.python import cp_model
 
 
-def SolutionHintingSampleSat():
+def solution_hinting_sample_sat():
     """Showcases solution hinting."""
     # Creates the model.
     model = cp_model.CpModel()
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Solution hinting: x <- 1, y <- 2
-    model.AddHint(x, 1)
-    model.AddHint(y, 2)
+    model.add_hint(x, 1)
+    model.add_hint(y, 2)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolutionHintingSampleSat()
+solution_hinting_sample_sat()
 ```
 
 ### C++ code
@@ -295,6 +300,63 @@ public class SolutionHintingSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The solution_hinting_sample_sat command is an example of setting solution hints on the model.
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang/glog"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+)
+
+func solutionHintingSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	model.Maximize(cpmodel.NewLinearExpr().AddWeightedSum([]cpmodel.LinearArgument{x, y, z}, []int64_t{1, 2, 3}))
+
+	// Solution hinting: x <- 1, y <- 2
+	hint := &cpmodel.Hint{Ints: map[cpmodel.IntVar]int64_t{x: 7}}
+	model.SetHint(hint)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	response, err := cpmodel.SolveCpModel(m)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Printf(" x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+		fmt.Printf(" y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+		fmt.Printf(" z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+	}
+
+	return nil
+}
+
+func main() {
+	if err := solutionHintingSampleSat(); err != nil {
+		glog.Exitf("solutionHintingSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Model copy
 
 The CpModel classes supports deep copy from a previous model. This is useful to
@@ -311,44 +373,44 @@ illustrated in the following examples.
 from ortools.sat.python import cp_model
 
 
-def CloneModelSampleSat():
+def clone_model_sample_sat():
     """Showcases cloning a model."""
     # Creates the model.
     model = cp_model.CpModel()
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the original model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the original model: {}".format(solver.objective_value))
 
-    # Clone the model.
-    copy = model.Clone()
+    # Clones the model.
+    copy = model.clone()
 
-    copy_x = copy.GetIntVarFromProtoIndex(x.Index())
-    copy_y = copy.GetIntVarFromProtoIndex(y.Index())
+    copy_x = copy.get_int_var_from_proto_index(x.index)
+    copy_y = copy.get_int_var_from_proto_index(y.index)
 
-    copy.Add(copy_x + copy_y <= 1)
+    copy.add(copy_x + copy_y <= 1)
 
-    status = solver.Solve(copy)
+    status = solver.solve(copy)
 
     if status == cp_model.OPTIMAL:
-        print("Optimal value of the modified model: {}".format(solver.ObjectiveValue()))
+        print("Optimal value of the modified model: {}".format(solver.objective_value))
 
 
-CloneModelSampleSat()
+clone_model_sample_sat()
 ```
 
 ### C++ code

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -390,6 +390,7 @@ PROTO2_RETURN(
 %rename (suppressOutput) operations_research::MPSolver::SuppressOutput;  // no test
 %rename (lookupConstraintOrNull) operations_research::MPSolver::LookupConstraintOrNull;  // no test
 %rename (lookupVariableOrNull) operations_research::MPSolver::LookupVariableOrNull;  // no test
+%rename (write) operations_research::MPSolver::Write;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %rename (computeConstraintActivities) operations_research::MPSolver::ComputeConstraintActivities;

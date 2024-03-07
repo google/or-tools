@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,7 +19,7 @@ from ortools.sat.python import cp_model
 # [END import]
 
 
-def main():
+def main() -> None:
     """Showcases assumptions."""
     # Creates the model.
     # [START model]
@@ -28,37 +28,37 @@ def main():
 
     # Creates the variables.
     # [START variables]
-    x = model.NewIntVar(0, 10, "x")
-    y = model.NewIntVar(0, 10, "y")
-    z = model.NewIntVar(0, 10, "z")
-    a = model.NewBoolVar("a")
-    b = model.NewBoolVar("b")
-    c = model.NewBoolVar("c")
+    x = model.new_int_var(0, 10, "x")
+    y = model.new_int_var(0, 10, "y")
+    z = model.new_int_var(0, 10, "z")
+    a = model.new_bool_var("a")
+    b = model.new_bool_var("b")
+    c = model.new_bool_var("c")
     # [END variables]
 
     # Creates the constraints.
     # [START constraints]
-    model.Add(x > y).OnlyEnforceIf(a)
-    model.Add(y > z).OnlyEnforceIf(b)
-    model.Add(z > x).OnlyEnforceIf(c)
+    model.add(x > y).only_enforce_if(a)
+    model.add(y > z).only_enforce_if(b)
+    model.add(z > x).only_enforce_if(c)
     # [END constraints]
 
     # Add assumptions
-    model.AddAssumptions([a, b, c])
+    model.add_assumptions([a, b, c])
 
     # Creates a solver and solves.
     # [START solve]
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    status = solver.solve(model)
     # [END solve]
 
     # Print solution.
     # [START print_solution]
-    print(f"Status = {solver.StatusName(status)}")
+    print(f"Status = {solver.status_name(status)}")
     if status == cp_model.INFEASIBLE:
         print(
-            "SufficientAssumptionsForInfeasibility = "
-            f"{solver.SufficientAssumptionsForInfeasibility()}"
+            "sufficient_assumptions_for_infeasibility = "
+            f"{solver.sufficient_assumptions_for_infeasibility()}"
         )
     # [END print_solution]
 

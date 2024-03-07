@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -45,6 +46,11 @@ SharedStatTables::SharedStatTables() {
 
   search_table_.push_back({"Search stats", "Bools", "Conflicts", "Branches",
                            "Restarts", "BoolPropag", "IntegerPropag"});
+
+  clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
+                            "LitLearned", "LitForgotten", "Subsumed",
+                            "MClauses", "MDecisions", "MLitTrue", "MSubsumed",
+                            "MLitRemoved", "MReused"});
 
   lp_table_.push_back({"Lp stats", "Component", "Iterations", "AddedCuts",
                        "OPTIMAL", "DUAL_F.", "DUAL_U."});
@@ -82,6 +88,23 @@ void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
                            FormatCounter(r.num_restarts()),
                            FormatCounter(r.num_binary_propagations()),
                            FormatCounter(r.num_integer_propagations())});
+}
+
+void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
+  absl::MutexLock mutex_lock(&mutex_);
+  SatSolver::Counters counters = model->GetOrCreate<SatSolver>()->counters();
+  clauses_table_.push_back(
+      {FormatName(name), FormatCounter(counters.num_minimizations),
+       FormatCounter(counters.num_literals_removed),
+       FormatCounter(counters.num_literals_learned),
+       FormatCounter(counters.num_literals_forgotten),
+       FormatCounter(counters.num_subsumed_clauses),
+       FormatCounter(counters.minimization_num_clauses),
+       FormatCounter(counters.minimization_num_decisions),
+       FormatCounter(counters.minimization_num_true),
+       FormatCounter(counters.minimization_num_subsumed),
+       FormatCounter(counters.minimization_num_removed_literals),
+       FormatCounter(counters.minimization_num_reused)});
 }
 
 void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
@@ -237,6 +260,9 @@ void SharedStatTables::Display(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (timing_table_.size() > 1) SOLVER_LOG(logger, FormatTable(timing_table_));
   if (search_table_.size() > 1) SOLVER_LOG(logger, FormatTable(search_table_));
+  if (clauses_table_.size() > 1) {
+    SOLVER_LOG(logger, FormatTable(clauses_table_));
+  }
 
   if (lp_table_.size() > 1) SOLVER_LOG(logger, FormatTable(lp_table_));
   if (lp_dim_table_.size() > 1) SOLVER_LOG(logger, FormatTable(lp_dim_table_));

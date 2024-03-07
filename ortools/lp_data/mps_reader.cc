@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -62,7 +62,7 @@ class DataWrapper<LinearProgram> {
   }
 
   int FindOrCreateConstraint(absl::string_view name) {
-    return data_->FindOrCreateConstraint(std::string(name)).value();
+    return data_->FindOrCreateConstraint(name).value();
   }
   void SetConstraintBounds(int index, double lower_bound, double upper_bound) {
     data_->SetConstraintBounds(RowIndex(index), lower_bound, upper_bound);
@@ -85,7 +85,7 @@ class DataWrapper<LinearProgram> {
   }
 
   int FindOrCreateVariable(absl::string_view name) {
-    return data_->FindOrCreateVariable(std::string(name)).value();
+    return data_->FindOrCreateVariable(name).value();
   }
   void SetVariableTypeToInteger(int index) {
     data_->SetVariableType(ColIndex(index),

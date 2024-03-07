@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,8 +16,11 @@
 #include <string>
 
 #include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/json/json.h"
 #include "google/protobuf/message.h"
@@ -45,17 +48,23 @@ absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   return contents;
 }
 
-bool ReadFileToProto(absl::string_view filename,
-                     google::protobuf::Message* proto, bool allow_partial) {
+absl::Status ReadFileToProto(absl::string_view filename,
+                             google::protobuf::Message* proto,
+                             bool allow_partial) {
   std::string data;
-  CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
+  RETURN_IF_ERROR(file::GetContents(filename, &data, file::Defaults()));
+  return util::StatusBuilder(StringToProto(data, proto, allow_partial))
+         << " in file '" << filename << "'";
+}
+
+absl::Status StringToProto(absl::string_view data,
+                           google::protobuf::Message* proto,
+                           bool allow_partial) {
   // Try decompressing it.
-  {
-    std::string uncompressed;
-    if (GunzipString(data, &uncompressed)) {
-      VLOG(1) << "ReadFileToProto(): input is gzipped";
-      data.swap(uncompressed);
-    }
+  std::string uncompressed;
+  if (GunzipString(data, &uncompressed)) {
+    VLOG(1) << "ReadFileToProto(): input is gzipped";
+    data = uncompressed;
   }
   // Try binary format first, then text format, then JSON, then proto3 JSON,
   // then give up.
@@ -68,6 +77,7 @@ bool ReadFileToProto(absl::string_view filename,
   // the case that the proto version changed and some fields are dropped.
   // We just fail when the difference is too large.
   constexpr double kMaxBinaryProtoParseShrinkFactor = 2;
+  std::string binary_format_error;
   if (proto->ParsePartialFromString(data) &&
       (allow_partial || proto->IsInitialized())) {
     // NOTE(user): When using ParseFromString() from a generic
@@ -78,60 +88,76 @@ bool ReadFileToProto(absl::string_view filename,
     proto->DiscardUnknownFields();
     if (proto->ByteSizeLong() <
         data.size() / kMaxBinaryProtoParseShrinkFactor) {
-      VLOG(1) << "ReadFileToProto(): input may be a binary proto, but of a "
-                 "different proto";
+      binary_format_error =
+          "The input may be a binary protobuf payload, but it"
+          " probably is from a different proto class";
     } else {
-      VLOG(1) << "ReadFileToProto(): input seems to be a binary proto";
-      return true;
+      VLOG(1) << "StringToProto(): input seems to be a binary proto";
+      return absl::OkStatus();
     }
   }
+
+  struct : public google::protobuf::io::ErrorCollector {
+    void RecordError(int line, google::protobuf::io::ColumnNumber column,
+                     absl::string_view error_message) override {
+      if (!message.empty()) message += ", ";
+      absl::StrAppendFormat(&message, "%d:%d: %s",
+                            // We convert the 0-indexed line to 1-indexed.
+                            line + 1, column, error_message);
+    }
+    std::string message;
+  } text_format_error;
   google::protobuf::TextFormat::Parser text_parser;
+  text_parser.RecordErrorsTo(&text_format_error);
   text_parser.AllowPartialMessage(allow_partial);
   if (text_parser.ParseFromString(data, proto)) {
-    VLOG(1) << "ReadFileToProto(): input is a text proto";
-    return true;
+    VLOG(1) << "StringToProto(): input is a text proto";
+    return absl::OkStatus();
   }
-  // We use `auto` here since protobuf does not use absl::Status.
-  const auto status = JsonStringToMessage(data, proto, JsonParseOptions());
-  if (!status.ok()) {
-    VLOG(1) << status;
-  } else {
+  std::string json_error;
+  absl::Status json_status =
+      JsonStringToMessage(data, proto, JsonParseOptions());
+  if (json_status.ok()) {
     // NOTE(user): We protect against the JSON proto3 parser being very lenient
     // and easily accepting any JSON as a valid JSON for our proto: if the
     // parsed proto's size is too small compared to the JSON, we probably parsed
     // a JSON that wasn't representing a valid proto.
     constexpr int kMaxJsonToBinaryShrinkFactor = 30;
     if (proto->ByteSizeLong() < data.size() / kMaxJsonToBinaryShrinkFactor) {
-      VLOG(1) << "ReadFileToProto(): input is probably JSON, but probably not"
-                 " of the right proto";
+      json_status = absl::InvalidArgumentError(
+          "The input looks like valid JSON, but probably not"
+          " of the right proto class");
     } else {
-      VLOG(1) << "ReadFileToProto(): input is a proto JSON";
-      return true;
+      VLOG(1) << "StringToProto(): input is a proto JSON";
+      return absl::OkStatus();
     }
   }
-  LOG(WARNING) << "Could not parse protocol buffer";
-  return false;
+  return absl::InvalidArgumentError(absl::StrFormat(
+      "binary format error: '%s', text format error: '%s', json error: '%s'",
+      binary_format_error, text_format_error.message, json_status.message()));
 }
 
-bool WriteProtoToFile(absl::string_view filename,
-                      const google::protobuf::Message& proto,
-                      ProtoWriteFormat proto_write_format, bool gzipped,
-                      bool append_extension_to_file_name) {
+absl::Status WriteProtoToFile(absl::string_view filename,
+                              const google::protobuf::Message& proto,
+                              ProtoWriteFormat proto_write_format, bool gzipped,
+                              bool append_extension_to_file_name) {
   std::string file_type_suffix;
   std::string output_string;
   google::protobuf::io::StringOutputStream stream(&output_string);
+  auto make_error = [filename](absl::string_view error_message) {
+    return absl::InternalError(absl::StrFormat(
+        "WriteProtoToFile('%s') failed: %s", filename, error_message));
+  };
   switch (proto_write_format) {
     case ProtoWriteFormat::kProtoBinary:
       if (!proto.SerializeToZeroCopyStream(&stream)) {
-        LOG(WARNING) << "Serialize to stream failed.";
-        return false;
+        return make_error("SerializeToZeroCopyStream()");
       }
       file_type_suffix = ".bin";
       break;
     case ProtoWriteFormat::kProtoText:
       if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
-        LOG(WARNING) << "Printing to string failed.";
-        return false;
+        return make_error("TextFormat::PrintToString()");
       }
       break;
     case ProtoWriteFormat::kJson: {
@@ -143,7 +169,7 @@ bool WriteProtoToFile(absl::string_view filename,
                                                        options)
                .ok()) {
         LOG(WARNING) << "Printing to stream failed.";
-        return false;
+        return make_error("google::protobuf::util::MessageToJsonString()");
       }
       file_type_suffix = ".json";
       break;
@@ -155,7 +181,7 @@ bool WriteProtoToFile(absl::string_view filename,
                                                        options)
                .ok()) {
         LOG(WARNING) << "Printing to stream failed.";
-        return false;
+        return make_error("google::protobuf::util::MessageToJsonString()");
       }
       file_type_suffix = ".json";
       break;
@@ -168,14 +194,9 @@ bool WriteProtoToFile(absl::string_view filename,
   }
   std::string output_filename(filename);
   if (append_extension_to_file_name) output_filename += file_type_suffix;
-  VLOG(1) << "Writing " << output_string.size() << " bytes to "
-          << output_filename;
-  if (!file::SetContents(output_filename, output_string, file::Defaults())
-           .ok()) {
-    LOG(WARNING) << "Writing to file failed.";
-    return false;
-  }
-  return true;
+  VLOG(1) << "Writing " << output_string.size() << " bytes to '"
+          << output_filename << "'";
+  return file::SetContents(output_filename, output_string, file::Defaults());
 }
 
 }  // namespace operations_research

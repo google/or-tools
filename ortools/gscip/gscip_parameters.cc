@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -140,6 +142,23 @@ bool GScipCatchCtrlC(const GScipParameters& parameters) {
 
 bool GScipCatchCtrlCSet(const GScipParameters& parameters) {
   return parameters.bool_params().contains(std::string(kCatchCtrlCParam));
+}
+
+void DisableAllCutsExceptUserDefined(GScipParameters* parameters) {
+  // The only way in SCIP's C API to disable all cuts except user-defined ones
+  // is to disable each individual cut. This may change if SCIP gets updated;
+  // the list below is for SCIP 7.0.1. See
+  // https://scip.zib.de/doc/html/group__SEPARATORS.php for a list of all cuts.
+  const std::vector<std::string> scip_separators = {
+      "cgmip",         "clique",        "closecuts",   "flowcover", "cmir",
+      "aggregation",   "convexproj",    "disjunctive", "eccuts",    "gauge",
+      "gomory",        "impliedbounds", "intobj",      "mcf",       "oddcycle",
+      "rapidlearning", "strongcg",      "zerohalf"};
+  for (const std::string& separator : scip_separators) {
+    const std::string separator_parameter =
+        absl::StrCat("separating/", separator, "/freq");
+    (*parameters->mutable_int_params())[separator_parameter] = -1;
+  }
 }
 
 }  // namespace operations_research

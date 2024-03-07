@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +14,9 @@
 """helpers methods for the cp_model module."""
 
 import numbers
+from typing import Any, Union
 import numpy as np
+
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
@@ -22,70 +24,77 @@ INT32_MIN = -2147483648
 INT32_MAX = 2147483647
 
 
-def is_integral(x):
-    """Checks if x has either a number.Integral or a np.integer type."""
-    return isinstance(x, numbers.Integral) or isinstance(x, np.integer)
+def is_boolean(x: Any) -> bool:
+    """Checks if the x is a boolean."""
+    if isinstance(x, bool):
+        return True
+    if isinstance(x, np.bool_):
+        return True
+    return False
 
 
-def is_a_number(x):
-    """Checks if x has either a number.Number or a np.double type."""
-    return (
-        isinstance(x, numbers.Number)
-        or isinstance(x, np.double)
-        or isinstance(x, np.integer)
-    )
-
-
-def is_zero(x):
+def is_zero(x: Any) -> bool:
     """Checks if the x is 0 or 0.0."""
-    return (is_integral(x) and int(x) == 0) or (is_a_number(x) and float(x) == 0.0)
+    if isinstance(x, numbers.Integral):
+        return int(x) == 0
+    if isinstance(x, numbers.Number):
+        return float(x) == 0.0
+    return False
 
 
-def is_one(x):
+def is_one(x: Any) -> bool:
     """Checks if x is 1 or 1.0."""
-    return (is_integral(x) and int(x) == 1) or (is_a_number(x) and float(x) == 1.0)
+    if isinstance(x, numbers.Integral):
+        return int(x) == 1
+    if isinstance(x, numbers.Number):
+        return float(x) == 1.0
+    return False
 
 
-def is_minus_one(x):
-    """Checks if x is -1 or -1.0."""
-    return (is_integral(x) and int(x) == -1) or (is_a_number(x) and float(x) == -1.0)
+def is_minus_one(x: Any) -> bool:
+    """Checks if x is -1 or -1.0 ."""
+    if isinstance(x, numbers.Integral):
+        return int(x) == -1
+    if isinstance(x, numbers.Number):
+        return float(x) == -1.0
+    return False
 
 
-def assert_is_int64(x):
-    """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
-    if not is_integral(x):
+def assert_is_int64(x: Any) -> int:
+    """Asserts that x is integer and x is in [min_int_64, max_int_64] and returns it casted to an int."""
+    if not isinstance(x, numbers.Integral):
         raise TypeError("Not an integer: %s" % x)
     if x < INT_MIN or x > INT_MAX:
         raise OverflowError("Does not fit in an int64_t: %s" % x)
     return int(x)
 
 
-def assert_is_int32(x):
-    """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
-    if not is_integral(x):
+def assert_is_int32(x: Any) -> int:
+    """Asserts that x is integer and x is in [min_int_32, max_int_32] and returns it casted to an int."""
+    if not isinstance(x, numbers.Integral):
         raise TypeError("Not an integer: %s" % x)
     if x < INT32_MIN or x > INT32_MAX:
         raise OverflowError("Does not fit in an int32_t: %s" % x)
     return int(x)
 
 
-def assert_is_boolean(x):
-    """Asserts that x is 0 or 1."""
-    if not is_integral(x) or x < 0 or x > 1:
+def assert_is_zero_or_one(x: Any) -> int:
+    """Asserts that x is 0 or 1 and returns it as an int."""
+    if not isinstance(x, numbers.Integral) or x < 0 or x > 1:
         raise TypeError("Not a boolean: %s" % x)
+    return int(x)
 
 
-def assert_is_a_number(x):
-    """Asserts that x is a number and returns it."""
-    if not is_a_number(x):
-        raise TypeError("Not a number: %s" % x)
-    elif is_integral(x):
+def assert_is_a_number(x: Any) -> Union[int, float]:
+    """Asserts that x is a number and returns it casted to an int or a float."""
+    if isinstance(x, numbers.Integral):
         return int(x)
-    else:
+    if isinstance(x, numbers.Number):
         return float(x)
+    raise TypeError("Not a number: %s" % x)
 
 
-def to_capped_int64(v):
+def to_capped_int64(v: int) -> int:
     """Restrict v within [INT_MIN..INT_MAX] range."""
     if v > INT_MAX:
         return INT_MAX
@@ -94,7 +103,7 @@ def to_capped_int64(v):
     return v
 
 
-def capped_subtraction(x, y):
+def capped_subtraction(x: int, y: int) -> int:
     """Saturated arithmetics. Returns x - y truncated to the int64_t range."""
     assert_is_int64(x)
     assert_is_int64(y)

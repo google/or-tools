@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,11 @@
 #include <ostream>
 #include <string>
 #include <system_error>  // NOLINT(build/c++11)
+#include <type_traits>
+#include <utility>
 
+#include "absl/base/attributes.h"
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/charconv.h"
 #include "absl/strings/escaping.h"
@@ -28,19 +32,25 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 
-#define OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-#if defined(__wasm__) || defined(ANDROID) || defined(_MSC_VER)
-#undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-#endif
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-#endif
-#if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 11
-#undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-#endif
-
 namespace operations_research {
 namespace {
+
+// Template type to test if std::to_chars() has an overload for the given
+// type. This source will use it only with `T = double` but for SFINAE to work
+// we must have a generic version.
+template <typename T, typename = void>
+struct std_to_chars_has_overload : std::false_type {};
+
+template <typename T>
+struct std_to_chars_has_overload<
+    T, std::void_t<decltype(std::to_chars(
+           std::declval<char*>(), std::declval<char*>(), std::declval<T>()))>>
+    : std::true_type {};
+
+// Alias to get std_to_chars_has_overload<T>::value directly.
+template <typename T>
+inline constexpr bool std_to_chars_has_overload_v =
+    std_to_chars_has_overload<T>::value;
 
 // When using std::to_chars(), the maximum number of digits for the mantissa is
 // std::numeric_limits<double>::max_digits10, which is 17. On top of that the
@@ -59,17 +69,29 @@ using RoundTripDoubleBuffer = std::array<char, 32>;
 
 // Writes the double to the provided buffer and returns a view on the written
 // range.
-absl::string_view RoundTripDoubleToBuffer(const double value,
+//
+// We have two overloads selected with std::enable_if; one used when
+// std::to_chars() supports double, the other when not.
+template <
+    typename Double = double,
+    typename std::enable_if_t<std_to_chars_has_overload_v<Double>, bool> = true>
+absl::string_view RoundTripDoubleToBuffer(const Double value,
                                           RoundTripDoubleBuffer& buffer) {
-#ifdef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
   const auto result =
       std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
   CHECK(result.ec == std::errc()) << std::make_error_code(result.ec).message();
   return absl::string_view(buffer.data(), result.ptr - buffer.data());
-#else   // OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-  // Here we use a version that use enough digits to have roundtrip. We lose the
-  // specification that we use the shortest string though.
-  //
+}
+
+// Overload for the case where std::to_chars() does not support double.
+//
+// Here we use a version that use enough digits to have roundtrip. We lose the
+// specification that we use the shortest string though.
+template <typename Double = double,
+          typename std::enable_if_t<!std_to_chars_has_overload_v<Double>,
+                                    bool> = true>
+absl::string_view RoundTripDoubleToBuffer(const Double value,
+                                          RoundTripDoubleBuffer& buffer) {
   // We use absl::SNPrintF() since it does not depend on the locale (contrary to
   // std::snprintf()).
   const int written =
@@ -78,18 +100,12 @@ absl::string_view RoundTripDoubleToBuffer(const double value,
   CHECK_GT(written, 0);
   CHECK_LT(written, buffer.size());
   return absl::string_view(buffer.data(), written);
-#endif  // OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
 }
 
 }  // namespace
 
-#ifdef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
-ABSL_CONST_INIT const bool kStdToCharsDoubleIsSupported = true;
-#else
-ABSL_CONST_INIT const bool kStdToCharsDoubleIsSupported = false;
-#endif
-
-#undef OPERATION_RESEARCH_STD_TO_CHARS_DOUBLE_SUPPORTED
+ABSL_CONST_INIT const bool kStdToCharsDoubleIsSupported =
+    std_to_chars_has_overload_v<double>;
 
 std::ostream& operator<<(std::ostream& out,
                          const RoundTripDoubleFormat& format) {

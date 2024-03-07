@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -69,7 +69,7 @@ void WriteSolveLog(const std::string& solve_log_file, const SolveLog& log) {
                << solve_log_file << ". Expected .textproto, .pb, or .json";
   }
   QCHECK(WriteProtoToFile(solve_log_file, log, write_format, /*gzipped=*/false,
-                          /*append_extension_to_file_name=*/false));
+                          /*append_extension_to_file_name=*/false).ok());
 }
 
 void Solve(const std::string& input, const std::string& params_str,

@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -90,6 +90,7 @@ message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
 # Generate Protobuf java sources
 set(PROTO_JAVAS)
 file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"
@@ -159,65 +160,89 @@ set(JAVA_RESSOURCES_PATH src/main/resources)
 #################
 ##  Java Test  ##
 #################
-if(BUILD_TESTING)
-  # add_java_test()
-  # CMake function to generate and build java test.
-  # Parameters:
-  #  the java filename
-  # e.g.:
-  # add_java_test(FooTests.java)
-  function(add_java_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME}: ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+# add_java_test()
+# CMake function to generate and build java test.
+# Parameters:
+#  FILE_NAME: the Java filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/java/
+# e.g.:
+# add_java_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/java/BarTest.java
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_java_test)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/java/
+    get_filename_component(WRAPPER_DIR ${TEST_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
     get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  endif()
 
-    set(JAVA_TEST_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
-    message(STATUS "build path: ${JAVA_TEST_DIR}")
+  set(JAVA_TEST_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
+  message(STATUS "build path: ${JAVA_TEST_DIR}")
 
-    add_custom_command(
-      OUTPUT ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-      COMMAND ${CMAKE_COMMAND} -E make_directory
-      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}
-      COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/
-      MAIN_DEPENDENCY ${FILE_NAME}
-      VERBATIM
-      )
+  add_custom_command(
+    OUTPUT ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+    ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy ${TEST_FILE_NAME} ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/
+    MAIN_DEPENDENCY ${TEST_FILE_NAME}
+    VERBATIM
+    )
 
-    string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-      ${JAVA_TEST_DIR}/pom.xml
-      @ONLY)
+  string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
+    ${JAVA_TEST_DIR}/pom.xml
+    @ONLY)
 
-    add_custom_command(
-      OUTPUT ${JAVA_TEST_DIR}/timestamp
-      COMMAND ${MAVEN_EXECUTABLE} compile -B
-      COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_TEST_DIR}/timestamp
-      DEPENDS
-      ${JAVA_TEST_DIR}/pom.xml
-      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-      java_package
-      BYPRODUCTS
-      ${JAVA_TEST_DIR}/target
-      COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${JAVA_TEST_DIR}/timestamp)"
-      WORKING_DIRECTORY ${JAVA_TEST_DIR})
+  add_custom_command(
+    OUTPUT ${JAVA_TEST_DIR}/timestamp
+    COMMAND ${MAVEN_EXECUTABLE} compile -B
+    COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_TEST_DIR}/timestamp
+    DEPENDS
+    ${JAVA_TEST_DIR}/pom.xml
+    ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+    java_package
+    BYPRODUCTS
+    ${JAVA_TEST_DIR}/target
+    COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${JAVA_TEST_DIR}/timestamp)"
+    WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
-    add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
-      DEPENDS
-      ${JAVA_TEST_DIR}/timestamp
-      WORKING_DIRECTORY ${JAVA_TEST_DIR})
+  add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
+    DEPENDS
+    ${JAVA_TEST_DIR}/timestamp
+    WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
+  if(BUILD_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${MAVEN_EXECUTABLE} test
       WORKING_DIRECTORY ${JAVA_TEST_DIR})
-    message(STATUS "Configuring test ${FILE_NAME}: ...DONE")
-  endfunction()
-endif()
+  endif()
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+endfunction()
 
 #####################
 ##  JAVA WRAPPERS  ##
@@ -386,15 +411,41 @@ endif()
 # add_java_sample()
 # CMake function to generate and build java sample.
 # Parameters:
-#  the java filename
+#  FILE_NAME: the Java filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_java_sample(Foo.java)
-function(add_java_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME}: ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_java_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/Bar.java
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_java_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+  endif()
   string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
 
   set(SAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
@@ -404,10 +455,8 @@ function(add_java_sample FILE_NAME)
     OUTPUT ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
       ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/
-    MAIN_DEPENDENCY ${FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SAMPLE_FILE_NAME} ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/
+      MAIN_DEPENDENCY ${SAMPLE_FILE_NAME}
     VERBATIM
   )
 
@@ -443,7 +492,7 @@ function(add_java_sample FILE_NAME)
       COMMAND ${MAVEN_EXECUTABLE} exec:java
       WORKING_DIRECTORY ${SAMPLE_DIR})
   endif()
-  message(STATUS "Configuring sample ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
 
 ####################
@@ -452,14 +501,40 @@ endfunction()
 # add_java_example()
 # CMake function to generate and build java example.
 # Parameters:
-#  the java filename
+#  FILE_NAME: the Java filename
+#  COMPONENT_NAME: name of the example/ subdir where the test is located
+#  note: automatically determined if located in examples/<component>/
 # e.g.:
-# add_java_example(Foo.java)
-function(add_java_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME}: ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_java_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/examples/foo/Bar.java
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_java_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # sample is located in examples/<component_name>/
+    get_filename_component(COMPONENT_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
+  endif()
 
   set(JAVA_EXAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
   message(STATUS "build path: ${JAVA_EXAMPLE_DIR}")
@@ -468,10 +543,8 @@ function(add_java_example FILE_NAME)
     OUTPUT ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
       ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${FILE_NAME}
-      ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/
-    MAIN_DEPENDENCY ${FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_FILE_NAME} ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/
+      MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
     VERBATIM
   )
 
@@ -507,5 +580,5 @@ function(add_java_example FILE_NAME)
       COMMAND ${MAVEN_EXECUTABLE} exec:java
       WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
   endif()
-  message(STATUS "Configuring example ${FILE_NAME}: ...DONE")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

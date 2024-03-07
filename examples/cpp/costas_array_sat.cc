@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
@@ -48,7 +49,7 @@ namespace operations_research {
 namespace sat {
 
 // Checks that all pairwise distances are unique and returns all violators
-void CheckConstraintViolators(const std::vector<int64_t>& vars,
+void CheckConstraintViolators(absl::Span<const int64_t> vars,
                               std::vector<int>* const violators) {
   int dim = vars.size();
 
@@ -172,10 +173,10 @@ void CostasBool(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr(
+              {~vars[var][value], ~vars[var + step][value + diff], pos});
+          cp_model.AddBoolOr(
+              {~vars[var][value + diff], ~vars[var + step][value], neg});
         }
       }
       cp_model.AddLessOrEqual(LinearExpr::Sum(positive_diffs), 1);
@@ -244,10 +245,10 @@ void CostasBoolSoft(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr(
+              {~vars[var][value], ~vars[var + step][value + diff], pos});
+          cp_model.AddBoolOr(
+              {~vars[var][value + diff], ~vars[var + step][value], neg});
         }
       }
       const IntVar pos_var =

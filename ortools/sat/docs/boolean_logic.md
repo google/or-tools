@@ -27,15 +27,15 @@ negation of `x`.
 from ortools.sat.python import cp_model
 
 
-def LiteralSampleSat():
+def literal_sample_sat():
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    not_x = x.Not()
+    x = model.new_bool_var("x")
+    not_x = ~x
     print(x)
     print(not_x)
 
 
-LiteralSampleSat()
+literal_sample_sat()
 ```
 
 ### C++ code
@@ -53,7 +53,7 @@ void LiteralSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar().WithName("x");
-  const BoolVar not_x = Not(x);
+  const BoolVar not_x = ~x;
   LOG(INFO) << "x = " << x << ", not(x) = " << not_x;
 }
 
@@ -106,6 +106,31 @@ public class LiteralSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The literal_sample_sat command is a simple example of literals.
+package main
+
+import (
+	"github.com/golang/glog"
+	"ortools/sat/go/cpmodel"
+)
+
+func literalSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar().WithName("x")
+	notX := x.Not()
+
+	glog.Infof("x = %d, x.Not() = %d", x.Index(), notX.Index())
+}
+
+func main() {
+	literalSampleSat()
+}
+```
+
 ## Boolean constraints
 
 For Boolean variables x and y, the following are elementary Boolean constraints:
@@ -128,16 +153,19 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 from ortools.sat.python import cp_model
 
 
-def BoolOrSampleSat():
+def bool_or_sample_sat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
 
-    model.AddBoolOr([x, y.Not()])
+    model.add_bool_or([x, y.negated()])
+    # The [] is not mandatory.
+    # ~y is equivalent to y.negated()
+    model.add_bool_or(x, ~y)
 
 
-BoolOrSampleSat()
+bool_or_sample_sat()
 ```
 
 ### C++ code
@@ -156,7 +184,9 @@ void BoolOrSampleSat() {
 
   const BoolVar x = cp_model.NewBoolVar();
   const BoolVar y = cp_model.NewBoolVar();
-  cp_model.AddBoolOr({x, Not(y)});
+  cp_model.AddBoolOr({x, ~y});
+  // You can also use the ~ operator.
+  cp_model.AddBoolOr({x, ~y});
 }
 
 }  // namespace sat
@@ -211,6 +241,30 @@ public class BoolOrSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The bool_or_sample_sat command is simple example of the BoolOr constraint.
+package main
+
+import (
+	"ortools/sat/go/cpmodel"
+)
+
+func boolOrSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar()
+	y := model.NewBoolVar()
+
+	model.AddBoolOr(x, y.Not())
+}
+
+func main() {
+	boolOrSampleSat()
+}
+```
+
 ## Reified constraints
 
 The CP-SAT solver supports *half-reified* constraints, also called
@@ -237,27 +291,27 @@ then is written as Or(not b, x) and Or(not b, not y).
 from ortools.sat.python import cp_model
 
 
-def ReifiedSampleSat():
+def reified_sample_sat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    b = model.NewBoolVar("b")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    b = model.new_bool_var("b")
 
     # First version using a half-reified bool and.
-    model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+    model.add_bool_and(x, ~y).only_enforce_if(b)
 
     # Second version using implications.
-    model.AddImplication(b, x)
-    model.AddImplication(b, y.Not())
+    model.add_implication(b, x)
+    model.add_implication(b, ~y)
 
     # Third version using bool or.
-    model.AddBoolOr(b.Not(), x)
-    model.AddBoolOr(b.Not(), y.Not())
+    model.add_bool_or(~b, x)
+    model.add_bool_or(~b, ~y)
 
 
-ReifiedSampleSat()
+reified_sample_sat()
 ```
 
 ### C++ code
@@ -279,15 +333,15 @@ void ReifiedSampleSat() {
   const BoolVar b = cp_model.NewBoolVar();
 
   // First version using a half-reified bool and.
-  cp_model.AddBoolAnd({x, Not(y)}).OnlyEnforceIf(b);
+  cp_model.AddBoolAnd({x, ~y}).OnlyEnforceIf(b);
 
   // Second version using implications.
   cp_model.AddImplication(b, x);
-  cp_model.AddImplication(b, Not(y));
+  cp_model.AddImplication(b, ~y);
 
   // Third version using bool or.
-  cp_model.AddBoolOr({Not(b), x});
-  cp_model.AddBoolOr({Not(b), Not(y)});
+  cp_model.AddBoolOr({~b, x});
+  cp_model.AddBoolOr({~b, ~y});
 }
 
 }  // namespace sat
@@ -373,6 +427,40 @@ public class ReifiedSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The reified_sample_sat command is a simple example of implication constraints.
+package main
+
+import (
+	"ortools/sat/go/cpmodel"
+)
+
+func reifiedSampleSat() {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar()
+	y := model.NewBoolVar()
+	b := model.NewBoolVar()
+
+	// First version using a half-reified bool and.
+	model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+
+	// Second version using implications.
+	model.AddImplication(b, x)
+	model.AddImplication(b, y.Not())
+
+	// Third version using bool or.
+	model.AddBoolOr(b.Not(), x)
+	model.AddBoolOr(b.Not(), y.Not())
+}
+
+func main() {
+	reifiedSampleSat()
+}
+```
+
 ## Product of two Boolean Variables
 
 A useful construct is the product `p` of two Boolean variables `x` and `y`.
@@ -401,29 +489,94 @@ code samples output this truth table:
 from ortools.sat.python import cp_model
 
 
-def BooleanProductSampleSat():
+def boolean_product_sample_sat():
     """Encoding of the product of two Boolean variables.
 
     p == x * y, which is the same as p <=> x and y
     """
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    p = model.NewBoolVar("p")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.AddBoolOr(x.Not(), y.Not(), p)
+    model.add_bool_or(~x, ~y, p)
 
     # p implies x and y, expanded into two implications.
-    model.AddImplication(p, x)
-    model.AddImplication(p, y)
+    model.add_implication(p, x)
+    model.add_implication(p, y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
     solver.parameters.enumerate_all_solutions = True
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
-BooleanProductSampleSat()
+boolean_product_sample_sat()
+```
+
+### Go code
+
+```cs
+// The boolean_product_sample_sat command is a simple example of the product of two literals.
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang/glog"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func booleanProductSample() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	x := model.NewBoolVar().WithName("x")
+	y := model.NewBoolVar().WithName("y")
+	p := model.NewBoolVar().WithName("p")
+
+	// x and y implies p, rewrite as not(x and y) or p.
+	model.AddBoolOr(x.Not(), y.Not(), p)
+
+	// p implies x and y, expanded into two implications.
+	model.AddImplication(p, x)
+	model.AddImplication(p, y)
+
+	// Solve.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
+	// the solver returns all solutions found.
+	params := sppb.SatParameters_builder{
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		EnumerateAllSolutions:             proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(4),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	for _, additionalSolution := range response.GetAdditionalSolutions() {
+		fmt.Printf("x: %v", additionalSolution.GetValues()[x.Index()])
+		fmt.Printf(" y: %v", additionalSolution.GetValues()[y.Index()])
+		fmt.Printf(" p: %v\n", additionalSolution.GetValues()[p.Index()])
+	}
+
+	return nil
+}
+
+func main() {
+	err := booleanProductSample()
+	if err != nil {
+		glog.Exitf("booleanProductSample returned with error: %v", err)
+	}
+}
 ```

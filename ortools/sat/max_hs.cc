@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -28,12 +29,12 @@
 #include "absl/meta/type_traits.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/cleanup.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/presolve_util.h"
 #if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/solve_mp_model.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -208,7 +209,7 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
 }
 
 void HittingSetOptimizer::ExtractAdditionalVariables(
-    const std::vector<IntegerVariable>& to_extract) {
+    absl::Span<const IntegerVariable> to_extract) {
   MPModelProto* hs_model = request_.mutable_model();
 
   VLOG(2) << "Extract " << to_extract.size() << " additional variables";
@@ -268,14 +269,14 @@ HittingSetOptimizer::ComputeAdditionalVariablesToExtract() {
 
   for (const LinearConstraint& linear : relaxation_.linear_constraints) {
     bool found_at_least_one = extract_all;
-    for (const IntegerVariable var : linear.vars) {
+    for (const IntegerVariable var : linear.VarsAsSpan()) {
       if (GetExtractedIndex(var) != kUnextracted) {
         found_at_least_one = true;
       }
       if (found_at_least_one) break;
     }
     if (!found_at_least_one) continue;
-    for (const IntegerVariable var : linear.vars) {
+    for (const IntegerVariable var : linear.VarsAsSpan()) {
       if (GetExtractedIndex(var) == kUnextracted) {
         result_set.insert(PositiveVariable(var));
       }
@@ -305,7 +306,7 @@ void HittingSetOptimizer::ProjectAndAddAtMostOne(
 MPConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(
     const LinearConstraint& linear) {
   int num_extracted_variables = 0;
-  for (int i = 0; i < linear.vars.size(); ++i) {
+  for (int i = 0; i < linear.num_terms; ++i) {
     if (GetExtractedIndex(PositiveVariable(linear.vars[i])) != kUnextracted) {
       num_extracted_variables++;
     }
@@ -322,7 +323,7 @@ void HittingSetOptimizer::ProjectLinear(const LinearConstraint& linear,
   IntegerValue lb = linear.lb;
   IntegerValue ub = linear.ub;
 
-  for (int i = 0; i < linear.vars.size(); ++i) {
+  for (int i = 0; i < linear.num_terms; ++i) {
     const IntegerVariable var = linear.vars[i];
     const IntegerValue coeff = linear.coeffs[i];
     const int index = GetExtractedIndex(PositiveVariable(var));
@@ -577,7 +578,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     TightenMpModel();
 
     // TODO(user): C^c is broken when using SCIP.
-    MPSolver::SolveWithProto(request_, &response_);
+    response_ = SolveMPModel(request_);
     if (response_.status() != MPSolverResponseStatus::MPSOLVER_OPTIMAL) {
       // We currently abort if we have a non-optimal result.
       // This is correct if we had a limit reached, but not in the other

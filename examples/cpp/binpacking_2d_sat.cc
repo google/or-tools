@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -170,6 +170,22 @@ absl::btree_set<int> FindFixedItems(
   return fixed_items;
 }
 
+// Solves a subset sum problem to find the maximum reachable max size.
+int64_t MaxSubsetSumSize(const std::vector<int64_t>& sizes, int64_t max_size) {
+  CpModelBuilder builder;
+  LinearExpr weighed_sum;
+  for (const int size : sizes) {
+    weighed_sum += size * builder.NewBoolVar();
+  }
+
+  builder.AddLessOrEqual(weighed_sum, max_size);
+  builder.Maximize(weighed_sum);
+
+  const CpSolverResponse response = Solve(builder.Build());
+  CHECK_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  return static_cast<int64_t>(response.objective_value());
+}
+
 }  // namespace
 
 // Load a 2D bin packing problem and solve it.
@@ -184,8 +200,8 @@ void LoadAndSolve(const std::string& file_name, int instance) {
             << file_name << "'";
   LOG(INFO) << "Instance has " << problem.items_size() << " items";
 
-  const auto bin_sizes = problem.box_shape().dimensions();
-  const int num_dimensions = bin_sizes.size();
+  const auto original_bin_sizes = problem.box_shape().dimensions();
+  const int num_dimensions = original_bin_sizes.size();
   const int num_items = problem.items_size();
 
   // Non overlapping.
@@ -195,15 +211,39 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(FATAL) << num_dimensions << " dimensions not supported.";
   }
 
-  const int64_t area_of_one_bin = bin_sizes[0] * bin_sizes[1];
+  // Reduce the size of the bin with subset-sum.
+  //
+  // Short correctness proof: For any solution, we can transform it so that each
+  // item is packed to the bottom and left. That is, touch an item or the bin
+  // border on these sides. In that case, we can see that there is a "path" from
+  // the top item, only moving down via touching items, to the bottom edge. And
+  // similarly from the right most item, moving left, to the left edge. So on
+  // each coordinate, the maximum size must be expressible as an exact sum of
+  // the item sizes.
+  std::vector<int64_t> x_sizes;
+  std::vector<int64_t> y_sizes;
   int64_t sum_of_items_area = 0;
   for (const auto& item : problem.items()) {
     CHECK_EQ(1, item.shapes_size());
     const auto& shape = item.shapes(0);
     CHECK_EQ(2, shape.dimensions_size());
     sum_of_items_area += shape.dimensions(0) * shape.dimensions(1);
+    x_sizes.push_back(shape.dimensions(0));
+    y_sizes.push_back(shape.dimensions(1));
+  }
+  std::vector<int64_t> bin_sizes(2);
+  bin_sizes[0] = MaxSubsetSumSize(x_sizes, original_bin_sizes[0]);
+  bin_sizes[1] = MaxSubsetSumSize(y_sizes, original_bin_sizes[1]);
+  if (bin_sizes[0] == original_bin_sizes[0] &&
+      bin_sizes[1] == original_bin_sizes[1]) {
+    LOG(INFO) << "Box size: [" << bin_sizes[0] << " * " << bin_sizes[1] << "]";
+  } else {
+    LOG(INFO) << "Box size: [" << bin_sizes[0] << " * " << bin_sizes[1]
+              << "] reduced from [" << original_bin_sizes[0] << " * "
+              << original_bin_sizes[1] << "]";
   }
 
+  const int64_t area_of_one_bin = bin_sizes[0] * bin_sizes[1];
   const int64_t trivial_lb = CeilOfRatio(sum_of_items_area, area_of_one_bin);
   LOG(INFO) << "Trivial lower bound of the number of bins = " << trivial_lb;
   const int max_bins = absl::GetFlag(FLAGS_max_bins) == 0
@@ -270,8 +310,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Compute the min size of all items in each dimension.
-  std::vector<int64_t> min_sizes_per_dimension = {bin_sizes.begin(),
-                                                  bin_sizes.end()};
+  std::vector<int64_t> min_sizes_per_dimension = bin_sizes;
   for (int item = 0; item < num_items; ++item) {
     for (int dim = 0; dim < num_dimensions; ++dim) {
       min_sizes_per_dimension[dim] =
@@ -281,36 +320,39 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   }
 
   // Manages positions and sizes for each item.
-  std::vector<std::vector<std::vector<IntervalVar>>>
-      interval_by_item_bin_dimension(num_items);
+  //
+  // Creates the starts variables.
   std::vector<std::vector<IntVar>> starts_by_dimension(num_items);
   absl::btree_set<int> items_exclusive_in_at_least_one_dimension;
   for (int item = 0; item < num_items; ++item) {
-    interval_by_item_bin_dimension[item].resize(max_bins);
     starts_by_dimension[item].resize(num_dimensions);
+    for (int dim = 0; dim < num_dimensions; ++dim) {
+      const int64_t bin_size = bin_sizes[dim];
+      const int64_t item_size = problem.items(item).shapes(0).dimensions(dim);
+      // For item fixed to a given bin, by symmetry, we can also assume it
+      // is in the lower left corner.
+      const int64_t start_max = fixed_items.contains(item)
+                                    ? (bin_size - item_size + 1) / 2
+                                    : bin_size - item_size;
+      starts_by_dimension[item][dim] = cp_model.NewIntVar({0, start_max});
+
+      const int64_t size = problem.items(item).shapes(0).dimensions(dim);
+      if (size + min_sizes_per_dimension[dim] > bin_size) {
+        items_exclusive_in_at_least_one_dimension.insert(item);
+      }
+    }
+  }
+
+  // Creates the optional interval variables, sharing the same IntVar.
+  std::vector<std::vector<std::vector<IntervalVar>>>
+      interval_by_item_bin_dimension(num_items);
+  for (int item = 0; item < num_items; ++item) {
+    interval_by_item_bin_dimension[item].resize(max_bins);
     for (int b = 0; b < max_bins; ++b) {
       interval_by_item_bin_dimension[item][b].resize(num_dimensions);
       for (int dim = 0; dim < num_dimensions; ++dim) {
-        const int64_t bin_size = bin_sizes[dim];
         const int64_t size = problem.items(item).shapes(0).dimensions(dim);
-        IntVar start;
-        if (b == 0) {
-          // For item fixed to a given bin, by symmetry of rotation we can also
-          // assume it is in the lower left corner.
-          // Note that the data defines the global size, so the range of the
-          // interval is [0, bin_size - 1].
-          const int64_t start_max = fixed_items.contains(item)
-                                        ? (bin_size - size) / 2
-                                        : bin_size - 1 - size;
-	  start = cp_model.NewIntVar({0, start_max});
-          starts_by_dimension[item][dim] = start;
-
-          if (size + min_sizes_per_dimension[dim] > bin_size) {
-            items_exclusive_in_at_least_one_dimension.insert(item);
-          }
-        } else {
-          start = starts_by_dimension[item][dim];
-        }
+        const IntVar start = starts_by_dimension[item][dim];
         interval_by_item_bin_dimension[item][b][dim] =
             cp_model.NewOptionalFixedSizeIntervalVar(start, size,
                                                      item_to_bin[item][b]);
@@ -350,8 +392,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
     LOG(INFO) << num_items_fixed_on_one_border << " items fixed on one border";
   }
 
-  // Non overlapping.
-  LOG(INFO) << "Box size: " << bin_sizes[0] << "*" << bin_sizes[1];
+  // Add non overlapping constraint.
   for (int b = 0; b < max_bins; ++b) {
     NoOverlap2DConstraint no_overlap_2d = cp_model.AddNoOverlap2D();
     for (int item = 0; item < num_items; ++item) {

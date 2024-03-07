@@ -5,16 +5,22 @@ FROM opensuse/tumbleweed AS env
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN zypper update -y \
-&& zypper install -y git gcc gcc-c++ zlib-devel \
+&& zypper install -y git wget gcc gcc-c++ zlib-devel \
 && zypper clean -a
 ENV CC=gcc CXX=g++
 
-# Install Bazel 6
-RUN zypper addrepo -Gf \
-https://download.opensuse.org/repositories/home:ftake:branches:M17N/openSUSE_Tumbleweed/home:ftake:branches:M17N.repo \
-&& zypper refresh \
-&& zypper install -y bazel6 \
+# Install Bazelisk
+RUN wget \
+https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64 \
+&& chmod +x bazelisk-linux-amd64 \
+&& mv bazelisk-linux-amd64 /usr/local/bin/bazel
+
+# Java
+RUN zypper install -y java-11-openjdk-devel \
 && zypper clean -a
+
+ENV JAVA_HOME=/usr/lib64/jvm/java
+ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Install Python
 RUN zypper update -y \
@@ -26,14 +32,14 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN bazel6 version
-RUN bazel6 build \
+RUN bazel version
+RUN bazel build \
  -c opt \
  --subcommands=true \
  //ortools/... //examples/...
 
 FROM build AS test
-RUN bazel6 test \
+RUN bazel test \
  -c opt \
  --test_output=errors \
  //ortools/... //examples/...

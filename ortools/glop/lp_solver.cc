@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -103,10 +103,8 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
   const ProtoWriteFormat write_format = absl::GetFlag(FLAGS_lp_dump_binary_file)
                                             ? ProtoWriteFormat::kProtoBinary
                                             : ProtoWriteFormat::kProtoText;
-  if (!WriteProtoToFile(filespec, proto, write_format,
-                        absl::GetFlag(FLAGS_lp_dump_compressed_file))) {
-    LOG(DFATAL) << "Could not write " << filespec;
-  }
+  CHECK_OK(WriteProtoToFile(filespec, proto, write_format,
+                            absl::GetFlag(FLAGS_lp_dump_compressed_file)));
 #endif
 }
 
@@ -179,6 +177,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     SOLVER_LOG(&logger_, "Initial problem: ", lp.GetDimensionString());
     SOLVER_LOG(&logger_, "Objective stats: ", lp.GetObjectiveStatsString());
     SOLVER_LOG(&logger_, "Bounds stats: ", lp.GetBoundsStatsString());
+    SOLVER_LOG(&logger_, "Parameters: ", parameters_.ShortDebugString());
   }
 
   // Check some preconditions.
@@ -203,6 +202,16 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
 
   // Make an internal copy of the problem for the preprocessing.
   current_linear_program_.PopulateFromLinearProgram(lp);
+
+  // Remove small entries even if presolve is off. This is mainly here to
+  // avoid floating point underflow. Keeping them can break many invariant like
+  // a * b == 0 iff a == 0 or b == 0.
+  //
+  // Note that our presolve/scaling can potentially create smaller entries than
+  // this, but the scale should stay reasonable.
+  //
+  // TODO(user): If speed matter, we could do that as we copy the program.
+  current_linear_program_.RemoveNearZeroEntries(parameters_.drop_magnitude());
 
   // Preprocess.
   MainLpPreprocessor preprocessor(&parameters_);

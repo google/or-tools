@@ -1,0 +1,78 @@
+// Copyright 2010-2024 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research;
+
+import "ortools/util/int128.proto";
+
+option java_package = "com.google.ortools.algorithms";
+option java_multiple_files = true;
+
+message SetCoverProto {
+  message Subset {
+    // The cost for using the given subset.
+    optional double cost = 1;
+
+    // The list of elements in the subset.
+    repeated int32 element = 2 [packed = true];
+  }
+
+  // The list of subsets in the model.
+  repeated Subset subset = 1;
+
+  // A user-defined name for the model.
+  optional string name = 2;
+
+  // An automatically fingerprint for the model. TODO(user): Implement.
+  optional Int128 fingerprint = 3;
+}
+
+message SetCoverSolutionResponse {
+  // Result of the optimization.
+  enum Status {
+    // Undefined.
+    UNDEFINED = 0;
+    // The solver found the proven optimal solution.
+    OPTIMAL = 1;
+    // The solver had enough time to find some solution that satisfied all
+    // constraints, but it did not reach the optimal.
+    FEASIBLE = 2;
+    // The model does not have any solution.
+    INFEASIBLE = 3;
+    // The model is invalid.
+    INVALID = 4;
+  }
+  // For future use. TODO(user): Implement.
+  optional Status status = 1;
+
+  // The number of subsets that are selected in the solution. This is used
+  // to decompress their indices below.
+  optional int32 num_subsets = 2;
+
+  // The list of the subsets selected in the solution.
+  repeated int32 subset = 3 [packed = true];
+
+  // The cost of the solution, as computed by the algorithm.
+  optional double cost = 4;
+
+  // A lower bound of the solution, as computed by the algorithm.
+  optional double cost_lower_bound = 5;
+
+  // An automatically fingerprint for the solution. TODO(user): Implement.
+  optional Int128 fingerprint = 6;
+
+  // A reference to the model the solution applies to. TODO(user): Implement.
+  optional Int128 model_fingerprint = 7;
+}

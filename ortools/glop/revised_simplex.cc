@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,22 +23,35 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/random.h"
+#include "absl/random/seed_sequences.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
+#include "ortools/glop/basis_representation.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/status.h"
+#include "ortools/glop/variables_info.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
 #include "ortools/lp_data/permutation.h"
-#include "ortools/util/fp_utils.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/lp_data/sparse_row.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/return_macros.h"
+#include "ortools/util/stats.h"
+#include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, simplex_display_numbers_as_fractions, false,
           "Display numbers as fractions.");
@@ -2777,6 +2790,9 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
   }
 
   while (true) {
+    AdvanceDeterministicTime(time_limit);
+    if (time_limit->LimitReached()) break;
+
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
     IF_STATS_ENABLED(
@@ -2889,11 +2905,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
     // case at the beginning of the algorithm.
-    AdvanceDeterministicTime(time_limit);
-    if (num_iterations_ == parameters_.max_number_of_iterations() ||
-        time_limit->LimitReached()) {
-      break;
-    }
+    if (num_iterations_ == parameters_.max_number_of_iterations()) break;
 
     Fractional step_length;
     RowIndex leaving_row;
@@ -3081,6 +3093,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   ColIndex entering_col;
 
   while (true) {
+    AdvanceDeterministicTime(time_limit);
+    if (time_limit->LimitReached()) break;
+
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
     IF_STATS_ENABLED(
@@ -3302,13 +3317,22 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       }
     }
 
+    // This is to avoid crashes below. It seems to happen rarely on a few miplib
+    // problem like rmine11.pb.gz in multithread.
+    //
+    // TODO(user): Try to recover instead.
+    if (std::abs(direction_[leaving_row]) <= 1e-20) {
+      const std::string error_message = absl::StrCat(
+          "trying to pivot with number too small: ", direction_[leaving_row]);
+      SOLVER_LOG(logger_, error_message);
+      return Status(Status::ERROR_LU, error_message);
+    }
+
     // This test takes place after the check for optimality/feasibility because
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
     // case at the beginning of the algorithm.
-    AdvanceDeterministicTime(time_limit);
-    if (num_iterations_ == parameters_.max_number_of_iterations() ||
-        time_limit->LimitReached()) {
+    if (num_iterations_ == parameters_.max_number_of_iterations()) {
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
       return Status::OK();
     }

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,11 +34,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/types.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/return_macros.h"
 
 namespace operations_research {
@@ -744,10 +748,8 @@ class TriangularMatrix : private CompactSparseMatrix {
   // sorted by rows. It is up to the client to call the direct or reverse
   // hyper-sparse solve function depending if the matrix is upper or lower
   // triangular.
-  void ComputeRowsToConsiderInSortedOrder(RowIndexVector* non_zero_rows,
-                                          Fractional sparsity_ratio,
-                                          Fractional num_ops_ratio) const;
   void ComputeRowsToConsiderInSortedOrder(RowIndexVector* non_zero_rows) const;
+
   // This is currently only used for testing. It achieves the same result as
   // PermutedLowerSparseSolve() below, but the latter exploits the sparsity of
   // rhs and is thus faster for our use case.
@@ -869,7 +871,7 @@ class TriangularMatrix : private CompactSparseMatrix {
 
   // For the hyper-sparse version. These are used to implement a DFS, see
   // TriangularComputeRowsToConsider() for more details.
-  mutable DenseBooleanColumn stored_;
+  mutable Bitset64<RowIndex> stored_;
   mutable std::vector<RowIndex> nodes_to_explore_;
 
   // For PermutedLowerSparseSolve().

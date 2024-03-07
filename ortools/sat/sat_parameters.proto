@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 269
+// NEXT TAG: 280
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -52,15 +52,6 @@ message SatParameters {
     POLARITY_TRUE = 0;
     POLARITY_FALSE = 1;
     POLARITY_RANDOM = 2;
-
-    // Choose the sign that tends to satisfy the most constraints. This is
-    // computed using a weighted sum: if a literal l appears in a constraint of
-    // the form: ... + coeff * l +... <= rhs with positive coefficients and
-    // rhs, then -sign(l) * coeff / rhs is added to the weight of l.variable().
-    POLARITY_WEIGHTED_SIGN = 3;
-
-    // The opposite choice of POLARITY_WEIGHTED_SIGN.
-    POLARITY_REVERSE_WEIGHTED_SIGN = 4;
   }
   optional Polarity initial_polarity = 2 [default = POLARITY_FALSE];
 
@@ -189,22 +180,6 @@ message SatParameters {
   // Same as for the clauses, but for the learned pseudo-Boolean constraints.
   optional int32 pb_cleanup_increment = 46 [default = 200];
   optional double pb_cleanup_ratio = 47 [default = 0.5];
-
-  // Parameters for an heuristic similar to the one described in "An effective
-  // learnt clause minimization approach for CDCL Sat Solvers",
-  // https://www.ijcai.org/proceedings/2017/0098.pdf
-  //
-  // For now, we have a somewhat simpler implementation where every x restart we
-  // spend y decisions on clause minimization. The minimization technique is the
-  // same as the one used to minimize core in max-sat. We also minimize problem
-  // clauses and not just the learned clause that we keep forever like in the
-  // paper.
-  //
-  // Changing these parameters or the kind of clause we minimize seems to have
-  // a big impact on the overall perf on our benchmarks. So this technique seems
-  // definitely useful, but it is hard to tune properly.
-  optional int32 minimize_with_propagation_restart_period = 96 [default = 10];
-  optional int32 minimize_with_propagation_num_decisions = 97 [default = 1000];
 
   // ==========================================================================
   // Variable and clause activities
@@ -436,7 +411,7 @@ message SatParameters {
   //
   // TODO(user): Clean up. The first one is used in CP-SAT, the other in pure
   // SAT presolve.
-  optional double probing_deterministic_time_limit = 226 [default = 1];
+  optional double probing_deterministic_time_limit = 226 [default = 1.0];
   optional double presolve_probing_deterministic_time_limit = 57
       [default = 30.0];
 
@@ -466,7 +441,6 @@ message SatParameters {
 
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
-  optional bool use_sat_inprocessing = 163 [default = false];
 
   // If true, we detect variable that are unique to a table constraint and only
   // there to encode a cost on each tuple. This is usually the case when a WCSP
@@ -547,6 +521,34 @@ message SatParameters {
   optional bool find_big_linear_overlap = 234 [default = true];
 
   // ==========================================================================
+  // Inprocessing
+  // ==========================================================================
+
+  // Enable or disable "inprocessing" which is some SAT presolving done at
+  // each restart to the root level.
+  optional bool use_sat_inprocessing = 163 [default = true];
+
+  // Proportion of deterministic time we should spend on inprocessing.
+  // At each "restart", if the proportion is below this ratio, we will do some
+  // inprocessing, otherwise, we skip it for this restart.
+  optional double inprocessing_dtime_ratio = 273 [default = 0.2];
+
+  // The amount of dtime we should spend on probing for each inprocessing round.
+  optional double inprocessing_probing_dtime = 274 [default = 1.0];
+
+  // Parameters for an heuristic similar to the one described in "An effective
+  // learnt clause minimization approach for CDCL Sat Solvers",
+  // https://www.ijcai.org/proceedings/2017/0098.pdf
+  //
+  // This is the amount of dtime we should spend on this technique during each
+  // inprocessing phase.
+  //
+  // The minimization technique is the same as the one used to minimize core in
+  // max-sat. We also minimize problem clauses and not just the learned clause
+  // that we keep forever like in the paper.
+  optional double inprocessing_minimization_dtime = 275 [default = 1.0];
+
+  // ==========================================================================
   // Multithread
   // ==========================================================================
 
@@ -609,8 +611,9 @@ message SatParameters {
 
   // It is possible to specify additional subsolver configuration. These can be
   // referred by their params.name() in the fields above. Note that only the
-  // specified field will "overwrite" the ones of the base parameter. It is also
-  // possible to overwrite the default names above.
+  // specified field will "overwrite" the ones of the base parameter. If a
+  // subsolver_params has the name of an existing subsolver configuration, the
+  // named parameters will be merged into the subsolver configuration.
   repeated SatParameters subsolver_params = 210;
 
   // TODO(user): Also define like for subsolvers the list of "active"
@@ -809,131 +812,22 @@ message SatParameters {
   optional bool use_energetic_reasoning_in_no_overlap_2d = 213
       [default = false];
 
-  // Performs an extra step of propagation in the no_overlap_2d constraint by
-  // looking at all pairs of intervals.
-  optional bool use_pairwise_reasoning_in_no_overlap_2d = 251 [default = false];
+  // When this is true, the no_overlap_2d constraint is reinforced with
+  // an energetic reasoning that uses an area-based energy. This can be combined
+  // with the two other overlap heuristics above.
+  optional bool use_area_energetic_reasoning_in_no_overlap_2d = 271
+      [default = false];
+
+  // If the number of pairs to look is below this threshold, do an extra step of
+  // propagation in the no_overlap_2d constraint by looking at all pairs of
+  // intervals.
+  optional int32 max_pairs_pairwise_reasoning_in_no_overlap_2d = 276
+      [default = 1250];
 
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers
   // as it modifies the reduced_cost, lb_tree_search, and probing workers.
   optional bool use_dual_scheduling_heuristics = 214 [default = true];
-
-  // A non-negative level indicating the type of constraints we consider in the
-  // LP relaxation. At level zero, no LP relaxation is used. At level 1, only
-  // the linear constraint and full encoding are added. At level 2, we also add
-  // all the Boolean constraints.
-  optional int32 linearization_level = 90 [default = 1];
-
-  // A non-negative level indicating how much we should try to fully encode
-  // Integer variables as Boolean.
-  optional int32 boolean_encoding_level = 107 [default = 1];
-
-  // When loading a*x + b*y ==/!= c when x and y are both fully encoded.
-  // The solver may decide to replace the linear equation by a set of clauses.
-  // This is triggered if the sizes of the domains of x and y are below the
-  // threshold.
-  optional int32 max_domain_size_when_encoding_eq_neq_constraints = 191
-      [default = 16];
-
-  // The limit on the number of cuts in our cut pool. When this is reached we do
-  // not generate cuts anymore.
-  //
-  // TODO(user): We should probably remove this parameters, and just always
-  // generate cuts but only keep the best n or something.
-  optional int32 max_num_cuts = 91 [default = 10000];
-
-  // Control the global cut effort. Zero will turn off all cut. For now we just
-  // have one level. Note also that most cuts are only used at linearization
-  // level >= 2.
-  optional int32 cut_level = 196 [default = 1];
-
-  // For the cut that can be generated at any level, this control if we only
-  // try to generate them at the root node.
-  optional bool only_add_cuts_at_level_zero = 92 [default = false];
-
-  // When the LP objective is fractional, do we add the cut that forces the
-  // linear objective expression to be greater or equal to this fractional value
-  // rounded up? We can always do that since our objective is integer, and
-  // combined with MIR heuristic to reduce the coefficient of such cut, it can
-  // help.
-  optional bool add_objective_cut = 197 [default = false];
-
-  // Whether we generate and add Chvatal-Gomory cuts to the LP at root node.
-  // Note that for now, this is not heavily tuned.
-  optional bool add_cg_cuts = 117 [default = true];
-
-  // Whether we generate MIR cuts at root node.
-  // Note that for now, this is not heavily tuned.
-  optional bool add_mir_cuts = 120 [default = true];
-
-  // Whether we generate Zero-Half cuts at root node.
-  // Note that for now, this is not heavily tuned.
-  optional bool add_zero_half_cuts = 169 [default = true];
-
-  // Whether we generate clique cuts from the binary implication graph. Note
-  // that as the search goes on, this graph will contains new binary clauses
-  // learned by the SAT engine.
-  optional bool add_clique_cuts = 172 [default = true];
-
-  // Cut generator for all diffs can add too many cuts for large all_diff
-  // constraints. This parameter restricts the large all_diff constraints to
-  // have a cut generator.
-  optional int32 max_all_diff_cut_size = 148 [default = 64];
-
-  // For the lin max constraints, generates the cuts described in "Strong
-  // mixed-integer programming formulations for trained neural networks" by Ross
-  // Anderson et. (https://arxiv.org/pdf/1811.01988.pdf)
-  optional bool add_lin_max_cuts = 152 [default = true];
-
-  // In the integer rounding procedure used for MIR and Gomory cut, the maximum
-  // "scaling" we use (must be positive). The lower this is, the lower the
-  // integer coefficients of the cut will be. Note that cut generated by lower
-  // values are not necessarily worse than cut generated by larger value. There
-  // is no strict dominance relationship.
-  //
-  // Setting this to 2 result in the "strong fractional rouding" of Letchford
-  // and Lodi.
-  optional int32 max_integer_rounding_scaling = 119 [default = 600];
-
-  // If true, we start by an empty LP, and only add constraints not satisfied
-  // by the current LP solution batch by batch. A constraint that is only added
-  // like this is known as a "lazy" constraint in the literature, except that we
-  // currently consider all constraints as lazy here.
-  optional bool add_lp_constraints_lazily = 112 [default = true];
-
-  // Even at the root node, we do not want to spend too much time on the LP if
-  // it is "difficult". So we solve it in "chunks" of that many iterations. The
-  // solve will be continued down in the tree or the next time we go back to the
-  // root node.
-  optional int32 root_lp_iterations = 227 [default = 2000];
-
-  // While adding constraints, skip the constraints which have orthogonality
-  // less than 'min_orthogonality_for_lp_constraints' with already added
-  // constraints during current call. Orthogonality is defined as 1 -
-  // cosine(vector angle between constraints). A value of zero disable this
-  // feature.
-  optional double min_orthogonality_for_lp_constraints = 115 [default = 0.05];
-
-  // Max number of time we perform cut generation and resolve the LP at level 0.
-  optional int32 max_cut_rounds_at_level_zero = 154 [default = 1];
-
-  // If a constraint/cut in LP is not active for that many consecutive OPTIMAL
-  // solves, remove it from the LP. Note that it might be added again later if
-  // it become violated by the current LP solution.
-  optional int32 max_consecutive_inactive_count = 121 [default = 100];
-
-  // These parameters are similar to sat clause management activity parameters.
-  // They are effective only if the number of generated cuts exceed the storage
-  // limit. Default values are based on a few experiments on miplib instances.
-  optional double cut_max_active_count_value = 155 [default = 1e10];
-  optional double cut_active_count_decay = 156 [default = 0.8];
-
-  // Target number of constraints to remove during cleanup.
-  optional int32 cut_cleanup_target = 157 [default = 1000];
-
-  // Add that many lazy constraints (or cuts) at once in the LP. Note that at
-  // the beginning of the solve, we do add more than this.
-  optional int32 new_constraints_batch_size = 122 [default = 50];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {
@@ -994,46 +888,16 @@ message SatParameters {
   // hinted value.
   optional bool fix_variables_to_their_hinted_value = 192 [default = false];
 
-  // All the "exploit_*" parameters below work in the same way: when branching
-  // on an IntegerVariable, these parameters affect the value the variable is
-  // branched on. Currently the first heuristic that triggers win in the order
-  // in which they appear below.
-  //
-  // TODO(user): Maybe do like for the restart algorithm, introduce an enum
-  // and a repeated field that control the order on which these are applied?
-
-  // If true and the Lp relaxation of the problem has an integer optimal
-  // solution, try to exploit it. Note that since the LP relaxation may not
-  // contain all the constraints, such a solution is not necessarily a solution
-  // of the full problem.
-  optional bool exploit_integer_lp_solution = 94 [default = true];
-
-  // If true and the Lp relaxation of the problem has a solution, try to exploit
-  // it. This is same as above except in this case the lp solution might not be
-  // an integer solution.
-  optional bool exploit_all_lp_solution = 116 [default = true];
-
-  // When branching on a variable, follow the last best solution value.
-  optional bool exploit_best_solution = 130 [default = false];
-
-  // When branching on a variable, follow the last best relaxation solution
-  // value. We use the relaxation with the tightest bound on the objective as
-  // the best relaxation solution.
-  optional bool exploit_relaxation_solution = 161 [default = false];
-
-  // When branching an a variable that directly affect the objective,
-  // branch on the value that lead to the best objective first.
-  optional bool exploit_objective = 131 [default = true];
-
-  // If set at zero (the default), it is disabled. Otherwise the solver attempts
-  // probing at every 'probing_period' root node. Period of 1 enables probing at
-  // every root node.
-  optional int64 probing_period_at_root = 142 [default = 0];
-
   // If true, search will continuously probe Boolean variables, and integer
   // variable bounds. This parameter is set to true in parallel on the probing
   // worker.
   optional bool use_probing_search = 176 [default = false];
+
+  // Use extended probing (probe bool_or, at_most_one, exactly_one).
+  optional bool use_extended_probing = 269 [default = true];
+
+  // How many combinations of pairs or triplets of variables we want to scan.
+  optional int32 probing_num_combinations_limit = 272 [default = 20000];
 
   // Add a shaving phase (where the solver tries to prove that the lower or
   // upper bound of a variable are infeasible) to the probing search.
@@ -1309,15 +1173,14 @@ message SatParameters {
   // numerical imprecision issues.
   optional bool use_exact_lp_reason = 109 [default = true];
 
-  // If true, the solver attemts to generate more info inside lp propagator by
-  // branching on some variables if certain criteria are met during the search
-  // tree exploration.
-  optional bool use_branching_in_lp = 139 [default = false];
-
   // This can be beneficial if there is a lot of no-overlap constraints but a
   // relatively low number of different intervals in the problem. Like 1000
   // intervals, but 1M intervals in the no-overlap constraints covering them.
   optional bool use_combined_no_overlap = 133 [default = false];
+
+  // All at_most_one constraints with a size <= param will be replaced by a
+  // quadratic number of binary implications.
+  optional int32 at_most_one_max_expansion_size = 270 [default = 3];
 
   // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
   // when calling solve. If set, catching the SIGINT signal will terminate the
@@ -1361,6 +1224,167 @@ message SatParameters {
   // this size will be split into sqrt(size) intermediate sums in order to have
   // faster propation in the CP engine.
   optional int32 linear_split_size = 256 [default = 100];
+
+  // ==========================================================================
+  // Linear programming relaxation
+  // ==========================================================================
+
+  // A non-negative level indicating the type of constraints we consider in the
+  // LP relaxation. At level zero, no LP relaxation is used. At level 1, only
+  // the linear constraint and full encoding are added. At level 2, we also add
+  // all the Boolean constraints.
+  optional int32 linearization_level = 90 [default = 1];
+
+  // A non-negative level indicating how much we should try to fully encode
+  // Integer variables as Boolean.
+  optional int32 boolean_encoding_level = 107 [default = 1];
+
+  // When loading a*x + b*y ==/!= c when x and y are both fully encoded.
+  // The solver may decide to replace the linear equation by a set of clauses.
+  // This is triggered if the sizes of the domains of x and y are below the
+  // threshold.
+  optional int32 max_domain_size_when_encoding_eq_neq_constraints = 191
+      [default = 16];
+
+  // The limit on the number of cuts in our cut pool. When this is reached we do
+  // not generate cuts anymore.
+  //
+  // TODO(user): We should probably remove this parameters, and just always
+  // generate cuts but only keep the best n or something.
+  optional int32 max_num_cuts = 91 [default = 10000];
+
+  // Control the global cut effort. Zero will turn off all cut. For now we just
+  // have one level. Note also that most cuts are only used at linearization
+  // level >= 2.
+  optional int32 cut_level = 196 [default = 1];
+
+  // For the cut that can be generated at any level, this control if we only
+  // try to generate them at the root node.
+  optional bool only_add_cuts_at_level_zero = 92 [default = false];
+
+  // When the LP objective is fractional, do we add the cut that forces the
+  // linear objective expression to be greater or equal to this fractional value
+  // rounded up? We can always do that since our objective is integer, and
+  // combined with MIR heuristic to reduce the coefficient of such cut, it can
+  // help.
+  optional bool add_objective_cut = 197 [default = false];
+
+  // Whether we generate and add Chvatal-Gomory cuts to the LP at root node.
+  // Note that for now, this is not heavily tuned.
+  optional bool add_cg_cuts = 117 [default = true];
+
+  // Whether we generate MIR cuts at root node.
+  // Note that for now, this is not heavily tuned.
+  optional bool add_mir_cuts = 120 [default = true];
+
+  // Whether we generate Zero-Half cuts at root node.
+  // Note that for now, this is not heavily tuned.
+  optional bool add_zero_half_cuts = 169 [default = true];
+
+  // Whether we generate clique cuts from the binary implication graph. Note
+  // that as the search goes on, this graph will contains new binary clauses
+  // learned by the SAT engine.
+  optional bool add_clique_cuts = 172 [default = true];
+
+  // Whether we generate RLT cuts. This is still experimental but can help on
+  // binary problem with a lot of clauses of size 3.
+  optional bool add_rlt_cuts = 279 [default = true];
+
+  // Cut generator for all diffs can add too many cuts for large all_diff
+  // constraints. This parameter restricts the large all_diff constraints to
+  // have a cut generator.
+  optional int32 max_all_diff_cut_size = 148 [default = 64];
+
+  // For the lin max constraints, generates the cuts described in "Strong
+  // mixed-integer programming formulations for trained neural networks" by Ross
+  // Anderson et. (https://arxiv.org/pdf/1811.01988.pdf)
+  optional bool add_lin_max_cuts = 152 [default = true];
+
+  // In the integer rounding procedure used for MIR and Gomory cut, the maximum
+  // "scaling" we use (must be positive). The lower this is, the lower the
+  // integer coefficients of the cut will be. Note that cut generated by lower
+  // values are not necessarily worse than cut generated by larger value. There
+  // is no strict dominance relationship.
+  //
+  // Setting this to 2 result in the "strong fractional rouding" of Letchford
+  // and Lodi.
+  optional int32 max_integer_rounding_scaling = 119 [default = 600];
+
+  // If true, we start by an empty LP, and only add constraints not satisfied
+  // by the current LP solution batch by batch. A constraint that is only added
+  // like this is known as a "lazy" constraint in the literature, except that we
+  // currently consider all constraints as lazy here.
+  optional bool add_lp_constraints_lazily = 112 [default = true];
+
+  // Even at the root node, we do not want to spend too much time on the LP if
+  // it is "difficult". So we solve it in "chunks" of that many iterations. The
+  // solve will be continued down in the tree or the next time we go back to the
+  // root node.
+  optional int32 root_lp_iterations = 227 [default = 2000];
+
+  // While adding constraints, skip the constraints which have orthogonality
+  // less than 'min_orthogonality_for_lp_constraints' with already added
+  // constraints during current call. Orthogonality is defined as 1 -
+  // cosine(vector angle between constraints). A value of zero disable this
+  // feature.
+  optional double min_orthogonality_for_lp_constraints = 115 [default = 0.05];
+
+  // Max number of time we perform cut generation and resolve the LP at level 0.
+  optional int32 max_cut_rounds_at_level_zero = 154 [default = 1];
+
+  // If a constraint/cut in LP is not active for that many consecutive OPTIMAL
+  // solves, remove it from the LP. Note that it might be added again later if
+  // it become violated by the current LP solution.
+  optional int32 max_consecutive_inactive_count = 121 [default = 100];
+
+  // These parameters are similar to sat clause management activity parameters.
+  // They are effective only if the number of generated cuts exceed the storage
+  // limit. Default values are based on a few experiments on miplib instances.
+  optional double cut_max_active_count_value = 155 [default = 1e10];
+  optional double cut_active_count_decay = 156 [default = 0.8];
+
+  // Target number of constraints to remove during cleanup.
+  optional int32 cut_cleanup_target = 157 [default = 1000];
+
+  // Add that many lazy constraints (or cuts) at once in the LP. Note that at
+  // the beginning of the solve, we do add more than this.
+  optional int32 new_constraints_batch_size = 122 [default = 50];
+
+  // All the "exploit_*" parameters below work in the same way: when branching
+  // on an IntegerVariable, these parameters affect the value the variable is
+  // branched on. Currently the first heuristic that triggers win in the order
+  // in which they appear below.
+  //
+  // TODO(user): Maybe do like for the restart algorithm, introduce an enum
+  // and a repeated field that control the order on which these are applied?
+
+  // If true and the Lp relaxation of the problem has an integer optimal
+  // solution, try to exploit it. Note that since the LP relaxation may not
+  // contain all the constraints, such a solution is not necessarily a solution
+  // of the full problem.
+  optional bool exploit_integer_lp_solution = 94 [default = true];
+
+  // If true and the Lp relaxation of the problem has a solution, try to exploit
+  // it. This is same as above except in this case the lp solution might not be
+  // an integer solution.
+  optional bool exploit_all_lp_solution = 116 [default = true];
+
+  // When branching on a variable, follow the last best solution value.
+  optional bool exploit_best_solution = 130 [default = false];
+
+  // When branching on a variable, follow the last best relaxation solution
+  // value. We use the relaxation with the tightest bound on the objective as
+  // the best relaxation solution.
+  optional bool exploit_relaxation_solution = 161 [default = false];
+
+  // When branching an a variable that directly affect the objective,
+  // branch on the value that lead to the best objective first.
+  optional bool exploit_objective = 131 [default = true];
+
+  // Infer products of Boolean or of Boolean time IntegerVariable from the
+  // linear constrainst in the problem. This can be used in some cuts, altough
+  // for now we don't really exploit it.
+  optional bool detect_linearized_product = 277 [default = false];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
@@ -1454,7 +1478,16 @@ message SatParameters {
   // overflow when evaluating bounds * coeff for instance. We are a bit more
   // defensive, but in practice, users shouldn't use super large values in a
   // MIP.
-  optional double mip_max_valid_magnitude = 199 [default = 1e30];
+  optional double mip_max_valid_magnitude = 199 [default = 1e20];
+
+  // By default, any variable/constraint bound with a finite value and a
+  // magnitude greater than the mip_max_valid_magnitude will result with a
+  // invalid model. This flags change the behavior such that such bounds are
+  // silently transformed to +∞ or -∞.
+  //
+  // It is recommended to keep it at false, and create valid bounds.
+  optional bool mip_treat_high_magnitude_bounds_as_infinity = 278
+      [default = false];
 
   // Any value in the input mip with a magnitude lower than this will be set to
   // zero. This is to avoid some issue in LP presolving.

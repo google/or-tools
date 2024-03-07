@@ -1,0 +1,101 @@
+// Copyright 2010-2024 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+import "ortools/math_opt/callback.proto";
+import "ortools/math_opt/infeasible_subsystem.proto";
+import "ortools/math_opt/model.proto";
+import "ortools/math_opt/model_parameters.proto";
+import "ortools/math_opt/model_update.proto";
+import "ortools/math_opt/parameters.proto";
+import "ortools/math_opt/result.proto";
+
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
+// This message is used to specify some hints on the resources a remote solve is
+// expected to use. These parameters are hints and may be ignored by the remote
+// server (in particular in case of solve in a local subprocess, for example).
+//
+// When using SolveService.Solve and SolveService.ComputeInfeasibleSubsystem,
+// these hints are mostly optional as some defaults will be computed based on
+// the other parameters.
+//
+// When using SolveService.StreamSolve these hints are used to dimension the
+// resources available during the execution of every action; thus it is
+// recommended to set them.
+//
+message SolverResourcesProto {
+  // The number of solver threads that are expected to actually execute in
+  // parallel. Must be finite and >0.0.
+  //
+  // For example a value of 3.0 means that if the solver has 5 threads that can
+  // execute we expect at least 3 of these threads to be scheduled in parallel
+  // for any given time slice of the operating system scheduler.
+  //
+  // A fractional value indicates that we don't expect the operating system to
+  // constantly schedule the solver's work. For example with 0.5 we would expect
+  // the solver's threads to be scheduled half the time.
+  //
+  // This parameter is usually used in conjunction with
+  // SolveParametersProto.threads. For some solvers like Gurobi it makes sense
+  // to use SolverResourcesProto.cpu = SolveParametersProto.threads. For other
+  // solvers like CP-SAT, it may makes sense to use a value lower than the
+  // number of threads as not all threads may be ready to be scheduled at the
+  // same time. It is better to consult each solver documentation to set this
+  // parameter.
+  //
+  // Note that if the SolveParametersProto.threads is not set then this
+  // parameter should also be left unset.
+  optional double cpu = 1;
+}
+
+// Request for a unary remote solve in MathOpt.
+message SolveRequest {
+  // Solver type to numerically solve the problem. Note that if a solver does
+  // not support a specific feautre in the model, the optimization procedure
+  // won't be successful.
+  SolverTypeProto solver_type = 1;
+
+  // A mathematical representation of the optimization problem to solve.
+  ModelProto model = 2;
+
+  // Hints on resources requested for the solve.
+  SolverResourcesProto resources = 6;
+
+  SolverInitializerProto initializer = 3;
+
+  // Parameters to control a single solve. The enable_output parameter is
+  // handled specifically. For solvers that support messages callbacks, setting
+  // it to true will have the server register a message callback. The resulting
+  // messages will be returned in SolveResponse.messages. For other
+  // solvers, setting enable_output to true will result in an error.
+  SolveParametersProto parameters = 4;
+
+  // Parameters to control a single solve that are specific to the input model
+  // (see SolveParametersProto for model independent parameters).
+  ModelSolveParametersProto model_parameters = 5;
+}
+
+// Response for a unary remote solve in MathOpt.
+message SolveResponse {
+  // Description of the output of solving the model in the request.
+  SolveResultProto result = 1;
+
+  // If SolveParametersProto.enable_output has been used, this will contain log
+  // messages for solvers that support message callbacks.
+  repeated string messages = 2;
+}

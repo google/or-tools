@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,13 +25,14 @@ from ortools.sat.python import cp_model
 class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, queens):
+    def __init__(self, queens: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__queens = queens
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
     def on_solution_callback(self):
@@ -45,7 +46,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
         all_queens = range(len(self.__queens))
         for i in all_queens:
             for j in all_queens:
-                if self.Value(self.__queens[j]) == i:
+                if self.value(self.__queens[j]) == i:
                     # There is a queen in column j, row i.
                     print("Q", end=" ")
                 else:
@@ -56,7 +57,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
 # [END solution_printer]
 
 
-def main(board_size):
+def main(board_size: int) -> None:
     # Creates the solver.
     # [START model]
     model = cp_model.CpModel()
@@ -66,17 +67,17 @@ def main(board_size):
     # [START variables]
     # There are `board_size` number of variables, one for a queen in each column
     # of the board. The value of each variable is the row that the queen is in.
-    queens = [model.NewIntVar(0, board_size - 1, f"x_{i}") for i in range(board_size)]
+    queens = [model.new_int_var(0, board_size - 1, f"x_{i}") for i in range(board_size)]
     # [END variables]
 
     # Creates the constraints.
     # [START constraints]
     # All rows must be different.
-    model.AddAllDifferent(queens)
+    model.add_all_different(queens)
 
     # No two queens can be on the same diagonal.
-    model.AddAllDifferent(queens[i] + i for i in range(board_size))
-    model.AddAllDifferent(queens[i] - i for i in range(board_size))
+    model.add_all_different(queens[i] + i for i in range(board_size))
+    model.add_all_different(queens[i] - i for i in range(board_size))
     # [END constraints]
 
     # Solve the model.
@@ -84,16 +85,16 @@ def main(board_size):
     solver = cp_model.CpSolver()
     solution_printer = NQueenSolutionPrinter(queens)
     solver.parameters.enumerate_all_solutions = True
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
     # [END solve]
 
     # Statistics.
     # [START statistics]
     print("\nStatistics")
-    print(f"  conflicts      : {solver.NumConflicts()}")
-    print(f"  branches       : {solver.NumBranches()}")
-    print(f"  wall time      : {solver.WallTime()} s")
-    print(f"  solutions found: {solution_printer.solution_count()}")
+    print(f"  conflicts      : {solver.num_conflicts}")
+    print(f"  branches       : {solver.num_branches}")
+    print(f"  wall time      : {solver.wall_time} s")
+    print(f"  solutions found: {solution_printer.solution_count}")
     # [END statistics]
 
 

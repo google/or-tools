@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -60,6 +60,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/routing/simple_graph.h"
@@ -156,7 +157,7 @@ class CarpParser {
 
   void Initialize();
   bool ParseFile(const std::string& file_name);
-  bool ParseMetadataLine(const std::vector<std::string>& words);
+  bool ParseMetadataLine(absl::Span<const std::string> words);
   bool ParseEdge(std::string_view line, bool with_servicing);
 
   // Parsing data.

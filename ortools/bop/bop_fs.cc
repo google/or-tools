@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -253,7 +253,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 
   // Save the current solver heuristics.
   const sat::SatParameters saved_params = sat_propagator_->parameters();
-  const std::vector<std::pair<sat::Literal, double>> saved_prefs =
+  const std::vector<std::pair<sat::Literal, float>> saved_prefs =
       sat_propagator_->AllPreferences();
 
   const int kMaxNumConflicts = 10;
@@ -339,7 +339,10 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   CHECK_EQ(0, sat_propagator_->AssumptionLevel());
   sat_propagator_->RestoreSolverToAssumptionLevel();
   sat_propagator_->SetParameters(saved_params);
-  sat_propagator_->ResetDecisionHeuristicAndSetAllPreferences(saved_prefs);
+  sat_propagator_->ResetDecisionHeuristic();
+  for (const auto [literal, weight] : saved_prefs) {
+    sat_propagator_->SetAssignmentPreference(literal, weight);
+  }
 
   // This can be proved during the call to RestoreSolverToAssumptionLevel().
   if (sat_propagator_->IsModelUnsat()) {

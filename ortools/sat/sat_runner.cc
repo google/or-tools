@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,9 @@
 #include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
@@ -31,6 +33,7 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/opb_reader.h"
 #include "ortools/sat/sat_cnf_reader.h"
@@ -43,6 +46,11 @@ ABSL_FLAG(
     ".cnf (sat, max-sat, weighted max-sat), .opb (pseudo-boolean sat/optim) "
     "and by default the CpModelProto proto (binary or text).");
 
+ABSL_FLAG(
+    std::string, hint_file, "",
+    "Protobuf file containing a CpModelResponse. The solution will be used as a"
+    " hint to bootstrap the search.");
+
 ABSL_FLAG(std::string, output, "",
           "If non-empty, write the response there. By default it uses the "
           "binary format except if the file extension is '.txt'.");
@@ -54,6 +62,8 @@ ABSL_FLAG(std::string, params, "",
 ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "If true, when we add a slack variable to reify a soft clause, we "
           "enforce the fact that when it is true, the clause must be false.");
+ABSL_FLAG(bool, fingerprint_intermediate_solutions, false,
+          "Attach the fingerprint of intermediate solutions to the output.");
 
 namespace operations_research {
 namespace sat {
@@ -77,7 +87,8 @@ std::string ExtractName(absl::string_view full_filename) {
   return filename;
 }
 
-bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
+bool LoadProblem(const std::string& filename, absl::string_view hint_file,
+                 CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -98,11 +109,29 @@ bool LoadProblem(const std::string& filename, CpModelProto* cp_model) {
     }
   } else {
     LOG(INFO) << "Reading a CpModelProto.";
-    *cp_model = ReadFileToProtoOrDie<CpModelProto>(filename);
+    CHECK_OK(ReadFileToProto(filename, cp_model));
   }
+
+  // Read the hint file.
+  if (!hint_file.empty()) {
+    CpSolverResponse response;
+    LOG(INFO) << "Reading a CpSolverResponse.";
+    CHECK_OK(ReadFileToProto(hint_file, &response));
+    CHECK_EQ(response.solution_size(), cp_model->variables_size())
+        << "The hint proto is not compatible with the model proto";
+
+    cp_model->clear_solution_hint();
+    for (int i = 0; i < cp_model->variables_size(); ++i) {
+      cp_model->mutable_solution_hint()->add_vars(i);
+      cp_model->mutable_solution_hint()->add_values(response.solution(i));
+    }
+  }
+
+  // Set the name if not present.
   if (cp_model->name().empty()) {
     cp_model->set_name(ExtractName(filename));
   }
+
   return true;
 }
 
@@ -123,8 +152,9 @@ int Run() {
   // Read the problem.
   google::protobuf::Arena arena;
   CpModelProto* cp_model =
-      google::protobuf::Arena::CreateMessage<CpModelProto>(&arena);
-  if (!LoadProblem(absl::GetFlag(FLAGS_input), cp_model)) {
+      google::protobuf::Arena::Create<CpModelProto>(&arena);
+  if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
+                   cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;
@@ -132,6 +162,15 @@ int Run() {
 
   Model model;
   model.Add(NewSatParameters(parameters));
+  if (absl::GetFlag(FLAGS_fingerprint_intermediate_solutions)) {
+    // Let's add a solution callback that will display the fingerprint of all
+    // solutions.
+    model.Add(NewFeasibleSolutionLogCallback([](const CpSolverResponse& r) {
+      return absl::StrFormat(
+          "fingerprint: %#x",
+          FingerprintRepeatedField(r.solution(), kDefaultFingerprintSeed));
+    }));
+  }
   const CpSolverResponse response = SolveCpModel(*cp_model, &model);
 
   if (!absl::GetFlag(FLAGS_output).empty()) {

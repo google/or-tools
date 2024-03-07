@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -56,12 +56,14 @@
 #include "ortools/pdlp/solvers_proto_validation.h"
 #include "ortools/pdlp/termination.h"
 #include "ortools/pdlp/trust_region.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research::pdlp {
 
 namespace {
 
 using ::Eigen::VectorXd;
+using ::operations_research::SolverLogger;
 
 using IterationStatsCallback =
     std::function<void(const IterationCallbackInfo&)>;
@@ -69,7 +71,7 @@ using IterationStatsCallback =
 // Computes a `num_threads` that is capped by the problem size and `num_shards`,
 // if specified, to avoid creating unusable threads.
 int NumThreads(const int num_threads, const int num_shards,
-               const QuadraticProgram& qp) {
+               const QuadraticProgram& qp, SolverLogger& logger) {
   int capped_num_threads = num_threads;
   if (num_shards > 0) {
     capped_num_threads = std::min(capped_num_threads, num_shards);
@@ -80,9 +82,9 @@ int NumThreads(const int num_threads, const int num_shards,
       static_cast<int>(std::min(int64_t{capped_num_threads}, problem_limit));
   capped_num_threads = std::max(capped_num_threads, 1);
   if (capped_num_threads != num_threads) {
-    LOG(WARNING) << "Reducing num_threads from " << num_threads << " to "
-                 << capped_num_threads
-                 << " because additional threads would be useless.";
+    SOLVER_LOG(&logger, "WARNING: Reducing num_threads from ", num_threads,
+               " to ", capped_num_threads,
+               " because additional threads would be useless.");
   }
   return capped_num_threads;
 }
@@ -184,10 +186,6 @@ std::string ConvergenceInformationShortString(
   LOG(FATAL) << "Invalid residual norm " << residual_norm << ".";
 }
 
-void LogInfoWithoutPrefix(absl::string_view message) {
-  LOG(INFO).NoPrefix() << message;
-}
-
 // Logs a description of `iter_stats`, based on the
 // `iter_stats.convergence_information` entry with
 // `.candidate_type()==preferred_candidate` if one exists, otherwise based on
@@ -198,7 +196,7 @@ void LogIterationStats(int verbosity_level, bool use_feasibility_polishing,
                        const IterationStats& iter_stats,
                        const TerminationCriteria& termination_criteria,
                        const QuadraticProgramBoundNorms& bound_norms,
-                       PointType preferred_candidate) {
+                       PointType preferred_candidate, SolverLogger& logger) {
   std::string iteration_string =
       verbosity_level >= 3
           ? absl::StrFormat("%6d %8.1f %6.1f", iter_stats.iteration_number(),
@@ -261,18 +259,18 @@ void LogIterationStats(int verbosity_level, bool use_feasibility_polishing,
             : ConvergenceInformationShortString(
                   *convergence_information, relative_information,
                   termination_criteria.optimality_norm());
-    LogInfoWithoutPrefix(absl::StrCat(phase_string, iterate_string,
-                                      iteration_string, " | ",
-                                      convergence_string));
+    SOLVER_LOG(&logger, phase_string, iterate_string, iteration_string, " | ",
+               convergence_string);
   } else {
     // No convergence information, just log the basic work stats.
-    LogInfoWithoutPrefix(absl::StrCat(
-        phase_string, verbosity_level >= 4 ? "? " : "", iteration_string));
+    SOLVER_LOG(&logger, phase_string, verbosity_level >= 4 ? "? " : "",
+               iteration_string);
   }
 }
 
 void LogIterationStatsHeader(int verbosity_level,
-                             bool use_feasibility_polishing) {
+                             bool use_feasibility_polishing,
+                             SolverLogger& logger) {
   std::string work_labels =
       verbosity_level >= 3
           ? absl::StrFormat("%6s %8s %6s", "iter#", "kkt_pass", "time")
@@ -286,9 +284,9 @@ void LogIterationStatsHeader(int verbosity_level,
                 "dual_var_l2")
           : absl::StrFormat("%10s %10s %10s | %10s %10s", "rel_p_res",
                             "rel_d_res", "rel_gap", "prim_obj", "dual_obj");
-  LogInfoWithoutPrefix(absl::StrCat(use_feasibility_polishing ? "f " : "",
-                                    verbosity_level >= 4 ? "I " : "",
-                                    work_labels, " | ", convergence_labels));
+  SOLVER_LOG(&logger, use_feasibility_polishing ? "f " : "",
+             verbosity_level >= 4 ? "I " : "", work_labels, " | ",
+             convergence_labels);
 }
 
 enum class InnerStepOutcome {
@@ -319,12 +317,14 @@ class PreprocessSolver {
  public:
   // Assumes that `qp` and `params` are valid.
   // Note that the `qp` is intentionally passed by value.
+  // `logger` is captured, and must outlive the class.
   // NOTE: Many `PreprocessSolver` methods accept a `params` argument. This is
   // passed as an argument instead of stored as a member variable to support
   // using different `params` in different contexts with the same
   // `PreprocessSolver` object.
   explicit PreprocessSolver(QuadraticProgram qp,
-                            const PrimalDualHybridGradientParams& params);
+                            const PrimalDualHybridGradientParams& params,
+                            SolverLogger* logger);
 
   // Not copyable or movable (because `glop::MainLpPreprocessor` isn't).
   PreprocessSolver(const PreprocessSolver&) = delete;
@@ -383,7 +383,8 @@ class PreprocessSolver {
   // NOTE: `result` is passed by value. To avoid unnecessary copying, move this
   // object (i.e. use `std::move()`).
   SolverResult ConstructOriginalSolverResult(
-      const PrimalDualHybridGradientParams& params, SolverResult result) const;
+      const PrimalDualHybridGradientParams& params, SolverResult result,
+      SolverLogger& logger) const;
 
   const ShardedQuadraticProgram& ShardedWorkingQp() const {
     return sharded_qp_;
@@ -415,6 +416,8 @@ class PreprocessSolver {
   const QuadraticProgramBoundNorms& OriginalBoundNorms() const {
     return original_bound_norms_;
   }
+
+  SolverLogger& Logger() { return logger_; }
 
  private:
   struct PresolveInfo {
@@ -453,7 +456,7 @@ class PreprocessSolver {
                                 VectorXd& starting_primal_solution,
                                 VectorXd& starting_dual_solution);
 
-  void LogQuadraticProgramStats(const QuadraticProgramStats& stats);
+  void LogQuadraticProgramStats(const QuadraticProgramStats& stats) const;
 
   double InitialPrimalWeight(const PrimalDualHybridGradientParams& params,
                              double l2_norm_primal_linear_objective,
@@ -498,6 +501,7 @@ class PreprocessSolver {
   // A counter used to trigger writing iteration headers.
   int log_counter_ = 0;
   absl::Time time_of_last_log_ = absl::InfinitePast();
+  SolverLogger& logger_;
   IterationStatsCallback iteration_stats_callback_;
 };
 
@@ -709,18 +713,22 @@ class Solver {
 };
 
 PreprocessSolver::PreprocessSolver(QuadraticProgram qp,
-                                   const PrimalDualHybridGradientParams& params)
-    : num_threads_(NumThreads(params.num_threads(), params.num_shards(), qp)),
+                                   const PrimalDualHybridGradientParams& params,
+                                   SolverLogger* logger)
+    : num_threads_(
+          NumThreads(params.num_threads(), params.num_shards(), qp, *logger)),
       num_shards_(NumShards(num_threads_, params.num_shards())),
-      sharded_qp_(std::move(qp), num_threads_, num_shards_) {}
+      sharded_qp_(std::move(qp), num_threads_, num_shards_),
+      logger_(*logger) {}
 
 SolverResult ErrorSolverResult(const TerminationReason reason,
-                               const std::string& message) {
+                               const std::string& message,
+                               SolverLogger& logger) {
   SolveLog error_log;
   error_log.set_termination_reason(reason);
   error_log.set_termination_string(message);
-  LOG(WARNING) << "The solver did not run because of invalid input: "
-               << message;
+  SOLVER_LOG(&logger,
+             "The solver did not run because of invalid input: ", message);
   return SolverResult{.solve_log = error_log};
 }
 
@@ -729,29 +737,30 @@ SolverResult ErrorSolverResult(const TerminationReason reason,
 // bounds, variable bound gaps, and objective vector values that PDLP can handle
 // but that cause problems for other code such as glop's presolve.
 std::optional<SolverResult> CheckProblemStats(
-    const QuadraticProgramStats& problem_stats,
-    bool check_excessively_small_values) {
+    const QuadraticProgramStats& problem_stats, const double objective_offset,
+    bool check_excessively_small_values, SolverLogger& logger) {
   const double kExcessiveInputValue = 1e50;
   const double kExcessivelySmallInputValue = 1e-50;
   const double kMaxDynamicRange = 1e20;
   if (std::isnan(problem_stats.constraint_matrix_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "Constraint matrix has a NAN.");
+                             "Constraint matrix has a NAN.", logger);
   }
   if (problem_stats.constraint_matrix_abs_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PROBLEM,
         absl::StrCat("Constraint matrix has a non-zero with absolute value ",
                      problem_stats.constraint_matrix_abs_max(),
-                     " which exceeds limit of ", kExcessiveInputValue, "."));
+                     " which exceeds limit of ", kExcessiveInputValue, "."),
+        logger);
   }
   if (problem_stats.constraint_matrix_abs_max() >
       kMaxDynamicRange * problem_stats.constraint_matrix_abs_min()) {
-    LOG(WARNING) << "Constraint matrix has largest absolute value "
-                 << problem_stats.constraint_matrix_abs_max()
-                 << " and smallest non-zero absolute value "
-                 << problem_stats.constraint_matrix_abs_min()
-                 << " performance may suffer.";
+    SOLVER_LOG(
+        &logger, "WARNING: Constraint matrix has largest absolute value ",
+        problem_stats.constraint_matrix_abs_max(),
+        " and smallest non-zero absolute value ",
+        problem_stats.constraint_matrix_abs_min(), " performance may suffer.");
   }
   if (problem_stats.constraint_matrix_col_min_l_inf_norm() > 0 &&
       problem_stats.constraint_matrix_col_min_l_inf_norm() <
@@ -761,7 +770,8 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Constraint matrix has a column with Linf norm ",
                      problem_stats.constraint_matrix_col_min_l_inf_norm(),
                      " which is less than limit of ",
-                     kExcessivelySmallInputValue, "."));
+                     kExcessivelySmallInputValue, "."),
+        logger);
   }
   if (problem_stats.constraint_matrix_row_min_l_inf_norm() > 0 &&
       problem_stats.constraint_matrix_row_min_l_inf_norm() <
@@ -771,11 +781,12 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Constraint matrix has a row with Linf norm ",
                      problem_stats.constraint_matrix_row_min_l_inf_norm(),
                      " which is less than limit of ",
-                     kExcessivelySmallInputValue, "."));
+                     kExcessivelySmallInputValue, "."),
+        logger);
   }
   if (std::isnan(problem_stats.combined_bounds_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "Constraint bounds vector has a NAN.");
+                             "Constraint bounds vector has a NAN.", logger);
   }
   if (problem_stats.combined_bounds_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
@@ -783,7 +794,8 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Combined constraint bounds vector has a non-zero with "
                      "absolute value ",
                      problem_stats.combined_bounds_max(),
-                     " which exceeds limit of ", kExcessiveInputValue, "."));
+                     " which exceeds limit of ", kExcessiveInputValue, "."),
+        logger);
   }
   if (check_excessively_small_values &&
       problem_stats.combined_bounds_min() > 0 &&
@@ -794,19 +806,22 @@ std::optional<SolverResult> CheckProblemStats(
                      "absolute value ",
                      problem_stats.combined_bounds_min(),
                      " which is less than the limit of ",
-                     kExcessivelySmallInputValue, "."));
+                     kExcessivelySmallInputValue, "."),
+        logger);
   }
   if (problem_stats.combined_bounds_max() >
       kMaxDynamicRange * problem_stats.combined_bounds_min()) {
-    LOG(WARNING)
-        << "Combined constraint bounds vector has largest absolute value "
-        << problem_stats.combined_bounds_max()
-        << " and smallest non-zero absolute value "
-        << problem_stats.combined_bounds_min() << "; performance may suffer.";
+    SOLVER_LOG(&logger,
+               "WARNING: Combined constraint bounds vector has largest "
+               "absolute value ",
+               problem_stats.combined_bounds_max(),
+               " and smallest non-zero absolute value ",
+               problem_stats.combined_bounds_min(),
+               "; performance may suffer.");
   }
   if (std::isnan(problem_stats.combined_variable_bounds_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "Variable bounds vector has a NAN.");
+                             "Variable bounds vector has a NAN.", logger);
   }
   if (problem_stats.combined_variable_bounds_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
@@ -814,7 +829,8 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Combined variable bounds vector has a non-zero with "
                      "absolute value ",
                      problem_stats.combined_variable_bounds_max(),
-                     " which exceeds limit of ", kExcessiveInputValue, "."));
+                     " which exceeds limit of ", kExcessiveInputValue, "."),
+        logger);
   }
   if (check_excessively_small_values &&
       problem_stats.combined_variable_bounds_min() > 0 &&
@@ -826,35 +842,51 @@ std::optional<SolverResult> CheckProblemStats(
                      "absolute value ",
                      problem_stats.combined_variable_bounds_min(),
                      " which is less than the limit of ",
-                     kExcessivelySmallInputValue, "."));
+                     kExcessivelySmallInputValue, "."),
+        logger);
   }
   if (problem_stats.combined_variable_bounds_max() >
       kMaxDynamicRange * problem_stats.combined_variable_bounds_min()) {
-    LOG(WARNING)
-        << "Combined variable bounds vector has largest absolute value "
-        << problem_stats.combined_variable_bounds_max()
-        << " and smallest non-zero absolute value "
-        << problem_stats.combined_variable_bounds_min()
-        << "; performance may suffer.";
+    SOLVER_LOG(
+        &logger,
+        "WARNING: Combined variable bounds vector has largest absolute value ",
+        problem_stats.combined_variable_bounds_max(),
+        " and smallest non-zero absolute value ",
+        problem_stats.combined_variable_bounds_min(),
+        "; performance may suffer.");
   }
   if (problem_stats.variable_bound_gaps_max() >
       kMaxDynamicRange * problem_stats.variable_bound_gaps_min()) {
-    LOG(WARNING) << "Variable bound gap vector has largest absolute value "
-                 << problem_stats.variable_bound_gaps_max()
-                 << " and smallest non-zero absolute value "
-                 << problem_stats.variable_bound_gaps_min()
-                 << "; performance may suffer.";
+    SOLVER_LOG(&logger,
+               "WARNING: Variable bound gap vector has largest absolute value ",
+               problem_stats.variable_bound_gaps_max(),
+               " and smallest non-zero absolute value ",
+               problem_stats.variable_bound_gaps_min(),
+               "; performance may suffer.");
+  }
+  if (std::isnan(objective_offset)) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "Objective offset is NAN.", logger);
+  }
+  if (std::abs(objective_offset) > kExcessiveInputValue) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        absl::StrCat("Objective offset ", objective_offset,
+                     " has absolute value which exceeds limit of ",
+                     kExcessiveInputValue, "."),
+        logger);
   }
   if (std::isnan(problem_stats.objective_vector_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "Objective vector has a NAN.");
+                             "Objective vector has a NAN.", logger);
   }
   if (problem_stats.objective_vector_abs_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PROBLEM,
         absl::StrCat("Objective vector has a non-zero with absolute value ",
                      problem_stats.objective_vector_abs_max(),
-                     " which exceeds limit of ", kExcessiveInputValue, "."));
+                     " which exceeds limit of ", kExcessiveInputValue, "."),
+        logger);
   }
   if (check_excessively_small_values &&
       problem_stats.objective_vector_abs_min() > 0 &&
@@ -864,41 +896,43 @@ std::optional<SolverResult> CheckProblemStats(
         absl::StrCat("Objective vector has a non-zero with absolute value ",
                      problem_stats.objective_vector_abs_min(),
                      " which is less than the limit of ",
-                     kExcessivelySmallInputValue, "."));
+                     kExcessivelySmallInputValue, "."),
+        logger);
   }
   if (problem_stats.objective_vector_abs_max() >
       kMaxDynamicRange * problem_stats.objective_vector_abs_min()) {
-    LOG(WARNING) << "Objective vector has largest absolute value "
-                 << problem_stats.objective_vector_abs_max()
-                 << " and smallest non-zero absolute value "
-                 << problem_stats.objective_vector_abs_min()
-                 << "; performance may suffer.";
+    SOLVER_LOG(&logger, "WARNING: Objective vector has largest absolute value ",
+               problem_stats.objective_vector_abs_max(),
+               " and smallest non-zero absolute value ",
+               problem_stats.objective_vector_abs_min(),
+               "; performance may suffer.");
   }
   if (std::isnan(problem_stats.objective_matrix_l2_norm())) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "Objective matrix has a NAN.");
+                             "Objective matrix has a NAN.", logger);
   }
   if (problem_stats.objective_matrix_abs_max() > kExcessiveInputValue) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PROBLEM,
         absl::StrCat("Objective matrix has a non-zero with absolute value ",
                      problem_stats.objective_matrix_abs_max(),
-                     " which exceeds limit of ", kExcessiveInputValue, "."));
+                     " which exceeds limit of ", kExcessiveInputValue, "."),
+        logger);
   }
   if (problem_stats.objective_matrix_abs_max() >
       kMaxDynamicRange * problem_stats.objective_matrix_abs_min()) {
-    LOG(WARNING) << "Objective matrix has largest absolute value "
-                 << problem_stats.objective_matrix_abs_max()
-                 << " and smallest non-zero absolute value "
-                 << problem_stats.objective_matrix_abs_min()
-                 << "; performance may suffer.";
+    SOLVER_LOG(&logger, "WARNING: Objective matrix has largest absolute value ",
+               problem_stats.objective_matrix_abs_max(),
+               " and smallest non-zero absolute value ",
+               problem_stats.objective_matrix_abs_min(),
+               "; performance may suffer.");
   }
   return std::nullopt;
 }
 
 std::optional<SolverResult> CheckInitialSolution(
     const ShardedQuadraticProgram& sharded_qp,
-    const PrimalAndDualSolution& initial_solution) {
+    const PrimalAndDualSolution& initial_solution, SolverLogger& logger) {
   const double kExcessiveInputValue = 1e50;
   if (initial_solution.primal_solution.size() != sharded_qp.PrimalSize()) {
     return ErrorSolverResult(
@@ -906,12 +940,13 @@ std::optional<SolverResult> CheckInitialSolution(
         absl::StrCat("Initial primal solution has size ",
                      initial_solution.primal_solution.size(),
                      " which differs from problem primal size ",
-                     sharded_qp.PrimalSize()));
+                     sharded_qp.PrimalSize()),
+        logger);
   }
   if (std::isnan(
           Norm(initial_solution.primal_solution, sharded_qp.PrimalSharder()))) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_INITIAL_SOLUTION,
-                             "Initial primal solution has a NAN.");
+                             "Initial primal solution has a NAN.", logger);
   }
   if (const double norm = LInfNorm(initial_solution.primal_solution,
                                    sharded_qp.PrimalSharder());
@@ -920,7 +955,8 @@ std::optional<SolverResult> CheckInitialSolution(
         TERMINATION_REASON_INVALID_INITIAL_SOLUTION,
         absl::StrCat(
             "Initial primal solution has an entry with absolute value ", norm,
-            " which exceeds limit of ", kExcessiveInputValue));
+            " which exceeds limit of ", kExcessiveInputValue),
+        logger);
   }
   if (initial_solution.dual_solution.size() != sharded_qp.DualSize()) {
     return ErrorSolverResult(
@@ -928,12 +964,13 @@ std::optional<SolverResult> CheckInitialSolution(
         absl::StrCat("Initial dual solution has size ",
                      initial_solution.dual_solution.size(),
                      " which differs from problem dual size ",
-                     sharded_qp.DualSize()));
+                     sharded_qp.DualSize()),
+        logger);
   }
   if (std::isnan(
           Norm(initial_solution.dual_solution, sharded_qp.DualSharder()))) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_INITIAL_SOLUTION,
-                             "Initial dual solution has a NAN.");
+                             "Initial dual solution has a NAN.", logger);
   }
   if (const double norm =
           LInfNorm(initial_solution.dual_solution, sharded_qp.DualSharder());
@@ -941,7 +978,8 @@ std::optional<SolverResult> CheckInitialSolution(
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_INITIAL_SOLUTION,
         absl::StrCat("Initial dual solution has an entry with absolute value ",
-                     norm, " which exceeds limit of ", kExcessiveInputValue));
+                     norm, " which exceeds limit of ", kExcessiveInputValue),
+        logger);
   }
   return std::nullopt;
 }
@@ -960,17 +998,38 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   *solve_log.mutable_params() = params;
   sharded_qp_.ReplaceLargeConstraintBoundsWithInfinity(
       params.infinite_constraint_bound_threshold());
+  if (!HasValidBounds(sharded_qp_)) {
+    return ErrorSolverResult(
+        TERMINATION_REASON_INVALID_PROBLEM,
+        "The input problem has invalid bounds (after replacing large "
+        "constraint bounds with infinity): some variable or constraint has "
+        "lower_bound > upper_bound, lower_bound == inf, or upper_bound == "
+        "-inf.",
+        logger_);
+  }
+  if (Qp().objective_matrix.has_value() &&
+      !sharded_qp_.PrimalSharder().ParallelTrueForAllShards(
+          [&](const Sharder::Shard& shard) -> bool {
+            return (shard(Qp().objective_matrix->diagonal()).array() >= 0.0)
+                .all();
+          })) {
+    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
+                             "The objective is not convex (i.e., the objective "
+                             "matrix contains negative or NAN entries).",
+                             logger_);
+  }
   *solve_log.mutable_original_problem_stats() = ComputeStats(sharded_qp_);
   const QuadraticProgramStats& original_problem_stats =
       solve_log.original_problem_stats();
-  if (auto maybe_result = CheckProblemStats(
-          original_problem_stats, params.presolve_options().use_glop());
+  if (auto maybe_result =
+          CheckProblemStats(original_problem_stats, Qp().objective_offset,
+                            params.presolve_options().use_glop(), logger_);
       maybe_result.has_value()) {
     return *maybe_result;
   }
   if (initial_solution.has_value()) {
     if (auto maybe_result =
-            CheckInitialSolution(sharded_qp_, *initial_solution);
+            CheckInitialSolution(sharded_qp_, *initial_solution, logger_);
         maybe_result.has_value()) {
       return *maybe_result;
     }
@@ -980,8 +1039,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
       params.presolve_options().use_glop() ? "presolving and " : "",
       "rescaling:");
   if (params.verbosity_level() >= 1) {
-    LogInfoWithoutPrefix(
-        absl::StrCat("Problem stats before ", preprocessing_string));
+    SOLVER_LOG(&logger_, "Problem stats before ", preprocessing_string);
     LogQuadraticProgramStats(solve_log.original_problem_stats());
   }
   iteration_stats_callback_ = std::move(iteration_stats_callback);
@@ -1019,17 +1077,21 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
     } else {
       if (*maybe_terminate == TERMINATION_REASON_OPTIMAL) {
         final_termination_reason = TERMINATION_REASON_NUMERICAL_ERROR;
-        LOG(WARNING) << "Presolve claimed to solve the LP optimally but the "
-                        "solution doesn't satisfy the optimality criteria.";
+        SOLVER_LOG(
+            &logger_,
+            "WARNING: Presolve claimed to solve the LP optimally but the "
+            "solution doesn't satisfy the optimality criteria.");
       } else {
         final_termination_reason = *maybe_terminate;
       }
     }
     return ConstructOriginalSolverResult(
-        params, ConstructSolverResult(
-                    std::move(working_primal), std::move(working_dual),
-                    std::move(iteration_stats), final_termination_reason,
-                    POINT_TYPE_PRESOLVER_SOLUTION, std::move(solve_log)));
+        params,
+        ConstructSolverResult(
+            std::move(working_primal), std::move(working_dual),
+            std::move(iteration_stats), final_termination_reason,
+            POINT_TYPE_PRESOLVER_SOLUTION, std::move(solve_log)),
+        logger_);
   }
 
   VectorXd starting_primal_solution;
@@ -1051,8 +1113,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
                            starting_dual_solution);
   *solve_log.mutable_preprocessed_problem_stats() = ComputeStats(sharded_qp_);
   if (params.verbosity_level() >= 1) {
-    LogInfoWithoutPrefix(
-        absl::StrCat("Problem stats after ", preprocessing_string));
+    SOLVER_LOG(&logger_, "Problem stats after ", preprocessing_string);
     LogQuadraticProgramStats(solve_log.preprocessed_problem_stats());
   }
 
@@ -1101,7 +1162,7 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   solve_log.set_preprocessing_time_sec(timer.Get());
   SolverResult result = solver.Solve(IterationType::kNormal, interrupt_solve,
                                      std::move(solve_log));
-  return ConstructOriginalSolverResult(params, std::move(result));
+  return ConstructOriginalSolverResult(params, std::move(result), logger_);
 }
 
 glop::GlopParameters PreprocessSolver::PreprocessorParameters(
@@ -1121,7 +1182,7 @@ glop::GlopParameters PreprocessSolver::PreprocessorParameters(
 }
 
 TerminationReason GlopStatusToTerminationReason(
-    const glop::ProblemStatus glop_status) {
+    const glop::ProblemStatus glop_status, SolverLogger& logger) {
   switch (glop_status) {
     case glop::ProblemStatus::OPTIMAL:
       return TERMINATION_REASON_OPTIMAL;
@@ -1137,7 +1198,8 @@ TerminationReason GlopStatusToTerminationReason(
     case glop::ProblemStatus::PRIMAL_UNBOUNDED:
       return TERMINATION_REASON_PRIMAL_OR_DUAL_INFEASIBLE;
     default:
-      LOG(WARNING) << "Unexpected preprocessor status " << glop_status;
+      SOLVER_LOG(&logger, "WARNING: Unexpected preprocessor status ",
+                 glop_status);
       return TERMINATION_REASON_OTHER;
   }
 }
@@ -1150,20 +1212,23 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
     return std::nullopt;
   }
   if (!IsLinearProgram(Qp())) {
-    LOG(WARNING)
-        << "Skipping presolve, which is only supported for linear programs";
+    SOLVER_LOG(&logger_,
+               "WARNING: Skipping presolve, which is only supported for linear "
+               "programs");
     return std::nullopt;
   }
   absl::StatusOr<MPModelProto> model = QpToMpModelProto(Qp());
   if (!model.ok()) {
-    LOG(WARNING)
-        << "Skipping presolve because of error converting to MPModelProto: "
-        << model.status();
+    SOLVER_LOG(&logger_,
+               "WARNING: Skipping presolve because of error converting to "
+               "MPModelProto: ",
+               model.status());
     return std::nullopt;
   }
   if (initial_solution->has_value()) {
-    LOG(WARNING) << "Ignoring initial solution. Initial solutions "
-                    "are ignored when presolve is on.";
+    SOLVER_LOG(&logger_,
+               "WARNING: Ignoring initial solution. Initial solutions are "
+               "ignored when presolve is on.");
     initial_solution->reset();
   }
   glop::LinearProgram glop_lp;
@@ -1196,7 +1261,8 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   if (presolve_info_->preprocessor.status() != glop::ProblemStatus::INIT) {
     col_scaling_vec_ = OnesVector(sharded_qp_.PrimalSharder());
     row_scaling_vec_ = OnesVector(sharded_qp_.DualSharder());
-    return GlopStatusToTerminationReason(presolve_info_->preprocessor.status());
+    return GlopStatusToTerminationReason(presolve_info_->preprocessor.status(),
+                                         logger_);
   }
   return std::nullopt;
 }
@@ -1218,51 +1284,63 @@ void PreprocessSolver::ComputeAndApplyRescaling(
 }
 
 void PreprocessSolver::LogQuadraticProgramStats(
-    const QuadraticProgramStats& stats) {
-  LogInfoWithoutPrefix(
-      absl::StrFormat("There are %i variables, %i constraints, and %i "
-                      "constraint matrix nonzeros.",
-                      stats.num_variables(), stats.num_constraints(),
-                      stats.constraint_matrix_num_nonzeros()));
+    const QuadraticProgramStats& stats) const {
+  SOLVER_LOG(&logger_,
+             absl::StrFormat("There are %i variables, %i constraints, and %i "
+                             "constraint matrix nonzeros.",
+                             stats.num_variables(), stats.num_constraints(),
+                             stats.constraint_matrix_num_nonzeros()));
   if (Qp().constraint_matrix.nonZeros() > 0) {
-    LogInfoWithoutPrefix(absl::StrFormat(
-        "Absolute values of nonzero constraint matrix elements: largest=%f, "
-        "smallest=%f, avg=%f",
-        stats.constraint_matrix_abs_max(), stats.constraint_matrix_abs_min(),
-        stats.constraint_matrix_abs_avg()));
-    LogInfoWithoutPrefix(
+    SOLVER_LOG(&logger_,
+               absl::StrFormat("Absolute values of nonzero constraint matrix "
+                               "elements: largest=%f, "
+                               "smallest=%f, avg=%f",
+                               stats.constraint_matrix_abs_max(),
+                               stats.constraint_matrix_abs_min(),
+                               stats.constraint_matrix_abs_avg()));
+    SOLVER_LOG(
+        &logger_,
         absl::StrFormat("Constraint matrix, infinity norm: max(row & col)=%f, "
                         "min_col=%f, min_row=%f",
                         stats.constraint_matrix_abs_max(),
                         stats.constraint_matrix_col_min_l_inf_norm(),
                         stats.constraint_matrix_row_min_l_inf_norm()));
-    LogInfoWithoutPrefix(absl::StrFormat(
-        "Constraint bounds statistics (max absolute value per row): "
-        "largest=%f, smallest=%f, avg=%f, l2_norm=%f",
-        stats.combined_bounds_max(), stats.combined_bounds_min(),
-        stats.combined_bounds_avg(), stats.combined_bounds_l2_norm()));
+    SOLVER_LOG(
+        &logger_,
+        absl::StrFormat(
+            "Constraint bounds statistics (max absolute value per row): "
+            "largest=%f, smallest=%f, avg=%f, l2_norm=%f",
+            stats.combined_bounds_max(), stats.combined_bounds_min(),
+            stats.combined_bounds_avg(), stats.combined_bounds_l2_norm()));
   }
   if (!IsLinearProgram(Qp())) {
-    LogInfoWithoutPrefix(absl::StrFormat(
-        "There are %i nonzero diagonal coefficients in the objective matrix.",
-        stats.objective_matrix_num_nonzeros()));
-    LogInfoWithoutPrefix(absl::StrFormat(
-        "Absolute values of nonzero objective matrix elements: largest=%f, "
-        "smallest=%f, avg=%f",
-        stats.objective_matrix_abs_max(), stats.objective_matrix_abs_min(),
-        stats.objective_matrix_abs_avg()));
+    SOLVER_LOG(&logger_,
+               absl::StrFormat("There are %i nonzero diagonal coefficients in "
+                               "the objective matrix.",
+                               stats.objective_matrix_num_nonzeros()));
+    SOLVER_LOG(
+        &logger_,
+        absl::StrFormat(
+            "Absolute values of nonzero objective matrix elements: largest=%f, "
+            "smallest=%f, avg=%f",
+            stats.objective_matrix_abs_max(), stats.objective_matrix_abs_min(),
+            stats.objective_matrix_abs_avg()));
   }
-  LogInfoWithoutPrefix(absl::StrFormat(
-      "Absolute values of objective vector elements: largest=%f, smallest=%f, "
-      "avg=%f, l2_norm=%f",
-      stats.objective_vector_abs_max(), stats.objective_vector_abs_min(),
-      stats.objective_vector_abs_avg(), stats.objective_vector_l2_norm()));
-  LogInfoWithoutPrefix(absl::StrFormat(
-      "Gaps between variable upper and lower bounds: #finite=%i of %i, "
-      "largest=%f, smallest=%f, avg=%f",
-      stats.variable_bound_gaps_num_finite(), stats.num_variables(),
-      stats.variable_bound_gaps_max(), stats.variable_bound_gaps_min(),
-      stats.variable_bound_gaps_avg()));
+  SOLVER_LOG(&logger_, absl::StrFormat("Absolute values of objective vector "
+                                       "elements: largest=%f, smallest=%f, "
+                                       "avg=%f, l2_norm=%f",
+                                       stats.objective_vector_abs_max(),
+                                       stats.objective_vector_abs_min(),
+                                       stats.objective_vector_abs_avg(),
+                                       stats.objective_vector_l2_norm()));
+  SOLVER_LOG(
+      &logger_,
+      absl::StrFormat(
+          "Gaps between variable upper and lower bounds: #finite=%i of %i, "
+          "largest=%f, smallest=%f, avg=%f",
+          stats.variable_bound_gaps_num_finite(), stats.num_variables(),
+          stats.variable_bound_gaps_max(), stats.variable_bound_gaps_min(),
+          stats.variable_bound_gaps_avg()));
 }
 
 double PreprocessSolver::InitialPrimalWeight(
@@ -1459,7 +1537,9 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
                      POINT_TYPE_AVERAGE_ITERATE, last_primal_start_point,
                      last_dual_start_point, stats);
   }
-  if (working_primal_delta != nullptr && working_dual_delta != nullptr) {
+  // Undoing presolve doesn't work for iterate differences.
+  if (!presolve_info_.has_value() && working_primal_delta != nullptr &&
+      working_dual_delta != nullptr) {
     ComputeConvergenceAndInfeasibilityFromWorkingSolution(
         params, *working_primal_delta, *working_dual_delta,
         POINT_TYPE_ITERATE_DIFFERENCE, nullptr,
@@ -1476,22 +1556,22 @@ PreprocessSolver::UpdateIterationStatsAndCheckTermination(
            absl::Seconds(params.log_interval_seconds()))) {
     if (log_counter_ == 0) {
       LogIterationStatsHeader(params.verbosity_level(),
-                              params.use_feasibility_polishing());
+                              params.use_feasibility_polishing(), logger_);
     }
     LogIterationStats(params.verbosity_level(),
                       params.use_feasibility_polishing(), iteration_type, stats,
                       params.termination_criteria(), original_bound_norms_,
-                      POINT_TYPE_AVERAGE_ITERATE);
+                      POINT_TYPE_AVERAGE_ITERATE, logger_);
     if (params.verbosity_level() >= 4) {
       // If the convergence information doesn't contain an average iterate, the
       // previous `LogIterationStats()` will report some other iterate (usually
       // the current one) so don't repeat logging it.
       if (GetConvergenceInformation(stats, POINT_TYPE_AVERAGE_ITERATE) !=
           std::nullopt) {
-        LogIterationStats(params.verbosity_level(),
-                          params.use_feasibility_polishing(), iteration_type,
-                          stats, params.termination_criteria(),
-                          original_bound_norms_, POINT_TYPE_CURRENT_ITERATE);
+        LogIterationStats(
+            params.verbosity_level(), params.use_feasibility_polishing(),
+            iteration_type, stats, params.termination_criteria(),
+            original_bound_norms_, POINT_TYPE_CURRENT_ITERATE, logger_);
       }
     }
     time_of_last_log_ = logging_time;
@@ -1531,6 +1611,9 @@ void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       EpsilonRatio(criteria.eps_optimal_dual_residual_absolute(),
                    criteria.eps_optimal_dual_residual_relative());
   if (presolve_info_.has_value()) {
+    // Undoing presolve doesn't make sense for iterate differences.
+    CHECK_NE(candidate_type, POINT_TYPE_ITERATE_DIFFERENCE);
+
     PrimalAndDualSolution original = RecoverOriginalSolution(
         {.primal_solution = working_primal, .dual_solution = working_dual});
     if (convergence_information != nullptr) {
@@ -1542,11 +1625,19 @@ void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
           candidate_type);
     }
     if (infeasibility_information != nullptr) {
+      VectorXd primal_copy =
+          CloneVector(original.primal_solution,
+                      presolve_info_->sharded_original_qp.PrimalSharder());
+      ProjectToPrimalVariableBounds(presolve_info_->sharded_original_qp,
+                                    primal_copy,
+                                    /*use_feasibility_bounds=*/true);
+      // Only iterate differences should be able to violate the dual variable
+      // bounds, and iterate differences aren't used when presolve is enabled.
       *infeasibility_information = ComputeInfeasibilityInformation(
           params, presolve_info_->sharded_original_qp,
           presolve_info_->trivial_col_scaling_vec,
-          presolve_info_->trivial_row_scaling_vec, original.primal_solution,
-          original.dual_solution, candidate_type);
+          presolve_info_->trivial_row_scaling_vec, primal_copy,
+          original.dual_solution, original.primal_solution, candidate_type);
     }
   } else {
     if (convergence_information != nullptr) {
@@ -1556,9 +1647,23 @@ void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
           dual_epsilon_ratio, candidate_type);
     }
     if (infeasibility_information != nullptr) {
-      *infeasibility_information = ComputeInfeasibilityInformation(
-          params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
-          working_primal, working_dual, candidate_type);
+      VectorXd primal_copy =
+          CloneVector(working_primal, sharded_qp_.PrimalSharder());
+      ProjectToPrimalVariableBounds(sharded_qp_, primal_copy,
+                                    /*use_feasibility_bounds=*/true);
+      if (candidate_type == POINT_TYPE_ITERATE_DIFFERENCE) {
+        // Iterate differences might not satisfy the dual variable bounds.
+        VectorXd dual_copy =
+            CloneVector(working_dual, sharded_qp_.DualSharder());
+        ProjectToDualVariableBounds(sharded_qp_, dual_copy);
+        *infeasibility_information = ComputeInfeasibilityInformation(
+            params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
+            primal_copy, dual_copy, working_primal, candidate_type);
+      } else {
+        *infeasibility_information = ComputeInfeasibilityInformation(
+            params, sharded_qp_, col_scaling_vec_, row_scaling_vec_,
+            primal_copy, working_dual, working_primal, candidate_type);
+      }
     }
   }
 }
@@ -1566,7 +1671,8 @@ void PreprocessSolver::ComputeConvergenceAndInfeasibilityFromWorkingSolution(
 // `result` is used both as the input and as the temporary that will be
 // returned.
 SolverResult PreprocessSolver::ConstructOriginalSolverResult(
-    const PrimalDualHybridGradientParams& params, SolverResult result) const {
+    const PrimalDualHybridGradientParams& params, SolverResult result,
+    SolverLogger& logger) const {
   const bool use_zero_primal_objective =
       result.solve_log.termination_reason() ==
       TERMINATION_REASON_PRIMAL_INFEASIBLE;
@@ -1576,6 +1682,14 @@ SolverResult PreprocessSolver::ConstructOriginalSolverResult(
         {.primal_solution = std::move(result.primal_solution),
          .dual_solution = std::move(result.dual_solution)});
     result.primal_solution = std::move(original_solution.primal_solution);
+    if (result.solve_log.termination_reason() ==
+        TERMINATION_REASON_DUAL_INFEASIBLE) {
+      ProjectToPrimalVariableBounds(presolve_info_->sharded_original_qp,
+                                    result.primal_solution,
+                                    /*use_feasibility_bounds=*/true);
+    }
+    // If presolve is enabled, no projection of the dual is performed when
+    // checking for infeasibility.
     result.dual_solution = std::move(original_solution.dual_solution);
     // `RecoverOriginalSolution` doesn't recover reduced costs so we need to
     // compute them with respect to the original problem.
@@ -1583,6 +1697,15 @@ SolverResult PreprocessSolver::ConstructOriginalSolverResult(
         params, presolve_info_->sharded_original_qp, result.primal_solution,
         result.dual_solution, use_zero_primal_objective);
   } else {
+    if (result.solve_log.termination_reason() ==
+        TERMINATION_REASON_DUAL_INFEASIBLE) {
+      ProjectToPrimalVariableBounds(sharded_qp_, result.primal_solution,
+                                    /*use_feasibility_bounds=*/true);
+    }
+    if (result.solve_log.termination_reason() ==
+        TERMINATION_REASON_PRIMAL_INFEASIBLE) {
+      ProjectToDualVariableBounds(sharded_qp_, result.dual_solution);
+    }
     result.reduced_costs =
         ReducedCosts(params, sharded_qp_, result.primal_solution,
                      result.dual_solution, use_zero_primal_objective);
@@ -1615,27 +1738,24 @@ SolverResult PreprocessSolver::ConstructOriginalSolverResult(
   }
 
   if (params.verbosity_level() >= 1) {
-    LogInfoWithoutPrefix(absl::StrCat(
-        "Termination reason: ",
-        TerminationReason_Name(result.solve_log.termination_reason())));
-    LogInfoWithoutPrefix(
-        absl::StrCat("Solution point type: ",
-                     PointType_Name(result.solve_log.solution_type())));
-    LogInfoWithoutPrefix("Final solution stats:");
+    SOLVER_LOG(&logger, "Termination reason: ",
+               TerminationReason_Name(result.solve_log.termination_reason()));
+    SOLVER_LOG(&logger, "Solution point type: ",
+               PointType_Name(result.solve_log.solution_type()));
+    SOLVER_LOG(&logger, "Final solution stats:");
     LogIterationStatsHeader(params.verbosity_level(),
-                            params.use_feasibility_polishing());
+                            params.use_feasibility_polishing(), logger);
     LogIterationStats(params.verbosity_level(),
                       params.use_feasibility_polishing(), iteration_type,
                       result.solve_log.solution_stats(),
                       params.termination_criteria(), original_bound_norms_,
-                      result.solve_log.solution_type());
+                      result.solve_log.solution_type(), logger);
     const auto& convergence_info = GetConvergenceInformation(
         result.solve_log.solution_stats(), result.solve_log.solution_type());
     if (convergence_info.has_value()) {
       if (std::isfinite(convergence_info->corrected_dual_objective())) {
-        LogInfoWithoutPrefix(
-            absl::StrCat("Dual objective after infeasibility correction: ",
-                         convergence_info->corrected_dual_objective()));
+        SOLVER_LOG(&logger, "Dual objective after infeasibility correction: ",
+                   convergence_info->corrected_dual_objective());
       }
     }
   }
@@ -2002,9 +2122,8 @@ double Solver::ComputeNewPrimalWeight() const {
       std::exp(smoothing_param * std::log(unsmoothed_new_primal_weight) +
                (1.0 - smoothing_param) * std::log(primal_weight_));
   if (params_.verbosity_level() >= 4) {
-    LogInfoWithoutPrefix(absl::StrCat("New computed primal weight is ",
-                                      new_primal_weight, " at iteration ",
-                                      iterations_completed_));
+    SOLVER_LOG(&preprocess_solver_->Logger(), "New computed primal weight is ",
+               new_primal_weight, " at iteration ", iterations_completed_);
   }
   return new_primal_weight;
 }
@@ -2046,16 +2165,16 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
       return;
     case RESTART_CHOICE_WEIGHTED_AVERAGE_RESET:
       if (params_.verbosity_level() >= 4) {
-        LogInfoWithoutPrefix(absl::StrCat(
-            "Restarted to current on iteration ", iterations_completed_,
-            " after ", primal_average_.NumTerms(), " iterations"));
+        SOLVER_LOG(&preprocess_solver_->Logger(),
+                   "Restarted to current on iteration ", iterations_completed_,
+                   " after ", primal_average_.NumTerms(), " iterations");
       }
       break;
     case RESTART_CHOICE_RESTART_TO_AVERAGE:
       if (params_.verbosity_level() >= 4) {
-        LogInfoWithoutPrefix(absl::StrCat(
-            "Restarted to average on iteration ", iterations_completed_,
-            " after ", primal_average_.NumTerms(), " iterations"));
+        SOLVER_LOG(&preprocess_solver_->Logger(),
+                   "Restarted to average on iteration ", iterations_completed_,
+                   " after ", primal_average_.NumTerms(), " iterations");
       }
       current_primal_solution_ = primal_average_.ComputeAverage();
       current_dual_solution_ = dual_average_.ComputeAverage();
@@ -2115,7 +2234,7 @@ IterationStats AddWorkStats(IterationStats stats,
 // Accumulates and returns the work (`iteration_number`,
 // `cumulative_kkt_matrix_passes`, `cumulative_rejected_steps`, and
 // `cumulative_time_sec`) from `solve_log.feasibility_polishing_details`.
-IterationStats WorkFromFeasiblityPolishing(const SolveLog& solve_log) {
+IterationStats WorkFromFeasibilityPolishing(const SolveLog& solve_log) {
   IterationStats result;
   for (const FeasibilityPolishingDetails& feasibility_polishing_detail :
        solve_log.feasibility_polishing_details()) {
@@ -2198,14 +2317,16 @@ void Solver::ResetAverageToCurrent() {
 
 void Solver::LogNumericalTermination() const {
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix(absl::StrCat(
-        "Forced numerical termination at iteration ", iterations_completed_));
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "Forced numerical termination at iteration ",
+               iterations_completed_);
   }
 }
 
 void Solver::LogInnerIterationLimitHit() const {
-  LOG(WARNING) << "Inner iteration limit reached at iteration "
-               << iterations_completed_;
+  SOLVER_LOG(&preprocess_solver_->Logger(),
+             "WARNING: Inner iteration limit reached at iteration ",
+             iterations_completed_);
 }
 
 InnerStepOutcome Solver::TakeMalitskyPockStep() {
@@ -2408,7 +2529,7 @@ InnerStepOutcome Solver::TakeConstantSizeStep() {
 IterationStats Solver::TotalWorkSoFar(const SolveLog& solve_log) const {
   IterationStats stats = CreateSimpleIterationStats(RESTART_CHOICE_NO_RESTART);
   IterationStats full_stats =
-      AddWorkStats(stats, WorkFromFeasiblityPolishing(solve_log));
+      AddWorkStats(stats, WorkFromFeasibilityPolishing(solve_log));
   return full_stats;
 }
 
@@ -2455,23 +2576,25 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
 
   if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
     if (params_.verbosity_level() >= 2) {
-      LogInfoWithoutPrefix(
-          "Skipping feasibility polishing because the objective gap "
-          "is too large.");
+      SOLVER_LOG(&preprocess_solver_->Logger(),
+                 "Skipping feasibility polishing because the objective gap "
+                 "is too large.");
     }
     return std::nullopt;
   }
 
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix("Starting primal feasibility polishing");
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "Starting primal feasibility polishing");
   }
   SolverResult primal_result = TryPrimalPolishing(
       std::move(average_primal), iteration_limit, interrupt_solve, solve_log);
 
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix(absl::StrCat(
+    SOLVER_LOG(
+        &preprocess_solver_->Logger(),
         "Primal feasibility polishing termination reason: ",
-        TerminationReason_Name(primal_result.solve_log.termination_reason())));
+        TerminationReason_Name(primal_result.solve_log.termination_reason()));
   }
   if (TerminationReasonIsWorkLimit(
           primal_result.solve_log.termination_reason())) {
@@ -2483,21 +2606,24 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     // we ignore the polishing result indicating infeasibility.
     // `TERMINATION_REASON_NUMERICAL_ERROR` can occur, but would be surprising
     // and interesting. Other termination reasons are probably bugs.
-    LOG(WARNING) << "Primal feasibility polishing terminated with error "
-                 << primal_result.solve_log.termination_reason();
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "WARNING: Primal feasibility polishing terminated with error ",
+               primal_result.solve_log.termination_reason());
     return std::nullopt;
   }
 
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix("Starting dual feasibility polishing");
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "Starting dual feasibility polishing");
   }
   SolverResult dual_result = TryDualPolishing(
       std::move(average_dual), iteration_limit, interrupt_solve, solve_log);
 
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix(absl::StrCat(
+    SOLVER_LOG(
+        &preprocess_solver_->Logger(),
         "Dual feasibility polishing termination reason: ",
-        TerminationReason_Name(dual_result.solve_log.termination_reason())));
+        TerminationReason_Name(dual_result.solve_log.termination_reason()));
   }
 
   if (TerminationReasonIsWorkLimit(
@@ -2508,8 +2634,9 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     // Note: The comment in the corresponding location when checking the
     // termination reason for primal feasibility polishing applies here
     // too.
-    LOG(WARNING) << "Dual feasibility polishing terminated with error "
-                 << dual_result.solve_log.termination_reason();
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "WARNING: Dual feasibility polishing terminated with error ",
+               dual_result.solve_log.termination_reason());
     return std::nullopt;
   }
 
@@ -2519,15 +2646,18 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
       POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
       full_stats.add_convergence_information(), nullptr);
   if (params_.verbosity_level() >= 2) {
-    LogInfoWithoutPrefix("solution stats for polished solution:");
+    SOLVER_LOG(&preprocess_solver_->Logger(),
+               "solution stats for polished solution:");
     LogIterationStatsHeader(params_.verbosity_level(),
-                            /*use_feasibility_polishing=*/true);
+                            /*use_feasibility_polishing=*/true,
+                            preprocess_solver_->Logger());
     LogIterationStats(params_.verbosity_level(),
                       /*use_feasibility_polishing=*/true,
                       IterationType::kFeasibilityPolishingTermination,
                       full_stats, params_.termination_criteria(),
                       preprocess_solver_->OriginalBoundNorms(),
-                      POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION);
+                      POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
+                      preprocess_solver_->Logger());
   }
   std::optional<TerminationReasonAndPointType> earned_termination =
       CheckIterateTerminationCriteria(params_.termination_criteria(),
@@ -2712,7 +2842,7 @@ SolverResult Solver::Solve(const IterationType iteration_type,
   num_rejected_steps_ = 0;
 
   IterationStats work_from_feasibility_polishing =
-      WorkFromFeasiblityPolishing(solve_log);
+      WorkFromFeasibilityPolishing(solve_log);
   for (iterations_completed_ = 0;; ++iterations_completed_) {
     // This code performs the logic of the major iterations and termination
     // checks. It may modify the current solution and primal weight (e.g., when
@@ -2745,7 +2875,7 @@ SolverResult Solver::Solve(const IterationType iteration_type,
       }
       next_feasibility_polishing_iteration *= 2;
       // Update work to include new feasibility phases.
-      work_from_feasibility_polishing = WorkFromFeasiblityPolishing(solve_log);
+      work_from_feasibility_polishing = WorkFromFeasibilityPolishing(solve_log);
     }
 
     // TODO(user): If we use a step rule that could reject many steps in a
@@ -2778,9 +2908,10 @@ SolverResult Solver::Solve(const IterationType iteration_type,
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     const std::atomic<bool>* interrupt_solve,
+    std::function<void(const std::string&)> message_callback,
     IterationStatsCallback iteration_stats_callback) {
   return PrimalDualHybridGradient(std::move(qp), params, std::nullopt,
-                                  interrupt_solve,
+                                  interrupt_solve, std::move(message_callback),
                                   std::move(iteration_stats_callback));
 }
 
@@ -2788,43 +2919,44 @@ SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve,
+    std::function<void(const std::string&)> message_callback,
     IterationStatsCallback iteration_stats_callback) {
+  SolverLogger logger;
+  logger.EnableLogging(true);
+  if (message_callback) {
+    logger.AddInfoLoggingCallback(std::move(message_callback));
+  } else {
+    logger.SetLogToStdOut(true);
+  }
   const absl::Status params_status =
       ValidatePrimalDualHybridGradientParams(params);
   if (!params_status.ok()) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PARAMETER,
-                             params_status.ToString());
+                             params_status.ToString(), logger);
   }
   if (!qp.constraint_matrix.isCompressed()) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
                              "constraint_matrix must be in compressed format. "
-                             "Call constraint_matrix.makeCompressed()");
+                             "Call constraint_matrix.makeCompressed()",
+                             logger);
   }
   const absl::Status dimensions_status = ValidateQuadraticProgramDimensions(qp);
   if (!dimensions_status.ok()) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             dimensions_status.ToString());
-  }
-  if (!HasValidBounds(qp)) {
-    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "The input problem has inconsistent bounds.");
+                             dimensions_status.ToString(), logger);
   }
   if (qp.objective_scaling_factor == 0) {
     return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "The objective scaling factor cannot be zero.");
-  }
-  if (qp.objective_matrix.has_value() &&
-      qp.objective_matrix->diagonal().minCoeff() < 0.0) {
-    return ErrorSolverResult(TERMINATION_REASON_INVALID_PROBLEM,
-                             "The objective is not convex (i.e., the objective "
-                             "matrix contains negative entries).");
+                             "The objective scaling factor cannot be zero.",
+                             logger);
   }
   if (params.use_feasibility_polishing() && !IsLinearProgram(qp)) {
     return ErrorSolverResult(
         TERMINATION_REASON_INVALID_PARAMETER,
-        "use_feasibility_polishing is only implemented for linear programs.");
+        "use_feasibility_polishing is only implemented for linear programs.",
+        logger);
   }
-  PreprocessSolver solver(std::move(qp), params);
+  PreprocessSolver solver(std::move(qp), params, &logger);
   return solver.PreprocessAndSolve(params, std::move(initial_solution),
                                    interrupt_solve,
                                    std::move(iteration_stats_callback));

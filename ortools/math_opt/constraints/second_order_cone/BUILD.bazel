@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,6 +12,68 @@
 # limitations under the License.
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+
+cc_library(
+    name = "second_order_cone_constraint",
+    srcs = ["second_order_cone_constraint.cc"],
+    hdrs = ["second_order_cone_constraint.h"],
+    deps = [
+        ":storage",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "second_order_cone_constraint_test",
+    srcs = ["second_order_cone_constraint_test.cc"],
+    deps = [
+        ":second_order_cone_constraint",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "storage",
+    srcs = ["storage.cc"],
+    hdrs = ["storage.h"],
+    deps = [
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:atomic_constraint_storage",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "storage_test",
+    srcs = ["storage_test.cc"],
+    deps = [
+        ":storage",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:linear_expression_data",
+        "//ortools/math_opt/storage:sparse_coefficient_map",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
 
 cc_library(
     name = "validator",
@@ -28,35 +90,18 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "storage",
-    srcs = ["storage.cc"],
-    hdrs = ["storage.h"],
+cc_test(
+    name = "validator_test",
+    srcs = ["validator_test.cc"],
     deps = [
-        "//ortools/base:intops",
+        ":validator",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/storage:atomic_constraint_storage",
-        "//ortools/math_opt/storage:linear_expression_data",
-        "//ortools/math_opt/storage:model_storage_types",
-        "//ortools/math_opt/storage:sorted",
-        "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-    ],
-)
-
-cc_library(
-    name = "second_order_cone_constraint",
-    srcs = ["second_order_cone_constraint.cc"],
-    hdrs = ["second_order_cone_constraint.h"],
-    deps = [
-        ":storage",
-        "//ortools/base:intops",
-        "//ortools/math_opt/constraints/util:model_util",
-        "//ortools/math_opt/cpp:variable_and_expressions",
-        "//ortools/math_opt/storage:linear_expression_data",
-        "//ortools/math_opt/storage:model_storage",
-        "@com_google_absl//absl/strings",
+        "//ortools/math_opt/core:model_summary",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/types:span",
     ],
 )

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -606,7 +607,7 @@ bool DisjunctivePropagator::ChainSpanMinDynamic(Tasks* tasks) {
   }
 }
 
-void AppendTasksFromPath(const std::vector<int64_t>& path,
+void AppendTasksFromPath(absl::Span<const int64_t> path,
                          const TravelBounds& travel_bounds,
                          const RoutingDimension& dimension,
                          DisjunctivePropagator::Tasks* tasks) {
@@ -773,7 +774,7 @@ void GlobalVehicleBreaksConstraint::FillPartialPathOfVehicle(int vehicle) {
 }
 
 void GlobalVehicleBreaksConstraint::FillPathTravels(
-    const std::vector<int64_t>& path) {
+    absl::Span<const int64_t> path) {
   const int num_travels = path.size() - 1;
   travel_bounds_.min_travels.resize(num_travels);
   travel_bounds_.max_travels.resize(num_travels);

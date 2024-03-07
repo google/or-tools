@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -67,15 +67,6 @@ cc_library(
 )
 
 cc_library(
-    name = "vector_map",
-    hdrs = ["vector_map.h"],
-    deps = [
-        "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
     deps = [],
@@ -105,18 +96,6 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:types",
-    ],
-)
-
-cc_library(
-    name = "graph_export",
-    srcs = ["graph_export.cc"],
-    hdrs = ["graph_export.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -292,18 +271,17 @@ cc_library(
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
     deps = [
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
         "//ortools/base",
+        "//ortools/base:dump_vars",
         "//ortools/base:file",
+        "//ortools/base:gzipstring",
         "//ortools/base:hash",
         "//ortools/base:recordio",
         "//ortools/base:status_macros",
-        "//ortools/base:gzipstring",
-        #        "//net/proto2/io/public",
-        #        "//net/proto2/io/public:io",
-        #        "//net/proto2/public",
-        #        "//net/proto2/util/public:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -328,6 +306,23 @@ cc_library(
     ],
 )
 
+# Int128
+proto_library(
+    name = "int128_proto",
+    srcs = ["int128.proto"],
+)
+
+cc_proto_library(
+    name = "int128_cc_proto",
+    deps = [":int128_proto"],
+)
+
+py_proto_library(
+    name = "int128_py_pb2",
+    deps = [":int128_proto"],
+)
+
+# OptionalBoolean
 proto_library(
     name = "optional_boolean_proto",
     srcs = ["optional_boolean.proto"],
@@ -340,10 +335,10 @@ cc_proto_library(
 
 py_proto_library(
     name = "optional_boolean_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":optional_boolean_proto"],
 )
 
+# SWIG
 cc_library(
     name = "functions_swig_helpers",
     hdrs = [
@@ -399,7 +394,6 @@ cc_library(
 cc_library(
     name = "vector_or_function",
     hdrs = ["vector_or_function.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -420,7 +414,6 @@ cc_library(
 #    name = "bp_parser",
 #    srcs = ["bp_parser.cc"],
 #    hdrs = ["bp_parser.h"],
-#    visibility = ["//visibility:public"],
 #    deps = [
 #        "@com_google_absl//absl/strings",
 #        ":filelineiter",
@@ -442,7 +435,6 @@ cc_library(
 cc_library(
     name = "sort",
     hdrs = ["sort.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -452,7 +444,6 @@ cc_library(
     name = "logging",
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
@@ -463,7 +454,6 @@ cc_library(
 cc_library(
     name = "testing_utils",
     hdrs = ["testing_utils.h"],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -495,6 +485,15 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "fp_roundtrip_conv_testing",
+    testonly = 1,
+    hdrs = ["fp_roundtrip_conv_testing.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
     ],
 )
 

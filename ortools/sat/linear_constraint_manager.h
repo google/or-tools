@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -69,19 +69,24 @@ class LinearConstraintManager {
     LinearConstraint constraint;
 
     double l2_norm = 0.0;
-    int64_t inactive_count = 0;
     double objective_parallelism = 0.0;
-    bool objective_parallelism_computed = false;
-    bool is_in_lp = false;
-    bool ub_is_trivial = false;
-    bool lb_is_trivial = false;
     size_t hash;
-    double current_score = 0.0;
 
     // Updated only for deletable constraints. This is incremented every time
     // ChangeLp() is called and the constraint is active in the LP or not in the
     // LP and violated.
     double active_count = 0.0;
+
+    // TODO(user): This is the number of time the constraint was consecutively
+    // inactive, and go up to 100 with the default param, so we could optimize
+    // the space used more.
+    uint16_t inactive_count = 0;
+
+    // TODO(user): Pack bool and in general optimize the memory of this class.
+    bool objective_parallelism_computed = false;
+    bool is_in_lp = false;
+    bool ub_is_trivial = false;
+    bool lb_is_trivial = false;
 
     // For now, we mark all the generated cuts as deletable and the problem
     // constraints as undeletable.
@@ -113,7 +118,7 @@ class LinearConstraintManager {
   //
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
-  bool AddCut(const LinearConstraint& ct, std::string type_name,
+  bool AddCut(LinearConstraint ct, std::string type_name,
               std::string extra_info = "");
 
   // These must be level zero bounds.

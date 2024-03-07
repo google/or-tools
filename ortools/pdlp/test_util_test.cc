@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,8 +22,8 @@
 #include "Eigen/Core"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 
 namespace operations_research::pdlp {
 namespace {
@@ -36,8 +36,11 @@ using ::testing::Matcher;
 using ::testing::Not;
 
 TEST(FloatArrayNearTest, TypicalUse) {
+  // M_PI is problematic on windows (requires _USE_MATH_DEFINES).
+  // std::numbers::pi is C++20 (incompatible with OR-Tools).
+  const double kPi = 3.14159265358979323846;
   std::vector<double> test_vector({0.998, -1.414, 3.142});
-  std::vector<double> reference_vector({1.0, -M_SQRT2, M_PI});
+  std::vector<double> reference_vector({1.0, -std::sqrt(2), kPi});
   EXPECT_THAT(test_vector, FloatArrayNear(reference_vector, 1.0e-2));
   EXPECT_THAT(test_vector, Not(FloatArrayNear(reference_vector, 1.0e-4)));
 }
@@ -95,7 +98,11 @@ TEST(FloatArrayNearTest, WithIntegerElements) {
 }
 
 TEST(FloatArrayEqTest, TypicalUse) {
-  std::vector<float> reference_vector({1.0e6, -M_SQRT2, M_PI});
+  // M_PI is problematic on windows (requires _USE_MATH_DEFINES).
+  // std::numbers::pi is C++20 (incompatible with OR-Tools).
+  const float kPi = 3.14159265358979323846;
+  const float kSqrt2 = std::sqrt(2);
+  std::vector<float> reference_vector({1.0e6, -kSqrt2, kPi});
   // Values are within 4 ULPs.
   std::vector<float> test_vector({1.0e6 + 0.25, -1.41421323, 3.14159262});
   EXPECT_THAT(test_vector, FloatArrayEq(reference_vector));

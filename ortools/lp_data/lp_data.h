@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,12 +33,15 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/strong_integers.h"
 
@@ -105,8 +108,8 @@ class LinearProgram {
   // LinearProgramBuilder class to simplify the code of some functions like
   // DeleteColumns() here and make the behavior on copy clear? or simply remove
   // them as it is almost as easy to maintain a hash_table on the client side.
-  ColIndex FindOrCreateVariable(const std::string& variable_id);
-  RowIndex FindOrCreateConstraint(const std::string& constraint_id);
+  ColIndex FindOrCreateVariable(absl::string_view variable_id);
+  RowIndex FindOrCreateConstraint(absl::string_view constraint_id);
 
   // Functions to set the name of a variable or constraint. Note that you
   // won't be able to find those named variables/constraints with
@@ -561,6 +564,9 @@ class LinearProgram {
   DenseColumn* mutable_constraint_upper_bounds() {
     return &constraint_upper_bounds_;
   }
+
+  // Removes objective and coefficient with magnitude <= threshold.
+  void RemoveNearZeroEntries(Fractional threshold);
 
  private:
   // A helper function that updates the vectors integer_variables_list_,

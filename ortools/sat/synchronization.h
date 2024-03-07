@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -244,17 +244,30 @@ class SharedResponseManager {
       std::function<void(CpSolverResponse*)> postprocessor);
 
   // Adds a callback that will be called on each new solution (for
-  // statisfiablity problem) or each improving new solution (for an optimization
+  // satisfiability problem) or each improving new solution (for an optimization
   // problem). Returns its id so it can be unregistered if needed.
   //
   // Note that adding a callback is not free since the solution will be
-  // postsolved before this is called.
+  // post-solved before this is called.
   //
   // Note that currently the class is waiting for the callback to finish before
   // accepting any new updates. That could be changed if needed.
   int AddSolutionCallback(
       std::function<void(const CpSolverResponse&)> callback);
   void UnregisterCallback(int callback_id);
+
+  // Adds an inline callback that will be called on each new solution (for
+  // satisfiability problem) or each improving new solution (for an optimization
+  // problem). Returns its id so it can be unregistered if needed.
+  //
+  // Note that adding a callback is not free since the solution will be
+  // post-solved before this is called.
+  //
+  // Note that currently the class is waiting for the callback to finish before
+  // accepting any new updates. That could be changed if needed.
+  int AddLogCallback(
+      std::function<std::string(const CpSolverResponse&)> callback);
+  void UnregisterLogCallback(int callback_id);
 
   // The "inner" objective is the CpModelProto objective without scaling/offset.
   // Note that these bound correspond to valid bound for the problem of finding
@@ -348,7 +361,7 @@ class SharedResponseManager {
   void DisplayImprovementStatistics();
 
   // Wrapper around our SolverLogger, but protected by mutex.
-  void LogMessage(const std::string& prefix, const std::string& message);
+  void LogMessage(absl::string_view prefix, absl::string_view message);
   void LogMessageWithThrottling(const std::string& prefix,
                                 const std::string& message);
   bool LoggingIsEnabled() const;
@@ -424,6 +437,11 @@ class SharedResponseManager {
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
       callbacks_ ABSL_GUARDED_BY(mutex_);
+
+  int next_search_log_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
+  std::vector<
+      std::pair<int, std::function<std::string(const CpSolverResponse&)>>>
+      search_log_callbacks_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::function<void(std::vector<int64_t>*)>>
       solution_postprocessors_ ABSL_GUARDED_BY(mutex_);
@@ -510,6 +528,11 @@ class SharedBoundsManager {
     debug_solution_.assign(solution.begin(), solution.end());
   }
 
+  // Debug only. Set dump prefix for solutions written to file.
+  void set_dump_prefix(absl::string_view dump_prefix) {
+    dump_prefix_ = dump_prefix;
+  }
+
  private:
   const int num_variables_;
   const CpModelProto& model_proto_;
@@ -521,6 +544,7 @@ class SharedBoundsManager {
   std::vector<int64_t> upper_bounds_ ABSL_GUARDED_BY(mutex_);
   SparseBitset<int> changed_variables_since_last_synchronize_
       ABSL_GUARDED_BY(mutex_);
+  int64_t total_num_improvements_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // These are only updated on Synchronize().
   std::vector<int64_t> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
@@ -530,6 +554,8 @@ class SharedBoundsManager {
   absl::btree_map<std::string, int> bounds_exported_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<int64_t> debug_solution_;
+  std::string dump_prefix_;
+  int export_counter_ = 0;
 };
 
 // This class holds all the binary clauses that were found and shared by the
@@ -563,6 +589,7 @@ class SharedClausesManager {
 
  private:
   absl::Mutex mutex_;
+
   // Cache to avoid adding the same clause twice.
   absl::flat_hash_set<std::pair<int, int>> added_binary_clauses_set_
       ABSL_GUARDED_BY(mutex_);
@@ -700,8 +727,7 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   }
 
   if (!solutions_.empty()) {
-    VLOG(2) << "Solution pool update:"
-            << " num_solutions=" << solutions_.size()
+    VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
             << " min_rank=" << solutions_[0].rank
             << " max_rank=" << solutions_.back().rank;
   }

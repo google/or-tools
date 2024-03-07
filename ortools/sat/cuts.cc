@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -32,9 +33,11 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -90,6 +93,37 @@ void CutTerm::Complement(absl::int128* rhs) {
   coeff = -coeff;
 }
 
+void CutTerm::ReplaceExpressionByLiteral(IntegerVariable var) {
+  CHECK_EQ(bound_diff, 1);
+  expr_coeffs[1] = 0;
+  if (VariableIsPositive(var)) {
+    expr_vars[0] = var;
+    expr_coeffs[0] = 1;
+    expr_offset = 0;
+  } else {
+    expr_vars[0] = PositiveVariable(var);
+    expr_coeffs[0] = -1;
+    expr_offset = 1;
+  }
+}
+
+IntegerVariable CutTerm::GetUnderlyingLiteralOrNone() const {
+  if (expr_coeffs[1] != 0) return kNoIntegerVariable;
+  if (bound_diff != 1) return kNoIntegerVariable;
+
+  if (expr_coeffs[0] > 0) {
+    if (expr_coeffs[0] != 1) return kNoIntegerVariable;
+    if (expr_offset != 0) return kNoIntegerVariable;
+    CHECK(VariableIsPositive(expr_vars[0]));
+    return expr_vars[0];
+  }
+
+  if (expr_coeffs[0] != -1) return kNoIntegerVariable;
+  if (expr_offset != 1) return kNoIntegerVariable;
+  CHECK(VariableIsPositive(expr_vars[0]));
+  return NegationOf(expr_vars[0]);
+}
+
 // To try to minimize the risk of overflow, we switch to the bound closer
 // to the lp_value. Since most of our base constraint for cut are tight,
 // hopefully this is not too bad.
@@ -136,7 +170,7 @@ bool CutData::FillFromLinearConstraint(
     IntegerTrail* integer_trail) {
   rhs = absl::int128(base_ct.ub.value());
   terms.clear();
-  const int num_terms = base_ct.vars.size();
+  const int num_terms = base_ct.num_terms;
   for (int i = 0; i < num_terms; ++i) {
     const IntegerVariable var = base_ct.vars[i];
     if (!AppendOneTerm(var, base_ct.coeffs[i], lp_values[base_ct.vars[i]],
@@ -149,24 +183,24 @@ bool CutData::FillFromLinearConstraint(
 }
 
 bool CutData::FillFromParallelVectors(
-    const LinearConstraint& base_ct, const std::vector<double>& lp_values,
-    const std::vector<IntegerValue>& lower_bounds,
-    const std::vector<IntegerValue>& upper_bounds) {
-  rhs = absl::int128(base_ct.ub.value());
+    IntegerValue ub, absl::Span<const IntegerVariable> vars,
+    absl::Span<const IntegerValue> coeffs, absl::Span<const double> lp_values,
+    absl::Span<const IntegerValue> lower_bounds,
+    absl::Span<const IntegerValue> upper_bounds) {
+  rhs = absl::int128(ub.value());
   terms.clear();
 
   const int size = lp_values.size();
   if (size == 0) return true;
 
+  CHECK_EQ(vars.size(), size);
+  CHECK_EQ(coeffs.size(), size);
   CHECK_EQ(lower_bounds.size(), size);
   CHECK_EQ(upper_bounds.size(), size);
-  CHECK_EQ(base_ct.vars.size(), size);
-  CHECK_EQ(base_ct.coeffs.size(), size);
-  CHECK_EQ(base_ct.lb, kMinIntegerValue);
 
   for (int i = 0; i < size; ++i) {
-    if (!AppendOneTerm(base_ct.vars[i], base_ct.coeffs[i], lp_values[i],
-                       lower_bounds[i], upper_bounds[i])) {
+    if (!AppendOneTerm(vars[i], coeffs[i], lp_values[i], lower_bounds[i],
+                       upper_bounds[i])) {
       return false;
     }
   }
@@ -220,6 +254,17 @@ double CutData::ComputeViolation() const {
     violation += term.lp_value * static_cast<double>(term.coeff.value());
   }
   return violation;
+}
+
+double CutData::ComputeEfficacy() const {
+  double violation = -static_cast<double>(rhs);
+  double norm = 0.0;
+  for (const CutTerm& term : terms) {
+    const double coeff = static_cast<double>(term.coeff.value());
+    violation += term.lp_value * coeff;
+    norm += coeff * coeff;
+  }
+  return violation / std::sqrt(norm);
 }
 
 void CutDataBuilder::ClearIndices() {
@@ -279,6 +324,7 @@ void CutDataBuilder::AddOrMergeTerm(const CutTerm& term, IntegerValue t,
 
 // TODO(user): Divide by gcd first to avoid possible overflow in the
 // conversion? it is however unlikely given that our coeffs should be small.
+ABSL_DEPRECATED("Only used in tests, this will be removed.")
 bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
                                                LinearConstraint* output) {
   tmp_map_.clear();
@@ -300,14 +346,17 @@ bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
     }
   }
 
-  output->ClearTerms();
   output->lb = kMinIntegerValue;
   output->ub = new_rhs;
+  output->resize(tmp_map_.size());
+  int new_size = 0;
   for (const auto [var, coeff] : tmp_map_) {
     if (coeff == 0) continue;
-    output->vars.push_back(var);
-    output->coeffs.push_back(coeff);
+    output->vars[new_size] = var;
+    output->coeffs[new_size] = coeff;
+    ++new_size;
   }
+  output->resize(new_size);
   DivideByGCD(output);
   return true;
 }
@@ -1530,6 +1579,220 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
 
   cut_ = temp_cut_;
   ++ls_stats_.num_cuts;
+  return true;
+}
+
+BoolRLTCutHelper::~BoolRLTCutHelper() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"bool_rlt/num_tried", num_tried_});
+  stats.push_back({"bool_rlt/num_tried_factors", num_tried_factors_});
+  shared_stats_->AddStats(stats);
+}
+
+void BoolRLTCutHelper::Initialize(
+    const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars) {
+  product_detector_->InitializeBooleanRLTCuts(lp_vars, *lp_values_);
+  enabled_ = !product_detector_->BoolRLTCandidates().empty();
+}
+
+// TODO(user): do less work, add more stats.
+bool BoolRLTCutHelper::TrySimpleSeparation(const CutData& input_ct) {
+  if (!enabled_) return false;
+
+  ++num_tried_;
+  DCHECK(input_ct.AllCoefficientsArePositive());
+
+  // We will list the interesting "factor" to try to multiply + linearize the
+  // input constraint with.
+  absl::flat_hash_set<IntegerVariable> to_try_set;
+  std::vector<IntegerVariable> to_try;
+
+  // We can look at the linearized factor * term and bound the activity delta
+  // rescaled by 1 / factor.
+  //
+  // CASE          linearized_term       delta = term/factor - previous
+  //
+  // DROP,                             0                               0 - X
+  // MC_CORMICK,  factor * ub - (ub - X)      (ub - X) * (1 - 1/factor) <= 0
+  // SQUARE,                    factor=X                               1 - X
+  // RLT,                     factor - P               1 - X - P/X  <= 1 - X
+  //
+  // TODO(user): detect earlier that a factor is not worth checking because
+  // we already loose too much with the DROP/MC_CORMICK cases ? Filter more ?
+  // I think we can probably evaluate the factor efficiency during the first
+  // loop which usually have a small complexity compared to num_factor_to_try
+  // times num filtered terms.
+  filtered_input_.terms.clear();
+  filtered_input_.rhs = input_ct.rhs;
+
+  const auto& candidates = product_detector_->BoolRLTCandidates();
+  for (const CutTerm& term : input_ct.terms) {
+    // The only options are DROP or MC_CORMICK, but the later will unlikely win.
+    //
+    // TODO(user): we never use factor with lp value < 1e-4, but we could use a
+    // factor equal to 1.0 I think. Double check.
+    if (!term.IsBoolean() && term.lp_value <= 1e-6) {
+      continue;
+    }
+
+    // Here the MC_CORMICK will not loose much. And SQUARE or RLT cannot win
+    // much, so we can assume there is no loss and just look for violated
+    // subconstraint.
+    if (term.LpDistToMaxValue() <= 1e-6) {
+      filtered_input_.rhs -= absl::int128(term.coeff.value()) *
+                             absl::int128(term.bound_diff.value());
+      continue;
+    }
+
+    // Convert to var or -var (to mean 1 - var).
+    //
+    // TODO(user): We could keep for each factor the max gain, so that we
+    // can decided if it is not even worth trying a factor.
+    const IntegerVariable var = term.GetUnderlyingLiteralOrNone();
+    if (var != kNoIntegerVariable && candidates.contains(NegationOf(var))) {
+      for (const IntegerVariable factor : candidates.at(NegationOf(var))) {
+        if (to_try_set.insert(factor).second) to_try.push_back(factor);
+      }
+    }
+    filtered_input_.terms.push_back(term);
+  }
+
+  // TODO(user): Avoid constructing the cut just to evaluate its efficacy.
+  double best_efficacy = 1e-3;
+  IntegerVariable best_factor = kNoIntegerVariable;
+  for (const IntegerVariable factor : to_try) {
+    ++num_tried_factors_;
+    if (!TryProduct(factor, filtered_input_)) continue;
+    const double efficacy = cut_.ComputeEfficacy();
+    if (efficacy > best_efficacy) {
+      best_efficacy = efficacy;
+      best_factor = factor;
+    }
+  }
+
+  // If we found a good factor, applies it to the non-filtered base constraint.
+  if (best_factor != kNoIntegerVariable) {
+    return TryProduct(best_factor, input_ct);
+  }
+  return false;
+}
+
+namespace {
+
+// Each bool * term can be linearized in a couple of way.
+// We will choose the best one.
+enum class LinearizationOption {
+  DROP,
+  MC_CORMICK,
+  RLT,
+  SQUARE,
+};
+
+}  // namespace
+
+double BoolRLTCutHelper::GetLiteralLpValue(IntegerVariable var) const {
+  if (VariableIsPositive(var)) return (*lp_values_)[var];
+  return 1.0 - (*lp_values_)[PositiveVariable(var)];
+}
+
+bool BoolRLTCutHelper::TryProduct(IntegerVariable factor,
+                                  const CutData& input) {
+  cut_.terms.clear();
+  cut_.rhs = 0;
+  absl::int128 old_rhs = input.rhs;
+
+  const double factor_lp = GetLiteralLpValue(factor);
+
+  // Consider each term in sequence and linearize them.
+  for (CutTerm term : input.terms) {
+    LinearizationOption best_option = LinearizationOption::DROP;
+
+    // Recover the "IntegerVariable" literal if any.
+    const IntegerVariable var = term.GetUnderlyingLiteralOrNone();
+    const bool is_literal = var != kNoIntegerVariable;
+
+    // First option is if factor == var.
+    if (factor == var) {
+      // The term can be left unchanged.
+      // Note that we "win" (factor_lp - factor_lp ^ 2) * coeff activity.
+      best_option = LinearizationOption::SQUARE;
+      cut_.terms.push_back(term);
+      continue;
+    }
+
+    // If factor == NegationOf(var) our best linearization is unfortunately
+    // just product >= 0.
+    if (NegationOf(factor) == var) {
+      best_option = LinearizationOption::DROP;
+      continue;
+    }
+
+    // TODO(user): If l implies x and y, we have x * y >= l.
+    // We have to choose l as high as possible if multiple choices.
+
+    // We start by the lp value for the drop option: simply dropping the term
+    // since we know it is >= 0. We will choose the option with the highest
+    // lp value, which is the one that "loose" the least activity.
+    double best_lp = 0.0;
+
+    // Second option, is complement it and use x * (1 - y) <= (1 - y):
+    // x * [1 - (1 - y)] = x - x * (1 - y) >= x - (1 - y)
+    const double complement_lp =
+        static_cast<double>(term.bound_diff.value()) - term.lp_value;
+    const double mc_cormick_lp = factor_lp - complement_lp;
+    if (mc_cormick_lp > best_lp) {
+      best_option = LinearizationOption::MC_CORMICK;
+      best_lp = mc_cormick_lp;
+    }
+
+    // Last option is complement it and use a relation x * (1 - y) <= u.
+    // so the lp is x - u. Note that this can be higher than x * y if the
+    // bilinear relation is violated by the lp solution.
+    if (is_literal) {
+      // TODO(user): only consider variable within current lp.
+      const IntegerVariable ub_lit =
+          product_detector_->LiteralProductUpperBound(factor, NegationOf(var));
+      if (ub_lit != kNoIntegerVariable) {
+        const double lit_lp = GetLiteralLpValue(ub_lit);
+        if (factor_lp - lit_lp > best_lp) {
+          // We do it right away since we have all we need.
+          best_option = LinearizationOption::RLT;
+
+          // First complement to update rhs.
+          term.Complement(&old_rhs);
+
+          // Now we replace the term data.
+          term.lp_value = lit_lp;
+          term.ReplaceExpressionByLiteral(ub_lit);
+          cut_.terms.push_back(term);
+          continue;
+        }
+      }
+    }
+
+    if (best_option == LinearizationOption::DROP) continue;
+
+    // We just keep the complemented term.
+    CHECK(best_option == LinearizationOption::MC_CORMICK);
+    term.Complement(&old_rhs);
+    cut_.terms.push_back(term);
+  }
+
+  // Finally we add the - factor * old_rhs term.
+  // We can only do that if the old_rhs is not too big.
+  //
+  // TODO(user): Avoid right away large constraint coming from gomory...
+  const absl::int128 limit(int64_t{1} << 50);
+  if (old_rhs > limit || old_rhs < -limit) return false;
+
+  CutTerm term;
+  term.coeff = -IntegerValue(static_cast<int64_t>(old_rhs));
+  term.lp_value = factor_lp;
+  term.bound_diff = 1;
+  term.ReplaceExpressionByLiteral(factor);
+  cut_.terms.push_back(term);
+
   return true;
 }
 

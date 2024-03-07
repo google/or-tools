@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -23,17 +24,14 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":gscip_solver_callback",
         ":message_callback_data",
-        "//ortools/base:cleanup",
+        "//ortools/base:linked_hash_map",
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/gscip",
         "//ortools/gscip:gscip_cc_proto",
-        "//ortools/gscip:gscip_event_handler",
         "//ortools/gscip:gscip_parameters",
-        "//ortools/linear_solver:scip_with_glop",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -50,8 +48,10 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_submatrix",
         "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/solvers/gscip:gscip_solver_constraint_handler",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
@@ -63,8 +63,43 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+        "@scip//:libscip",
     ],
     alwayslink = 1,
+)
+
+cc_test(
+    name = "gscip_solver_test",
+    size = "medium",
+    srcs = ["gscip_solver_test.cc"],
+    shard_count = 10,
+    deps = [
+        ":gscip_solver",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/gscip:gscip_parameters",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:ip_multiple_solutions_tests",
+        "//ortools/math_opt/solver_tests:ip_parameter_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:mip_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+        "//ortools/math_opt/testing:param_name",
+        "//ortools/port:scoped_std_stream_capture",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
 )
 
 cc_library(
@@ -73,8 +108,8 @@ cc_library(
     hdrs = ["gurobi_callback.h"],
     deps = [
         ":message_callback_data",
-        "//ortools/base",
         "//ortools/base:linked_hash_map",
+        "//ortools/base:logging",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/gurobi:environment",
@@ -115,6 +150,7 @@ cc_library(
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/gurobi:environment",
+        "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -130,10 +166,12 @@ cc_library(
         "//ortools/math_opt/core:non_streamable_solver_init_arguments",
         "//ortools/math_opt/core:solve_interrupter",
         "//ortools/math_opt/core:solver_interface",
+        "//ortools/math_opt/core:sorted",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
+        "//ortools/util:testing_utils",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -146,6 +184,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
     ],
     alwayslink = 1,
 )
@@ -158,7 +197,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base:cleanup",
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
@@ -187,6 +225,7 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -211,7 +250,8 @@ cc_library(
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver/proto_solver",
+        "//ortools/linear_solver/proto_solver:proto_utils",
+        "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -243,6 +283,60 @@ cc_library(
     alwayslink = 1,
 )
 
+cc_test(
+    name = "glop_solver_test",
+    srcs = ["glop_solver_test.cc"],
+    deps = [
+        ":glop_solver",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:lp_incomplete_solve_tests",
+        "//ortools/math_opt/solver_tests:lp_initial_basis_tests",
+        "//ortools/math_opt/solver_tests:lp_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:lp_parameter_tests",
+        "//ortools/math_opt/solver_tests:lp_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+    ],
+)
+
+cc_test(
+    name = "cp_sat_solver_test",
+    srcs = ["cp_sat_solver_test.cc"],
+    shard_count = 10,
+    deps = [
+        ":cp_sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:ip_multiple_solutions_tests",
+        "//ortools/math_opt/solver_tests:ip_parameter_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:mip_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+        "//ortools/math_opt/testing:param_name",
+        "@com_google_absl//absl/status",
+    ],
+)
+
 cc_library(
     name = "message_callback_data",
     srcs = ["message_callback_data.cc"],
@@ -254,24 +348,112 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "gscip_solver_callback",
-    srcs = ["gscip_solver_callback.cc"],
-    hdrs = ["gscip_solver_callback.h"],
+cc_test(
+    name = "message_callback_data_test",
+    srcs = ["message_callback_data_test.cc"],
     deps = [
-        "//ortools/base",
-        "//ortools/linear_solver:scip_helper_macros",
-        "//ortools/linear_solver:scip_with_glop",
-        "//ortools/math_opt:callback_cc_proto",
+        ":message_callback_data",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "pdlp_bridge",
+    srcs = ["pdlp_bridge.cc"],
+    hdrs = ["pdlp_bridge.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:inverted_bounds",
         "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@eigen//:eigen3",
+    ],
+)
+
+cc_library(
+    name = "pdlp_solver",
+    srcs = [
+        "pdlp_solver.cc",
+        "pdlp_solver.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pdlp_bridge",
+        "//ortools/base:protoutil",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:inverted_bounds",
+        "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:solve_interrupter",
         "//ortools/math_opt/core:solver_interface",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "//ortools/math_opt/validators:callback_validator",
+        "//ortools/pdlp:iteration_stats",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "pdlp_solver_test",
+    size = "small",
+    srcs = ["pdlp_solver_test.cc"],
+    shard_count = 10,
+    deps = [
+        ":pdlp_solver",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:solver",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:lp_incomplete_solve_tests",
+        "//ortools/math_opt/solver_tests:lp_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:lp_parameter_tests",
+        "//ortools/math_opt/solver_tests:lp_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -281,10 +463,10 @@ cc_library(
         "glpk_solver.cc",
         "glpk_solver.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":glpk_cc_proto",
         ":message_callback_data",
-        "//ortools/base:cleanup",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/base:sysinfo",
@@ -311,6 +493,7 @@ cc_library(
         "//ortools/math_opt/solvers/glpk:rays",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -319,24 +502,63 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
         "@glpk",
     ],
     alwayslink = 1,
 )
 
+cc_test(
+    name = "glpk_solver_test",
+    srcs = ["glpk_solver_test.cc"],
+    deps = [
+        ":glpk_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/core:solver",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:ip_parameter_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:lp_incomplete_solve_tests",
+        "//ortools/math_opt/solver_tests:lp_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:lp_parameter_tests",
+        "//ortools/math_opt/solver_tests:lp_tests",
+        "//ortools/math_opt/solver_tests:mip_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+        "//ortools/math_opt/testing:param_name",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+proto_library(
+    name = "osqp_proto",
+    srcs = ["osqp.proto"],
+)
+
+cc_proto_library(
+    name = "osqp_cc_proto",
+    deps = [":osqp_proto"],
+)
+
+py_proto_library(
+    name = "osqp_py_pb2",
+    deps = [":osqp_proto"],
+)
+
 proto_library(
     name = "gurobi_proto",
     srcs = ["gurobi.proto"],
-)
-
-cc_proto_library(
-    name = "gurobi_cc_proto",
-    deps = [":gurobi_proto"],
-)
-
-cc_proto_library(
-    name = "glpk_cc_proto",
-    deps = [":glpk_proto"],
 )
 
 proto_library(
@@ -345,11 +567,38 @@ proto_library(
 )
 
 cc_proto_library(
-    name = "highs_cc_proto",
-    deps = [":highs_proto"],
+    name = "glpk_cc_proto",
+    deps = [":glpk_proto"],
+)
+
+py_proto_library(
+    name = "glpk_py_pb2",
+    deps = [":glpk_proto"],
+)
+
+cc_proto_library(
+    name = "gurobi_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
+)
+
+py_proto_library(
+    name = "gurobi_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
 )
 
 proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
+)
+
+cc_proto_library(
+    name = "highs_cc_proto",
+    deps = [":highs_proto"],
+)
+
+py_proto_library(
+    name = "highs_py_pb2",
+    deps = [":highs_proto"],
 )

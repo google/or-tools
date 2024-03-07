@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,9 +14,11 @@
 #ifndef OR_TOOLS_GLOP_PRICING_H_
 #define OR_TOOLS_GLOP_PRICING_H_
 
+#include <cmath>
 #include <random>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "ortools/lp_data/lp_types.h"
@@ -178,7 +180,7 @@ inline void DynamicMaximum<Index>::StartDenseUpdates() {
 template <typename Index>
 inline void DynamicMaximum<Index>::DenseAddOrUpdate(Index position,
                                                     Fractional value) {
-  DCHECK(IsFinite(value));
+  DCHECK(!std::isnan(value));
   DCHECK(tops_.empty());
   is_candidate_.Set(position);
   values_[position] = value;
@@ -187,7 +189,7 @@ inline void DynamicMaximum<Index>::DenseAddOrUpdate(Index position,
 template <typename Index>
 inline void DynamicMaximum<Index>::AddOrUpdate(Index position,
                                                Fractional value) {
-  DCHECK(IsFinite(value));
+  DCHECK(!std::isnan(value));
   is_candidate_.Set(position);
   values_[position] = value;
   if (value >= threshold_) UpdateTopK(position, value);

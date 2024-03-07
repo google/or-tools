@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -69,7 +69,8 @@ QuadraticProgram ReadQuadraticProgramOrDie(const std::string& filename,
 QuadraticProgram ReadMPModelProtoFileOrDie(
     const std::string& mpmodel_proto_file, bool include_names) {
   MPModelProto lp_proto;
-  QCHECK(ReadFileToProto(mpmodel_proto_file, &lp_proto)) << mpmodel_proto_file;
+  QCHECK_OK(ReadFileToProto(mpmodel_proto_file, &lp_proto))
+      << mpmodel_proto_file;
   auto result = QpFromMpModelProto(lp_proto, /*relax_integer_variables=*/true,
                                    include_names);
   QCHECK_OK(result);
@@ -267,10 +268,10 @@ class MpsReaderQpDataWrapper {
           std::vector<std::string>(dimension_and_names_.NumVariables());
       quadratic_program_.constraint_names =
           std::vector<std::string>(dimension_and_names_.NumConstraints());
-      for (auto [name, index] : dimension_and_names_.ColNameIndexMap()) {
+      for (const auto& [name, index] : dimension_and_names_.ColNameIndexMap()) {
         (*quadratic_program_.variable_names)[index] = name;
       }
-      for (auto [name, index] : dimension_and_names_.RowNameIndexMap()) {
+      for (const auto& [name, index] : dimension_and_names_.RowNameIndexMap()) {
         (*quadratic_program_.constraint_names)[index] = name;
       }
     }

@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -133,7 +133,6 @@ cc_library(
         ":bop_types",
         ":bop_util",
         "//ortools/base",
-        "//ortools/base:cleanup",
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:stl_util",
@@ -148,6 +147,7 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/random",
+        "@com_google_absl//absl/cleanup",
         "@com_google_protobuf//:protobuf",
     ],
 )

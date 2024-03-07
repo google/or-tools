@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -24,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -37,7 +37,8 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/cleanup.h"
+#include "google/protobuf/repeated_ptr_field.h"
+#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
@@ -61,13 +62,12 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solvers/gscip_solver_callback.h"
+#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "scip/type_cons.h"
-#include "scip/type_event.h"
 #include "scip/type_var.h"
 
 namespace operations_research {
@@ -245,60 +245,17 @@ inline GScipVarType GScipVarTypeFromIsInteger(const bool is_integer) {
   return is_integer ? GScipVarType::kInteger : GScipVarType::kContinuous;
 }
 
-// Used to delay the evaluation of a costly computation until the first time it
-// is actually needed.
-//
-// The typical use is when we have two independent branches that need the same
-// data but we don't want to compute these data if we don't enter any of those
-// branches.
-//
-// Usage:
-//   LazyInitialized<Xxx> xxx([&]() {
-//     return Xxx(...);
-//   });
-//
-//   if (predicate_1) {
-//     ...
-//     f(xxx.GetOrCreate());
-//     ...
-//   }
-//   if (predicate_2) {
-//     ...
-//     f(xxx.GetOrCreate());
-//     ...
-//   }
-template <typename T>
-class LazyInitialized {
- public:
-  // Checks that the input initializer is not nullptr.
-  explicit LazyInitialized(std::function<T()> initializer)
-      : initializer_(ABSL_DIE_IF_NULL(initializer)) {}
-
-  // Returns the value returned by initializer(), calling it the first time.
-  const T& GetOrCreate() {
-    if (!value_) {
-      value_ = initializer_();
-    }
-    return *value_;
-  }
-
- private:
-  const std::function<T()> initializer_;
-  std::optional<T> value_;
-};
-
 template <typename T>
 SparseDoubleVectorProto FillSparseDoubleVector(
-    const std::vector<int64_t>& ids_in_order,
-    const absl::flat_hash_map<int64_t, T>& id_map,
+    const gtl::linked_hash_map<int64_t, T>& id_map,
     const absl::flat_hash_map<T, double>& value_map,
     const SparseVectorFilterProto& filter) {
   SparseVectorFilterPredicate predicate(filter);
   SparseDoubleVectorProto result;
-  for (const int64_t variable_id : ids_in_order) {
-    const double value = value_map.at(id_map.at(variable_id));
-    if (predicate.AcceptsAndUpdate(variable_id, value)) {
-      result.add_ids(variable_id);
+  for (const auto [mathopt_id, scip_id] : id_map) {
+    const double value = value_map.at(scip_id);
+    if (predicate.AcceptsAndUpdate(mathopt_id, value)) {
+      result.add_ids(mathopt_id);
       result.add_values(value);
     }
   }
@@ -817,12 +774,39 @@ std::string JoinDetails(absl::string_view gscip_detail,
   return absl::StrCat(gscip_detail, "; ", math_opt_detail);
 }
 
+double GetBestPrimalObjective(
+    const double gscip_best_objective,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool is_maximize) {
+  double result = gscip_best_objective;
+  for (const auto& solution : solutions) {
+    if (solution.has_primal_solution() &&
+        solution.primal_solution().feasibility_status() ==
+            SOLUTION_STATUS_FEASIBLE) {
+      result =
+          is_maximize
+              ? std::max(result, solution.primal_solution().objective_value())
+              : std::min(result, solution.primal_solution().objective_value());
+    }
+  }
+  return result;
+}
+
 absl::StatusOr<TerminationProto> ConvertTerminationReason(
-    const bool is_maximize, const GScipOutput::Status gscip_status,
-    absl::string_view gscip_status_detail, const GScipSolvingStats& gscip_stats,
-    const bool has_feasible_solution, const bool had_cutoff) {
+    const GScipResult& gscip_result, const bool is_maximize,
+    const google::protobuf::RepeatedPtrField<SolutionProto>& solutions,
+    const bool had_cutoff) {
+  const bool has_feasible_solution = !solutions.empty();
+  const GScipOutput::Status gscip_status = gscip_result.gscip_output.status();
+  absl::string_view gscip_status_detail =
+      gscip_result.gscip_output.status_detail();
+  const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
+  // SCIP may return primal solutions that are slightly better than
+  // gscip_stats.best_objective().
+  const double best_primal_objective = GetBestPrimalObjective(
+      gscip_stats.best_objective(), solutions, is_maximize);
   const std::optional<double> optional_finite_primal_objective =
-      has_feasible_solution ? std::make_optional(gscip_stats.best_objective())
+      has_feasible_solution ? std::make_optional(best_primal_objective)
                             : std::nullopt;
   // For SCIP, the only indicator for the existence of a dual feasible solution
   // is a finite dual bound.
@@ -881,12 +865,12 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
                       "underlying gSCIP status: RESTART_LIMIT"));
     case GScipOutput::OPTIMAL:
       return OptimalTerminationProto(
-          /*finite_primal_objective=*/gscip_stats.best_objective(),
+          /*finite_primal_objective=*/best_primal_objective,
           /*dual_objective=*/gscip_stats.best_bound(),
           JoinDetails(gscip_status_detail, "underlying gSCIP status: OPTIMAL"));
     case GScipOutput::GAP_LIMIT:
       return OptimalTerminationProto(
-          /*finite_primal_objective=*/gscip_stats.best_objective(),
+          /*finite_primal_objective=*/best_primal_objective,
           /*dual_objective=*/gscip_stats.best_bound(),
           JoinDetails(gscip_status_detail,
                       "underlying gSCIP status: GAP_LIMIT"));
@@ -961,15 +945,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
     }
   };
 
-  LazyInitialized<std::vector<int64_t>> sorted_variables([&]() {
-    std::vector<int64_t> sorted;
-    sorted.reserve(variables_.size());
-    for (const auto& entry : variables_) {
-      sorted.emplace_back(entry.first);
-    }
-    std::sort(sorted.begin(), sorted.end());
-    return sorted;
-  });
   CHECK_EQ(gscip_result.solutions.size(), gscip_result.objective_values.size());
   for (int i = 0; i < gscip_result.solutions.size(); ++i) {
     // GScip ensures the solutions are returned best objective first.
@@ -981,32 +956,26 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
         solution->mutable_primal_solution();
     primal_solution->set_objective_value(gscip_result.objective_values[i]);
     primal_solution->set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
-    *primal_solution->mutable_variable_values() = FillSparseDoubleVector(
-        sorted_variables.GetOrCreate(), variables_, gscip_result.solutions[i],
-        model_parameters.variable_values_filter());
+    *primal_solution->mutable_variable_values() =
+        FillSparseDoubleVector(variables_, gscip_result.solutions[i],
+                               model_parameters.variable_values_filter());
   }
   if (!gscip_result.primal_ray.empty()) {
     *solve_result.add_primal_rays()->mutable_variable_values() =
-        FillSparseDoubleVector(sorted_variables.GetOrCreate(), variables_,
-                               gscip_result.primal_ray,
+        FillSparseDoubleVector(variables_, gscip_result.primal_ray,
                                model_parameters.variable_values_filter());
   }
-  const bool has_feasible_solution = solve_result.solutions_size() > 0;
-  ASSIGN_OR_RETURN(
-      *solve_result.mutable_termination(),
-      ConvertTerminationReason(is_maximize, gscip_result.gscip_output.status(),
-                               gscip_result.gscip_output.status_detail(),
-                               gscip_result.gscip_output.stats(),
-                               /*has_feasible_solution=*/has_feasible_solution,
-                               /*had_cutoff=*/cutoff.has_value()));
+  ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
+                   ConvertTerminationReason(gscip_result, is_maximize,
+                                            solve_result.solutions(),
+                                            /*had_cutoff=*/cutoff.has_value()));
   SolveStatsProto* const common_stats = solve_result.mutable_solve_stats();
   const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
 
   common_stats->set_node_count(gscip_stats.node_count());
   common_stats->set_simplex_iterations(gscip_stats.primal_simplex_iterations() +
                                        gscip_stats.dual_simplex_iterations());
-  common_stats->set_barrier_iterations(gscip_stats.total_lp_iterations() -
-                                       common_stats->simplex_iterations());
+  common_stats->set_barrier_iterations(gscip_stats.barrier_iterations());
   *solve_result.mutable_gscip_output() = std::move(gscip_result.gscip_output);
   return solve_result;
 }
@@ -1021,8 +990,7 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
   RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
   RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
-  RETURN_IF_ERROR(solver->RegisterHandlers());
-
+  RETURN_IF_ERROR(solver->constraint_handler_.Register(solver->gscip_.get()));
   RETURN_IF_ERROR(solver->AddVariables(
       model.variables(),
       SparseDoubleVectorAsMap(model.objective().linear_coefficients())));
@@ -1037,7 +1005,6 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
       solver->AddIndicatorConstraints(model.indicator_constraints()));
   RETURN_IF_ERROR(solver->AddSos1Constraints(model.sos1_constraints()));
   RETURN_IF_ERROR(solver->AddSos2Constraints(model.sos2_constraints()));
-
   return solver;
 }
 
@@ -1045,16 +1012,52 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
-    const CallbackRegistrationProto& callback_registration, const Callback cb,
+    const CallbackRegistrationProto& callback_registration, Callback cb,
     SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                /*supported_events=*/{}));
+  GScip::Interrupter gscip_interrupter;
+  const ScopedSolveInterrupterCallback scoped_interrupt_cb(
+      interrupter, [&]() { gscip_interrupter.Interrupt(); });
+  const bool use_interrupter = interrupter != nullptr || cb != nullptr;
 
-  const std::unique_ptr<GScipSolverCallbackHandler> callback_handler =
-      GScipSolverCallbackHandler::RegisterIfNeeded(callback_registration, cb,
-                                                   start, gscip_->scip());
+  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+      callback_registration,
+      /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION,
+                            CALLBACK_EVENT_MIP_NODE}));
+  if (constraint_data_ != nullptr) {
+    return absl::InternalError(
+        "constraint_data_ should always be null at the start of "
+        "GScipSolver::Solver()");
+  }
+  SCIP_CONS* callback_cons = nullptr;
+  if (cb != nullptr) {
+    // NOTE: we must meet the invariant on GScipSolverConstraintData, that when
+    // user_callback != nullptr, all fields are filled in.
+    constraint_data_ = std::make_unique<GScipSolverConstraintData>();
+    constraint_data_->user_callback = std::move(cb);
+    constraint_data_->SetWhenRunAndAdds(callback_registration);
+    constraint_data_->solve_start_time = absl::Now();
+    constraint_data_->variables = &variables_;
+    constraint_data_->variable_node_filter =
+        &callback_registration.mip_node_filter();
+    constraint_data_->variable_solution_filter =
+        &callback_registration.mip_solution_filter();
+    constraint_data_->interrupter = &gscip_interrupter;
+    // NOTE: it is critical that this constraint is added after all other
+    // constraints, as otherwise, due to what appears to be a bug in SCIP, we
+    // may run our callback before checking all the constraints in the model,
+    // see https://listserv.zib.de/pipermail/scip/2023-November/004785.html.
+    ASSIGN_OR_RETURN(callback_cons,
+                     constraint_handler_.AddCallbackConstraint(
+                         gscip_.get(), "mathopt_callback_constraint",
+                         constraint_data_.get()));
+  }
+  const auto cleanup_constraint_data = absl::Cleanup([this]() {
+    if (constraint_data_ != nullptr) {
+      *constraint_data_ = {};
+    }
+  });
 
   BufferedMessageCallback buffered_message_callback(std::move(message_cb));
   auto message_cb_cleanup = absl::MakeCleanup(
@@ -1074,14 +1077,6 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), value));
   }
 
-  // Before calling solve, set the interrupter on the event handler that calls
-  // SCIPinterruptSolve().
-  if (interrupter != nullptr) {
-    interrupt_event_handler_.interrupter = interrupter;
-  }
-  const auto interrupter_cleanup = absl::MakeCleanup(
-      [&]() { interrupt_event_handler_.interrupter = nullptr; });
-
   // SCIP returns "infeasible" when the model contain invalid bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
@@ -1097,13 +1092,15 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   ASSIGN_OR_RETURN(
       GScipResult gscip_result,
       gscip_->Solve(gscip_parameters,
-                    /*legacy_params=*/"", std::move(gscip_msg_cb)));
+                    /*legacy_params=*/"", std::move(gscip_msg_cb),
+                    use_interrupter ? &gscip_interrupter : nullptr));
 
   // Flush the potential last unfinished line.
   std::move(message_cb_cleanup).Invoke();
 
-  if (callback_handler) {
-    RETURN_IF_ERROR(callback_handler->Flush());
+  if (callback_cons != nullptr) {
+    RETURN_IF_ERROR(gscip_->DeleteConstraint(callback_cons));
+    constraint_data_.reset();
   }
 
   ASSIGN_OR_RETURN(
@@ -1112,6 +1109,14 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
                              parameters.has_cutoff_limit()
                                  ? std::make_optional(parameters.cutoff_limit())
                                  : std::nullopt));
+
+  // Reset solve-specific model parameters so that they do not leak into the
+  // next solve. Note that 0 is the default branching priority.
+  for (const auto [id, unused] :
+       MakeView(model_parameters.branching_priorities())) {
+    RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), 0));
+  }
+
   CHECK_OK(util_time::EncodeGoogleApiProto(
       absl::Now() - start, result.mutable_solve_stats()->mutable_solve_time()));
   return result;
@@ -1342,67 +1347,6 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
       model_update.sos2_constraint_updates().new_constraints()));
 
   return true;
-}
-
-absl::Status GScipSolver::RegisterHandlers() {
-  RETURN_IF_ERROR(interrupt_event_handler_.Register(gscip_.get()));
-  return absl::OkStatus();
-}
-
-GScipSolver::InterruptEventHandler::InterruptEventHandler()
-    : GScipEventHandler(
-          {.name = "interrupt event handler",
-           .description = "Event handler to call SCIPinterruptSolve() when a "
-                          "user SolveInterrupter is triggered."}) {}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::Init(GScip* const gscip) {
-  // We don't register any event if we don't have an interrupter.
-  if (interrupter == nullptr) {
-    return SCIP_OKAY;
-  }
-
-  // TODO(b/193537362): see if these events are enough or if we should have more
-  // of these.
-  CatchEvent(SCIP_EVENTTYPE_PRESOLVEROUND);
-  CatchEvent(SCIP_EVENTTYPE_NODEEVENT);
-  CatchEvent(SCIP_EVENTTYPE_ROWEVENT);
-
-  return TryCallInterruptIfNeeded(gscip);
-}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::Execute(
-    const GScipEventHandlerContext context) {
-  return TryCallInterruptIfNeeded(context.gscip());
-}
-
-SCIP_RETCODE GScipSolver::InterruptEventHandler::TryCallInterruptIfNeeded(
-    GScip* const gscip) {
-  if (interrupter == nullptr) {
-    LOG(WARNING) << "TryCallInterruptIfNeeded() called after interrupter has "
-                    "been reset!";
-    return SCIP_OKAY;
-  }
-
-  if (!interrupter->IsInterrupted()) {
-    return SCIP_OKAY;
-  }
-
-  const SCIP_STAGE stage = SCIPgetStage(gscip->scip());
-  switch (stage) {
-    case SCIP_STAGE_INIT:
-    case SCIP_STAGE_FREE:
-      // This should never happen anyway; but if this happens, we may want to
-      // know about it in unit tests.
-      LOG(DFATAL) << "TryCallInterruptIfNeeded() called in stage "
-                  << (stage == SCIP_STAGE_INIT ? "INIT" : "FREE");
-      return SCIP_OKAY;
-    case SCIP_STAGE_INITSOLVE:
-      LOG(WARNING) << "TryCallInterruptIfNeeded() called in INITSOLVE stage; "
-                      "we can't call SCIPinterruptSolve() in this stage.";
-      return SCIP_OKAY;
-    default:
-      return SCIPinterruptSolve(gscip->scip());
-  }
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>

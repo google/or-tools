@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -79,9 +80,10 @@ LbTreeSearch::LbTreeSearch(Model* model)
   // We use the normal SAT search but we will bump the variable activity
   // slightly differently. In addition to the conflicts, we also bump it each
   // time the objective lower bound increase in a sub-node.
-  search_heuristic_ =
-      SequentialSearch({SatSolverHeuristic(model),
-                        model->GetOrCreate<SearchHeuristics>()->fixed_search});
+  search_heuristic_ = SequentialSearch(
+      {SatSolverHeuristic(model), MostFractionalHeuristic(model),
+       IntegerValueSelectionHeuristic(
+           model->GetOrCreate<SearchHeuristics>()->fixed_search, model)});
 }
 
 void LbTreeSearch::UpdateParentObjective(int level) {
@@ -622,7 +624,7 @@ SatSolver::Status LbTreeSearch::Search(
 }
 
 std::vector<Literal> LbTreeSearch::ExtractDecisions(
-    int base_level, const std::vector<Literal>& conflict) {
+    int base_level, absl::Span<const Literal> conflict) {
   std::vector<int> num_per_level(sat_solver_->CurrentDecisionLevel() + 1, 0);
   std::vector<bool> is_marked;
   for (const Literal l : conflict) {
@@ -711,8 +713,6 @@ void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
   CHECK(!sat_solver_->Assignment().LiteralIsAssigned(node.literal));
   for (const IntegerLiteral integer_literal :
        integer_encoder_->GetIntegerLiterals(node.literal)) {
-    if (integer_trail_->IsCurrentlyIgnored(integer_literal.var)) continue;
-
     // To avoid bad corner case. Not sure it ever triggers.
     if (++num_tests > 10) break;
 

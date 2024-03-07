@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -198,6 +198,18 @@ std::function<int(GRBenv* env, const char* paramname, double* valueP)>
     GRBgetdblparam = nullptr;
 std::function<int(GRBenv* env, const char* paramname, char* valueP)>
     GRBgetstrparam = nullptr;
+std::function<int(GRBenv* env, const char* paramname, int* valueP, int* minP,
+                  int* maxP, int* defP)>
+    GRBgetintparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname, double* valueP,
+                  double* minP, double* maxP, double* defP)>
+    GRBgetdblparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname, char* valueP, char* defP)>
+    GRBgetstrparaminfo = nullptr;
+std::function<int(GRBenv* env, const char* paramname)> GRBgetparamtype =
+    nullptr;
+std::function<int(GRBenv* env, int i, char** paramnameP)> GRBgetparamname =
+    nullptr;
 std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetparam = nullptr;
 std::function<int(GRBenv* env, const char* paramname, int value)>
@@ -208,7 +220,10 @@ std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetstrparam = nullptr;
 std::function<int(GRBenv* env)> GRBresetparams = nullptr;
 std::function<int(GRBenv* dest, GRBenv* src)> GRBcopyparams = nullptr;
+std::function<int(GRBenv* env)> GRBgetnumparams = nullptr;
+std::function<int(GRBenv** envP)> GRBemptyenv = nullptr;
 std::function<int(GRBenv** envP, const char* logfilename)> GRBloadenv = nullptr;
+std::function<int(GRBenv* env)> GRBstartenv = nullptr;
 std::function<GRBenv*(GRBmodel* model)> GRBgetenv = nullptr;
 std::function<void(GRBenv* env)> GRBfreeenv = nullptr;
 std::function<const char*(GRBenv* env)> GRBgeterrormsg = nullptr;
@@ -309,6 +324,17 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBresetparams, "GRBresetparams");
   gurobi_dynamic_library->GetFunction(&GRBcopyparams, "GRBcopyparams");
   gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
+  gurobi_dynamic_library->GetFunction(&GRBstartenv, "GRBstartenv");
+  gurobi_dynamic_library->GetFunction(&GRBemptyenv, "GRBemptyenv");
+  gurobi_dynamic_library->GetFunction(&GRBgetnumparams, "GRBgetnumparams");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamname, "GRBgetparamname");
+  gurobi_dynamic_library->GetFunction(&GRBgetparamtype, "GRBgetparamtype");
+  gurobi_dynamic_library->GetFunction(&GRBgetintparaminfo,
+                                      "GRBgetintparaminfo");
+  gurobi_dynamic_library->GetFunction(&GRBgetdblparaminfo,
+                                      "GRBgetdblparaminfo");
+  gurobi_dynamic_library->GetFunction(&GRBgetstrparaminfo,
+                                      "GRBgetstrparaminfo");
   gurobi_dynamic_library->GetFunction(&GRBgetenv, "GRBgetenv");
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, "GRBfreeenv");
   gurobi_dynamic_library->GetFunction(&GRBgeterrormsg, "GRBgeterrormsg");
@@ -318,9 +344,9 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
 
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
-  const std::vector<std::string> kGurobiVersions = {"1000", "952", "951", "950",
-                                                    "911",  "910", "903", "902",
-                                                    "811",  "801", "752"};
+  const std::vector<std::string> kGurobiVersions = {
+      "1100", "1003", "1002", "1001", "1000", "952", "951", "950",
+      "911",  "910",  "903",  "902",  "811",  "801", "752"};
   potential_paths.reserve(kGurobiVersions.size() * 3);
 
   // Look for libraries pointed by GUROBI_HOME first.
@@ -378,7 +404,8 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   }
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
-  for (const std::string& version : {"10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
+  for (const std::string& version : {"11.0.0", "10.0.3", "10.0.2", "10.0.1",
+                                     "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
   }

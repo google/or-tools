@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,8 +18,10 @@
 #include <string>
 
 #include "absl/flags/flag.h"
-#include "ortools/base/commandlineflags.h"
+#include "absl/log/check.h"
+#include "absl/strings/match.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"

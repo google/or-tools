@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
-#define OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
+#ifndef OR_TOOLS_INIT_INIT_H_
+#define OR_TOOLS_INIT_INIT_H_
 
 #include <cstdint>
 #include <string>
@@ -177,4 +177,4 @@ class OrToolsVersion {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_OPEN_SOURCE_INIT_INIT_H_
+#endif  // OR_TOOLS_INIT_INIT_H_

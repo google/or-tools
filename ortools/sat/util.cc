@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -41,7 +41,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -278,9 +277,9 @@ int64_t ClosestMultiple(int64_t value, int64_t base) {
 }
 
 bool LinearInequalityCanBeReducedWithClosestMultiple(
-    int64_t base, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
-    int64_t rhs, int64_t* new_rhs) {
+    int64_t base, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> lbs, absl::Span<const int64_t> ubs, int64_t rhs,
+    int64_t* new_rhs) {
   // Precompute some bounds for the equation base * X + error <= rhs.
   int64_t max_activity = 0;
   int64_t max_x = 0;
@@ -377,6 +376,25 @@ int MoveOneUnprocessedLiteralLast(
       literals->begin() + target_prefix_size, literals->end(),
       [&processed](Literal l) { return processed.contains(l.Index()); });
   return target_prefix_size;
+}
+
+int WeightedPick(absl::Span<const double> input, absl::BitGenRef random) {
+  DCHECK(!input.empty());
+
+  double total_weight = 0;
+  for (const double w : input) {
+    total_weight += w;
+  }
+
+  const double weight_point = absl::Uniform(random, 0.0f, total_weight);
+  double total_weight2 = 0;
+  for (int i = 0; i < input.size(); ++i) {
+    total_weight2 += input[i];
+    if (total_weight2 > weight_point) {
+      return i;
+    }
+  }
+  return input.size() - 1;
 }
 
 void IncrementalAverage::Reset(double reset_value) {

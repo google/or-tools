@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -259,6 +259,10 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
   absl::MutexLock mutex_lock(&mu_);
   if (!IsValid(path)) return;
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
+  if (nodes.back().first->closed) {
+    VLOG(2) << "Cannot split closed node";
+    return;
+  }
   if (nodes.back().first->children[0] != nullptr) {
     LOG_IF(WARNING, nodes.size() > 1)
         << "Cannot resplit previously split node @ " << nodes.back().second
@@ -266,11 +270,11 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     return;
   }
   if (nodes_.size() >= max_nodes_) {
-    VLOG(1) << "Too many nodes to accept split";
+    VLOG(2) << "Too many nodes to accept split";
     return;
   }
   if (num_splits_wanted_ <= 0) {
-    VLOG(1) << "Enough splits for now";
+    VLOG(2) << "Enough splits for now";
     return;
   }
   if (params_.shared_tree_split_strategy() ==
@@ -289,13 +293,13 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + path.MaxLevel() >
         MaxAllowedDiscrepancyPlusDepth(num_workers_)) {
-      VLOG(1) << "Too high discrepancy to accept split";
+      VLOG(2) << "Too high discrepancy to accept split";
       return;
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_OBJECTIVE_LB) {
     if (nodes.back().first->objective_lb > nodes.front().first->objective_lb) {
-      VLOG(1) << "Can only split nodes with minimum objective lb, "
+      VLOG(2) << "Can only split nodes with minimum objective lb, "
               << nodes.back().first->objective_lb << " > "
               << nodes.front().first->objective_lb;
       return;
@@ -303,11 +307,11 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
     if (path.MaxLevel() + 1 > log2(num_workers_)) {
-      VLOG(1) << "Tree too unbalanced to accept split";
+      VLOG(2) << "Tree too unbalanced to accept split";
       return;
     }
   }
-  VLOG_EVERY_N(1, 10) << unassigned_leaves_.size() << " unassigned leaves, "
+  VLOG_EVERY_N(2, 10) << unassigned_leaves_.size() << " unassigned leaves, "
                       << nodes_.size() << " subtrees, " << num_splits_wanted_
                       << " splits wanted";
   Split(nodes, decision);
@@ -320,7 +324,7 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
   if (nodes.back().first->children[0] == nullptr &&
       !nodes.back().first->closed && nodes.size() > 1) {
-    VLOG(1) << "Returning leaf to be replaced";
+    VLOG(2) << "Returning leaf to be replaced";
     unassigned_leaves_.push_back(nodes.back().first);
   }
   path.Clear();
@@ -334,7 +338,7 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
       return;
     }
   }
-  VLOG(1) << "Assigning root because no unassigned leaves are available";
+  VLOG(2) << "Assigning root because no unassigned leaves are available";
   // TODO(user): Investigate assigning a random leaf so workers can still
   // improve shared tree bounds.
 }
@@ -448,7 +452,7 @@ void SharedTreeManager::CloseTree(ProtoTrail& path, int level) {
   path.Clear();
   if (node_id_to_close < node_id_offset_) return;
   Node* node = &nodes_[node_id_to_close - node_id_offset_];
-  VLOG(1) << "Closing subtree at level " << level;
+  VLOG(2) << "Closing subtree at level " << level;
   DCHECK(to_close_.empty());
   to_close_.push_back(node);
   ProcessNodeChanges();
@@ -522,7 +526,7 @@ bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level) {
   CHECK_NE(lit.Index(), kNoLiteralIndex);
   CHECK(!sat_solver_->Assignment().LiteralIsTrue(lit));
   if (sat_solver_->Assignment().LiteralIsFalse(lit)) {
-    VLOG(1) << "Closing subtree via impl at " << level + 1
+    VLOG(2) << "Closing subtree via impl at " << level + 1
             << " assigned=" << assigned_tree_.MaxLevel();
     integer_trail_->ReportConflict(DecisionReason(level), {});
     manager_->CloseTree(assigned_tree_, level);
@@ -530,7 +534,7 @@ bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level) {
     return false;
   }
   integer_trail_->EnqueueLiteral(lit, DecisionReason(level), {});
-  VLOG(1) << "Learned shared clause";
+  VLOG(2) << "Learned shared clause";
   return true;
 }
 
@@ -583,7 +587,7 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
     if (!sat_solver_->Assignment().LiteralIsAssigned(next_decision)) break;
     if (sat_solver_->Assignment().LiteralIsFalse(next_decision)) {
       // Next assigned decision is impossible.
-      VLOG(1) << "Closing subtree at " << level + 1
+      VLOG(2) << "Closing subtree at " << level + 1
               << " assigned=" << assigned_tree_.MaxLevel();
       manager_->CloseTree(assigned_tree_, level + 1);
       assigned_tree_literals_.clear();
@@ -602,7 +606,7 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
   CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   if (next_level <= assigned_tree_.MaxLevel()) {
-    VLOG(1) << "Following shared trail depth=" << next_level << " "
+    VLOG(2) << "Following shared trail depth=" << next_level << " "
             << parameters_->name();
     const Literal decision = assigned_tree_literals_[next_level - 1];
     CHECK(!sat_solver_->Assignment().LiteralIsFalse(decision))
@@ -665,7 +669,7 @@ void SharedTreeWorker::MaybeProposeSplit() {
 
 void SharedTreeWorker::SyncWithSharedTree() {
   splits_wanted_ = manager_->SplitsToGeneratePerWorker();
-  VLOG(1) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
+  VLOG(2) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
   manager_->SyncTree(assigned_tree_);
   // If we have no assignment, try to get one.
   // We also want to ensure unassigned nodes have their lower bounds bumped
@@ -679,7 +683,7 @@ void SharedTreeWorker::SyncWithSharedTree() {
     manager_->ReplaceTree(assigned_tree_);
     tree_assignment_restart_ = num_restarts_;
   }
-  VLOG(1) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
+  VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
   assigned_tree_literals_.clear();
   for (int i = 1; i <= assigned_tree_.MaxLevel(); ++i) {

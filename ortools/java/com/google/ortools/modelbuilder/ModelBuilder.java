@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -317,7 +317,17 @@ public final class ModelBuilder {
    * @return true if the model was correctly written.
    */
   public boolean exportToFile(String file) {
-    return helper.writeModelToFile(file);
+    return helper.writeModelToProtoFile(file);
+  }
+
+  /**
+   * import the model from protocol buffer 'file'.
+   *
+   * @param file file to read the model from.
+   * @return true if the model was correctly loaded.
+   */
+  public boolean importFromFile(String file) {
+    return helper.readModelFromProtoFile(file);
   }
 
   public String exportToMpsString(boolean obfuscate) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
@@ -80,7 +81,7 @@ class PrecedenceRelations {
   void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
                               std::vector<FullIntegerPrecedence>* output);
 
-  // If we don't have too many variable, we compute the full transtive closure
+  // If we don't have too many variable, we compute the full transitive closure
   // and can query in O(1) if there is a relation between two variables.
   // This can be used to optimize some scheduling propagation and reasons.
   //
@@ -93,12 +94,6 @@ class PrecedenceRelations {
     return it == all_relations_.end() ? kMinIntegerValue : it->second;
   }
 
-  // Update the hash table of precedence relation.
-  void UpdateOffset(IntegerVariable a, IntegerVariable b, IntegerValue offset) {
-    InternalUpdate(a, b, offset);
-    InternalUpdate(NegationOf(b), NegationOf(a), -offset);
-  }
-
   // The current code requires the internal data to be processed once all
   // relations are loaded.
   //
@@ -106,7 +101,7 @@ class PrecedenceRelations {
   void Build();
 
  private:
-  void InternalUpdate(IntegerVariable a, IntegerVariable b,
+  void AddToHashTable(IntegerVariable a, IntegerVariable b,
                       IntegerValue offset) {
     const auto [it, inserted] = all_relations_.insert({{a, b}, offset});
     if (!inserted) {
@@ -117,7 +112,7 @@ class PrecedenceRelations {
   IntegerTrail* integer_trail_;
 
   util::StaticGraph<> graph_;
-  std::vector<IntegerValue> arc_offset_;
+  std::vector<IntegerValue> arc_offsets_;
 
   bool is_built_ = false;
   bool is_dag_ = false;
@@ -181,6 +176,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                                IntegerValue offset);
   void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
                                        IntegerVariable offset_var);
+  // Add a precedence relation (e1 + offset <= i2) between affine expressions.
+  // It will check that both e1 and e2 avec a variable with a coefficient of 1.
+  // This is used in tests.
+  void AddAffineCoeffOnePrecedence(AffineExpression e1, AffineExpression e2);
 
   // Same as above, but the relation is only true when the given literal is.
   void AddConditionalPrecedence(IntegerVariable i1, IntegerVariable i2,
@@ -448,6 +447,15 @@ inline void PrecedencesPropagator::AddPrecedenceWithOffset(
   AddArc(i1, i2, offset, /*offset_var=*/kNoIntegerVariable, {});
 }
 
+inline void PrecedencesPropagator::AddAffineCoeffOnePrecedence(
+    AffineExpression e1, AffineExpression e2) {
+  CHECK_NE(e1.var, kNoIntegerVariable);
+  CHECK_EQ(e1.coeff, 1);
+  CHECK_NE(e2.var, kNoIntegerVariable);
+  CHECK_EQ(e2.coeff, 1);
+  AddPrecedenceWithOffset(e1.var, e2.var, e1.constant - e2.constant);
+}
+
 inline void PrecedencesPropagator::AddConditionalPrecedence(IntegerVariable i1,
                                                             IntegerVariable i2,
                                                             Literal l) {
@@ -491,6 +499,21 @@ inline std::function<void(Model*)> LowerOrEqualWithOffset(IntegerVariable a,
     model->GetOrCreate<PrecedenceRelations>()->Add(a, b, IntegerValue(offset));
     model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
         a, b, IntegerValue(offset));
+  };
+}
+
+// a + offset <= b. (when a and b are of the form 1 * var + offset).
+inline std::function<void(Model*)> AffineCoeffOneLowerOrEqualWithOffset(
+    AffineExpression a, AffineExpression b, int64_t offset) {
+  CHECK_NE(a.var, kNoIntegerVariable);
+  CHECK_EQ(a.coeff, 1);
+  CHECK_NE(b.var, kNoIntegerVariable);
+  CHECK_EQ(b.coeff, 1);
+  return [=](Model* model) {
+    model->GetOrCreate<PrecedenceRelations>()->Add(
+        a.var, b.var, a.constant - b.constant + offset);
+    model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
+        a.var, b.var, a.constant - b.constant + offset);
   };
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -79,16 +79,6 @@ absl::Status ValidateQuadraticProgramDimensions(const QuadraticProgram& qp) {
   return absl::OkStatus();
 }
 
-bool HasValidBounds(const QuadraticProgram& qp) {
-  const bool constraint_bounds_valid =
-      (qp.constraint_lower_bounds.array() <= qp.constraint_upper_bounds.array())
-          .all();
-  const bool variable_bounds_valid =
-      (qp.variable_lower_bounds.array() <= qp.variable_upper_bounds.array())
-          .all();
-  return constraint_bounds_valid && variable_bounds_valid;
-}
-
 absl::StatusOr<QuadraticProgram> QpFromMpModelProto(
     const MPModelProto& proto, bool relax_integer_variables,
     bool include_names) {
@@ -135,7 +125,7 @@ absl::StatusOr<QuadraticProgram> QpFromMpModelProto(
     }
   }
   // To reduce peak RAM usage we construct the constraint matrix in-place.
-  // According to the documentation of `SparseMatrix::insert()` it's effecient
+  // According to the documentation of `SparseMatrix::insert()` it's efficient
   // to construct a matrix with insert()s as long as reserve() is called first
   // and the non-zeros are inserted in increasing order of inner index.
   // The non-zeros in each input constraint may not be sorted so this is only

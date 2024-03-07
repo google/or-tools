@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -138,7 +138,9 @@ search_python_module(
   NO_VERSION)
 set(PROTO_PYS)
 set(PROTO_MYPYS)
-file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+set(OR_TOOLS_PROTO_PY_FILES)
+file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/algorithms/*.proto"
   "ortools/bop/*.proto"
   "ortools/constraint_solver/*.proto"
   "ortools/glop/*.proto"
@@ -149,12 +151,29 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
   )
-if(USE_PDLP)
-  file(GLOB_RECURSE pdlp_proto_py_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
-  list(APPEND proto_py_files ${pdlp_proto_py_files})
+list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
+
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE MATH_OPT_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solver/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${MATH_OPT_PROTO_PY_FILES})
+
+  file(GLOB_RECURSE SERVICE_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/service/v1/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${SERVICE_PROTO_PY_FILES})
 endif()
-list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
-foreach(PROTO_FILE IN LISTS proto_py_files)
+
+if(USE_PDLP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE PDLP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${PDLP_PROTO_PY_FILES})
+endif()
+if(USE_SCIP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE GSCIP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${GSCIP_PROTO_PY_FILES})
+endif()
+
+foreach(PROTO_FILE IN LISTS OR_TOOLS_PROTO_PY_FILES)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
@@ -200,27 +219,53 @@ if(BUILD_VENV)
   endif()
 endif()
 
-if(BUILD_TESTING)
-  # add_python_test()
-  # CMake function to generate and build python test.
-  # Parameters:
-  #  the python filename
-  # e.g.:
-  # add_python_test(foo.py)
-  function(add_python_test FILE_NAME)
-    message(STATUS "Configuring test ${FILE_NAME} ...")
-    get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
-    get_filename_component(WRAPPER_DIR ${FILE_NAME} DIRECTORY)
+# add_python_test()
+# CMake function to generate and build python test.
+# Parameters:
+#  FILE_NAME: the python filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/python/
+# e.g.:
+# add_python_test(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/python/bar_test.py
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_python_test)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT TEST_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(TEST_NAME ${TEST_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...")
+
+  if(NOT TEST_COMPONENT_NAME)
+    # test is located in ortools/<component_name>/python/
+    get_filename_component(WRAPPER_DIR ${TEST_FILE_NAME} DIRECTORY)
     get_filename_component(COMPONENT_DIR ${WRAPPER_DIR} DIRECTORY)
     get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
+  endif()
 
+  if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
-    message(STATUS "Configuring test ${FILE_NAME} done")
-  endfunction()
-endif()
+  endif()
+  message(STATUS "Configuring test ${TEST_FILE_NAME} ...DONE")
+endfunction()
 
 #######################
 ##  PYTHON WRAPPERS  ##
@@ -232,10 +277,24 @@ message(STATUS "Python project: ${PYTHON_PROJECT}")
 set(PYTHON_PROJECT_DIR ${PROJECT_BINARY_DIR}/python/${PYTHON_PROJECT})
 message(STATUS "Python project build path: ${PYTHON_PROJECT_DIR}")
 
-# Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS init algorithms graph linear_solver constraint_solver pdlp sat scheduling util)
+# SWIG/Pybind11 wrap all libraries
+foreach(SUBPROJECT IN ITEMS
+ init
+ algorithms
+ graph
+ constraint_solver
+ linear_solver
+ ${PDLP_DIR}
+ sat
+ scheduling
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/python)
 endforeach()
+
+if(BUILD_MATH_OPT)
+  add_subdirectory(ortools/math_opt/core/python)
+  add_subdirectory(ortools/math_opt/python)
+endif()
 
 #######################
 ## Python Packaging  ##
@@ -256,13 +315,30 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/gscip/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/python/__init__.py CONTENT "")
+if(BUILD_MATH_OPT)
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/../pybind11_abseil/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/core/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/ipc/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
+
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/mathopt/__init__.py CONTENT "")
+endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/packing/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
+if(USE_PDLP OR BUILD_MATH_OPT)
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
+endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
@@ -278,6 +354,35 @@ file(COPY
   ortools/linear_solver/python/model_builder.py
   ortools/linear_solver/python/model_builder_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/linear_solver/python)
+if(BUILD_MATH_OPT)
+  file(COPY
+    ortools/math_opt/python/callback.py
+    ortools/math_opt/python/compute_infeasible_subsystem_result.py
+    ortools/math_opt/python/expressions.py
+    ortools/math_opt/python/hash_model_storage.py
+    ortools/math_opt/python/mathopt.py
+    ortools/math_opt/python/message_callback.py
+    ortools/math_opt/python/model_parameters.py
+    ortools/math_opt/python/model.py
+    ortools/math_opt/python/model_storage.py
+    ortools/math_opt/python/normalize.py
+    ortools/math_opt/python/parameters.py
+    ortools/math_opt/python/result.py
+    ortools/math_opt/python/solution.py
+    ortools/math_opt/python/solve.py
+    ortools/math_opt/python/solver_resources.py
+    ortools/math_opt/python/sparse_containers.py
+    ortools/math_opt/python/statistics.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python)
+  file(COPY
+    ortools/math_opt/python/ipc/proto_converter.py
+    ortools/math_opt/python/ipc/remote_http_solve.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python/ipc)
+  file(COPY
+    ortools/math_opt/python/testing/compare_proto.py
+    ortools/math_opt/python/testing/proto_matcher.py
+    DESTINATION ${PYTHON_PROJECT_DIR}/math_opt/python/testing)
+endif()
 file(COPY
   ortools/sat/python/cp_model.py
   ortools/sat/python/cp_model_helper.py
@@ -286,6 +391,11 @@ file(COPY
   ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
+
+# Adds py.typed to make typed packages.
+file(TOUCH ${PYTHON_PROJECT_DIR}/linear_solver/python/py.typed)
+file(TOUCH ${PYTHON_PROJECT_DIR}/sat/py.typed)
+file(TOUCH ${PYTHON_PROJECT_DIR}/sat/python/py.typed)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
@@ -308,6 +418,82 @@ configure_file(
   ${PROJECT_BINARY_DIR}/python/README.txt
   COPYONLY)
 
+configure_file(
+  ${PROJECT_SOURCE_DIR}/LICENSE
+  ${PROJECT_BINARY_DIR}/python/LICENSE
+  COPYONLY)
+
+add_custom_command(
+  OUTPUT python/ortools_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
+  # Don't need to copy static lib on Windows.
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
+   $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
+   ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
+  MAIN_DEPENDENCY
+    ortools/python/setup.py.in
+  DEPENDS
+    Py${PROJECT_NAME}_proto
+    ${PROJECT_NAMESPACE}::ortools
+  WORKING_DIRECTORY python
+  COMMAND_EXPAND_LISTS)
+
+add_custom_command(
+  OUTPUT python/pybind11_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f pybind11_timestamp
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:init_pybind11> ${PYTHON_PROJECT}/init/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:math_opt_pybind11> ${PYTHON_PROJECT}/math_opt/core/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:status_py_extension_stub> ${PYTHON_PROJECT}/../pybind11_abseil
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
+   $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
+  MAIN_DEPENDENCY
+    ortools/python/setup.py.in
+  DEPENDS
+    init_pybind11
+    knapsack_solver_pybind11
+    linear_sum_assignment_pybind11
+    max_flow_pybind11
+    min_cost_flow_pybind11
+    pywrapcp
+    pywraplp
+    model_builder_helper_pybind11
+    math_opt_pybind11
+    $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
+    swig_helper_pybind11
+    rcpsp_pybind11
+    sorted_interval_list_pybind11
+  WORKING_DIRECTORY python
+  COMMAND_EXPAND_LISTS)
+
+
 # Generate Stub
 if(GENERATE_PYTHON_STUB)
 # Look for required python modules
@@ -321,11 +507,11 @@ find_program(
   NAMES stubgen stubgen.exe
   REQUIRED
 )
+message(STATUS "Python: stubgen: ${stubgen_EXECUTABLE}")
 
 add_custom_command(
-  OUTPUT python/stub/timestamp
-  COMMAND ${CMAKE_COMMAND} -E remove_directory stub
-  COMMAND ${CMAKE_COMMAND} -E make_directory stub
+  OUTPUT python/stub_timestamp
+  COMMAND ${CMAKE_COMMAND} -E remove -f stub_timestamp
   COMMAND ${stubgen_EXECUTABLE} -p ortools.init.python.init --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.algorithms.python.knapsack_solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.linear_sum_assignment --output .
@@ -334,26 +520,18 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
+  COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
-  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
-    init_pybind11
-    knapsack_solver_pybind11
-    linear_sum_assignment_pybind11
-    max_flow_pybind11
-    min_cost_flow_pybind11
-    pywrapcp
-    pywraplp
-    model_builder_helper_pybind11
-    pdlp_pybind11
-    swig_helper_pybind11
-    rcpsp_pybind11
-    sorted_interval_list_pybind11
+    python/ortools_timestamp
+    python/pybind11_timestamp
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 endif()
@@ -367,47 +545,18 @@ search_python_module(
   PACKAGE wheel)
 
 add_custom_command(
-  OUTPUT python/dist/timestamp
+  OUTPUT python/dist_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
-  # Don't need to copy static lib on Windows.
-  COMMAND ${CMAKE_COMMAND} -E $<IF:$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>,copy,true>
-  $<$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>:$<TARGET_SONAME_FILE:ortools>>
-  ${PYTHON_PROJECT}/.libs
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:init_pybind11> ${PYTHON_PROJECT}/init/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:knapsack_solver_pybind11> ${PYTHON_PROJECT}/algorithms/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:linear_sum_assignment_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:max_flow_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:min_cost_flow_pybind11> ${PYTHON_PROJECT}/graph/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pdlp_pybind11> ${PYTHON_PROJECT}/pdlp/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
   #COMMAND ${Python3_EXECUTABLE} setup.py bdist_egg bdist_wheel
   COMMAND ${Python3_EXECUTABLE} setup.py bdist_wheel
-  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist/timestamp
+  COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/dist_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
   DEPENDS
     python/setup.py
-    Py${PROJECT_NAME}_proto
-    ${PROJECT_NAMESPACE}::ortools
-    init_pybind11
-    knapsack_solver_pybind11
-    linear_sum_assignment_pybind11
-    max_flow_pybind11
-    min_cost_flow_pybind11
-    pywrapcp
-    pywraplp
-    model_builder_helper_pybind11
-    pdlp_pybind11
-    swig_helper_pybind11
-    rcpsp_pybind11
-    sorted_interval_list_pybind11
-    $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub/timestamp>
+    python/ortools_timestamp
+    python/pybind11_timestamp
+    $<$<BOOL:${GENERATE_PYTHON_STUB}>:python/stub_timestamp>
   BYPRODUCTS
     python/${PYTHON_PROJECT}
     python/${PYTHON_PROJECT}.egg-info
@@ -419,7 +568,7 @@ add_custom_command(
 # Main Target
 add_custom_target(python_package ALL
   DEPENDS
-    python/dist/timestamp
+    python/dist_timestamp
   WORKING_DIRECTORY python)
 
 # Install rules
@@ -443,7 +592,8 @@ if(BUILD_VENV)
     COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
       --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PYTHON_PROJECT}==${PROJECT_VERSION}
     # install modules only required to run examples
-    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install pandas matplotlib pytest scipy
+    COMMAND ${VENV_Python3_EXECUTABLE} -m pip install
+      pandas matplotlib pytest scipy svgwrite
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Create venv and install ${PYTHON_PROJECT}"
@@ -518,23 +668,49 @@ endif()
 # add_python_sample()
 # CMake function to generate and build python sample.
 # Parameters:
-#  the python filename
+#  FILE_NAME: the Python filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_python_sample(foo.py)
-function(add_python_sample FILE_NAME)
-  message(STATUS "Configuring sample ${FILE_NAME} ...")
-  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_python_sample(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/sample/bar.py
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_python_sample)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT SAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(SAMPLE_NAME ${SAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
+
+  if(NOT SAMPLE_COMPONENT_NAME)
+    # sample is located in ortools/<component_name>/sample/
+    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+  endif()
 
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
-  message(STATUS "Configuring sample ${FILE_NAME} done")
+  message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...DONE")
 endfunction()
 
 ######################
@@ -543,20 +719,46 @@ endfunction()
 # add_python_example()
 # CMake function to generate and build python example.
 # Parameters:
-#  the python filename
+#  FILE_NAME: the Python filename
+#  COMPONENT_NAME: name of the ortools/ subdir where the test is located
+#  note: automatically determined if located in ortools/<component>/samples/
 # e.g.:
-# add_python_example(foo.py)
-function(add_python_example FILE_NAME)
-  message(STATUS "Configuring example ${FILE_NAME} ...")
-  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
-  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
-  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+# add_python_example(
+#   FILE_NAME
+#     ${PROJECT_SOURCE_DIR}/examples/foo/bar.py
+#   COMPONENT_NAME
+#     foo
+# )
+function(add_python_example)
+  set(options "")
+  set(oneValueArgs FILE_NAME COMPONENT_NAME)
+  set(multiValueArgs "")
+  cmake_parse_arguments(EXAMPLE
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+if(NOT EXAMPLE_FILE_NAME)
+    message(FATAL_ERROR "no FILE_NAME provided")
+  endif()
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE_NAME} NAME_WE)
+
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...")
+
+  if(NOT EXAMPLE_COMPONENT_NAME)
+    # example is located in example/<component_name>/
+    get_filename_component(EXAMPLE_DIR ${EXAMPLE_FILE_NAME} DIRECTORY)
+    get_filename_component(COMPONENT_NAME ${EXAMPLE_DIR} NAME)
+  else()
+    set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
+  endif()
 
   if(BUILD_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
-      COMMAND ${VENV_Python3_EXECUTABLE} ${FILE_NAME}
+      COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
-  message(STATUS "Configuring example ${FILE_NAME} done")
+  message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()

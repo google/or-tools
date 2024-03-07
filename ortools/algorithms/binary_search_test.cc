@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,16 +19,17 @@
 #include <functional>
 #include <limits>
 #include <utility>
-#include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "ortools/util/testing_utils.h"
+#include "ortools/base/gmock.h"
+#include "ortools/base/hash.h"
 
 namespace operations_research {
 
@@ -43,11 +44,14 @@ int BinarySearchMidpoint(int x, int y) {
 namespace {
 
 TEST(BinarySearchTest, DoubleExample) {
+  // M_PI is problematic on windows.
+  // std::numbers::pi is C++20 (incompatible with OR-Tools).
+  const double kPi = 3.14159265358979323846;
   const double x =
-      BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/M_PI / 2,
+      BinarySearch<double>(/*x_true=*/0.0, /*x_false=*/kPi / 2,
                            [](double x) { return cos(x) >= 2 * sin(x); });
   EXPECT_GE(x, 0);
-  EXPECT_LE(x, M_PI / 2);
+  EXPECT_LE(x, kPi / 2);
   EXPECT_EQ(cos(x), 2 * sin(x)) << x;
 }
 
@@ -208,8 +212,8 @@ TEST(BinarySearchTest, NonMonoticPredicateReachesLocalInflexionPoint_Double) {
     const uint64_t hash_seed = random();
     std::function<bool(double)> non_monotonic_predicate =
         [hash_seed](double x) {
-          return util_hash::CityHash64WithSeed(
-                     reinterpret_cast<const char*>(&x), sizeof(x), hash_seed) &
+          return fasthash64(reinterpret_cast<const char*>(&x), sizeof(x),
+                            hash_seed) &
                  1;
         };
     // Pick a random [x_true, x_false] interval which verifies f(x_true) = true
@@ -295,10 +299,10 @@ template <typename T>
 void BM_BinarySearch(benchmark::State& state) {
   auto functor = [](T x) { return x > std::numeric_limits<T>::max() / 2; };
   for (const auto s : state) {
-    testing::DoNotOptimize(functor);
+    benchmark::DoNotOptimize(functor);
     auto result = BinarySearch<T>(std::numeric_limits<T>::max(),
                                   std::numeric_limits<T>::min(), functor);
-    testing::DoNotOptimize(result);
+    benchmark::DoNotOptimize(result);
   }
 }
 BENCHMARK(BM_BinarySearch<float>);

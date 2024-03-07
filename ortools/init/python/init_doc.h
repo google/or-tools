@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_OPEN_SOURCE_INIT_PYTHON_INIT_DOC_H_
-#define OR_TOOLS_OPEN_SOURCE_INIT_PYTHON_INIT_DOC_H_
+#ifndef OR_TOOLS_INIT_PYTHON_INIT_DOC_H_
+#define OR_TOOLS_INIT_PYTHON_INIT_DOC_H_
 
 /*
   This file contains docstrings for use in the Python bindings.
@@ -89,13 +89,13 @@ static const char* __doc_operations_research_CppFlags =
 languages.)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_lns =
-    R"doc(DEBUG ONLY: Dump CP-SAT LNS models during solve.
+    R"doc(Dump CP-SAT LNS models during solve. (DEBUG ONLY)
 
 When set to true, solve will dump all lns models proto in text format
 to 'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_models =
-    R"doc(DEBUG ONLY: Dump CP-SAT models during solve.
+    R"doc(Dump CP-SAT models during solve. (DEBUG ONLY)
 
 When set to true, SolveCpModel() will dump its model protos (original
 model, presolved model, mapping model) in text format to 'FLAGS_cp_mod
@@ -106,7 +106,7 @@ static const char* __doc_operations_research_CppFlags_cp_model_dump_prefix =
 models).)doc";
 
 static const char* __doc_operations_research_CppFlags_cp_model_dump_response =
-    R"doc(DEBUG ONLY: Dump the CP-SAT final response found during solve.
+    R"doc(Dump the CP-SAT final response found during solve. (DEBUG ONLY)
 
 If true, the final response of each solve will be dumped to
 'FLAGS_cp_model_dump_prefix'response.pbtxt.)doc";
@@ -141,4 +141,4 @@ static const char* __doc_operations_research_OrToolsVersion_VersionString =
 #pragma GCC diagnostic pop
 #endif
 
-#endif  // OR_TOOLS_OPEN_SOURCE_INIT_PYTHON_INIT_DOC_H_
+#endif  // OR_TOOLS_INIT_PYTHON_INIT_DOC_H_

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,7 +33,6 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -45,18 +44,9 @@
 #include "absl/types/span.h"
 #include "ortools/base/source_location.h"
 #include "ortools/gurobi/environment.h"
+#include "ortools/gurobi/isv_public/gurobi_isv.h"
 
 namespace operations_research::math_opt {
-
-// An ISV key for the Gurobi solver, an alternative to using a license file.
-//
-// See http://www.gurobi.com/products/licensing-pricing/isv-program.
-struct GurobiIsvKey {
-  std::string name;
-  std::string application_name;
-  int32_t expiration = 0;
-  std::string key;
-};
 
 // Functor to use as deleter for std::unique_ptr that stores a primary GRBenv,
 // used by GRBenvUniquePtr. Most users will not use this directly.

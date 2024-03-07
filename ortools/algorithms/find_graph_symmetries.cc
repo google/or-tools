@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dense_doubly_linked_list.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
@@ -692,7 +693,7 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
     DynamicPartition* image_partition,
     const std::vector<std::unique_ptr<SparsePermutation>>&
         generators_found_so_far,
-    const std::vector<std::vector<int>>& permutations_displacing_node) {
+    absl::Span<const std::vector<int>> permutations_displacing_node) {
   // DCHECKs() and statistics.
   ScopedTimeDistributionUpdater search_time_updater(&stats_.search_time);
   DCHECK_EQ("", tmp_dynamic_permutation_.DebugString());
@@ -953,8 +954,8 @@ GraphSymmetryFinder::TailsOfIncomingArcsTo(int node) const {
 
 void GraphSymmetryFinder::PruneOrbitsUnderPermutationsCompatibleWithPartition(
     const DynamicPartition& partition,
-    const std::vector<std::unique_ptr<SparsePermutation>>& permutations,
-    const std::vector<int>& permutation_indices, std::vector<int>* nodes) {
+    absl::Span<const std::unique_ptr<SparsePermutation>> permutations,
+    absl::Span<const int> permutation_indices, std::vector<int>* nodes) {
   VLOG(4) << "    Pruning [" << absl::StrJoin(*nodes, ", ") << "]";
   // TODO(user): apply a smarter test to decide whether to do the pruning
   // or not: we can accurately estimate the cost of pruning (iterate through

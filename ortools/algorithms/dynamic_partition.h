@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -107,7 +107,7 @@ class DynamicPartition {
   // keeping track of one additional bit of information for each part that
   // remains unchanged by a Refine() operation: was that part entirely *in*
   // the distinguished subset or entirely *out*?
-  void Refine(const std::vector<int>& distinguished_subset);
+  void Refine(absl::Span<const int> distinguished_subset);
 
   // Undo one or several Refine() operations, until the number of parts
   // becomes equal to "original_num_parts".

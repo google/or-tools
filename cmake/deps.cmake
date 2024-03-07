@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -74,13 +74,23 @@ if(NOT TARGET protobuf::libprotobuf)
   message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
-if(BUILD_LP_PARSER)
+if(NOT BUILD_Eigen3)
+  find_package(Eigen3 REQUIRED)
+endif()
+if(NOT TARGET Eigen3::Eigen)
+  message(FATAL_ERROR "Target Eigen3::Eigen not available.")
+endif()
+
+if(BUILD_LP_PARSER OR BUILD_TESTING)
   if(NOT BUILD_re2)
     find_package(re2 REQUIRED)
   endif()
   if(NOT TARGET re2::re2)
     message(FATAL_ERROR "Target re2::re2 not available.")
   endif()
+endif()
+
+if(BUILD_LP_PARSER)
   set(RE2_DEPS re2::re2)
 endif()
 
@@ -124,12 +134,6 @@ if(USE_PDLP)
   if(NOT BUILD_PDLP)
     find_package(PDLP REQUIRED)
   else()
-    if(NOT BUILD_Eigen3)
-      find_package(Eigen3 REQUIRED)
-    endif()
-    if(NOT TARGET Eigen3::Eigen)
-      message(FATAL_ERROR "Target Eigen3::Eigen not available.")
-    endif()
     set(PDLP_DEPS Eigen3::Eigen)
   endif()
 endif()
@@ -145,8 +149,14 @@ if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
 endif()
 
-if(USE_XPRESS)
-  find_package(XPRESS REQUIRED)
+# CXX Test
+if(BUILD_TESTING)
+  if(NOT BUILD_googletest)
+    find_package(GTest REQUIRED)
+  endif()
+  if(NOT TARGET GTest::gtest_main)
+    message(FATAL_ERROR "Target GTest::gtest_main not available.")
+  endif()
 endif()
 
 # Check language Dependencies

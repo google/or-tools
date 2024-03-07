@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -159,7 +160,7 @@ class LinearConstraintStorage {
 
   UpdateResult Update(const Diff& diff,
                       const absl::flat_hash_set<VariableId>& deleted_variables,
-                      const std::vector<VariableId>& new_variables) const;
+                      absl::Span<const VariableId> new_variables) const;
 
   // Updates the checkpoint and clears all stored changes in diff.
   void AdvanceCheckpointInDiff(VariableId variable_checkpoint,

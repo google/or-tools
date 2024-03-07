@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_STAT_TABLES_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/string_view.h"
@@ -37,6 +38,8 @@ class SharedStatTables {
 
   void AddSearchStat(absl::string_view name, Model* model);
 
+  void AddClausesStat(absl::string_view name, Model* model);
+
   void AddLpStat(absl::string_view name, Model* model);
 
   void AddLnsStat(absl::string_view name,
@@ -55,6 +58,7 @@ class SharedStatTables {
 
   std::vector<std::vector<std::string>> timing_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> search_table_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::vector<std::string>> clauses_table_ ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::vector<std::string>> lp_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> lp_dim_table_ ABSL_GUARDED_BY(mutex_);

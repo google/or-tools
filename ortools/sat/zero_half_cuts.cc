@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer.h"
@@ -38,8 +39,8 @@ void ZeroHalfCutHelper::Reset(int size) {
 
 void ZeroHalfCutHelper::ProcessVariables(
     const std::vector<double>& lp_values,
-    const std::vector<IntegerValue>& lower_bounds,
-    const std::vector<IntegerValue>& upper_bounds) {
+    absl::Span<const IntegerValue> lower_bounds,
+    absl::Span<const IntegerValue> upper_bounds) {
   Reset(lp_values.size());
 
   // Shift all variables to their closest bound.
@@ -66,23 +67,24 @@ void ZeroHalfCutHelper::AddBinaryRow(const CombinationOfRows& binary_row) {
   rows_.push_back(binary_row);
 }
 
-void ZeroHalfCutHelper::AddOneConstraint(
-    const glop::RowIndex row,
-    const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms,
-    IntegerValue lb, IntegerValue ub) {
-  if (terms.size() > kMaxInputConstraintSize) return;
+void ZeroHalfCutHelper::AddOneConstraint(const glop::RowIndex row,
+                                         absl::Span<const glop::ColIndex> cols,
+                                         absl::Span<const IntegerValue> coeffs,
+                                         IntegerValue lb, IntegerValue ub) {
+  const int num_terms = cols.size();
+  if (num_terms > kMaxInputConstraintSize) return;
 
   double activity = 0.0;
   IntegerValue magnitude(0);
   CombinationOfRows binary_row;
   int rhs_adjust = 0;
-  for (const auto& term : terms) {
-    const int col = term.first.value();
-    activity += ToDouble(term.second) * lp_values_[col];
-    magnitude = std::max(magnitude, IntTypeAbs(term.second));
+  for (int i = 0; i < num_terms; ++i) {
+    const int col = cols[i].value();
+    activity += ToDouble(coeffs[i]) * lp_values_[col];
+    magnitude = std::max(magnitude, IntTypeAbs(coeffs[i]));
 
     // Only consider odd coefficient.
-    if ((term.second.value() & 1) == 0) continue;
+    if ((coeffs[i].value() & 1) == 0) continue;
 
     // Ignore column in the binary matrix if its lp value is almost zero.
     if (shifted_lp_values_[col] > 1e-2) {

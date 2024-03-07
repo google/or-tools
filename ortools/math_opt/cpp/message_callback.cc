@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,6 +88,24 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
       std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
   return
       [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+}
+
+MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
+                                          const absl::SourceLocation loc) {
+  return [=](const std::vector<std::string>& messages) {
+    for (const std::string& message : messages) {
+      LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
+    }
+  };
+}
+
+MessageCallback VLoggerMessageCallback(int level, absl::string_view prefix,
+                                       absl::SourceLocation loc) {
+  return [=](const std::vector<std::string>& messages) {
+    for (const std::string& message : messages) {
+      VLOG(level).AtLocation(loc.file_name(), loc.line()) << prefix << message;
+    }
+  };
 }
 
 MessageCallback VectorMessageCallback(std::vector<std::string>* sink) {

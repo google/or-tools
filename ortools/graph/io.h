@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,9 +26,11 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "ortools/base/numbers.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/filelineiter.h"
@@ -65,19 +67,20 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 template <class Graph>
 absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color);
+                              absl::Span<const int> num_nodes_with_color);
 
 // Implementations of the templated methods.
 
 template <class Graph>
 std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
   std::string out;
-  std::vector<typename Graph::NodeIndex> adj;
+  std::vector<uint64_t> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
     if (format == PRINT_GRAPH_ARCS) {
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
         if (!out.empty()) out += '\n';
-        absl::StrAppend(&out, node, "->", graph.Head(arc));
+        absl::StrAppend(&out, static_cast<uint64_t>(node), "->",
+                        static_cast<uint64_t>(graph.Head(arc)));
       }
     } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
@@ -88,7 +91,8 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
         std::sort(adj.begin(), adj.end());
       }
       if (node != 0) out += '\n';
-      absl::StrAppend(&out, node, ": ", absl::StrJoin(adj, " "));
+      absl::StrAppend(&out, static_cast<uint64_t>(node), ": ",
+                      absl::StrJoin(adj, " "));
     }
   }
   return out;
@@ -97,7 +101,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
 template <class Graph>
 absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color) {
+                              absl::Span<const int> num_nodes_with_color) {
   FILE* f = fopen(filename.c_str(), "w");
   if (f == nullptr) {
     return absl::Status(absl::StatusCode::kInvalidArgument,

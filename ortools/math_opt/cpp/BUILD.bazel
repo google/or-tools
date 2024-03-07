@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,7 +13,9 @@
 
 # External users should depend only on ":math_opt" and include
 # "math_opt.h". Hence other libraries are private.
-package(default_visibility = ["//ortools/math_opt:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/constraints:__subpackages__",
+])
 
 cc_library(
     name = "math_opt",
@@ -46,18 +48,21 @@ cc_library(
         ":linear_constraint",
         ":objective",
         ":variable_and_expressions",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "//ortools/math_opt/validators:ids_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
         "//ortools/util:status_macros",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
         "@com_google_protobuf//:protobuf",
     ],
@@ -93,6 +98,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -112,6 +118,21 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "objective",
+    srcs = ["objective.cc"],
+    hdrs = ["objective.h"],
+    deps = [
+        ":key_types",
+        ":variable_and_expressions",
+        "//ortools/base:intops",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
@@ -175,10 +196,13 @@ cc_library(
         "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:status_macros",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
@@ -254,6 +278,8 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/util:status_macros",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf",
@@ -265,7 +291,7 @@ cc_library(
     srcs = ["update_tracker.cc"],
     hdrs = ["update_tracker.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt/storage:model_storage",
@@ -280,7 +306,7 @@ cc_library(
     srcs = ["message_callback.cc"],
     hdrs = ["message_callback.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:source_location",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
@@ -387,6 +413,28 @@ cc_library(
 )
 
 cc_library(
+    name = "matchers",
+    testonly = 1,
+    srcs = ["matchers.cc"],
+    hdrs = ["matchers.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":linear_constraint",
+        ":math_opt",
+        ":update_result",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:logging",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "enums",
     hdrs = ["enums.h"],
     deps = [
@@ -400,6 +448,7 @@ cc_library(
     name = "statistics",
     srcs = ["statistics.cc"],
     hdrs = ["statistics.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":model",
         "//ortools/math_opt/storage:model_storage",
@@ -416,21 +465,6 @@ cc_library(
     name = "update_result",
     hdrs = ["update_result.h"],
     deps = ["//ortools/math_opt:model_update_cc_proto"],
-)
-
-cc_library(
-    name = "objective",
-    srcs = ["objective.cc"],
-    hdrs = ["objective.h"],
-    deps = [
-        ":key_types",
-        ":variable_and_expressions",
-        "//ortools/base:intops",
-        "//ortools/math_opt/storage:model_storage",
-        "//ortools/math_opt/storage:model_storage_types",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-    ],
 )
 
 cc_library(
@@ -472,5 +506,18 @@ cc_library(
         ":message_callback",
         ":parameters",
         "//ortools/math_opt/core:solve_interrupter",
+    ],
+)
+
+cc_library(
+    name = "solver_resources",
+    srcs = ["solver_resources.cc"],
+    hdrs = ["solver_resources.h"],
+    deps = [
+        "//ortools/math_opt:rpc_cc_proto",
+        "//ortools/port:proto_utils",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )

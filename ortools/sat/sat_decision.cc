@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,8 +47,6 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   tie_breakers_.resize(num_variables, 0.0);
   num_bumps_.clear();
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
-
-  weighted_sign_.resize(num_variables, 0.0);
 
   has_forced_polarity_.resize(num_variables, false);
   forced_polarity_.resize(num_variables);
@@ -164,12 +162,6 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
 
 void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
   // Sets the initial polarity.
-  //
-  // TODO(user): The WEIGHTED_SIGN one are currently slightly broken because the
-  // weighted_sign_ is updated after this has been called. It requires a call
-  // to ResetDecisionHeuristic() after all the constraint have been added. Fix.
-  // On another hand, this is only used with SolveWithRandomParameters() that
-  // does call this function.
   const int num_variables = activities_.size();
   for (BooleanVariable var(from); var < num_variables; ++var) {
     switch (parameters_.initial_polarity()) {
@@ -181,12 +173,6 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
         break;
       case SatParameters::POLARITY_RANDOM:
         var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
-        break;
-      case SatParameters::POLARITY_WEIGHTED_SIGN:
-        var_polarity_[var] = weighted_sign_[var] > 0;
-        break;
-      case SatParameters::POLARITY_REVERSE_WEIGHTED_SIGN:
-        var_polarity_[var] = weighted_sign_[var] < 0;
         break;
     }
   }
@@ -226,8 +212,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   for (BooleanVariable var(0); var < num_variables; ++var) {
     if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0.0) {
-        var_ordering_.Add(
-            {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
+        var_ordering_.Add({var, tie_breakers_[var], activities_[var]});
       } else {
         tmp_variables_.push_back(var);
       }
@@ -253,7 +238,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
 
   // Add the variables without activity to the queue (in the default order)
   for (const BooleanVariable var : tmp_variables_) {
-    var_ordering_.Add({var, static_cast<float>(tie_breakers_[var]), 0.0});
+    var_ordering_.Add({var, tie_breakers_[var], 0.0});
   }
 
   // Finish the queue initialization.
@@ -262,8 +247,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   var_ordering_is_initialized_ = true;
 }
 
-void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
-                                                double weight) {
+void SatDecisionPolicy::SetAssignmentPreference(Literal literal, float weight) {
   if (!parameters_.use_optimization_hints()) return;
   DCHECK_GE(weight, 0.0);
   DCHECK_LE(weight, 1.0);
@@ -277,28 +261,18 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
   var_ordering_is_initialized_ = false;
 }
 
-std::vector<std::pair<Literal, double>> SatDecisionPolicy::AllPreferences()
+std::vector<std::pair<Literal, float>> SatDecisionPolicy::AllPreferences()
     const {
-  std::vector<std::pair<Literal, double>> prefs;
+  std::vector<std::pair<Literal, float>> prefs;
   for (BooleanVariable var(0); var < var_polarity_.size(); ++var) {
     // TODO(user): we currently assume that if the tie_breaker is zero then
     // no preference was set (which is not 100% correct). Fix that.
-    const double value = var_ordering_.GetElement(var.value()).tie_breaker;
+    const float value = var_ordering_.GetElement(var.value()).tie_breaker;
     if (value > 0.0) {
       prefs.push_back(std::make_pair(Literal(var, var_polarity_[var]), value));
     }
   }
   return prefs;
-}
-
-void SatDecisionPolicy::UpdateWeightedSign(
-    const std::vector<LiteralWithCoeff>& terms, Coefficient rhs) {
-  for (const LiteralWithCoeff& term : terms) {
-    const double weight = static_cast<double>(term.coefficient.value()) /
-                          static_cast<double>(rhs.value());
-    weighted_sign_[term.literal.Variable()] +=
-        term.literal.IsPositive() ? -weight : weight;
-  }
 }
 
 void SatDecisionPolicy::BumpVariableActivities(
@@ -402,8 +376,8 @@ Literal SatDecisionPolicy::NextBranch() {
 }
 
 void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
-  const WeightedVarQueueElement element{
-      var, static_cast<float>(tie_breakers_[var]), activities_[var]};
+  const WeightedVarQueueElement element{var, tie_breakers_[var],
+                                        activities_[var]};
   if (var_ordering_.Contains(var.value())) {
     // Note that the new weight should always be higher than the old one.
     var_ordering_.IncreasePriority(element);

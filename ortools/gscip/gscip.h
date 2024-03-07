@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 
 // Simplified bindings for the SCIP solver. This is not designed to be used
 // directly by users, the API is not friendly to a modeler.  For most common
-// cases, use MPSolver instead.
+// cases, use MathOpt instead.
 //
 // Notable differences between gSCIP and SCIP:
 //   * Unless callbacks are used, gSCIP only exposes the SCIP stage PROBLEM to
@@ -29,6 +29,13 @@
 //     a best effort basis, also filter out bad input to gSCIP functions). In
 //     constraint handlers, we also use absl::Status and absl::StatusOr for
 //     error propagation and not SCIP_RETCODE.
+//   * Interruption: SCIP interruption (via SCIPinterruptSolve()) is not
+//     threadsafe and can only be safely used from a callback (and only in some
+//     stages). For GScip, users can optionally provide a GScip::Interrupter as
+//     part of the Solve() API. (Behind the scenes we call SCIPinterruptSolve()
+//     on the correct thread for the user. Users who know what they are doing
+//     can invoke SCIPinterruptSolve() directly, but using a GScip::Interrupter
+//     is recommended.
 //
 // A note on error propagation and reliability:
 //   Many methods on SCIP return an error code. Errors can be triggered by
@@ -50,6 +57,7 @@
 #ifndef OR_TOOLS_GSCIP_GSCIP_H_
 #define OR_TOOLS_GSCIP_GSCIP_H_
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -65,8 +73,11 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
+#include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -92,9 +103,6 @@ struct GScipResult {
   // If the problem was unbounded, a primal ray in the unbounded direction of
   // the LP relaxation should be produced.
   absl::flat_hash_map<SCIP_VAR*, double> primal_ray;
-  // TODO(user): add dual support:
-  //   1. The dual solution for LPs.
-  //   2. The dual ray for infeasible LP/MIPs.
 };
 
 // Models the constraint lb <= a*x <= ub. Members variables and coefficients
@@ -131,6 +139,37 @@ enum class GScipHintResult;
 // object should be considered to be in an error state.
 class GScip {
  public:
+  // Used to notify GScip that a call to Solve() should terminate early.
+  //
+  // Begins in the uninterrupted state, and irreversibly moves to the
+  // interrupted state after a call to `interrupt()`.
+  //
+  // This class is threadsafe.
+  class Interrupter {
+   public:
+    Interrupter() = default;
+    Interrupter(const Interrupter&) = delete;
+    Interrupter& operator=(const Interrupter&) = delete;
+
+    // Triggers the interrupter. Informs calls to GScip::Solve() which took
+    // this Interrupter as an argument to stop as soon as possible. Note that
+    // this function does not block and GScip::Solve() does not stop
+    // immediately. Calling this function more than once has no further effect.
+    //
+    // This function is threadsafe and nonblocking.
+    void Interrupt() { interrupted_ = true; }
+
+    // Returns true if we are in the interrupted state (i.e. `interrupt() was
+    // called).
+    //
+    // This function is threadsafe, non-blocking, and fast (time to read an
+    // atomic).
+    bool is_interrupted() const { return interrupted_.load(); }
+
+   private:
+    std::atomic<bool> interrupted_{false};
+  };
+
   // Create a new GScip (the constructor is private). The default objective
   // direction is minimization.
   static absl::StatusOr<std::unique_ptr<GScip>> Create(
@@ -148,10 +187,14 @@ class GScip {
   //   * A user-defined callback function fails.
   // The above cases are not mutually exclusive. If the problem is infeasible,
   // this will be reflected in the value of GScipResult::gscip_output::status.
+  //
+  // No reference is held to message_handler or interrupter after Solve()
+  // returns.
   absl::StatusOr<GScipResult> Solve(
       const GScipParameters& params = GScipParameters(),
       absl::string_view legacy_params = "",
-      GScipMessageHandler message_handler = nullptr);
+      GScipMessageHandler message_handler = nullptr,
+      const Interrupter* interrupter = nullptr);
 
   // ///////////////////////////////////////////////////////////////////////////
   // Basic Model Construction
@@ -348,13 +391,6 @@ class GScip {
   double ScipInf();
   static constexpr double kDefaultScipInf = 1e20;
 
-  // WARNING(rander): no synchronization is provided between InterruptSolve()
-  // and ~GScip(). These methods require mutual exclusion, the user is
-  // responsible for ensuring this invariant.
-  // TODO(user): should we add a lock here? Seems a little dangerous to block
-  // in a destructor.
-  bool InterruptSolve();
-
   // These should typically not be needed.
   SCIP* scip() { return scip_; }
 
@@ -379,9 +415,67 @@ class GScip {
   // status error is returned by SCIP).
   //
   // CHECK fails if status is OK.
-  void InterruptSolveFromCallback(absl::Status error_status);
+  void InterruptSolveFromCallbackOnCallbackError(absl::Status error_status);
+
+  // Internal use only. Users should instead call
+  // GScipConstraintHandler::AddCallbackConstraint().
+  template <typename ConsHandler, typename ConsData>
+  inline absl::StatusOr<SCIP_CONS*> AddConstraintForHandler(
+      ConsHandler* handler, ConsData* data, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
+
+  // Internal use only.
+  //
+  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
+  absl::StatusOr<double> ScipInfClamp(double d);
+
+  // Internal use only.
+  //
+  // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
+  double ScipInfUnclamp(double d);
 
  private:
+  // Event handler that it used to call SCIPinterruptSolve() is a safe manner.
+  //
+  // At the start of SCIPsolve(), SCIP resets `SCIP_Stat::userinterrupt` to
+  // false. It does the same in SCIPpresolve(), which is called at the beginning
+  // of SCIPsolve() but also at the beginning of each restart. The
+  // `userinterrupt` can also be reset when the transformed problem is freed
+  // when the parameter "misc/resetstat" is used. On top of that, it is not
+  // possible to call SCIPinterruptSolve() in SCIP_STAGE_INITSOLVE stage; which
+  // occurs in the middle of the solve and at restarts.
+  //
+  // If this was no enough, SCIPinterruptSolve() calls SCIPcheckStage() which is
+  // not thread-safe.
+  //
+  // As a consequence, there is no safe way to call SCIPinterruptSolve() from
+  // another thread. Here we take a safer approach: we call it only from the
+  // Exec() of an event handler. This solves all thread safety issues and, if we
+  // have been careful, also ensures we don't call it in the wrong stage. This
+  // also solves the issue the multiple resets of the `userinterrupt` flag since
+  // each time we are called after the interrupter has been triggered, we simply
+  // call SCIPinterruptSolve() until SCIP finally listens.
+  class InterruptEventHandler : public GScipEventHandler {
+   public:
+    InterruptEventHandler();
+
+    SCIP_RETCODE Init(GScip* gscip) override;
+    SCIP_RETCODE Execute(GScipEventHandlerContext) override;
+
+    // Calls SCIPinterruptSolve() if the interrupter is set and triggered and
+    // SCIP is in a valid stage for that.
+    SCIP_RETCODE TryCallInterruptIfNeeded(GScip* gscip);
+
+    // Sets the interrupter, or clears it when `interrupter == nullptr`.
+    void set_interrupter(const Interrupter* interrupter);
+
+   private:
+    // This is set at the start of each call to GScip::Solve() and cleared
+    // before the function returns. It may be null when the user does not
+    // provide an interrupter; in that case we don't register any event.
+    const Interrupter* interrupter_ = nullptr;
+  };
+
   explicit GScip(SCIP* scip);
   // Releases SCIP memory.
   absl::Status CleanUp();
@@ -390,12 +484,6 @@ class GScip {
                          absl::string_view legacy_params);
   absl::Status FreeTransform();
 
-  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
-  absl::StatusOr<double> ScipInfClamp(double d);
-
-  // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
-  double ScipInfUnclamp(double d);
-
   // Returns an error if |d| >= ScipInf().
   absl::Status CheckScipFinite(double d);
 
@@ -403,6 +491,7 @@ class GScip {
                                         const GScipConstraintOptions& options);
 
   SCIP* scip_;
+  InterruptEventHandler interrupt_event_handler_;
   absl::flat_hash_set<SCIP_VAR*> variables_;
   absl::flat_hash_set<SCIP_CONS*> constraints_;
   absl::Mutex callback_status_mutex_;
@@ -579,6 +668,28 @@ struct GScipConstraintOptions {
   // deleted.
   bool keep_alive = true;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Template function implementations
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename ConsHandler, typename ConsData>
+absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
+    ConsHandler* handler, ConsData* data, const std::string& name,
+    const GScipConstraintOptions& options) {
+  SCIP_CONS* constraint = nullptr;
+  RETURN_IF_SCIP_ERROR(SCIPcreateCons(
+      scip_, &constraint, name.data(), handler, data, options.initial,
+      options.separate, options.enforce, options.check, options.propagate,
+      options.local, options.modifiable, options.dynamic, options.removable,
+      options.sticking_at_node));
+  if (constraint == nullptr) {
+    return absl::InternalError("SCIP failed to create constraint");
+  }
+  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
+  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  return constraint;
+}
 
 }  // namespace operations_research
 

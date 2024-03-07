@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -73,8 +73,6 @@
 namespace operations_research {
 namespace glop {
 
-class SparseMatrix;
-
 class SparseMatrixScaler {
  public:
   SparseMatrixScaler();
@@ -107,17 +105,12 @@ class SparseMatrixScaler {
   Fractional ColUnscalingFactor(ColIndex col) const;
   Fractional RowUnscalingFactor(RowIndex row) const;
 
-  // TODO(user): rename function and field to col_scales (and row_scales)
-  const DenseRow& col_scale() const { return col_scale_; }
+  // These are unscaling factor, same as [Col|Row]UnscalingFactor().
+  const DenseRow& col_scales() const { return col_scales_; }
+  const DenseColumn& row_scales() const { return row_scales_; }
 
   // Scales the matrix.
   void Scale(GlopParameters::ScalingAlgorithm method);
-
-  // Solves the scaling problem as a linear program.
-  Status LPScale();
-
-  // Unscales the matrix.
-  void Unscale();
 
   // Scales a row vector up or down (depending whether parameter up is true or
   // false) using the scaling factors determined by Scale().
@@ -130,6 +123,10 @@ class SparseMatrixScaler {
   // Scaling up means multiplying by the scaling factors, while scaling down
   // means dividing by the scaling factors.
   void ScaleColumnVector(bool up, DenseColumn* column_vector) const;
+
+ private:
+  // Solves the scaling problem as a linear program.
+  Status LPScale();
 
   // Computes the variance of the non-zero coefficients of the matrix.
   // Used by Scale() do decide when to stop.
@@ -151,10 +148,6 @@ class SparseMatrixScaler {
   // scaled. Helper function to Scale().
   ColIndex EquilibrateColumns();
 
- private:
-  // Convert the matrix to be scaled into a linear program.
-  void GenerateLinearProgram(LinearProgram*);
-
   // Scales the row indexed by row by 1/factor.
   // Used by ScaleMatrixRowsGeometrically and EquilibrateRows.
   RowIndex ScaleMatrixRows(const DenseColumn& factors);
@@ -162,13 +155,6 @@ class SparseMatrixScaler {
   // Scales the column index by col by 1/factor.
   // Used by ScaleColumnsGeometrically and EquilibrateColumns.
   void ScaleMatrixColumn(ColIndex col, Fractional factor);
-
-  // Looks up the index to the scale factor variable for this matrix row, in the
-  // LinearProgram, or creates it. Note lp_ must be initialized first.
-  ColIndex GetRowScaleIndex(RowIndex row_num);
-
-  // As above, but for the columns of the matrix.
-  ColIndex GetColumnScaleIndex(ColIndex col_num);
 
   // Returns a string containing information on the progress of the scaling
   // algorithm. This is not meant to be called in an optimized mode as it takes
@@ -178,15 +164,11 @@ class SparseMatrixScaler {
   // Pointer to the matrix to be scaled.
   SparseMatrix* matrix_;
 
-  // Member pointer for convenience, in particular for GetRowScaleIndex and
-  //  GetColumnScaleIndex.
-  LinearProgram* lp_;
-
   // Array of scaling factors for each row. Indexed by row number.
-  DenseColumn row_scale_;
+  DenseColumn row_scales_;
 
   // Array of scaling factors for each column. Indexed by column number.
-  DenseRow col_scale_;
+  DenseRow col_scales_;
 };
 
 }  // namespace glop

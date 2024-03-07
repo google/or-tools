@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/types/span.h"
 #include "ortools/base/murmur.h"
 
 namespace operations_research {
@@ -97,7 +98,7 @@ DynamicPartition::DynamicPartition(
   }
 }
 
-void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
+void DynamicPartition::Refine(absl::Span<const int> distinguished_subset) {
   // tmp_counter_of_part_[i] will contain the number of
   // elements in distinguished_subset that were part of part #i.
   tmp_counter_of_part_.resize(NumParts(), 0);

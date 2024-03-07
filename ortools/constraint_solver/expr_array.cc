@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -59,7 +60,7 @@ class TreeArrayConstraint : public CastConstraint {
     root_node_ = &tree_[0][0];
   }
 
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s) == %s", name,
                            JoinDebugStringPtr(vars_, ", "),
                            target_var_->DebugString());
@@ -1481,7 +1482,7 @@ class BaseSumBooleanConstraint : public Constraint {
   ~BaseSumBooleanConstraint() override {}
 
  protected:
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 
@@ -2723,7 +2724,7 @@ void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
 
 Constraint* MakeScalProdEqualityFct(Solver* const solver,
                                     const std::vector<IntVar*>& pre_vars,
-                                    const std::vector<int64_t>& pre_coefs,
+                                    absl::Span<const int64_t> pre_coefs,
                                     int64_t cst) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -2867,7 +2868,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
 
 Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
                                        const std::vector<IntVar*>& pre_vars,
-                                       const std::vector<int64_t>& pre_coefs,
+                                       absl::Span<const int64_t> pre_coefs,
                                        IntVar* const target) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -2897,7 +2898,7 @@ Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
 
 Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
                                           const std::vector<IntVar*>& pre_vars,
-                                          const std::vector<int64_t>& pre_coefs,
+                                          absl::Span<const int64_t> pre_coefs,
                                           int64_t cst) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -2932,7 +2933,7 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
 
 Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
                                        const std::vector<IntVar*>& pre_vars,
-                                       const std::vector<int64_t>& pre_coefs,
+                                       absl::Span<const int64_t> pre_coefs,
                                        int64_t upper_bound) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
@@ -3199,7 +3200,7 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
 }
 
 IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
-                         const std::vector<int64_t>& pre_coefs) {
+                         absl::Span<const int64_t> pre_coefs) {
   int64_t constant = 0;
   std::vector<IntVar*> vars;
   std::vector<int64_t> coefs;

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -184,14 +184,17 @@ SingularValueAndIterations EstimateMaximumSingularValueOfConstraintMatrix(
     std::mt19937& mt_generator);
 
 // Checks if the lower and upper bounds of the problem are consistent, i.e. for
-// each variable and constraint bound we have lower_bound <= upper_bound. If
-// the input is consistent the method returns true, otherwise it returns false.
-// See also `HasValidBounds(const QuadraticProgram&)`.
+// each variable and constraint bound we have lower_bound <= upper_bound,
+// lower_bound < inf, and upper_bound > -inf. If the input is consistent the
+// method returns true, otherwise it returns false.
 bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp);
 
 // Projects `primal` onto the variable bounds constraints.
+// If `use_feasibility_bounds == true`, all finite variable bounds are replaced
+// by zero.
 void ProjectToPrimalVariableBounds(const ShardedQuadraticProgram& sharded_qp,
-                                   Eigen::VectorXd& primal);
+                                   Eigen::VectorXd& primal,
+                                   bool use_feasibility_bounds = false);
 
 // Projects `dual` onto the dual variable bounds; see
 // https://developers.google.com/optimization/lp/pdlp_math#dual_variable_bounds.

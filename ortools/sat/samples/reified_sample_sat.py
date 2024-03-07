@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,24 +17,24 @@
 from ortools.sat.python import cp_model
 
 
-def ReifiedSampleSat():
+def reified_sample_sat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    b = model.NewBoolVar("b")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    b = model.new_bool_var("b")
 
     # First version using a half-reified bool and.
-    model.AddBoolAnd(x, y.Not()).OnlyEnforceIf(b)
+    model.add_bool_and(x, ~y).only_enforce_if(b)
 
     # Second version using implications.
-    model.AddImplication(b, x)
-    model.AddImplication(b, y.Not())
+    model.add_implication(b, x)
+    model.add_implication(b, ~y)
 
     # Third version using bool or.
-    model.AddBoolOr(b.Not(), x)
-    model.AddBoolOr(b.Not(), y.Not())
+    model.add_bool_or(~b, x)
+    model.add_bool_or(~b, ~y)
 
 
-ReifiedSampleSat()
+reified_sample_sat()

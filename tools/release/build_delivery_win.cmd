@@ -5,7 +5,8 @@ REM run it as:
 REM cmd /c tools\release\build_delivery_win.cmd all
 
 REM make few tools available
-set PATH=%PATH%;tools;tools\win
+set PATH=tools;tools\win;%PATH%
+::echo "path base: %PATH%"
 set PRG=%0
 
 REM Print version
@@ -106,7 +107,7 @@ REM Build .Net
 :BUILD_DOTNET
 title Build .Net
 set HASH=
-for /F "tokens=* delims=" %%x in (build_dotnet.log) do (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_dotnet.log) do (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo .Net build seems up to date, skipping
 exit /B 0
@@ -135,7 +136,7 @@ echo DONE | tee.exe -a build.log
 REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 REM echo make test_dotnet: DONE | tee.exe -a build.log
 
-for %%i in (temp_dotnet\dotnet\packages\*.nupkg*) do (
+FOR %%i IN (temp_dotnet\dotnet\packages\*.nupkg*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
@@ -148,7 +149,7 @@ REM Build Java
 :BUILD_JAVA
 title Build Java
 set HASH=
-for /F "tokens=* delims=" %%x in (build_java.log) do (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_java.log) do (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo Java build seems up to date, skipping
 exit /B 0
@@ -186,12 +187,12 @@ echo DONE | tee.exe -a build.log
 REM cmake --build temp_java --config Release --target RUN_TEST || exit 1
 REM echo cmake test_java: DONE | tee.exe -a build.log
 
-for %%i in (temp_java\java\ortools-win32-x86-64\target\*.jar*) do (
+FOR %%i IN (temp_java\java\ortools-win32-x86-64\target\*.jar*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
 )
-for %%i in (temp_java\java\ortools-java\target\*.jar*) do (
+FOR %%i IN (temp_java\java\ortools-java\target\*.jar*) do (
   echo Copy %%i to export... | tee.exe -a build.log
   copy %%i export\.
   echo Copy %%i to export...DONE | tee.exe -a build.log
@@ -204,7 +205,7 @@ REM Create Archive
 :BUILD_ARCHIVE
 title Build archives
 set HASH=
-for /F "tokens=* delims=" %%x in (build_archive.log) do (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_archive.log) do (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo Archive build seems up to date, skipping
 exit /B 0
@@ -225,7 +226,7 @@ echo Make java archive... | tee.exe -a build.log
 make.exe archive_java WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo DONE | tee.exe -a build.log
 
-for %%i in (or-tools_*VisualStudio*.zip) do (
+FOR %%i IN (or-tools_*VisualStudio*.zip) do (
   echo Move %%i to export... | tee.exe -a build.log
   move %%i export\.
   echo Move %%i to export...DONE | tee.exe -a build.log
@@ -238,7 +239,7 @@ REM Build Examples Archives
 :BUILD_EXAMPLES
 title Build examples
 set HASH=
-for /F "tokens=* delims=" %%x in (build_examples.log) do (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_examples.log) do (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo Examples build seems up to date, skipping
 exit /B 0
@@ -254,7 +255,7 @@ echo   .Net examples archive... | tee.exe -a build.log
 make.exe dotnet_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
 echo DONE | tee.exe -a build.log
 
-for %%i in (or-tools_*_examples_*.zip) do (
+FOR %%i IN (or-tools_*_examples_*.zip) do (
   echo Move %%i to export... | tee.exe -a build.log
   move %%i export\.
   echo Move %%i to export...DONE | tee.exe -a build.log
@@ -262,40 +263,68 @@ for %%i in (or-tools_*_examples_*.zip) do (
 echo %BRANCH% %SHA1%>build_examples.log
 exit /B 0
 
+:subroutine
+set PATH=C:\python3%1-64\Scripts;%PATH%
+set PATH=%userprofile%\AppData\Roaming\Python\Python3%1\Scripts;%PATH%
+::echo "python path: %PATH%"
+GOTO :eof
 
 REM PYTHON 3.8, 3.9, 3.10, 3.11, 3.12
 :BUILD_PYTHON
 title Build Python
 set HASH=
-for /F "tokens=* delims=" %%x in (build_python.log) do (set HASH=%%x)
+FOR /F "tokens=* delims=" %%x IN (build_python.log) DO (set HASH=%%x)
 if "%HASH%"=="%BRANCH% %SHA1%" (
 echo Python build seems up to date, skipping
 exit /B 0
 )
 
-for %%v in (8 9 10 11 12) do (
+FOR %%v IN (8 9 10 11 12) DO (
   title Build Python 3.%%v
-  :: Check Python
-  which.exe C:\python3%%v-64\python.exe || exit 1
-  echo C:\python3%%v-64\python.exe: FOUND | tee.exe -a build.log
-  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf
-  set PATH+=;%userprofile%\appdata\roaming\python\python3%%v\Scripts"
-  set PATH+=;C:\python3%%v-64\Scripts"
+  echo Check python3.%%v... | tee.exe -a build.log
+  which.exe "C:\python3%%v-64\python.exe" || exit 1
+  echo "C:\python3%%v-64\python.exe: FOUND" | tee.exe -a build.log
+  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf protobuf numpy pandas
+
+  call :subroutine %%v
 
   echo Cleaning Python 3.%%v... | tee.exe -a build.log
   rm.exe -rf temp_python3%%v
-  echo DONE | tee.exe -a build.log
+  echo Cleaning Python 3.%%v...DONE | tee.exe -a build.log
 
   echo Build Python 3.%%v... | tee.exe -a build.log
   cmake -S. -Btemp_python3%%v -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR=C:\python3%%v-64
   cmake --build temp_python3%%v --config Release -j8 -v
-  echo DONE | tee.exe -a build.log
+  echo Build Python 3.%%v...DONE | tee.exe -a build.log
+
+  echo Check MYPY files... | tee.exe -a build.log
+    FOR %%m IN (
+      ortools\algorithms\python\knapsack_solver.pyi
+      ortools\constraint_solver\pywrapcp.pyi
+      ortools\graph\python\linear_sum_assignment.pyi
+      ortools\graph\python\max_flow.pyi
+      ortools\graph\python\min_cost_flow.pyi
+      ortools\init\python\init.pyi
+      ortools\linear_solver\python\model_builder_helper.pyi
+      ortools\linear_solver\pywraplp.pyi
+      ortools\pdlp\python\pdlp.pyi
+      ortools\sat\python\swig_helper.pyi
+      ortools\scheduling\python\rcpsp.pyi
+      ortools\util\python\sorted_interval_list.pyi
+    ) DO (
+      IF NOT EXIST temp_python3%%v\python\%%m (
+        echo File %%m missing in python project | tee.exe -a build.log
+        exit /B 1
+      )
+    )
+  echo Check MYPY files...DONE | tee.exe -a build.log
+
 
   REM echo Test Python 3.%%v pypi archive... | tee.exe -a build.log
   REM cmake --build temp_python3%%v --config Release --target RUN_TEST || exit 1
   REM echo DONE | tee.exe -a build.log
 
-  for %%i in (temp_python3%%v\python\dist\*.whl) do (
+  FOR %%i IN (temp_python3%%v\python\dist\*.whl) do (
     echo Copy %%i to export... | tee.exe -a build.log
     copy %%i export\.
     echo Copy %%i to export...DONE | tee.exe -a build.log
@@ -313,14 +342,14 @@ del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
 del /s /f /q temp_java
 rmdir /s /q temp_java
-for %%v in (8 9 10 11 12) do (
+FOR %%v IN (8 9 10 11 12) do (
   del /s /f /q temp_python3%%v
   rmdir /s /q temp_python3%%v
 )
 rm.exe -rf export
 del or-tools.snk
-for %%i in (*.zip) DO del %%i
-for %%i in (*.whl) DO del %%i
-for %%i in (*.log) DO del %%i
+FOR %%i IN (*.zip) DO del %%i
+FOR %%i IN (*.whl) DO del %%i
+FOR %%i IN (*.log) DO del %%i
 echo DONE
 exit /B 0

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,6 +47,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -65,6 +66,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
+#include "ortools/gurobi/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
@@ -234,7 +236,11 @@ class GurobiInterface : public MPSolverInterface {
   int SolutionCount() const;
 
   GRBmodel* model_;
-  GRBenv* env_;
+  // The environment used to create model_. Note that once the model is created,
+  // it used a copy of the environment, accessible via GRBgetenv(model_), which
+  // you should use for setting parameters. Use global_env_ only to create a new
+  // model or for GRBgeterrormsg().
+  GRBenv* global_env_;
   bool mip_;
   int current_solution_index_;
   MPCallback* callback_ = nullptr;
@@ -539,7 +545,7 @@ int GUROBI_STDCALL CallbackImpl(GRBmodel* model,
 }  // namespace
 
 void GurobiInterface::CheckedGurobiCall(int err) const {
-  ::operations_research::CheckedGurobiCall(err, env_);
+  ::operations_research::CheckedGurobiCall(err, global_env_);
 }
 
 void GurobiInterface::SetIntAttr(const char* name, int value) {
@@ -606,11 +612,11 @@ char GurobiInterface::GetCharAttrElement(const char* name, int index) const {
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver),
       model_(nullptr),
-      env_(nullptr),
+      global_env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  env_ = GetGurobiEnv().value();
-  CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
+  global_env_ = GetGurobiEnv().value();
+  CheckedGurobiCall(GRBnewmodel(global_env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
                                 nullptr,    // lb
@@ -618,13 +624,13 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
                                 nullptr,    // vtype
                                 nullptr));  // varnanes
   SetIntAttr(GRB_INT_ATTR_MODELSENSE, maximize_ ? GRB_MAXIMIZE : GRB_MINIMIZE);
-  CheckedGurobiCall(GRBsetintparam(env_, GRB_INT_PAR_THREADS,
+  CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_THREADS,
                                    absl::GetFlag(FLAGS_num_gurobi_threads)));
 }
 
 GurobiInterface::~GurobiInterface() {
   CheckedGurobiCall(GRBfreemodel(model_));
-  GRBfreeenv(env_);
+  GRBfreeenv(global_env_);
 }
 
 // ------ Model modifications and extraction -----
@@ -634,7 +640,7 @@ void GurobiInterface::Reset() {
   const absl::MutexLock lock(&hold_interruptions_mutex_);
 
   GRBmodel* old_model = model_;
-  CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
+  CheckedGurobiCall(GRBnewmodel(global_env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
                                 nullptr,    // lb
@@ -1208,7 +1214,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     CheckedGurobiCall(GRBsetcallbackfunc(model_, nullptr, nullptr));
   } else {
     gurobi_context = std::make_unique<GurobiMPCallbackContext>(
-        env_, &mp_var_to_gurobi_var_, num_gurobi_vars_,
+        global_env_, &mp_var_to_gurobi_var_, num_gurobi_vars_,
         callback_->might_add_cuts(), callback_->might_add_lazy_constraints());
     mp_callback_with_context.context = gurobi_context.get();
     mp_callback_with_context.callback = callback_;
@@ -1222,12 +1228,18 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   CheckedGurobiCall(GRBsetintparam(
       GRBgetenv(model_), GRB_INT_PAR_LAZYCONSTRAINTS, gurobi_lazy_constraint));
 
+  // Logs all parameters not at default values in the model environment.
+  if (!quiet()) {
+    std::cout << GurobiParamInfoForLogging(GRBgetenv(model_),
+                                           /*one_liner_output=*/true);
+  }
+
   // Solve
   timer.Restart();
   const int status = GRBoptimize(model_);
 
   if (status) {
-    VLOG(1) << "Failed to optimize MIP." << GRBgeterrormsg(env_);
+    VLOG(1) << "Failed to optimize MIP." << GRBgeterrormsg(global_env_);
   } else {
     VLOG(1) << absl::StrFormat("Solved in %s.",
                                absl::FormatDuration(timer.GetDuration()));
@@ -1269,7 +1281,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
         GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &best_objective_bound_);
     LOG_IF(WARNING, error != 0)
         << "Best objective bound is not available, error=" << error
-        << ", message=" << GRBgeterrormsg(env_);
+        << ", message=" << GRBgeterrormsg(global_env_);
     VLOG(1) << "best bound = " << best_objective_bound_;
   }
 
@@ -1328,7 +1340,7 @@ std::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
 
   // Here we reuse the Gurobi environment to support single-use license that
   // forbids creating a second environment if one already exists.
-  const auto status_or = GurobiSolveProto(request, env_);
+  const auto status_or = GurobiSolveProto(request, global_env_);
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
@@ -1384,7 +1396,7 @@ void GurobiInterface::Write(const std::string& filename) {
   VLOG(1) << "Writing Gurobi model file \"" << filename << "\".";
   const int status = GRBwrite(model_, filename.c_str());
   if (status) {
-    LOG(WARNING) << "Failed to write MIP." << GRBgeterrormsg(env_);
+    LOG(WARNING) << "Failed to write MIP." << GRBgeterrormsg(global_env_);
   }
 }
 

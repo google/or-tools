@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,7 +43,7 @@ ABSL_CONST_INIT extern const bool kStdToCharsDoubleIsSupported;
 //  LOG(INFO) << "x: " << RoundTripDoubleFormat(x);
 //
 //  const std::string x_str =
-//    absl::StrCat("x: ", RoundTripDoubleFormat::ToString(x));
+//    absl::StrCat("x: ", RoundTripDoubleFormat(x));
 //
 //  ASSIGN_OR_RETURN(const double y,
 //                   RoundTripDoubleFormat::Parse(x_str));
@@ -60,10 +60,23 @@ class RoundTripDoubleFormat {
   friend std::ostream& operator<<(std::ostream& out,
                                   const RoundTripDoubleFormat& format);
 
+  // Prints the formatted double to the provided sink.
+  //
+  // PERFORMANCE: the current implementation uses ToString() as the code has to
+  // be templated and thus inlined. It could be optimized a bit by using the
+  // same implementation pattern as operator<< (i.e. a stack-allocated buffer)
+  // but this would require exposing some internals here. It may not even be
+  // that bad for most practical case for the rationale explained in ToString()
+  // documentation.
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const RoundTripDoubleFormat& format) {
+    sink.Append(RoundTripDoubleFormat::ToString(format.value_));
+  }
+
   // Returns a string with the provided double formatted.
   //
   // Prefer using operator<< when possible (with LOG(), StatusBuilder,
-  // std::cout,...) since it avoids allocating a temporary string.
+  // std::cout...) since it avoids allocating a temporary string.
   //
   // PERFORMANCE: operator<< may be noticeably faster in some extreme cases,
   // especially in non-64bit platforms or when value is in (-∞, -1e+100] or in

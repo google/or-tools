@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,9 +44,9 @@ namespace sat {
 
 template <bool use_int128>
 LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
-    const std::vector<Literal>& enforcement_literals,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<IntegerValue>& coeffs, IntegerValue upper, Model* model)
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const IntegerVariable> vars,
+    absl::Span<const IntegerValue> coeffs, IntegerValue upper, Model* model)
     : upper_bound_(upper),
       shared_(
           model->GetOrCreate<LinearConstraintPropagator<use_int128>::Shared>()),
@@ -75,6 +75,33 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
   literal_reason_.reserve(enforcement_literals.size());
   for (const Literal literal : enforcement_literals) {
     literal_reason_.push_back(literal.Negated());
+  }
+
+  // Initialize the reversible numbers.
+  rev_num_fixed_vars_ = 0;
+  rev_lb_fixed_vars_ = IntegerValue(0);
+}
+
+// TODO(user): Avoid duplication with other constructor.
+template <bool use_int128>
+LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
+    LinearConstraint ct, Model* model)
+    : upper_bound_(ct.ub),
+      shared_(
+          model->GetOrCreate<LinearConstraintPropagator<use_int128>::Shared>()),
+      size_(ct.num_terms),
+      vars_(std::move(ct.vars)),
+      coeffs_(std::move(ct.coeffs)),
+      max_variations_(new IntegerValue[size_]) {
+  // TODO(user): deal with this corner case.
+  CHECK_GT(size_, 0);
+
+  // Handle negative coefficients.
+  for (int i = 0; i < size_; ++i) {
+    if (coeffs_[i] < 0) {
+      vars_[i] = NegationOf(vars_[i]);
+      coeffs_[i] = -coeffs_[i];
+    }
   }
 
   // Initialize the reversible numbers.

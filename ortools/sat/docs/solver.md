@@ -18,17 +18,17 @@ solver. The most useful one is the time limit.
 from ortools.sat.python import cp_model
 
 
-def SolveWithTimeLimitSampleSat():
+def solve_with_time_limit_sample_sat():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
     # Adds an all-different constraint.
-    model.Add(x != y)
+    model.add(x != y)
 
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
@@ -36,15 +36,15 @@ def SolveWithTimeLimitSampleSat():
     # Sets a time limit of 10 seconds.
     solver.parameters.max_time_in_seconds = 10.0
 
-    status = solver.Solve(model)
+    status = solver.solve(model)
 
     if status == cp_model.OPTIMAL:
-        print(f"x = {solver.Value(x)}")
-        print(f"y = {solver.Value(y)}")
-        print(f"z = {solver.Value(z)}")
+        print(f"x = {solver.value(x)}")
+        print(f"y = {solver.value(y)}")
+        print(f"z = {solver.value(z)}")
 
 
-SolveWithTimeLimitSampleSat()
+solve_with_time_limit_sample_sat()
 ```
 
 ### Specifying the time limit in C++
@@ -185,6 +185,66 @@ public class SolveWithTimeLimitSampleSat
 }
 ```
 
+### Specifying the time limit in Go
+
+```cs
+// The solve_with_time_limit_sample_sat command is an example of setting a time limit on the model.
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang/glog"
+	"golang/protobuf/v2/proto/proto"
+	cmpb "ortools/sat/cp_model_go_proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func solveWithTimeLimitSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+
+	// Sets a time limit of 10 seconds.
+	params := sppb.SatParameters_builder{
+		MaxTimeInSeconds: proto.Float64(10.0),
+	}.Build()
+
+	// Solve.
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Printf("Status: %v\n", response.GetStatus())
+
+	if response.GetStatus() == cmpb.CpSolverStatus_OPTIMAL {
+		fmt.Printf(" x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+		fmt.Printf(" y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+		fmt.Printf(" z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+	}
+
+	return nil
+}
+
+func main() {
+	if err := solveWithTimeLimitSampleSat(); err != nil {
+		glog.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Printing intermediate solutions
 
 In an optimization model, you can print intermediate solutions. For all
@@ -207,49 +267,50 @@ from ortools.sat.python import cp_model
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         print(f"Solution {self.__solution_count}")
-        print(f"  objective value = {self.ObjectiveValue()}")
+        print(f"  objective value = {self.objective_value}")
         for v in self.__variables:
-            print(f"  {v}={self.Value(v)}", end=" ")
+            print(f"  {v}={self.value(v)}", end=" ")
         print()
         self.__solution_count += 1
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
-def SolveAndPrintIntermediateSolutionsSampleSat():
+def solve_and_print_intermediate_solutions_sample_sat():
     """Showcases printing intermediate solutions found during search."""
     # Creates the model.
     model = cp_model.CpModel()
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Creates the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
-    model.Maximize(x + 2 * y + 3 * z)
+    model.maximize(x + 2 * y + 3 * z)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SolveAndPrintIntermediateSolutionsSampleSat()
+solve_and_print_intermediate_solutions_sample_sat()
 ```
 
 ### C++ code
@@ -434,6 +495,68 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
 }
 ```
 
+### Go code
+
+```cs
+// The solve_and_print_intermediate_solutions_sample_sat command
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang/glog"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func solveAndPrintIntermediateSolutionsSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	model.Maximize(cpmodel.NewLinearExpr().Add(x).AddTerm(y, 2).AddTerm(z, 3))
+
+	// Create a solver and solve with a fixed search.
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+
+	// Currently, the CpModelBuilder does not allow for callbacks, so intermediate solutions
+	// cannot be printed while solving. However, the CP-SAT solver does allow for returning
+	// the intermediate solutions found while solving in the response.
+	params := sppb.SatParameters_builder{
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(10),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	fmt.Println("Number of intermediate solutions found: ", len(response.GetAdditionalSolutions()))
+
+	fmt.Println("Optimal solution:")
+	fmt.Printf("  x = %v\n", cpmodel.SolutionIntegerValue(response, x))
+	fmt.Printf("  y = %v\n", cpmodel.SolutionIntegerValue(response, y))
+	fmt.Printf("  z = %v\n", cpmodel.SolutionIntegerValue(response, z))
+
+	return nil
+}
+
+func main() {
+	if err := solveAndPrintIntermediateSolutionsSampleSat(); err != nil {
+		glog.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Searching for all solutions in a satisfiability model
 
 In an non-optimization model, you can search for all solutions. For all
@@ -469,34 +592,35 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables):
+    def __init__(self, variables: list[cp_model.IntVar]):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
-def SearchForAllSolutionsSampleSat():
+def search_for_all_solutions_sample_sat():
     """Showcases calling the solver to search for all solutions."""
     # Creates the model.
     model = cp_model.CpModel()
 
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Create the constraints.
-    model.Add(x != y)
+    model.add(x != y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -504,13 +628,13 @@ def SearchForAllSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
+    status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
-SearchForAllSolutionsSampleSat()
+search_for_all_solutions_sample_sat()
 ```
 
 ### C++ code
@@ -704,6 +828,68 @@ public class SearchForAllSolutionsSampleSat
 }
 ```
 
+### Go code
+
+To search for all solutions, a parameter of the SAT solver must be changed.
+
+```cs
+// The search_for_all_solutions_sample_sat command is an example for how to search for
+// all solutions.
+package main
+
+import (
+	"fmt"
+
+	"github.com/golang/glog"
+	"golang/protobuf/v2/proto/proto"
+	"ortools/sat/go/cpmodel"
+	sppb "ortools/sat/sat_parameters_go_proto"
+)
+
+func searchForAllSolutionsSampleSat() error {
+	model := cpmodel.NewCpModelBuilder()
+
+	domain := cpmodel.NewDomain(0, 2)
+	x := model.NewIntVarFromDomain(domain).WithName("x")
+	y := model.NewIntVarFromDomain(domain).WithName("y")
+	z := model.NewIntVarFromDomain(domain).WithName("z")
+
+	model.AddNotEqual(x, y)
+
+	m, err := model.Model()
+	if err != nil {
+		return fmt.Errorf("failed to instantiate the CP model: %w", err)
+	}
+	// Currently, the CpModelBuilder does not allow for callbacks, so each feasible solution cannot
+	// be printed while solving. However, the CP Solver can return all of the enumerated solutions
+	// in the response by setting the following parameters.
+	params := sppb.SatParameters_builder{
+		EnumerateAllSolutions:             proto.Bool(true),
+		FillAdditionalSolutionsInResponse: proto.Bool(true),
+		SolutionPoolSize:                  proto.Int32(27),
+	}.Build()
+	response, err := cpmodel.SolveCpModelWithParameters(m, params)
+	if err != nil {
+		return fmt.Errorf("failed to solve the model: %w", err)
+	}
+
+	for i, solution := range response.GetAdditionalSolutions() {
+		vs := solution.GetValues()
+		fmt.Printf("Solution %v: x = %v, y = %v, z = %v\n", i, vs[x.Index()], vs[y.Index()], vs[z.Index()])
+	}
+
+	fmt.Println("Number of solutions found: ", len(response.GetAdditionalSolutions()))
+
+	return nil
+}
+
+func main() {
+	if err := searchForAllSolutionsSampleSat(); err != nil {
+		glog.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
+	}
+}
+```
+
 ## Stopping search early
 
 Sometimes, you might decide that the current solution is good enough. In this
@@ -725,34 +911,35 @@ from ortools.sat.python import cp_model
 class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables, limit):
+    def __init__(self, variables: list[cp_model.IntVar], limit: int):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
         self.__solution_count = 0
         self.__solution_limit = limit
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         self.__solution_count += 1
         for v in self.__variables:
-            print(f"{v}={self.Value(v)}", end=" ")
+            print(f"{v}={self.value(v)}", end=" ")
         print()
         if self.__solution_count >= self.__solution_limit:
             print(f"Stop search after {self.__solution_limit} solutions")
-            self.StopSearch()
+            self.stop_search()
 
-    def solution_count(self):
+    @property
+    def solution_count(self) -> int:
         return self.__solution_count
 
 
-def StopAfterNSolutionsSampleSat():
+def stop_after_n_solutions_sample_sat():
     """Showcases calling the solver to search for small number of solutions."""
     # Creates the model.
     model = cp_model.CpModel()
     # Creates the variables.
     num_vals = 3
-    x = model.NewIntVar(0, num_vals - 1, "x")
-    y = model.NewIntVar(0, num_vals - 1, "y")
-    z = model.NewIntVar(0, num_vals - 1, "z")
+    x = model.new_int_var(0, num_vals - 1, "x")
+    y = model.new_int_var(0, num_vals - 1, "y")
+    z = model.new_int_var(0, num_vals - 1, "z")
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
@@ -760,13 +947,13 @@ def StopAfterNSolutionsSampleSat():
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
     # Solve.
-    status = solver.Solve(model, solution_printer)
-    print(f"Status = {solver.StatusName(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count()}")
-    assert solution_printer.solution_count() == 5
+    status = solver.solve(model, solution_printer)
+    print(f"Status = {solver.status_name(status)}")
+    print(f"Number of solutions found: {solution_printer.solution_count}")
+    assert solution_printer.solution_count == 5
 
 
-StopAfterNSolutionsSampleSat()
+stop_after_n_solutions_sample_sat()
 ```
 
 ### C++ code

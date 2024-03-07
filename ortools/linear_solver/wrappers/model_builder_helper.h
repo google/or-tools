@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -50,7 +50,8 @@ class ModelBuilderHelper {
                                     options = MPModelExportOptions());
   std::string ExportToLpString(const operations_research::MPModelExportOptions&
                                    options = MPModelExportOptions());
-  bool WriteModelToFile(const std::string& filename);
+  bool ReadModelFromProtoFile(const std::string& filename);
+  bool WriteModelToProtoFile(const std::string& filename);
 
   bool ImportFromMpsString(const std::string& mps_string);
   bool ImportFromMpsFile(const std::string& mps_file);

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
+#include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -209,7 +211,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     // precondition but not the Var = sum bool * value one. In this case, we
     // just don't encode it this way. Hopefully, most normal model will not run
     // into this.
-    const LinearConstraint lc = encoding_ct.Build();
+    LinearConstraint lc = encoding_ct.Build();
     if (!PossibleOverflow(*integer_trail, lc)) {
       relaxation->linear_constraints.push_back(at_least_one.Build());
       relaxation->linear_constraints.push_back(std::move(lc));
@@ -230,7 +232,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
                                        rhs - value_literal.value));
     }
 
-    const LinearConstraint lc = encoding_ct.Build();
+    LinearConstraint lc = encoding_ct.Build();
     if (!PossibleOverflow(*integer_trail, lc)) {
       relaxation->at_most_ones.push_back(at_most_one_ct);
       relaxation->linear_constraints.push_back(std::move(lc));
@@ -248,7 +250,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(lower_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_min - value_literal.value));
   }
-  const LinearConstraint built_lb_ct = lower_bound_ct.Build();
+  LinearConstraint built_lb_ct = lower_bound_ct.Build();
   if (!PossibleOverflow(*integer_trail, built_lb_ct)) {
     relaxation->linear_constraints.push_back(std::move(built_lb_ct));
     ++*num_loose;
@@ -263,7 +265,7 @@ void AppendRelaxationForEqualityEncoding(IntegerVariable var,
     CHECK(upper_bound_ct.AddLiteralTerm(value_literal.literal,
                                         d_max - value_literal.value));
   }
-  const LinearConstraint built_ub_ct = upper_bound_ct.Build();
+  LinearConstraint built_ub_ct = upper_bound_ct.Build();
   if (!PossibleOverflow(*integer_trail, built_ub_ct)) {
     relaxation->linear_constraints.push_back(std::move(built_ub_ct));
     ++*num_loose;
@@ -335,7 +337,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
 namespace {
 
 bool AllLiteralsHaveViews(const IntegerEncoder& encoder,
-                          const std::vector<Literal>& literals) {
+                          absl::Span<const Literal> literals) {
   for (const Literal lit : literals) {
     if (!encoder.LiteralOrNegationHasView(lit)) return false;
   }
@@ -820,15 +822,43 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   IntegerValue max_of_ends = kMinIntegerValue;
   int num_variable_energies = 0;
   int num_optionals = 0;
+  int64_t sizes_gcd = 0;
+  int64_t demands_gcd = 0;
+  int64_t num_active_intervals = 0;
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
-    if (helper->IsOptional(index) && demands_helper->EnergyMin(index) >= 0) {
-      num_optionals++;
+    if (helper->SizeMax(index) == 0 || demands_helper->DemandMax(index) == 0) {
+      continue;
     }
+
+    if (helper->IsOptional(index)) {
+      if (demands_helper->EnergyMin(index) > 0) {
+        num_optionals++;
+      } else {
+        continue;
+      }
+    }
+
     if (!helper->SizeIsFixed(index) || !demands_helper->DemandIsFixed(index)) {
       num_variable_energies++;
     }
+    if (sizes_gcd != 1) {
+      if (helper->SizeIsFixed(index)) {
+        sizes_gcd = std::gcd(helper->SizeMin(index).value(), sizes_gcd);
+      } else {
+        sizes_gcd = 1;
+      }
+    }
+    if (demands_gcd != 1) {
+      if (demands_helper->DemandIsFixed(index)) {
+        demands_gcd =
+            std::gcd(demands_helper->DemandMin(index).value(), demands_gcd);
+      } else {
+        demands_gcd = 1;
+      }
+    }
+    num_active_intervals++;
     min_of_starts = std::min(min_of_starts, helper->StartMin(index));
     max_of_ends = std::max(max_of_ends, helper->EndMax(index));
   }
@@ -836,15 +866,93 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "
           << num_optionals << " optional intervals, and "
           << num_variable_energies << " variable energy tasks out of "
-          << num_intervals << " intervals"
-          << (makespan.has_value() ? ", and 1 makespan" : "");
+          << num_active_intervals << "/" << num_intervals << " intervals"
+          << (makespan.has_value() ? ", and 1 makespan" : "")
+          << " sizes_gcd: " << sizes_gcd << " demands_gcd: " << demands_gcd;
 
-  // If nothing is variable, the linear relaxation will already be enforced
-  // by the scheduling propagators.
-  if (num_variable_energies + num_optionals == 0) return;
+  // There are no active intervals, no need to add the relaxation.
+  if (num_active_intervals == 0) return;
+
+  // If nothing is variable, and the coefficients cannot be reduced, the linear
+  // relaxation will already be enforced by the scheduling propagators.
+  if (num_variable_energies + num_optionals == 0 && sizes_gcd == 1 &&
+      demands_gcd == 1) {
+    return;
+  }
+
+  // Specialized case 1: sizes are fixed with a non 1 gcd and no makespan.
+  if (sizes_gcd != 1 && !makespan.has_value()) {
+    VLOG(2) << "Cumulative relaxation: sizes_gcd = " << sizes_gcd
+            << ", demands_gcd = " << demands_gcd
+            << ", no makespan, capacity is " << capacity.DebugString();
+    // We can simplify the capacity only if it is fixed.
+    // TODO(user): We could use (capacity / demands_gcd) * demands_gcd.
+    if (!integer_trail->IsFixed(capacity)) demands_gcd = 1;
+    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+    for (int index = 0; index < num_intervals; ++index) {
+      if (helper->IsAbsent(index)) continue;
+      if (helper->SizeMax(index) == 0 ||
+          demands_helper->DemandMax(index) == 0) {
+        continue;
+      }
+
+      if (helper->IsOptional(index)) {
+        const IntegerValue energy_min = demands_helper->EnergyMin(index);
+        if (energy_min == 0) continue;
+        DCHECK_EQ(energy_min % (sizes_gcd * demands_gcd), 0);
+        if (!lc.AddLiteralTerm(helper->PresenceLiteral(index),
+                               energy_min / sizes_gcd / demands_gcd)) {
+          return;
+        }
+      } else {
+        // Copy the decomposed energy.
+        std::vector<LiteralValueValue> product =
+            demands_helper->DecomposedEnergies()[index];
+        if (!product.empty()) {
+          // The energy is defined if the vector is not empty.
+          // Let's reduce the coefficients.
+          for (LiteralValueValue& entry : product) {
+            DCHECK_EQ(entry.left_value % sizes_gcd, 0);
+            entry.left_value /= sizes_gcd;
+            DCHECK_EQ(entry.right_value % demands_gcd, 0);
+            entry.right_value /= demands_gcd;
+          }
+          if (!lc.AddDecomposedProduct(product)) return;
+        } else {
+          // We know the size is fixed.
+          const IntegerValue local_size =
+              integer_trail->FixedValue(helper->Sizes()[index]);
+          DCHECK_EQ(local_size % sizes_gcd, 0);
+          if (demands_gcd == 1) {
+            lc.AddTerm(demands_helper->Demands()[index],
+                       local_size / sizes_gcd);
+          } else {
+            const IntegerValue local_demand =
+                integer_trail->FixedValue(demands_helper->Demands()[index]);
+            DCHECK_EQ(local_demand % demands_gcd, 0);
+            lc.AddConstant(local_size * local_demand / sizes_gcd / demands_gcd);
+          }
+        }
+      }
+    }
+
+    // Add the available energy of the cumulative.
+    if (integer_trail->IsFixed(capacity)) {
+      const IntegerValue span = max_of_ends - min_of_starts;
+      const IntegerValue fixed_capacity = integer_trail->FixedValue(capacity);
+      lc.AddConstant(-FloorOfRatio(fixed_capacity.value(), demands_gcd) *
+                     FloorOfRatio(span.value(), sizes_gcd));
+    } else {
+      DCHECK_EQ(demands_gcd, 1);
+      lc.AddTerm(capacity, -(max_of_ends - min_of_starts) / sizes_gcd);
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+    return;
+  }
+
+  // TODO(user): Implement demands_gcd != 1 && capacity is fixed.
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  int num_intervals_added = 0;
   for (int index = 0; index < num_intervals; ++index) {
     if (helper->IsAbsent(index)) continue;
     if (helper->IsOptional(index)) {
@@ -868,9 +976,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
                                   integer_trail);
       }
     }
-    ++num_intervals_added;
   }
-  if (num_intervals_added == 0) return;
 
   // Create and link span_start and span_end to the starts and ends of the
   // tasks.
@@ -1133,8 +1239,13 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
   if (!linearize_enforced_constraints) return;
 
   // We linearize fully reified constraints of size 1 all together for a given
-  // variable. But we need to process half-reified ones.
-  if (!mapping->IsHalfEncodingConstraint(&ct) && ct.linear().vars_size() <= 1) {
+  // variable. But we need to process half-reified ones or constraint with
+  // more than one enforcement.
+  //
+  // TODO(user): Use cleaner "already loaded" logic, and mark as such constraint
+  // already encoded by code like AppendRelaxationForEqualityEncoding().
+  if (!mapping->IsHalfEncodingConstraint(&ct) && ct.linear().vars_size() <= 1 &&
+      ct.enforcement_literal().size() <= 1) {
     return;
   }
 
@@ -1342,7 +1453,7 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
           PossibleOverflow(integer_trail, relaxation->linear_constraints[i]);
       if (issue) {
         LOG(INFO) << "Possible overflow in linearization of: "
-                  << ct.ShortDebugString();
+                  << google::protobuf::ShortFormat(ct);
       }
     }
   }
@@ -1718,7 +1829,7 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
         }
       }
       ++num_exactly_one_elements;
-      const LinearConstraint lc = builder.Build();
+      LinearConstraint lc = builder.Build();
       if (!PossibleOverflow(*integer_trail, lc)) {
         relaxation->linear_constraints.push_back(std::move(lc));
       }
@@ -1839,12 +1950,43 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
   // so that we don't do extra work in the connected component computation.
   relaxation.at_most_ones.clear();
 
-  // Remove size one LP constraints, they are not useful.
+  // Propagate unary constraints.
+  {
+    SatSolver* sat_solver = m->GetOrCreate<SatSolver>();
+    CHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
+    IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+    for (const LinearConstraint& lc : relaxation.linear_constraints) {
+      if (lc.num_terms == 0) {
+        if (lc.lb > 0 || lc.ub < 0) {
+          sat_solver->NotifyThatModelIsUnsat();
+          return relaxation;
+        }
+      } else if (lc.num_terms == 1) {
+        const AffineExpression expr(lc.vars[0], lc.coeffs[0]);
+        if (lc.lb > integer_trail->LevelZeroLowerBound(expr)) {
+          if (!integer_trail->Enqueue(expr.GreaterOrEqual(lc.lb), {}, {})) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return relaxation;
+          }
+        }
+        if (lc.ub < integer_trail->LevelZeroUpperBound(expr)) {
+          if (!integer_trail->Enqueue(expr.LowerOrEqual(lc.ub), {}, {})) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return relaxation;
+          }
+        }
+      }
+    }
+    if (!sat_solver->FinishPropagation()) return relaxation;
+  }
+
+  // Remove size one LP constraints from the main algorithms, they are not
+  // useful.
   relaxation.linear_constraints.erase(
       std::remove_if(
           relaxation.linear_constraints.begin(),
           relaxation.linear_constraints.end(),
-          [](const LinearConstraint& lc) { return lc.vars.size() <= 1; }),
+          [](const LinearConstraint& lc) { return lc.num_terms <= 1; }),
       relaxation.linear_constraints.end());
 
   // We add a clique cut generation over all Booleans of the problem.

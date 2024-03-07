@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -75,6 +75,15 @@ struct CutTerm {
   // ensure that this can never overflow.
   void Complement(absl::int128* rhs);
 
+  // This assumes bound_diff == 1. It replaces the inner expression by either
+  // var or 1 - var depending on the positiveness of var.
+  void ReplaceExpressionByLiteral(IntegerVariable var);
+
+  // If the term correspond to literal_view or (1 - literal_view) return the
+  // integer variable representation of that literal. Returns kNoIntegerVariable
+  // if this is not the case.
+  IntegerVariable GetUnderlyingLiteralOrNone() const;
+
   // Each term is of the form coeff * X where X is a variable with given
   // lp_value and with a domain in [0, bound_diff]. Note X is always >= 0.
   double lp_value = 0.0;
@@ -98,10 +107,12 @@ struct CutData {
       const absl::StrongVector<IntegerVariable, double>& lp_values,
       IntegerTrail* integer_trail);
 
-  bool FillFromParallelVectors(const LinearConstraint& base_ct,
-                               const std::vector<double>& lp_values,
-                               const std::vector<IntegerValue>& lower_bounds,
-                               const std::vector<IntegerValue>& upper_bounds);
+  bool FillFromParallelVectors(IntegerValue ub,
+                               absl::Span<const IntegerVariable> vars,
+                               absl::Span<const IntegerValue> coeffs,
+                               absl::Span<const double> lp_values,
+                               absl::Span<const IntegerValue> lower_bounds,
+                               absl::Span<const IntegerValue> upper_bounds);
 
   bool AppendOneTerm(IntegerVariable var, IntegerValue coeff, double lp_value,
                      IntegerValue lb, IntegerValue ub);
@@ -111,8 +122,9 @@ struct CutData {
   void ComplementForPositiveCoefficients();
   void ComplementForSmallerLpValues();
 
-  // Computes and return the cut violation.
+  // Computes and returns the cut violation.
   double ComputeViolation() const;
+  double ComputeEfficacy() const;
 
   std::string DebugString() const;
 
@@ -629,6 +641,54 @@ class CoverCutHelper {
   CutStats flow_stats_;
   CutStats cover_stats_;
   CutStats ls_stats_;
+};
+
+// Separate RLT cuts.
+//
+// See for instance "Efficient Separation of RLT Cuts for Implicit and Explicit
+// Bilinear Products", Ksenia Bestuzheva, Ambros Gleixner, Tobias Achterberg,
+// https://arxiv.org/abs/2211.13545
+class BoolRLTCutHelper {
+ public:
+  explicit BoolRLTCutHelper(Model* model)
+      : product_detector_(model->GetOrCreate<ProductDetector>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        lp_values_(model->GetOrCreate<ModelLpValues>()){};
+  ~BoolRLTCutHelper();
+
+  // Precompute data according to the current lp relaxation.
+  // This also restrict any Boolean to be currently appearing in the LP.
+  void Initialize(
+      const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars);
+
+  // Tries RLT separation of the input constraint. Returns true on success.
+  bool TrySimpleSeparation(const CutData& input_ct);
+
+  // If successful, this contains the last generated cut.
+  const CutData& cut() const { return cut_; }
+
+  // Single line of text that we append to the cut log line.
+  std::string Info() const { return ""; }
+
+ private:
+  // LP value of a literal encoded as an IntegerVariable.
+  // That is lit(X) = X if X positive or 1 - X otherwise.
+  double GetLiteralLpValue(IntegerVariable var) const;
+
+  // Multiplies input by lit(factor) and linearize in the best possible way.
+  // The result will be stored in cut_.
+  bool TryProduct(IntegerVariable factor, const CutData& input);
+
+  bool enabled_ = false;
+  CutData filtered_input_;
+  CutData cut_;
+
+  ProductDetector* product_detector_;
+  SharedStatistics* shared_stats_;
+  ModelLpValues* lp_values_;
+
+  int64_t num_tried_ = 0;
+  int64_t num_tried_factors_ = 0;
 };
 
 // A cut generator for z = x * y (x and y >= 0).

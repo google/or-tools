@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #include <atomic>
 #include <functional>
 #include <optional>
+#include <string>
 
 #include "Eigen/Core"
 #include "ortools/lp_data/lp_data.h"
@@ -128,6 +129,12 @@ struct IterationCallbackInfo {
 // if `interrupt_solve->load()` is true, in which case the solve will terminate
 // with `TERMINATION_REASON_INTERRUPTED_BY_USER`.
 //
+// If `message_callback` is not nullptr, solver logging will be passed to
+// `message_callback`. Otherwise solver logging will be written to stdout.
+// In either case, the amount of logging is controlled by `verbosity_level`.
+// In particular, if `verbosity_level == 0`, there will be no logging in either
+// case.
+//
 // If `iteration_stats_callback` is not nullptr, then at each termination step
 // (when iteration stats are logged), `iteration_stats_callback` will also
 // be called with those iteration stats.
@@ -144,6 +151,7 @@ struct IterationCallbackInfo {
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     const std::atomic<bool>* interrupt_solve = nullptr,
+    std::function<void(const std::string&)> message_callback = nullptr,
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);
 
@@ -156,6 +164,7 @@ SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     std::optional<PrimalAndDualSolution> initial_solution,
     const std::atomic<bool>* interrupt_solve = nullptr,
+    std::function<void(const std::string&)> message_callback = nullptr,
     std::function<void(const IterationCallbackInfo&)> iteration_stats_callback =
         nullptr);
 

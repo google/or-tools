@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -149,12 +149,6 @@ absl::Status ValidateQuadraticProgramDimensions(const QuadraticProgram& qp);
 inline bool IsLinearProgram(const QuadraticProgram& qp) {
   return !qp.objective_matrix.has_value();
 }
-
-// Checks if the lower and upper bounds of the problem are consistent, i.e. for
-// each variable and constraint bound we have `lower_bound <= upper_bound`. If
-// the input is consistent the method returns true, otherwise it returns false.
-// See also `HasValidBounds(const ShardedQuadraticProgram&)`.
-bool HasValidBounds(const QuadraticProgram& qp);
 
 // Converts an `MPModelProto` into a `QuadraticProgram`.
 // Returns an error if general constraints are present.

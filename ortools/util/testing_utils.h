@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,13 @@
 
 namespace operations_research {
 
+inline constexpr bool kAsanEnabled = false;
+inline constexpr bool kMsanEnabled = false;
+inline constexpr bool kTsanEnabled = false;
 inline bool ProbablyRunningInsideUnitTest() { return false; }
+
+inline constexpr bool kAnyXsanEnabled =
+    kAsanEnabled || kMsanEnabled || kTsanEnabled;
 
 }  // namespace operations_research
 

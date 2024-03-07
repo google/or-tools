@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -376,7 +376,17 @@ public class Model
     ///@return true if the model was correctly written.
     public bool ExportToFile(String file)
     {
-        return helper_.WriteModelToFile(file);
+        return helper_.WriteModelToProtoFile(file);
+    }
+
+    /// <summary>
+    /// load the model as a protocol buffer from 'file'.
+    /// </summary>
+    /// @param file file to read the model from.
+    ///@return true if the model was correctly loaded.
+    public bool ImportFromFile(String file)
+    {
+        return helper_.ReadModelFromProtoFile(file);
     }
 
     public String ExportToMpsString(bool obfuscate)

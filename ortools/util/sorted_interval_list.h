@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,6 +51,11 @@ struct ClosedInterval {
     return start < other.start;
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const ClosedInterval& interval) {
+    return H::combine(std::move(h), interval.start, interval.end);
+  }
+
   int64_t start = 0;  // Inclusive.
   int64_t end = 0;    // Inclusive.
 };
@@ -96,10 +101,10 @@ class Domain {
   }
 
   /// Move constructor.
-  Domain(Domain&& other) : intervals_(std::move(other.intervals_)) {}
+  Domain(Domain&& other) noexcept : intervals_(std::move(other.intervals_)) {}
 
   /// Move operator.
-  Domain& operator=(Domain&& other) {
+  Domain& operator=(Domain&& other) noexcept {
     intervals_ = std::move(other.intervals_);
     return *this;
   }
@@ -451,6 +456,11 @@ class Domain {
     return intervals_ != other.intervals_;
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const Domain& domain) {
+    return H::combine(std::move(h), domain.intervals_);
+  }
+
   /**
    * Basic read-only std::vector<> wrapping to view a Domain as a sorted list of
    * non-adjacent intervals. Note that we don't expose size() which might be
@@ -465,14 +475,6 @@ class Domain {
   }
   absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
     return intervals_.end();
-  }
-
-  // Deprecated.
-  //
-  // TODO(user): remove, this makes a copy and is of a different type that our
-  // internal InlinedVector() anyway.
-  std::vector<ClosedInterval> intervals() const {
-    return {intervals_.begin(), intervals_.end()};
   }
 
  private:

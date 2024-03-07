@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/io/names_removal.h"
 #include "ortools/math_opt/model.pb.h"
@@ -38,7 +39,6 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/iterators.h"
 #include "ortools/math_opt/storage/linear_constraint_storage.h"
-#include "ortools/math_opt/storage/sorted.h"
 #include "ortools/math_opt/storage/sparse_matrix.h"
 #include "ortools/math_opt/storage/update_trackers.h"
 #include "ortools/math_opt/storage/variable_storage.h"
@@ -279,6 +279,8 @@ void ModelStorage::AddAuxiliaryObjectives(
   }
 }
 
+// TODO: b/315974557 - Return an error if any of the Proto() methods called
+// tries to create a very long RepeatedField.
 ModelProto ModelStorage::ExportModel(const bool remove_names) const {
   ModelProto result;
   result.set_name(name_);

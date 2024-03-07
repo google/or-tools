@@ -1,7 +1,9 @@
 # OR-Tools code dependencies
 absl-py==2.0.0
+immutabledict==3.0.0
 numpy==1.26.1
-protobuf==4.25.0
+protobuf==4.25.3
+requests==2.31.0
 scipy==1.11.3
 
 # OR-Tools build dependencies
@@ -19,7 +21,7 @@ plotly==5.15.0
 
 # Notebook
 jupyter==1.0.0
+jupyter-server==2.12.5
 tornado==6.3.3
 Pygments==2.15.0
-jupyter-server==2.11.2
 jsonschema==4.19.0

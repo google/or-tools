@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -58,7 +58,6 @@ struct Neighborhood {
   // with updated domains.
   // It can contains new variables and new constraints, and solution hinting.
   CpModelProto delta;
-  std::vector<int> constraints_to_ignore;
 
   // Neighborhood Id. Used to identify the neighborhood by a generator.
   // Currently only used by WeightedRandomRelaxationNeighborhoodGenerator.
@@ -110,10 +109,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   Neighborhood FixGivenVariables(
       const CpSolverResponse& base_solution,
       const absl::flat_hash_set<int>& variables_to_fix) const;
-
-  // Returns the neighborhood where the given constraints are removed.
-  Neighborhood RemoveMarkedConstraints(
-      const std::vector<int>& constraints_to_remove) const;
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.
@@ -188,11 +183,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Important:
   //   - The constraint index is NOT related to the one in the cp_model.
   //   - Only non-constant var are listed in ConstraintToVar().
-  const std::vector<std::vector<int>>& ConstraintToVar() const
+  const CompactVectorVector<int, int>& ConstraintToVar() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return constraint_to_var_;
   }
-  const std::vector<std::vector<int>>& VarToConstraint() const
+  const CompactVectorVector<int, int>& VarToConstraint() const
       ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_) {
     return var_to_constraint_;
   }
@@ -321,9 +316,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   //
   // TODO(user): Note that the objective is not considered here. Which is fine
   // except if the objective domain is constraining.
-  std::vector<std::vector<int>> constraint_to_var_
+  CompactVectorVector<int, int> constraint_to_var_
       ABSL_GUARDED_BY(graph_mutex_);
-  std::vector<std::vector<int>> var_to_constraint_
+  CompactVectorVector<int, int> var_to_constraint_
       ABSL_GUARDED_BY(graph_mutex_);
 
   // Connected components of the variable-constraint graph. If a variable is
@@ -340,6 +335,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // The list of non constant variables appearing in the objective.
   std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
+
+  std::vector<int> tmp_row_;
 
   mutable absl::Mutex domain_mutex_;
 };
@@ -722,7 +719,7 @@ class RandomPrecedencesPackingNeighborhoodGenerator
 class SlicePackingNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit SlicePackingNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
       : NeighborhoodGenerator(name, helper) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution,

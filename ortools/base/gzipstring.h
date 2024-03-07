@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #include "zlib.h"
 
-bool GunzipString(const std::string& str, std::string* out) {
+bool GunzipString(absl::string_view str, std::string* out) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -60,7 +60,7 @@ bool GunzipString(const std::string& str, std::string* out) {
   return true;
 }
 
-void GzipString(absl::string_view uncompressed, std::string* compressed) {
+bool GzipString(absl::string_view uncompressed, std::string* compressed) {
   z_stream zs;
   zs.zalloc = Z_NULL;
   zs.zfree = Z_NULL;
@@ -71,7 +71,7 @@ void GzipString(absl::string_view uncompressed, std::string* compressed) {
 
   if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) {
     VLOG(1) << "Cannot initialize zlib compression.";
-    return;
+    return false;
   }
 
   zs.next_in = (Bytef*)uncompressed.data();
@@ -97,7 +97,9 @@ void GzipString(absl::string_view uncompressed, std::string* compressed) {
   if (status != Z_STREAM_END) {  // an error occurred that was not EOF
     VLOG(1) << "Exception during zlib compression: (" << status << ") "
             << zs.msg;
+    return false;
   }
+  return true;
 }
 
 #endif  // OR_TOOLS_BASE_GZIPSTRING_H_

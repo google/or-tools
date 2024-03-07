@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,7 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
+#include "ortools/pdlp/solvers.pb.h"             // IWYU pragma: export
 #include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
 
 namespace operations_research {
@@ -62,6 +63,12 @@ enum class SolverType {
   // to be after presolve). Experimental support to rescale and discretize
   // problems with continuous variables.
   kCpSat = SOLVER_TYPE_CP_SAT,
+
+  // Google's PDLP solver.
+  //
+  // Supports LP and convex diagonal quadratic objectives. Uses first order
+  // methods rather than simplex. Can solve very large problems.
+  kPdlp = SOLVER_TYPE_PDLP,
 
   // GNU Linear Programming Kit (GLPK) (third party).
   //
@@ -96,6 +103,12 @@ enum class SolverType {
   //
   // Supports LP and MIP problems (convex QPs are unimplemented).
   kHighs = SOLVER_TYPE_HIGHS,
+
+  // MathOpt's reference implementation of a MIP solver.
+  //
+  // Slow/not recommended for production. Not an LP solver (no dual information
+  // returned).
+  kSantorini = SOLVER_TYPE_SANTORINI,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);
@@ -403,6 +416,7 @@ struct SolveParameters {
   GurobiParameters gurobi;
   glop::GlopParameters glop;
   sat::SatParameters cp_sat;
+  pdlp::PrimalDualHybridGradientParams pdlp;
 
   GlpkParameters glpk;
   HighsOptionsProto highs;

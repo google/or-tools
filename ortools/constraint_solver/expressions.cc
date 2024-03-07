@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -1332,7 +1333,7 @@ class DomainIntVar : public IntVar {
 
   // ----- Main Class -----
   DomainIntVar(Solver* s, int64_t vmin, int64_t vmax, const std::string& name);
-  DomainIntVar(Solver* s, const std::vector<int64_t>& sorted_values,
+  DomainIntVar(Solver* s, absl::Span<const int64_t> sorted_values,
                const std::string& name);
   ~DomainIntVar() override;
 
@@ -2207,7 +2208,7 @@ DomainIntVar::DomainIntVar(Solver* const s, int64_t vmin, int64_t vmax,
       bound_watcher_(nullptr) {}
 
 DomainIntVar::DomainIntVar(Solver* const s,
-                           const std::vector<int64_t>& sorted_values,
+                           absl::Span<const int64_t> sorted_values,
                            const std::string& name)
     : IntVar(s, name),
       min_(std::numeric_limits<int64_t>::max()),
@@ -6388,7 +6389,7 @@ void CleanVariableOnFail(IntVar* var) {
   dvar->CleanInProcess();
 }
 
-Constraint* SetIsEqual(IntVar* const var, const std::vector<int64_t>& values,
+Constraint* SetIsEqual(IntVar* const var, absl::Span<const int64_t> values,
                        const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -6396,7 +6397,7 @@ Constraint* SetIsEqual(IntVar* const var, const std::vector<int64_t>& values,
 }
 
 Constraint* SetIsGreaterOrEqual(IntVar* const var,
-                                const std::vector<int64_t>& values,
+                                absl::Span<const int64_t> values,
                                 const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -6519,7 +6520,7 @@ IntVar* Solver::MakeIntConst(int64_t val) { return MakeIntConst(val, ""); }
 // ----- Int Var and associated methods -----
 
 namespace {
-std::string IndexedName(const std::string& prefix, int index, int max_index) {
+std::string IndexedName(absl::string_view prefix, int index, int max_index) {
 #if 0
 #if defined(_MSC_VER)
   const int digits = max_index > 0 ?

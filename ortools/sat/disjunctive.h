@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
@@ -196,7 +197,7 @@ class CombinedDisjunctive : public PropagatorInterface {
 
   // After creation, this must be called for all the disjunctive constraints
   // in the model.
-  void AddNoOverlap(const std::vector<IntervalVariable>& var);
+  void AddNoOverlap(absl::Span<const IntervalVariable> var);
 
   bool Propagate() final;
 

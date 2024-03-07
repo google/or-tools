@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -34,6 +34,7 @@
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -53,13 +54,6 @@
 namespace operations_research {
 namespace sat {
 
-// Helper struct to combine info generated from solving LP.
-struct LPSolveInfo {
-  glop::ProblemStatus status;
-  double lp_objective = -std::numeric_limits<double>::infinity();
-  IntegerValue new_obj_bound = kMinIntegerValue;
-};
-
 // Simple class to combine linear expression efficiently. First in a sparse
 // way that switch to dense when the number of non-zeros grows.
 class ScatteredIntegerVector {
@@ -76,9 +70,9 @@ class ScatteredIntegerVector {
   // Returns false if we encountered any integer overflow. If the template bool
   // is false, we do not check for a bit of extra speed.
   template <bool check_overflow = true>
-  bool AddLinearExpressionMultiple(
-      IntegerValue multiplier,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms);
+  bool AddLinearExpressionMultiple(IntegerValue multiplier,
+                                   absl::Span<const glop::ColIndex> cols,
+                                   absl::Span<const IntegerValue> coeffs);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse
@@ -86,9 +80,11 @@ class ScatteredIntegerVector {
   //
   // TODO(user): Ideally we should convert to IntegerVariable as late as
   // possible. Prefer to use GetTerms().
-  void ConvertToLinearConstraint(
-      const std::vector<IntegerVariable>& integer_variables,
-      IntegerValue upper_bound, LinearConstraint* result);
+  LinearConstraint ConvertToLinearConstraint(
+      absl::Span<const IntegerVariable> integer_variables,
+      IntegerValue upper_bound,
+      std::optional<std::pair<IntegerVariable, IntegerValue>> extra_term =
+          std::nullopt);
 
   void ConvertToCutData(absl::int128 rhs,
                         const std::vector<IntegerVariable>& integer_variables,
@@ -190,37 +186,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
-  // This looks at all unassigned 0-1 variables, takes the one with
-  // a support value closest to 0.5, and tries to assign it to 1.
-  // If all 0-1 variables have an integer support, returns kNoLiteralIndex.
-  // Tie-breaking is done using the variable natural order.
-  //
-  // TODO(user): This fixes to 1, but for some problems fixing to 0
-  // or to the std::round(support value) might work better. When this is the
-  // case, change behaviour automatically?
-  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary();
-
-  // Returns a IntegerLiteral guided by the underlying LP constraints.
-  //
-  // This computes the mean of reduced costs over successive calls,
-  // and tries to fix the variable which has the highest reduced cost.
-  // Tie-breaking is done using the variable natural order.
-  // Only works for 0/1 variables.
-  //
-  // TODO(user): Try to get better pseudocosts than averaging every time
-  // the heuristic is called. MIP solvers initialize this with strong branching,
-  // then keep track of the pseudocosts when doing tree search. Also, this
-  // version only branches on var >= 1 and keeps track of reduced costs from var
-  // = 1 to var = 0. This works better than the conventional MIP where the
-  // chosen variable will be argmax_var min(pseudocost_var(0->1),
-  // pseudocost_var(1->0)), probably because we are doing DFS search where MIP
-  // does BFS. This might depend on the model, more trials are necessary. We
-  // could also do exponential smoothing instead of decaying every N calls, i.e.
-  // pseudo = a * pseudo + (1-a) reduced.
-  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary();
-
-  // Returns a IntegerLiteral guided by the underlying LP constraints.
-  //
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
   // Tie-breaking is done using the variable natural order.
@@ -266,12 +231,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     return optimal_constraints_;
   }
 
- private:
-  // Helper methods for branching. Returns true if branching on the given
-  // variable helps with more propagation or finds a conflict.
-  bool BranchOnVar(IntegerVariable var);
-  LPSolveInfo SolveLpForBranching();
+  // This api allows to temporarily disable the LP propagator which can be
+  // costly during probing or other heavy propagation phase.
+  void EnablePropagation(bool enable) { enabled_ = enable; }
+  bool PropagationIsEnabled() const { return enabled_; }
 
+ private:
   // Helper method to fill reduced cost / dual ray reason in 'integer_reason'.
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for
@@ -332,7 +297,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Called by PropagateExactLpReason() and PropagateExactDualRay() to finish
   // propagation.
-  bool PropagateLpConstraint(const LinearConstraint& ct);
+  bool PropagateLpConstraint(LinearConstraint ct);
 
   // Returns number of non basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
@@ -364,7 +329,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // is false, we do not check for a bit of extra speed.
   template <bool check_overflow = true>
   bool ComputeNewLinearConstraint(
-      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+      absl::Span<const std::pair<glop::RowIndex, IntegerValue>>
           integer_multipliers,
       ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
@@ -418,6 +383,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // linearization level 2 and above.
   void UpdateSimplexIterationLimit(int64_t min_iter, int64_t max_iter);
 
+  // Returns the col/coeff of integer_lp_[row].
+  absl::Span<const glop::ColIndex> IntegerLpRowCols(glop::RowIndex row) const;
+  absl::Span<const IntegerValue> IntegerLpRowCoeffs(glop::RowIndex row) const;
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -442,10 +411,20 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   struct LinearConstraintInternal {
     IntegerValue lb;
     IntegerValue ub;
-    LinearExpression terms;
+
+    // Point in integer_lp_cols_/integer_lp_coeffs_ for the actual data.
+    int start_in_buffer;
+    int num_terms;
+
     bool lb_is_trivial = false;
     bool ub_is_trivial = false;
   };
+  std::vector<glop::ColIndex> integer_lp_cols_;
+  std::vector<IntegerValue> integer_lp_coeffs_;
+
+  std::vector<glop::ColIndex> tmp_cols_;
+  std::vector<IntegerValue> tmp_coeffs_;
+
   LinearExpression integer_objective_;
   IntegerValue integer_objective_offset_ = IntegerValue(0);
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
@@ -470,9 +449,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
-  LinearConstraint cut_;
-  LinearConstraint saved_cut_;
-  LinearConstraint tmp_constraint_;
 
   ScatteredIntegerVector tmp_scattered_vector_;
 
@@ -505,13 +481,23 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
+  //
+  // TODO(user): ObjectiveDefinition and SharedResponseManager are only needed
+  // to report the objective bounds during propagation, find a better way to
+  // avoid some of these dependencies?
   const SatParameters& parameters_;
   Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
+  ProductDetector* product_detector_;
+  ObjectiveDefinition* objective_definition_;
+  SharedStatistics* shared_stats_;
+  SharedResponseManager* shared_response_manager_;
   ModelRandomGenerator* random_;
+
+  BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.
   ImpliedBoundsProcessor implied_bounds_processor_;
@@ -579,10 +565,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IncrementalAverage average_degeneracy_;
   bool is_degenerate_ = false;
 
-  // Used by the strong branching heuristic.
-  int branching_frequency_ = 1;
-  int64_t count_since_last_branching_ = 0;
-
   // Sum of all simplex iterations performed by this class. This is useful to
   // test the incrementality and compare to other solvers.
   int64_t total_num_simplex_iterations_ = 0;
@@ -600,6 +582,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   mutable int64_t num_bad_cuts_ = 0;
   mutable int64_t num_scaling_issues_ = 0;
   std::vector<int64_t> num_solves_by_status_;
+
+  // We might temporarily disable the LP propagation.
+  bool enabled_ = true;
 };
 
 // A class that stores which LP propagator is associated to each variable.

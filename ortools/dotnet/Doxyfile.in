@@ -993,8 +993,8 @@ EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = *Test.cs \
                          */docs/* \
                          */cpp/* \
-                         */csharp/* \
                          */java/* \
+                         */go/* \
                          */python/* \
                          */samples/* \
                          */obj/* \

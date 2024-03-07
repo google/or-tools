@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -39,7 +39,6 @@ USE_HIGHS ?= OFF
 USE_PDLP := ON # OFF not supported
 USE_SCIP ?= ON
 USE_CPLEX ?= OFF
-USE_XPRESS ?= OFF
 
 USE_DOTNET_CORE_31 ?= OFF
 USE_DOTNET_6 ?= ON
@@ -72,7 +71,6 @@ third_party:
  -DUSE_PDLP=$(USE_PDLP) \
  -DUSE_SCIP=$(USE_SCIP) \
  -DUSE_CPLEX=$(USE_CPLEX) \
- -DUSE_XPRESS=$(USE_XPRESS) \
  -DUSE_DOTNET_CORE_31=$(USE_DOTNET_CORE_31) \
  -DUSE_DOTNET_6=$(USE_DOTNET_6) \
  -DBUILD_VENV=$(BUILD_VENV) \
@@ -665,7 +663,6 @@ detect_cpp:
 	@echo USE_SCIP = $(USE_SCIP)
 	@echo USE_GLPK = $(USE_GLPK)
 	@echo USE_CPLEX = $(USE_CPLEX)
-	@echo USE_XPRESS = $(USE_XPRESS)
 ifdef GLPK_ROOT
 	@echo GLPK_ROOT = $(GLPK_ROOT)
 endif

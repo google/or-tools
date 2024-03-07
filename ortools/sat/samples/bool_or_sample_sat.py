@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,13 +18,16 @@
 from ortools.sat.python import cp_model
 
 
-def BoolOrSampleSat():
+def bool_or_sample_sat():
     model = cp_model.CpModel()
 
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
 
-    model.AddBoolOr([x, y.Not()])
+    model.add_bool_or([x, y.negated()])
+    # The [] is not mandatory.
+    # ~y is equivalent to y.negated()
+    model.add_bool_or(x, ~y)
 
 
-BoolOrSampleSat()
+bool_or_sample_sat()

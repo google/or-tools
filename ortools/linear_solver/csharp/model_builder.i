@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -116,7 +116,8 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %rename (ConstraintsCount) operations_research::ModelBuilderHelper::num_constraints;
 %rename (Name) operations_research::ModelBuilderHelper::name;
 %unignore operations_research::ModelBuilderHelper::SetName;
-%unignore operations_research::ModelBuilderHelper::WriteModelToFile;
+%unignore operations_research::ModelBuilderHelper::ReadModelFromProtoFile;
+%unignore operations_research::ModelBuilderHelper::WriteModelToProtoFile;
 %unignore operations_research::ModelBuilderHelper::ImportFromMpsString;
 %unignore operations_research::ModelBuilderHelper::ImportFromMpsFile;
 %unignore operations_research::ModelBuilderHelper::ImportFromLpString;

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,7 +16,10 @@
 
 #include <vector>
 
+#include "absl/log/check.h"
+#include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
+#include "ortools/util/strong_integers.h"
 
 // Representation class for the weighted set-covering problem.
 //
@@ -57,6 +60,7 @@ DEFINE_STRONG_INDEX_TYPE(EntryIndex);
 // The return type for size() is a simple size_t and not an Index as in
 // StrictITIVector, which makes the code less elegant.
 using SubsetCostVector = glop::StrictITIVector<SubsetIndex, Cost>;
+using ElementCostVector = glop::StrictITIVector<ElementIndex, Cost>;
 using SparseColumn = glop::StrictITIVector<EntryIndex, ElementIndex>;
 using SparseRow = glop::StrictITIVector<EntryIndex, SubsetIndex>;
 
@@ -85,11 +89,14 @@ class SetCoverModel {
   // number of columns.
   SubsetIndex num_subsets() const { return columns_.size(); }
 
-  const SubsetCostVector& subset_costs() { return subset_costs_; }
+  // Vector of costs for each subset.
+  const SubsetCostVector& subset_costs() const { return subset_costs_; }
 
-  const SparseColumnView& columns() { return columns_; }
+  // Column view of the set covering problem.
+  const SparseColumnView& columns() const { return columns_; }
 
-  const SparseRowView& rows() {
+  // Row view of the set covering problem.
+  const SparseRowView& rows() const {
     DCHECK(row_view_is_valid_);
     return rows_;
   }
@@ -97,7 +104,7 @@ class SetCoverModel {
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
 
-  // Returns the list of indices for the subsets in the model.
+  // Returns the list of indices for all the subsets in the model.
   std::vector<SubsetIndex> all_subsets() const { return all_subsets_; }
 
   // Adds an empty subset with a cost to the problem. In matrix terms, this
@@ -110,6 +117,7 @@ class SetCoverModel {
   void AddElementToLastSubset(ElementIndex element);
 
   // Sets 'cost' to an already existing 'subset'.
+  // This will CHECK-fail if cost is infinite or a NaN.
   void SetSubsetCost(int subset, Cost cost);
 
   // Adds 'element' to and already existing 'subset'.
@@ -127,6 +135,14 @@ class SetCoverModel {
 
   // Reserves num_elements rows in the column indexed by subset.
   void ReserveNumElementsInSubset(int num_elements, int subset);
+
+  // Returns the model as a SetCoverProto. The function is not const because
+  // the element indices in the columns need to be sorted for the representation
+  // as a protobuf to be canonical.
+  SetCoverProto ExportModelAsProto();
+
+  // Imports the model from a SetCoverProto.
+  void ImportModelFromProto(const SetCoverProto& message);
 
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to

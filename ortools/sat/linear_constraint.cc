@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -25,6 +26,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
@@ -80,7 +82,7 @@ void LinearConstraintBuilder::AddLinearExpression(const LinearExpression& expr,
 }
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddDecomposedProduct(
-    const std::vector<LiteralValueValue>& product) {
+    absl::Span<const LiteralValueValue> product) {
   if (product.empty()) return true;
 
   IntegerValue product_min = kMaxIntegerValue;
@@ -164,7 +166,7 @@ double ComputeActivity(
     const LinearConstraint& constraint,
     const absl::StrongVector<IntegerVariable, double>& values) {
   int i = 0;
-  const int size = static_cast<int>(constraint.vars.size());
+  const int size = constraint.num_terms;
   const int shifted_size = size - 3;
   double a0 = 0.0;
   double a1 = 0.0;
@@ -196,37 +198,35 @@ double ComputeActivity(
   return activity;
 }
 
-double ComputeL2Norm(const LinearConstraint& constraint) {
+double ComputeL2Norm(const LinearConstraint& ct) {
   double sum = 0.0;
-  for (const IntegerValue coeff : constraint.coeffs) {
-    sum += ToDouble(coeff) * ToDouble(coeff);
+  for (int i = 0; i < ct.num_terms; ++i) {
+    sum += ToDouble(ct.coeffs[i]) * ToDouble(ct.coeffs[i]);
   }
   return std::sqrt(sum);
 }
 
-IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint) {
+IntegerValue ComputeInfinityNorm(const LinearConstraint& ct) {
   IntegerValue result(0);
-  for (const IntegerValue coeff : constraint.coeffs) {
-    result = std::max(result, IntTypeAbs(coeff));
+  for (int i = 0; i < ct.num_terms; ++i) {
+    result = std::max(result, IntTypeAbs(ct.coeffs[i]));
   }
   return result;
 }
 
-double ScalarProduct(const LinearConstraint& constraint1,
-                     const LinearConstraint& constraint2) {
-  DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
-  DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
+double ScalarProduct(const LinearConstraint& ct1, const LinearConstraint& ct2) {
+  DCHECK(std::is_sorted(ct1.vars.get(), ct1.vars.get() + ct1.num_terms));
+  DCHECK(std::is_sorted(ct2.vars.get(), ct2.vars.get() + ct2.num_terms));
   double scalar_product = 0.0;
   int index_1 = 0;
   int index_2 = 0;
-  while (index_1 < constraint1.vars.size() &&
-         index_2 < constraint2.vars.size()) {
-    if (constraint1.vars[index_1] == constraint2.vars[index_2]) {
-      scalar_product += ToDouble(constraint1.coeffs[index_1]) *
-                        ToDouble(constraint2.coeffs[index_2]);
+  while (index_1 < ct1.num_terms && index_2 < ct2.num_terms) {
+    if (ct1.vars[index_1] == ct2.vars[index_2]) {
+      scalar_product +=
+          ToDouble(ct1.coeffs[index_1]) * ToDouble(ct2.coeffs[index_2]);
       index_1++;
       index_2++;
-    } else if (constraint1.vars[index_1] > constraint2.vars[index_2]) {
+    } else if (ct1.vars[index_1] > ct2.vars[index_2]) {
       index_2++;
     } else {
       index_1++;
@@ -238,7 +238,7 @@ double ScalarProduct(const LinearConstraint& constraint1,
 namespace {
 
 // TODO(user): Template for any integer type and expose this?
-IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
+IntegerValue ComputeGcd(absl::Span<const IntegerValue> values) {
   if (values.empty()) return IntegerValue(1);
   int64_t gcd = 0;
   for (const IntegerValue value : values) {
@@ -252,8 +252,9 @@ IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
 }  // namespace
 
 void DivideByGCD(LinearConstraint* constraint) {
-  if (constraint->coeffs.empty()) return;
-  const IntegerValue gcd = ComputeGcd(constraint->coeffs);
+  if (constraint->num_terms == 0) return;
+  const IntegerValue gcd = ComputeGcd(
+      {constraint->coeffs.get(), static_cast<size_t>(constraint->num_terms)});
   if (gcd == 1) return;
 
   if (constraint->lb > kMinIntegerValue) {
@@ -262,24 +263,25 @@ void DivideByGCD(LinearConstraint* constraint) {
   if (constraint->ub < kMaxIntegerValue) {
     constraint->ub = FloorRatio(constraint->ub, gcd);
   }
-  for (IntegerValue& coeff : constraint->coeffs) coeff /= gcd;
+  for (int i = 0; i < constraint->num_terms; ++i) {
+    constraint->coeffs[i] /= gcd;
+  }
 }
 
 void RemoveZeroTerms(LinearConstraint* constraint) {
   int new_size = 0;
-  const int size = constraint->vars.size();
+  const int size = constraint->num_terms;
   for (int i = 0; i < size; ++i) {
     if (constraint->coeffs[i] == 0) continue;
     constraint->vars[new_size] = constraint->vars[i];
     constraint->coeffs[new_size] = constraint->coeffs[i];
     ++new_size;
   }
-  constraint->vars.resize(new_size);
-  constraint->coeffs.resize(new_size);
+  constraint->resize(new_size);
 }
 
 void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
-  const int size = constraint->vars.size();
+  const int size = constraint->num_terms;
   for (int i = 0; i < size; ++i) {
     const IntegerValue coeff = constraint->coeffs[i];
     if (coeff < 0) {
@@ -290,7 +292,7 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
 }
 
 void MakeAllVariablesPositive(LinearConstraint* constraint) {
-  const int size = constraint->vars.size();
+  const int size = constraint->num_terms;
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
     if (!VariableIsPositive(var)) {
@@ -355,36 +357,9 @@ std::string LinearExpression::DebugString() const {
   return result;
 }
 
-// TODO(user): it would be better if LinearConstraint natively supported
-// term and not two separated vectors. Fix?
-//
-// TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
-// we should just make the later switch negative variable to positive ones to
-// avoid an extra linear scan on each new cuts.
-void CanonicalizeConstraint(LinearConstraint* ct) {
-  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-
-  const int size = ct->vars.size();
-  for (int i = 0; i < size; ++i) {
-    if (VariableIsPositive(ct->vars[i])) {
-      terms.push_back({ct->vars[i], ct->coeffs[i]});
-    } else {
-      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
-    }
-  }
-  std::sort(terms.begin(), terms.end());
-
-  ct->vars.clear();
-  ct->coeffs.clear();
-  for (const auto& term : terms) {
-    ct->vars.push_back(term.first);
-    ct->coeffs.push_back(term.second);
-  }
-}
-
 bool NoDuplicateVariable(const LinearConstraint& ct) {
   absl::flat_hash_set<IntegerVariable> seen_variables;
-  const int size = ct.vars.size();
+  const int size = ct.num_terms;
   for (int i = 0; i < size; ++i) {
     if (VariableIsPositive(ct.vars[i])) {
       if (!seen_variables.insert(ct.vars[i]).second) return false;
@@ -416,7 +391,7 @@ bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
                                          const IntegerTrail& integer_trail) {
   int64_t positive_sum(0);
   int64_t negative_sum(0);
-  for (int i = 0; i < constraint.vars.size(); ++i) {
+  for (int i = 0; i < constraint.num_terms; ++i) {
     const IntegerVariable var = constraint.vars[i];
     const IntegerValue coeff = constraint.coeffs[i];
     const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
@@ -488,7 +463,7 @@ bool PossibleOverflow(const IntegerTrail& integer_trail,
                       const LinearConstraint& constraint) {
   IntegerValue min_activity(0);
   IntegerValue max_activity(0);
-  const int size = constraint.vars.size();
+  const int size = constraint.num_terms;
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint.vars[i];
     const IntegerValue coeff = constraint.coeffs[i];

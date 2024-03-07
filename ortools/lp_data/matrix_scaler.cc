@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,41 +20,48 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/return_macros.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace glop {
 
 SparseMatrixScaler::SparseMatrixScaler()
-    : matrix_(nullptr), row_scale_(), col_scale_() {}
+    : matrix_(nullptr), row_scales_(), col_scales_() {}
 
 void SparseMatrixScaler::Init(SparseMatrix* matrix) {
   DCHECK(matrix != nullptr);
   matrix_ = matrix;
-  row_scale_.resize(matrix_->num_rows(), 1.0);
-  col_scale_.resize(matrix_->num_cols(), 1.0);
+  row_scales_.resize(matrix_->num_rows(), 1.0);
+  col_scales_.resize(matrix_->num_cols(), 1.0);
 }
 
 void SparseMatrixScaler::Clear() {
   matrix_ = nullptr;
-  row_scale_.clear();
-  col_scale_.clear();
+  row_scales_.clear();
+  col_scales_.clear();
 }
 
 Fractional SparseMatrixScaler::RowUnscalingFactor(RowIndex row) const {
   DCHECK_GE(row, 0);
-  return row < row_scale_.size() ? row_scale_[row] : 1.0;
+  return row < row_scales_.size() ? row_scales_[row] : 1.0;
 }
 
 Fractional SparseMatrixScaler::ColUnscalingFactor(ColIndex col) const {
   DCHECK_GE(col, 0);
-  return col < col_scale_.size() ? col_scale_[col] : 1.0;
+  return col < col_scales_.size() ? col_scales_[col] : 1.0;
 }
 
 Fractional SparseMatrixScaler::RowScalingFactor(RowIndex row) const {
@@ -69,8 +76,8 @@ std::string SparseMatrixScaler::DebugInformationString() const {
   // Note that some computations are redundant with the computations made in
   // some callees, but we do not care as this function is supposed to be called
   // with FLAGS_v set to 1.
-  DCHECK(!row_scale_.empty());
-  DCHECK(!col_scale_.empty());
+  DCHECK(!row_scales_.empty());
+  DCHECK(!col_scales_.empty());
   Fractional max_magnitude;
   Fractional min_magnitude;
   matrix_->ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
@@ -83,10 +90,10 @@ std::string SparseMatrixScaler::DebugInformationString() const {
       "Minimum col scale = %g, maximum col scale = %g\n",
       min_magnitude, max_magnitude, dynamic_range,
       VarianceOfAbsoluteValueOfNonZeros(),
-      *std::min_element(row_scale_.begin(), row_scale_.end()),
-      *std::max_element(row_scale_.begin(), row_scale_.end()),
-      *std::min_element(col_scale_.begin(), col_scale_.end()),
-      *std::max_element(col_scale_.begin(), col_scale_.end()));
+      *std::min_element(row_scales_.begin(), row_scales_.end()),
+      *std::max_element(row_scales_.begin(), row_scales_.end()),
+      *std::min_element(col_scales_.begin(), col_scales_.end()),
+      *std::max_element(col_scales_.begin(), col_scales_.end()));
   return output;
 }
 
@@ -136,8 +143,8 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
       }
     }
   }
-  RowIndex rows_equilibrated = EquilibrateRows();
-  ColIndex cols_equilibrated = EquilibrateColumns();
+  const RowIndex rows_equilibrated = EquilibrateRows();
+  const ColIndex cols_equilibrated = EquilibrateColumns();
   VLOG(1) << "Equilibration step: Rows scaled = " << rows_equilibrated
           << ", columns scaled = " << cols_equilibrated << "\n";
   VLOG(1) << DebugInformationString();
@@ -173,13 +180,13 @@ ColIndex CreateOrGetScaleIndex(
 
 void SparseMatrixScaler::ScaleRowVector(bool up, DenseRow* row_vector) const {
   DCHECK(row_vector != nullptr);
-  ScaleVector(col_scale_, up, row_vector);
+  ScaleVector(col_scales_, up, row_vector);
 }
 
 void SparseMatrixScaler::ScaleColumnVector(bool up,
                                            DenseColumn* column_vector) const {
   DCHECK(column_vector != nullptr);
-  ScaleVector(row_scale_, up, column_vector);
+  ScaleVector(row_scales_, up, column_vector);
 }
 
 Fractional SparseMatrixScaler::VarianceOfAbsoluteValueOfNonZeros() const {
@@ -191,14 +198,13 @@ Fractional SparseMatrixScaler::VarianceOfAbsoluteValueOfNonZeros() const {
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
       const Fractional magnitude = fabs(e.coefficient());
-      if (magnitude != 0.0) {
-        sigma_square += magnitude * magnitude;
-        sigma_abs += magnitude;
-        ++n;
-      }
+      sigma_square += magnitude * magnitude;
+      sigma_abs += magnitude;
+      ++n;
     }
   }
   if (n == 0.0) return 0.0;
+
   // Since we know all the population (the non-zeros) and we are not using a
   // sample, the variance is defined as below.
   // For an explanation, see:
@@ -234,7 +240,7 @@ RowIndex SparseMatrixScaler::ScaleRowsGeometrically() {
       scaling_factor[row] = 1.0;
     } else {
       DCHECK_NE(kInfinity, min_in_row[row]);
-      scaling_factor[row] = sqrt(max_in_row[row] * min_in_row[row]);
+      scaling_factor[row] = std::sqrt(max_in_row[row] * min_in_row[row]);
     }
   }
   return ScaleMatrixRows(scaling_factor);
@@ -255,7 +261,7 @@ ColIndex SparseMatrixScaler::ScaleColumnsGeometrically() {
       }
     }
     if (max_in_col != 0.0) {
-      const Fractional factor(sqrt(ToDouble(max_in_col * min_in_col)));
+      const Fractional factor(std::sqrt(ToDouble(max_in_col * min_in_col)));
       ScaleMatrixColumn(col, factor);
       num_cols_scaled++;
     }
@@ -271,23 +277,23 @@ ColIndex SparseMatrixScaler::ScaleColumnsGeometrically() {
 RowIndex SparseMatrixScaler::EquilibrateRows() {
   DCHECK(matrix_ != nullptr);
   const RowIndex num_rows = matrix_->num_rows();
-  DenseColumn max_magnitude(num_rows, 0.0);
+  DenseColumn max_magnitudes(num_rows, 0.0);
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
       const Fractional magnitude = fabs(e.coefficient());
       if (magnitude != 0.0) {
         const RowIndex row = e.row();
-        max_magnitude[row] = std::max(max_magnitude[row], magnitude);
+        max_magnitudes[row] = std::max(max_magnitudes[row], magnitude);
       }
     }
   }
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (max_magnitude[row] == 0.0) {
-      max_magnitude[row] = 1.0;
+    if (max_magnitudes[row] == 0.0) {
+      max_magnitudes[row] = 1.0;
     }
   }
-  return ScaleMatrixRows(max_magnitude);
+  return ScaleMatrixRows(max_magnitudes);
 }
 
 ColIndex SparseMatrixScaler::EquilibrateColumns() {
@@ -296,7 +302,7 @@ ColIndex SparseMatrixScaler::EquilibrateColumns() {
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional max_magnitude = InfinityNorm(matrix_->column(col));
-    if (max_magnitude != 0.0) {
+    if (max_magnitude != 0.0 && max_magnitude != 1.0) {
       ScaleMatrixColumn(col, max_magnitude);
       num_cols_scaled++;
     }
@@ -315,16 +321,13 @@ RowIndex SparseMatrixScaler::ScaleMatrixRows(const DenseColumn& factors) {
     DCHECK_NE(0.0, factor);
     if (factor != 1.0) {
       ++num_rows_scaled;
-      row_scale_[row] *= factor;
+      row_scales_[row] *= factor;
     }
   }
 
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    SparseColumn* const column = matrix_->mutable_column(col);
-    if (column != nullptr) {
-      column->ComponentWiseDivide(factors);
-    }
+    matrix_->mutable_column(col)->ComponentWiseDivide(factors);
   }
 
   return num_rows_scaled;
@@ -333,29 +336,9 @@ RowIndex SparseMatrixScaler::ScaleMatrixRows(const DenseColumn& factors) {
 void SparseMatrixScaler::ScaleMatrixColumn(ColIndex col, Fractional factor) {
   // A column is scaled by dividing by factor.
   DCHECK(matrix_ != nullptr);
-  col_scale_[col] *= factor;
   DCHECK_NE(0.0, factor);
-
-  SparseColumn* const column = matrix_->mutable_column(col);
-  if (column != nullptr) {
-    column->DivideByConstant(factor);
-  }
-}
-
-void SparseMatrixScaler::Unscale() {
-  // Unscaling is easier than scaling since all scaling factors are stored.
-  DCHECK(matrix_ != nullptr);
-  const ColIndex num_cols = matrix_->num_cols();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    const Fractional column_scale = col_scale_[col];
-    DCHECK_NE(0.0, column_scale);
-
-    SparseColumn* const column = matrix_->mutable_column(col);
-    if (column != nullptr) {
-      column->MultiplyByConstant(column_scale);
-      column->ComponentWiseMultiply(row_scale_);
-    }
-  }
+  col_scales_[col] *= factor;
+  matrix_->mutable_column(col)->DivideByConstant(factor);
 }
 
 Status SparseMatrixScaler::LPScale() {
@@ -395,15 +378,14 @@ Status SparseMatrixScaler::LPScale() {
   matrix_->CleanUp();
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    SparseColumn* const column = matrix_->mutable_column(col);
     // This is the variable representing the log of the scale factor for col.
     const ColIndex column_scale = CreateOrGetScaleIndex<ColIndex>(
         col, linear_program.get(), &col_scale_var_indices);
     linear_program->SetVariableBounds(column_scale, -kInfinity, kInfinity);
-    for (EntryIndex i : column->AllEntryIndices()) {
-      const Fractional log_magnitude =
-          log2(std::abs(column->EntryCoefficient(i)));
-      const RowIndex row = column->EntryRow(i);
+    for (const SparseColumn::Entry e : matrix_->column(col)) {
+      const Fractional log_magnitude = log2(std::abs(e.coefficient()));
+      const RowIndex row = e.row();
+
       // This is the variable representing the log of the scale factor for row.
       const ColIndex row_scale = CreateOrGetScaleIndex<RowIndex>(
           row, linear_program.get(), &row_scale_var_indices);

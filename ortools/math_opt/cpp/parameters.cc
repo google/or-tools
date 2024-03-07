@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -73,6 +73,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "glop";
     case SolverType::kCpSat:
       return "cp_sat";
+    case SolverType::kPdlp:
+      return "pdlp";
     case SolverType::kGlpk:
       return "glpk";
     case SolverType::kEcos:
@@ -81,15 +83,18 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "scs";
     case SolverType::kHighs:
       return "highs";
+    case SolverType::kSantorini:
+      return "santorini";
   }
   return std::nullopt;
 }
 
 absl::Span<const SolverType> Enum<SolverType>::AllValues() {
   static constexpr SolverType kSolverTypeValues[] = {
-      SolverType::kGscip, SolverType::kGurobi, SolverType::kGlop,
-      SolverType::kCpSat, SolverType::kGlpk,   SolverType::kEcos,
-      SolverType::kScs,   SolverType::kHighs,
+      SolverType::kGscip,     SolverType::kGurobi, SolverType::kGlop,
+      SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
+      SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
+      SolverType::kSantorini,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }
@@ -256,6 +261,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_gurobi() = gurobi.Proto();
   *result.mutable_glop() = glop;
   *result.mutable_cp_sat() = cp_sat;
+  *result.mutable_pdlp() = pdlp;
   *result.mutable_glpk() = glpk.Proto();
   *result.mutable_highs() = highs;
   return result;
@@ -314,6 +320,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.gurobi = GurobiParameters::FromProto(proto.gurobi());
   result.glop = proto.glop();
   result.cp_sat = proto.cp_sat();
+  result.pdlp = proto.pdlp();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
   result.highs = proto.highs();
   return result;
@@ -338,7 +345,7 @@ bool AbslParseFlag(absl::string_view text, SolveParameters* solve_parameters,
 }
 
 std::string AbslUnparseFlag(SolveParameters solve_parameters) {
-  return ProtobufTextFormatPrintToString(solve_parameters.Proto());
+  return ProtobufTextFormatPrintToStringForFlag(solve_parameters.Proto());
 }
 
 }  // namespace math_opt

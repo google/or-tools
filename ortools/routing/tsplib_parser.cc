@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
@@ -195,7 +196,7 @@ int TspLibParser::SizeFromFile(const std::string& file_name) const {
 }
 
 void TspLibParser::ParseExplicitFullMatrix(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   if (type_ == Types::SOP && to_read_ == size_ * size_) {
     // Matrix size is present in SOP which is redundant with dimension and must
@@ -213,8 +214,7 @@ void TspLibParser::ParseExplicitFullMatrix(
   }
 }
 
-void TspLibParser::ParseExplicitUpperRow(
-    const std::vector<std::string>& words) {
+void TspLibParser::ParseExplicitUpperRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -229,8 +229,7 @@ void TspLibParser::ParseExplicitUpperRow(
   }
 }
 
-void TspLibParser::ParseExplicitLowerRow(
-    const std::vector<std::string>& words) {
+void TspLibParser::ParseExplicitLowerRow(absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -246,7 +245,7 @@ void TspLibParser::ParseExplicitLowerRow(
 }
 
 void TspLibParser::ParseExplicitUpperDiagRow(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -261,7 +260,7 @@ void TspLibParser::ParseExplicitUpperDiagRow(
 }
 
 void TspLibParser::ParseExplicitLowerDiagRow(
-    const std::vector<std::string>& words) {
+    absl::Span<const std::string> words) {
   CHECK_LT(edge_row_, size_);
   for (const std::string& word : words) {
     SetExplicitCost(edge_row_, edge_column_, atoi64(word));
@@ -275,7 +274,7 @@ void TspLibParser::ParseExplicitLowerDiagRow(
   }
 }
 
-void TspLibParser::ParseNodeCoord(const std::vector<std::string>& words) {
+void TspLibParser::ParseNodeCoord(absl::Span<const std::string> words) {
   CHECK_LE(3, words.size()) << words[0];
   CHECK_GE(4, words.size()) << words[4];
   const int node(atoi32(words[0]) - 1);
@@ -660,7 +659,7 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
 }
 
 std::string TspLibParser::BuildTourFromRoutes(
-    const std::vector<std::vector<int>>& routes) const {
+    absl::Span<const std::vector<int>> routes) const {
   std::string tours = absl::StrCat(
       "NAME : ", name_, "\nCOMMENT :\nTYPE : TOUR\nDIMENSION : ", size(),
       "\nTOUR_SECTION\n");

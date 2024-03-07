@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -65,13 +65,18 @@ ConvergenceInformation ComputeConvergenceInformation(
 // row_scaling_vec)`. `scaled_primal_ray` and `scaled_dual_ray` are
 // potential certificates for the scaled problem. The stats are computed with
 // respect to the implicit original problem.
+// `primal_solution_for_residual_tests` is used instead of `scaled_primal_ray`
+// when deciding whether or not to treat a primal gradient as a dual residual
+// or not.
 InfeasibilityInformation ComputeInfeasibilityInformation(
     const PrimalDualHybridGradientParams& params,
     const ShardedQuadraticProgram& scaled_sharded_qp,
     const Eigen::VectorXd& col_scaling_vec,
     const Eigen::VectorXd& row_scaling_vec,
     const Eigen::VectorXd& scaled_primal_ray,
-    const Eigen::VectorXd& scaled_dual_ray, PointType candidate_type);
+    const Eigen::VectorXd& scaled_dual_ray,
+    const Eigen::VectorXd& primal_solution_for_residual_tests,
+    PointType candidate_type);
 
 // Computes the reduced costs vector, objective_matrix * `primal_solution` +
 // objective_vector - constraint_matrix * `dual_solution`, when

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -89,8 +89,7 @@ bool JumpTable::JumpIsUpToDate(int var) {
   if (abs(score - scores_[var]) / std::max(abs(score), 1.0) > 1e-2) {
     score_ok = false;
     LOG(ERROR) << "Incorrect score for var " << var << ": " << scores_[var]
-               << " (should be " << score << ") "
-               << " delta = " << delta;
+               << " (should be " << score << ") " << " delta = " << delta;
   }
   return delta == deltas_[var] && score_ok;
 }
@@ -273,6 +272,14 @@ void FeasibilityJumpSolver::ResetCurrentSolution() {
       }
     }
   }
+
+  // Overwrite with the (partial) hint on the first batch.
+  if (num_batches_ == 0 && linear_model_->model_proto().has_solution_hint()) {
+    const auto& hint = linear_model_->model_proto().solution_hint();
+    for (int i = 0; i < hint.vars().size(); ++i) {
+      solution[hint.vars(i)] = hint.values(i);
+    }
+  }
 }
 
 void FeasibilityJumpSolver::PerturbateCurrentSolution() {
@@ -348,7 +355,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
     // In incomplete mode, query the starting solution for the shared response
     // manager.
-    if (type() == SubSolver::INCOMPLETE) {
+    if (type() == SubSolver::INCOMPLETE) {  // violation_ls.
       // Choose a base solution for this neighborhood.
       const SharedSolutionRepository<int64_t>& repo =
           shared_response_->SolutionsRepository();
@@ -375,7 +382,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         should_recompute_violations = true;
         reset_weights = true;
       }
-    } else {
+    } else {  // feasibility_jump.
       // Restart?  Note that we always "restart" the first time.
       const double dtime = evaluator_->DeterministicTime();
       if (dtime >= dtime_restart_threshold_ &&

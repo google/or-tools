@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -98,6 +98,16 @@ class PresolveContext {
   // a solution hint accordingly.
   int NewIntVar(const Domain& domain);
   int NewBoolVar();
+
+  // This should replace NewIntVar() eventually in order to be able to crush
+  // primal solution or just update the hint.
+  int NewIntVarWithDefinition(
+      const Domain& domain,
+      absl::Span<const std::pair<int, int64_t>> definition);
+
+  // Create a new bool var.
+  // Its hint value will be the same as the value of the given clause.
+  int NewBoolVarWithClause(absl::Span<const int> clause);
 
   // Some expansion code use constant literal to be simpler to write. This will
   // create a NewBoolVar() the first time, but later call will just returns it.
@@ -199,6 +209,7 @@ class PresolveContext {
   }
 
   // Returns true if this ref only appear in one constraint.
+  bool VariableIsUnique(int ref) const;
   bool VariableIsUniqueAndRemovable(int ref) const;
 
   // Returns true if this ref no longer appears in the model.
@@ -251,7 +262,6 @@ class PresolveContext {
       absl::string_view message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     SOLVER_LOG(logger_, "INFEASIBLE: '", message, "'");
-    DCHECK(!is_unsat_);
     is_unsat_ = true;
     return false;
   }
@@ -493,11 +503,7 @@ class PresolveContext {
   // Important: To properly handle the objective, var_to_constraints[objective]
   // contains kObjectiveConstraint (i.e. -1) so that if the objective appear in
   // only one constraint, the constraint cannot be simplified.
-  const std::vector<std::vector<int>>& ConstraintToVarsGraph() const {
-    DCHECK(ConstraintVariableGraphIsUpToDate());
-    return constraint_to_vars_;
-  }
-  const std::vector<int>& ConstraintToVars(int c) const {
+  absl::Span<const int> ConstraintToVars(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return constraint_to_vars_[c];
   }
@@ -507,6 +513,7 @@ class PresolveContext {
   }
   int IntervalUsage(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
+    if (c >= interval_usage_.size()) return 0;
     return interval_usage_[c];
   }
 
@@ -557,6 +564,14 @@ class PresolveContext {
   // Return the given index, or the index of an interval with the same data.
   int GetIntervalRepresentative(int index);
 
+  // This should be called only once after InitializeNewDomains() to load
+  // the hint, in order to maintain it as best as possible during presolve.
+  void LoadSolutionHint();
+
+  // Solution hint accessor.
+  bool VarHasSolutionHint(int var) const { return hint_has_value_[var]; }
+  int64_t SolutionHint(int var) const { return hint_[var]; }
+
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
@@ -596,6 +611,8 @@ class PresolveContext {
   DomainDeductions deductions;
 
  private:
+  void MaybeResizeIntervalData();
+
   void EraseFromVarToConstraint(int var, int c);
 
   // Helper to add an affine relation x = c.y + o to the given repository.
@@ -635,6 +652,14 @@ class PresolveContext {
 
   // The current domain of each variables.
   std::vector<Domain> domains;
+
+  // Parallel to domains.
+  //
+  // This contains all the hinted value or zero if the hint wasn't specified.
+  // We try to maintain this as we create new variable.
+  bool hint_is_loaded_ = false;
+  std::vector<bool> hint_has_value_;
+  std::vector<int64_t> hint_;
 
   // Internal representation of the objective. During presolve, we first load
   // the objective in this format in order to have more efficient substitution
@@ -689,8 +714,6 @@ class PresolveContext {
   // detection time. But we mark all the variables in affine relations as part
   // of the kAffineRelationConstraint.
   AffineRelation affine_relations_;
-
-  std::vector<int> tmp_new_usage_;
 
   // Used by SetVariableAsRemoved() and VariableWasRemoved().
   absl::flat_hash_set<int> removed_variables_;

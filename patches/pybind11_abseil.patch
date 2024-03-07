@@ -1,0 +1,292 @@
+diff --git a/.bazelignore b/.bazelignore
+new file mode 100644
+index 0000000..378eac2
+--- /dev/null
++++ b/.bazelignore
+@@ -0,0 +1 @@
++build
+diff --git a/.gitignore b/.gitignore
+index 2a7b42e..c2a37f0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,2 +1,4 @@
+ build
++/bazel-*
+ tmp_build
++.*.swp
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ceb65a8..e142837 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,14 +1,11 @@
+ cmake_minimum_required(VERSION 3.11)
+ project(pybind11_abseil LANGUAGES CXX)
+ 
+-include(FetchContent)
+ include(CTest)
+ 
+ if(NOT DEFINED CMAKE_CXX_STANDARD)
+   set(CMAKE_CXX_STANDARD 17)
+ endif(NOT DEFINED CMAKE_CXX_STANDARD)
+-set(ABSL_PROPAGATE_CXX_STD ON)
+-set(BUILD_TESTING OFF)
+ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+ 
+@@ -16,17 +13,8 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+   cmake_policy(SET CMP0135 NEW)
+ endif()
+ 
+-FetchContent_Declare(
+-  abseil-cpp
+-  URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.0.tar.gz
+-  URL_HASH
+-    SHA256=59d2976af9d6ecf001a81a35749a6e551a335b949d34918cfade07737b9d93c5)
+-
+-FetchContent_Declare(
+-  pybind11
+-  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
+-
+-FetchContent_MakeAvailable(abseil-cpp pybind11)
++find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
++add_subdirectory(cmake/dependencies dependencies)
+ 
+ set(TOP_LEVEL_DIR ${CMAKE_CURRENT_LIST_DIR})
+ include_directories(${TOP_LEVEL_DIR} ${pybind11_INCLUDE_DIRS})
+diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.txt
+new file mode 100644
+index 0000000..ffe4d38
+--- /dev/null
++++ b/cmake/dependencies/CMakeLists.txt
+@@ -0,0 +1,15 @@
++include(FetchContent)
++
++set(ABSL_PROPAGATE_CXX_STD ON)
++set(BUILD_TESTING OFF)
++FetchContent_Declare(
++  abseil-cpp
++  URL https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.0.tar.gz
++  URL_HASH
++    SHA256=59d2976af9d6ecf001a81a35749a6e551a335b949d34918cfade07737b9d93c5)
++
++FetchContent_Declare(
++  pybind11
++  URL https://github.com/pybind/pybind11/archive/refs/heads/master.tar.gz)
++
++FetchContent_MakeAvailable(abseil-cpp pybind11)
+diff --git a/pybind11_abseil/BUILD b/pybind11_abseil/BUILD
+index 4cff8b7..33e614a 100644
+--- a/pybind11_abseil/BUILD
++++ b/pybind11_abseil/BUILD
+@@ -25,43 +25,39 @@ pybind_library(
+     ],
+ )
+ 
+-cc_library(
++pybind_library(
+     name = "ok_status_singleton_lib",
+     srcs = ["ok_status_singleton_lib.cc"],
+     hdrs = ["ok_status_singleton_lib.h"],
+     visibility = ["//visibility:public"],
+     deps = [
+         "@com_google_absl//absl/status",
+-        "@local_config_python//:python_headers",  # buildcleaner: keep
+     ],
+ )
+ 
+-cc_library(
++pybind_library(
+     name = "ok_status_singleton_pyinit_google3",
+     srcs = ["ok_status_singleton_pyinit_google3.cc"],
+     visibility = ["//visibility:private"],
+     deps = [
+         ":ok_status_singleton_lib",
+-        "@local_config_python//:python_headers",  # buildcleaner: keep
+     ],
+ )
+ 
+-cc_binary(
+-    name = "ok_status_singleton.so",
++pybind_extension(
++    name = "ok_status_singleton",
+     srcs = ["ok_status_singleton_py_extension_stub.cc"],
+-    linkshared = 1,
+     deps = [
+         ":ok_status_singleton_pyinit_google3",
+-        "@local_config_python//:python_headers",  # buildcleaner: keep
+     ],
+ )
+ 
+-cc_library(
++pybind_library(
+     name = "no_throw_status",
+     hdrs = ["no_throw_status.h"],
+ )
+ 
+-cc_library(
++pybind_library(
+     name = "status_not_ok_exception",
+     hdrs = ["status_not_ok_exception.h"],
+     deps = ["@com_google_absl//absl/status"],
+@@ -104,7 +100,7 @@ pybind_library(
+     ],
+ )
+ 
+-cc_library(
++pybind_library(
+     name = "init_from_tag",
+     hdrs = ["init_from_tag.h"],
+     visibility = ["//visibility:private"],
+@@ -149,13 +145,11 @@ pybind_library(
+     ],
+ )
+ 
+-cc_binary(
+-    name = "status.so",
++pybind_extension(
++    name = "status",
+     srcs = ["status_py_extension_stub.cc"],
+-    linkshared = 1,
+     deps = [
+         ":status_pyinit_google3",
+-        "@local_config_python//:python_headers",  # buildcleaner: keep
+     ],
+ )
+ 
+diff --git a/pybind11_abseil/CMakeLists.txt b/pybind11_abseil/CMakeLists.txt
+index d1b7483..ce7fd72 100644
+--- a/pybind11_abseil/CMakeLists.txt
++++ b/pybind11_abseil/CMakeLists.txt
+@@ -42,14 +42,19 @@ target_link_libraries(ok_status_singleton_pyinit_google3
+ 
+ # ok_status_singleton =======================================================
+ 
+-add_library(ok_status_singleton SHARED ok_status_singleton_py_extension_stub.cc)
++pybind11_add_module(ok_status_singleton MODULE ok_status_singleton_py_extension_stub.cc)
+ add_library(pybind11_abseil::ok_status_singleton ALIAS ok_status_singleton)
+ 
++# note: macOS is APPLE and also UNIX !
++if(APPLE)
++  set_target_properties(ok_status_singleton PROPERTIES SUFFIX ".so")
++  set_property(TARGET ok_status_singleton APPEND PROPERTY
++    LINK_FLAGS "-flat_namespace -undefined suppress")
++endif()
++
+ target_include_directories(ok_status_singleton
+                            INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-set_target_properties(ok_status_singleton PROPERTIES PREFIX "")
+-
+ target_link_libraries(ok_status_singleton
+                       PUBLIC ok_status_singleton_pyinit_google3)
+ 
+@@ -150,14 +155,23 @@ target_link_libraries(status_pyinit_google3 PUBLIC register_status_bindings)
+ 
+ # status ====================================================================
+ 
+-add_library(status SHARED status_py_extension_stub.cc)
+-add_library(pybind11_abseil::status ALIAS status)
++pybind11_add_module(status_py_extension_stub MODULE status_py_extension_stub.cc)
++
++set_target_properties(status_py_extension_stub PROPERTIES LIBRARY_OUTPUT_NAME "status")
++# note: macOS is APPLE and also UNIX !
++if(APPLE)
++  set_target_properties(status_py_extension_stub PROPERTIES SUFFIX ".so")
++  set_property(TARGET status_py_extension_stub APPEND PROPERTY
++    LINK_FLAGS "-flat_namespace -undefined suppress")
++endif()
++
++add_library(pybind11_abseil::status ALIAS status_py_extension_stub)
+ 
+-target_include_directories(status INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
++target_include_directories(status_py_extension_stub INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-set_target_properties(status PROPERTIES PREFIX "")
++set_target_properties(status_py_extension_stub PROPERTIES PREFIX "")
+ 
+-target_link_libraries(status PUBLIC status_pyinit_google3 absl::status)
++target_link_libraries(status_py_extension_stub PUBLIC status_pyinit_google3 absl::status)
+ 
+ # import_status_module =========================================================
+ 
+@@ -167,7 +181,7 @@ add_library(pybind11_abseil::import_status_module ALIAS import_status_module)
+ target_include_directories(import_status_module
+                            INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+-target_link_libraries(import_status_module PUBLIC status)
++add_dependencies(import_status_module status_py_extension_stub)
+ 
+ # status_casters ===============================================================
+ 
+@@ -175,25 +189,27 @@ add_library(status_casters INTERFACE)
+ add_library(pybind11_abseil::status_casters ALIAS status_casters)
+ 
+ target_include_directories(status_casters
+-                           INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
++  INTERFACE $<BUILD_INTERFACE:${TOP_LEVEL_DIR}>)
+ 
+ target_link_libraries(status_casters INTERFACE import_status_module
+-                                               status_caster statusor_caster)
++  status_caster statusor_caster)
+ 
+-add_subdirectory(tests)
++if(BUILD_TESTING)
++  add_subdirectory(tests)
++endif()
+ 
+ if(CMAKE_INSTALL_PYDIR)
+   # Copying to two target directories for simplicity. It is currently unknown
+   # how to determine here which copy is actually being used.
+   install(
+-    TARGETS status ok_status_singleton
++    TARGETS status_py_extension_stub ok_status_singleton
+     EXPORT pybind11_abseilTargets
+     LIBRARY DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil
+     RUNTIME DESTINATION ${CMAKE_INSTALL_PYDIR}/pybind11_abseil)
+ 
+   install(
+-    TARGETS status ok_status_singleton
++    TARGETS status_py_extension_stub ok_status_singleton
+     EXPORT pybind11_abseil_cppTargets
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+diff --git a/pybind11_abseil/tests/CMakeLists.txt b/pybind11_abseil/tests/CMakeLists.txt
+index a423c30..ae22a48 100644
+--- a/pybind11_abseil/tests/CMakeLists.txt
++++ b/pybind11_abseil/tests/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ # cpp_capsule_tools_testing ====================================================
+ 
+-pybind11_add_module(cpp_capsule_tools_testing SHARED
++pybind11_add_module(cpp_capsule_tools_testing MODULE
+                     cpp_capsule_tools_testing.cc)
+ 
+ target_link_libraries(
+@@ -26,7 +26,7 @@ add_test(
+ 
+ # absl_example =================================================================
+ 
+-pybind11_add_module(absl_example SHARED absl_example.cc)
++pybind11_add_module(absl_example MODULE absl_example.cc)
+ 
+ target_link_libraries(
+   absl_example
+@@ -57,7 +57,7 @@ add_test(
+ 
+ # missing_import ===============================================================
+ 
+-pybind11_add_module(missing_import SHARED missing_import.cc)
++pybind11_add_module(missing_import MODULE missing_import.cc)
+ 
+ target_compile_options(missing_import PUBLIC -UNDEBUG)
+ 
+@@ -83,7 +83,7 @@ add_test(
+ 
+ # status_example ===============================================================
+ 
+-pybind11_add_module(status_example SHARED status_example.cc)
++pybind11_add_module(status_example MODULE status_example.cc)
+ 
+ target_link_libraries(status_example PRIVATE status_casters absl::status
+                                              absl::statusor)

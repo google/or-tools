@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -44,17 +44,19 @@ class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
         self.__variables = variables
         self.__collect = []
 
-    def on_solution_callback(self):
+    def on_solution_callback(self) -> None:
         """Collect a new combination."""
-        combination = [self.Value(v) for v in self.__variables]
+        combination = [self.value(v) for v in self.__variables]
         self.__collect.append(combination)
 
-    def combinations(self):
+    def combinations(self) -> list[list[int]]:
         """Returns all collected combinations."""
         return self.__collect
 
 
-def EnumerateAllKnapsacksWithRepetition(item_sizes, total_size_min, total_size_max):
+def enumerate_all_knapsacks_with_repetition(
+    item_sizes: list[int], total_size_min: int, total_size_max: int
+) -> list[list[int]]:
     """Enumerate all possible knapsacks with total size in the given range.
 
     Args:
@@ -68,22 +70,26 @@ def EnumerateAllKnapsacksWithRepetition(item_sizes, total_size_min, total_size_m
       nonnegative integer: the number of times we put item #K in the knapsack.
     """
     model = cp_model.CpModel()
-    variables = [model.NewIntVar(0, total_size_max // size, "") for size in item_sizes]
+    variables = [
+        model.new_int_var(0, total_size_max // size, "") for size in item_sizes
+    ]
     load = sum(variables[i] * size for i, size in enumerate(item_sizes))
-    model.AddLinearConstraint(load, total_size_min, total_size_max)
+    model.add_linear_constraint(load, total_size_min, total_size_max)
 
     solver = cp_model.CpSolver()
     solution_collector = AllSolutionCollector(variables)
     # Enumerate all solutions.
     solver.parameters.enumerate_all_solutions = True
-    # Solve
-    solver.Solve(model, solution_collector)
+    # solve
+    solver.solve(model, solution_collector)
     return solution_collector.combinations()
 
 
-def AggregateItemCollectionsOptimally(
-    item_collections, max_num_collections, ideal_item_ratios
-):
+def aggregate_item_collections_optimally(
+    item_collections: list[list[int]],
+    max_num_collections: int,
+    ideal_item_ratios: list[float],
+) -> list[int]:
     """Selects a set (with repetition) of combination of items optimally.
 
     Given a set of collections of N possible items (in each collection, an item
@@ -173,7 +179,9 @@ def AggregateItemCollectionsOptimally(
     return []
 
 
-def GetOptimalSchedule(demand):
+def get_optimal_schedule(
+    demand: list[tuple[float, str, int]]
+) -> list[tuple[int, list[tuple[int, str]]]]:
     """Computes the optimal schedule for the installation input.
 
     Args:
@@ -185,8 +193,10 @@ def GetOptimalSchedule(demand):
     Returns:
       The same output type as EnumerateAllKnapsacksWithRepetition.
     """
-    combinations = EnumerateAllKnapsacksWithRepetition(
-        [a[2] + _COMMUTE_TIME.value for a in demand], _LOAD_MIN.value, _LOAD_MAX.value
+    combinations = enumerate_all_knapsacks_with_repetition(
+        [a[2] + _COMMUTE_TIME.value for a in demand],
+        _LOAD_MIN.value,
+        _LOAD_MAX.value,
     )
     print(
         (
@@ -195,18 +205,18 @@ def GetOptimalSchedule(demand):
         )
     )
 
-    selection = AggregateItemCollectionsOptimally(
+    selection = aggregate_item_collections_optimally(
         combinations, _NUM_WORKERS.value, [a[0] / 100.0 for a in demand]
     )
     output = []
-    for i in range(len(selection)):
-        if selection[i] != 0:
+    for i, s in enumerate(selection):
+        if s != 0:
             output.append(
                 (
-                    selection[i],
+                    s,
                     [
-                        (combinations[i][t], demand[t][1])
-                        for t in range(len(demand))
+                        (combinations[i][t], d[1])
+                        for t, d in enumerate(demand)
                         if combinations[i][t] != 0
                     ],
                 )
@@ -227,7 +237,7 @@ def main(_):
         % (_LOAD_MIN.value, _LOAD_MAX.value)
     )
     print("%d workers" % _NUM_WORKERS.value)
-    selection = GetOptimalSchedule(demand)
+    selection = get_optimal_schedule(demand)
     print()
     installed = 0
     installed_per_type = {}
@@ -252,7 +262,8 @@ def main(_):
         per_type = installed_per_type[name]
         if installed != 0:
             print(
-                f"   {per_type} ({per_type * 100.0 / installed}%) installations of type {name} planned"
+                f"   {per_type} ({per_type * 100.0 / installed}%) installations of"
+                f" type {name} planned"
             )
         else:
             print(f"   {per_type} installations of type {name} planned")

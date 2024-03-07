@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 #define ssize_t SSIZE_T
 #endif
 
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/adjustable_priority_queue.h"
 
@@ -63,7 +63,7 @@ using SubsetPriorityVector = glop::StrictITIVector<SubsetIndex, SubsetPriority>;
 // Also an implementation detail.
 class SubsetPriorityQueue {
  public:
-  explicit SubsetPriorityQueue(SetCoverLedger* ledger) : ledger_(ledger) {
+  explicit SubsetPriorityQueue(SetCoverInvariant* inv) : inv_(inv) {
     Initialize();
   }
 
@@ -99,8 +99,8 @@ class SubsetPriorityQueue {
   // Initializes the priority queue.
   void Initialize();
 
-  // The ledger on which the priority queue applies.
-  SetCoverLedger* ledger_;
+  // The set-cover invariant to which the priority queue applies.
+  SetCoverInvariant* inv_;
 
   // The adjustable priority queue per se.
   AdjustablePriorityQueue<SubsetPriority> max_pq_;

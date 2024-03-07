@@ -313,7 +313,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
             time_var = time_dimension.CumulVar(index)
             plan_output += (
                 f' {manager.IndexToNode(index)} '
-                f'Load({assignment.Value(load_var)}) '
+                f'Load({assignment.Min(load_var)}) '
                 f'Time({assignment.Min(time_var)},{assignment.Max(time_var)}) ->'
             )
             previous_index = index
@@ -324,15 +324,15 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         time_var = time_dimension.CumulVar(index)
         plan_output += (
             f' {manager.IndexToNode(index)} '
-            f'Load({assignment.Value(load_var)}) '
+            f'Load({assignment.Min(load_var)}) '
             f'Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n')
         plan_output += f'Distance of the route: {distance}m\n'
-        plan_output += f'Load of the route: {assignment.Value(load_var)}\n'
-        plan_output += f'Time of the route: {assignment.Value(time_var)}min\n'
+        plan_output += f'Load of the route: {assignment.Min(load_var)}\n'
+        plan_output += f'Time of the route: {assignment.Min(time_var)}min\n'
         print(plan_output)
         total_distance += distance
-        total_load += assignment.Value(load_var)
-        total_time += assignment.Value(time_var)
+        total_load += assignment.Min(load_var)
+        total_time += assignment.Min(time_var)
     print(f'Total Distance of all routes: {total_distance}m')
     print(f'Total Load of all routes: {total_load}')
     print(f'Total Time of all routes: {total_time}min')

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
@@ -322,7 +323,7 @@ void AssignmentAndConstraintFeasibilityMaintainer::
 }
 
 void AssignmentAndConstraintFeasibilityMaintainer::Assign(
-    const std::vector<sat::Literal>& literals) {
+    absl::Span<const sat::Literal> literals) {
   for (const sat::Literal& literal : literals) {
     const VariableIndex var(literal.Variable().value());
     const bool value = literal.IsPositive();
@@ -828,8 +829,7 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
   // All nodes have been explored.
   if (search_nodes_.empty()) {
     VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_
-            << " finished."
-            << " #explored:" << num_nodes_
+            << " finished." << " #explored:" << num_nodes_
             << " #stored:" << transposition_table_.size()
             << " #skipped:" << num_skipped_nodes_;
     return false;

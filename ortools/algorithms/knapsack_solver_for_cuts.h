@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,6 +51,7 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
@@ -239,8 +240,8 @@ class KnapsackPropagatorForCuts {
       delete;
 
   // Initializes the data structure and then calls InitPropagator.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, double capacity);
+  void Init(absl::Span<const double> profits, absl::Span<const double> weights,
+            double capacity);
 
   // Updates data structure. Returns false on failure.
   bool Update(bool revert, const KnapsackAssignmentForCuts& assignment);
@@ -306,8 +307,8 @@ class KnapsackSolverForCuts {
   KnapsackSolverForCuts& operator=(const KnapsackSolverForCuts&) = delete;
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, double capacity);
+  void Init(absl::Span<const double> profits, absl::Span<const double> weights,
+            double capacity);
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
 
   // Gets the lower and the upper bound when the item is in or out of the

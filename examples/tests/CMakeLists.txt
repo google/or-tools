@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,27 +18,27 @@ endif()
 if(BUILD_CXX_EXAMPLES)
   file(GLOB CXX_SRCS "*.cc")
   foreach(FILE_NAME IN LISTS CXX_SRCS)
-    add_cxx_test(${FILE_NAME})
+    add_cxx_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
 
 if(BUILD_PYTHON_EXAMPLES)
   file(GLOB PYTHON_SRCS "*.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    add_python_example(${FILE_NAME})
+    add_python_example(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
 
 if(BUILD_JAVA_EXAMPLES)
   file(GLOB JAVA_SRCS "*.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
-    add_java_example(${FILE_NAME})
+    add_java_example(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
 
 if(BUILD_DOTNET_EXAMPLES)
   file(GLOB DOTNET_SRCS "*.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
-    add_dotnet_example(${FILE_NAME})
+    add_dotnet_example(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()

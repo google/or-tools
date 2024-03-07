@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,9 +19,14 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <string>
+#include <tuple>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 
@@ -411,6 +416,8 @@ inline uint64_t TwoBitsFromPos64(uint64_t pos) {
 template <typename IndexType = int64_t>
 class Bitset64 {
  public:
+  using value_type = IndexType;
+
   // When speed matter, caching the base pointer like this to access this class
   // in a read only mode help.
   class ConstView {
@@ -452,7 +459,14 @@ class Bitset64 {
   void resize(int size) { Resize(IndexType(size)); }
   void Resize(IndexType size) {
     DCHECK_GE(Value(size), 0);
-    size_ = Value(size) > 0 ? size : IndexType(0);
+    IndexType new_size = Value(size) > 0 ? size : IndexType(0);
+    if (new_size < size_ && Value(new_size) > 0) {
+      const int64_t new_data_size = BitLength64(Value(new_size));
+      const uint64_t bitmask = kAllBitsButLsb64
+                               << BitPos64(Value(new_size) - 1);
+      data_[new_data_size - 1] &= ~bitmask;
+    }
+    size_ = new_size;
     data_.resize(BitLength64(Value(size_)), 0);
   }
 
@@ -584,9 +598,21 @@ class Bitset64 {
   //
   // IMPORTANT: Because the iterator "caches" the current uint64_t bucket, this
   // will probably not do what you want if Bitset64 is modified while iterating.
-  class EndIterator {};
   class Iterator {
    public:
+    // Make this iterator a std::forward_iterator, so it works with std::sample,
+    // std::max_element, etc.
+    Iterator() : data_(nullptr), size_(0) {}
+    Iterator(Iterator&& other) = default;
+    Iterator(const Iterator& other) = default;
+    Iterator& operator=(const Iterator& other) = default;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = IndexType;
+    using size_type = std::size_t;
+    using reference = value_type&;
+    using pointer = value_type*;
+
     explicit Iterator(const Bitset64& bitset)
         : data_(bitset.data_.data()), size_(bitset.data_.size()) {
       if (!bitset.data_.empty()) {
@@ -595,17 +621,34 @@ class Bitset64 {
       }
     }
 
-    bool operator!=(const EndIterator&) const { return size_ != 0; }
+    static Iterator EndIterator(const Bitset64& bitset) {
+      return Iterator(bitset.data_.data());
+    }
+
+    bool operator==(const Iterator& other) const { return !(*this != other); }
+    bool operator!=(const Iterator& other) const {
+      if (other.size_ == 0) {
+        return size_ != 0;
+      }
+      return std::tie(index_, current_) !=
+             std::tie(other.index_, other.current_);
+    }
 
     IndexType operator*() const { return IndexType(index_); }
 
-    void operator++() {
+    Iterator operator++(int) {
+      Iterator other = *this;
+      ++(*this);
+      return other;
+    }
+
+    Iterator& operator++() {
       int bucket = BitOffset64(index_);
       while (current_ == 0) {
         bucket++;
         if (bucket == size_) {
           size_ = 0;
-          return;
+          return *this;
         }
         current_ = data_[bucket];
       }
@@ -613,10 +656,13 @@ class Bitset64 {
       // Computes the index and clear the least significant bit of current_.
       index_ = BitShift64(bucket) | LeastSignificantBitPosition64(current_);
       current_ &= current_ - 1;
+      return *this;
     }
 
    private:
-    const uint64_t* const data_;
+    explicit Iterator(const uint64_t* data) : data_(data), size_(0) {}
+
+    const uint64_t* data_;
     int size_;
     int index_ = 0;
     uint64_t current_ = 0;
@@ -625,7 +671,7 @@ class Bitset64 {
   // Allows range-based "for" loop on the non-zero positions:
   //   for (const IndexType index : bitset) {}
   Iterator begin() const { return Iterator(*this); }
-  EndIterator end() const { return EndIterator(); }
+  Iterator end() const { return Iterator::EndIterator(*this); }
 
   // Cryptic function! This is just an optimized version of a given piece of
   // code and has probably little general use.

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -41,25 +42,38 @@ namespace sat {
 struct LinearConstraint {
   IntegerValue lb;
   IntegerValue ub;
-  std::vector<IntegerVariable> vars;
-  std::vector<IntegerValue> coeffs;
+
+  // Rather than using two std::vector<> this class is optimized for memory
+  // consumption, given that most of our LinearConstraint are constructed once
+  // and for all.
+  //
+  // It is however up to clients to maintain the invariants that both vars
+  // and coeffs are properly allocated and of size num_terms.
+  //
+  // Also note that we did not add a copy constructor, to make sure that this is
+  // moved as often as possible. This allowed to optimize a few call site and so
+  // far we never copy this.
+  int num_terms = 0;
+  std::unique_ptr<IntegerVariable[]> vars;
+  std::unique_ptr<IntegerValue[]> coeffs;
 
   LinearConstraint() = default;
   LinearConstraint(IntegerValue _lb, IntegerValue _ub) : lb(_lb), ub(_ub) {}
 
-  void AddTerm(IntegerVariable var, IntegerValue coeff) {
-    vars.push_back(var);
-    coeffs.push_back(coeff);
-  }
-
-  void Clear() {
-    lb = ub = IntegerValue(0);
-    ClearTerms();
-  }
-
-  void ClearTerms() {
-    vars.clear();
-    coeffs.clear();
+  // Resize the LinearConstraint to have space for num_terms. We always
+  // re-allocate if the size is different to always be tight in memory.
+  void resize(int size) {
+    if (size == num_terms) return;
+    IntegerVariable* tmp_vars = new IntegerVariable[size];
+    IntegerValue* tmp_coeffs = new IntegerValue[size];
+    const int to_copy = std::min(size, num_terms);
+    if (to_copy > 0) {
+      memcpy(tmp_vars, vars.get(), sizeof(IntegerVariable) * to_copy);
+      memcpy(tmp_coeffs, coeffs.get(), sizeof(IntegerValue) * to_copy);
+    }
+    num_terms = size;
+    vars.reset(tmp_vars);
+    coeffs.reset(tmp_coeffs);
   }
 
   std::string DebugString() const {
@@ -67,7 +81,7 @@ struct LinearConstraint {
     if (lb.value() > kMinIntegerValue) {
       absl::StrAppend(&result, lb.value(), " <= ");
     }
-    for (int i = 0; i < vars.size(); ++i) {
+    for (int i = 0; i < num_terms; ++i) {
       absl::StrAppend(&result, i > 0 ? " " : "",
                       IntegerTermDebugString(vars[i], coeffs[i]));
     }
@@ -77,12 +91,32 @@ struct LinearConstraint {
     return result;
   }
 
-  bool operator==(const LinearConstraint other) const {
+  bool IsEqualIgnoringBounds(const LinearConstraint& other) const {
+    if (this->num_terms != other.num_terms) return false;
+    if (this->num_terms == 0) return true;
+    if (memcmp(this->vars.get(), other.vars.get(),
+               sizeof(IntegerVariable) * this->num_terms)) {
+      return false;
+    }
+    if (memcmp(this->coeffs.get(), other.coeffs.get(),
+               sizeof(IntegerValue) * this->num_terms)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool operator==(const LinearConstraint& other) const {
     if (this->lb != other.lb) return false;
     if (this->ub != other.ub) return false;
-    if (this->vars != other.vars) return false;
-    if (this->coeffs != other.coeffs) return false;
-    return true;
+    return IsEqualIgnoringBounds(other);
+  }
+
+  absl::Span<const IntegerVariable> VarsAsSpan() const {
+    return absl::MakeSpan(vars.get(), num_terms);
+  }
+
+  absl::Span<const IntegerValue> CoeffsAsSpan() const {
+    return absl::MakeSpan(coeffs.get(), num_terms);
   }
 };
 
@@ -176,6 +210,8 @@ class LinearConstraintBuilder {
   // TODO(user): Have a subclass so we can enforce that a caller using
   // AddLiteralTerm() must construct the Builder with an encoder.
   LinearConstraintBuilder() : encoder_(nullptr), lb_(0), ub_(0) {}
+  LinearConstraintBuilder(IntegerValue lb, IntegerValue ub)
+      : encoder_(nullptr), lb_(lb), ub_(ub) {}
 
   // Adds the corresponding term to the current linear expression.
   void AddConstant(IntegerValue value);
@@ -190,7 +226,7 @@ class LinearConstraintBuilder {
   // It returns false if one literal does not have an integer view, as it
   // actually calls AddLiteralTerm().
   ABSL_MUST_USE_RESULT bool AddDecomposedProduct(
-      const std::vector<LiteralValueValue>& product);
+      absl::Span<const LiteralValueValue> product);
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
@@ -292,23 +328,14 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint);
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
-// Sorts the terms and makes all IntegerVariable positive. This assumes that a
-// variable or its negation only appear once.
-//
-// Note that currently this allocates some temporary memory.
-void CanonicalizeConstraint(LinearConstraint* ct);
-
 // Returns false if duplicate variables are found in ct.
 bool NoDuplicateVariable(const LinearConstraint& ct);
 
 // Sorts and merges duplicate IntegerVariable in the given "terms".
 // Fills the given LinearConstraint or LinearExpression with the result.
-//
-// TODO(user): This actually only sort the terms, we don't clean them.
-template <class ClassWithVarsAndCoeffs>
-void CleanTermsAndFillConstraint(
+inline void CleanTermsAndFillConstraint(
     std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
-    ClassWithVarsAndCoeffs* output) {
+    LinearExpression* output) {
   output->vars.clear();
   output->coeffs.clear();
 
@@ -335,6 +362,39 @@ void CleanTermsAndFillConstraint(
     output->vars.push_back(previous_var);
     output->coeffs.push_back(current_coeff);
   }
+}
+
+inline void CleanTermsAndFillConstraint(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* output) {
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
+  int new_size = 0;
+  output->resize(terms->size());
+  std::sort(terms->begin(), terms->end());
+  IntegerVariable previous_var = kNoIntegerVariable;
+  IntegerValue current_coeff(0);
+  for (const std::pair<IntegerVariable, IntegerValue>& entry : *terms) {
+    if (previous_var == entry.first) {
+      current_coeff += entry.second;
+    } else if (previous_var == NegationOf(entry.first)) {
+      current_coeff -= entry.second;
+    } else {
+      if (current_coeff != 0) {
+        output->vars[new_size] = previous_var;
+        output->coeffs[new_size] = current_coeff;
+        ++new_size;
+      }
+      previous_var = entry.first;
+      current_coeff = entry.second;
+    }
+  }
+  if (current_coeff != 0) {
+    output->vars[new_size] = previous_var;
+    output->coeffs[new_size] = current_coeff;
+    ++new_size;
+  }
+  output->resize(new_size);
 }
 
 }  // namespace sat

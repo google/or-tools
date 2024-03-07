@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,8 +18,10 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
@@ -30,6 +32,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -70,7 +73,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   const bool log_round_info = VLOG_IS_ON(1);
 
   // We currently do the transformations in a given order and restart each time
-  // we did something to make sure that the earlier step cannot srengthen more.
+  // we did something to make sure that the earlier step cannot strengthen more.
   // This might not be the best, but it is really good during development phase
   // to make sure each individual functions is as incremental and as fast as
   // possible.
@@ -83,6 +86,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
     // This one is fast since only newly fixed variables are considered.
     implication_graph_->RemoveFixedVariables();
+    implication_graph_->RemoveDuplicates();
 
     // This also prepare the stamping below so that we do that on a DAG and do
     // not consider potential new implications added by
@@ -94,6 +98,14 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // seems better to do just one loop instead of two over all clauses. Because
     // of memory access. it isn't that clear though.
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+
+    // IMPORTANT: Since we only run this on pure sat problem, we can just
+    // get rid of equivalent variable right away and do not need to keep them
+    // in the implication_graph_ for propagation.
+    //
+    // This is needed for the correctness of the bounded variable elimination.
+    implication_graph_->RemoveAllRedundantVariables(&postsolve_->clauses);
+
     RETURN_IF_FALSE(stamping_simplifier_->DoOneRound(log_round_info));
 
     // We wait for the fix-point to be reached before doing the other
@@ -113,6 +125,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // clause graph twice. It might make sense to reach the BCE fix point which
     // is unique before each variable elimination.
     blocked_clause_simplifier_->DoOneRound(log_round_info);
+
+    // TODO(user): this break some binary graph invariant. Fix!
+    RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
     RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
     RETURN_IF_FALSE(LevelZeroPropagate());
 
@@ -157,15 +172,42 @@ bool Inprocessing::InprocessingRound() {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  const bool log_info = true || VLOG_IS_ON(1);
-  const bool log_round_info = VLOG_IS_ON(1);
+  const bool log_info = VLOG_IS_ON(1);
+  const bool log_round_info = VLOG_IS_ON(2);
+  const double start_dtime = time_limit_->GetElapsedDeterministicTime();
 
   // Mainly useful for development.
   double probing_time = 0.0;
-  const double start_dtime = time_limit_->GetElapsedDeterministicTime();
+
+  // Store the dtime of the first call (first restart) and wait for the next
+  // restart.
+  if (first_inprocessing_call_) {
+    reference_dtime_ = start_dtime;
+    first_inprocessing_call_ = false;
+    return true;
+  }
 
   // Try to spend a given ratio of time in the inprocessing.
-  if (total_dtime_ > 0.1 * start_dtime) return true;
+  const double diff = start_dtime - reference_dtime_;
+  if (total_dtime_ > params_.inprocessing_dtime_ratio() * diff) {
+    return true;
+  }
+
+  // LP Propagation during inprocessing can be really slow, so we temporarily
+  // disable it.
+  //
+  // TODO(user): The LP and incremental structure will still be called though,
+  // which can take some time, try to disable it more cleanly.
+  std::vector<std::pair<LinearProgrammingConstraint*, bool>> saved_state;
+  for (LinearProgrammingConstraint* lp : *all_lp_constraints_) {
+    saved_state.push_back({lp, lp->PropagationIsEnabled()});
+    lp->EnablePropagation(false);
+  }
+  auto cleanup = absl::MakeCleanup([&saved_state]() {
+    for (const auto [lp, old_value] : saved_state) {
+      lp->EnablePropagation(old_value);
+    }
+  });
 
   // We make sure we do not "pollute" the current saved polarities. We will
   // restore them at the end.
@@ -174,18 +216,21 @@ bool Inprocessing::InprocessingRound() {
   // updates.
   decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
 
+  implication_graph_->RemoveDuplicates();
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());
 
   // Probing.
-  const double saved_wtime = wall_timer.Get();
-  ProbingOptions probing_options;
-  probing_options.log_info = log_round_info;
-  probing_options.deterministic_limit = 5;
-  probing_options.extract_binary_clauses = true;
-  RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
-  probing_time += wall_timer.Get() - saved_wtime;
+  if (params_.inprocessing_probing_dtime() > 0.0) {
+    const double saved_wtime = wall_timer.Get();
+    ProbingOptions probing_options;
+    probing_options.log_info = log_round_info;
+    probing_options.deterministic_limit = params_.inprocessing_probing_dtime();
+    probing_options.extract_binary_clauses = true;
+    RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
+    probing_time += wall_timer.Get() - saved_wtime;
+  }
 
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -193,31 +238,49 @@ bool Inprocessing::InprocessingRound() {
 
   RETURN_IF_FALSE(stamping_simplifier_->DoOneRound(log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+  RETURN_IF_FALSE(LevelZeroPropagate());
 
   // TODO(user): Add a small wrapper function to time this.
-  RETURN_IF_FALSE(LevelZeroPropagate());
-  sat_solver_->MinimizeSomeClauses(/*decisions_budget=*/1000);
-  RETURN_IF_FALSE(LevelZeroPropagate());
-
-  RETURN_IF_FALSE(SubsumeAndStrenghtenRound(log_round_info));
+  const auto old_counter = sat_solver_->counters();
+  if (params_.inprocessing_minimization_dtime() > 0.0) {
+    RETURN_IF_FALSE(sat_solver_->MinimizeByPropagation(
+        params_.inprocessing_minimization_dtime()));
+  }
+  const int64_t mini_num_clause =
+      sat_solver_->counters().minimization_num_clauses -
+      old_counter.minimization_num_clauses;
+  const int64_t mini_num_removed =
+      sat_solver_->counters().minimization_num_removed_literals -
+      old_counter.minimization_num_removed_literals;
 
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
-  blocked_clause_simplifier_->DoOneRound(log_round_info);
-  RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
+  RETURN_IF_FALSE(SubsumeAndStrenghtenRound(log_round_info));
+  RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+
+  // TODO(user): try to enable these? The problem is that we can only remove
+  // variables not used the non-pure SAT part of a model.
+  if (/*DISABLES_CODE*/ (false)) {
+    blocked_clause_simplifier_->DoOneRound(log_round_info);
+    RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
+  }
   RETURN_IF_FALSE(LevelZeroPropagate());
 
+  sat_solver_->AdvanceDeterministicTime(time_limit_);
   total_dtime_ += time_limit_->GetElapsedDeterministicTime() - start_dtime;
-  LOG_IF(INFO, log_info)
-      << "Presolve."
-      << " num_fixed: " << trail_->Index()
-      << " num_redundant: " << implication_graph_->num_redundant_literals() / 2
-      << "/" << sat_solver_->NumVariables()
-      << " num_implications: " << implication_graph_->num_implications()
-      << " num_watched_clauses: " << clause_manager_->num_watched_clauses()
-      << " dtime: " << time_limit_->GetElapsedDeterministicTime() - start_dtime
-      << " wtime: " << wall_timer.Get()
-      << " non-probing time: " << (wall_timer.Get() - probing_time);
+  if (log_info) {
+    SOLVER_LOG(
+        logger_, "Inprocessing.", " fixed:", trail_->Index(),
+        " equiv:", implication_graph_->num_redundant_literals() / 2,
+        " bools:", sat_solver_->NumVariables(),
+        " implications:", implication_graph_->num_implications(),
+        " watched:", clause_manager_->num_watched_clauses(),
+        " minimization:", mini_num_clause, "|", mini_num_removed,
+        " dtime:", time_limit_->GetElapsedDeterministicTime() - start_dtime,
+        " wtime:", wall_timer.Get(),
+        " np_wtime:", (wall_timer.Get() - probing_time));
+  }
 
+  DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/true);
   return true;
 }
@@ -399,8 +462,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // TODO(user): probably faster without the size indirection.
   std::vector<SatClause*> clauses =
       clause_manager_->AllClausesInCreationOrder();
-  std::sort(clauses.begin(), clauses.end(),
-            [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
+  std::stable_sort(
+      clauses.begin(), clauses.end(),
+      [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -516,16 +580,10 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     if (!candidates_for_removal.empty()) {
       new_clause.clear();
       for (const Literal l : clause->AsSpan()) {
+        if (l == candidates_for_removal[0]) continue;
         new_clause.push_back(l);
       }
-
-      int new_size = 0;
-      for (const Literal l : new_clause) {
-        if (l == candidates_for_removal[0]) continue;
-        new_clause[new_size++] = l;
-      }
-      CHECK_EQ(new_size + 1, new_clause.size());
-      new_clause.resize(new_size);
+      CHECK_EQ(new_clause.size() + 1, clause->size());
 
       num_removed_literals += clause->size() - new_clause.size();
       if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
@@ -616,7 +674,6 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   // Note that num_removed_literals_ do not count the literals of the subsumed
   // clauses.
   time_limit_->AdvanceDeterministicTime(dtime_);
-  log_info |= VLOG_IS_ON(1);
   LOG_IF(INFO, log_info) << "Stamping. num_removed_literals: "
                          << num_removed_literals_
                          << " num_subsumed: " << num_subsumed_clauses_
@@ -642,9 +699,8 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
 
   // TODO(user): compute some dtime, it is always zero currently.
   time_limit_->AdvanceDeterministicTime(dtime_);
-  log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "Prestamping."
-                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+  LOG_IF(INFO, log_info) << "Prestamping." << " num_fixed: " << num_fixed_
+                         << " dtime: " << dtime_
                          << " wtime: " << wall_timer.Get();
   return true;
 }
@@ -666,14 +722,14 @@ void StampingSimplifier::SampleTreeAndFillParent() {
     // TODO(user): More generally, we could sample a parent while probing so
     // that we consider all hyper binary implications (in the case we don't add
     // them to the implication graph already).
-    const auto& children_of_not_l =
-        implication_graph_->DirectImplications(Literal(i).Negated());
-    if (children_of_not_l.empty()) continue;
     for (int num_tries = 0; num_tries < 10; ++num_tries) {
-      const Literal candidate =
-          children_of_not_l[absl::Uniform<int>(*random_, 0,
-                                               children_of_not_l.size())]
-              .Negated();
+      // We look for a random lit that implies i. For that we take a random
+      // literal in the direct implications of not(i) and reverse it.
+      const LiteralIndex index =
+          implication_graph_->RandomImpliedLiteral(Literal(i).Negated());
+      if (index == kNoLiteralIndex) break;
+
+      const Literal candidate = Literal(index).Negated();
       if (implication_graph_->IsRedundant(candidate)) continue;
       if (i == candidate.Index()) continue;
 
@@ -804,7 +860,7 @@ bool StampingSimplifier::ProcessClauses() {
       entries.push_back({i, true, first_stamps_[span[i].NegatedIndex()],
                          last_stamps_[span[i].NegatedIndex()]});
     }
-    if (clause->empty()) continue;
+    if (clause->IsRemoved()) continue;
 
     // The sort should be dominant.
     if (!entries.empty()) {
@@ -875,7 +931,7 @@ bool StampingSimplifier::ProcessClauses() {
       }
     }
 
-    if (clause->empty()) continue;
+    if (clause->IsRemoved()) continue;
 
     // Strengthen the clause.
     if (!to_remove.empty() || entries.size() < span.size()) {
@@ -918,7 +974,10 @@ void BlockedClauseSimplifier::DoOneRound(bool log_info) {
     const Literal l = queue_.front();
     in_queue_[l] = false;
     queue_.pop_front();
-    ProcessLiteral(l);
+
+    // Avoid doing too much work here on large problem.
+    // Note that we still what to empty the queue.
+    if (num_inspected_literals_ <= 1e9) ProcessLiteral(l);
   }
 
   // Release some memory.
@@ -997,7 +1056,7 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   // clauses_to_process clauses that resolve trivially with that clause.
   std::vector<ClauseIndex> clauses_to_process;
   for (const ClauseIndex i : literal_to_clauses_[current_literal]) {
-    if (clauses_[i]->empty()) continue;
+    if (clauses_[i]->IsRemoved()) continue;
 
     // Blocked with respect to binary clause only? all marked binary should have
     // their negation in clause.
@@ -1067,7 +1126,7 @@ bool BlockedClauseSimplifier::ClauseIsBlocked(
   // all clauses that are used in a non-blocked certificate first in the list.
   for (const ClauseIndex i :
        literal_to_clauses_[current_literal.NegatedIndex()]) {
-    if (clauses_[i]->empty()) continue;
+    if (clauses_[i]->IsRemoved()) continue;
     bool some_marked = false;
     for (const Literal l : clauses_[i]->AsSpan()) {
       // TODO(user): we can be faster here by only updating it at the end?
@@ -1134,7 +1193,6 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   queue_.Reserve(num_variables);
   for (BooleanVariable v(0); v < num_variables; ++v) {
     if (assignment_.VariableIsAssigned(v)) continue;
-    if (implication_graph_->IsRemoved(Literal(v, true))) continue;
     UpdatePriorityQueue(v);
   }
 
@@ -1173,13 +1231,12 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     need_to_be_updated_.clear();
   }
 
-  implication_graph_->RemoveFixedVariables();
-  implication_graph_->CleanupAllRemovedVariables();
+  if (!Propagate()) return false;
+  implication_graph_->CleanupAllRemovedAndFixedVariables();
 
   // Remove all redundant clause containing a removed literal. This avoid to
   // re-introduce a removed literal via conflict learning.
   for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
-    if (!clause_manager_->IsRemovable(c)) continue;
     bool remove = false;
     for (const Literal l : c->AsSpan()) {
       if (implication_graph_->IsRemoved(l)) {
@@ -1197,8 +1254,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "BVE."
-                         << " num_fixed: "
+  LOG_IF(INFO, log_info) << "BVE." << " num_fixed: "
                          << trail_->Index() - saved_trail_index
                          << " num_simplified_literals: " << num_simplifications_
                          << " num_blocked_clauses_: " << num_blocked_clauses_
@@ -1229,7 +1285,7 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
   if (!clause_manager_->InprocessingRewriteClause(sat_clause, resolvant_)) {
     return false;
   }
-  if (sat_clause->empty()) {
+  if (sat_clause->IsRemoved()) {
     --num_clauses_diff_;
     for (const Literal l : resolvant_) literal_to_num_clauses_[l]--;
   } else {
@@ -1245,14 +1301,14 @@ bool BoundedVariableElimination::Propagate() {
 
     const Literal l = (*trail_)[propagation_index_];
     for (const ClauseIndex index : literal_to_clauses_[l]) {
-      if (clauses_[index]->empty()) continue;
+      if (clauses_[index]->IsRemoved()) continue;
       num_clauses_diff_--;
       num_literals_diff_ -= clauses_[index]->size();
       clause_manager_->InprocessingRemoveClause(clauses_[index]);
     }
     literal_to_clauses_[l].clear();
     for (const ClauseIndex index : literal_to_clauses_[l.NegatedIndex()]) {
-      if (clauses_[index]->empty()) continue;
+      if (clauses_[index]->IsRemoved()) continue;
       if (!RemoveLiteralFromClause(l.Negated(), clauses_[index])) return false;
     }
     literal_to_clauses_[l.NegatedIndex()].clear();
@@ -1270,6 +1326,8 @@ int BoundedVariableElimination::NumClausesContaining(Literal l) {
 // TODO(user): Only enqueue variable that can be removed.
 void BoundedVariableElimination::UpdatePriorityQueue(BooleanVariable var) {
   if (assignment_.VariableIsAssigned(var)) return;
+  if (implication_graph_->IsRemoved(Literal(var, true))) return;
+  if (implication_graph_->IsRedundant(Literal(var, true))) return;
   const int priority = -NumClausesContaining(Literal(var, true)) -
                        NumClausesContaining(Literal(var, false));
   if (queue_.Contains(var.value())) {
@@ -1496,6 +1554,7 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
 
   const Literal lit(var, true);
   const Literal not_lit(var, false);
+  DCHECK(!implication_graph_->IsRedundant(lit));
   {
     const int s1 = NumClausesContaining(lit);
     const int s2 = NumClausesContaining(not_lit);
@@ -1510,15 +1569,6 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
       num_eliminated_variables_++;
       if (!clause_manager_->InprocessingFixLiteral(not_lit)) return false;
       DeleteAllClausesContaining(not_lit);
-      return true;
-    }
-    if (implication_graph_->IsRedundant(lit)) {
-      // TODO(user): do that elsewhere?
-      CHECK_EQ(s1, 1);
-      CHECK_EQ(s2, 1);
-      CHECK_EQ(implication_graph_->NumImplicationOnVariableRemoval(var), 0);
-      num_eliminated_variables_++;
-      implication_graph_->RemoveBooleanVariable(var, &postsolve_->clauses);
       return true;
     }
 

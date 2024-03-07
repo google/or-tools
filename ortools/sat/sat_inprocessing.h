@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -97,17 +98,21 @@ class Inprocessing {
  public:
   explicit Inprocessing(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        params_(*model->GetOrCreate<SatParameters>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         trail_(model->GetOrCreate<Trail>()),
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
+        all_lp_constraints_(
+            model->GetOrCreate<LinearProgrammingConstraintCollection>()),
         stamping_simplifier_(model->GetOrCreate<StampingSimplifier>()),
         blocked_clause_simplifier_(
             model->GetOrCreate<BlockedClauseSimplifier>()),
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
+        postsolve_(model->GetOrCreate<PostsolveClauses>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         model_(model) {}
 
@@ -146,17 +151,23 @@ class Inprocessing {
 
  private:
   const VariablesAssignment& assignment_;
+  const SatParameters& params_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   Trail* trail_;
   SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
   SatSolver* sat_solver_;
+  LinearProgrammingConstraintCollection* all_lp_constraints_;
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
+  PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
+  // Inprocessing dtime.
+  bool first_inprocessing_call_ = true;
+  double reference_dtime_ = 0.0;
   double total_dtime_ = 0.0;
 
   // TODO(user): This is only used for calling probing. We should probably
@@ -186,7 +197,7 @@ class StampingSimplifier {
   explicit StampingSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -219,7 +230,7 @@ class StampingSimplifier {
  private:
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   ModelRandomGenerator* random_;
   TimeLimit* time_limit_;
 
@@ -265,7 +276,7 @@ class BlockedClauseSimplifier {
   explicit BlockedClauseSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -279,7 +290,7 @@ class BlockedClauseSimplifier {
 
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   PostsolveClauses* postsolve_;
   TimeLimit* time_limit_;
 
@@ -309,7 +320,7 @@ class BoundedVariableElimination {
       : parameters_(*model->GetOrCreate<SatParameters>()),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         trail_(model->GetOrCreate<Trail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
@@ -337,7 +348,7 @@ class BoundedVariableElimination {
   const SatParameters& parameters_;
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
-  LiteralWatchers* clause_manager_;
+  ClauseManager* clause_manager_;
   PostsolveClauses* postsolve_;
   Trail* trail_;
   TimeLimit* time_limit_;

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/bitmap.h"
 #include "ortools/base/logging.h"
@@ -88,6 +89,8 @@ void SearchLog::EnterSearch() {
   OutputLine(buffer);
   timer_->Restart();
   min_right_depth_ = std::numeric_limits<int32_t>::max();
+  neighbors_offset_ = solver()->accepted_neighbors();
+  nsol_ = 0;
 }
 
 void SearchLog::ExitSearch() {
@@ -171,7 +174,7 @@ bool SearchLog::AtSolution() {
   if (!solver()->SearchContext().empty()) {
     absl::StrAppendFormat(&log, ", %s", solver()->SearchContext());
   }
-  if (solver()->neighbors() != 0) {
+  if (solver()->accepted_neighbors() != neighbors_offset_) {
     absl::StrAppendFormat(&log,
                           ", neighbors = %d, filtered neighbors = %d,"
                           " accepted neighbors = %d",
@@ -1408,7 +1411,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
     int64_t value;
   };
 
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(absl::string_view name) const {
     return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 
@@ -3094,7 +3097,11 @@ bool OptimizeVar::AcceptSolution() {
     // ApplyBound should have been called before. In parallel, this is
     // no longer true. That is why we keep it there, just in case.
     for (int i = 0; i < Size(); ++i) {
-      const int64_t value = MinimizationVar(i)->Value();
+      IntVar* const minimization_var = MinimizationVar(i);
+      // In unchecked mode, variables are unbound and the solution should be
+      // accepted.
+      if (!minimization_var->Bound()) return true;
+      const int64_t value = minimization_var->Value();
       if (value == BestInternalValue(i)) continue;
       return value < BestInternalValue(i);
     }
@@ -3252,30 +3259,38 @@ class TabuSearch : public Metaheuristic {
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
   bool LocalOptimum() override;
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void AcceptNeighbor() override;
   std::string DebugString() const override { return "Tabu Search"; }
 
  protected:
   struct VarValue {
-    IntVar* const var;
-    const int64_t value;
-    const int64_t stamp;
+    int var_index;
+    int64_t value;
+    int64_t stamp;
   };
   typedef std::list<VarValue> TabuList;
 
   virtual std::vector<IntVar*> CreateTabuVars();
   const TabuList& forbid_tabu_list() { return forbid_tabu_list_; }
+  IntVar* vars(int index) const { return vars_[index]; }
 
  private:
   void AgeList(int64_t tenure, TabuList* list);
   void AgeLists();
+  int64_t TabuLimit() const {
+    return (synced_keep_tabu_list_.size() + synced_forbid_tabu_list_.size()) *
+           tabu_factor_;
+  }
 
   const std::vector<IntVar*> vars_;
-  Assignment assignment_;
+  Assignment::IntContainer assignment_container_;
   std::vector<int64_t> last_values_;
   TabuList keep_tabu_list_;
+  TabuList synced_keep_tabu_list_;
   int64_t keep_tenure_;
   TabuList forbid_tabu_list_;
+  TabuList synced_forbid_tabu_list_;
   int64_t forbid_tenure_;
   double tabu_factor_;
   int64_t stamp_;
@@ -3288,13 +3303,15 @@ TabuSearch::TabuSearch(Solver* solver, const std::vector<bool>& maximize,
                        int64_t forbid_tenure, double tabu_factor)
     : Metaheuristic(solver, maximize, std::move(objectives), std::move(steps)),
       vars_(vars),
-      assignment_(solver),
       last_values_(Size(), std::numeric_limits<int64_t>::max()),
       keep_tenure_(keep_tenure),
       forbid_tenure_(forbid_tenure),
       tabu_factor_(tabu_factor),
       stamp_(0) {
-  assignment_.Add(vars_);
+  for (int index = 0; index < vars_.size(); ++index) {
+    assignment_container_.FastAdd(vars_[index]);
+    DCHECK_EQ(vars_[index], assignment_container_.Element(index).Var());
+  }
 }
 
 void TabuSearch::EnterSearch() {
@@ -3309,6 +3326,8 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     return;
   }
 
+  synced_keep_tabu_list_ = keep_tabu_list_;
+  synced_forbid_tabu_list_ = forbid_tabu_list_;
   Constraint* tabu_ct = nullptr;
   {
     // Creating vectors in a scope to make sure they get deleted before
@@ -3316,7 +3335,7 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     const std::vector<IntVar*> tabu_vars = CreateTabuVars();
     if (!tabu_vars.empty()) {
       IntVar* tabu_var = s->MakeIsGreaterOrEqualCstVar(
-          s->MakeSum(tabu_vars)->Var(), tabu_vars.size() * tabu_factor_);
+          s->MakeSum(tabu_vars)->Var(), TabuLimit());
       // Aspiration criterion
       // Accept a neighbor if it improves the best solution found so far.
       IntVar* aspiration = MakeMinimizationVarsLessOrEqualWithStepsStatus(
@@ -3358,11 +3377,11 @@ std::vector<IntVar*> TabuSearch::CreateTabuVars() {
   // the tabu criterion which is tolerated; a factor of 1 means no violations
   // allowed, a factor of 0 means all violations allowed.
   std::vector<IntVar*> tabu_vars;
-  for (const auto [var, value, unused_stamp] : keep_tabu_list_) {
-    tabu_vars.push_back(s->MakeIsEqualCstVar(var, value));
+  for (const auto [var_index, value, unused_stamp] : keep_tabu_list_) {
+    tabu_vars.push_back(s->MakeIsEqualCstVar(vars(var_index), value));
   }
-  for (const auto [var, value, unused_stamp] : forbid_tabu_list_) {
-    tabu_vars.push_back(s->MakeIsDifferentCstVar(var, value));
+  for (const auto [var_index, value, unused_stamp] : forbid_tabu_list_) {
+    tabu_vars.push_back(s->MakeIsDifferentCstVar(vars(var_index), value));
   }
   return tabu_vars;
 }
@@ -3378,20 +3397,21 @@ bool TabuSearch::AtSolution() {
   // New solution found: add new assignments to tabu lists; this is only
   // done after the first local optimum (stamp_ != 0)
   if (0 != stamp_) {
-    for (IntVar* const var : vars_) {
-      const int64_t old_value = assignment_.Value(var);
+    for (int index = 0; index < vars_.size(); ++index) {
+      IntVar* var = vars(index);
+      const int64_t old_value = assignment_container_.Element(index).Value();
       const int64_t new_value = var->Value();
       if (old_value != new_value) {
         if (keep_tenure_ > 0) {
-          keep_tabu_list_.push_front({var, new_value, stamp_});
+          keep_tabu_list_.push_front({index, new_value, stamp_});
         }
         if (forbid_tenure_ > 0) {
-          forbid_tabu_list_.push_front({var, old_value, stamp_});
+          forbid_tabu_list_.push_front({index, old_value, stamp_});
         }
       }
     }
   }
-  assignment_.Store();
+  assignment_container_.Store();
 
   return true;
 }
@@ -3403,6 +3423,59 @@ bool TabuSearch::LocalOptimum() {
     SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
   }
   return found_initial_solution_;
+}
+
+bool TabuSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+  if (delta == nullptr) return true;
+  if (!Metaheuristic::AcceptDelta(delta, deltadelta)) return false;
+  if (synced_keep_tabu_list_.empty() && synced_forbid_tabu_list_.empty()) {
+    return true;
+  }
+  const Assignment::IntContainer& delta_container = delta->IntVarContainer();
+  // Detect LNS, bail out quickly in this case without filtering.
+  for (const IntVarElement& element : delta_container.elements()) {
+    if (!element.Bound()) return true;
+  }
+  int num_respected = 0;
+  // TODO(user): Make this O(delta).
+  auto get_value = [this, &delta_container](int var_index) {
+    const IntVarElement* element =
+        delta_container.ElementPtrOrNull(vars(var_index));
+    return (element != nullptr)
+               ? element->Value()
+               : assignment_container_.Element(var_index).Value();
+  };
+  for (const auto [var_index, value, unused_stamp] : synced_keep_tabu_list_) {
+    if (get_value(var_index) == value) {
+      ++num_respected;
+    }
+  }
+  for (const auto [var_index, value, unused_stamp] : synced_forbid_tabu_list_) {
+    if (get_value(var_index) != value) {
+      ++num_respected;
+    }
+  }
+  const int64_t tabu_limit = TabuLimit();
+  if (num_respected >= tabu_limit) return true;
+  // Aspiration
+  // TODO(user): Add proper support for lex-objectives with steps.
+  if (Size() == 1) {
+    if (Maximize(0)) {
+      delta->SetObjectiveMinFromIndex(0, CapAdd(BestInternalValue(0), Step(0)));
+    } else {
+      delta->SetObjectiveMaxFromIndex(0, CapSub(BestInternalValue(0), Step(0)));
+    }
+  } else {
+    for (int i = 0; i < Size(); ++i) {
+      if (Maximize(i)) {
+        delta->SetObjectiveMinFromIndex(i, BestInternalValue(i));
+      } else {
+        delta->SetObjectiveMaxFromIndex(i, BestInternalValue(i));
+      }
+    }
+  }
+  // TODO(user): Add support for plateau removal.
+  return true;
 }
 
 void TabuSearch::AcceptNeighbor() {
@@ -3442,8 +3515,8 @@ std::vector<IntVar*> GenericTabuSearch::CreateTabuVars() {
   // Tabu criterion
   // At least one element of the forbid_tabu_list must change value.
   std::vector<IntVar*> forbid_values;
-  for (const auto [var, value, unused_stamp] : forbid_tabu_list()) {
-    forbid_values.push_back(s->MakeIsDifferentCstVar(var, value));
+  for (const auto [var_index, value, unused_stamp] : forbid_tabu_list()) {
+    forbid_values.push_back(s->MakeIsDifferentCstVar(vars(var_index), value));
   }
   std::vector<IntVar*> tabu_vars;
   if (!forbid_values.empty()) {

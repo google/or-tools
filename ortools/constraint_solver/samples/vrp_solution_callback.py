@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,6 +24,8 @@
 """
 
 # [START import]
+import weakref
+
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
@@ -98,20 +100,21 @@ class SolutionCallback:
         model: pywrapcp.RoutingModel,
         limit: int,
     ):
-        self._routing_manager = manager
-        self._routing_model = model
+        # We need a weak ref on the routing model to avoid a cycle.
+        self._routing_manager_ref = weakref.ref(manager)
+        self._routing_model_ref = weakref.ref(model)
         self._counter = 0
         self._counter_limit = limit
         self.objectives = []
 
     def __call__(self):
-        objective = int(self._routing_model.CostVar().Value())
+        objective = int(self._routing_model_ref().CostVar().Value())
         if not self.objectives or objective < self.objectives[-1]:
             self.objectives.append(objective)
-            print_solution(self._routing_manager, self._routing_model)
+            print_solution(self._routing_manager_ref(), self._routing_model_ref())
             self._counter += 1
         if self._counter > self._counter_limit:
-            self._routing_model.solver().FinishCurrentSearch()
+            self._routing_model_ref().solver().FinishCurrentSearch()
 
 # [END solution_callback]
 

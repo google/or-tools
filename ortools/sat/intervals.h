@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -109,29 +110,6 @@ class IntervalsRepository {
   AffineExpression Size(IntervalVariable i) const { return sizes_[i]; }
   AffineExpression Start(IntervalVariable i) const { return starts_[i]; }
   AffineExpression End(IntervalVariable i) const { return ends_[i]; }
-
-  // Deprecated.
-  IntegerVariable SizeVar(IntervalVariable i) const {
-    if (sizes_[i].var != kNoIntegerVariable) {
-      CHECK_EQ(sizes_[i].coeff, 1);
-      CHECK_EQ(sizes_[i].constant, 0);
-    }
-    return sizes_[i].var;
-  }
-  IntegerVariable StartVar(IntervalVariable i) const {
-    if (starts_[i].var != kNoIntegerVariable) {
-      CHECK_EQ(starts_[i].coeff, 1);
-      CHECK_EQ(starts_[i].constant, 0);
-    }
-    return starts_[i].var;
-  }
-  IntegerVariable EndVar(IntervalVariable i) const {
-    if (ends_[i].var != kNoIntegerVariable) {
-      CHECK_EQ(ends_[i].coeff, 1);
-      CHECK_EQ(ends_[i].constant, 0);
-    }
-    return ends_[i].var;
-  }
 
   // Return the minimum size of the given IntervalVariable.
   IntegerValue MinSize(IntervalVariable i) const {
@@ -332,6 +310,13 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue EndMin(int t) const { return cached_end_min_[t]; }
   IntegerValue StartMax(int t) const { return -cached_negated_start_max_[t]; }
   IntegerValue EndMax(int t) const { return -cached_negated_end_max_[t]; }
+
+  IntegerValue LevelZeroStartMin(int t) const {
+    return integer_trail_->LevelZeroLowerBound(starts_[t]);
+  }
+  IntegerValue LevelZeroStartMax(int t) const {
+    return integer_trail_->LevelZeroUpperBound(starts_[t]);
+  }
 
   // In the presence of tasks with a variable size, we do not necessarily
   // have start_min + size_min = end_min, we can instead have a situation
@@ -676,8 +661,7 @@ class SchedulingDemandHelper {
   }
 
   // Visible for testing.
-  void OverrideLinearizedEnergies(
-      const std::vector<LinearExpression>& energies);
+  void OverrideLinearizedEnergies(absl::Span<const LinearExpression> energies);
   void OverrideDecomposedEnergies(
       const std::vector<std::vector<LiteralValueValue>>& energies);
   // Returns the decomposed energy terms compatible with the current literal
@@ -727,7 +711,7 @@ class SchedulingDemandHelper {
 IntegerValue ComputeEnergyMinInWindow(
     IntegerValue start_min, IntegerValue start_max, IntegerValue end_min,
     IntegerValue end_max, IntegerValue size_min, IntegerValue demand_min,
-    const std::vector<LiteralValueValue>& filtered_energy,
+    absl::Span<const LiteralValueValue> filtered_energy,
     IntegerValue window_start, IntegerValue window_end);
 
 // =============================================================================
@@ -892,26 +876,6 @@ inline void SchedulingConstraintHelper::AddEnergyMinInIntervalReason(
 // Model based functions.
 // =============================================================================
 
-inline std::function<IntegerVariable(const Model&)> StartVar(
-    IntervalVariable v) {
-  return [=](const Model& model) {
-    return model.Get<IntervalsRepository>()->StartVar(v);
-  };
-}
-
-inline std::function<IntegerVariable(const Model&)> EndVar(IntervalVariable v) {
-  return [=](const Model& model) {
-    return model.Get<IntervalsRepository>()->EndVar(v);
-  };
-}
-
-inline std::function<IntegerVariable(const Model&)> SizeVar(
-    IntervalVariable v) {
-  return [=](const Model& model) {
-    return model.Get<IntervalsRepository>()->SizeVar(v);
-  };
-}
-
 inline std::function<int64_t(const Model&)> MinSize(IntervalVariable v) {
   return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->MinSize(v).value();
@@ -941,10 +905,14 @@ inline std::function<IntervalVariable(Model*)> NewInterval(int64_t min_start,
                                                            int64_t max_end,
                                                            int64_t size) {
   return [=](Model* model) {
+    CHECK_LE(min_start + size, max_end);
+    const IntegerVariable start =
+        model->Add(NewIntegerVariable(min_start, max_end - size));
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        model->Add(NewIntegerVariable(min_start, max_end)),
-        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
-        IntegerValue(size), kNoLiteralIndex);
+        AffineExpression(start),
+        AffineExpression(start, IntegerValue(1), IntegerValue(size)),
+        AffineExpression(IntegerValue(size)), kNoLiteralIndex,
+        /*add_linear_relation=*/false);
   };
 }
 
@@ -967,30 +935,25 @@ inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
   };
 }
 
+// Note that this should only be used in tests.
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     int64_t min_start, int64_t max_end, int64_t size, Literal is_present) {
   return [=](Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        model->Add(NewIntegerVariable(min_start, max_end)),
-        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
-        IntegerValue(size), is_present.Index());
-  };
-}
-
-inline std::function<IntervalVariable(Model*)>
-NewOptionalIntervalWithOptionalVariables(int64_t min_start, int64_t max_end,
-                                         int64_t size, Literal is_present) {
-  return [=](Model* model) {
-    // Note that we need to mark the optionality first.
+    CHECK_LE(min_start + size, max_end);
     const IntegerVariable start =
-        model->Add(NewIntegerVariable(min_start, max_end));
-    const IntegerVariable end =
-        model->Add(NewIntegerVariable(min_start, max_end));
-    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-    integer_trail->MarkIntegerVariableAsOptional(start, is_present);
-    integer_trail->MarkIntegerVariableAsOptional(end, is_present);
-    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        start, end, kNoIntegerVariable, IntegerValue(size), is_present.Index());
+        model->Add(NewIntegerVariable(min_start, max_end - size));
+    const IntervalVariable interval =
+        model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+            AffineExpression(start),
+            AffineExpression(start, IntegerValue(1), IntegerValue(size)),
+            AffineExpression(IntegerValue(size)), is_present.Index(),
+            /*add_linear_relation=*/false);
+
+    // To not have too many solutions during enumeration, we force the
+    // start at its min value for absent interval.
+    model->Add(Implication({is_present.Negated()},
+                           IntegerLiteral::LowerOrEqual(start, min_start)));
+    return interval;
   };
 }
 
@@ -1013,59 +976,6 @@ NewOptionalIntervalWithVariableSize(int64_t min_start, int64_t max_end,
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
         is_present.Index());
-  };
-}
-
-// This requires that all the alternatives are optional tasks.
-inline std::function<void(Model*)> IntervalWithAlternatives(
-    IntervalVariable parent, const std::vector<IntervalVariable>& members) {
-  return [=](Model* model) {
-    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-    auto* intervals = model->GetOrCreate<IntervalsRepository>();
-
-    std::vector<Literal> presences;
-    std::vector<IntegerValue> sizes;
-
-    // Create an "exactly one executed" constraint on the alternatives.
-    std::vector<LiteralWithCoeff> sat_ct;
-    for (const IntervalVariable member : members) {
-      CHECK(intervals->IsOptional(member));
-      const Literal is_present = intervals->PresenceLiteral(member);
-      sat_ct.push_back({is_present, Coefficient(1)});
-      model->Add(
-          Equality(model->Get(StartVar(parent)), model->Get(StartVar(member))));
-      model->Add(
-          Equality(model->Get(EndVar(parent)), model->Get(EndVar(member))));
-
-      // TODO(user): IsOneOf() only work for members with fixed size.
-      // Generalize to an "int_var_element" constraint.
-      CHECK(integer_trail->IsFixed(intervals->Size(member)));
-      presences.push_back(is_present);
-      sizes.push_back(intervals->MinSize(member));
-    }
-    if (intervals->SizeVar(parent) != kNoIntegerVariable) {
-      model->Add(IsOneOf(intervals->SizeVar(parent), presences, sizes));
-    }
-    model->Add(BooleanLinearConstraint(1, 1, &sat_ct));
-
-    // Propagate from the candidate bounds to the parent interval ones.
-    {
-      std::vector<IntegerVariable> starts;
-      starts.reserve(members.size());
-      for (const IntervalVariable member : members) {
-        starts.push_back(intervals->StartVar(member));
-      }
-      model->Add(
-          PartialIsOneOfVar(intervals->StartVar(parent), starts, presences));
-    }
-    {
-      std::vector<IntegerVariable> ends;
-      ends.reserve(members.size());
-      for (const IntervalVariable member : members) {
-        ends.push_back(intervals->EndVar(member));
-      }
-      model->Add(PartialIsOneOfVar(intervals->EndVar(parent), ends, presences));
-    }
   };
 }
 

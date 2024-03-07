@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -33,6 +33,6 @@ target_link_libraries(dotnet_constraint_solver PRIVATE ortools::ortools)
 if(BUILD_TESTING)
   file(GLOB DOTNET_SRCS "*Tests.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
-    add_dotnet_test(${FILE_NAME})
+    add_dotnet_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()

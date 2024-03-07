@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
@@ -32,7 +33,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"
@@ -434,9 +434,8 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
 }  // namespace
 
 CoreBasedOptimizer::CoreBasedOptimizer(
-    IntegerVariable objective_var,
-    const std::vector<IntegerVariable>& variables,
-    const std::vector<IntegerValue>& coefficients,
+    IntegerVariable objective_var, absl::Span<const IntegerVariable> variables,
+    absl::Span<const IntegerValue> coefficients,
     std::function<void()> feasible_solution_observer, Model* model)
     : parameters_(model->GetOrCreate<SatParameters>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
@@ -554,7 +553,6 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
         some_bound_were_tightened = true;
         const IntegerValue new_ub = var_lb + gap / term.weight;
         DCHECK_LT(new_ub, var_ub);
-        DCHECK(!integer_trail_->IsCurrentlyIgnored(term.var));
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
           return false;

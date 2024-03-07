@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"  // IWYU pragma: export
@@ -426,7 +427,7 @@ class Model {
   //   model.AddSecondOrderConeConstraint({x, y}, 1.0, "soc");
   //   model.AddSecondOrderConeConstraint({1.0, 3 * y - x}, 2 * x);
   SecondOrderConeConstraint AddSecondOrderConeConstraint(
-      const std::vector<LinearExpression>& arguments_to_norm,
+      absl::Span<const LinearExpression> arguments_to_norm,
       const LinearExpression& upper_bound, absl::string_view name = "");
 
   // Removes a second-order cone constraint from the model.

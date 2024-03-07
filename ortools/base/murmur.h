@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 
 namespace util_hash {
 // In the or-tools project, MurmurHash64 is just a redirection towards
-// fash_hash.
+// fast_hash.
 inline uint64_t MurmurHash64(const char* buf, const size_t len) {
   return operations_research::fasthash64(buf, len,
                                          uint64_t{0xa5b85c5e198ed849});

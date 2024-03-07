@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,7 +17,6 @@
 #include <limits>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -25,10 +24,9 @@
 #include "Eigen/SparseCore"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/protobuf_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/pdlp/test_util.h"
 
@@ -129,21 +127,6 @@ TEST(ValidateQuadraticProgramDimensions, ObjectiveMatrixRowsInconsistent) {
   qp.objective_matrix->resize(10);
   EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
             absl::StatusCode::kInvalidArgument);
-}
-
-TEST(HasValidBoundsTest, InconsistentConstraintBounds) {
-  QuadraticProgram invalid_lp = SmallInvalidProblemLp();
-  EXPECT_FALSE(HasValidBounds(invalid_lp));
-}
-
-TEST(HasValidBoundsTest, InconsistentVariableBounds) {
-  QuadraticProgram invalid_lp = SmallInconsistentVariableBoundsLp();
-  EXPECT_FALSE(HasValidBounds(invalid_lp));
-}
-
-TEST(HasValidBoundsTest, SmallValidLp) {
-  QuadraticProgram valid_lp = SmallPrimalInfeasibleLp();
-  EXPECT_TRUE(HasValidBounds(valid_lp));
 }
 
 class ConvertQpMpModelProtoTest : public testing::TestWithParam<bool> {};

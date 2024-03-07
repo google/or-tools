@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -817,8 +817,8 @@ class SVector {
   }
 
   // Move constructor and move assignment operator.
-  SVector(SVector&& other) : SVector() { swap(other); }
-  SVector& operator=(SVector&& other) {
+  SVector(SVector&& other) noexcept : SVector() { swap(other); }
+  SVector& operator=(SVector&& other) noexcept {
     // NOTE(user): We could just swap() and let the other's destruction take
     // care of the clean-up, but it is probably less bug-prone to perform the
     // destruction immediately.
@@ -860,7 +860,7 @@ class SVector {
 
   T* data() const { return base_; }
 
-  void swap(SVector<T>& x) {
+  void swap(SVector<T>& x) noexcept {
     std::swap(base_, x.base_);
     std::swap(size_, x.size_);
     std::swap(capacity_, x.capacity_);

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,18 +16,15 @@
 
 #if (defined(__APPLE__) || defined(__FreeBSD__)) && defined(__GNUC__)
 #include <machine/endian.h>
-#elif !defined(_MSC_VER)
+#elif !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
 #include <endian.h>
 #endif
-#include <climits>
-#include <cstdio>
-#include <limits>
+#include <cstdint>
 #include <memory>
-#include <string>
+#include <string>  // IWYU pragma: keep
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 
 // An array class for storing arrays of integers.
 //

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,6 +39,7 @@
 #ifndef OR_TOOLS_BASE_DUMP_VARS_H_
 #define OR_TOOLS_BASE_DUMP_VARS_H_
 
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -58,6 +59,9 @@
 #define DUMP_FOR_EACH_N6(F, a, ...) F(a) DUMP_FOR_EACH_N5(F, __VA_ARGS__)
 #define DUMP_FOR_EACH_N7(F, a, ...) F(a) DUMP_FOR_EACH_N6(F, __VA_ARGS__)
 #define DUMP_FOR_EACH_N8(F, a, ...) F(a) DUMP_FOR_EACH_N7(F, __VA_ARGS__)
+#define DUMP_FOR_EACH_N9(F, a, ...) F(a) DUMP_FOR_EACH_N8(F, __VA_ARGS__)
+#define DUMP_FOR_EACH_N10(F, a, ...) F(a) DUMP_FOR_EACH_N9(F, __VA_ARGS__)
+#define DUMP_FOR_EACH_N11(F, a, ...) F(a) DUMP_FOR_EACH_N10(F, __VA_ARGS__)
 
 #define DUMP_CONCATENATE(x, y) x##y
 #define DUMP_FOR_EACH_(N, F, ...) \
@@ -65,8 +69,8 @@
 
 #define DUMP_NARG(...) DUMP_NARG_(__VA_OPT__(__VA_ARGS__, ) DUMP_RSEQ_N())
 #define DUMP_NARG_(...) DUMP_ARG_N(__VA_ARGS__)
-#define DUMP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
-#define DUMP_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
+#define DUMP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, N, ...) N
+#define DUMP_RSEQ_N() 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 #define DUMP_FOR_EACH(F, ...) \
   DUMP_FOR_EACH_(DUMP_NARG(__VA_ARGS__), F __VA_OPT__(, __VA_ARGS__))
 
@@ -112,6 +116,24 @@ std::ostream& operator<<(std::ostream& os,
   for (T it : vec) {
     os << ::std::to_string(it) << ',';
   }
+  return os;
+}
+
+// needed by algorithms tests
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const ::std::vector<T>& vec) {
+  for (T it : vec) {
+    os << ::std::to_string(it) << ',';
+  }
+  return os;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const ::std::optional<T>& opt) {
+  if (opt.has_value())
+    os << ::std::to_string(opt.value());
+  else
+    os << "(none)";
   return os;
 }
 

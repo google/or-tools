@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,14 +22,20 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
 #include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/fp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -61,7 +67,6 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 template <class I, class T>
 double Average(const absl::StrongVector<I, T>& v) {
   const size_t size = v.size();
-  DCHECK_LT(0, size);
   double sum = 0.0;
   double n = 0.0;  // n is used in a calculation involving doubles.
   for (I i(0); i < size; ++i) {
@@ -204,7 +209,7 @@ RowIndex LinearProgram::CreateNewConstraint() {
   return row;
 }
 
-ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
+ColIndex LinearProgram::FindOrCreateVariable(absl::string_view variable_id) {
   const absl::flat_hash_map<std::string, ColIndex>::iterator it =
       variable_table_.find(variable_id);
   if (it != variable_table_.end()) {
@@ -218,7 +223,7 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
 }
 
 RowIndex LinearProgram::FindOrCreateConstraint(
-    const std::string& constraint_id) {
+    absl::string_view constraint_id) {
   const absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
@@ -576,6 +581,7 @@ std::string LinearProgram::Dump() const {
 
   // Constraints.
   const RowIndex num_rows = num_constraints();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
   for (RowIndex row(0); row < num_rows; ++row) {
     const Fractional lower_bound = constraint_lower_bounds()[row];
     const Fractional upper_bound = constraint_upper_bounds()[row];
@@ -586,9 +592,10 @@ std::string LinearProgram::Dump() const {
       output += Stringify(lower_bound);
       output += " <=";
     }
-    for (ColIndex col(0); col < num_cols; ++col) {
-      const Fractional coeff = matrix_.LookUpValue(row, col);
-      output += StringifyMonomial(coeff, GetVariableName(col), false);
+    for (const auto& entry : transpose.column(RowToColIndex(row))) {
+      const Fractional coeff = entry.coefficient();
+      output += StringifyMonomial(
+          coeff, GetVariableName(RowToColIndex(entry.row())), false);
     }
     if (AreBoundsFreeOrBoxed(lower_bound, upper_bound)) {
       output += " <= ";
@@ -1547,6 +1554,29 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
     }
   }
   return true;
+}
+
+void LinearProgram::RemoveNearZeroEntries(Fractional threshold) {
+  int64_t num_removed_objective_entries = 0;
+  int64_t num_removed_matrix_entries = 0;
+  for (ColIndex col(0); col < matrix_.num_cols(); ++col) {
+    const int64_t old_size = matrix_.column(col).num_entries().value();
+    matrix_.mutable_column(col)->RemoveNearZeroEntries(threshold);
+    num_removed_matrix_entries +=
+        old_size - matrix_.column(col).num_entries().value();
+    if (std::abs(objective_coefficients_[col]) <= threshold) {
+      objective_coefficients_[col] = 0.0;
+      ++num_removed_objective_entries;
+    }
+  }
+  if (num_removed_matrix_entries > 0) {
+    transpose_matrix_is_consistent_ = false;
+    VLOG(1) << "Removed " << num_removed_matrix_entries << " matrix entries.";
+  }
+  if (num_removed_objective_entries > 0) {
+    VLOG(1) << "Removed " << num_removed_objective_entries
+            << " objective coefficients.";
+  }
 }
 
 // --------------------------------------------------------

@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -212,7 +212,7 @@ define manylinux_inner =
 .PHONY: python_$1_manylinux_cp$2_$3
 python_$1_manylinux_cp$2_$3: python/$1/manylinux.Dockerfile export/python/manylinux/build-manylinux.sh
 	@docker image rm -f ${IMAGE}:$$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} \
+	${DOCKER_BUILDX_CMD} --platform linux/$1 \
  --tag ${IMAGE}:$$@ \
  --build-arg GIT_BRANCH=${OR_TOOLS_BRANCH} \
  --build-arg GIT_SHA1=${OR_TOOLS_SHA1} \

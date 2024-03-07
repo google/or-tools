@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
@@ -190,17 +191,17 @@ class ElementEncodings {
            int exactly_one_index);
 
   // Returns an empty map if there is no such encoding.
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>& Get(
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>& Get(
       IntegerVariable var);
 
   // Get an unsorted set of variables appearing in element encodings.
   const std::vector<IntegerVariable>& GetElementEncodedVariables() const;
 
  private:
-  absl::flat_hash_map<IntegerVariable,
-                      absl::flat_hash_map<int, std::vector<ValueLiteralPair>>>
+  absl::btree_map<IntegerVariable,
+                  absl::btree_map<int, std::vector<ValueLiteralPair>>>
       var_to_index_to_element_encodings_;
-  const absl::flat_hash_map<int, std::vector<ValueLiteralPair>>
+  const absl::btree_map<int, std::vector<ValueLiteralPair>>
       empty_element_encoding_;
   std::vector<IntegerVariable> element_encoded_variables_;
 };
@@ -294,13 +295,46 @@ class ProductDetector {
   // TODO(user): Implement!
   LinearExpression ProductLowerBound(IntegerVariable a, IntegerVariable b);
 
+  // Experimental. Find violated inequality of the form l1 * l2 <= l3.
+  // And set-up data structure to query this efficiently.
+  void InitializeBooleanRLTCuts(
+      const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
+      const absl::StrongVector<IntegerVariable, double>& lp_values);
+
+  // BoolRLTCandidates()[var] contains the list of factor for which we have
+  // a violated upper bound on lit(var) * lit(factor).
+  const absl::flat_hash_map<IntegerVariable, std::vector<IntegerVariable>>&
+  BoolRLTCandidates() const {
+    return bool_rlt_candidates_;
+  }
+
+  // Returns if it exists an integer variable u such that lit(a) * lit(b) <=
+  // lit(u). All integer variable must be boolean, a positive variable means
+  // positive literal, and a negative variable means negative literal. Returns
+  // kNoIntegerVariable if there are none.
+  IntegerVariable LiteralProductUpperBound(IntegerVariable a,
+                                           IntegerVariable b) const {
+    if (b < a) std::swap(a, b);
+    const auto it = bool_rlt_ubs_.find({a, b});
+    if (it == bool_rlt_ubs_.end()) return kNoIntegerVariable;
+    return it->second;
+  }
+
  private:
   std::array<LiteralIndex, 2> GetKey(LiteralIndex a, LiteralIndex b) const;
   void ProcessNewProduct(LiteralIndex p, LiteralIndex a, LiteralIndex b);
   void ProcessNewProduct(IntegerVariable p, Literal l, IntegerVariable x);
+  void ProcessTernaryClauseForRLT(absl::Span<const Literal> clause);
+
+  // Process a relation lit(var1) * lit(var2) <= lit(bound_var).
+  void UpdateRLTMaps(
+      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
+      IntegerVariable bound_var, double bound_lp);
 
   // Fixed at creation time.
-  bool enabled_;
+  const bool enabled_;
+  const bool rlt_enabled_;
   SatSolver* sat_solver_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
@@ -338,6 +372,18 @@ class ProductDetector {
   // Stores l * X = P.
   absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>, IntegerVariable>
       int_products_;
+
+  // For RLT cuts.
+  absl::flat_hash_map<IntegerVariable, std::vector<IntegerVariable>>
+      bool_rlt_candidates_;
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
+                      IntegerVariable>
+      bool_rlt_ubs_;
+
+  // Store ternary clause which have an IntegerVariable view.
+  // We only consider BooleanVariable == IntegerVariable, and store not(literal)
+  // as NegatedVariable(). This is a flat vector of size multiple of 3.
+  std::vector<IntegerVariable> ternary_clauses_with_view_;
 
   // Stats.
   int64_t num_products_ = 0;

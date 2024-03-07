@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -93,6 +93,11 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
+
+// This function changes bounds of variables or constraints that have a
+// magnitude greater than mip_max_valid_magnitude.
+void ChangeLargeBoundsToInfinity(double max_magnitude, MPModelProto* mp_model,
+                                 SolverLogger* logger);
 
 // Performs some extra tests on the given MPModelProto and returns false if one
 // is not satisfied. These are needed before trying to convert it to the native

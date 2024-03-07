@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,11 +39,11 @@
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
-
 namespace operations_research {
 namespace sat {
 
@@ -67,25 +67,25 @@ void RemoveIf(Container c, Predicate p) {
 
 }  // namespace
 
-// ----- LiteralWatchers -----
+// ----- ClauseManager -----
 
-LiteralWatchers::LiteralWatchers(Model* model)
-    : SatPropagator("LiteralWatchers"),
+ClauseManager::ClauseManager(Model* model)
+    : SatPropagator("ClauseManager"),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
-      stats_("LiteralWatchers") {
+      stats_("ClauseManager") {
   trail_->RegisterPropagator(this);
 }
 
-LiteralWatchers::~LiteralWatchers() {
+ClauseManager::~ClauseManager() {
   gtl::STLDeleteElements(&clauses_);
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
 }
 
-void LiteralWatchers::Resize(int num_variables) {
+void ClauseManager::Resize(int num_variables) {
   DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
   reasons_.resize(num_variables);
@@ -94,15 +94,15 @@ void LiteralWatchers::Resize(int num_variables) {
 
 // Note that this is the only place where we add Watcher so the DCHECK
 // guarantees that there are no duplicates.
-void LiteralWatchers::AttachOnFalse(Literal literal, Literal blocking_literal,
-                                    SatClause* clause) {
+void ClauseManager::AttachOnFalse(Literal literal, Literal blocking_literal,
+                                  SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   DCHECK(!WatcherListContains(watchers_on_false_[literal], *clause));
   watchers_on_false_[literal].push_back(Watcher(clause, blocking_literal));
 }
 
-bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
+bool ClauseManager::PropagateOnFalse(Literal false_literal, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
   std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
@@ -198,7 +198,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   return true;
 }
 
-bool LiteralWatchers::Propagate(Trail* trail) {
+bool ClauseManager::Propagate(Trail* trail) {
   const int old_index = trail->Index();
   while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
     const Literal literal = (*trail)[propagation_trail_index_++];
@@ -207,27 +207,27 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<const Literal> LiteralWatchers::Reason(const Trail& trail,
-                                                  int trail_index) const {
+absl::Span<const Literal> ClauseManager::Reason(const Trail& /*trail*/,
+                                                int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
-SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
+SatClause* ClauseManager::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
-bool LiteralWatchers::AddClause(absl::Span<const Literal> literals) {
+bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
   return AddClause(literals, trail_);
 }
 
-bool LiteralWatchers::AddClause(absl::Span<const Literal> literals,
-                                Trail* trail) {
+bool ClauseManager::AddClause(absl::Span<const Literal> literals,
+                              Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
   return AttachAndPropagate(clause, trail);
 }
 
-SatClause* LiteralWatchers::AddRemovableClause(
+SatClause* ClauseManager::AddRemovableClause(
     const std::vector<Literal>& literals, Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
@@ -240,7 +240,7 @@ SatClause* LiteralWatchers::AddRemovableClause(
 // false. It returns false if the clause only contains literals assigned to
 // false. If only one literals is not false, it propagates it to true if it
 // is not already assigned.
-bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
+bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
 
   const int size = clause->size();
@@ -289,17 +289,17 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   return true;
 }
 
-void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
+void ClauseManager::Attach(SatClause* clause, Trail* trail) {
   Literal* literals = clause->literals();
-  CHECK(!trail->Assignment().LiteralIsAssigned(literals[0]));
-  CHECK(!trail->Assignment().LiteralIsAssigned(literals[1]));
+  DCHECK(!trail->Assignment().LiteralIsAssigned(literals[0]));
+  DCHECK(!trail->Assignment().LiteralIsAssigned(literals[1]));
 
   ++num_watched_clauses_;
   AttachOnFalse(literals[0], literals[1], clause);
   AttachOnFalse(literals[1], literals[0], clause);
 }
 
-void LiteralWatchers::InternalDetach(SatClause* clause) {
+void ClauseManager::InternalDetach(SatClause* clause) {
   --num_watched_clauses_;
   const size_t size = clause->size();
   if (drat_proof_handler_ != nullptr && size > 2) {
@@ -309,24 +309,24 @@ void LiteralWatchers::InternalDetach(SatClause* clause) {
   clause->Clear();
 }
 
-void LiteralWatchers::LazyDetach(SatClause* clause) {
+void ClauseManager::LazyDetach(SatClause* clause) {
   InternalDetach(clause);
   is_clean_ = false;
   needs_cleaning_.Set(clause->FirstLiteral());
   needs_cleaning_.Set(clause->SecondLiteral());
 }
 
-void LiteralWatchers::Detach(SatClause* clause) {
+void ClauseManager::Detach(SatClause* clause) {
   InternalDetach(clause);
   for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
     needs_cleaning_.Clear(l);
     RemoveIf(&(watchers_on_false_[l]), [](const Watcher& watcher) {
-      return !watcher.clause->IsAttached();
+      return watcher.clause->IsRemoved();
     });
   }
 }
 
-void LiteralWatchers::DetachAllClauses() {
+void ClauseManager::DetachAllClauses() {
   if (!all_clauses_are_attached_) return;
   all_clauses_are_attached_ = false;
 
@@ -337,7 +337,7 @@ void LiteralWatchers::DetachAllClauses() {
   watchers_on_false_.clear();
 }
 
-void LiteralWatchers::AttachAllClauses() {
+void ClauseManager::AttachAllClauses() {
   if (all_clauses_are_attached_) return;
   all_clauses_are_attached_ = true;
 
@@ -347,15 +347,15 @@ void LiteralWatchers::AttachAllClauses() {
   DeleteRemovedClauses();
   for (SatClause* clause : clauses_) {
     ++num_watched_clauses_;
-    CHECK_GE(clause->size(), 2);
+    DCHECK_GE(clause->size(), 2);
     AttachOnFalse(clause->FirstLiteral(), clause->SecondLiteral(), clause);
     AttachOnFalse(clause->SecondLiteral(), clause->FirstLiteral(), clause);
   }
 }
 
 // This one do not need the clause to be detached.
-bool LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+bool ClauseManager::InprocessingFixLiteral(Literal true_literal) {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause({true_literal});
   }
@@ -373,8 +373,8 @@ bool LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
 
 // TODO(user): We could do something slower if the clauses are attached like
 // we do for InprocessingRewriteClause().
-void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
-  CHECK(!all_clauses_are_attached_);
+void ClauseManager::InprocessingRemoveClause(SatClause* clause) {
+  DCHECK(!all_clauses_are_attached_);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->DeleteClause(clause->AsSpan());
   }
@@ -382,13 +382,13 @@ void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
   clause->Clear();
 }
 
-bool LiteralWatchers::InprocessingRewriteClause(
+bool ClauseManager::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause) {
   if (new_clause.empty()) return false;  // UNSAT.
 
   if (DEBUG_MODE) {
     for (const Literal l : new_clause) {
-      CHECK(!trail_->Assignment().LiteralIsAssigned(l));
+      DCHECK(!trail_->Assignment().LiteralIsAssigned(l));
     }
   }
 
@@ -399,7 +399,7 @@ bool LiteralWatchers::InprocessingRewriteClause(
   }
 
   if (new_clause.size() == 2) {
-    implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
+    CHECK(implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]));
     InprocessingRemoveClause(clause);
     return true;
   }
@@ -418,25 +418,25 @@ bool LiteralWatchers::InprocessingRewriteClause(
     for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
       needs_cleaning_.Clear(l);
       RemoveIf(&(watchers_on_false_[l]), [](const Watcher& watcher) {
-        return !watcher.clause->IsAttached();
+        return watcher.clause->IsRemoved();
       });
     }
   }
 
   clause->Rewrite(new_clause);
 
-  // And we re-attach it.
+  // And we reattach it.
   if (all_clauses_are_attached_) Attach(clause, trail_);
   return true;
 }
 
-SatClause* LiteralWatchers::InprocessingAddClause(
+SatClause* ClauseManager::InprocessingAddClause(
     absl::Span<const Literal> new_clause) {
-  CHECK(!new_clause.empty());
-  CHECK(!all_clauses_are_attached_);
+  DCHECK(!new_clause.empty());
+  DCHECK(!all_clauses_are_attached_);
   if (DEBUG_MODE) {
     for (const Literal l : new_clause) {
-      CHECK(!trail_->Assignment().LiteralIsAssigned(l));
+      DCHECK(!trail_->Assignment().LiteralIsAssigned(l));
     }
   }
 
@@ -456,12 +456,12 @@ SatClause* LiteralWatchers::InprocessingAddClause(
   return clause;
 }
 
-void LiteralWatchers::CleanUpWatchers() {
+void ClauseManager::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (const LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
     DCHECK(needs_cleaning_[index]);
     RemoveIf(&(watchers_on_false_[index]), [](const Watcher& watcher) {
-      return !watcher.clause->IsAttached();
+      return watcher.clause->IsRemoved();
     });
     needs_cleaning_.Clear(index);
   }
@@ -469,25 +469,28 @@ void LiteralWatchers::CleanUpWatchers() {
   is_clean_ = true;
 }
 
-void LiteralWatchers::DeleteRemovedClauses() {
+// We also update to_minimize_index_/to_probe_index_ correctly.
+//
+// TODO(user): If more indices are needed, generalize the code to a vector of
+// indices.
+void ClauseManager::DeleteRemovedClauses() {
   DCHECK(is_clean_);
 
-  // Update to_minimize_index_.
-  if (to_minimize_index_ >= clauses_.size()) {
-    to_minimize_index_ = clauses_.size();
+  int new_size = 0;
+  const int old_size = clauses_.size();
+  for (int i = 0; i < old_size; ++i) {
+    if (i == to_minimize_index_) to_minimize_index_ = new_size;
+    if (i == to_probe_index_) to_probe_index_ = new_size;
+    if (clauses_[i]->IsRemoved()) {
+      delete clauses_[i];
+    } else {
+      clauses_[new_size++] = clauses_[i];
+    }
   }
-  to_minimize_index_ =
-      std::stable_partition(clauses_.begin(),
-                            clauses_.begin() + to_minimize_index_,
-                            [](SatClause* a) { return a->IsAttached(); }) -
-      clauses_.begin();
+  clauses_.resize(new_size);
 
-  // Do the proper deletion.
-  std::vector<SatClause*>::iterator iter =
-      std::stable_partition(clauses_.begin(), clauses_.end(),
-                            [](SatClause* a) { return a->IsAttached(); });
-  gtl::STLDeleteContainerPointers(iter, clauses_.end());
-  clauses_.erase(iter, clauses_.end());
+  if (to_minimize_index_ > new_size) to_minimize_index_ = new_size;
+  if (to_probe_index_ > new_size) to_probe_index_ = new_size;
 }
 
 // ----- BinaryImplicationGraph -----
@@ -495,11 +498,27 @@ void LiteralWatchers::DeleteRemovedClauses() {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
+  implies_something_.resize(num_variables << 1);
+  might_have_dups_.resize(num_variables << 1);
   is_redundant_.resize(implications_.size());
   is_removed_.resize(implications_.size(), false);
   estimated_sizes_.resize(implications_.size(), 0);
   in_direct_implications_.resize(implications_.size(), false);
   reasons_.resize(num_variables);
+}
+
+void BinaryImplicationGraph::NotifyPossibleDuplicate(Literal a) {
+  if (might_have_dups_[a.Index()]) return;
+  might_have_dups_[a.Index()] = true;
+  to_clean_.push_back(a);
+}
+
+void BinaryImplicationGraph::RemoveDuplicates() {
+  for (const Literal l : to_clean_) {
+    might_have_dups_[l.Index()] = false;
+    gtl::STLSortAndRemoveDuplicates(&implications_[l.Index()]);
+  }
+  to_clean_.clear();
 }
 
 // TODO(user): Not all of the solver knows about representative literal, do
@@ -521,19 +540,30 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
     drat_proof_handler_->AddClause({a, b});
   }
 
+  if (is_redundant_[a.Index()]) a = Literal(representative_of_[a.Index()]);
+  if (is_redundant_[b.Index()]) b = Literal(representative_of_[b.Index()]);
+  if (a == b.Negated()) return true;
+  if (a == b) return FixLiteral(a);
+
   DCHECK(!is_removed_[a]);
   DCHECK(!is_removed_[b]);
   estimated_sizes_[a.NegatedIndex()]++;
   estimated_sizes_[b.NegatedIndex()]++;
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
+  implies_something_.Set(a.NegatedIndex());
+  implies_something_.Set(b.NegatedIndex());
+  NotifyPossibleDuplicate(a);
+  NotifyPossibleDuplicate(b);
   is_dag_ = false;
   num_implications_ += 2;
 
+  if (enable_sharing_ && add_callback_ != nullptr) add_callback_(a, b);
+
   const auto& assignment = trail_->Assignment();
   if (trail_->CurrentDecisionLevel() == 0) {
-    CHECK(!assignment.LiteralIsAssigned(a));
-    CHECK(!assignment.LiteralIsAssigned(b));
+    DCHECK(!assignment.LiteralIsAssigned(a));
+    DCHECK(!assignment.LiteralIsAssigned(b));
   } else {
     if (assignment.LiteralIsFalse(a)) {
       if (assignment.LiteralIsAssigned(b)) {
@@ -553,26 +583,29 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   return true;
 }
 
-bool BinaryImplicationGraph::AddAtMostOne(absl::Span<const Literal> at_most_one,
-                                          int expansion_size) {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+bool BinaryImplicationGraph::AddAtMostOne(
+    absl::Span<const Literal> at_most_one) {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (at_most_one.size() <= 1) return true;
 
   // Temporarily copy the at_most_one constraint at the end of
   // at_most_one_buffer_. It will be cleaned up and added by
   // CleanUpAndAddAtMostOnes().
   const int base_index = at_most_one_buffer_.size();
+  at_most_one_buffer_.push_back(Literal(LiteralIndex(at_most_one.size())));
   at_most_one_buffer_.insert(at_most_one_buffer_.end(), at_most_one.begin(),
                              at_most_one.end());
-  at_most_one_buffer_.push_back(Literal(kNoLiteralIndex));
 
   is_dag_ = false;
-  return CleanUpAndAddAtMostOnes(base_index, expansion_size);
+  return CleanUpAndAddAtMostOnes(base_index);
 }
 
-// TODO(user): remove duplication with
-// LiteralWatchers::InprocessingFixLiteral();
+// TODO(user): remove dupl with ClauseManager::InprocessingFixLiteral().
+//
+// Note that we currently do not support calling this at a positive level since
+// we might loose the fixing on backtrack otherwise.
 bool BinaryImplicationGraph::FixLiteral(Literal true_literal) {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
   if (trail_->Assignment().LiteralIsFalse(true_literal)) return false;
 
@@ -587,21 +620,31 @@ bool BinaryImplicationGraph::FixLiteral(Literal true_literal) {
 // This works by doing a linear scan on the at_most_one_buffer_ and
 // cleaning/copying the at most ones on the fly to the beginning of the same
 // buffer.
-bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
-                                                     int expansion_size) {
+bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
   const VariablesAssignment& assignment = trail_->Assignment();
   int local_end = base_index;
   const int buffer_size = at_most_one_buffer_.size();
-  for (int i = base_index; i < buffer_size; ++i) {
-    if (at_most_one_buffer_[i].Index() == kNoLiteralIndex) continue;
-
+  for (int i = base_index; i < buffer_size;) {
     // Process a new at most one.
-    // It will be copied into buffer[local_start, local_end].
+    // It will be copied into buffer[local_start + 1, local_end].
+    // With its size at buffer[local_start].
     const int local_start = local_end;
+
+    // Update the iterator now. Even if the current at_most_one is reduced away,
+    // local_start will still point to the next one, or to the end of the
+    // buffer.
+    if (i == at_most_one_iterator_) {
+      at_most_one_iterator_ = local_start;
+    }
+
+    // We have an at_most_one starting at i, and we increment i to the next one.
+    const absl::Span<const Literal> initial_amo = AtMostOne(i);
+    i += initial_amo.size() + 1;
+
+    // Reserve space for size.
+    local_end++;
     bool set_all_left_to_false = false;
-    for (;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : initial_amo) {
       if (assignment.LiteralIsFalse(l)) continue;
       if (is_removed_[l]) continue;
       if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
@@ -610,18 +653,22 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
       }
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
+    at_most_one_buffer_[local_start] =
+        Literal(LiteralIndex(local_end - local_start - 1));
 
     // Deal with duplicates.
     // Any duplicate in an "at most one" must be false.
     bool some_duplicates = false;
     if (!set_all_left_to_false) {
-      int new_local_end = local_start;
-      std::sort(&at_most_one_buffer_[local_start],
-                &at_most_one_buffer_[local_end]);
+      // Sort the copied amo.
+      // We only want to expose a const AtMostOne() so we sort directly here.
+      Literal* pt = &at_most_one_buffer_[local_start + 1];
+      std::sort(pt, pt + AtMostOne(local_start).size());
+
       LiteralIndex previous = kNoLiteralIndex;
       bool remove_previous = false;
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      int new_local_end = local_start + 1;
+      for (const Literal l : AtMostOne(local_start)) {
         if (l.Index() == previous) {
           if (assignment.LiteralIsTrue(l)) return false;
           if (!assignment.LiteralIsFalse(l)) {
@@ -642,15 +689,18 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
         at_most_one_buffer_[new_local_end++] = l;
       }
       if (remove_previous) --new_local_end;
+
+      // Update local end and the amo size.
       local_end = new_local_end;
+      at_most_one_buffer_[local_start] =
+          Literal(LiteralIndex(local_end - local_start - 1));
     }
 
     // If there was some duplicates, we need to rescan to see if a literal
     // didn't become true because its negation was appearing twice!
     if (some_duplicates) {
-      int new_local_end = local_start;
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      int new_local_end = local_start + 1;
+      for (const Literal l : AtMostOne(local_start)) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
           set_all_left_to_false = true;
@@ -658,33 +708,38 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
         }
         at_most_one_buffer_[new_local_end++] = l;
       }
+
+      // Update local end and the amo size.
       local_end = new_local_end;
+      at_most_one_buffer_[local_start] =
+          Literal(LiteralIndex(local_end - local_start - 1));
     }
 
     // Deal with all false.
     if (set_all_left_to_false) {
-      for (int j = local_start; j < local_end; ++j) {
-        const Literal l = at_most_one_buffer_[j];
+      for (const Literal l : AtMostOne(local_start)) {
         if (assignment.LiteralIsFalse(l)) continue;
         if (assignment.LiteralIsTrue(l)) return false;
         if (!FixLiteral(l.Negated())) return false;
       }
+
+      // Erase this at_most_one.
       local_end = local_start;
       continue;
     }
 
     // Create a Span<> to simplify the code below.
-    const absl::Span<const Literal> at_most_one(
-        &at_most_one_buffer_[local_start], local_end - local_start);
+    const absl::Span<const Literal> at_most_one = AtMostOne(local_start);
 
     // We expand small sizes into implications.
     // TODO(user): Investigate what the best threshold is.
-    if (at_most_one.size() < expansion_size) {
-      // Note that his automatically skip size 0 and 1.
+    if (at_most_one.size() <= std::max(2, at_most_one_max_expansion_size_)) {
       for (const Literal a : at_most_one) {
         for (const Literal b : at_most_one) {
           if (a == b) continue;
           implications_[a].push_back(b.Negated());
+          implies_something_.Set(a);
+          NotifyPossibleDuplicate(a);
         }
       }
       num_implications_ += at_most_one.size() * (at_most_one.size() - 1);
@@ -699,12 +754,10 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index,
       if (l.Index() >= at_most_ones_.size()) {
         at_most_ones_.resize(l.Index().value() + 1);
       }
-      CHECK(!is_redundant_[l]);
+      DCHECK(!is_redundant_[l]);
       at_most_ones_[l].push_back(local_start);
+      implies_something_.Set(l);
     }
-
-    // Add sentinel.
-    at_most_one_buffer_[local_end++] = Literal(kNoLiteralIndex);
   }
 
   at_most_one_buffer_.resize(local_end);
@@ -749,14 +802,11 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
   if (true_literal.Index() < at_most_ones_.size()) {
     for (const int start : at_most_ones_[true_literal]) {
       bool seen = false;
-      for (int i = start;; ++i) {
-        const Literal literal = at_most_one_buffer_[i];
-        if (literal.Index() == kNoLiteralIndex) break;
-
+      for (const Literal literal : AtMostOne(start)) {
         ++num_inspections_;
         if (literal == true_literal) {
           if (DEBUG_MODE) {
-            CHECK(!seen);
+            DCHECK(!seen);
             seen = true;
           }
           continue;
@@ -795,7 +845,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
 }
 
 absl::Span<const Literal> BinaryImplicationGraph::Reason(
-    const Trail& trail, int trail_index) const {
+    const Trail& /*trail*/, int trail_index) const {
   return {&reasons_[trail_index], 1};
 }
 
@@ -887,11 +937,15 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
     SparseBitset<BooleanVariable>* marked) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(!conflict->empty());
+  DCHECK(!conflict->empty());
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   MarkDescendants(conflict->front().Negated());
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
-    if (trail.Assignment().LiteralIsFalse(Literal(i))) {
+    // TODO(user): if this is false, then we actually have a conflict of size 2.
+    // This can only happen if the binary clause was not propagated properly
+    // if for instance we do chronological bactracking without re-enqueing the
+    // consequence of a binary clause.
+    if (trail.Assignment().LiteralIsTrue(Literal(i))) {
       marked->Set(Literal(i).Variable());
     }
   }
@@ -902,7 +956,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // computation to remove redundant implication in the implication list of the
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
-    const Trail& trail, std::vector<Literal>* conflict,
+    const Trail& /*trail*/, std::vector<Literal>* conflict,
     absl::BitGenRef random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
@@ -1016,7 +1070,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 
 void BinaryImplicationGraph::RemoveFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (IsEmpty()) return;
 
   // Nothing to do if nothing changed since last call.
@@ -1033,7 +1087,7 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
       // The code assumes that everything is already propagated.
       // Otherwise we will remove implications that didn't propagate yet!
       for (const Literal lit : implications_[true_literal]) {
-        CHECK(trail_->Assignment().LiteralIsTrue(lit));
+        DCHECK(trail_->Assignment().LiteralIsTrue(lit));
       }
     }
 
@@ -1074,20 +1128,21 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
   // this shouldn't change the correctness of the code.
   at_most_ones_.clear();
   CleanUpAndAddAtMostOnes(/*base_index=*/0);
+  DCHECK(InvariantsAreOk());
 }
 
 class SccGraph {
  public:
-  using Implication =
+  using Implications =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
-  using AtMostOne =
+  using AtMostOnes =
       absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
       StronglyConnectedComponentsFinder<int32_t, SccGraph,
-                                        std::vector<std::vector<int32_t>>>;
+                                        CompactVectorVector<int32_t, int32_t>>;
 
-  explicit SccGraph(SccFinder* finder, Implication* graph,
-                    AtMostOne* at_most_ones,
+  explicit SccGraph(SccFinder* finder, Implications* graph,
+                    AtMostOnes* at_most_ones,
                     std::vector<Literal>* at_most_one_buffer)
       : finder_(*finder),
         implications_(*graph),
@@ -1119,7 +1174,7 @@ class SccGraph {
         if (at_most_one_already_explored_[start]) {
           // We never expand a node twice.
           const int first_node = previous_node_to_explore_at_most_one_[start];
-          CHECK_NE(node, first_node);
+          DCHECK_NE(node, first_node);
 
           if (finder_.NodeIsInCurrentDfsPath(first_node)) {
             // If the first node is not settled, then we do explore the
@@ -1150,9 +1205,10 @@ class SccGraph {
           previous_node_to_explore_at_most_one_[start] = node;
         }
 
-        for (int i = start;; ++i) {
-          const Literal l = at_most_one_buffer_[i];
-          if (l.Index() == kNoLiteralIndex) break;
+        const absl::Span<const Literal> amo =
+            absl::MakeSpan(&at_most_one_buffer_[start + 1],
+                           at_most_one_buffer_[start].Index().value());
+        for (const Literal l : amo) {
           if (l.Index() == node) continue;
           tmp_.push_back(l.NegatedIndex().value());
           if (finder_.NodeIsInCurrentDfsPath(l.Index().value())) {
@@ -1173,8 +1229,8 @@ class SccGraph {
 
  private:
   const SccFinder& finder_;
-  const Implication& implications_;
-  const AtMostOne& at_most_ones_;
+  const Implications& implications_;
+  const AtMostOnes& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
 
   mutable std::vector<int32_t> tmp_;
@@ -1199,9 +1255,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   DCHECK(InvariantsAreOk());
 
   // TODO(user): We could just do it directly though.
-  int num_fixed_during_scc = 0;
   const int32_t size(implications_.size());
-  std::vector<std::vector<int32_t>> scc;
+  CompactVectorVector<int32_t, int32_t> scc;
+  scc.reserve(size);
   double dtime = 0.0;
   {
     SccGraph::SccFinder finder;
@@ -1213,7 +1269,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (const Literal l : graph.to_fix_) {
       if (assignment.LiteralIsFalse(l)) return false;
       if (assignment.LiteralIsTrue(l)) continue;
-      ++num_fixed_during_scc;
       if (!FixLiteral(l)) return false;
     }
   }
@@ -1224,7 +1279,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
-  for (std::vector<int32_t>& component : scc) {
+  for (int index = 0; index < scc.size(); ++index) {
+    const absl::Span<int32_t> component = scc[index];
+
     // If one is fixed then all must be fixed. Note that the reason why the
     // propagation didn't already do that and we don't always get fixed
     // component of size 1 is because of the potential newly fixed literals
@@ -1248,11 +1305,11 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           if (!is_redundant_[l]) {
             ++num_redundant_literals_;
             is_redundant_.Set(l);
+            representative_of_[l] = l.Index();
           }
           const Literal to_fix = all_true ? l : l.Negated();
           if (assignment.LiteralIsFalse(to_fix)) return false;
           if (assignment.LiteralIsTrue(to_fix)) continue;
-          ++num_fixed_during_scc;
           if (!FixLiteral(l)) return false;
         }
 
@@ -1355,9 +1412,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   }
 
   time_limit_->AdvanceDeterministicTime(dtime);
-  if (num_fixed_during_scc > 0) {
-    RemoveFixedVariables();
-  }
+  const int num_fixed_during_scc =
+      trail_->Index() - num_processed_fixed_variables_;
+  RemoveFixedVariables();
   DCHECK(InvariantsAreOk());
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "
@@ -1377,7 +1434,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 // TODO(user): Track which literal have new implications, and only process
 // the antecedants of these.
 bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
-  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (!DetectEquivalences()) return false;
 
   // TODO(user): the situation with fixed variable is not really "clean".
@@ -1466,16 +1523,14 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       // We have a DAG, so direct_child could only be marked first.
       is_marked_.Clear(direct_child);
     }
-    CHECK(!is_marked_[root])
+    DCHECK(!is_marked_[root])
         << "DetectEquivalences() should have removed cycles!";
     is_marked_.Set(root);
 
     // Also mark all the ones reachable through the root AMOs.
     if (root < at_most_ones_.size()) {
       for (const int start : at_most_ones_[root]) {
-        for (int i = start;; ++i) {
-          const Literal l = at_most_one_buffer_[i];
-          if (l.Index() == kNoLiteralIndex) break;
+        for (const Literal l : AtMostOne(start)) {
           if (l.Index() == root) continue;
           if (!is_marked_[l.Negated()] && !is_redundant_[l.Negated()]) {
             is_marked_.SetUnsafe(l.Negated());
@@ -1493,10 +1548,10 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       const LiteralIndex i = marked_positions[marked_index];
       if (is_marked_[Literal(i).NegatedIndex()]) {
         // We tested that at the beginning.
-        CHECK(!trail_->Assignment().LiteralIsAssigned(Literal(root)));
+        DCHECK(!trail_->Assignment().LiteralIsAssigned(Literal(root)));
 
         // We propagate right away the binary implications so that we do not
-        // need to consider all antecedants of root in the transitive
+        // need to consider all antecedents of root in the transitive
         // reduction.
         ++num_fixed;
         if (!FixLiteral(Literal(root).Negated())) return false;
@@ -1518,7 +1573,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
         direct_implications[new_size++] = l;
       } else {
         tmp_removed_.push_back({Literal(root), l});
-        CHECK(!is_redundant_[l]);
+        DCHECK(!is_redundant_[l]);
       }
     }
     const int diff = direct_implications.size() - new_size;
@@ -1537,11 +1592,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   is_marked_.ClearAndResize(size);
 
   // If we aborted early, we might no longer have both a=>b and not(b)=>not(a).
-  // This is not desirable has some algo relies on this invariant. That code fix
-  // this.
-  if (num_fixed > 0) {
-    RemoveFixedVariables();
-  }
+  // This is not desirable has some algo relies on this invariant. We fix this
+  // here.
   if (aborted) {
     absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>> removed;
     for (const auto [a, b] : tmp_removed_) {
@@ -1558,6 +1610,9 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       implication.resize(new_size);
     }
   }
+  if (num_fixed > 0) {
+    RemoveFixedVariables();
+  }
   DCHECK(InvariantsAreOk());
 
   gtl::STLClearObject(&tmp_removed_);
@@ -1568,8 +1623,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
                          << num_new_redundant_implications << " literals. "
                          << num_fixed << " fixed. " << num_implications_
                          << " implications left. " << implications_.size()
-                         << " literals."
-                         << " dtime: " << dtime
+                         << " literals." << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get()
                          << (aborted ? " Aborted." : "");
   return true;
@@ -1577,8 +1631,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
 
 namespace {
 
-int ElementInIntersectionOrMinusOne(const std::vector<int>& a,
-                                    const std::vector<int>& b) {
+int ElementInIntersectionOrMinusOne(absl::Span<const int> a,
+                                    absl::Span<const int> b) {
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b.begin(), b.end()));
   if (a.empty() || b.empty()) return -1;
@@ -1669,7 +1723,7 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
     // Special case for clique of size 2, we don't expand them if they
     // are included in an already added clique.
     if (clique.size() == 2) {
-      CHECK_NE(clique[0], clique[1]);
+      DCHECK_NE(clique[0], clique[1]);
       const int dense_index = ElementInIntersectionOrMinusOne(
           max_cliques_containing[clique[0]], max_cliques_containing[clique[1]]);
       if (dense_index >= 0) {
@@ -1941,9 +1995,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
       if (!inserted) continue;
 
       int intersection_size = 0;
-      for (int i = start;; ++i) {
-        const Literal l = at_most_one_buffer_[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (to_consider[l]) ++intersection_size;
       }
       if (intersection_size > 1) {
@@ -1963,9 +2015,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 
     // Recompute size.
     int intersection_size = 0;
-    for (int i = start;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : AtMostOne(start)) {
       if (to_consider[l]) ++intersection_size;
     }
     if (intersection_size != old_size) {
@@ -1977,9 +2027,7 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
     }
 
     // Mark the literal of that at most one at false.
-    for (int i = start;; ++i) {
-      const Literal l = at_most_one_buffer_[i];
-      if (l.Index() == kNoLiteralIndex) break;
+    for (const Literal l : AtMostOne(start)) {
       to_consider[l] = false;
     }
 
@@ -2000,7 +2048,6 @@ BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
 void BinaryImplicationGraph::MarkDescendants(Literal root) {
   bfs_stack_.resize(implications_.size());
   auto* const stack = bfs_stack_.data();
-  auto* const amo_buffer = at_most_one_buffer_.data();
   const int amo_size = static_cast<int>(at_most_ones_.size());
   auto is_marked = is_marked_.const_view();
   auto is_redundant = is_redundant_.const_view();
@@ -2011,6 +2058,8 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
   is_marked_.Set(root);
   for (int j = 0; j < stack_size; ++j) {
     const Literal current = stack[j];
+    if (!implies_something_[current]) continue;
+
     for (const Literal l : implications_[current]) {
       if (!is_marked[l] && !is_redundant[l]) {
         is_marked_.SetUnsafe(l);
@@ -2020,9 +2069,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 
     if (current.Index() >= amo_size) continue;
     for (const int start : at_most_ones_[current]) {
-      for (int i = start;; ++i) {
-        const Literal l = amo_buffer[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (l == current) continue;
         if (!is_marked[l.NegatedIndex()] && !is_redundant[l.NegatedIndex()]) {
           is_marked_.SetUnsafe(l.NegatedIndex());
@@ -2085,7 +2132,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 // TODO(user): Mark fixed variable as is_removed_ for faster iteration?
 const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
     Literal literal) {
-  CHECK(!is_removed_[literal]);
+  DCHECK(!is_removed_[literal]);
 
   // Clear old state.
   for (const Literal l : direct_implications_) {
@@ -2095,7 +2142,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
 
   // Fill new state.
   const VariablesAssignment& assignment = trail_->Assignment();
-  CHECK(!assignment.LiteralIsAssigned(literal));
+  DCHECK(!assignment.LiteralIsAssigned(literal));
   for (const Literal l : implications_[literal]) {
     if (l == literal) continue;
     if (assignment.LiteralIsAssigned(l)) continue;
@@ -2106,12 +2153,10 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
   }
   if (literal.Index() < at_most_ones_.size()) {
     if (is_redundant_[literal]) {
-      CHECK(at_most_ones_[literal].empty());
+      DCHECK(at_most_ones_[literal].empty());
     }
     for (const int start : at_most_ones_[literal]) {
-      for (int i = start;; ++i) {
-        const Literal l = at_most_one_buffer_[i];
-        if (l.Index() == kNoLiteralIndex) break;
+      for (const Literal l : AtMostOne(start)) {
         if (l == literal) continue;
         if (assignment.LiteralIsAssigned(l)) continue;
         if (!is_removed_[l] && !in_direct_implications_[l.NegatedIndex()]) {
@@ -2125,10 +2170,42 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
   return direct_implications_;
 }
 
+absl::Span<const Literal> BinaryImplicationGraph::AtMostOne(int start) const {
+  const int size = at_most_one_buffer_[start].Index().value();
+  return absl::MakeSpan(&at_most_one_buffer_[start + 1], size);
+}
+
+LiteralIndex BinaryImplicationGraph::RandomImpliedLiteral(Literal lhs) {
+  const int size1 = implications_[lhs].size();
+  const int size2 =
+      lhs.Index() < at_most_ones_.size() ? at_most_ones_[lhs].size() : 0;
+  if (size1 + size2 == 0) return kNoLiteralIndex;
+
+  const int choice = absl::Uniform<int>(*random_, 0, size1 + size2);
+  if (choice < size1) {
+    return implications_[lhs][choice].Index();
+  }
+
+  const absl::Span<const Literal> amo =
+      AtMostOne(at_most_ones_[lhs][choice - size1]);
+  CHECK_GE(amo.size(), 2);
+  const int first_choice = absl::Uniform<int>(*random_, 0, amo.size());
+  const Literal lit = amo[first_choice];
+  if (lit != lhs) return lit.NegatedIndex();
+
+  // We are unlucky and just picked the wrong literal: take a different one.
+  int next_choice = absl::Uniform<int>(*random_, 0, amo.size() - 1);
+  if (next_choice >= first_choice) {
+    next_choice += 1;
+  }
+  CHECK_NE(amo[next_choice], lhs);
+  return amo[next_choice].NegatedIndex();
+}
+
 bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
                                                         bool* is_unsat) {
   const int saved_index = propagation_trail_index_;
-  CHECK_EQ(propagation_trail_index_, trail_->Index());  // Propagation done.
+  DCHECK_EQ(propagation_trail_index_, trail_->Index());  // Propagation done.
 
   const VariablesAssignment& assignment = trail_->Assignment();
   if (assignment.VariableIsAssigned(var)) return false;
@@ -2161,7 +2238,7 @@ int64_t BinaryImplicationGraph::NumImplicationOnVariableRemoval(
     result += s1;
 
     // We should have dealt with that in FindFailedLiteralAroundVar().
-    CHECK(!in_direct_implications_[l]);
+    DCHECK(!in_direct_implications_[l]);
 
     // l => literal => l: equivalent variable!
     if (in_direct_implications_[l.NegatedIndex()]) result--;
@@ -2173,10 +2250,14 @@ int64_t BinaryImplicationGraph::NumImplicationOnVariableRemoval(
 void BinaryImplicationGraph::RemoveBooleanVariable(
     BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses) {
   const Literal literal(var, true);
+  DCHECK(!is_removed_[literal.Index()]);
+  DCHECK(!is_redundant_[literal.Index()]);
+
   direct_implications_of_negated_literal_ =
       DirectImplications(literal.Negated());
   for (const Literal b : DirectImplications(literal)) {
     if (is_removed_[b]) continue;
+    DCHECK(!is_redundant_[b]);
     estimated_sizes_[b.NegatedIndex()]--;
     for (const Literal a_negated : direct_implications_of_negated_literal_) {
       if (a_negated.Negated() == b) continue;
@@ -2186,6 +2267,7 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   }
   for (const Literal a_negated : direct_implications_of_negated_literal_) {
     if (is_removed_[a_negated]) continue;
+    DCHECK(!is_redundant_[a_negated]);
     estimated_sizes_[a_negated.NegatedIndex()]--;
   }
 
@@ -2216,17 +2298,50 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   }
 }
 
-void BinaryImplicationGraph::CleanupAllRemovedVariables() {
+void BinaryImplicationGraph::RemoveAllRedundantVariables(
+    std::deque<std::vector<Literal>>* postsolve_clauses) {
   for (LiteralIndex a(0); a < implications_.size(); ++a) {
-    if (is_removed_[a]) {
-      DCHECK(implications_[a].empty());
+    if (is_redundant_[a] && !is_removed_[a]) {
+      postsolve_clauses->push_back(
+          {Literal(a), Literal(RepresentativeOf(Literal(a))).Negated()});
+      is_removed_[a] = true;
+      gtl::STLClearObject(&(implications_[a]));
       continue;
     }
 
     int new_size = 0;
     auto& implication = implications_[a];
     for (const Literal l : implication) {
-      if (!is_removed_[l]) implication[new_size++] = l;
+      if (!is_redundant_[l]) {
+        implication[new_size++] = l;
+      }
+    }
+    implication.resize(new_size);
+  }
+}
+
+void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
+  const VariablesAssignment& assignment = trail_->Assignment();
+  for (LiteralIndex a(0); a < implications_.size(); ++a) {
+    if (is_removed_[a] || assignment.LiteralIsAssigned(Literal(a))) {
+      if (DEBUG_MODE && assignment.LiteralIsTrue(Literal(a))) {
+        // The code assumes that everything is already propagated.
+        // Otherwise we will remove implications that didn't propagate yet!
+        for (const Literal lit : implications_[a]) {
+          DCHECK(trail_->Assignment().LiteralIsTrue(lit));
+        }
+      }
+
+      gtl::STLClearObject(&(implications_[a]));
+      continue;
+    }
+
+    int new_size = 0;
+    auto& implication = implications_[a];
+    for (const Literal l : implication) {
+      if (!is_removed_[l] && !assignment.LiteralIsTrue(l)) {
+        implication[new_size++] = l;
+      }
     }
     implication.resize(new_size);
   }
@@ -2234,6 +2349,8 @@ void BinaryImplicationGraph::CleanupAllRemovedVariables() {
   // Clean-up at most ones.
   at_most_ones_.clear();
   CleanUpAndAddAtMostOnes(/*base_index=*/0);
+
+  // Note that to please the invariant() we also removed fixed literal above.
   DCHECK(InvariantsAreOk());
 }
 
@@ -2251,13 +2368,16 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
       }
       continue;
     }
+    if (is_removed_[a_index]) {
+      if (!implications_[a_index].empty()) {
+        LOG(ERROR) << "Removed literal has non-cleared implications";
+        return false;
+      }
+      continue;
+    }
     if (is_redundant_[a_index]) {
       ++num_redundant;
-
-      // TODO(user): nothing really prevent other parts of the solver to re-add
-      // implication containing redundant literal. It should be up to us to
-      // filter them and replace by the representative...
-      if (false && implications_[a_index].size() != 1) {
+      if (implications_[a_index].size() != 1) {
         LOG(ERROR)
             << "Redundant literal should only point to its representative "
             << Literal(a_index) << " => " << implications_[a_index];
@@ -2283,20 +2403,30 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   for (LiteralIndex a_index(0); a_index < implications_.size(); ++a_index) {
     const LiteralIndex not_a_index = Literal(a_index).NegatedIndex();
     for (const Literal b : implications_[a_index]) {
+      if (is_removed_[b]) {
+        LOG(ERROR) << "A removed literal still appear! " << Literal(a_index)
+                   << " => " << b;
+        return false;
+      }
+
       if (!seen.contains({b.NegatedIndex(), not_a_index})) {
         LOG(ERROR) << "We have " << Literal(a_index) << " => " << b
                    << " but not the reverse implication!";
-        LOG(ERROR) << is_redundant_[a_index] << " "
-                   << trail_->Assignment().LiteralIsAssigned(Literal(a_index));
-        LOG(ERROR) << is_redundant_[b] << " "
-                   << trail_->Assignment().LiteralIsAssigned(b);
+        LOG(ERROR) << "redundant[a]: " << is_redundant_[a_index]
+                   << " assigned[a]: "
+                   << trail_->Assignment().LiteralIsAssigned(Literal(a_index))
+                   << " removed[a]: " << is_removed_[a_index]
+                   << " redundant[b]: " << is_redundant_[b] << " assigned[b]: "
+                   << trail_->Assignment().LiteralIsAssigned(b)
+                   << " removed[b]: " << is_removed_[b];
+
         return false;
       }
 
       // Test that if we have a dag, our topo order is correct.
       if (is_dag_ && !is_redundant_[b] && !is_redundant_[a_index]) {
-        CHECK_NE(lit_to_order[b], -1);
-        CHECK_LE(lit_to_order[b], lit_to_order[a_index]);
+        DCHECK_NE(lit_to_order[b], -1);
+        DCHECK_LE(lit_to_order[b], lit_to_order[a_index]);
       }
     }
   }
@@ -2308,27 +2438,39 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
       lit_to_start.insert({i, start});
     }
   }
-  int index = 0;
-  int start = 0;
-  for (int i = 0; i < at_most_one_buffer_.size(); ++i) {
-    if (at_most_one_buffer_[i].Index() == kNoLiteralIndex) {
-      ++index;
-      start = i + 1;
-      continue;
+
+  for (int start = 0; start < at_most_one_buffer_.size();) {
+    const absl::Span<const Literal> amo = AtMostOne(start);
+    for (const Literal l : amo) {
+      if (is_removed_[l]) {
+        LOG(ERROR) << "A removed literal still appear in an amo " << l;
+        return false;
+      }
+      if (!lit_to_start.contains({l, start})) {
+        return false;
+      }
     }
-    if (!lit_to_start.contains({at_most_one_buffer_[i], start})) {
-      return false;
-    }
+    start += amo.size() + 1;
   }
 
   return true;
+}
+
+absl::Span<const Literal> BinaryImplicationGraph::NextAtMostOne() {
+  if (at_most_one_iterator_ >= at_most_one_buffer_.size()) {
+    return absl::Span<const Literal>();
+  }
+
+  const absl::Span<const Literal> result = AtMostOne(at_most_one_iterator_);
+  at_most_one_iterator_ += result.size() + 1;
+  return result;
 }
 
 // ----- SatClause -----
 
 // static
 SatClause* SatClause::Create(absl::Span<const Literal> literals) {
-  CHECK_GE(literals.size(), 2);
+  DCHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
       ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
   clause->size_ = literals.size();
@@ -2342,7 +2484,7 @@ SatClause* SatClause::Create(absl::Span<const Literal> literals) {
 // any of the watched literal is assigned, then the clause is necessarily true.
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment) {
-  DCHECK(IsAttached());
+  DCHECK(!IsRemoved());
   if (assignment.VariableIsAssigned(literals_[0].Variable()) ||
       assignment.VariableIsAssigned(literals_[1].Variable())) {
     DCHECK(IsSatisfied(assignment));

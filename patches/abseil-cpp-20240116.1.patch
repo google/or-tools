@@ -1,0 +1,91 @@
+diff --git a/CMake/AbseilDll.cmake b/CMake/AbseilDll.cmake
+index 47f3beeb..43217c85 100644
+--- a/CMake/AbseilDll.cmake
++++ b/CMake/AbseilDll.cmake
+@@ -624,31 +624,44 @@ set(ABSL_INTERNAL_TEST_DLL_TARGETS
+ 
+ include(CheckCXXSourceCompiles)
+ 
+-check_cxx_source_compiles(
+-  [==[
+-#ifdef _MSC_VER
+-#  if _MSVC_LANG < 201703L
+-#    error "The compiler defaults or is configured for C++ < 17"
+-#  endif
+-#elif __cplusplus < 201703L
+-#  error "The compiler defaults or is configured for C++ < 17"
+-#endif
+-int main() { return 0; }
+-]==]
++message(WARNING "ABSL_CXX_STANDARD: ${ABSL_CXX_STANDARD}")
++message(WARNING "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
++message(WARNING "CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
++message(WARNING "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
++
++if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
++  set(ABSL_INTERNAL_AT_LEAST_CXX17 TRUE)
++else()
++  check_cxx_source_compiles(
++    [==[
++  #ifdef _MSC_VER
++  #  if _MSVC_LANG < 201703L
++  #    error "The compiler defaults or is configured for C++ < 17"
++  #  endif
++  #elif __cplusplus < 201703L
++  #  error "The compiler defaults or is configured for C++ < 17"
++  #endif
++  int main() { return 0; }
++  ]==]
+   ABSL_INTERNAL_AT_LEAST_CXX17)
++endif()
+ 
+-check_cxx_source_compiles(
+-  [==[
+-#ifdef _MSC_VER
+-#  if _MSVC_LANG < 202002L
+-#    error "The compiler defaults or is configured for C++ < 20"
+-#  endif
+-#elif __cplusplus < 202002L
+-#  error "The compiler defaults or is configured for C++ < 20"
+-#endif
+-int main() { return 0; }
+-]==]
++if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
++  set(ABSL_INTERNAL_AT_LEAST_CXX20 TRUE)
++else()
++  check_cxx_source_compiles(
++    [==[
++  #ifdef _MSC_VER
++  #  if _MSVC_LANG < 202002L
++  #    error "The compiler defaults or is configured for C++ < 20"
++  #  endif
++  #elif __cplusplus < 202002L
++  #  error "The compiler defaults or is configured for C++ < 20"
++  #endif
++  int main() { return 0; }
++  ]==]
+   ABSL_INTERNAL_AT_LEAST_CXX20)
++endif()
+ 
+ if(ABSL_INTERNAL_AT_LEAST_CXX20)
+   set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_20)
+@@ -656,6 +669,7 @@ elseif(ABSL_INTERNAL_AT_LEAST_CXX17)
+   set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_17)
+ else()
+   set(ABSL_INTERNAL_CXX_STD_FEATURE cxx_std_14)
++  message(FATAL_ERROR "Should not pass here !!!")
+ endif()
+ 
+ function(absl_internal_dll_contains)
+diff --git a/absl/container/CMakeLists.txt b/absl/container/CMakeLists.txt
+index 128cc0e9..11d65d55 100644
+--- a/absl/container/CMakeLists.txt
++++ b/absl/container/CMakeLists.txt
+@@ -213,6 +213,7 @@ absl_cc_library(
+   DEPS
+     absl::config
+     GTest::gmock
++  TESTONLY
+ )
+ 
+ absl_cc_test(

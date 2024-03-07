@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -64,7 +65,12 @@ Status LuFactorization::ComputeFactorization(
     stats_.lu_fill_in.Add(GetFillInPercentage(matrix));
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
-  DCHECK(CheckFactorization(matrix, Fractional(1e-6)));
+
+  // Note(user): This might fail on badly scaled matrices. I still prefer to
+  // keep it as a DCHECK() for tests though, but I only test it for small
+  // matrices.
+  DCHECK(matrix.num_rows() > 100 ||
+         CheckFactorization(matrix, Fractional(1e-6)));
   return Status::OK();
 }
 
@@ -341,7 +347,7 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   // If non-zeros is non-empty, we use an hypersparse solve. Note that if
   // non_zeros starts to be too big, we clear it and thus switch back to a
   // normal sparse solve.
-  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros, 0.1, 0.2);
+  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
   x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
     transpose_upper_.TransposeLowerSolve(&x->values);

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -112,6 +112,7 @@ class CpModelMapping {
   template <typename List>
   std::vector<IntegerVariable> Integers(const List& list) const {
     std::vector<IntegerVariable> result;
+    result.reserve(list.size());
     for (const auto i : list) result.push_back(Integer(i));
     return result;
   }
@@ -119,6 +120,7 @@ class CpModelMapping {
   template <typename ProtoIndices>
   std::vector<sat::Literal> Literals(const ProtoIndices& indices) const {
     std::vector<sat::Literal> result;
+    result.reserve(indices.size());
     for (const int i : indices) result.push_back(CpModelMapping::Literal(i));
     return result;
   }
@@ -126,6 +128,7 @@ class CpModelMapping {
   template <typename List>
   std::vector<AffineExpression> Affines(const List& list) const {
     std::vector<AffineExpression> result;
+    result.reserve(list.size());
     for (const auto& i : list) result.push_back(Affine(i));
     return result;
   }
@@ -133,6 +136,7 @@ class CpModelMapping {
   template <typename ProtoIndices>
   std::vector<IntervalVariable> Intervals(const ProtoIndices& indices) const {
     std::vector<IntervalVariable> result;
+    result.reserve(indices.size());
     for (const int i : indices) result.push_back(Interval(i));
     return result;
   }

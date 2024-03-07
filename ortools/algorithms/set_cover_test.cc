@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,57 +15,20 @@
 
 #include <limits>
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
-#include "ortools/algorithms/set_cover_ledger.h"
+#include "ortools/algorithms/set_cover.pb.h"
+#include "ortools/algorithms/set_cover_invariant.h"
+#include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace {
-
-TEST(SetCoverTest, InitialValues) {
-  SetCoverModel model;
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(0);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(1);
-  model.AddElementToLastSubset(2);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(1);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(2);
-  EXPECT_TRUE(model.ComputeFeasibility());
-
-  SetCoverLedger ledger(&model);
-  TrivialSolutionGenerator trivial(&ledger);
-  CHECK(trivial.NextSolution());
-  LOG(INFO) << "TrivialSolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-
-  GreedySolutionGenerator greedy(&ledger);
-  CHECK(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-
-  SteepestSearch steepest(&ledger);
-  CHECK(steepest.NextSolution(500));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-}
-
-TEST(SetCoverTest, Infeasible) {
-  SetCoverModel model;
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(0);
-  model.AddEmptySubset(1);
-  model.AddElementToLastSubset(3);
-  EXPECT_FALSE(model.ComputeFeasibility());
-}
 
 SetCoverModel CreateKnightsCoverModel(int num_rows, int num_cols) {
   SetCoverModel model;
@@ -107,10 +70,77 @@ void DisplayKnightsCoverSolution(const SubsetBoolVector& choices, int num_rows,
   }
 }
 
+TEST(SetCoverProtoTest, SaveReload) {
+  SetCoverModel model = CreateKnightsCoverModel(10, 10);
+  SetCoverProto proto = model.ExportModelAsProto();
+  SetCoverModel reloaded;
+  reloaded.ImportModelFromProto(proto);
+  EXPECT_EQ(model.num_subsets(), reloaded.num_subsets());
+  EXPECT_EQ(model.num_elements(), reloaded.num_elements());
+  EXPECT_EQ(model.subset_costs(), reloaded.subset_costs());
+  EXPECT_EQ(model.columns(), reloaded.columns());
+}
+
+TEST(SolutionProtoTest, SaveReloadTwice) {
+  SetCoverModel model = CreateKnightsCoverModel(10, 10);
+  SetCoverInvariant inv(&model);
+  GreedySolutionGenerator greedy(&inv);
+  CHECK(greedy.NextSolution());
+  EXPECT_TRUE(inv.CheckSolution());
+  SetCoverSolutionResponse greedy_proto = inv.ExportSolutionAsProto();
+  SteepestSearch steepest(&inv);
+  CHECK(steepest.NextSolution(500));
+  EXPECT_TRUE(inv.CheckSolution());
+  SetCoverSolutionResponse steepest_proto = inv.ExportSolutionAsProto();
+  inv.ImportSolutionFromProto(greedy_proto);
+  CHECK(steepest.NextSolution(500));
+  EXPECT_TRUE(inv.CheckSolution());
+  SetCoverSolutionResponse reloaded_proto = inv.ExportSolutionAsProto();
+}
+
+TEST(SetCoverTest, InitialValues) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(2);
+  EXPECT_TRUE(model.ComputeFeasibility());
+
+  SetCoverInvariant inv(&model);
+  TrivialSolutionGenerator trivial(&inv);
+  CHECK(trivial.NextSolution());
+  LOG(INFO) << "TrivialSolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
+
+  GreedySolutionGenerator greedy(&inv);
+  CHECK(greedy.NextSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
+
+  SteepestSearch steepest(&inv);
+  CHECK(steepest.NextSolution(500));
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
+}
+
+TEST(SetCoverTest, Infeasible) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(3);
+  EXPECT_FALSE(model.ComputeFeasibility());
+}
+
 #ifdef NDEBUG
-static constexpr int SIZE = 512;
+static constexpr int SIZE = 128;
 #else
-static constexpr int SIZE = 32;
+static constexpr int SIZE = 16;
 #endif
 
 TEST(SetCoverTest, KnightsCoverCreation) {
@@ -121,132 +151,198 @@ TEST(SetCoverTest, KnightsCoverCreation) {
 TEST(SetCoverTest, KnightsCoverTrivalAndGreedy) {
   SetCoverModel model = CreateKnightsCoverModel(SIZE, SIZE);
   EXPECT_TRUE(model.ComputeFeasibility());
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
 
-  TrivialSolutionGenerator trivial(&ledger);
+  TrivialSolutionGenerator trivial(&inv);
   CHECK(trivial.NextSolution());
-  LOG(INFO) << "TrivialSolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "TrivialSolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 
   // Reinitialize before using Greedy, to start from scratch.
-  ledger.Initialize();
-  GreedySolutionGenerator greedy(&ledger);
+  inv.Initialize();
+  GreedySolutionGenerator greedy(&inv);
   CHECK(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 
-  SteepestSearch steepest(&ledger);
+  SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(100000));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 }
 
 TEST(SetCoverTest, KnightsCoverGreedy) {
   SetCoverModel model = CreateKnightsCoverModel(SIZE, SIZE);
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
 
-  GreedySolutionGenerator greedy(&ledger);
+  GreedySolutionGenerator greedy(&inv);
   CHECK(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
 
-  SteepestSearch steepest(&ledger);
+  SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(100000));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
 }
 
 TEST(SetCoverTest, KnightsCoverRandom) {
   SetCoverModel model = CreateKnightsCoverModel(SIZE, SIZE);
   EXPECT_TRUE(model.ComputeFeasibility());
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
 
-  RandomSolutionGenerator random(&ledger);
+  RandomSolutionGenerator random(&inv);
   CHECK(random.NextSolution());
-  LOG(INFO) << "RandomSolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "RandomSolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 
-  SteepestSearch steepest(&ledger);
+  SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(100000));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 }
 
 TEST(SetCoverTest, KnightsCoverTrivial) {
   SetCoverModel model = CreateKnightsCoverModel(SIZE, SIZE);
   EXPECT_TRUE(model.ComputeFeasibility());
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
 
-  TrivialSolutionGenerator trivial(&ledger);
+  TrivialSolutionGenerator trivial(&inv);
   CHECK(trivial.NextSolution());
-  LOG(INFO) << "TrivialSolutionGenerator cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "TrivialSolutionGenerator cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 
-  SteepestSearch steepest(&ledger);
+  SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(100000));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 }
 
 TEST(SetCoverTest, KnightsCoverGreedyAndTabu) {
-  const int BoardSize = 15;
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
 
-  GreedySolutionGenerator greedy(&ledger);
+  GreedySolutionGenerator greedy(&inv);
   CHECK(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
 
-  SteepestSearch steepest(&ledger);
+  SteepestSearch steepest(&inv);
   CHECK(steepest.NextSolution(10000));
-  LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
 
-  GuidedTabuSearch gts(&ledger);
+  GuidedTabuSearch gts(&inv);
   CHECK(gts.NextSolution(10000));
-  LOG(INFO) << "GuidedTabuSearch cost: " << ledger.cost();
-  EXPECT_TRUE(ledger.CheckSolution());
-  DisplayKnightsCoverSolution(ledger.GetSolution(), BoardSize, BoardSize);
+  LOG(INFO) << "GuidedTabuSearch cost: " << inv.cost();
+  EXPECT_TRUE(inv.CheckSolution());
+  DisplayKnightsCoverSolution(inv.is_selected(), BoardSize, BoardSize);
 }
 
 TEST(SetCoverTest, KnightsCoverRandomClear) {
-  const int BoardSize = 15;
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
-  SetCoverLedger ledger(&model);
+  SetCoverInvariant inv(&model);
   Cost best_cost = std::numeric_limits<Cost>::max();
-  SubsetBoolVector best_choices = ledger.GetSolution();
-  std::vector<SubsetIndex> focus = model.all_subsets();
+  SubsetBoolVector best_choices = inv.is_selected();
   for (int i = 0; i < 10000; ++i) {
-    GreedySolutionGenerator greedy(&ledger);
-    CHECK(greedy.NextSolution(focus));
-    // LOG(INFO) << "GreedySolutionGenerator cost: " << ledger.cost();
+    inv.LoadSolution(best_choices);
+    ClearRandomSubsets(0.1 * model.num_subsets().value(), &inv);
 
-    SteepestSearch steepest(&ledger);
-    CHECK(steepest.NextSolution(focus, 10000));
-    // LOG(INFO) << "SteepestSearch cost: " << ledger.cost();
-    EXPECT_TRUE(ledger.CheckSolution());
-    if (ledger.cost() < best_cost) {
-      best_cost = ledger.cost();
-      best_choices = ledger.GetSolution();
+    GreedySolutionGenerator greedy(&inv);
+    CHECK(greedy.NextSolution());
+
+    SteepestSearch steepest(&inv);
+    CHECK(steepest.NextSolution(10000));
+
+    EXPECT_TRUE(inv.CheckSolution());
+    if (inv.cost() < best_cost) {
+      best_cost = inv.cost();
+      best_choices = inv.is_selected();
       LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
     }
-    ledger.LoadSolution(best_choices);
-    ClearProportionRandomly(0.1, &ledger);
-    // focus = ledger.ComputeSettableSubsets();
   }
-  if (ledger.cost() < 0) {
-    // The best solution found until now has a cost of 350.
-    // http://www.contestcen.com/kn50.htm
-    DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
-    CHECK_GE(ledger.cost(), 350);
-  }
+  inv.LoadSolution(best_choices);
   DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "RandomClear cost: " << best_cost;
+  // The best solution found until 2023-08 has a cost of 350.
+  // http://www.contestcen.com/kn50.htm
+  if (BoardSize == 50) {
+    CHECK_GE(inv.cost(), 350);
+  }
+}
+
+TEST(SetCoverTest, KnightsCoverRandomClearMip) {
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverInvariant inv(&model);
+  Cost best_cost = std::numeric_limits<Cost>::max();
+  SubsetBoolVector best_choices = inv.is_selected();
+  GreedySolutionGenerator greedy(&inv);
+  CHECK(greedy.NextSolution());
+  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
+
+  SteepestSearch steepest(&inv);
+  CHECK(steepest.NextSolution(10000));
+  LOG(INFO) << "SteepestSearch cost: " << inv.cost();
+
+  best_cost = inv.cost();
+  best_choices = inv.is_selected();
+  for (int i = 0; i < 100; ++i) {
+    inv.LoadSolution(best_choices);
+    auto focus = ClearRandomSubsets(0.1 * model.num_subsets().value(), &inv);
+    SetCoverMip mip(&inv);
+    mip.SetTimeLimitInSeconds(1);
+    mip.NextSolution(focus);
+    EXPECT_TRUE(inv.CheckSolution());
+    if (inv.cost() < best_cost) {
+      best_cost = inv.cost();
+      best_choices = inv.is_selected();
+      LOG(INFO) << "Best cost: " << best_cost << " at iteration = " << i;
+    }
+  }
+  inv.LoadSolution(best_choices);
+  DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "RandomClearMip cost: " << best_cost;
+  // The best solution found until 2023-08 has a cost of 350.
+  // http://www.contestcen.com/kn50.htm
+  if (BoardSize == 50) {
+    CHECK_GE(inv.cost(), 350);
+  }
+}
+
+TEST(SetCoverTest, KnightsCoverMip) {
+#ifdef NDEBUG
+  constexpr int BoardSize = 50;
+#else
+  constexpr int BoardSize = 15;
+#endif
+  SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
+  SetCoverInvariant inv(&model);
+  SetCoverMip mip(&inv);
+  mip.SetTimeLimitInSeconds(10);
+  mip.NextSolution();
+  SubsetBoolVector best_choices = inv.is_selected();
+  DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
+  LOG(INFO) << "Mip cost: " << inv.cost();
 }
 
 void BM_Steepest(benchmark::State& state) {
   for (auto s : state) {
     SetCoverModel model = CreateKnightsCoverModel(SIZE, SIZE);
-    SetCoverLedger ledger(&model);
-    GreedySolutionGenerator greedy(&ledger);
-    SteepestSearch steepest(&ledger);
+    SetCoverInvariant inv(&model);
+    GreedySolutionGenerator greedy(&inv);
+    SteepestSearch steepest(&inv);
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -38,9 +38,8 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
 /// Variant based on local optimizers, for which each route is handled
 /// separately.
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
-    Solver* solver, LocalDimensionCumulOptimizer* local_optimizer,
-    LocalDimensionCumulOptimizer* local_mp_optimizer, SearchMonitor* monitor,
-    bool optimize_and_pack = false,
+    Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
+    LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack = false,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
 
@@ -51,11 +50,6 @@ DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     bool optimize_and_pack = false,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
-
-/// Variant taking into account resources.
-DecisionBuilder* MakeSetCumulsFromResourceAssignmentCosts(
-    Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer, SearchMonitor* monitor);
 
 /// A decision builder that monitors solutions, and tries to fix dimension
 /// variables whose route did not change in the candidate solution.

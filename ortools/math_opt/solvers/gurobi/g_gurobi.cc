@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,20 +16,22 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/cleanup.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gurobi/environment.h"
+#include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
 namespace operations_research::math_opt {
@@ -151,33 +153,23 @@ void GurobiFreeEnv::operator()(GRBenv* const env) const {
 
 absl::StatusOr<GRBenvUniquePtr> GurobiNewPrimaryEnv(
     const std::optional<GurobiIsvKey>& isv_key) {
-  GRBenv* naked_primary_env = nullptr;
-  int err;
-  std::string_view init_env_method;
   if (isv_key.has_value()) {
-    err = GRBisqp(&naked_primary_env, /*logfilename=*/
-                  nullptr, isv_key->name.c_str(),
-                  isv_key->application_name.c_str(), isv_key->expiration,
-                  isv_key->key.c_str());
-    init_env_method = "GRBisqp()";
-  } else {
-    err = GRBloadenv(&naked_primary_env, /*logfilename=*/nullptr);
-    init_env_method = "GRBloadenv()";
+    ASSIGN_OR_RETURN(GRBenv* const naked_primary_env,
+                     NewPrimaryEnvFromISVKey(*isv_key));
+    return GRBenvUniquePtr(naked_primary_env);
   }
-  if (err != kGrbOk) {
-    // Surprisingly, even when Gurobi fails to load the environment, it still
-    // creates one. Here we make sure to free it properly.
-    //
-    // We can also use it with GRBgeterrormsg() to get the associated error
-    // message that goes with the error and the contains additional data like
-    // the user, the host and the hostid.
-    const GRBenvUniquePtr primary_env(naked_primary_env);
-    return util::InvalidArgumentErrorBuilder()
-           << "failed to create Gurobi primary environment, " << init_env_method
-           << " returned the error (" << err
-           << "): " << GRBgeterrormsg(primary_env.get());
+  GRBenv* naked_primary_env = nullptr;
+  const int err = GRBloadenv(&naked_primary_env, /*logfilename=*/nullptr);
+  // Surprisingly, Gurobi will still create an environment if initialization
+  // fails, so we want this wrapper even in the error case to free it properly.
+  GRBenvUniquePtr primary_env(naked_primary_env);
+  if (err == kGrbOk) {
+    return primary_env;
   }
-  return GRBenvUniquePtr(naked_primary_env);
+  return util::InvalidArgumentErrorBuilder()
+         << "failed to create Gurobi primary environment, GRBloadenv() "
+            "returned the error ("
+         << err << "): " << GRBgeterrormsg(primary_env.get());
 }
 
 absl::StatusOr<std::unique_ptr<Gurobi>> Gurobi::NewWithSharedPrimaryEnv(

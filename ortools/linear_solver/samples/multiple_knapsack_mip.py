@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -90,7 +90,8 @@ def main():
             for i in data["all_items"]:
                 if x[i, b].solution_value() > 0:
                     print(
-                        f"Item {i} weight: {data['weights'][i]} value: {data['values'][i]}"
+                        f"Item {i} weight: {data['weights'][i]} value:"
+                        f" {data['values'][i]}"
                     )
                     bin_weight += data["weights"][i]
                     bin_value += data["values"][i]

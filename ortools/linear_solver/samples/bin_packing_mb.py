@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,7 +25,7 @@ from ortools.linear_solver.python import model_builder
 
 # [START program_part1]
 # [START data_model]
-def create_data_model():
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create the data for the example."""
 
     items_str = """

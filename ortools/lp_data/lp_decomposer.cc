@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,10 +16,15 @@
 #include <algorithm>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace glop {
@@ -135,7 +140,7 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
 }
 
 DenseRow LPDecomposer::AggregateAssignments(
-    const std::vector<DenseRow>& assignments) const {
+    absl::Span<const DenseRow> assignments) const {
   CHECK_EQ(assignments.size(), clusters_.size());
 
   absl::MutexLock mutex_lock(&mutex_);

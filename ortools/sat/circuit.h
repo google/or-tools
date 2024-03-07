@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -244,7 +244,7 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // ============================================================================
 
 // This just wraps CircuitPropagator. See the comment there to see what this
-// does. Note that any nodes with no outoing or no incoming arc will cause the
+// does. Note that any nodes with no outgoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
 std::function<void(Model*)> SubcircuitConstraint(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -305,10 +305,10 @@ bool SatPresolver::ProcessAllClauses() {
 
   // Because on large problem we don't have a budget to process all clauses,
   // lets start by the smallest ones first.
-  std::sort(clause_to_process_.begin(), clause_to_process_.end(),
-            [this](ClauseIndex c1, ClauseIndex c2) {
-              return clauses_[c1].size() < clauses_[c2].size();
-            });
+  std::stable_sort(clause_to_process_.begin(), clause_to_process_.end(),
+                   [this](ClauseIndex c1, ClauseIndex c2) {
+                     return clauses_[c1].size() < clauses_[c2].size();
+                   });
   while (!clause_to_process_.empty()) {
     const ClauseIndex ci = clause_to_process_.front();
     in_clause_to_process_[ci] = false;
@@ -381,6 +381,7 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   return true;
 }
 
+// TODO(user): Put work limit in place !
 void SatPresolver::PresolveWithBva() {
   var_pq_elements_.clear();  // so we don't update it.
   InitializeBvaPriorityQueue();
@@ -388,6 +389,7 @@ void SatPresolver::PresolveWithBva() {
     const LiteralIndex lit = bva_pq_.Top()->literal;
     bva_pq_.Pop();
     SimpleBva(lit);
+    if (time_limit_ != nullptr && time_limit_->LimitReached()) break;
   }
 }
 
@@ -403,7 +405,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   m_cls_ = literal_to_clauses_[l];
 
   int reduction = 0;
-  while (true) {
+  for (int loop = 0; loop < 100; ++loop) {
     LiteralIndex lmax = kNoLiteralIndex;
     int max_size = 0;
 
@@ -1265,169 +1267,6 @@ void ProbeAndFindEquivalentLiteral(
                            << solver->NumVariables()
                            << " wtime: " << timer.Get();
   }
-}
-
-SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
-                                    TimeLimit* time_limit,
-                                    std::vector<bool>* solution,
-                                    DratProofHandler* drat_proof_handler,
-                                    SolverLogger* logger) {
-  // We save the initial parameters.
-  const SatParameters parameters = (*solver)->parameters();
-  SatPostsolver postsolver((*solver)->NumVariables());
-
-  const bool log_info = parameters.log_search_progress() || VLOG_IS_ON(1);
-
-  // Some problems are formulated in such a way that our SAT heuristics
-  // simply works without conflict. Get them out of the way first because it
-  // is possible that the presolve lose this "lucky" ordering. This is in
-  // particular the case on the SAT14.crafted.complete-xxx-... problems.
-  {
-    Model* model = (*solver)->model();
-    const double dtime = std::min(1.0, time_limit->GetDeterministicTimeLeft());
-    if (!LookForTrivialSatSolution(dtime, model, logger)) {
-      VLOG(1) << "UNSAT during probing.";
-      return SatSolver::INFEASIBLE;
-    }
-    const int num_variables = (*solver)->NumVariables();
-    if ((*solver)->LiteralTrail().Index() == num_variables) {
-      VLOG(1) << "Problem solved by trivial heuristic!";
-      solution->clear();
-      for (int i = 0; i < (*solver)->NumVariables(); ++i) {
-        solution->push_back((*solver)->Assignment().LiteralIsTrue(
-            Literal(BooleanVariable(i), true)));
-      }
-      return SatSolver::FEASIBLE;
-    }
-  }
-
-  // We use a new block so the memory used by the presolver can be
-  // reclaimed as soon as it is no longer needed.
-  const int max_num_passes = 4;
-  for (int i = 0; i < max_num_passes && !time_limit->LimitReached(); ++i) {
-    const int saved_num_variables = (*solver)->NumVariables();
-
-    // Run the new preprocessing code. Note that the probing that it does is
-    // faster than the ProbeAndFindEquivalentLiteral() call below, but does not
-    // do equivalence detection as completely, so we still apply the other
-    // "probing" code afterwards even if it will not fix more literals, but it
-    // will do one pass of proper equivalence detection.
-    {
-      Model* model = (*solver)->model();
-      model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit);
-      SatPresolveOptions options;
-      options.log_info = log_info;
-      options.extract_binary_clauses_in_probing = false;
-      options.use_transitive_reduction = false;
-      options.deterministic_time_limit =
-          parameters.presolve_probing_deterministic_time_limit();
-
-      if (!model->GetOrCreate<Inprocessing>()->PresolveLoop(options)) {
-        VLOG(1) << "UNSAT during probing.";
-        return SatSolver::INFEASIBLE;
-      }
-      for (const auto& c : model->GetOrCreate<PostsolveClauses>()->clauses) {
-        postsolver.Add(c[0], c);
-      }
-    }
-
-    // Probe + find equivalent literals.
-    // TODO(user): Use a derived time limit in the probing phase.
-    absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver,
-                                  drat_proof_handler, &equiv_map);
-    if ((*solver)->ModelIsUnsat()) {
-      VLOG(1) << "UNSAT during probing.";
-      return SatSolver::INFEASIBLE;
-    }
-
-    // The rest of the presolve only work on pure SAT problem.
-    if (!(*solver)->ProblemIsPureSat()) {
-      VLOG(1) << "The problem is not a pure SAT problem, skipping the SAT "
-                 "specific presolve.";
-      break;
-    }
-
-    // Register the fixed variables with the postsolver.
-    // TODO(user): Find a better place for this?
-    (*solver)->Backtrack(0);
-    for (int i = 0; i < (*solver)->LiteralTrail().Index(); ++i) {
-      postsolver.FixVariable((*solver)->LiteralTrail()[i]);
-    }
-
-    // TODO(user): Pass the time_limit to the presolver.
-    SatPresolver presolver(&postsolver, logger);
-    presolver.SetParameters(parameters);
-    presolver.SetDratProofHandler(drat_proof_handler);
-    presolver.SetEquivalentLiteralMapping(equiv_map);
-    (*solver)->ExtractClauses(&presolver);
-    (*solver)->AdvanceDeterministicTime(time_limit);
-
-    // Tricky: the model local time limit is updated by the new functions, but
-    // the old ones update time_limit directly.
-    time_limit->AdvanceDeterministicTime((*solver)
-                                             ->model()
-                                             ->GetOrCreate<TimeLimit>()
-                                             ->GetElapsedDeterministicTime());
-
-    (*solver).reset(nullptr);
-    std::vector<bool> can_be_removed(presolver.NumVariables(), true);
-    if (!presolver.Presolve(can_be_removed)) {
-      VLOG(1) << "UNSAT during presolve.";
-
-      // This is just here to reset the SatSolver::Solve() statistics.
-      (*solver) = std::make_unique<SatSolver>();
-      return SatSolver::INFEASIBLE;
-    }
-
-    postsolver.ApplyMapping(presolver.VariableMapping());
-    if (drat_proof_handler != nullptr) {
-      drat_proof_handler->ApplyMapping(presolver.VariableMapping());
-    }
-
-    // Load the presolved problem in a new solver.
-    (*solver) = std::make_unique<SatSolver>();
-    (*solver)->SetDratProofHandler(drat_proof_handler);
-    (*solver)->SetParameters(parameters);
-    presolver.LoadProblemIntoSatSolver((*solver).get());
-
-    // Stop if a fixed point has been reached.
-    if ((*solver)->NumVariables() == saved_num_variables) break;
-  }
-
-  // Before solving, we use the new probing code that adds all new binary
-  // implication it can find to the binary implication graph. This gives good
-  // benefits. Note that we currently do not do it before presolve because then
-  // the current presolve code does not work too well with the potential huge
-  // number of binary clauses added.
-  //
-  // TODO(user): Revisit the situation when we simplify better all the clauses
-  // using binary ones. Or if/when we support at most one better in pure SAT
-  // solving and presolve.
-  {
-    Model* model = (*solver)->model();
-    model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit);
-    SatPresolveOptions options;
-    options.log_info = log_info;
-    options.use_transitive_reduction = true;
-    options.extract_binary_clauses_in_probing = true;
-    options.deterministic_time_limit =
-        model->GetOrCreate<SatParameters>()
-            ->presolve_probing_deterministic_time_limit();
-    if (!model->GetOrCreate<Inprocessing>()->PresolveLoop(options)) {
-      return SatSolver::INFEASIBLE;
-    }
-    for (const auto& c : model->GetOrCreate<PostsolveClauses>()->clauses) {
-      postsolver.Add(c[0], c);
-    }
-  }
-
-  // Solve.
-  const SatSolver::Status result = (*solver)->SolveWithTimeLimit(time_limit);
-  if (result == SatSolver::FEASIBLE) {
-    *solution = postsolver.ExtractAndPostsolveSolution(**solver);
-  }
-  return result;
 }
 
 }  // namespace sat

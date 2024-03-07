@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,11 +14,11 @@
 
 """Solves a Qubo program using the CP-SAT solver."""
 
-from typing import Sequence
+from typing import List, Sequence
 from absl import app
 from ortools.sat.python import cp_model
 
-RAW_DATA = [
+RAW_DATA: List[List[float]] = [
     # fmt:off
     [
         0, 0, 49.774821, -59.5968886, -46.0773896, 0, -65.166109, 0, 0, 0, 0, 0,
@@ -652,15 +652,15 @@ RAW_DATA = [
 ]
 
 
-def solve_qubo():
-    """Solve the Qubo problem."""
+def solve_qubo() -> None:
+    """solve the Qubo problem."""
 
-    # Constraint programming engine
+    # Build the model.
     model = cp_model.CpModel()
 
     num_vars = len(RAW_DATA)
     all_vars = range(num_vars)
-    variables = [model.NewBoolVar("x_%i" % i) for i in all_vars]
+    variables = [model.new_bool_var("x_%i" % i) for i in all_vars]
 
     obj_vars = []
     obj_coeffs = []
@@ -672,10 +672,10 @@ def solve_qubo():
             if coeff == 0.0:
                 continue
             x_j = variables[j]
-            var = model.NewBoolVar("")
-            model.AddBoolOr([x_i.Not(), x_j.Not(), var])
-            model.AddImplication(var, x_i)
-            model.AddImplication(var, x_j)
+            var = model.new_bool_var("")
+            model.add_bool_or([~x_i, ~x_j, var])
+            model.add_implication(var, x_i)
+            model.add_implication(var, x_j)
             obj_vars.append(var)
             obj_coeffs.append(coeff)
 
@@ -685,14 +685,14 @@ def solve_qubo():
             obj_vars.append(variables[i])
             obj_coeffs.append(self_coeff)
 
-    model.Minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     ### Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 16
     solver.parameters.log_search_progress = True
     solver.parameters.max_time_in_seconds = 30
-    solver.Solve(model)
+    solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,6 +51,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
@@ -314,7 +315,7 @@ Assignment* IntVarFilteredHeuristic::BuildSolution() {
   return nullptr;
 }
 
-const Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
+Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
     const std::function<int64_t(int64_t)>& next_accessor) {
   // Initialize must be called before the state of the heuristic is changed, in
   // particular before InitializeSolution() and BuildSolutionInternal().
@@ -2241,17 +2242,49 @@ LocalCheapestInsertionFilteredHeuristic::
         RoutingModel* model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-        LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities)
+        LocalSearchFilterManager* filter_manager, BinCapacities* bin_capacities,
+        std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
+                           std::vector<RoutingModel::VariableValuePair>*)>
+            optimize_on_insertion)
     : CheapestInsertionFilteredHeuristic(model, std::move(stop_search),
                                          std::move(evaluator), nullptr,
                                          filter_manager),
       pair_insertion_strategy_(pair_insertion_strategy),
-      bin_capacities_(bin_capacities) {}
+      bin_capacities_(bin_capacities),
+      optimize_on_insertion_(std::move(optimize_on_insertion)) {}
 
 void LocalCheapestInsertionFilteredHeuristic::Initialize() {
   // NOTE(user): Keeping the code in a separate function as opposed to
   // inlining here, to allow for future additions to this function.
+  synchronize_insertion_optimizer_ = true;
   ComputeInsertionOrder();
+}
+
+bool LocalCheapestInsertionFilteredHeuristic::OptimizeOnInsertion(
+    std::vector<int> delta_indices) {
+  if (optimize_on_insertion_ == nullptr) return false;
+  std::vector<RoutingModel::VariableValuePair> in_state;
+  if (synchronize_insertion_optimizer_) {
+    for (int i = 0; i < model()->Nexts().size(); ++i) {
+      if (Contains(i)) {
+        in_state.push_back({i, Value(i)});
+      }
+    }
+    synchronize_insertion_optimizer_ = false;
+  } else {
+    for (int index : delta_indices) {
+      in_state.push_back({index, Value(index)});
+    }
+  }
+  std::vector<RoutingModel::VariableValuePair> out_state;
+  optimize_on_insertion_(in_state, &out_state);
+  if (out_state.empty()) return false;
+  for (const auto& [var, value] : out_state) {
+    if (Contains(var)) {
+      SetValue(var, value);
+    }
+  }
+  return Evaluate(/*commit=*/true).has_value();
 }
 
 namespace {
@@ -2393,7 +2426,13 @@ bool LocalCheapestInsertionFilteredHeuristic::InsertPair(
                                              : Value(insert_delivery_after);
   InsertBetween(delivery, insert_delivery_after, insert_delivery_before,
                 vehicle);
-  return Evaluate(/*commit=*/true).has_value();
+  // Capturing the state of the delta before it gets wiped by Evaluate.
+  std::vector<int> indices = delta_indices();
+  if (Evaluate(/*commit=*/true).has_value()) {
+    OptimizeOnInsertion(std::move(indices));
+    return true;
+  }
+  return false;
 }
 
 void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
@@ -2406,8 +2445,9 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
       for (const NodeInsertion& pickup_insertion : pickup_insertions) {
         const int vehicle = pickup_insertion.vehicle;
         if (!model()->VehicleVar(delivery)->Contains(vehicle)) continue;
-        if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
-                                   {pickup, delivery}, vehicle)) {
+        if (MustUpdateBinCapacities() &&
+            !bin_capacities_->CheckAdditionsFeasibility({pickup, delivery},
+                                                        vehicle)) {
           continue;
         }
         for (const NodeInsertion& delivery_insertion :
@@ -2416,7 +2456,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPickupThenDelivery(
                  vehicle)) {
           if (InsertPair(pickup, pickup_insertion.insert_after, delivery,
                          delivery_insertion.insert_after, vehicle)) {
-            if (bin_capacities_) {
+            if (MustUpdateBinCapacities()) {
               bin_capacities_->AddItemToBin(pickup, vehicle);
               bin_capacities_->AddItemToBin(delivery, vehicle);
             }
@@ -2441,7 +2481,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPair(
                        vehicle] : sorted_pair_positions) {
         if (InsertPair(pickup, insert_pickup_after, delivery,
                        insert_delivery_after, vehicle)) {
-          if (bin_capacities_) {
+          if (MustUpdateBinCapacities()) {
             bin_capacities_->AddItemToBin(pickup, vehicle);
             bin_capacities_->AddItemToBin(delivery, vehicle);
           }
@@ -2539,8 +2579,9 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
       for (const int vehicle : InitAndGetValues(pickup_vehicles.get())) {
         if (vehicle == -1) continue;
         if (!delivery_vehicle_var->Contains(vehicle)) continue;
-        if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
-                                   {pickup, delivery}, vehicle)) {
+        if (MustUpdateBinCapacities() &&
+            !bin_capacities_->CheckAdditionsFeasibility({pickup, delivery},
+                                                        vehicle)) {
           continue;
         }
         fill_path(vehicle);
@@ -2575,7 +2616,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
         }
         if (Evaluate(/*commit=*/true).has_value()) {
           // Insertion succeeded.
-          if (bin_capacities_) {
+          if (MustUpdateBinCapacities()) {
             bin_capacities_->AddItemToBin(pickup, vehicle);
             bin_capacities_->AddItemToBin(delivery, vehicle);
           }
@@ -2602,7 +2643,7 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   const RoutingModel& model = *this->model();
 
   // Fill vehicle bins with nodes that are already inserted.
-  if (bin_capacities_) {
+  if (MustUpdateBinCapacities()) {
     bin_capacities_->ClearItems();
     for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
       const int start = Value(model.Start(vehicle));
@@ -2677,10 +2718,13 @@ bool LocalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
         }
         InsertBetween(index, insertion.insert_after,
                       Value(insertion.insert_after), insertion.vehicle);
+        // Capturing the state of the delta before it gets wiped by Evaluate.
+        std::vector<int> indices = delta_indices();
         if (Evaluate(/*commit=*/true).has_value()) {
-          if (bin_capacities_) {
+          if (MustUpdateBinCapacities()) {
             bin_capacities_->AddItemToBin(index, insertion.vehicle);
           }
+          OptimizeOnInsertion(std::move(indices));
           break;
         }
       }
@@ -2701,7 +2745,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
       vehicle_var->MakeDomainIterator(false));
   for (const int vehicle : InitAndGetValues(node_vehicles.get())) {
     if (vehicle == -1) continue;
-    if (bin_capacities_ &&
+    if (MustUpdateBinCapacities() &&
         !bin_capacities_->CheckAdditionFeasibility(node, vehicle)) {
       continue;
     }
@@ -2709,7 +2753,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
     const size_t old_num_insertions = sorted_insertions.size();
     AppendInsertionPositionsAfter(node, start, Value(start), vehicle,
                                   /*ignore_cost=*/false, &sorted_insertions);
-    if (bin_capacities_ && evaluator_) {
+    if (MustUpdateBinCapacities() && evaluator_) {
       // Compute cost incurred from soft capacities.
       const int64_t old_cost = bin_capacities_->TotalCost();
       bin_capacities_->AddItemToBin(node, vehicle);
@@ -2756,8 +2800,9 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
   for (const int vehicle : InitAndGetValues(pickup_vehicles.get())) {
     if (vehicle == -1) continue;
     if (!delivery_vehicle_var->Contains(vehicle)) continue;
-    if (bin_capacities_ && !bin_capacities_->CheckAdditionsFeasibility(
-                               {pickup, delivery}, vehicle)) {
+    if (MustUpdateBinCapacities() &&
+        !bin_capacities_->CheckAdditionsFeasibility({pickup, delivery},
+                                                    vehicle)) {
       continue;
     }
     int64_t insert_pickup_after = model()->Start(vehicle);
@@ -2786,7 +2831,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
           const int64_t delivery_cost = GetInsertionCostForNodeAtPosition(
               delivery, insert_delivery_after, insert_delivery_before, vehicle);
           int64_t total_cost = CapAdd(pickup_cost, delivery_cost);
-          if (bin_capacities_) {
+          if (MustUpdateBinCapacities()) {
             const int64_t old_cost = bin_capacities_->TotalCost();
             bin_capacities_->AddItemToBin(pickup, vehicle);
             bin_capacities_->AddItemToBin(delivery, vehicle);

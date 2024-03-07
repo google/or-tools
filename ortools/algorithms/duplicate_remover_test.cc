@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,8 +17,8 @@
 #include <vector>
 
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/linked_hash_set.h"
 #include "ortools/util/random_engine.h"
 #include "util/tuple/dump_vars.h"
@@ -146,8 +146,8 @@ void BM_AppendAndLazilyRemoveDuplicates(benchmark::State& state) {
       }
     }
     if (!use_flat_hash_set) deduper.RemoveDuplicates(&v);
-    testing::DoNotOptimize(v);
-    testing::DoNotOptimize(set);
+    benchmark::DoNotOptimize(v);
+    benchmark::DoNotOptimize(set);
   }
   state.SetItemsProcessed(state.iterations() * num_inserts);
 }

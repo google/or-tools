@@ -1,7 +1,10 @@
+common --noenable_bzlmod
+
 # ----CONFIG OPTIONS----
 build --flag_alias=with_bop=//ortools/linear_solver:with_bop
 build --flag_alias=with_cbc=//ortools/linear_solver:with_cbc
 build --flag_alias=with_clp=//ortools/linear_solver:with_clp
+build --flag_alias=with_cp_sat=//ortools/linear_solver:with_cp_sat
 build --flag_alias=with_glop=//ortools/linear_solver:with_glop
 build --flag_alias=with_glpk=//ortools/linear_solver:with_glpk
 build --flag_alias=with_highs=//ortools/linear_solver:with_highs
@@ -18,12 +21,17 @@ build --apple_platform_type=macos
 # platform.
 build --enable_platform_specific_config
 
-build:linux --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
-build:linux --host_cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
-build:macos --cxxopt="-std=c++17"  --features=-supports_dynamic_linker --cxxopt=-Wno-sign-compare
-build:macos --host_cxxopt="-std=c++17" --features=-supports_dynamic_linker --cxxopt=-Wno-sign-compare
-build:windows --cxxopt="/std:c++20"
-build:windows --host_cxxopt="/std:c++20"
+build:linux --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare --host_cxxopt="-std=c++17" --host_cxxopt=-Wno-sign-compare
+build:macos --cxxopt="-std=c++17"  --cxxopt=-Wno-sign-compare --cxxopt=-mmacos-version-min=10.15  --features=-supports_dynamic_linker
+build:macos --host_cxxopt="-std=c++17" --host_cxxopt=-Wno-sign-compare --host_cxxopt=-mmacos-version-min=10.15
+build:windows --cxxopt="/std:c++20" --host_cxxopt="/std:c++20"
+
+# Enable the runfiles symlink tree on Windows. This makes it possible to build
+# the pip package on Windows without an intermediate data-file archive, as the
+# build_pip_package script in its current form (as of Aug 2023) uses the
+# runfiles symlink tree to decide what to put into the Python wheel.
+startup --windows_enable_symlinks
+build:windows --enable_runfiles
 
 # Print command lines for build commands.
 # build --subcommands=pretty_print

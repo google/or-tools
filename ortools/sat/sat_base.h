@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -33,7 +32,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
@@ -118,6 +116,11 @@ class Literal {
 inline std::ostream& operator<<(std::ostream& os, Literal literal) {
   os << literal.DebugString();
   return os;
+}
+
+template <typename Sink, typename... T>
+void AbslStringify(Sink& sink, Literal arg) {
+  absl::Format(&sink, "%s", arg.DebugString());
 }
 
 inline std::ostream& operator<<(std::ostream& os,
@@ -396,7 +399,6 @@ class Trail {
     }
     current_info_.trail_index = target_trail_index;
   }
-  void Dequeue() { Untrail(Index() - 1); }
 
   // Changes the decision level used by the next Enqueue().
   void SetDecisionLevel(int level) { current_info_.level = level; }
@@ -414,7 +416,7 @@ class Trail {
   // Returns the last conflict.
   absl::Span<const Literal> FailingClause() const {
     if (DEBUG_MODE && debug_checker_ != nullptr) {
-      debug_checker_(conflict_);
+      CHECK(debug_checker_(conflict_));
     }
     return conflict_;
   }
@@ -443,7 +445,7 @@ class Trail {
   }
 
   // Print the current literals on the trail.
-  std::string DebugString() {
+  std::string DebugString() const {
     std::string result;
     for (int i = 0; i < current_info_.trail_index; ++i) {
       if (!result.empty()) result += " ";
@@ -555,7 +557,7 @@ class SatPropagator {
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
   virtual absl::Span<const Literal> Reason(const Trail& trail,
-                                           int trail_index) const {
+                                           int /*trail_index*/) const {
     LOG(FATAL) << "Not implemented.";
     return {};
   }
@@ -596,9 +598,8 @@ inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
   if (propagation_trail_index_ < trail.Index() &&
       trail.Info(trail[propagation_trail_index_].Variable()).level !=
           trail.CurrentDecisionLevel()) {
-    LOG(INFO) << "Issue in '" << name_ << "':"
-              << " propagation_trail_index_=" << propagation_trail_index_
-              << " trail_.Index()=" << trail.Index()
+    LOG(INFO) << "Issue in '" << name_ << "':" << " propagation_trail_index_="
+              << propagation_trail_index_ << " trail_.Index()=" << trail.Index()
               << " level_at_propagation_index="
               << trail.Info(trail[propagation_trail_index_].Variable()).level
               << " current_decision_level=" << trail.CurrentDecisionLevel();
@@ -659,7 +660,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
       std::vector<Literal> clause;
       clause.assign(reasons_[var].begin(), reasons_[var].end());
       clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-      debug_checker_(clause);
+      CHECK(debug_checker_(clause));
     }
     return reasons_[var];
   }
@@ -679,7 +680,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
     std::vector<Literal> clause;
     clause.assign(reasons_[var].begin(), reasons_[var].end());
     clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-    debug_checker_(clause);
+    CHECK(debug_checker_(clause));
   }
   return reasons_[var];
 }

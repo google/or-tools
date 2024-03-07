@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/scheduling/course_scheduling.pb.h"
@@ -56,7 +57,7 @@ class CourseSchedulingSolver {
 
   int GetTeacherIndex(int course_index, int section);
 
-  void InsertSortedPairs(const std::vector<int>& list, ConflictPairs* pairs);
+  void InsertSortedPairs(absl::Span<const int> list, ConflictPairs* pairs);
 
   bool ShouldCreateVariable(int course_index, int section, int time_slot,
                             int room);

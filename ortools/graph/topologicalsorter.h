@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,6 +43,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -220,7 +221,7 @@ class DenseIntTopologicalSorterTpl {
   void AddNode(int node_index);
 
   // Performs AddEdge() in bulk. Much faster if you add *all* edges at once.
-  void AddEdges(const std::vector<std::pair<int, int>>& edges);
+  void AddEdges(absl::Span<const std::pair<int, int>> edges);
 
   // Performs in constant amortized time. Calling this will make all
   // node indices in [0, max(from, to)] be valid node indices.
@@ -473,7 +474,7 @@ ABSL_MUST_USE_RESULT bool DenseIntTopologicalSortImpl(
 
 template <typename T, bool stable_sort = false>
 ABSL_MUST_USE_RESULT bool TopologicalSortImpl(
-    const std::vector<T>& nodes, const std::vector<std::pair<T, T>>& arcs,
+    absl::Span<const T> nodes, const std::vector<std::pair<T, T>>& arcs,
     std::vector<T>* topological_order, std::vector<T>* cycle) {
   TopologicalSorter<T, stable_sort> sorter;
   for (const T& node : nodes) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,8 @@
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
@@ -66,15 +68,27 @@ class CompactVectorVector {
  public:
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
+  bool empty() const;
 
   // Getters, either via [] or via a wrapping to be compatible with older api.
   //
   // Warning: Spans are only valid until the next modification!
+  absl::Span<V> operator[](K key);
   absl::Span<const V> operator[](K key) const;
   std::vector<absl::Span<const V>> AsVectorOfSpan() const;
 
   // Restore to empty vector<vector<>>.
   void clear();
+
+  // Reserve memory if it is already known or tightly estimated.
+  void reserve(int size) {
+    starts_.reserve(size);
+    sizes_.reserve(size);
+  }
+  void reserve(int size, int num_terms) {
+    reserve(size);
+    buffer_.reserve(num_terms);
+  }
 
   // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not
   // necessarily sorted by key, regroup the same key so that
@@ -85,6 +99,17 @@ class CompactVectorVector {
   template <typename Keys, typename Values>
   void ResetFromFlatMapping(Keys keys, Values values);
 
+  // Initialize this vector from the transpose of another.
+  // IMPORTANT: This cannot be called with the vector itself.
+  //
+  // If min_transpose_size is given, then the transpose will have at least this
+  // size even if some of the last keys do not appear in other.
+  //
+  // If this is called twice in a row, then it has the side effect of sorting
+  // all inner vectors by values !
+  void ResetFromTranspose(const CompactVectorVector<V, K>& other,
+                          int min_transpose_size = 0);
+
   // Append a new entry.
   // Returns the previous size() as this is convenient for how we use it.
   int Add(absl::Span<const V> values);
@@ -94,13 +119,34 @@ class CompactVectorVector {
   template <typename L>
   int AddLiterals(const std::vector<L>& wrapped_values);
 
+  // We lied when we said this is a pure read-only class :)
+  // It is possible to shrink inner vectors with not much cost.
+  //
+  // Removes the element at index from this[key] by swapping it with
+  // this[key].back() and then decreasing this key size. It is an error to
+  // call this on an empty inner vector.
+  void RemoveBySwap(K key, int index) {
+    DCHECK_GE(index, 0);
+    DCHECK_LT(index, sizes_[key]);
+    const int start = starts_[key];
+    std::swap(buffer_[start + index], buffer_[start + sizes_[key] - 1]);
+    sizes_[key]--;
+  }
+
+  // Replace the values at the given key.
+  // This will crash if there are more values than before.
+  void ReplaceValuesBySmallerSet(K key, absl::Span<const V> values);
+
+  // Interface so this can be used as an output of
+  // FindStronglyConnectedComponents().
+  void emplace_back(V const* begin, V const* end) {
+    Add(absl::MakeSpan(begin, end - begin));
+  }
+
  private:
   // Convert int and StrongInt to normal int.
   static int InternalKey(K key);
 
-  // TODO(user): with a sentinel, we can infer
-  // size_[i] = starts_[i + 1] - starts_[i]. This should be slightly faster.
-  // Benchmark and change.
   std::vector<int> starts_;
   std::vector<int> sizes_;
   std::vector<V> buffer_;
@@ -205,9 +251,9 @@ std::vector<absl::Span<int>> AtMostOneDecomposition(
 // Preconditions: All coeffs are assumed to be positive. You can easily negate
 // all the negative coeffs and corresponding bounds before calling this.
 bool LinearInequalityCanBeReducedWithClosestMultiple(
-    int64_t base, const std::vector<int64_t>& coeffs,
-    const std::vector<int64_t>& lbs, const std::vector<int64_t>& ubs,
-    int64_t rhs, int64_t* new_rhs);
+    int64_t base, absl::Span<const int64_t> coeffs,
+    absl::Span<const int64_t> lbs, absl::Span<const int64_t> ubs, int64_t rhs,
+    int64_t* new_rhs);
 
 // The model "singleton" random engine used in the solver.
 //
@@ -254,6 +300,12 @@ class ModelSharedTimeLimit : public SharedTimeLimit {
 // Randomizes the decision heuristic of the given SatParameters.
 void RandomizeDecisionHeuristic(absl::BitGenRef random,
                                 SatParameters* parameters);
+
+// This is equivalent of
+// absl::discrete_distribution<std::size_t>(input.begin(), input.end())(random)
+// but does no allocations. It is a lot faster when you need to pick just one
+// elements from a distribution for instance.
+int WeightedPick(absl::Span<const double> input, absl::BitGenRef random);
 
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
@@ -573,6 +625,7 @@ class TopN {
   bool empty() const { return elements_.empty(); }
 
   const std::vector<Element>& UnorderedElements() const { return elements_; }
+  std::vector<Element>* MutableUnorderedElements() { return &elements_; }
 
  private:
   const int n_;
@@ -653,6 +706,15 @@ inline int CompactVectorVector<K, V>::Add(absl::Span<const V> values) {
 }
 
 template <typename K, typename V>
+inline void CompactVectorVector<K, V>::ReplaceValuesBySmallerSet(
+    K key, absl::Span<const V> values) {
+  CHECK_LE(values.size(), sizes_[key]);
+  sizes_[key] = values.size();
+  if (values.empty()) return;
+  memcpy(&buffer_[starts_[key]], values.data(), sizeof(V) * values.size());
+}
+
+template <typename K, typename V>
 template <typename L>
 inline int CompactVectorVector<K, V>::AddLiterals(
     const std::vector<L>& wrapped_values) {
@@ -687,6 +749,17 @@ inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
 }
 
 template <typename K, typename V>
+inline absl::Span<V> CompactVectorVector<K, V>::operator[](K key) {
+  DCHECK_GE(key, 0);
+  DCHECK_LT(key, starts_.size());
+  DCHECK_LT(key, sizes_.size());
+  const int k = InternalKey(key);
+  const size_t size = static_cast<size_t>(sizes_[k]);
+  if (size == 0) return {};
+  return absl::MakeSpan(&buffer_[starts_[k]], size);
+}
+
+template <typename K, typename V>
 inline std::vector<absl::Span<const V>>
 CompactVectorVector<K, V>::AsVectorOfSpan() const {
   std::vector<absl::Span<const V>> result(starts_.size());
@@ -706,6 +779,11 @@ inline void CompactVectorVector<K, V>::clear() {
 template <typename K, typename V>
 inline size_t CompactVectorVector<K, V>::size() const {
   return starts_.size();
+}
+
+template <typename K, typename V>
+inline bool CompactVectorVector<K, V>::empty() const {
+  return starts_.empty();
 }
 
 template <typename K, typename V>
@@ -736,6 +814,56 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
   buffer_.resize(keys.size());
   for (int i = 0; i < keys.size(); ++i) {
     buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = max_key - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
+}
+
+// Similar to ResetFromFlatMapping().
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::ResetFromTranspose(
+    const CompactVectorVector<V, K>& other, int min_transpose_size) {
+  if (other.empty()) {
+    clear();
+    if (min_transpose_size > 0) {
+      starts_.assign(min_transpose_size, 0);
+      sizes_.assign(min_transpose_size, 0);
+    }
+    return;
+  }
+
+  // Compute maximum index.
+  int max_key = min_transpose_size;
+  for (V v = 0; v < other.size(); ++v) {
+    for (const K k : other[v]) {
+      max_key = std::max(max_key, InternalKey(k) + 1);
+    }
+  }
+
+  // Compute sizes_;
+  sizes_.assign(max_key, 0);
+  for (V v = 0; v < other.size(); ++v) {
+    for (const K k : other[v]) {
+      sizes_[InternalKey(k)]++;
+    }
+  }
+
+  // Compute starts_;
+  starts_.assign(max_key, 0);
+  for (int k = 1; k < max_key; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  buffer_.resize(other.buffer_.size());
+  for (V v = 0; v < other.size(); ++v) {
+    for (const K k : other[v]) {
+      buffer_[starts_[InternalKey(k)]++] = v;
+    }
   }
 
   // Restore starts_.

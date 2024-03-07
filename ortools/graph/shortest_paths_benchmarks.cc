@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,9 +21,9 @@
 #include "absl/memory/memory.h"
 #include "absl/random/distributions.h"
 #include "benchmark/benchmark.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "isp/fiber/auto_design/utils/parallelizer.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/threadlocal.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/shortest_paths.h"
@@ -143,7 +143,7 @@ static void BM_MultiThreadAllPairsOn2DGrid(benchmark::State& state) {
     cost = absl::Uniform(random, 0, 100000);
   }
   for (auto _ : state) {
-    ::testing::DoNotOptimize(
+    ::benchmark::DoNotOptimize(
         AllPairsShortestPaths<implementation>(*graph, arc_costs, num_threads));
   }
   // "byte" = pair of nodes for which we computed the shortest path distance.
@@ -201,7 +201,7 @@ static void BM_WindowedAllPairsOn2DGrid(benchmark::State& state) {
     }
   }
   for (auto _ : state) {
-    ::testing::DoNotOptimize(ManyToManyShortestPaths<implementation>(
+    ::benchmark::DoNotOptimize(ManyToManyShortestPaths<implementation>(
         *graph, arc_costs, window_nodes, window_nodes, num_threads));
   }
   // "byte" = pair of nodes for which we computed the shortest path distance.

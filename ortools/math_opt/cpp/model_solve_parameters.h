@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,10 +19,12 @@
 
 #include <sys/types.h>
 
+#include <cstdint>
 #include <initializer_list>
 #include <optional>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
@@ -146,8 +148,55 @@ struct ModelSolveParameters {
   // solver's default priority (usually zero).
   VariableMap<int32_t> branching_priorities;
 
-  // Returns a failure if the referenced variables don't belong to the input
-  // expected_storage (which must not be nullptr).
+  // Parameters for an individual objective in a multi-objective model.
+  struct ObjectiveParameters {
+    // Optional objective degradation absolute tolerance. For a hierarchical
+    // multi-objective solver, each objective fⁱ is processed in priority order:
+    // the solver determines the optimal objective value Γⁱ, if it exists,
+    // subject to all constraints in the model and the additional constraints
+    // that fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+    // considered to be "within tolerances" for this objective fᵏ if
+    // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_absolute_tolerance`.
+    //
+    // See also `objective_degradation_relative_tolerance`; if both parameters
+    // are set for a given objective, the solver need only satisfy one to be
+    // considered "within tolerances".
+    //
+    //  If set, must be nonnegative.
+    std::optional<double> objective_degradation_absolute_tolerance;
+
+    // Optional objective degradation relative tolerance. For a hierarchical
+    // multi-objective solver, each objective fⁱ is processed in priority order:
+    // the solver determines the optimal objective value Γⁱ, if it exists,
+    // subject to all constraints in the model and the additional constraints
+    // that fᵏ(x) = Γᵏ (within tolerances) for each k < i. If set, a solution is
+    // considered to be "within tolerances" for this objective fᵏ if
+    // |fᵏ(x) - Γᵏ| ≤ `objective_degradation_relative_tolerance` * |Γᵏ|.
+    //
+    // See also `objective_degradation_absolute_tolerance`; if both parameters
+    // are set for a given objective, the solver need only satisfy one to be
+    // considered "within tolerances".
+    //
+    //  If set, must be nonnegative.
+    std::optional<double> objective_degradation_relative_tolerance;
+
+    // Returns the proto equivalent of this object.
+    ObjectiveParametersProto Proto() const;
+  };
+  // Parameters for individual objectives in a multi-objective model.
+  ObjectiveMap<ObjectiveParameters> objective_parameters;
+
+  // Optional lazy constraint annotations. Included linear constraints will be
+  // marked as "lazy" with supporting solvers, meaning that they will only be
+  // added to the working model as-needed as the solver runs.
+  //
+  // Note that this an algorithmic hint that does not affect the model's
+  // feasible region; solvers not supporting these annotations will simply
+  // ignore it.
+  absl::flat_hash_set<LinearConstraint> lazy_linear_constraints;
+
+  // Returns a failure if the referenced variables and constraints do not belong
+  // to the input expected_storage (which must not be nullptr).
   absl::Status CheckModelStorage(const ModelStorage* expected_storage) const;
 
   // Returns the proto equivalent of this object.

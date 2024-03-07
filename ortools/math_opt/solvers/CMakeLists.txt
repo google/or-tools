@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,6 +15,8 @@ set(NAME ${PROJECT_NAME}_math_opt_solvers)
 add_library(${NAME} OBJECT)
 
 file(GLOB_RECURSE _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+
 if(NOT USE_GLPK)
   list(FILTER _SRCS EXCLUDE REGEX "/glpk/")
   list(FILTER _SRCS EXCLUDE REGEX "/glpk_.*.h$")
@@ -24,6 +26,10 @@ if(NOT USE_GUROBI)
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi/")
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.cc$")
+endif()
+if(NOT USE_PDLP)
+  list(FILTER _SRCS EXCLUDE REGEX "/pdlp_.*.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/pdlp_.*.cc$")
 endif()
 if(NOT USE_SCIP)
   list(FILTER _SRCS EXCLUDE REGEX "/gscip/")
@@ -37,6 +43,7 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
   absl::strings
+  Eigen3::Eigen
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAMESPACE}::math_opt_proto)

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
@@ -37,7 +38,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/cleanup.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -209,7 +210,7 @@ void UpdateBounds(glp_prob* const problem, const Dimension& dimension,
 // convention).
 template <typename V>
 void DeleteRowOrColData(std::vector<V>& data,
-                        const std::vector<int>& sorted_deleted_rows_or_cols) {
+                        absl::Span<const int> sorted_deleted_rows_or_cols) {
   if (sorted_deleted_rows_or_cols.empty()) {
     // Avoid looping when not necessary.
     return;
@@ -335,7 +336,7 @@ bool IsEmpty(glp_prob* const problem) {
 // ids and taking into account the provided filter.
 SparseDoubleVectorProto FilteredVector(glp_prob* const problem,
                                        const SparseVectorFilterProto& filter,
-                                       const std::vector<int64_t>& ids,
+                                       absl::Span<const int64_t> ids,
                                        double (*const getter)(glp_prob*, int)) {
   SparseDoubleVectorProto vec;
   vec.mutable_ids()->Reserve(ids.size());
@@ -355,8 +356,8 @@ SparseDoubleVectorProto FilteredVector(glp_prob* const problem,
 // Returns the ray data the corresponds to element id having the given value and
 // all other elements of ids having 0.
 SparseDoubleVectorProto FilteredRay(const SparseVectorFilterProto& filter,
-                                    const std::vector<int64_t>& ids,
-                                    const std::vector<double>& values) {
+                                    absl::Span<const int64_t> ids,
+                                    absl::Span<const double> values) {
   CHECK_EQ(ids.size(), values.size());
   SparseDoubleVectorProto vec;
   SparseVectorFilterPredicate predicate(filter);
@@ -558,10 +559,10 @@ void MipCallback(glp_tree* const tree, void* const info) {
 // failing status when rounded bounds of integer variables cross due to the
 // rounding. See EmptyIntegerBoundsResult() for dealing with this case.
 InvertedBounds ListInvertedBounds(
-    glp_prob* const problem, const std::vector<int64_t>& variable_ids,
-    const std::vector<double>& unrounded_variable_lower_bounds,
-    const std::vector<double>& unrounded_variable_upper_bounds,
-    const std::vector<int64_t>& linear_constraint_ids) {
+    glp_prob* const problem, absl::Span<const int64_t> variable_ids,
+    absl::Span<const double> unrounded_variable_lower_bounds,
+    absl::Span<const double> unrounded_variable_upper_bounds,
+    absl::Span<const int64_t> linear_constraint_ids) {
   InvertedBounds inverted_bounds;
 
   const int num_cols = glp_get_num_cols(problem);

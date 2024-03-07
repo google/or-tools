@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 
 #if defined(_MSC_VER)
 #pragma fenv_access(on)  // NOLINT
@@ -236,7 +237,7 @@ void ComputeScalingErrors(const std::vector<double>& input,
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
 // all zero then the result is 1. Note that round(fabs()) is the same as
 // fabs(round()) since the numbers are rounded away from zero.
-int64_t ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+int64_t ComputeGcdOfRoundedDoubles(absl::Span<const double> x,
                                    double scaling_factor);
 
 // Returns alpha * x + (1 - alpha) * y.

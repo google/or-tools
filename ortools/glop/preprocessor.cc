@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -422,8 +422,8 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* lp) {
         if (!IsFinite(value)) {
           VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, empty column " << col
                   << " has a minimization cost of " << objective_coefficient
-                  << " and bounds"
-                  << " [" << lower_bound << "," << upper_bound << "]";
+                  << " and bounds" << " [" << lower_bound << "," << upper_bound
+                  << "]";
           status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
           return false;
         }
@@ -2673,6 +2673,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     return false;
   }
 
+  // The code below do not work as is for integer variable.
+  if (in_mip_context_ && lp->IsVariableInteger(e.col)) return false;
+
   // To be efficient, we only process a row once and cache the domain that an
   // "artificial" extra variable x with coefficient 1.0 could take while still
   // making the constraint feasible. The domain bounds for the constraint e.row
@@ -2960,80 +2963,6 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
 }
-
-// --------------------------------------------------------
-// RemoveNearZeroEntriesPreprocessor
-// --------------------------------------------------------
-
-bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp) {
-  SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
-  const ColIndex num_cols = lp->num_variables();
-  if (num_cols == 0) return false;
-
-  // We will use a different threshold for each row depending on its degree.
-  // We use Fractionals for convenience since they will be used as such below.
-  const RowIndex num_rows = lp->num_constraints();
-  DenseColumn row_degree(num_rows, 0.0);
-  Fractional num_non_zero_objective_coefficients = 0.0;
-  for (ColIndex col(0); col < num_cols; ++col) {
-    for (const SparseColumn::Entry e : lp->GetSparseColumn(col)) {
-      row_degree[e.row()] += 1.0;
-    }
-    if (lp->objective_coefficients()[col] != 0.0) {
-      num_non_zero_objective_coefficients += 1.0;
-    }
-  }
-
-  // To not have too many parameters, we use the preprocessor_zero_tolerance.
-  const Fractional allowed_impact = parameters_.preprocessor_zero_tolerance();
-
-  // TODO(user): Our criteria ensure that during presolve a primal feasible
-  // solution will stay primal feasible. However, we have no guarantee on the
-  // dual-feasibility (because the dual variable values range is not taken into
-  // account). Fix that? or find a better criteria since it seems that on all
-  // our current problems, this preprocessor helps and doesn't introduce errors.
-  const EntryIndex initial_num_entries = lp->num_entries();
-  int num_zeroed_objective_coefficients = 0;
-  for (ColIndex col(0); col < num_cols; ++col) {
-    const Fractional lower_bound = lp->variable_lower_bounds()[col];
-    const Fractional upper_bound = lp->variable_upper_bounds()[col];
-
-    // TODO(user): Write a small class that takes a matrix, its transpose, row
-    // and column bounds, and "propagate" the bounds as much as possible so we
-    // can use this better estimate here and remove more near-zero entries.
-    const Fractional max_magnitude =
-        std::max(std::abs(lower_bound), std::abs(upper_bound));
-    if (max_magnitude == kInfinity || max_magnitude == 0) continue;
-    const Fractional threshold = allowed_impact / max_magnitude;
-    lp->GetMutableSparseColumn(col)->RemoveNearZeroEntriesWithWeights(
-        threshold, row_degree);
-
-    if (lp->objective_coefficients()[col] != 0.0 &&
-        num_non_zero_objective_coefficients *
-                std::abs(lp->objective_coefficients()[col]) <
-            threshold) {
-      lp->SetObjectiveCoefficient(col, 0.0);
-      ++num_zeroed_objective_coefficients;
-    }
-  }
-
-  const EntryIndex num_entries = lp->num_entries();
-  if (num_entries != initial_num_entries) {
-    VLOG(1) << "Removed " << initial_num_entries - num_entries
-            << " near-zero entries.";
-  }
-  if (num_zeroed_objective_coefficients > 0) {
-    VLOG(1) << "Removed " << num_zeroed_objective_coefficients
-            << " near-zero objective coefficients.";
-  }
-
-  // No post-solve is required.
-  return false;
-}
-
-void RemoveNearZeroEntriesPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {}
 
 // --------------------------------------------------------
 // SingletonColumnSignPreprocessor

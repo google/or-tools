@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -37,12 +37,13 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "gmock/gmock.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/dump_vars.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/path.h"
@@ -148,7 +149,7 @@ TEST(GraphSymmetryFinderTest, EmptyGraph) {
     std::vector<int> node_equivalence_classes_io;
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     std::vector<int> factorized_automorphism_group_size;
-    CHECK_OK(symmetry_finder.FindSymmetries(
+    ASSERT_OK(symmetry_finder.FindSymmetries(
         &node_equivalence_classes_io, &generators,
         &factorized_automorphism_group_size));
     EXPECT_THAT(node_equivalence_classes_io, IsEmpty());
@@ -167,7 +168,7 @@ class IsGraphAutomorphismTest : public testing::Test {
  protected:
   void ExpectIsGraphAutomorphism(
       int num_nodes, const std::vector<std::pair<int, int>>& graph_arcs,
-      const std::vector<std::vector<int>>& permutation_cycles,
+      absl::Span<const std::vector<int>> permutation_cycles,
       bool expected_is_automorphism) {
     Graph graph(num_nodes, graph_arcs.size());
     for (const std::pair<int, int>& arc : graph_arcs) {
@@ -328,7 +329,7 @@ class FindSymmetriesTest : public ::testing::Test {
     std::vector<int> node_equivalence_classes(graph.num_nodes(), 0);
     std::vector<int> orbit_sizes;
     TimeLimit time_limit(kDefaultTimeLimitSeconds);
-    CHECK_OK(symmetry_finder.FindSymmetries(
+    ASSERT_OK(symmetry_finder.FindSymmetries(
         &node_equivalence_classes, &generators, &orbit_sizes, &time_limit));
     std::vector<std::string> permutations_str;
     for (const std::unique_ptr<SparsePermutation>& permutation : generators) {

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -199,8 +199,12 @@ class GurobiSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
-  absl::StatusOr<double> GetBestDualBound();
-  absl::StatusOr<double> GetBestPrimalBound(bool has_primal_feasible_solution);
+  absl::StatusOr<double> GetGurobiBestDualBound() const;
+  absl::StatusOr<double> GetBestDualBound(
+      const std::vector<SolutionProto>& solutions) const;
+  absl::StatusOr<double> GetBestPrimalBound(
+      absl::Span<const SolutionProto> solutions) const;
+
   bool PrimalSolutionQualityAvailable() const;
   absl::StatusOr<double> GetPrimalSolutionQuality() const;
 
@@ -226,7 +230,8 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<bool> IsMaximize() const;
 
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
-      int gurobi_status, SolutionClaims solution_claims);
+      int gurobi_status, SolutionClaims solution_claims,
+      double best_primal_bound, double best_dual_bound);
 
   // Returns solution information appropriate and available for an LP (linear
   // constraints + linear objective, only).
@@ -378,6 +383,12 @@ class GurobiSolver : public SolverInterface {
   // up the stack to a bridge.
   absl::StatusOr<VariableEqualToExpression>
   CreateSlackVariableEqualToExpression(const LinearExpressionProto& expression);
+
+  absl::Status SetMultiObjectiveTolerances(
+      const ModelSolveParametersProto& model_parameters);
+
+  absl::Status ResetModelParameters(
+      const ModelSolveParametersProto& model_parameters);
 
   const std::unique_ptr<Gurobi> gurobi_;
 

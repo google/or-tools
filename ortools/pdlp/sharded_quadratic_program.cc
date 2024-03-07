@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,6 +26,7 @@
 #include "ortools/base/threadpool.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharder.h"
+#include "ortools/util/logging.h"
 
 namespace operations_research::pdlp {
 
@@ -35,7 +36,8 @@ namespace {
 // a single column.
 void WarnIfMatrixUnbalanced(
     const Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>& matrix,
-    absl::string_view matrix_name, int64_t density_limit) {
+    absl::string_view matrix_name, int64_t density_limit,
+    operations_research::SolverLogger* logger) {
   if (matrix.cols() == 0) return;
   int64_t worst_column = 0;
   for (int64_t col = 0; col < matrix.cols(); ++col) {
@@ -46,23 +48,35 @@ void WarnIfMatrixUnbalanced(
   if (matrix.col(worst_column).nonZeros() > density_limit) {
     // TODO(user): fix this automatically in presolve instead of asking the
     // user to do it.
-    LOG(WARNING)
-        << "The " << matrix_name << " has "
-        << matrix.col(worst_column).nonZeros() << " non-zeros in its "
-        << worst_column
-        << "th column. For best parallelization all rows and columns should "
-           "have at most order "
-        << density_limit
-        << " non-zeros. Consider rewriting the QP to split the corresponding "
-           "variable or constraint.";
+    if (logger) {
+      SOLVER_LOG(
+          logger, "WARNING: The ", matrix_name, " has ",
+          matrix.col(worst_column).nonZeros(), " non-zeros in its ",
+          worst_column,
+          "th column. For best parallelization all rows and columns should "
+          "have at most order ",
+          density_limit,
+          " non-zeros. Consider rewriting the QP to split the corresponding "
+          "variable or constraint.");
+    } else {
+      LOG(WARNING)
+          << "The " << matrix_name << " has "
+          << matrix.col(worst_column).nonZeros() << " non-zeros in its "
+          << worst_column
+          << "th column. For best parallelization all rows and columns should "
+             "have at most order "
+          << density_limit
+          << " non-zeros. Consider rewriting the QP to split the corresponding "
+             "variable or constraint.";
+    }
   }
 }
 
 }  // namespace
 
-ShardedQuadraticProgram::ShardedQuadraticProgram(QuadraticProgram qp,
-                                                 const int num_threads,
-                                                 const int num_shards)
+ShardedQuadraticProgram::ShardedQuadraticProgram(
+    QuadraticProgram qp, const int num_threads, const int num_shards,
+    operations_research::SolverLogger* logger)
     : qp_(std::move(qp)),
       transposed_constraint_matrix_(qp_.constraint_matrix.transpose()),
       thread_pool_(num_threads == 1
@@ -85,10 +99,10 @@ ShardedQuadraticProgram::ShardedQuadraticProgram(QuadraticProgram qp,
                                        qp_.constraint_lower_bounds.size();
     const int64_t column_density_limit = work_per_iteration / num_threads;
     WarnIfMatrixUnbalanced(qp_.constraint_matrix, "constraint matrix",
-                           column_density_limit);
+                           column_density_limit, logger);
     WarnIfMatrixUnbalanced(transposed_constraint_matrix_,
-                           "transposed constraint matrix",
-                           column_density_limit);
+                           "transposed constraint matrix", column_density_limit,
+                           logger);
   }
 }
 

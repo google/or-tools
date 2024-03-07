@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -889,7 +889,6 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
 }
 
 void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const SatParameters& parameters = *(m->GetOrCreate<SatParameters>());
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
@@ -946,7 +945,6 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
 
   // Auto-detect optional variables.
   int num_optionals = 0;
-  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int var = 0; var < num_proto_variables; ++var) {
     const IntegerVariableProto& var_proto = model_proto.variables(var);
     const int64_t min = var_proto.domain(0);
@@ -956,14 +954,12 @@ void DetectOptionalVariables(const CpModelProto& model_proto, Model* m) {
     if (enforcement_intersection[var].empty()) continue;
 
     ++num_optionals;
-    integer_trail->MarkIntegerVariableAsOptional(
-        mapping->Integer(var),
-        mapping->Literal(enforcement_intersection[var].front()));
   }
 
   if (num_optionals > 0) {
     SOLVER_LOG(m->GetOrCreate<SolverLogger>(), "Auto-detected ", num_optionals,
-               " optional variables.");
+               " optional variables. Note that for now we DO NOT do anything "
+               "with this information.");
   }
 }
 
@@ -976,9 +972,10 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
     if (strategy.domain_reduction_strategy() ==
         DecisionStrategyProto::SELECT_MEDIAN_VALUE) {
-      for (const int ref : strategy.variables()) {
-        if (!mapping->IsInteger(ref)) continue;
-        const IntegerVariable variable = mapping->Integer(PositiveRef(ref));
+      for (const LinearExpressionProto& expr : strategy.exprs()) {
+        const int var = expr.vars(0);
+        if (!mapping->IsInteger(var)) continue;
+        const IntegerVariable variable = mapping->Integer(var);
         if (!integer_trail->IsFixed(variable)) {
           m->Add(FullyEncodeVariable(variable));
         }
@@ -993,11 +990,12 @@ void AddFullEncodingFromSearchBranching(const CpModelProto& model_proto,
 
 void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
   std::vector<Literal> literals = mapping->Literals(ct.bool_or().literals());
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  m->Add(ClauseConstraint(literals));
+  sat_solver->AddProblemClause(literals, /*is_safe=*/false);
   if (literals.size() == 3) {
     m->GetOrCreate<ProductDetector>()->ProcessTernaryClause(literals);
   }

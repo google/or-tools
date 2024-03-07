@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -64,7 +64,7 @@ SatSolver::SatSolver() : SatSolver(new Model()) {
 SatSolver::SatSolver(Model* model)
     : model_(model),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
-      clauses_propagator_(model->GetOrCreate<LiteralWatchers>()),
+      clauses_propagator_(model->GetOrCreate<ClauseManager>()),
       pb_constraints_(model->GetOrCreate<PbConstraints>()),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
@@ -270,8 +270,7 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
       // Always true.
       return true;
     } else {
-      AddBinaryClauseInternal(literals[0], literals[1],
-                              /*export_clause=*/false);
+      AddBinaryClauseInternal(literals[0], literals[1]);
     }
   } else {
     if (!clauses_propagator_->AddClause(literals, trail_)) {
@@ -289,10 +288,6 @@ bool SatSolver::AddLinearConstraintInternal(
   DCHECK(BooleanLinearExpressionIsCanonical(cst));
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
   if (rhs >= max_value) return true;    // Always satisfied constraint.
-
-  // The case "rhs = 0" will just fix variables, so there is no need to
-  // updates the weighted sign.
-  if (rhs > 0) decision_policy_->UpdateWeightedSign(cst, rhs);
 
   // Since the constraint is in canonical form, the coefficients are sorted.
   const Coefficient min_coeff = cst.front().coefficient;
@@ -424,9 +419,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
       // This clause MUST be knew, otherwise something is wrong.
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    if (shared_binary_clauses_callback_ != nullptr) {
-      shared_binary_clauses_callback_(literals[0], literals[1]);
-    }
     CHECK(binary_implication_graph_->AddBinaryClause(literals[0], literals[1]));
     return /*lbd=*/2;
   }
@@ -497,15 +489,26 @@ void SatSolver::SaveDebugAssignment() {
   }
 }
 
-void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
-                                        bool export_clause) {
+void SatSolver::LoadDebugSolution(const std::vector<Literal>& solution) {
+  debug_assignment_.Resize(num_variables_.value());
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
+    if (!debug_assignment_.VariableIsAssigned(var)) continue;
+    debug_assignment_.UnassignLiteral(Literal(var, true));
+  }
+  for (const Literal l : solution) {
+    debug_assignment_.AssignFromTrueLiteral(l);
+  }
+
+  // We should only call this with complete solution.
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
+    CHECK(debug_assignment_.VariableIsAssigned(var));
+  }
+}
+
+void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   if (track_binary_clauses_) {
     // Abort if this clause was already added.
     if (!binary_clauses_.Add(BinaryClause(a, b))) return;
-  }
-
-  if (export_clause && shared_binary_clauses_callback_ != nullptr) {
-    shared_binary_clauses_callback_(a, b);
   }
 
   if (!binary_implication_graph_->AddBinaryClause(a, b)) {
@@ -515,7 +518,8 @@ void SatSolver::AddBinaryClauseInternal(Literal a, Literal b,
 }
 
 bool SatSolver::ClauseIsValidUnderDebugAssignment(
-    const std::vector<Literal>& clause) const {
+    absl::Span<const Literal> clause) const {
+  if (debug_assignment_.NumberOfVariables() == 0) return true;
   for (Literal l : clause) {
     if (l.Variable() >= debug_assignment_.NumberOfVariables() ||
         debug_assignment_.LiteralIsTrue(l)) {
@@ -871,7 +875,7 @@ void SatSolver::ProcessCurrentConflict() {
   }
 
   // Minimize the learned conflict.
-  MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
+  MinimizeConflict(&learned_conflict_);
 
   // Minimize it further with binary clauses?
   if (!binary_implication_graph_->IsEmpty()) {
@@ -918,6 +922,16 @@ void SatSolver::ProcessCurrentConflict() {
   // may be deleted.
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause(learned_conflict_);
+  }
+
+  // Because we might change the conflict with this minimization algorithm, we
+  // cannot just subsume clauses with it blindly.
+  //
+  // TODO(user): Either remove that algorithm or support subsumption by just
+  // checking if it is okay to do so, or doing it on the fly while computing the
+  // first UIP.
+  if (parameters_->minimization_algorithm() == SatParameters::EXPERIMENTAL) {
+    subsumed_clauses_.clear();
   }
 
   // Detach any subsumed clause. They will actually be deleted on the next
@@ -1006,7 +1020,7 @@ SatSolver::Status SatSolver::EnqueueDecisionAndBacktrackOnConflict(
 
 bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(PropagationIsDone());
+  DCHECK(PropagationIsDone());
 
   if (model_is_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
@@ -1044,7 +1058,14 @@ void SatSolver::Backtrack(int target_level) {
   const int target_trail_index =
       decisions_[current_decision_level_].trail_index;
 
-  Untrail(target_trail_index);
+  DCHECK_LT(target_trail_index, trail_->Index());
+  for (SatPropagator* propagator : propagators_) {
+    if (propagator->IsEmpty()) continue;
+    propagator->Untrail(*trail_, target_trail_index);
+  }
+  decision_policy_->Untrail(target_trail_index);
+  trail_->Untrail(target_trail_index);
+
   last_decision_or_backtrack_trail_index_ = trail_->Index();
 }
 
@@ -1125,7 +1146,11 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
     const BooleanVariable var = (*trail_)[trail_index].Variable();
     SatClause* clause = ReasonClauseOrNull(var);
     if (clause != nullptr) {
+      // Keep this clause.
       clauses_propagator_->mutable_clauses_info()->erase(clause);
+    }
+    if (trail_->AssignmentType(var) == AssignmentType::kSearchDecision) {
+      continue;
     }
     for (const Literal l : trail_->Reason(var)) {
       const AssignmentInfo& info = trail_->Info(l.Variable());
@@ -1138,15 +1163,94 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
   }
 }
 
+bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable) {
+  // TODO(user): other id should probably be safe as long as we do not delete
+  // the propagators. Note that symmetry is tricky since we would need to keep
+  // the symmetric clause around in KeepAllClauseUsedToInfer().
+  const int binary_id = binary_implication_graph_->PropagatorId();
+  const int clause_id = clauses_propagator_->PropagatorId();
+
+  CHECK(Assignment().VariableIsAssigned(variable));
+  if (trail_->Info(variable).level == 0) return true;
+  int trail_index = trail_->Info(variable).trail_index;
+  std::vector<bool> is_marked(trail_index + 1, false);  // move to local member.
+  is_marked[trail_index] = true;
+  int num = 1;
+  int num_clause_to_mark_as_non_deletable = 0;
+  for (; num > 0 && trail_index >= 0; --trail_index) {
+    if (!is_marked[trail_index]) continue;
+    is_marked[trail_index] = false;
+    --num;
+
+    const BooleanVariable var = (*trail_)[trail_index].Variable();
+    const int type = trail_->AssignmentType(var);
+    if (type == AssignmentType::kSearchDecision) continue;
+    if (type != binary_id && type != clause_id) return false;
+    SatClause* clause = ReasonClauseOrNull(var);
+    if (clause != nullptr && clauses_propagator_->IsRemovable(clause)) {
+      ++num_clause_to_mark_as_non_deletable;
+    }
+    for (const Literal l : trail_->Reason(var)) {
+      const AssignmentInfo& info = trail_->Info(l.Variable());
+      if (info.level == 0) continue;
+      if (!is_marked[info.trail_index]) {
+        is_marked[info.trail_index] = true;
+        ++num;
+      }
+    }
+  }
+  return num_clause_to_mark_as_non_deletable <= 1;
+}
+
 // TODO(user): this is really an in-processing stuff and should be moved out
 // of here. I think the name for that (or similar) technique is called vivify.
 // Ideally this should be scheduled after other faster in-processing technique.
 void SatSolver::TryToMinimizeClause(SatClause* clause) {
-  CHECK_EQ(CurrentDecisionLevel(), 0);
+  CHECK(clause != nullptr);
   ++counters_.minimization_num_clauses;
 
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(clause->begin(), clause->end());
+
+  // Note that CP-SAT presolve detect the clauses that share n-1 literals and
+  // transform them into (n-1 enforcement) => (1 literal per clause). We
+  // currently do not support that internally, but these clauses will still
+  // likely be loaded one after the other, so there is an high chance that if we
+  // call TryToMinimizeClause() on consecutive clauses, there will be a long
+  // prefix in common !
+  //
+  // TODO(user): Exploit this more by choosing a good minimization order?
+  int longest_valid_prefix = 0;
+  if (CurrentDecisionLevel() > 0) {
+    // Quick linear scan to see if first literal is there.
+    const Literal first_decision = decisions_[0].literal;
+    for (int i = 0; i < candidate.size(); ++i) {
+      if (candidate[i].Negated() == first_decision) {
+        std::swap(candidate[0], candidate[i]);
+        longest_valid_prefix = 1;
+        break;
+      }
+    }
+    // Lets compute the full maximum prefix if we have already one match.
+    if (longest_valid_prefix == 1 && CurrentDecisionLevel() > 1) {
+      // Lets do the full algo.
+      absl::flat_hash_map<LiteralIndex, int> indexing;
+      for (int i = 0; i < candidate.size(); ++i) {
+        indexing[candidate[i].NegatedIndex()] = i;
+      }
+      for (; longest_valid_prefix < CurrentDecisionLevel();
+           ++longest_valid_prefix) {
+        const auto it =
+            indexing.find(decisions_[longest_valid_prefix].literal.Index());
+        if (it == indexing.end()) break;
+        std::swap(candidate[longest_valid_prefix], candidate[it->second]);
+        indexing[candidate[it->second].NegatedIndex()] = it->second;
+      }
+      counters_.minimization_num_reused += longest_valid_prefix;
+    }
+  }
+  Backtrack(longest_valid_prefix);
+
   while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
@@ -1157,6 +1261,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (target_level == -1) break;
     Backtrack(target_level);
     while (CurrentDecisionLevel() < candidate.size()) {
+      if (time_limit_->LimitReached()) return;
       const int level = CurrentDecisionLevel();
       const Literal literal = candidate[level];
       if (Assignment().LiteralIsFalse(literal)) {
@@ -1178,11 +1283,10 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         // know that this clause is subsumed by other clauses in the database,
         // so we can remove it. Note however that we need to make sure we will
         // never remove the clauses that subsumes it later.
-        if (ReasonClauseOrNull(literal.Variable()) != clause) {
+        if (ReasonClauseOrNull(literal.Variable()) != clause &&
+            SubsumptionIsInteresting(literal.Variable())) {
           counters_.minimization_num_subsumed++;
           counters_.minimization_num_removed_literals += clause->size();
-
-          // TODO(user): do not do that if it make us keep too many clauses?
           KeepAllClauseUsedToInfer(literal.Variable());
           Backtrack(0);
           clauses_propagator_->Detach(clause);
@@ -1200,7 +1304,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
       } else {
         ++counters_.minimization_num_decisions;
         EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
-        if (!clause->IsAttached()) {
+        if (clause->IsRemoved()) {
           Backtrack(0);
           return;
         }
@@ -1215,8 +1319,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
 
   // Returns if we don't have any minimization.
-  Backtrack(0);
+  //
+  // Note that we don't backtrack right away so maybe if the next clause as
+  // similar literal, we can reuse the trail prefix!
   if (candidate.size() == clause->size()) return;
+  Backtrack(0);
 
   if (candidate.size() == 1) {
     if (drat_proof_handler_ != nullptr) {
@@ -1234,7 +1341,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
-    AddBinaryClauseInternal(candidate[0], candidate[1], /*export_clause=*/true);
+    AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_->Detach(clause);
 
     // This is needed in the corner case where this was the first binary clause
@@ -1278,11 +1385,6 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
                clauses_propagator_->num_watched_clauses());
     SOLVER_LOG(logger_, "Parameters: ", ProtobufShortDebugString(*parameters_));
   }
-
-  // Used to trigger clause minimization via propagation.
-  int64_t next_minimization_num_restart =
-      restart_->NumRestarts() +
-      parameters_->minimize_with_propagation_restart_period();
 
   // Variables used to show the search progress.
   const int64_t kDisplayFrequency = 10000;
@@ -1359,52 +1461,48 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
         Backtrack(assumption_level_);
       }
 
-      // Clause minimization using propagation.
-      if (CurrentDecisionLevel() == 0 &&
-          restart_->NumRestarts() >= next_minimization_num_restart) {
-        next_minimization_num_restart =
-            restart_->NumRestarts() +
-            parameters_->minimize_with_propagation_restart_period();
-        MinimizeSomeClauses(
-            parameters_->minimize_with_propagation_num_decisions());
-
-        // Corner case: the minimization above being based on propagation may
-        // fix the remaining variables or prove UNSAT.
-        if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
-        if (trail_->Index() == num_variables_.value()) {
-          return StatusWithLog(FEASIBLE);
-        }
-      }
-
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
       EnqueueNewDecision(decision_policy_->NextBranch());
     }
   }
 }
 
-void SatSolver::MinimizeSomeClauses(int decisions_budget) {
+bool SatSolver::MinimizeByPropagation(double dtime) {
+  CHECK(time_limit_ != nullptr);
+  AdvanceDeterministicTime(time_limit_);
+  const double threshold = time_limit_->GetElapsedDeterministicTime() + dtime;
+
   // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
   // while we are processing it.
   block_clause_deletion_ = true;
 
-  const int64_t target_num_branches = counters_.num_branches + decisions_budget;
-  while (counters_.num_branches < target_num_branches &&
-         (time_limit_ == nullptr || !time_limit_->LimitReached())) {
+  int num_resets = 0;
+  while (!time_limit_->LimitReached() &&
+         time_limit_->GetElapsedDeterministicTime() < threshold) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
-      if (model_is_unsat_) return;
+      if (model_is_unsat_) return false;
     } else {
       if (to_minimize == nullptr) {
+        ++num_resets;
         VLOG(1) << "Minimized all clauses, restarting from first one.";
         clauses_propagator_->ResetToMinimizeIndex();
       }
-      break;
+      if (num_resets > 1) break;
     }
+
+    AdvanceDeterministicTime(time_limit_);
   }
+
+  // Note(user): In some corner cases, the function above might find a
+  // feasible assignment. I think it is okay to ignore this special case
+  // that should only happen on trivial problems and just reset the solver.
+  const bool result = ResetToLevelZero();
 
   block_clause_deletion_ = false;
   clauses_propagator_->DeleteRemovedClauses();
+  return result;
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1703,7 +1801,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // others. Note that none of the clause should be all false because we should
   // have detected a conflict before this is called.
   for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
-    if (!clause->IsAttached()) continue;
+    if (clause->IsRemoved()) continue;
 
     const size_t old_size = clause->size();
     if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
@@ -1726,8 +1824,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // This clause is now a binary clause, treat it separately. Note that
       // it is safe to do that because this clause can't be used as a reason
       // since we are at level zero and the clause is not satisfied.
-      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral(),
-                              /*export_clause=*/true);
+      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
       clauses_propagator_->LazyDetach(clause);
       ++num_binary;
       continue;
@@ -1737,8 +1834,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // Note that we will only delete the clauses during the next database cleanup.
   clauses_propagator_->CleanUpWatchers();
   if (num_detached_clauses > 0 || num_binary > 0) {
-    VLOG(1) << trail_->Index() << " fixed variables at level 0. "
-            << "Detached " << num_detached_clauses << " clauses. " << num_binary
+    VLOG(1) << trail_->Index() << " fixed variables at level 0. " << "Detached "
+            << num_detached_clauses << " clauses. " << num_binary
             << " converted to binary.";
   }
 
@@ -1891,17 +1988,6 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   trail_->EnqueueSearchDecision(literal);
 }
 
-void SatSolver::Untrail(int target_trail_index) {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK_LT(target_trail_index, trail_->Index());
-  for (SatPropagator* propagator : propagators_) {
-    if (propagator->IsEmpty()) continue;
-    propagator->Untrail(*trail_, target_trail_index);
-  }
-  decision_policy_->Untrail(target_trail_index);
-  trail_->Untrail(target_trail_index);
-}
-
 std::string SatSolver::DebugString(const SatClause& clause) const {
   std::string result;
   for (const Literal literal : clause) {
@@ -1979,20 +2065,18 @@ void SatSolver::ComputeFirstUIPConflict(
     for (const Literal literal : clause_to_expand) {
       const BooleanVariable var = literal.Variable();
       const int level = DecisionLevel(var);
-      if (level > 0) ++num_vars_at_positive_level_in_clause_to_expand;
+      if (level == 0) continue;
+      ++num_vars_at_positive_level_in_clause_to_expand;
       if (!is_marked_[var]) {
         is_marked_.Set(var);
+        ++num_new_vars_at_positive_level;
         if (level == highest_level) {
-          ++num_new_vars_at_positive_level;
           ++num_literal_at_highest_level_that_needs_to_be_processed;
-        } else if (level > 0) {
-          ++num_new_vars_at_positive_level;
+        } else {
           // Note that all these literals are currently false since the clause
           // to expand was used to infer the value of a literal at this level.
           DCHECK(trail_->Assignment().LiteralIsFalse(literal));
           conflict->push_back(literal);
-        } else {
-          reason_used_to_infer_the_conflict->push_back(literal);
         }
       }
     }
@@ -2229,9 +2313,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
   LOG(FATAL) << "The code should never reach here.";
 }
 
-void SatSolver::MinimizeConflict(
-    std::vector<Literal>* conflict,
-    std::vector<Literal>* reason_used_to_infer_the_conflict) {
+void SatSolver::MinimizeConflict(std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
 
   const int old_size = conflict->size();

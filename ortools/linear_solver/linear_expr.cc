@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
@@ -87,7 +88,7 @@ double LinearExpr::SolutionValue() const {
 
 namespace {
 
-void AppendTerm(const double coef, const std::string& var_name,
+void AppendTerm(const double coef, absl::string_view var_name,
                 const bool is_first, std::string* s) {
   if (is_first) {
     if (coef == 1.0) {

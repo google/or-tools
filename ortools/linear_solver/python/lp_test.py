@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -158,15 +158,16 @@ class PyWrapLpTest(unittest.TestCase):
 
         print('Advanced usage:')
         print(('Problem solved in %d iterations' % solver.iterations()))
-        for variable in variable_list:
-            print(('%s: reduced cost = %f' % (variable.name(),
+        if not solver.IsMip():
+            for variable in variable_list:
+                print(('%s: reduced cost = %f' % (variable.name(),
                                               variable.reduced_cost())))
-        activities = solver.ComputeConstraintActivities()
-        for i, constraint in enumerate(constraint_list):
-            print(
-                ('constraint %d: dual value = %f\n'
-                 '               activity = %f' %
-                 (i, constraint.dual_value(), activities[constraint.index()])))
+            activities = solver.ComputeConstraintActivities()
+            for i, constraint in enumerate(constraint_list):
+                print(
+                    ('constraint %d: dual value = %f\n'
+                     '               activity = %f' %
+                     (i, constraint.dual_value(), activities[constraint.index()])))
 
     def testApi(self):
         print('testApi', flush=True)

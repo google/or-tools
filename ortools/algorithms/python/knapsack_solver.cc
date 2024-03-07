@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -84,5 +84,9 @@ PYBIND11_MODULE(knapsack_solver, m) {
              KnapsackSolver::SolverType::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
              DOC(operations_research, KnapsackSolver, SolverType,
                  KNAPSACK_DIVIDE_AND_CONQUER_SOLVER))
+      .value("KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER",
+             KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER,
+             DOC(operations_research, KnapsackSolver, SolverType,
+                 KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER))
       .export_values();
 }

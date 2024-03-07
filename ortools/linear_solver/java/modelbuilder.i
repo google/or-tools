@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -174,7 +174,8 @@ class GlobalRefGuard {
 %rename (numConstraints) operations_research::ModelBuilderHelper::num_constraints;
 %rename (getName) operations_research::ModelBuilderHelper::name;
 %rename (setName) operations_research::ModelBuilderHelper::SetName;
-%rename (writeModelToFile) operations_research::ModelBuilderHelper::WriteModelToFile;
+%rename (readModelFromProtoFile) operations_research::ModelBuilderHelper::ReadModelFromProtoFile;
+%rename (writeModelToProtoFile) operations_research::ModelBuilderHelper::WriteModelToProtoFile;
 %rename (importFromMpsString) operations_research::ModelBuilderHelper::ImportFromMpsString;
 %rename (importFromMpsFile) operations_research::ModelBuilderHelper::ImportFromMpsFile;
 %rename (importFromLpString) operations_research::ModelBuilderHelper::ImportFromLpString;

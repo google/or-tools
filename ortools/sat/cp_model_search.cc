@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@
 #include <functional>
 #include <limits>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -35,6 +34,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -64,11 +64,6 @@ bool CpModelView::IsFixed(int var) const {
     return integer_trail_.IsFixed(mapping_.Integer(var));
   }
   return true;  // Default.
-}
-
-bool CpModelView::IsCurrentlyFree(int var) const {
-  return mapping_.IsInteger(var) &&
-         integer_trail_.IsCurrentlyIgnored(mapping_.Integer(var));
 }
 
 int64_t CpModelView::Min(int var) const {
@@ -165,9 +160,10 @@ void AddDualSchedulingHeuristics(SatParameters& new_params) {
   new_params.set_use_overload_checker_in_cumulative(true);
   new_params.set_use_strong_propagation_in_disjunctive(true);
   new_params.set_use_timetable_edge_finding_in_cumulative(true);
-  new_params.set_use_pairwise_reasoning_in_no_overlap_2d(true);
+  new_params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(5000);
   new_params.set_use_timetabling_in_no_overlap_2d(true);
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -215,35 +211,23 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
           randomize_decision ? parameters.search_random_variable_pool_size()
                              : 1);
 
-      int t_index = 0;  // Index in strategy.transformations().
-      for (int i = 0; i < strategy.variables().size(); ++i) {
-        const int ref = strategy.variables(i);
-        const int var = PositiveRef(ref);
-        if (view.IsFixed(var) || view.IsCurrentlyFree(var)) continue;
+      for (const LinearExpressionProto& expr : strategy.exprs()) {
+        const int var = expr.vars(0);
+        if (view.IsFixed(var)) continue;
 
-        int64_t coeff(1);
-        int64_t offset(0);
-        while (t_index < strategy.transformations().size() &&
-               strategy.transformations(t_index).index() < i) {
-          ++t_index;
-        }
-        if (t_index < strategy.transformations_size() &&
-            strategy.transformations(t_index).index() == i) {
-          coeff = strategy.transformations(t_index).positive_coeff();
-          offset = strategy.transformations(t_index).offset();
-        }
-
-        // TODO(user): deal with integer overflow in case of wrongly specified
-        // coeff? Note that if this is filled by the presolve it shouldn't
-        // happen since any feasible value in the new variable domain should be
-        // a feasible value of the original variable domain.
-        int64_t value(0);
+        int64_t coeff = expr.coeffs(0);
+        int64_t offset = expr.offset();
         int64_t lb = view.Min(var);
         int64_t ub = view.Max(var);
-        if (!RefIsPositive(ref)) {
+        int ref = var;
+        if (coeff < 0) {
           lb = -view.Max(var);
           ub = -view.Min(var);
+          coeff = -coeff;
+          ref = NegatedRef(var);
         }
+
+        int64_t value(0);
         switch (strategy.variable_selection_strategy()) {
           case DecisionStrategyProto::CHOOSE_FIRST:
             break;
@@ -344,12 +328,25 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
   if (ModelHasSchedulingConstraints(cp_model_proto)) {
     std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
     const auto& params = *model->GetOrCreate<SatParameters>();
+    bool possible_new_constraints = false;
     if (params.use_dynamic_precedence_in_disjunctive()) {
+      possible_new_constraints = true;
       heuristics.push_back(DisjunctivePrecedenceSearchHeuristic(model));
     }
     if (params.use_dynamic_precedence_in_cumulative()) {
+      possible_new_constraints = true;
       heuristics.push_back(CumulativePrecedenceSearchHeuristic(model));
     }
+
+    // Tricky: we need to create this at level zero in case there are no linear
+    // constraint in the model at the beginning.
+    //
+    // TODO(user): Alternatively, support creation of SatPropagator at positive
+    // level.
+    if (possible_new_constraints && params.new_linear_propagation()) {
+      model->GetOrCreate<LinearPropagator>();
+    }
+
     heuristics.push_back(SchedulingSearchHeuristic(model));
     return SequentialSearch(std::move(heuristics));
   }
@@ -605,6 +602,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
+    new_params.set_at_most_one_max_expansion_size(2);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddDualSchedulingHeuristics(new_params);
     }
@@ -673,10 +671,39 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["less_encoding"] = new_params;
   }
 
+  // Base parameters for shared tree worker.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    strategies["shared_tree"] = new_params;
+  }
+
+  // Base parameters for LNS worker.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_stop_after_first_solution(false);
+    new_params.set_cp_model_presolve(true);
+    new_params.set_cp_model_probing_level(0);
+    new_params.set_symmetry_level(0);
+    new_params.set_find_big_linear_overlap(false);
+    new_params.set_log_search_progress(false);
+    new_params.set_solution_pool_size(1);  // Keep the best solution found.
+    strategies["lns"] = new_params;
+  }
+
   // Add user defined ones.
-  // Note that this might overwrite our default ones.
+  // Note that this might be merged to our default ones.
   for (const SatParameters& params : base_params.subsolver_params()) {
-    strategies[params.name()] = params;
+    auto it = strategies.find(params.name());
+    if (it != strategies.end()) {
+      it->second.MergeFrom(params);
+    } else {
+      // Merge the named parameters with the base parameters to create the new
+      // parameters.
+      SatParameters new_params = base_params;
+      new_params.MergeFrom(params);
+      strategies[params.name()] = new_params;
+    }
   }
 
   return strategies;
@@ -885,14 +912,24 @@ std::vector<SatParameters> GetFirstSolutionParams(
       new_params.set_search_branching(SatParameters::RANDOMIZED_SEARCH);
       new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random + 1));
-      new_params.set_name("random");
+      if (num_random % 2 == 1) {
+        new_params.set_name("random_no_lp");
+        new_params.set_linearization_level(0);
+      } else {
+        new_params.set_name("random");
+      }
       num_random++;
     } else {  // Random quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       new_params.set_search_random_variable_pool_size(5);
       new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_random_qr));
-      new_params.set_name("random_quick_restart");
+      if (num_random_qr % 2 == 1) {
+        new_params.set_name("random_quick_restart_no_lp");
+        new_params.set_linearization_level(0);
+      } else {
+        new_params.set_name("random_quick_restart");
+      }
       num_random_qr++;
     }
     result.push_back(new_params);
@@ -907,14 +944,16 @@ std::vector<SatParameters> GetWorkSharingParams(
   // TODO(user): We could support assumptions, it's just not implemented.
   if (!cp_model.assumptions().empty()) return result;
   if (num_params_to_generate <= 0) return result;
+
+  const auto strategies = GetNamedParameters(base_params);
+  const SatParameters& shared_tree_base_params = strategies.at("shared_tree");
   int num_workers = 0;
   while (result.size() < num_params_to_generate) {
-    // TODO(user): Make the base parameters configurable.
-    SatParameters new_params = base_params;
-    std::string name = "shared_";
+    SatParameters new_params = shared_tree_base_params;
     const int base_seed = base_params.random_seed();
     new_params.set_random_seed(ValidSumSeed(base_seed, 2 * num_workers + 1));
-    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    // We force this parameter as it could have been forgotten when set
+    // manually.
     new_params.set_use_shared_tree_search(true);
 
     // These settings don't make sense with shared tree search, turn them off as
@@ -923,14 +962,14 @@ std::vector<SatParameters> GetWorkSharingParams(
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
 
-    std::string lp_tags[] = {"no", "default", "max"};
-    absl::StrAppend(&name,
-                    lp_tags[std::min(new_params.linearization_level(), 2)],
-                    "_lp_", num_workers);
-    new_params.set_name(name);
+    absl::string_view lp_tags[] = {"no", "default", "max"};
+    new_params.set_name(absl::StrCat(
+        "shared_", lp_tags[std::min(new_params.linearization_level(), 2)],
+        "_lp_", num_workers));
     num_workers++;
     result.push_back(new_params);
   }
+
   return result;
 }
 }  // namespace sat

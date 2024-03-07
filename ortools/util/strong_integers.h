@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -94,7 +94,7 @@ namespace operations_research {
 // index and int64_t type.
 
 #define STRONG_ASSIGNMENT_OP(StrongClass, IntType, op) \
-  ThisType& operator op(const ThisType& arg_value) {   \
+  ThisType& operator op(const ThisType & arg_value) {  \
     value_ op arg_value.value();                       \
     return *this;                                      \
   }                                                    \

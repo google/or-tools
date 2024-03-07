@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -86,34 +86,33 @@ int main(int argc, char* argv[]) {
   const pdlp::SolveLog& solve_log = result.solve_log;
 
   if (solve_log.termination_reason() == pdlp::TERMINATION_REASON_OPTIMAL) {
-    std::cout << "Solve successful" << std::endl;
+    std::cout << "Solve successful" << '\n';
   } else {
     std::cout << "Solve not successful. Status: "
               << pdlp::TerminationReason_Name(solve_log.termination_reason())
-              << std::endl;
+              << '\n';
   }
 
   // Solutions vectors are always returned. *However*, their interpretation
   // depends on termination_reason! See primal_dual_hybrid_gradient.h for more
   // details on what the vectors mean if termination_reason is not
   // TERMINATION_REASON_OPTIMAL.
-  std::cout << "Primal solution:\n" << result.primal_solution << std::endl;
-  std::cout << "Dual solution:\n" << result.dual_solution << std::endl;
-  std::cout << "Reduced costs:\n" << result.reduced_costs << std::endl;
+  std::cout << "Primal solution:\n" << result.primal_solution << '\n';
+  std::cout << "Dual solution:\n" << result.dual_solution << '\n';
+  std::cout << "Reduced costs:\n" << result.reduced_costs << '\n';
 
   const pdlp::PointType solution_type = solve_log.solution_type();
-  std::cout << "Solution type: " << pdlp::PointType_Name(solution_type)
-            << std::endl;
+  std::cout << "Solution type: " << pdlp::PointType_Name(solution_type) << '\n';
   const std::optional<pdlp::ConvergenceInformation> ci =
       pdlp::GetConvergenceInformation(solve_log.solution_stats(),
                                       solution_type);
   if (ci.has_value()) {
-    std::cout << "Primal objective: " << ci->primal_objective() << std::endl;
-    std::cout << "Dual objective: " << ci->dual_objective() << std::endl;
+    std::cout << "Primal objective: " << ci->primal_objective() << '\n';
+    std::cout << "Dual objective: " << ci->dual_objective() << '\n';
   }
 
-  std::cout << "Iterations: " << solve_log.iteration_count() << std::endl;
-  std::cout << "Solve time (sec): " << solve_log.solve_time_sec() << std::endl;
+  std::cout << "Iterations: " << solve_log.iteration_count() << '\n';
+  std::cout << "Solve time (sec): " << solve_log.solve_time_sec() << '\n';
 
   return 0;
 }

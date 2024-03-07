@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -282,15 +282,15 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
     const int num_tasks = vars.size();
     SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
 
-    std::vector<IntegerVariable> start_vars;
-    std::vector<IntegerVariable> end_vars;
+    std::vector<AffineExpression> start_exprs;
+    std::vector<AffineExpression> end_exprs;
     std::vector<IntegerValue> fixed_demands;
 
     for (int t = 0; t < num_tasks; ++t) {
-      start_vars.push_back(intervals->StartVar(vars[t]));
-      end_vars.push_back(intervals->EndVar(vars[t]));
+      start_exprs.push_back(repository->Start(vars[t]));
+      end_exprs.push_back(repository->End(vars[t]));
       CHECK(integer_trail->IsFixed(demands[t]));
       fixed_demands.push_back(integer_trail->LowerBound(demands[t]));
     }
@@ -299,16 +299,18 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
     IntegerValue min_start = kMaxIntegerValue;
     IntegerValue max_end = kMinIntegerValue;
     for (int t = 0; t < num_tasks; ++t) {
-      min_start = std::min(min_start, integer_trail->LowerBound(start_vars[t]));
-      max_end = std::max(max_end, integer_trail->UpperBound(end_vars[t]));
+      min_start =
+          std::min(min_start, integer_trail->LowerBound(start_exprs[t]));
+      max_end = std::max(max_end, integer_trail->UpperBound(end_exprs[t]));
     }
 
     for (IntegerValue time = min_start; time < max_end; ++time) {
       std::vector<LiteralWithCoeff> literals_with_coeff;
       for (int t = 0; t < num_tasks; ++t) {
         if (!sat_solver->Propagate()) return;
-        const IntegerValue start_min = integer_trail->LowerBound(start_vars[t]);
-        const IntegerValue end_max = integer_trail->UpperBound(end_vars[t]);
+        const IntegerValue start_min =
+            integer_trail->LowerBound(start_exprs[t]);
+        const IntegerValue end_max = integer_trail->UpperBound(end_exprs[t]);
         if (end_max <= time || time < start_min || fixed_demands[t] == 0) {
           continue;
         }
@@ -318,16 +320,15 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
         const Literal consume = Literal(model->Add(NewBooleanVariable()), true);
 
         // Task t consumes the resource at time if it is present.
-        if (intervals->IsOptional(vars[t])) {
-          consume_condition.push_back(intervals->PresenceLiteral(vars[t]));
+        if (repository->IsOptional(vars[t])) {
+          consume_condition.push_back(repository->PresenceLiteral(vars[t]));
         }
 
         // Task t overlaps time.
         consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::LowerOrEqual(start_vars[t], IntegerValue(time))));
+            start_exprs[t].LowerOrEqual(IntegerValue(time))));
         consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::GreaterOrEqual(end_vars[t],
-                                           IntegerValue(time + 1))));
+            end_exprs[t].GreaterOrEqual(IntegerValue(time + 1))));
 
         model->Add(ReifiedBoolAnd(consume_condition, consume));
 
@@ -357,7 +358,7 @@ std::function<void(Model*)> CumulativeUsingReservoir(
 
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     auto* encoder = model->GetOrCreate<IntegerEncoder>();
-    auto* intervals = model->GetOrCreate<IntervalsRepository>();
+    auto* repository = model->GetOrCreate<IntervalsRepository>();
 
     CHECK(integer_trail->IsFixed(capacity));
     const IntegerValue fixed_capacity(
@@ -370,13 +371,13 @@ std::function<void(Model*)> CumulativeUsingReservoir(
     const int num_tasks = vars.size();
     for (int t = 0; t < num_tasks; ++t) {
       CHECK(integer_trail->IsFixed(demands[t]));
-      times.push_back(intervals->StartVar(vars[t]));
+      times.push_back(repository->Start(vars[t]));
       deltas.push_back(demands[t]);
-      times.push_back(intervals->EndVar(vars[t]));
+      times.push_back(repository->End(vars[t]));
       deltas.push_back(demands[t].Negated());
-      if (intervals->IsOptional(vars[t])) {
-        presences.push_back(intervals->PresenceLiteral(vars[t]));
-        presences.push_back(intervals->PresenceLiteral(vars[t]));
+      if (repository->IsOptional(vars[t])) {
+        presences.push_back(repository->PresenceLiteral(vars[t]));
+        presences.push_back(repository->PresenceLiteral(vars[t]));
       } else {
         presences.push_back(encoder->GetTrueLiteral());
         presences.push_back(encoder->GetTrueLiteral());

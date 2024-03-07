@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -35,7 +36,7 @@ namespace sat {
 BoolVar::BoolVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
-BoolVar BoolVar::WithName(const std::string& name) {
+BoolVar BoolVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()
@@ -115,7 +116,7 @@ BoolVar IntVar::ToBoolVar() const {
   return BoolVar(index_, builder_);
 }
 
-IntVar IntVar::WithName(const std::string& name) {
+IntVar IntVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_variables(index_)->set_name(name);
@@ -491,7 +492,7 @@ std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e) {
 
 Constraint::Constraint(ConstraintProto* proto) : proto_(proto) {}
 
-Constraint Constraint::WithName(const std::string& name) {
+Constraint Constraint::WithName(absl::string_view name) {
   proto_->set_name(name);
   return *this;
 }
@@ -578,7 +579,7 @@ IntervalVar::IntervalVar() : builder_(nullptr), index_() {}
 IntervalVar::IntervalVar(int index, CpModelBuilder* builder)
     : builder_(builder), index_(index) {}
 
-IntervalVar IntervalVar::WithName(const std::string& name) {
+IntervalVar IntervalVar::WithName(absl::string_view name) {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return *this;
   builder_->MutableProto()->mutable_constraints(index_)->set_name(name);
@@ -642,7 +643,7 @@ std::ostream& operator<<(std::ostream& os, const IntervalVar& var) {
   return os;
 }
 
-void CpModelBuilder::SetName(const std::string& name) {
+void CpModelBuilder::SetName(absl::string_view name) {
   cp_model_.set_name(name);
 }
 
@@ -1243,7 +1244,15 @@ void CpModelBuilder::AddDecisionStrategy(
     DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
   for (const IntVar& var : variables) {
-    proto->add_variables(var.index_);
+    LinearExpressionProto* expr = proto->add_exprs();
+    if (var.index_ >= 0) {
+      expr->add_vars(var.index_);
+      expr->add_coeffs(1);
+    } else {
+      expr->add_vars(PositiveRef(var.index_));
+      expr->add_coeffs(-1);
+      expr->set_offset(1);
+    }
   }
   proto->set_variable_selection_strategy(var_strategy);
   proto->set_domain_reduction_strategy(domain_strategy);
@@ -1255,7 +1264,39 @@ void CpModelBuilder::AddDecisionStrategy(
     DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
   for (const BoolVar& var : variables) {
-    proto->add_variables(var.index_);
+    LinearExpressionProto* expr = proto->add_exprs();
+    if (var.index_ >= 0) {
+      expr->add_vars(var.index_);
+      expr->add_coeffs(1);
+    } else {
+      expr->add_vars(PositiveRef(var.index_));
+      expr->add_coeffs(-1);
+      expr->set_offset(1);
+    }
+  }
+  proto->set_variable_selection_strategy(var_strategy);
+  proto->set_domain_reduction_strategy(domain_strategy);
+}
+
+void CpModelBuilder::AddDecisionStrategy(
+    absl::Span<const LinearExpr> expressions,
+    DecisionStrategyProto::VariableSelectionStrategy var_strategy,
+    DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
+  DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
+  for (const LinearExpr& expr : expressions) {
+    *proto->add_exprs() = LinearExprToProto(expr);
+  }
+  proto->set_variable_selection_strategy(var_strategy);
+  proto->set_domain_reduction_strategy(domain_strategy);
+}
+
+void CpModelBuilder::AddDecisionStrategy(
+    std::initializer_list<LinearExpr> expressions,
+    DecisionStrategyProto::VariableSelectionStrategy var_strategy,
+    DecisionStrategyProto::DomainReductionStrategy domain_strategy) {
+  DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
+  for (const LinearExpr& expr : expressions) {
+    *proto->add_exprs() = LinearExprToProto(expr);
   }
   proto->set_variable_selection_strategy(var_strategy);
   proto->set_domain_reduction_strategy(domain_strategy);
@@ -1346,7 +1387,7 @@ IntervalVar CpModelBuilder::GetIntervalVarFromProtoIndex(int index) {
   return IntervalVar(index, this);
 }
 
-bool CpModelBuilder::ExportToFile(const std::string& filename) const {
+bool CpModelBuilder::ExportToFile(absl::string_view filename) const {
   return WriteModelProtoToFile(cp_model_, filename);
 }
 

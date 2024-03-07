@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,10 +19,11 @@ cc_library(
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/glpk:glpk_computational_form",
         "//ortools/glpk:glpk_formatters",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
@@ -34,11 +35,33 @@ cc_library(
     name = "glpk_sparse_vector",
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
-    deps = ["//ortools/base"],
+    deps = [
+        "//ortools/base:logging",
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "glpk_sparse_vector_test",
+    srcs = ["glpk_sparse_vector_test.cc"],
+    deps = [
+        ":glpk_sparse_vector",
+        "//ortools/base:gmock_main",
+    ],
 )
 
 cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
+)
+
+cc_test(
+    name = "gap_test",
+    srcs = ["gap_test.cc"],
+    deps = [
+        ":gap",
+        "//ortools/base:gmock_main",
+        "//ortools/util:fp_roundtrip_conv",
+    ],
 )

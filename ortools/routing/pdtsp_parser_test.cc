@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,14 +13,13 @@
 
 #include "ortools/routing/pdtsp_parser.h"
 
+#include <cstdint>
 #include <functional>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
-#include "ortools/base/helpers.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 
 #if defined(_MSC_VER)
 #define ROOT_DIR "../../../../../../../"

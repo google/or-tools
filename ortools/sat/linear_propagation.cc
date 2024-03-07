@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -46,12 +46,24 @@ namespace sat {
 
 void CustomFifoQueue::IncreaseSize(int n) {
   CHECK_GE(n, pos_.size());
-  CHECK_LE(left_, right_);
   pos_.resize(n, -1);
   tmp_positions_.resize(n, 0);
 
   // We need 1 more space since we can add at most n element.
+  if (n + 1 < queue_.size()) return;
+  const int old_size = queue_.size();
   queue_.resize(n + 1, 0);
+  queue_.resize(queue_.capacity(), 0);
+
+  // We need to reconstruct the queue in this case.
+  if (left_ > right_) {
+    const int diff = queue_.size() - old_size;
+    for (int i = old_size - 1; i >= left_; --i) {
+      pos_[queue_[i]] = i + diff;
+      queue_[i + diff] = queue_[i];
+    }
+    left_ += diff;
+  }
 }
 
 int CustomFifoQueue::Pop() {
@@ -230,10 +242,11 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
 EnforcementId EnforcementPropagator::Register(
     absl::Span<const Literal> enforcement,
     std::function<void(EnforcementStatus)> callback) {
-  CHECK_EQ(trail_.CurrentDecisionLevel(), 0);
   int num_true = 0;
   int num_false = 0;
+  bool is_always_false = false;
   temp_literals_.clear();
+  const int level = trail_.CurrentDecisionLevel();
   for (const Literal l : enforcement) {
     // Make sure we always have enough room for the literal and its negation.
     const int size = std::max(l.Index().value(), l.NegatedIndex().value()) + 1;
@@ -241,23 +254,25 @@ EnforcementId EnforcementPropagator::Register(
       watcher_.resize(size);
     }
     if (assignment_.LiteralIsTrue(l)) {
+      if (level == 0 || trail_.Info(l.Variable()).level == 0) continue;
       ++num_true;
-      continue;
-    }
-    if (assignment_.LiteralIsFalse(l)) {
+    } else if (assignment_.LiteralIsFalse(l)) {
+      if (level == 0 || trail_.Info(l.Variable()).level == 0) {
+        is_always_false = true;
+        break;
+      }
       ++num_false;
-      continue;
     }
     temp_literals_.push_back(l);
   }
   gtl::STLSortAndRemoveDuplicates(&temp_literals_);
 
   // Return special indices if never/always enforced.
-  if (num_false > 0) {
+  if (is_always_false) {
     if (callback != nullptr) callback(EnforcementStatus::IS_FALSE);
     return EnforcementId(-1);
   }
-  if (num_true == enforcement.size()) {
+  if (temp_literals_.empty()) {
     if (callback != nullptr) callback(EnforcementStatus::IS_ENFORCED);
     return EnforcementId(-1);
   }
@@ -267,15 +282,56 @@ EnforcementId EnforcementPropagator::Register(
 
   CHECK(!temp_literals_.empty());
   buffer_.insert(buffer_.end(), temp_literals_.begin(), temp_literals_.end());
-  starts_.push_back(buffer_.size());  // Sentinel.
-  statuses_.push_back(EnforcementStatus::CANNOT_PROPAGATE);
+  starts_.push_back(buffer_.size());  // Sentinel/next-start.
+
+  // The default status at level zero.
+  statuses_.push_back(temp_literals_.size() == 1
+                          ? EnforcementStatus::CAN_PROPAGATE
+                          : EnforcementStatus::CANNOT_PROPAGATE);
 
   if (temp_literals_.size() == 1) {
     watcher_[temp_literals_[0].Index()].push_back(id);
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
   } else {
-    watcher_[temp_literals_[0].Index()].push_back(id);
-    watcher_[temp_literals_[1].Index()].push_back(id);
+    // Make sure we watch correct literals.
+    const auto span = GetSpan(id);
+    int num_not_true = 0;
+    for (int i = 0; i < span.size(); ++i) {
+      if (assignment_.LiteralIsTrue(span[i])) continue;
+      std::swap(span[num_not_true], span[i]);
+      ++num_not_true;
+      if (num_not_true == 2) break;
+    }
+
+    // We need to watch one of the literals at highest level.
+    if (num_not_true == 1) {
+      int max_level = trail_.Info(span[1].Variable()).level;
+      for (int i = 2; i < span.size(); ++i) {
+        const int level = trail_.Info(span[i].Variable()).level;
+        if (level > max_level) {
+          max_level = level;
+          std::swap(span[1], span[i]);
+        }
+      }
+    }
+
+    watcher_[span[0].Index()].push_back(id);
+    watcher_[span[1].Index()].push_back(id);
+  }
+
+  // Change status, call callback and set up untrail if the status is different
+  // from EnforcementStatus::CANNOT_PROPAGATE.
+  if (num_false > 0) {
+    ChangeStatus(id, EnforcementStatus::IS_FALSE);
+  } else if (num_true == temp_literals_.size()) {
+    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
+  } else if (num_true + 1 == temp_literals_.size()) {
+    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
+    // Because this is the default status, we still need to call the callback.
+    if (temp_literals_.size() == 1) {
+      if (callbacks_[id] != nullptr) {
+        callbacks_[id](EnforcementStatus::CAN_PROPAGATE);
+      }
+    }
   }
   return id;
 }
@@ -390,6 +446,22 @@ void EnforcementPropagator::ChangeStatus(EnforcementId id,
   if (callbacks_[id] != nullptr) callbacks_[id](new_status);
 }
 
+EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
+  if (id < 0) return EnforcementStatus::IS_ENFORCED;
+
+  int num_true = 0;
+  for (const Literal l : GetSpan(id)) {
+    if (assignment_.LiteralIsFalse(l)) {
+      return EnforcementStatus::IS_FALSE;
+    }
+    if (assignment_.LiteralIsTrue(l)) ++num_true;
+  }
+  const int size = GetSpan(id).size();
+  if (num_true == size) return EnforcementStatus::IS_ENFORCED;
+  if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE;
+  return EnforcementStatus::CANNOT_PROPAGATE;
+}
+
 LinearPropagator::LinearPropagator(Model* model)
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -438,13 +510,14 @@ void LinearPropagator::SetLevel(int level) {
     while (!propagation_queue_.empty()) {
       in_queue_[propagation_queue_.Pop()] = false;
     }
-    for (int i = rev_at_false_size_; i < in_queue_and_at_false_.size(); ++i) {
-      in_queue_[in_queue_and_at_false_[i]] = false;
+    for (int i = rev_unenforced_size_; i < unenforced_constraints_.size();
+         ++i) {
+      in_queue_[unenforced_constraints_[i]] = false;
     }
-    in_queue_and_at_false_.resize(rev_at_false_size_);
+    unenforced_constraints_.resize(rev_unenforced_size_);
   } else if (level > previous_level_) {
-    rev_at_false_size_ = in_queue_and_at_false_.size();
-    rev_int_repository_->SaveState(&rev_at_false_size_);
+    rev_unenforced_size_ = unenforced_constraints_.size();
+    rev_int_repository_->SaveState(&rev_unenforced_size_);
   }
   previous_level_ = level;
 
@@ -468,12 +541,12 @@ bool LinearPropagator::Propagate() {
     AddWatchedToQueue(var);
   }
 
-  // TODO(user): Abort this propagator as soon as a Boolean is propagated ? so
-  // that we always finish the Boolean propagation first. This can happen when
-  // we push a bound that has associated Booleans. The idea is to resume from
-  // our current state when we are called again. Note however that we have to
-  // clear the propagated_by_ info has other propagator might have pushed the
-  // same variable further.
+  // We abort this propagator as soon as a Boolean is propagated, so that we
+  // always finish the Boolean propagation first. This can happen when we push a
+  // bound that has associated Booleans or push enforcement to false. The idea
+  // is to resume from our current state when we are called again. Note however
+  // that we have to clear the propagated_by_ info (as done above) has other
+  // propagator might have pushed the same variable further.
   //
   // Empty FIFO queue.
   const int saved_index = trail_->Index();
@@ -497,13 +570,15 @@ bool LinearPropagator::Propagate() {
 }
 
 // Adds a new constraint to the propagator.
-void LinearPropagator::AddConstraint(
+bool LinearPropagator::AddConstraint(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
     absl::Span<const IntegerValue> coeffs, IntegerValue upper_bound) {
-  if (vars.empty()) return;
-  for (const Literal l : enforcement_literals) {
-    if (trail_->Assignment().LiteralIsFalse(l)) return;
+  if (vars.empty()) return true;
+  if (trail_->CurrentDecisionLevel() == 0) {
+    for (const Literal l : enforcement_literals) {
+      if (trail_->Assignment().LiteralIsFalse(l)) return true;
+    }
   }
 
   // Make sure max_variations_ is of correct size.
@@ -551,12 +626,13 @@ void LinearPropagator::AddConstraint(
   propagation_queue_.IncreaseSize(in_queue_.size());
 
   if (!enforcement_literals.empty()) {
-    infos_.back().enf_status = EnforcementStatus::CANNOT_PROPAGATE;
+    infos_.back().enf_status =
+        static_cast<int>(EnforcementStatus::CANNOT_PROPAGATE);
     infos_.back().enf_id = enforcement_propagator_->Register(
         enforcement_literals, [this, id](EnforcementStatus status) {
-          infos_[id].enf_status = status;
+          infos_[id].enf_status = static_cast<int>(status);
           // TODO(user): With some care, when we cannot propagate or the
-          // constraint is not enforced, we could live in_queue_[] at true but
+          // constraint is not enforced, we could leave in_queue_[] at true but
           // not put the constraint in the queue.
           if (status == EnforcementStatus::CAN_PROPAGATE ||
               status == EnforcementStatus::IS_ENFORCED) {
@@ -567,7 +643,7 @@ void LinearPropagator::AddConstraint(
   } else {
     AddToQueueIfNeeded(id);
     infos_.back().enf_id = -1;
-    infos_.back().enf_status = EnforcementStatus::IS_ENFORCED;
+    infos_.back().enf_status = static_cast<int>(EnforcementStatus::IS_ENFORCED);
   }
 
   for (const IntegerVariable var : GetVariables(infos_[id])) {
@@ -593,6 +669,9 @@ void LinearPropagator::AddConstraint(
       watcher_->WatchLowerBound(var, watcher_id_);
     }
   }
+
+  // Propagate this new constraint.
+  return PropagateOneConstraint(id);
 }
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(
@@ -635,14 +714,16 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
 
   // Skip constraint not enforced or that cannot propagate if false.
   ConstraintInfo& info = infos_[id];
-  if (info.enf_status == EnforcementStatus::IS_FALSE ||
-      info.enf_status == EnforcementStatus::CANNOT_PROPAGATE) {
+  const EnforcementStatus enf_status = EnforcementStatus(info.enf_status);
+  DCHECK_EQ(enf_status, enforcement_propagator_->DebugStatus(info.enf_id));
+  if (enf_status == EnforcementStatus::IS_FALSE ||
+      enf_status == EnforcementStatus::CANNOT_PROPAGATE) {
     DCHECK(!in_queue_[id]);
-    if (info.enf_status == EnforcementStatus::IS_FALSE) {
+    if (enf_status == EnforcementStatus::IS_FALSE) {
       // We mark this constraint as in the queue but will never inspect it
       // again until we backtrack over this time.
       in_queue_[id] = true;
-      in_queue_and_at_false_.push_back(id);
+      unenforced_constraints_.push_back(id);
     }
     ++num_ignored_;
     return true;
@@ -706,7 +787,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // We can only propagate more if all the enforcement literals are true.
-  if (info.enf_status != EnforcementStatus::IS_ENFORCED) return true;
+  if (info.enf_status != static_cast<int>(EnforcementStatus::IS_ENFORCED)) {
+    return true;
+  }
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.

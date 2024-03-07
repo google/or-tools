@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,6 +16,7 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/solve.cc
 )
 list(FILTER _SRCS EXCLUDE REGEX "/model_exporter_main\\.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 if(USE_SCIP)
   list(APPEND _SRCS ${LPI_GLOP_SRC})
 endif()
@@ -44,14 +45,16 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
-  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
 #add_library(${PROJECT_NAMESPACE}::linear_solver ALIAS ${NAME})
 
 # solve
 add_executable(solve)
 target_sources(solve PRIVATE "solve.cc")
-target_include_directories(solve PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(solve PRIVATE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+)
 target_compile_features(solve PRIVATE cxx_std_17)
 target_link_libraries(solve PRIVATE ${PROJECT_NAMESPACE}::ortools)
 
@@ -63,8 +66,25 @@ elseif(UNIX)
   cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
              BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
              OUTPUT_VARIABLE libdir_relative_path)
-  set_target_properties(solve PROPERTIES
-                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  set_target_properties(solve PROPERTIES INSTALL_RPATH
+    "$ORIGIN/${libdir_relative_path}")
 endif()
 
-install(TARGETS solve)
+install(TARGETS solve
+  EXPORT ${PROJECT_NAME}Targets
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(BUILD_TESTING)
+  if (APPLE)
+    set(CMAKE_INSTALL_RPATH
+            "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif (UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN:$ORIGIN/../lib:$ORIGIN")
+  endif ()
+
+  add_executable(test_xprs_interface xpress_interface_test.cc)
+  target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
+  target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
+
+  add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
+endif ()

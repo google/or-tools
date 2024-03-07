@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -704,14 +704,18 @@ bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp) {
       sharded_qp.DualSharder().ParallelTrueForAllShards(
           [&](const Sharder::Shard& shard) {
             return (shard(qp.constraint_lower_bounds).array() <=
-                    shard(qp.constraint_upper_bounds).array())
+                        shard(qp.constraint_upper_bounds).array() &&
+                    shard(qp.constraint_lower_bounds).array() < kInfinity &&
+                    shard(qp.constraint_upper_bounds).array() > -kInfinity)
                 .all();
           });
   const bool variable_bounds_valid =
       sharded_qp.PrimalSharder().ParallelTrueForAllShards(
           [&](const Sharder::Shard& shard) {
             return (shard(qp.variable_lower_bounds).array() <=
-                    shard(qp.variable_upper_bounds).array())
+                        shard(qp.variable_upper_bounds).array() &&
+                    shard(qp.variable_lower_bounds).array() < kInfinity &&
+                    shard(qp.variable_upper_bounds).array() > -kInfinity)
                 .all();
           });
 
@@ -719,13 +723,26 @@ bool HasValidBounds(const ShardedQuadraticProgram& sharded_qp) {
 }
 
 void ProjectToPrimalVariableBounds(const ShardedQuadraticProgram& sharded_qp,
-                                   VectorXd& primal) {
+                                   VectorXd& primal,
+                                   const bool use_feasibility_bounds) {
+  const auto make_finite_values_zero = [](const double x) {
+    return std::isfinite(x) ? 0.0 : x;
+  };
   sharded_qp.PrimalSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
         const QuadraticProgram& qp = sharded_qp.Qp();
-        shard(primal) = shard(primal)
-                            .cwiseMin(shard(qp.variable_upper_bounds))
-                            .cwiseMax(shard(qp.variable_lower_bounds));
+        if (use_feasibility_bounds) {
+          shard(primal) =
+              shard(primal)
+                  .cwiseMin(shard(qp.variable_upper_bounds)
+                                .unaryExpr(make_finite_values_zero))
+                  .cwiseMax(shard(qp.variable_lower_bounds)
+                                .unaryExpr(make_finite_values_zero));
+        } else {
+          shard(primal) = shard(primal)
+                              .cwiseMin(shard(qp.variable_upper_bounds))
+                              .cwiseMax(shard(qp.variable_lower_bounds));
+        }
       });
 }
 
@@ -738,6 +755,9 @@ void ProjectToDualVariableBounds(const ShardedQuadraticProgram& sharded_qp,
         const auto upper_bound_shard = shard(qp.constraint_upper_bounds);
         auto dual_shard = shard(dual);
 
+        // TODO(user): Investigate whether it is more efficient to
+        // use .cwiseMax() + .cwiseMin() with unaryExpr(s) that map
+        // upper_bound_shard and lower_bound_shard to appropriate values.
         for (int64_t i = 0; i < dual_shard.size(); ++i) {
           if (!std::isfinite(upper_bound_shard[i])) {
             dual_shard[i] = std::max(dual_shard[i], 0.0);

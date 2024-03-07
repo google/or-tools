@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1138,7 +1138,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
 
   // First scan: update the partition.
   const int num_constraints = cp_model.constraints_size();
-  std::vector<std::pair<int64_t, int64_t>> activities(num_constraints);
+  std::vector<bool> c_is_free_to_increase(num_constraints);
+  std::vector<bool> c_is_free_to_decrease(num_constraints);
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
     switch (ct.constraint_case()) {
@@ -1154,13 +1155,15 @@ void ScanModelForDominanceDetection(PresolveContext& context,
         break;
       case ConstraintProto::kLinear: {
         // TODO(user): Maybe we should avoid recomputing that here.
-        activities[c] = context.ComputeMinMaxActivity(ct.linear());
-        const auto [min_activity, max_activity] = activities[c];
+        const auto [min_activity, max_activity] =
+            context.ComputeMinMaxActivity(ct.linear());
         const bool domain_is_simple = ct.linear().domain().size() == 2;
         const bool free_to_increase =
             domain_is_simple && ct.linear().domain(1) >= max_activity;
         const bool free_to_decrease =
             domain_is_simple && ct.linear().domain(0) <= min_activity;
+        c_is_free_to_increase[c] = free_to_increase;
+        c_is_free_to_decrease[c] = free_to_decrease;
         if (free_to_decrease && free_to_increase) break;
         if (!free_to_increase && !free_to_decrease) {
           var_domination->ActivityShouldNotChange(ct.linear().vars(),
@@ -1234,12 +1237,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
                                                     /*coeffs=*/{});
           break;
         case ConstraintProto::kLinear: {
-          const auto [min_activity, max_activity] = activities[c];
-          const bool domain_is_simple = ct.linear().domain().size() == 2;
-          const bool free_to_increase =
-              domain_is_simple && ct.linear().domain(1) >= max_activity;
-          const bool free_to_decrease =
-              domain_is_simple && ct.linear().domain(0) <= min_activity;
+          const bool free_to_increase = c_is_free_to_increase[c];
+          const bool free_to_decrease = c_is_free_to_decrease[c];
           if (free_to_decrease && free_to_increase) break;
           if (free_to_increase) {
             var_domination->ActivityShouldNotDecrease(ct.enforcement_literal(),
@@ -1305,8 +1304,8 @@ void ScanModelForDominanceDetection(PresolveContext& context,
     }
   }
   if (num_unconstrained_refs == 0 && num_dominated_refs == 0) return;
-  VLOG(1) << "Dominance:"
-          << " num_unconstrained_refs=" << num_unconstrained_refs
+  VLOG(1) << "Dominance:" << " num_unconstrained_refs="
+          << num_unconstrained_refs
           << " num_dominated_refs=" << num_dominated_refs
           << " num_dominance_relations=" << num_dominance_relations;
 }
@@ -1692,6 +1691,8 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
         ++num_added;
         context->AddImplication(ref, dom_ref);
+        implications.insert({ref, dom_ref});
+        implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
 
         // dom-- or var++ are now forbidden.
         increase_is_forbidden[var] = true;

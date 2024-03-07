@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -520,6 +520,15 @@ int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
   return max_activity;
 }
 
+bool ActivityBoundHelper::AppearInTriggeredAmo(int literal) {
+  const Index index = IndexFromLiteral(literal);
+  if (index >= amo_indices_.size()) return false;
+  for (const int amo : amo_indices_[index]) {
+    if (triggered_amo_.contains(amo)) return true;
+  }
+  return false;
+}
+
 bool ActivityBoundHelper::PresolveEnforcement(
     absl::Span<const int> refs, ConstraintProto* ct,
     absl::flat_hash_set<int>* literals_at_true) {
@@ -539,17 +548,7 @@ bool ActivityBoundHelper::PresolveEnforcement(
     // Tricky: We need to do that before appending the amo containing ref in
     // case an amo contains both ref and not(ref).
     // TODO(user): Ideally these amo should not be added to this class.
-    const Index negated_index = IndexFromLiteral(NegatedRef(ref));
-    if (negated_index < amo_indices_.size()) {
-      bool skip = false;
-      for (const int a : amo_indices_[negated_index]) {
-        if (triggered_amo_.contains(a)) {
-          skip = true;
-          break;
-        }
-      }
-      if (skip) continue;
-    }
+    if (AppearInTriggeredAmo(NegatedRef(ref))) continue;
 
     const Index index = IndexFromLiteral(ref);
     if (index < amo_indices_.size()) {
@@ -587,6 +586,66 @@ bool ActivityBoundHelper::PresolveEnforcement(
   }
 
   return true;
+}
+
+int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
+    absl::Span<const std::pair<int, int64_t>> boolean_terms,
+    const Domain& other_terms, const Domain& rhs, ConstraintProto* ct) {
+  tmp_set_.clear();
+  for (const int enf_lit : ct->enforcement_literal()) {
+    const Index negated_index = IndexFromLiteral(NegatedRef(enf_lit));
+    if (negated_index >= amo_indices_.size()) continue;
+    if (amo_indices_[negated_index].empty()) continue;
+
+    triggered_amo_.clear();
+    triggered_amo_.insert(amo_indices_[negated_index].begin(),
+                          amo_indices_[negated_index].end());
+
+    // Compute min_max activity when enf_lit is false.
+    int64_t min_activity = 0;
+    int64_t max_activity = 0;
+    for (const auto [ref, coeff] : boolean_terms) {
+      // This is not supposed to happen after PresolveEnforcement(), so we
+      // just abort in this case.
+      if (ref == enf_lit || ref == NegatedRef(enf_lit)) break;
+
+      const bool is_true = AppearInTriggeredAmo(NegatedRef(ref));
+      const bool is_false = AppearInTriggeredAmo(ref);
+
+      // Similarly, this is not supposed to happen after PresolveEnforcement().
+      if (is_true && is_false) break;
+
+      if (is_false) continue;
+      if (is_true) {
+        min_activity += coeff;
+        max_activity += coeff;
+        continue;
+      }
+      if (coeff > 0) {
+        max_activity += coeff;
+      } else {
+        min_activity += coeff;
+      }
+    }
+
+    if (Domain(min_activity, max_activity)
+            .AdditionWith(other_terms)
+            .IsIncludedIn(rhs)) {
+      tmp_set_.insert(enf_lit);
+    }
+  }
+
+  if (!tmp_set_.empty()) {
+    int new_size = 0;
+    for (const int ref : ct->enforcement_literal()) {
+      if (tmp_set_.contains(ref)) continue;
+      ct->set_enforcement_literal(new_size++, ref);
+    }
+    const int old_size = ct->enforcement_literal().size();
+    ct->mutable_enforcement_literal()->Truncate(new_size);
+    return old_size - new_size;
+  }
+  return 0;
 }
 
 void ClauseWithOneMissingHasher::RegisterClause(int c,

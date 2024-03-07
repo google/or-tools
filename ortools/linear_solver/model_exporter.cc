@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -50,7 +51,7 @@ class LineBreaker {
   // - Lines are split so that their length doesn't exceed the max length;
   //   unless a single string given to Append() exceeds that length (in which
   //   case it will be put alone on a single unsplit line).
-  void Append(const std::string& s);
+  void Append(absl::string_view s);
 
   // Returns true if string s will fit on the current line without adding a
   // carriage return.
@@ -70,7 +71,7 @@ class LineBreaker {
   std::string output_;
 };
 
-void LineBreaker::Append(const std::string& s) {
+void LineBreaker::Append(absl::string_view s) {
   line_size_ += s.size();
   if (line_size_ > max_line_size_) {
     line_size_ = s.size();
@@ -258,15 +259,15 @@ namespace {
 class NameManager {
  public:
   NameManager() : names_set_(), last_n_(1) {}
-  std::string MakeUniqueName(const std::string& name);
+  std::string MakeUniqueName(absl::string_view name);
 
  private:
   absl::flat_hash_set<std::string> names_set_;
   int last_n_;
 };
 
-std::string NameManager::MakeUniqueName(const std::string& name) {
-  std::string result = name;
+std::string NameManager::MakeUniqueName(absl::string_view name) {
+  std::string result(name);
   // Find the 'n' so that "name_n" does not already exist.
   int n = last_n_;
   while (!names_set_.insert(result).second) {

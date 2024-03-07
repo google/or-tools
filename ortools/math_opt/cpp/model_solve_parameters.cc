@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -19,7 +19,10 @@
 #include <optional>
 #include <utility>
 
-#include "google/protobuf/message.h"
+#include "absl/algorithm/container.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "google/protobuf/repeated_field.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"
@@ -64,6 +67,26 @@ absl::Status ModelSolveParameters::CheckModelStorage(
       << "invalid dual_values_filter";
   RETURN_IF_ERROR(reduced_costs_filter.CheckModelStorage(expected_storage))
       << "invalid reduced_costs_filter";
+  for (const auto [var, unused] : branching_priorities) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/var.storage(),
+        /*expected_storage=*/expected_storage))
+        << "invalid variable " << var << " in branching_priorities";
+  }
+  for (const auto& [objective, params] : objective_parameters) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/objective.storage(),
+        /*expected_storage=*/expected_storage))
+        << "invalid objective " << objective << " in objective_parameters";
+  }
+  for (const LinearConstraint lazy_linear_constraint :
+       lazy_linear_constraints) {
+    RETURN_IF_ERROR(internal::CheckModelStorage(
+        /*storage=*/lazy_linear_constraint.storage(),
+        /*expected_storage=*/expected_storage))
+        << "invalid LinearConstraint " << lazy_linear_constraint
+        << " in lazy_linear_constraints";
+  }
   return absl::OkStatus();
 }
 
@@ -108,6 +131,21 @@ ModelSolveParameters::SolutionHint::FromProto(
   };
 }
 
+ObjectiveParametersProto ModelSolveParameters::ObjectiveParameters::Proto()
+    const {
+  ObjectiveParametersProto params;
+  if (objective_degradation_absolute_tolerance) {
+    params.set_objective_degradation_absolute_tolerance(
+        *objective_degradation_absolute_tolerance);
+  }
+  if (objective_degradation_relative_tolerance) {
+    params.set_objective_degradation_relative_tolerance(
+        *objective_degradation_relative_tolerance);
+  }
+  return params;
+}
+
+// TODO: b/315974557 - Return an error if a RepeatedField is too long.
 ModelSolveParametersProto ModelSolveParameters::Proto() const {
   ModelSolveParametersProto ret;
   *ret.mutable_variable_values_filter() = variable_values_filter.Proto();
@@ -117,31 +155,37 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
   // TODO(b/183616124): consolidate code. Probably best to add an
   // export_to_proto to IdMap
   if (initial_basis) {
-    RepeatedField<int64_t>* const constraint_status_ids =
-        ret.mutable_initial_basis()->mutable_constraint_status()->mutable_ids();
-    RepeatedField<int>* const constraint_status_values =
-        ret.mutable_initial_basis()
-            ->mutable_constraint_status()
-            ->mutable_values();
-    constraint_status_ids->Reserve(initial_basis->constraint_status.size());
-    constraint_status_values->Reserve(initial_basis->constraint_status.size());
+    RepeatedField<int64_t>& constraint_status_ids =
+        *ret.mutable_initial_basis()
+             ->mutable_constraint_status()
+             ->mutable_ids();
+    RepeatedField<int>& constraint_status_values =
+        *ret.mutable_initial_basis()
+             ->mutable_constraint_status()
+             ->mutable_values();
+    constraint_status_ids.Reserve(
+        static_cast<int>(initial_basis->constraint_status.size()));
+    constraint_status_values.Reserve(
+        static_cast<int>(initial_basis->constraint_status.size()));
     for (const LinearConstraint& key :
          SortedKeys(initial_basis->constraint_status)) {
-      constraint_status_ids->Add(key.id());
-      constraint_status_values->Add(
+      constraint_status_ids.Add(key.id());
+      constraint_status_values.Add(
           EnumToProto(initial_basis->constraint_status.at(key)));
     }
-    RepeatedField<int64_t>* const variable_status_ids =
-        ret.mutable_initial_basis()->mutable_variable_status()->mutable_ids();
-    RepeatedField<int>* const variable_status_values =
-        ret.mutable_initial_basis()
-            ->mutable_variable_status()
-            ->mutable_values();
-    variable_status_ids->Reserve(initial_basis->variable_status.size());
-    variable_status_values->Reserve(initial_basis->variable_status.size());
+    RepeatedField<int64_t>& variable_status_ids =
+        *ret.mutable_initial_basis()->mutable_variable_status()->mutable_ids();
+    RepeatedField<int>& variable_status_values =
+        *ret.mutable_initial_basis()
+             ->mutable_variable_status()
+             ->mutable_values();
+    variable_status_ids.Reserve(
+        static_cast<int>(initial_basis->variable_status.size()));
+    variable_status_values.Reserve(
+        static_cast<int>(initial_basis->variable_status.size()));
     for (const Variable& key : SortedKeys(initial_basis->variable_status)) {
-      variable_status_ids->Add(key.id());
-      variable_status_values->Add(
+      variable_status_ids.Add(key.id());
+      variable_status_values.Add(
           EnumToProto(initial_basis->variable_status.at(key)));
     }
   }
@@ -149,16 +193,35 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
     *ret.add_solution_hints() = solution_hint.Proto();
   }
   if (!branching_priorities.empty()) {
-    RepeatedField<int64_t>* const variable_ids =
-        ret.mutable_branching_priorities()->mutable_ids();
-    RepeatedField<int32_t>* const variable_values =
-        ret.mutable_branching_priorities()->mutable_values();
-    variable_ids->Reserve(branching_priorities.size());
-    variable_values->Reserve(branching_priorities.size());
+    RepeatedField<int64_t>& variable_ids =
+        *ret.mutable_branching_priorities()->mutable_ids();
+    RepeatedField<int32_t>& variable_values =
+        *ret.mutable_branching_priorities()->mutable_values();
+    variable_ids.Reserve(static_cast<int>(branching_priorities.size()));
+    variable_values.Reserve(static_cast<int>(branching_priorities.size()));
     for (const Variable& key : SortedKeys(branching_priorities)) {
-      variable_ids->Add(key.id());
-      variable_values->Add(branching_priorities.at(key));
+      variable_ids.Add(key.id());
+      variable_values.Add(branching_priorities.at(key));
     }
+  }
+  for (const auto& [objective, params] : objective_parameters) {
+    if (objective.id()) {
+      (*ret.mutable_auxiliary_objective_parameters())[*objective.id()] =
+          params.Proto();
+    } else {
+      *ret.mutable_primary_objective_parameters() = params.Proto();
+    }
+  }
+  if (!lazy_linear_constraints.empty()) {
+    RepeatedField<int64_t>& lazy_linear_constraint_ids =
+        *ret.mutable_lazy_linear_constraint_ids();
+    lazy_linear_constraint_ids.Reserve(
+        static_cast<int>(lazy_linear_constraints.size()));
+    for (const LinearConstraint lazy_linear_constraint :
+         lazy_linear_constraints) {
+      lazy_linear_constraint_ids.Add(lazy_linear_constraint.id());
+    }
+    absl::c_sort(lazy_linear_constraint_ids);
   }
   return ret;
 }

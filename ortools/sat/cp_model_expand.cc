@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,11 +29,13 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -573,14 +575,34 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context) {
     if (var_domain.IsFixed()) {
       context->AddImplyInDomain(index_lit, target_ref, var_domain);
     } else {
+      // We make sure we only use positive ref.
+      //
+      // TODO(user): Get rid of this code once we accept affine in element
+      // constraint.
       ConstraintProto* const ct = context->working_model->add_constraints();
       ct->add_enforcement_literal(index_lit);
-      ct->mutable_linear()->add_vars(var);
-      ct->mutable_linear()->add_coeffs(1);
-      ct->mutable_linear()->add_vars(target_ref);
-      ct->mutable_linear()->add_coeffs(-1);
+      if (RefIsPositive(var)) {
+        ct->mutable_linear()->add_vars(var);
+        ct->mutable_linear()->add_coeffs(1);
+      } else {
+        ct->mutable_linear()->add_vars(NegatedRef(var));
+        ct->mutable_linear()->add_coeffs(-1);
+      }
+      if (RefIsPositive(target_ref)) {
+        ct->mutable_linear()->add_vars(target_ref);
+        ct->mutable_linear()->add_coeffs(-1);
+      } else {
+        ct->mutable_linear()->add_vars(NegatedRef(target_ref));
+        ct->mutable_linear()->add_coeffs(1);
+      }
       ct->mutable_linear()->add_domain(0);
       ct->mutable_linear()->add_domain(0);
+
+      // Note that this should have been checked at model validation.
+      DCHECK(!PossibleIntegerOverflow(*context->working_model,
+                                      ct->mutable_linear()->vars(),
+                                      ct->mutable_linear()->coeffs()))
+          << google::protobuf::ShortFormat(*ct);
     }
   }
 
@@ -1422,8 +1444,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
     }
   }
 
-  VLOG(2) << "Table compression"
-          << " var=" << vars.size()
+  VLOG(2) << "Table compression" << " var=" << vars.size()
           << " cost=" << domain_sizes.size() - vars.size()
           << " tuples= " << num_tuples_before_compression << " -> "
           << num_tuples_after_first_compression << " -> "
@@ -1881,11 +1902,17 @@ bool IsVarEqOrNeqValue(PresolveContext* context,
                        const LinearConstraintProto& lin) {
   if (lin.vars_size() != 1) return false;
   const Domain rhs = ReadDomainFromProto(lin);
+
+  // This is literal => var == value.
   if (rhs.IsFixed()) return true;
-  return rhs.InverseMultiplicationBy(lin.coeffs(0))
-      .Complement()
-      .IntersectionWith(context->DomainOf(lin.vars(0)))
-      .IsFixed();
+
+  // Is it literal => var != value ?
+  const Domain not_implied =
+      rhs.InverseMultiplicationBy(lin.coeffs(0))
+          .Complement()
+          .IntersectionWith(context->DomainOf(lin.vars(0)));
+  if (not_implied.IsEmpty()) return false;
+  return not_implied.IsFixed();
 }
 
 // This method will scan all constraints of all variables appearing in an
@@ -2045,6 +2072,7 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
       context->params().expand_alldiff_constraints();
   AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
   if (proto.exprs_size() <= 1) return;
+  if (context->ModelIsUnsat()) return;
 
   bool keep_after_expansion = false;
   bool expand_all_diff_from_usage = false;
@@ -2139,6 +2167,7 @@ void ExpandCpModel(PresolveContext* context) {
 
   // Make sure all domains are initialized.
   context->InitializeNewDomains();
+  if (context->ModelIsUnsat()) return;
 
   // Clear the precedence cache.
   context->ClearPrecedenceCache();

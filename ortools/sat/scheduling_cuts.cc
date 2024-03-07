@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -81,9 +81,6 @@ struct EnergyEvent : BaseEvent {
 
   // True if linearized_energy is not exact and a McCormick relaxation.
   bool energy_is_quadratic = false;
-
-  // Used to minimize the increase on the y axis for rectangles.
-  double y_spread = 0.0;
 
   // The actual value of the presence literal of the interval(s) is checked
   // when the event is created. A value of kNoLiteralIndex indicates that either
@@ -246,7 +243,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
 // This generates the actual cut and compute its activity vs the
 // available_energy_lp.
 bool CutIsEfficient(
-    const std::vector<EnergyEvent>& events, IntegerValue window_start,
+    absl::Span<const EnergyEvent> events, IntegerValue window_start,
     IntegerValue window_end, double available_energy_lp,
     const absl::StrongVector<IntegerVariable, double>& lp_values,
     LinearConstraintBuilder* temp_builder) {
@@ -874,7 +871,7 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
   //   A Computational Study of the Job-Shop Scheduling Problem. 149-156
   //   INFORMS Journal on Computing, Volume 3, Number 1, Winter 1991
   const auto add_balas_disjunctive_cut =
-      [&](const std::string& local_cut_name, IntegerValue start_min_1,
+      [&](absl::string_view local_cut_name, IntegerValue start_min_1,
           IntegerValue duration_min_1, AffineExpression start_1,
           IntegerValue start_min_2, IntegerValue duration_min_2,
           AffineExpression start_2) {
@@ -1022,14 +1019,14 @@ namespace {
 
 // This functions packs all events in a cumulative of capacity 'capacity_max'
 // following the given permutation. It returns the sum of end mins and the sum
-// of end mins weighted by event.y_size_min.
+// of end mins weighted by event.weight.
 //
 // It ensures that if event_j is after event_i in the permutation, then event_j
 // starts exactly at the same time or after event_i.
 //
-// It returns false if one event cannot start before event.x_start_max.
+// It returns false if one event cannot start before event.start_max.
 bool ComputeWeightedSumOfEndMinsForOnePermutation(
-    const std::vector<PermutableEvent>& events, IntegerValue capacity_max,
+    absl::Span<const PermutableEvent> events, IntegerValue capacity_max,
     IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
     std::vector<std::pair<IntegerValue, IntegerValue>>& profile,
     std::vector<std::pair<IntegerValue, IntegerValue>>& new_profile) {
@@ -1044,13 +1041,13 @@ bool ComputeWeightedSumOfEndMinsForOnePermutation(
   IntegerValue start_of_previous_task = kMinIntegerValue;
   for (const PermutableEvent& event : events) {
     const IntegerValue start_min =
-        std::max(event.x_start_min, start_of_previous_task);
+        std::max(event.start_min, start_of_previous_task);
 
     // Iterate on the profile to find the step that contains start_min.
     // Then push until we find a step with enough capacity.
     int current = 0;
     while (profile[current + 1].first <= start_min ||
-           profile[current].second < event.y_size_min) {
+           profile[current].second < event.demand) {
       ++current;
     }
 
@@ -1058,12 +1055,12 @@ bool ComputeWeightedSumOfEndMinsForOnePermutation(
         std::max(start_min, profile[current].first);
     start_of_previous_task = actual_start;
 
-    // Compatible with the event._start_max ?
-    if (actual_start > event.x_start_max) return false;
+    // Compatible with the event.start_max ?
+    if (actual_start > event.start_max) return false;
 
-    const IntegerValue actual_end = actual_start + event.x_size_min;
+    const IntegerValue actual_end = actual_start + event.size;
     sum_of_ends += actual_end;
-    sum_of_weighted_ends += event.y_size_min * actual_end;
+    sum_of_weighted_ends += event.weight * actual_end;
 
     // No need to update the profile on the last loop.
     if (&event == &events.back()) break;
@@ -1071,18 +1068,18 @@ bool ComputeWeightedSumOfEndMinsForOnePermutation(
     // Update the profile.
     new_profile.clear();
     new_profile.push_back(
-        {actual_start, profile[current].second - event.y_size_min});
+        {actual_start, profile[current].second - event.demand});
     ++current;
 
     while (profile[current].first < actual_end) {
       new_profile.push_back(
-          {profile[current].first, profile[current].second - event.y_size_min});
+          {profile[current].first, profile[current].second - event.demand});
       ++current;
     }
 
     if (profile[current].first > actual_end) {
       new_profile.push_back(
-          {actual_end, new_profile.back().second + event.y_size_min});
+          {actual_end, new_profile.back().second + event.demand});
     }
     while (current < profile.size()) {
       new_profile.push_back(profile[current]);

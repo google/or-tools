@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 
@@ -66,7 +67,7 @@ static const int kLazyDuplicateDetectionSizeThreshold = 16;
 
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::AddEdges(
-    const std::vector<std::pair<int, int>>& edges) {
+    absl::Span<const std::pair<int, int>> edges) {
   CHECK(!TraversalStarted()) << "Cannot add edges after starting traversal";
 
   // Make a first pass to detect the number of nodes.

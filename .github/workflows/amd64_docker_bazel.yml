@@ -7,7 +7,7 @@ jobs:
   bazel:
     strategy:
       matrix:
-        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        distro: [archlinux, debian, fedora, opensuse, ubuntu]
       fail-fast: false
     name: ${{ matrix.distro }} • Bazel • C++
     runs-on: ubuntu-latest

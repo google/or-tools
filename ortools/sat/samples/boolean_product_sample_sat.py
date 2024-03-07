@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,28 +18,28 @@
 from ortools.sat.python import cp_model
 
 
-def BooleanProductSampleSat():
+def boolean_product_sample_sat():
     """Encoding of the product of two Boolean variables.
 
     p == x * y, which is the same as p <=> x and y
     """
     model = cp_model.CpModel()
-    x = model.NewBoolVar("x")
-    y = model.NewBoolVar("y")
-    p = model.NewBoolVar("p")
+    x = model.new_bool_var("x")
+    y = model.new_bool_var("y")
+    p = model.new_bool_var("p")
 
     # x and y implies p, rewrite as not(x and y) or p.
-    model.AddBoolOr(x.Not(), y.Not(), p)
+    model.add_bool_or(~x, ~y, p)
 
     # p implies x and y, expanded into two implications.
-    model.AddImplication(p, x)
-    model.AddImplication(p, y)
+    model.add_implication(p, x)
+    model.add_implication(p, y)
 
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
     solver.parameters.enumerate_all_solutions = True
-    solver.Solve(model, solution_printer)
+    solver.solve(model, solution_printer)
 
 
-BooleanProductSampleSat()
+boolean_product_sample_sat()

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -204,12 +204,13 @@ message ConvergenceInformation {
 // infeasibility (i.e. has no solution); see also TerminationCriteria.
 message InfeasibilityInformation {
   // Let x_ray be the algorithm's estimate of the primal extreme ray where x_ray
-  // is a vector scaled such that its infinity norm is one. A simple and typical
+  // is a vector that satisfies the sign constraints for a ray, scaled such that
+  // its infinity norm is one (the sign constraints are the variable bound
+  // constraints, with all finite bounds mapped to zero). A simple and typical
   // choice of x_ray is x_ray = x / | x |_∞ where x is the current primal
-  // iterate. For this value compute the maximum absolute error in the primal
-  // linear program with the right hand side and finite variable bounds set to
-  // zero. This error refers to both the linear constraints and sign constraints
-  // on the ray.
+  // iterate projected onto the primal ray sign constraints. For this value
+  // compute the maximum absolute error in the primal linear program with the
+  // right hand side set to zero.
   optional double max_primal_ray_infeasibility = 1;
 
   // The value of the linear part of the primal objective (ignoring additive
@@ -223,12 +224,12 @@ message InfeasibilityInformation {
   optional double primal_ray_quadratic_norm = 3;
 
   // Let (y_ray, r_ray) be the algorithm's estimate of the dual and reduced cost
-  // extreme ray where (y_ray, r_ray) is a vector scaled such that its infinity
-  // norm is one. A simple and typical choice of y_ray is
-  // (y_ray, r_ray) = (y, r) / max(| y |_∞, | r |_∞) where y is the
-  // current dual iterate and r is the current dual reduced costs.
-  // Consider the quadratic program we are solving but with the objective (both
-  // quadratic and linear terms) set to zero. This forms a linear program
+  // extreme ray where (y_ray, r_ray) is a vector (satisfying the dual variable
+  // constraints) scaled such that its infinity norm is one. A simple and
+  // typical choice of y_ray is (y_ray, r_ray) = (y, r) / max(| y |_∞, | r |_∞)
+  // where y is the current dual iterate and r is the current dual reduced
+  // costs. Consider the quadratic program we are solving but with the objective
+  // (both quadratic and linear terms) set to zero. This forms a linear program
   // (label this linear program (1)) with no objective. Take the dual of (1) and
   // compute the maximum absolute value of the constraint error for
   // (y_ray, r_ray) to obtain the value of max_dual_ray_infeasibility.

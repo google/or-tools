@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,13 +21,11 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "ortools/gscip/gscip.h"
 #include "ortools/gscip/gscip_callback_result.h"
 #include "scip/type_cons.h"
@@ -140,10 +138,35 @@ struct GScipCallbackStats {
   // nodes before a restart), including the focus node. See SCIPgetNNodes().
   int64_t num_processed_nodes = 0;
 
+  // The number of open nodes left in the current run. See SCIPgetNNodesLeft().
+  int64_t num_nodes_left = 0;
+
   // The total number of processed nodes in all runs, including the focus node.
   // If the solver restarts > 1 time, will be larger than
   // num_processed_nodes, otherwise is equal. See SCIPgetNTotalNodes().
   int64_t num_processed_nodes_total = 0;
+
+  // The global primal bound on the problem. See SCIPgetPrimalBound().
+  double primal_bound = 0.0;
+
+  // The global dual bound on the problem. See SCIPgetDualBound().
+  double dual_bound = 0.0;
+
+  // The number of pivots taken by the primal simplex method. See
+  // SCIPgetNPrimalLPIterations().
+  int64_t primal_simplex_iterations = 0;
+
+  // The number of pivots taken by the dual simplex method. See
+  // SCIPgetNDualLPIterations().
+  int64_t dual_simplex_iterations = 0;
+
+  // The number of feasible solutions found that were at least as good as the
+  // cutoff limit. See SCIPgetNLimSolsFound().
+  int32_t num_solutions_found = 0;
+
+  // The number of rows in the current LP that were added as cuts. See
+  // SCIPgetNPoolCuts().
+  int32_t num_cuts_in_lp = 0;
 };
 
 // Interface to the callback context and underlying problem. Supports adding
@@ -281,10 +304,19 @@ class GScipConstraintHandler {
 
   // Adds a callback constraint to the model. That is, it attaches to the
   // constraint handler a constraint for the given constraint data.
-  absl::Status AddCallbackConstraint(GScip* gscip,
-                                     std::string_view constraint_name,
-                                     const ConstraintData* constraint_data,
-                                     const GScipConstraintOptions& options);
+  //
+  // Warning: the user is responsible for ensuring that constraint_data outlives
+  // the returned constraint (e.g. until GScip is destroyed or
+  // GScip::delete_constraint() is invoked on the returned constraint).
+  //
+  // Note: it appears to be safe (from looking at the source and running asan)
+  // to free constraint_data before calling ~GScip(), but this is difficult to
+  // verify. Any other interaction with GScip after freeing the constraint_data
+  // seems very likely to cause memory corruption.
+  absl::StatusOr<SCIP_CONS*> AddCallbackConstraint(
+      GScip* gscip, const std::string& constraint_name,
+      const ConstraintData* constraint_data,
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Callback function called at SCIP's CONSENFOLP. Must check if an LP solution
   // at a node is feasible, and if not, resolve the infeasibility if possible by
@@ -418,6 +450,41 @@ class GScipConstraintHandler {
   GScipConstraintHandlerProperties properties_;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Helpers for implementing callbacks
+////////////////////////////////////////////////////////////////////////////////
+
+// Enum with supported user-implementable callback functions in the SCIP
+// constraint handler. Non-user-implementable functions are not included here
+// (e.g. CONSFREE). Same order as in type_cons.h.
+enum class ConstraintHandlerCallbackType {
+  kSepaLp,   // CONSSEPALP
+  kSepaSol,  // CONSSEPASOL
+  kEnfoLp,   // CONSENFOLP
+  // Unsupported:  kEnfoRelax,    // CONSENFORELAX
+  kEnfoPs,     // CONSENFOPS
+  kConsCheck,  // CONSCHECK
+  // Unsupported:  kConsProp,     // CONSPROP
+  // Unsupported:  kConsPresol,   // CONSPRESOL
+  // Unsupported:  kConsResProp,  // CONSRESPROP
+  kConsLock  // CONSLOCK
+};
+
+// In callbacks, SCIP requires the first SCIP_RESULT in a priority list be
+// returned when multiple results are applicable. This is a unified order of the
+// priorities extracted from type_cons.h. The higher the result, the higher
+// priority it is.
+//
+// Larger number indicates higher priority in what should be returned.
+int ConstraintHandlerResultPriority(
+    GScipCallbackResult result, ConstraintHandlerCallbackType callback_type);
+
+// Returns the GScipCallbackResult with larger priority, see
+// ConstraintHandlerResultPriority().
+GScipCallbackResult MergeConstraintHandlerResults(
+    GScipCallbackResult result1, GScipCallbackResult result2,
+    ConstraintHandlerCallbackType callback_type);
+
 namespace internal {
 
 // These classes implement a void pointer version of GScipConstraintHandler that
@@ -495,10 +562,10 @@ absl::Status RegisterConstraintHandler(
     GScip* gscip,
     std::unique_ptr<UntypedGScipConstraintHandler> constraint_handler);
 
-absl::Status AddCallbackConstraint(GScip* gscip, std::string_view handler_name,
-                                   std::string_view constraint_name,
-                                   void* constraint_data,
-                                   const GScipConstraintOptions& options);
+absl::StatusOr<SCIP_CONS*> AddCallbackConstraint(
+    GScip* gscip, const std::string& handler_name,
+    const std::string& constraint_name, void* constraint_data,
+    const GScipConstraintOptions& options);
 
 }  // namespace internal
 
@@ -513,8 +580,9 @@ absl::Status GScipConstraintHandler<ConstraintData>::Register(GScip* gscip) {
 }
 
 template <typename ConstraintData>
-absl::Status GScipConstraintHandler<ConstraintData>::AddCallbackConstraint(
-    GScip* gscip, std::string_view constraint_name,
+absl::StatusOr<SCIP_CONS*>
+GScipConstraintHandler<ConstraintData>::AddCallbackConstraint(
+    GScip* gscip, const std::string& constraint_name,
     const ConstraintData* constraint_data,
     const GScipConstraintOptions& options) {
   return internal::AddCallbackConstraint(
@@ -587,7 +655,7 @@ GScipConstraintHandler<ConstraintData>::HandleCallbackStatus(
     GScipConstraintHandlerContext context,
     const GScipCallbackResult default_callback_result) {
   if (!result.ok()) {
-    context.gscip()->InterruptSolveFromCallback(result.status());
+    context.gscip()->InterruptSolveFromCallbackOnCallbackError(result.status());
     return default_callback_result;
   }
   return result.value();

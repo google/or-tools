@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -85,7 +86,7 @@ absl::Status ValidateOptions(
 
 absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     const Model& model, const VariableMap<double>& input_solution,
-    const std::vector<Variable>& variables,
+    absl::Span<const Variable> variables,
     const MoveVariablesToTheirBestFeasibleValueOptions& options) {
   // Validate the inputs.
   {

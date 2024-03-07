@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -95,9 +95,6 @@ target_sources(glop PRIVATE
   ortools/base/types.h
   ortools/base/version.cc
   ortools/base/version.h
-  ortools/base/vlog.h
-  ortools/base/vlog_is_on.cc
-  ortools/base/vlog_is_on.h
   ortools/glop/basis_representation.cc
   ortools/glop/basis_representation.h
   ortools/glop/dual_edge_norms.cc
@@ -182,6 +179,7 @@ if(MSVC)
     "/D_CRT_SECURE_NO_WARNINGS"
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
+    "/Zc:preprocessor" # Enable preprocessor conformance mode
     "/DNDEBUG"
     )
   # MSVC warning suppressions
@@ -318,8 +316,6 @@ install(FILES
   ortools/base/timer.h
   ortools/base/types.h
   ortools/base/version.h
-  ortools/base/vlog.h
-  ortools/base/vlog_is_on.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ortools/base
   COMPONENT Devel)
 install(FILES

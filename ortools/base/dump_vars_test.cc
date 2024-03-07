@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 #include "ortools/base/dump_vars.h"
 
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -36,6 +37,7 @@ TEST(DumpVars, Empty) {
   EXPECT_EQ(R"()", DUMP_VARS().str());
 }
 
+#if !defined(__APPLE__)
 TEST(DumpVars, Lvalue) {
   int a = 42;
   EXPECT_EQ(R"(a = 42)", ToString(DUMP_VARS(a)));
@@ -116,6 +118,22 @@ TEST(DumpVars, ManyArgs) {
             DUMP_VARS(a, b, c, d, e, f).str());
 }
 
+TEST(DumpVars, Vector) {
+  std::vector<float> vec = {49.3, 3.14};
+  EXPECT_EQ("vec = 49.299999,3.140000,", ToString(DUMP_VARS(vec)));
+  EXPECT_EQ("vec = 49.299999,3.140000,", DUMP_VARS(vec).str());
+}
+
+TEST(DumpVars, Optional) {
+  std::optional<float> of = {};
+  EXPECT_EQ("of = (none)", ToString(DUMP_VARS(of)));
+  EXPECT_EQ("of = (none)", DUMP_VARS(of).str());
+
+  of = 49.3f;
+  EXPECT_EQ("of = 49.299999", ToString(DUMP_VARS(of)));
+  EXPECT_EQ("of = 49.299999", DUMP_VARS(of).str());
+}
+
 TEST(DumpVars, LazyEvaluation) {
   {
     int n = 0;
@@ -158,6 +176,7 @@ TEST(DumpVars, TemporaryLifetime) {
   EXPECT_EQ(R"(std::string_view(std::string("hello")) = hello)", ToString(v));
   EXPECT_EQ(R"(temp = hello)", ToString(v.as("temp")));
 }
+#endif  // !defined(__APPLE__)
 
 }  // namespace
 }  // namespace operations_research::base

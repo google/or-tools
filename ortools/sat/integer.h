@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -33,13 +33,9 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -126,6 +122,28 @@ inline bool AtMinOrMaxInt64I(IntegerValue t) {
   return AtMinOrMaxInt64(t.value());
 }
 
+// Helper for dividing several small integers by the same value. Note that there
+// is no point using this class is the divisor is a compile-time constant, since
+// the compiler should be smart enough to do this automatically.
+// Building a `QuickSmallDivision` object costs an integer division, but each
+// call to `DivideByDivisor` will only do an integer multiplication and a shift.
+//
+// This class always return the exact value of the division for all possible
+// values of `dividend` and `divisor`.
+class QuickSmallDivision {
+ public:
+  explicit QuickSmallDivision(uint16_t divisor)
+      : inverse_((1ull << 48) / divisor + 1) {}
+
+  uint16_t DivideByDivisor(uint16_t dividend) const {
+    return static_cast<uint16_t>((inverse_ * static_cast<uint64_t>(dividend)) >>
+                                 48);
+  }
+
+ private:
+  uint64_t inverse_;
+};
+
 // Returns dividend - FloorRatio(dividend, divisor) * divisor;
 //
 // This function is around the same speed than the computation above, but it
@@ -161,7 +179,7 @@ inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
 //
 // Each time we create an IntegerVariable we also create its negation. This is
 // done like that so internally we only stores and deal with lower bound. The
-// upper bound beeing the lower bound of the negated variable.
+// upper bound being the lower bound of the negated variable.
 DEFINE_STRONG_INDEX_TYPE(IntegerVariable);
 const IntegerVariable kNoIntegerVariable(-1);
 inline IntegerVariable NegationOf(IntegerVariable i) {
@@ -366,7 +384,7 @@ struct DebugSolution {
   std::vector<int64_t> proto_values;
 
   // This is filled from proto_values at load-time, and using the
-  // cp_model_mapping, we cache the solution of the integer-variabls that are
+  // cp_model_mapping, we cache the solution of the integer variables that are
   // mapped. Note that it is possible that not all integer variable are mapped.
   //
   // TODO(user): When this happen we should be able to infer the value of these
@@ -586,7 +604,7 @@ class IntegerEncoder {
     for (const IntegerLiteral l : GetIntegerLiterals(lit)) {
       temp_associated_vars_.push_back(l.var);
     }
-    for (const auto [var, value] : GetEqualityLiterals(lit)) {
+    for (const auto& [var, value] : GetEqualityLiterals(lit)) {
       temp_associated_vars_.push_back(var);
     }
     return temp_associated_vars_;
@@ -813,35 +831,6 @@ class IntegerTrail : public SatPropagator {
     return AddIntegerVariable(kMinIntegerValue, kMaxIntegerValue);
   }
 
-  // For an optional variable, both its lb and ub must be valid bound assuming
-  // the fact that the variable is "present". However, the domain [lb, ub] is
-  // allowed to be empty (i.e. ub < lb) if the given is_ignored literal is true.
-  // Moreover, if is_ignored is true, then the bound of such variable should NOT
-  // impact any non-ignored variable in any way (but the reverse is not true).
-  bool IsOptional(IntegerVariable i) const {
-    return is_ignored_literals_[i] != kNoLiteralIndex;
-  }
-  bool IsCurrentlyIgnored(IntegerVariable i) const {
-    const LiteralIndex is_ignored_literal = is_ignored_literals_[i];
-    return is_ignored_literal != kNoLiteralIndex &&
-           trail_->Assignment().LiteralIsTrue(Literal(is_ignored_literal));
-  }
-  Literal IsIgnoredLiteral(IntegerVariable i) const {
-    DCHECK(IsOptional(i));
-    return Literal(is_ignored_literals_[i]);
-  }
-  LiteralIndex OptionalLiteralIndex(IntegerVariable i) const {
-    return is_ignored_literals_[i] == kNoLiteralIndex
-               ? kNoLiteralIndex
-               : Literal(is_ignored_literals_[i]).NegatedIndex();
-  }
-  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_considered) {
-    DCHECK(is_ignored_literals_[i] == kNoLiteralIndex ||
-           is_ignored_literals_[i] == is_considered.NegatedIndex());
-    is_ignored_literals_[i] = is_considered.NegatedIndex();
-    is_ignored_literals_[NegationOf(i)] = is_considered.NegatedIndex();
-  }
-
   // Returns the current lower/upper bound of the given integer variable.
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
@@ -939,8 +928,8 @@ class IntegerTrail : public SatPropagator {
   // restrictive bound than the current one will have no effect.
   //
   // The reason for this "assignment" must be provided as:
-  // - A set of Literal currently beeing all false.
-  // - A set of IntegerLiteral currently beeing all true.
+  // - A set of Literal currently being all false.
+  // - A set of IntegerLiteral currently being all true.
   //
   // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
   // confusing but internally SAT use this direction for efficiency.
@@ -1088,6 +1077,12 @@ class IntegerTrail : public SatPropagator {
   // propagations on the trail.
   void AppendNewBounds(std::vector<IntegerLiteral>* output) const;
 
+  // Inspects the trail and output all the non-level zero bounds from the base
+  // index (one per variables) to the output. The algo is sparse if there is
+  // only a few propagations on the trail.
+  void AppendNewBoundsFrom(int base_index,
+                           std::vector<IntegerLiteral>* output) const;
+
   // Returns the trail index < threshold of a TrailEntry about var. Returns -1
   // if there is no such entry (at a positive decision level). This is basically
   // the trail index of the lower bound of var at the time.
@@ -1103,8 +1098,8 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable NextVariableToBranchOnInPropagationLoop() const;
 
   // If we had an incomplete propagation, it is important to fix all the
-  // variables and not relly on the propagation to do so. This is related to the
-  // InPropagationLoop() code above.
+  // variables and not really on the propagation to do so. This is related to
+  // the InPropagationLoop() code above.
   bool CurrentBranchHadAnIncompletePropagation();
   IntegerVariable FirstUnassignedVariable() const;
 
@@ -1209,7 +1204,7 @@ class IntegerTrail : public SatPropagator {
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
   // for each variable that may or may not point to a TrailEntry regarding this
-  // variable. The validity of the index is verified before beeing used.
+  // variable. The validity of the index is verified before being used.
   //
   // The cache will only be updated with trail_index >= threshold.
   mutable int var_trail_index_cache_threshold_ = 0;
@@ -1257,9 +1252,6 @@ class IntegerTrail : public SatPropagator {
   // Temporary vector filled by calls to LazyReasonFunction().
   mutable std::vector<Literal> lazy_reason_literals_;
   mutable std::vector<int> lazy_reason_trail_indices_;
-
-  // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
-  absl::StrongVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // Temporary data used by MergeReasonInto().
   mutable bool has_dependency_ = false;
@@ -1346,7 +1338,7 @@ class PropagatorInterface {
   // - At level zero, it will not contain any indices associated with literals
   //   that were already fixed when the propagator was registered. Only the
   //   indices of the literals modified after the registration will be present.
-  virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
+  virtual bool IncrementalPropagate(const std::vector<int>& /*watch_indices*/) {
     LOG(FATAL) << "Not implemented.";
     return false;  // Remove warning in Windows
   }
@@ -1421,7 +1413,7 @@ class GenericLiteralWatcher : public SatPropagator {
   void WatchUpperBound(IntegerVariable var, int id, int watch_index = -1);
   void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
 
-  // Because the coeff is always positive, whatching an affine expression is
+  // Because the coeff is always positive, watching an affine expression is
   // the same as watching its var.
   void WatchLowerBound(AffineExpression e, int id) {
     WatchLowerBound(e.var, id);
@@ -1460,6 +1452,24 @@ class GenericLiteralWatcher : public SatPropagator {
   // to have just a slight overhead per int updates. This later option is what
   // is usually done in a CP solver at the cost of a slightly more complex API.
   void RegisterReversibleInt(int id, int* rev);
+
+  // A simple form of incremental update is to maintain state as we dive into
+  // the search tree but forget everything on every backtrack. A propagator
+  // can be called many times by decision, so this can make a large proportion
+  // of the calls incremental.
+  //
+  // This allows to achieve this with a really low overhead.
+  //
+  // The propagator can define a bool rev_is_in_dive_ = false; and at the
+  // beginning of each propagate do:
+  // const bool no_backtrack_since_last_call = rev_is_in_dive_;
+  // watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
+  void SetUntilNextBacktrack(bool* is_in_dive) {
+    if (!*is_in_dive) {
+      *is_in_dive = true;
+      bool_to_reset_on_backtrack_.push_back(is_in_dive);
+    }
+  }
 
   // Returns the number of registered propagators.
   int NumPropagators() const { return in_queue_.size(); }
@@ -1544,6 +1554,8 @@ class GenericLiteralWatcher : public SatPropagator {
       level_zero_modified_variable_callback_;
 
   std::function<bool()> stop_propagation_callback_;
+
+  std::vector<bool*> bool_to_reset_on_backtrack_;
 };
 
 // ============================================================================
@@ -1958,14 +1970,6 @@ inline std::function<std::vector<ValueLiteralPair>(Model*)> FullyEncodeVariable(
     return encoder->FullDomainEncoding(var);
   };
 }
-
-// Same as ExcludeCurrentSolutionAndBacktrack() but this version works for an
-// integer problem with optional variables. The issue is that an optional
-// variable that is ignored can basically take any value, and we don't really
-// want to enumerate them. This function should exclude all solutions where
-// only the ignored variable values change.
-std::function<void(Model*)>
-ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack();
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -784,31 +784,6 @@ class EmptyConstraintPreprocessor : public Preprocessor {
 
  private:
   RowDeletionHelper row_deletion_helper_;
-};
-
-// --------------------------------------------------------
-// RemoveNearZeroEntriesPreprocessor
-// --------------------------------------------------------
-// Removes matrix entries that have only a negligible impact on the solution.
-// Using the variable bounds, we derive a maximum possible impact, and remove
-// the entries whose impact is under a given tolerance.
-//
-// TODO(user): This preprocessor doesn't work well on badly scaled problems. In
-// particular, it will set the objective to zero if all the objective
-// coefficients are small! Run it after ScalingPreprocessor or fix the code.
-class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
- public:
-  explicit RemoveNearZeroEntriesPreprocessor(const GlopParameters* parameters)
-      : Preprocessor(parameters) {}
-  RemoveNearZeroEntriesPreprocessor(const RemoveNearZeroEntriesPreprocessor&) =
-      delete;
-  RemoveNearZeroEntriesPreprocessor& operator=(
-      const RemoveNearZeroEntriesPreprocessor&) = delete;
-  ~RemoveNearZeroEntriesPreprocessor() final = default;
-  bool Run(LinearProgram* lp) final;
-  void RecoverSolution(ProblemSolution* solution) const final;
-
- private:
 };
 
 // --------------------------------------------------------

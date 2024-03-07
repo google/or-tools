@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,10 +15,20 @@
 """Tests for ortools.sat.python.cp_model_helper."""
 
 from absl.testing import absltest
+import numpy as np
 from ortools.sat.python import cp_model_helper
 
 
 class CpModelHelperTest(absltest.TestCase):
+    def test_is_boolean(self):
+        print("test_is_boolean")
+        self.assertTrue(cp_model_helper.is_boolean(True))
+        self.assertTrue(cp_model_helper.is_boolean(False))
+        self.assertFalse(cp_model_helper.is_boolean(1))
+        self.assertFalse(cp_model_helper.is_boolean(0))
+        self.assertTrue(cp_model_helper.is_boolean(np.bool_(1)))
+        self.assertTrue(cp_model_helper.is_boolean(np.bool_(0)))
+
     def testassert_is_int64(self):
         print("testassert_is_int64")
         self.assertRaises(TypeError, cp_model_helper.assert_is_int64, "Hello")

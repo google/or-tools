@@ -1,4 +1,4 @@
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,11 +21,17 @@ def code_sample_cc(name):
         srcs = [name + ".cc"],
         deps = [
             "//ortools/base",
+            "//ortools/base:status_macros",
+            "//ortools/base:top_n",
             "//ortools/graph:assignment",
+            "//ortools/graph:bounded_dijkstra",
+            "//ortools/graph:bfs",
+            "//ortools/graph:dag_shortest_path",
             "//ortools/graph:ebert_graph",
             "//ortools/graph:linear_assignment",
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
+            "@com_google_absl//absl/random",
         ],
     )
 
@@ -36,11 +42,17 @@ def code_sample_cc(name):
         deps = [
             ":" + name + "_cc",
             "//ortools/base",
+            "//ortools/base:status_macros",
+            "//ortools/base:top_n",
             "//ortools/graph:assignment",
+            "//ortools/graph:bounded_dijkstra",
+            "//ortools/graph:bfs",
+            "//ortools/graph:dag_shortest_path",
             "//ortools/graph:ebert_graph",
             "//ortools/graph:linear_assignment",
             "//ortools/graph:max_flow",
             "//ortools/graph:min_cost_flow",
+            "@com_google_absl//absl/random",
         ],
     )
 
@@ -87,10 +99,6 @@ def code_sample_java(name):
         srcs = [name + ".java"],
         main_class = "com.google.ortools.graph.samples." + name,
         test_class = "com.google.ortools.graph.samples." + name,
-        jvm_flags = select({
-            "@platforms//os:windows": ["-Djava.library.path=../../../../java/com/google/ortools"],
-            "//conditions:default": ["-Djava.library.path=ortools/java/com/google/ortools"],
-        }),
         deps = [
             "//ortools/graph/java:graph",
             "//ortools/java/com/google/ortools:Loader",

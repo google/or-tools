@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -50,6 +51,18 @@ RoutingModelParameters DefaultRoutingModelParameters() {
 }
 
 namespace {
+IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
+  IteratedLocalSearchParameters ils;
+  ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
+  RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
+  rr->set_ruin_strategy(RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL);
+  rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
+  rr->set_num_ruined_routes(2);
+  ils.set_improve_perturbed_solution(true);
+  ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
+  return ils;
+}
+
 RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   RoutingSearchParameters p;
   p.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
@@ -141,10 +154,58 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_log_search(false);
   p.set_log_cost_scaling_factor(1.0);
   p.set_log_cost_offset(0.0);
+  p.set_use_iterated_local_search(false);
+  *p.mutable_iterated_local_search_parameters() =
+      CreateDefaultIteratedLocalSearchParameters();
 
   const std::string error = FindErrorInRoutingSearchParameters(p);
   LOG_IF(DFATAL, !error.empty())
       << "The default search parameters aren't valid: " << error;
+  return p;
+}
+
+RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
+  RoutingSearchParameters p = CreateDefaultRoutingSearchParameters();
+  p.set_local_search_metaheuristic(LocalSearchMetaheuristic::GREEDY_DESCENT);
+  p.set_use_iterated_local_search(false);
+  *p.mutable_iterated_local_search_parameters() =
+      CreateDefaultIteratedLocalSearchParameters();
+  RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
+      p.mutable_local_search_operators();
+  o->set_use_relocate(BOOL_TRUE);
+  o->set_use_relocate_pair(BOOL_FALSE);
+  o->set_use_light_relocate_pair(BOOL_TRUE);
+  o->set_use_relocate_subtrip(BOOL_TRUE);
+  o->set_use_relocate_neighbors(BOOL_FALSE);
+  o->set_use_exchange(BOOL_TRUE);
+  o->set_use_exchange_pair(BOOL_TRUE);
+  o->set_use_exchange_subtrip(BOOL_TRUE);
+  o->set_use_cross(BOOL_TRUE);
+  o->set_use_cross_exchange(BOOL_FALSE);
+  o->set_use_relocate_expensive_chain(BOOL_FALSE);
+  o->set_use_two_opt(BOOL_TRUE);
+  o->set_use_or_opt(BOOL_TRUE);
+  o->set_use_lin_kernighan(BOOL_TRUE);
+  o->set_use_tsp_opt(BOOL_FALSE);
+  o->set_use_make_active(BOOL_FALSE);
+  o->set_use_relocate_and_make_active(BOOL_FALSE);
+  o->set_use_make_inactive(BOOL_FALSE);
+  o->set_use_make_chain_inactive(BOOL_FALSE);
+  o->set_use_swap_active(BOOL_FALSE);
+  o->set_use_extended_swap_active(BOOL_FALSE);
+  o->set_use_shortest_path_swap_active(BOOL_FALSE);
+  o->set_use_node_pair_swap_active(BOOL_FALSE);
+  o->set_use_path_lns(BOOL_FALSE);
+  o->set_use_full_path_lns(BOOL_FALSE);
+  o->set_use_tsp_lns(BOOL_FALSE);
+  o->set_use_inactive_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_path_lns(BOOL_FALSE);
+  o->set_use_local_cheapest_insertion_path_lns(BOOL_FALSE);
+  o->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
+      BOOL_FALSE);
+  const std::string error = FindErrorInRoutingSearchParameters(p);
+  LOG_IF(DFATAL, !error.empty())
+      << "The default secondary search parameters aren't valid: " << error;
   return p;
 }
 }  // namespace
@@ -153,6 +214,12 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
 RoutingSearchParameters DefaultRoutingSearchParameters() {
   static const auto* default_parameters =
       new RoutingSearchParameters(CreateDefaultRoutingSearchParameters());
+  return *default_parameters;
+}
+
+RoutingSearchParameters DefaultSecondaryRoutingSearchParameters() {
+  static const auto* default_parameters = new RoutingSearchParameters(
+      CreateDefaultSecondaryRoutingSearchParameters());
   return *default_parameters;
 }
 

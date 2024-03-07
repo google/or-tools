@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1026,7 +1026,10 @@ public class CpModel
         ds.Variables.TrySetCapacity(vars);
         foreach (IntVar var in vars)
         {
-            ds.Variables.Add(var.Index);
+            LinearExpressionProto expr = new LinearExpressionProto();
+            expr.Vars.Add(var.Index);
+            expr.Coeffs.Add(1);
+            ds.Exprs.Add(expr);
         }
         ds.VariableSelectionStrategy = var_str;
         ds.DomainReductionStrategy = dom_str;

@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1387,8 +1387,8 @@ YY_DECL {
         default:
           YY_FATAL_ERROR("fatal flex scanner internal error--no action found");
       } /* end of action switch */
-    }   /* end of scanning one token */
-  }     /* end of user's declarations */
+    } /* end of scanning one token */
+  } /* end of user's declarations */
 } /* end of yylex */
 
 /* yy_get_next_buffer - try to read in a new buffer
@@ -2323,8 +2323,7 @@ static void yy_flex_strncpy(char* s1, const char* s2, int n,
 #ifdef YY_NEED_STRLEN
 static int yy_flex_strlen(const char* s, yyscan_t yyscanner) {
   int n;
-  for (n = 0; s[n]; ++n)
-    ;
+  for (n = 0; s[n]; ++n);
 
   return n;
 }

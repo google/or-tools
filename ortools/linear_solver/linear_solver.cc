@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -403,10 +403,8 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 #if defined(USE_CPLEX)
 extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 #endif
-#if defined(USE_XPRESS)
 extern MPSolverInterface* BuildXpressInterface(bool mip,
                                                MPSolver* const solver);
-#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -460,12 +458,10 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
 #endif
-#if defined(USE_XPRESS)
     case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
       return BuildXpressInterface(true, solver);
     case MPSolver::XPRESS_LINEAR_PROGRAMMING:
       return BuildXpressInterface(false, solver);
-#endif
     default:
       // TODO(user): Revert to the best *available* interface.
       LOG(FATAL) << "Linear solver not recognized.";
@@ -501,6 +497,7 @@ MPSolver::MPSolver(const std::string& name,
 MPSolver::~MPSolver() { Clear(); }
 
 extern bool GurobiIsCorrectlyInstalled();
+extern bool XpressIsCorrectlyInstalled();
 
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
@@ -545,12 +542,10 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
-#ifdef USE_XPRESS
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
       problem_type == XPRESS_LINEAR_PROGRAMMING) {
-    return true;
+    return XpressIsCorrectlyInstalled();
   }
-#endif
 
   return false;
 }
@@ -1533,8 +1528,8 @@ bool MPSolver::HasInfeasibleConstraints() const {
   for (int i = 0; i < static_cast<int>(constraints_.size()); ++i) {
     if (constraints_[i]->lb() > constraints_[i]->ub()) {
       LOG(WARNING) << "Constraint " << constraints_[i]->name() << " (" << i
-                   << ") has contradictory bounds:"
-                   << " lower bound = " << constraints_[i]->lb()
+                   << ") has contradictory bounds:" << " lower bound = "
+                   << constraints_[i]->lb()
                    << " upper bound = " << constraints_[i]->ub();
       hasInfeasibleConstraints = true;
     }

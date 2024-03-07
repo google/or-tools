@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -147,7 +147,7 @@ bool ApplyLiteralMapping(
 
 // TODO(user): Also check for no duplicates literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(
-    const std::vector<LiteralWithCoeff>& cst) {
+    absl::Span<const LiteralWithCoeff> cst) {
   Coefficient previous(1);
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
@@ -239,7 +239,7 @@ bool CanonicalBooleanLinearProblem::AddLinearConstraint(
 }
 
 bool CanonicalBooleanLinearProblem::AddConstraint(
-    const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
+    absl::Span<const LiteralWithCoeff> cst, Coefficient max_value,
     Coefficient rhs) {
   if (rhs < 0) return false;          // Trivially unsatisfiable.
   if (rhs >= max_value) return true;  // Trivially satisfiable.
@@ -453,7 +453,7 @@ void UpperBoundedLinearConstraint::AddToConflict(
 }
 
 bool UpperBoundedLinearConstraint::HasIdenticalTerms(
-    const std::vector<LiteralWithCoeff>& cst) {
+    absl::Span<const LiteralWithCoeff> cst) {
   if (cst.size() != literals_.size()) return false;
   int literal_index = 0;
   int coeff_index = 0;

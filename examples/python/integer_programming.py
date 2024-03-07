@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2010-2022 Google LLC
+# Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -102,6 +102,7 @@ def RunAllIntegerExampleNaturalLanguageAPI():
     # RunIntegerExampleNaturalLanguageAPI('CBC')
     RunIntegerExampleNaturalLanguageAPI("SCIP")
     RunIntegerExampleNaturalLanguageAPI("SAT")
+    RunIntegerExampleNaturalLanguageAPI("XPRESS")
 
 
 def RunAllIntegerExampleCppStyleAPI():
@@ -110,6 +111,7 @@ def RunAllIntegerExampleCppStyleAPI():
     # RunIntegerExampleCppStyleAPI('CBC')
     RunIntegerExampleCppStyleAPI("SCIP")
     RunIntegerExampleCppStyleAPI("SAT")
+    RunIntegerExampleCppStyleAPI("XPRESS")
 
 
 def main():

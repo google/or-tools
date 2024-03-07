@@ -1,4 +1,4 @@
-// Copyright 2010-2022 Google LLC
+// Copyright 2010-2024 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,9 +13,12 @@
 
 #include "ortools/math_opt/validators/model_parameters_validator.h"
 
+#include <cstdint>
+
 #include "absl/status/status.h"
+#include "google/protobuf/repeated_field.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/types.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -62,6 +65,35 @@ absl::Status ValidateBranchingPriorities(
   return absl::OkStatus();
 }
 
+absl::Status ValidateObjectiveParameters(
+    const ObjectiveParametersProto& parameters) {
+  if (parameters.objective_degradation_absolute_tolerance() < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "ObjectiveParametersProto.objective_degradation_absolute_"
+              "tolerance = "
+           << parameters.objective_degradation_absolute_tolerance() << " < 0";
+  }
+
+  if (parameters.objective_degradation_relative_tolerance() < 0) {
+    return util::InvalidArgumentErrorBuilder()
+           << "ObjectiveParametersProto.objective_degradation_relative_"
+              "tolerance = "
+           << parameters.objective_degradation_relative_tolerance() << " < 0";
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateLazyLinearConstraints(
+    const google::protobuf::RepeatedField<int64_t>& lazy_linear_constraint_ids,
+    const ModelSummary& model_summary) {
+  RETURN_IF_ERROR(
+      CheckIdsRangeAndStrictlyIncreasing(lazy_linear_constraint_ids));
+  RETURN_IF_ERROR(CheckIdsSubset(
+      lazy_linear_constraint_ids, model_summary.linear_constraints,
+      "lazy_linear_constraint ids", "model linear constraint IDs"));
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
@@ -100,6 +132,24 @@ absl::Status ValidateModelSolveParameters(
   }
   RETURN_IF_ERROR(ValidateBranchingPriorities(parameters.branching_priorities(),
                                               model_summary));
+  RETURN_IF_ERROR(
+      ValidateObjectiveParameters(parameters.primary_objective_parameters()))
+      << "invalid primary_objective_parameters";
+  for (const auto& [objective, params] :
+       parameters.auxiliary_objective_parameters()) {
+    if (!model_summary.auxiliary_objectives.HasId(objective)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Entry in auxiliary_objective_parameters for unknown "
+                "objective: "
+             << objective;
+    }
+    RETURN_IF_ERROR(ValidateObjectiveParameters(params))
+        << "invalid auxiliary_objective_parameters entry for objective: "
+        << objective;
+  }
+  RETURN_IF_ERROR(ValidateLazyLinearConstraints(
+      parameters.lazy_linear_constraint_ids(), model_summary))
+      << "invalid lazy_linear_constraint_ids";
   return absl::OkStatus();
 }
 
