@@ -831,7 +831,7 @@ class IntVar(LinearExpr):
         model: cp_model_pb2.CpModelProto,
         domain: Union[int, Domain],
         name: Optional[str],
-    ):
+    ) -> None:
         """See CpModel.new_int_var below."""
         self.__negation: Optional[_NotBooleanVariable] = None
         # Python do not support multiple __init__ methods.
@@ -974,7 +974,7 @@ class BoundedLinearExpression:
         model.add(x + 2 * y -1 >= z)
     """
 
-    def __init__(self, expr: LinearExprT, bounds: Sequence[int]):
+    def __init__(self, expr: LinearExprT, bounds: Sequence[int]) -> None:
         self.__expr: LinearExprT = expr
         self.__bounds: Sequence[int] = bounds
 
@@ -1056,7 +1056,7 @@ class Constraint:
     def __init__(
         self,
         cp_model: "CpModel",
-    ):
+    ) -> None:
         self.__index: int = len(cp_model.proto.constraints)
         self.__cp_model: "CpModel" = cp_model
         self.__constraint: cp_model_pb2.ConstraintProto = (
@@ -1174,7 +1174,7 @@ class IntervalVar:
         end: Optional[cp_model_pb2.LinearExpressionProto],
         is_present_index: Optional[int],
         name: Optional[str],
-    ):
+    ) -> None:
         self.__model: cp_model_pb2.CpModelProto = model
         # As with the IntVar::__init__ method, we hack the __init__ method to
         # support two use cases:
@@ -1302,7 +1302,7 @@ class CpModel:
     * ```add``` create new constraints and add them to the model.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__model: cp_model_pb2.CpModelProto = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
 
@@ -3095,7 +3095,7 @@ class CpSolver:
     about the solve procedure.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__solution: Optional[cp_model_pb2.CpSolverResponse] = None
         self.parameters: sat_parameters_pb2.SatParameters = (
             sat_parameters_pb2.SatParameters()
@@ -3108,7 +3108,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cp_model_pb2.CpSolverStatus:
+    ) -> cp_model_pb2.CpSolverStatus.ValueType:
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
             self.__solve_wrapper = swig_helper.SolveWrapper()
@@ -3292,7 +3292,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cp_model_pb2.CpSolverStatus:
+    ) -> cp_model_pb2.CpSolverStatus.ValueType:
         return self.solve(model, solution_callback)
 
     def SolutionInfo(self) -> str:
@@ -3390,7 +3390,7 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
     `CpSolver` class.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         swig_helper.SolutionCallback.__init__(self)
 
     def OnSolutionCallback(self) -> None:
@@ -3563,7 +3563,7 @@ class CpSolverSolutionCallback(swig_helper.SolutionCallback):
 class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
     """Display the objective value and time of intermediate solutions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
         self.__start_time = time.time()
@@ -3586,7 +3586,7 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
 class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
     """Print intermediate solutions (objective, variable values, time)."""
 
-    def __init__(self, variables):
+    def __init__(self, variables) -> None:
         CpSolverSolutionCallback.__init__(self)
         self.__variables: Sequence[IntVar] = variables
         self.__solution_count: int = 0
@@ -3614,7 +3614,7 @@ class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
 class VarArraySolutionPrinter(CpSolverSolutionCallback):
     """Print intermediate solutions (variable values, time)."""
 
-    def __init__(self, variables: Sequence[IntVar]):
+    def __init__(self, variables: Sequence[IntVar]) -> None:
         CpSolverSolutionCallback.__init__(self)
         self.__variables: Sequence[IntVar] = variables
         self.__solution_count: int = 0
