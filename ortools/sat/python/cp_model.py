@@ -122,12 +122,12 @@ RANDOMIZED_SEARCH = sat_parameters_pb2.SatParameters.RANDOMIZED_SEARCH
 # We need to add int to numbers.Integral
 IntegralT = Union[numbers.Integral, int]
 # We need to add int and float, otherwise type checkers complain.
-NumberT = Union[numbers.Integral, int, numbers.Number, float]
+NumberT = Union[int, numbers.Number, float]
 LiteralT = Union["IntVar", "_NotBooleanVariable", IntegralT, bool]
 BoolVarT = Union["IntVar", "_NotBooleanVariable"]
 VariableT = Union["IntVar", IntegralT]
-LinearExprT = Union["LinearExpr", "IntVar", IntegralT]
-ObjLinearExprT = Union["LinearExpr", "IntVar", NumberT]
+LinearExprT = Union["LinearExpr", IntegralT]
+ObjLinearExprT = Union["LinearExpr", NumberT]
 BoundedLinearExprT = Union["BoundedLinearExpression", bool]
 ArcT = Tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
@@ -400,11 +400,11 @@ class LinearExpr:
         )
 
     @overload
-    def __add__(self, arg: LinearExprT) -> LinearExprT:
+    def __add__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __add__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __add__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __add__(self, arg):
@@ -413,11 +413,11 @@ class LinearExpr:
         return _Sum(self, arg)
 
     @overload
-    def __radd__(self, arg: LinearExprT) -> LinearExprT:
+    def __radd__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __radd__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __radd__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __radd__(self, arg):
@@ -426,11 +426,11 @@ class LinearExpr:
         return _Sum(self, arg)
 
     @overload
-    def __sub__(self, arg: LinearExprT) -> LinearExprT:
+    def __sub__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __sub__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __sub__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __sub__(self, arg):
@@ -443,22 +443,22 @@ class LinearExpr:
             return _Sum(self, -arg)
 
     @overload
-    def __rsub__(self, arg: LinearExprT) -> LinearExprT:
+    def __rsub__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __rsub__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __rsub__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __rsub__(self, arg):
         return _Sum(-self, arg)
 
     @overload
-    def __mul__(self, arg: LinearExprT) -> LinearExprT:
+    def __mul__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __mul__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __mul__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __mul__(self, arg):
@@ -470,11 +470,11 @@ class LinearExpr:
         return _ProductCst(self, arg)
 
     @overload
-    def __rmul__(self, arg: LinearExprT) -> LinearExprT:
+    def __rmul__(self, arg: "LinearExpr") -> "LinearExpr":
         ...
 
     @overload
-    def __rmul__(self, arg: ObjLinearExprT) -> ObjLinearExprT:
+    def __rmul__(self, arg: NumberT) -> "LinearExpr":
         ...
 
     def __rmul__(self, arg):
@@ -537,7 +537,7 @@ class LinearExpr:
             "please use CpModel.add_bool_xor"
         )
 
-    def __neg__(self) -> LinearExprT:
+    def __neg__(self) -> "LinearExpr":
         return _ProductCst(self, -1)
 
     def __bool__(self) -> NoReturn:
