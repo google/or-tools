@@ -454,11 +454,11 @@ class LinearExpr:
         return _Sum(-self, arg)
 
     @overload
-    def __mul__(self, arg: "LinearExpr") -> "LinearExpr":
+    def __mul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]:
         ...
 
     @overload
-    def __mul__(self, arg: NumberT) -> "LinearExpr":
+    def __mul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]:
         ...
 
     def __mul__(self, arg):
@@ -470,11 +470,11 @@ class LinearExpr:
         return _ProductCst(self, arg)
 
     @overload
-    def __rmul__(self, arg: "LinearExpr") -> "LinearExpr":
+    def __rmul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]:
         ...
 
     @overload
-    def __rmul__(self, arg: NumberT) -> "LinearExpr":
+    def __rmul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]:
         ...
 
     def __rmul__(self, arg):
@@ -3321,7 +3321,7 @@ class CpSolver:
 
     def SolveWithSolutionCallback(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cp_model_pb2.CpSolverStatus:
+    ) -> cp_model_pb2.CpSolverStatus.ValueType:
         """DEPRECATED Use solve() with the callback argument."""
         warnings.warn(
             "solve_with_solution_callback is deprecated; use solve() with"
@@ -3332,7 +3332,7 @@ class CpSolver:
 
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cp_model_pb2.CpSolverStatus:
+    ) -> cp_model_pb2.CpSolverStatus.ValueType:
         """DEPRECATED Use solve() with the right parameter.
 
         Search for all solutions of a satisfiability problem.
@@ -3586,7 +3586,7 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
 class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
     """Print intermediate solutions (objective, variable values, time)."""
 
-    def __init__(self, variables) -> None:
+    def __init__(self, variables: Sequence[IntVar]) -> None:
         CpSolverSolutionCallback.__init__(self)
         self.__variables: Sequence[IntVar] = variables
         self.__solution_count: int = 0
