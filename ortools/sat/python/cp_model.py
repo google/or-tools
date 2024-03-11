@@ -3108,7 +3108,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cp_model_pb2.CpSolverStatus.ValueType:
+    ) -> cp_model_pb2.CpSolverStatus:
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
             self.__solve_wrapper = swig_helper.SolveWrapper()
@@ -3292,7 +3292,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cp_model_pb2.CpSolverStatus.ValueType:
+    ) -> cp_model_pb2.CpSolverStatus:
         return self.solve(model, solution_callback)
 
     def SolutionInfo(self) -> str:
@@ -3321,7 +3321,7 @@ class CpSolver:
 
     def SolveWithSolutionCallback(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cp_model_pb2.CpSolverStatus.ValueType:
+    ) -> cp_model_pb2.CpSolverStatus:
         """DEPRECATED Use solve() with the callback argument."""
         warnings.warn(
             "solve_with_solution_callback is deprecated; use solve() with"
@@ -3332,7 +3332,7 @@ class CpSolver:
 
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cp_model_pb2.CpSolverStatus.ValueType:
+    ) -> cp_model_pb2.CpSolverStatus:
         """DEPRECATED Use solve() with the right parameter.
 
         Search for all solutions of a satisfiability problem.
