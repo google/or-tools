@@ -20,15 +20,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/map_util.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/graph.h"
-#include "util/tuple/dump_vars.h"
 
 namespace operations_research {
 namespace {
@@ -100,9 +99,6 @@ TEST(BidirectionalDijkstraTest, SmallTest) {
 
 TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
   std::mt19937 random(12345);
-  // Performance on forge as of 2016-10-05 with these numbers, over 1000 runs:
-  // - fastbuild: max = 21.9s, avg = 10.7s.
-  // - opt: max = 23.2s, avg = 10.4s.
   const int kNumGraphs = DEBUG_MODE ? 100 : 300;
   const int kNumQueriesPerGraph = DEBUG_MODE ? 10 : 30;
   const int kNumNodes = 1000;

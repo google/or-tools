@@ -23,6 +23,7 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/ebert_graph_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_path_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/hamiltonian_path_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/k_shortest_paths_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/linear_assignment_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/max_flow_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/min_cost_flow_test.cc

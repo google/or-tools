@@ -21,6 +21,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/logging.h"
@@ -105,8 +106,8 @@ class PathTree {
  public:
   PathTree() : nodes_(), parents_() {}
 
-  void Initialize(const std::vector<NodeIndex>& paths,
-                  const std::vector<NodeIndex>& destinations);
+  void Initialize(absl::Span<const NodeIndex> paths,
+                  absl::Span<const NodeIndex> destinations);
 
   // Returns the parent (predecessor) of 'node' in the tree in
   // O(log(path_tree_size)), where path_tree_size is the size of nodes_.
@@ -126,8 +127,8 @@ class PathTree {
 // Initializes the tree from a non-sparse representation of the path tree
 // represented by 'paths'. The tree is reduced to the subtree in which nodes in
 // 'destinations' are the leafs.
-void PathTree::Initialize(const std::vector<NodeIndex>& paths,
-                          const std::vector<NodeIndex>& destinations) {
+void PathTree::Initialize(absl::Span<const NodeIndex> paths,
+                          absl::Span<const NodeIndex> destinations) {
   const NodeIndex kNilNode = StarGraph::kNilNode;
   std::vector<bool> node_explored(paths.size(), false);
   const int destination_size = destinations.size();
@@ -256,7 +257,7 @@ class DistanceContainer : public PathContainerImpl {
   std::vector<int> reverse_destinations_;
 
  private:
-  static void ComputeReverse(const std::vector<NodeIndex>& nodes,
+  static void ComputeReverse(absl::Span<const NodeIndex> nodes,
                              NodeIndex num_nodes,
                              std::vector<int>* reverse_nodes) {
     CHECK(reverse_nodes != nullptr);

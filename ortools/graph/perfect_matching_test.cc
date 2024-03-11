@@ -248,7 +248,7 @@ std::vector<Edge> GenerateAndLoadRandomProblem(
 // condition if really needed. This is a bit involved though, and with the MIP
 // tests below, we should have a good enough confidence in the code already.
 void CheckOptimalSolution(const MinCostPerfectMatching& matcher,
-                          const std::vector<Edge>& edges) {
+                          absl::Span<const Edge> edges) {
   const std::vector<int>& matches = matcher.Matches();
   std::vector<bool> seen(matches.size(), false);
   int num_seen = 0;
