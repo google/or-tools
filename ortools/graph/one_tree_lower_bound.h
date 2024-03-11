@@ -335,10 +335,10 @@ int GetNodeMinimizingEdgeCostToSource(const GraphType& graph, int source,
 template <typename CostFunction, typename GraphType, typename CostType>
 std::vector<int> ComputeOneTree(const GraphType& graph,
                                 const CostFunction& cost,
-                                const std::vector<double>& weights,
-                                const std::vector<int>& sorted_arcs,
+                                absl::Span<const double> weights,
+                                absl::Span<const int> sorted_arcs,
                                 CostType* one_tree_cost) {
-  const auto weighed_cost = [&cost, &weights](int from, int to) {
+  const auto weighed_cost = [&cost, weights](int from, int to) {
     return cost(from, to) + weights[from] + weights[to];
   };
   // Compute MST on graph.

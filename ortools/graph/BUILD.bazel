@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -65,10 +66,12 @@ cc_library(
     hdrs = ["bounded_dijkstra.h"],
     deps = [
         ":graph",
-        "//ortools/base",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:threadpool",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -76,8 +79,9 @@ cc_library(
     name = "multi_dijkstra",
     hdrs = ["multi_dijkstra.h"],
     deps = [
-        "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "//ortools/base:map_util",
+        "//ortools/base:types",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -86,6 +90,7 @@ cc_library(
     hdrs = ["bidirectional_dijkstra.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:iterator_adaptors",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
@@ -99,7 +104,7 @@ cc_library(
     hdrs = ["cliques.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:intops",
+        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -112,6 +117,7 @@ cc_library(
     hdrs = ["hamiltonian_path.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_or_function",
@@ -123,11 +129,16 @@ cc_library(
     hdrs = ["christofides.h"],
     deps = [
         ":eulerian_path",
+        ":graph",
         ":minimum_spanning_tree",
         ":perfect_matching",
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -144,10 +155,10 @@ cc_library(
     hdrs = ["minimum_spanning_tree.h"],
     deps = [
         ":connected_components",
-        ":graph",
-        "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:types",
         "//ortools/util:vector_or_function",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -157,8 +168,8 @@ cc_library(
     deps = [
         ":christofides",
         ":minimum_spanning_tree",
-        "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:types",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -167,8 +178,10 @@ cc_library(
     hdrs = ["ebert_graph.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -181,12 +194,29 @@ cc_library(
         ":graph",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:file",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/functional:bind_front",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "k_shortest_paths",
+    hdrs = ["k_shortest_paths.h"],
+    deps = [
+        ":bounded_dijkstra",
+        ":ebert_graph",
+        ":shortest_paths",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -212,9 +242,12 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:stats",
         "//ortools/util:zvector",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -228,17 +261,15 @@ cc_test(
         ":graphs",
         ":max_flow",
         "//ortools/base",
-        "//ortools/base:gmock",
-        "//ortools/base:message_matchers",
+        "//ortools/base:gmock_main",
         "//ortools/base:path",
-        "//ortools/base:status_matchers",
         "//ortools/linear_solver",
         "//ortools/util:file_util",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -254,7 +285,6 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":connected_components",
         ":ebert_graph",
         ":graph",
         ":graphs",
@@ -262,9 +292,13 @@ cc_library(
         "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
+        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -279,7 +313,8 @@ cc_binary(
         ":min_cost_flow",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:filesystem",
+        "//ortools/base:status_macros",
+        "//ortools/base:timer",
         "//ortools/util:filelineiter",
         "//ortools/util:stats",
         "@com_google_absl//absl/flags:flag",
@@ -298,7 +333,7 @@ cc_library(
     deps = [
         ":ebert_graph",
         ":linear_assignment",
-        "//ortools/base",
+        "@com_google_absl//absl/flags:flag",
     ],
 )
 
@@ -314,49 +349,10 @@ cc_library(
         "//ortools/base:types",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
-        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
-
-# Biconnected
-#cc_library(
-#    name = "biconnected",
-#    srcs = ["biconnected.cc"],
-#    hdrs = ["biconnected.h"],
-#    deps = [
-#        ":ebert_graph",
-#        "//ortools/base",
-#        "//ortools/base:types",
-#    ],
-#)
-
-# Hopcroft-Karp (Old)
-#cc_library(
-#    name = "hopcroft_karp",
-#    srcs = ["hopcroft_karp.c"],
-#    hdrs = ["hopcroft_karp.h"],
-#)
-
-# Hopcroft-Karp (New)
-#cc_library(
-#    name = "bipartite_matching",
-#    srcs = ["bipartite_matching.cc"],
-#    hdrs = ["bipartite_matching.h"],
-#    deps = [
-#        "//ortools/base",
-#    ],
-#)
-
-#cc_library(
-#    name = "dag_connectivity",
-#    srcs = ["dag_connectivity.cc"],
-#    hdrs = ["dag_connectivity.h"],
-#    deps = [
-#        ":topologicalsorter",
-#        "//ortools/base",
-#    ],
-#)
 
 cc_library(
     name = "perfect_matching",
@@ -365,7 +361,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:intops",
+        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
@@ -382,6 +378,8 @@ cc_library(
     deps = [
         ":graph",
         ":topologicalsorter",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
@@ -392,12 +390,16 @@ cc_library(
 
 cc_library(
     name = "dag_constrained_shortest_path",
+    testonly = True,
     srcs = ["dag_constrained_shortest_path.cc"],
     hdrs = ["dag_constrained_shortest_path.h"],
     deps = [
         ":dag_shortest_path",
         ":graph",
         ":topologicalsorter",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -439,6 +441,21 @@ cc_library(
 cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
+)
+
+cc_library(
+    name = "random_graph",
+    srcs = ["random_graph.cc"],
+    hdrs = ["random_graph.h"],
+    deps = [
+        ":graph",
+        "//ortools/base:logging",
+        "//ortools/base:types",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
+    ],
 )
 
 cc_library(

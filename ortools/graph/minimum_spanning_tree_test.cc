@@ -78,10 +78,10 @@ void CheckMSTWithKruskal(const ListGraph<int, int>& graph,
 
 // Helper function to check the expected MST is obtained with Prim.
 void CheckMSTWithPrim(const ListGraph<int, int>& graph,
-                      const std::vector<int64_t>& costs,
+                      absl::Span<const int64_t> costs,
                       const std::vector<int>& expected_arcs) {
   const std::vector<int> prim_mst = BuildPrimMinimumSpanningTree(
-      graph, [&costs](int arc) { return costs[arc]; });
+      graph, [costs](int arc) { return costs[arc]; });
   EXPECT_THAT(expected_arcs, UnorderedElementsAreArray(prim_mst));
 }
 
