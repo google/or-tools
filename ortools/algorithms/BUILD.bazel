@@ -208,30 +208,6 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "knapsack_solver_for_cuts",
-    srcs = ["knapsack_solver_for_cuts.cc"],
-    hdrs = ["knapsack_solver_for_cuts.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:int_type",
-        "//ortools/util:time_limit",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "knapsack_solver_for_cuts_test",
-    size = "medium",
-    srcs = ["knapsack_solver_for_cuts_test.cc"],
-    deps = [
-        ":knapsack_solver_for_cuts",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-    ],
-)
-
 # Partitioning and splitting of vector<int64_t>.
 
 # query matching library.
