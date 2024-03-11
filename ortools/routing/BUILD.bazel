@@ -242,7 +242,7 @@ cc_test(
     deps = [
         ":tsplib_parser",
         "//ortools/base",
-        "//ortools/base:filesystem",
+        "//ortools/base:file",
         "//ortools/base:memfile",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
