@@ -114,9 +114,9 @@ class CoreBasedOptimizer {
   // - Support resuming for interleaved search.
   // - Implement all core heurisitics.
   SatSolver::Status OptimizeWithSatEncoding(
-      const std::vector<Literal>& literals,
-      const std::vector<IntegerVariable>& vars,
-      const std::vector<Coefficient>& coefficients, Coefficient offset);
+      absl::Span<const Literal> literals,
+      absl::Span<const IntegerVariable> vars,
+      absl::Span<const Coefficient> coefficients, Coefficient offset);
 
  private:
   CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;

@@ -1090,6 +1090,7 @@ cc_library(
         "//ortools/graph",
         "//ortools/graph:topologicalsorter",
         "//ortools/util:bitset",
+        "//ortools/util:logging",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/cleanup",

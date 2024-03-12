@@ -254,9 +254,6 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::deque<ConstraintInfo> infos_;
 
   // Buffer of the constraints data.
-  //
-  // TODO(user): A lot of constrains have all their coeffs at one, we could
-  // exploit this.
   std::vector<IntegerVariable> variables_buffer_;
   std::vector<IntegerValue> coeffs_buffer_;
   std::vector<IntegerValue> buffer_of_ones_;
@@ -314,6 +311,9 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // This is only used in --v 1.
   SparseBitset<int> id_scanned_at_least_once_;
   int64_t num_extra_scans_ = 0;
+
+  // This is used to update the deterministic time.
+  int64_t num_terms_for_dtime_update_ = 0;
 
   // Stats.
   int64_t num_pushes_ = 0;

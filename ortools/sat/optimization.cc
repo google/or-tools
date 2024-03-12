@@ -666,9 +666,8 @@ bool CoreBasedOptimizer::CoverOptimization() {
 }
 
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
-    const std::vector<Literal>& literals,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<Coefficient>& coefficients, Coefficient offset) {
+    absl::Span<const Literal> literals, absl::Span<const IntegerVariable> vars,
+    absl::Span<const Coefficient> coefficients, Coefficient offset) {
   // Create one initial nodes per variables with cost.
   // TODO(user): We could create EncodingNode out of IntegerVariable.
   //

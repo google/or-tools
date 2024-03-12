@@ -234,16 +234,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void ComputePartialPrecedences(const std::vector<IntegerVariable>& vars,
                                  std::vector<FullIntegerPrecedence>* output);
 
-  // Advanced usage. To be called once all the constraints have been added to
-  // the model. This will loop over all "node" in this class, and if one of its
-  // optional incoming arcs must be chosen, it will add a corresponding
-  // GreaterThanAtLeastOneOfConstraint(). Returns the number of added
-  // constraint.
-  //
-  // TODO(user): This can be quite slow, add some kind of deterministic limit
-  // so that we can use it all the time.
-  int AddGreaterThanAtLeastOneOfConstraints(Model* model);
-
   // If known, return an offset such that we have a + offset <= b.
   // Note that this only cover the case where this was conditionned by a single
   // literal.
@@ -261,19 +251,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  private:
   DEFINE_STRONG_INDEX_TYPE(ArcIndex);
   DEFINE_STRONG_INDEX_TYPE(OptionalArcIndex);
-
-  // Given an existing clause, sees if it can be used to add "greater than at
-  // least one of" type of constraints. Returns the number of such constraint
-  // added.
-  int AddGreaterThanAtLeastOneOfConstraintsFromClause(
-      absl::Span<const Literal> clause, Model* model);
-
-  // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
-  // might be a bit slow as it relies on the propagation engine to detect
-  // clauses between incoming arcs presence literals.
-  // Returns the number of added constraints.
-  int AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(
-      Model* model);
 
   // Information about an individual arc.
   struct ArcInfo {
@@ -430,6 +407,66 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   int64_t num_cycles_ = 0;
   int64_t num_pushes_ = 0;
   int64_t num_enforcement_pushes_ = 0;
+};
+
+// Similar to AffineExpression, but with a zero constant.
+// If coeff is zero, then this is always zero and var is ignored.
+struct LinearTerm {
+  IntegerVariable var = kNoIntegerVariable;
+  IntegerValue coeff = IntegerValue(0);
+};
+
+// This collect all enforced linear of size 2 or 1 and detect if at least one of
+// a subset touching the same variable must be true. When this is the case
+// we add a new propagator to propagate that fact.
+//
+// TODO(user): Shall we do that on the main thread before the workers are
+// spawned? note that the probing version need the model to be loaded though.
+class GreaterThanAtLeastOneOfDetector {
+ public:
+  // Adds a relation lit => a + b \in [lhs, rhs].
+  void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
+           IntegerValue rhs);
+
+  // Advanced usage. To be called once all the constraints have been added to
+  // the model. This will detect GreaterThanAtLeastOneOfConstraint().
+  // Returns the number of added constraint.
+  //
+  // TODO(user): This can be quite slow, add some kind of deterministic limit
+  // so that we can use it all the time.
+  int AddGreaterThanAtLeastOneOfConstraints(Model* model,
+                                            bool auto_detect_clauses = false);
+
+ private:
+  // Given an existing clause, sees if it can be used to add "greater than at
+  // least one of" type of constraints. Returns the number of such constraint
+  // added.
+  int AddGreaterThanAtLeastOneOfConstraintsFromClause(
+      absl::Span<const Literal> clause, Model* model);
+
+  // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
+  // might be a bit slow as it relies on the propagation engine to detect
+  // clauses between incoming arcs presence literals.
+  // Returns the number of added constraints.
+  int AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(
+      Model* model);
+
+  // Once we identified a clause and relevant indices, this build the
+  // constraint. Returns true if we actually add it.
+  bool AddRelationFromIndices(IntegerVariable var,
+                              absl::Span<const Literal> clause,
+                              absl::Span<const int> indices, Model* model);
+
+  struct Relation {
+    Literal enforcement;
+    LinearTerm a;
+    LinearTerm b;
+    IntegerValue lhs;
+    IntegerValue rhs;
+  };
+
+  std::vector<Relation> relations_;
+  absl::StrongVector<LiteralIndex, std::vector<int>> lit_to_relations_;
 };
 
 // =============================================================================
