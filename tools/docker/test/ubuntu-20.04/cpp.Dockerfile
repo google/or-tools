@@ -9,12 +9,12 @@ RUN apt-get update \
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
-# Install CMake v3.26.4
+# Install CMake 3.28.3
 RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.26/cmake-3.26.4-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.26.4-linux-${ARCH}.sh \
-&& ./cmake-3.26.4-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.26.4-linux-${ARCH}.sh
+&& wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.28.3-linux-${ARCH}.sh \
+&& ./cmake-3.28.3-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.28.3-linux-${ARCH}.sh
 
 WORKDIR /root
 ADD or-tools_amd64_ubuntu-20.04_cpp_v*.tar.gz .

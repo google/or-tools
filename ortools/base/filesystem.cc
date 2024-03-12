@@ -14,14 +14,51 @@
 #include "ortools/base/filesystem.h"
 
 #include <filesystem>  // NOLINT(build/c++17)
+#include <regex>  // NOLINT
 
 #include "absl/status/status.h"
+#include "absl/strings/str_replace.h"
+
+namespace fs = std::filesystem;
+
+// Converts a absl::string_view into an object compatible with std::filesystem.
+#ifdef ABSL_USES_STD_STRING_VIEW
+#define SV_ABSL_TO_STD(X) X
+#else
+#define SV_ABSL_TO_STD(X) std::string(X)
+#endif
 
 namespace file {
 
 absl::Status Match(std::string_view pattern, std::vector<std::string>* result,
                    const file::Options& options) {
-  return absl::Status();
+  try {
+    const auto search_dir = fs::path(SV_ABSL_TO_STD(pattern)).parent_path();
+    const auto filename = fs::path(SV_ABSL_TO_STD(pattern)).filename().string();
+    std::string regexp_filename =
+        absl::StrReplaceAll(filename, {{".", "\\."}, {"*", ".*"}, {"?", "."}});
+    std::regex regexp_pattern(regexp_filename);
+    std::error_code error;
+
+    const fs::directory_iterator path_end;
+    for (auto path = fs::directory_iterator(search_dir, error);
+         !error && path != path_end; path.increment(error)) {
+      if (!fs::is_regular_file(path->path())) {
+        continue;
+      }
+      if (std::regex_match(path->path().filename().string(), regexp_pattern)) {
+        result->push_back(path->path().string());
+      }
+    }
+    if (error) {
+      return absl::InvalidArgumentError(error.message());
+    }
+
+    std::sort(result->begin(), result->end());
+    return absl::OkStatus();
+  } catch (const std::exception& e) {
+    return absl::InvalidArgumentError(e.what());
+  }
 }
 
 absl::Status IsDirectory(std::string_view path, const file::Options& options) {
