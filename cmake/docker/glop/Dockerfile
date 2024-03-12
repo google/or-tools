@@ -7,11 +7,12 @@ RUN apt-get update -qq \
 && apt-get install -yq git wget libssl-dev build-essential \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-# Install CMake 3.27.7
-RUN wget -q "https://cmake.org/files/v3.27/cmake-3.27.7-linux-x86_64.sh" \
-&& chmod a+x cmake-3.27.7-linux-x86_64.sh \
-&& ./cmake-3.27.7-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.27.7-linux-x86_64.sh
+
+# Install CMake 3.28.3
+RUN wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
+&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
+&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.28.3-linux-x86_64.sh
 CMD [ "/usr/bin/bash" ]
 
 FROM env AS devel
