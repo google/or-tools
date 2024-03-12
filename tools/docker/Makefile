@@ -404,7 +404,7 @@ DISTROS := \
  alpine-edge \
  archlinux \
  centos-7 \
- debian-12 debian-11 debian-sid \
+ debian-11 debian-12 debian-13 debian-sid \
  fedora-37 fedora-38 \
  ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10
 
