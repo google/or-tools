@@ -145,8 +145,8 @@ public class VrpInitialRoutes {
 
     // Solve the problem.
     // [START solve]
-    Assignment solution = routing.solveFromAssignmentWithParameters(
-        initialSolution, searchParameters);
+    Assignment solution =
+        routing.solveFromAssignmentWithParameters(initialSolution, searchParameters);
     // [END solve]
 
     // Print solution on console.

@@ -38,6 +38,8 @@ package operations_research;
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
 // Next ID: 61
 message RoutingSearchParameters {
+  reserved 19;
+
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
 
@@ -66,8 +68,6 @@ message RoutingSearchParameters {
   //                 - savings_arc_coefficient * Cost(a-->b)
   // This parameter must be greater than 0, and its default value is 1.
   double savings_arc_coefficient = 18;
-  // When true, the routes are built in parallel, sequentially otherwise.
-  bool savings_parallel_routes = 19;
 
   // Ratio (between 0 and 1) of available vehicles in the model on which
   // farthest nodes of the model are inserted as seeds in the

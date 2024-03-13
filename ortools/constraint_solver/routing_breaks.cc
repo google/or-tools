@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
@@ -1004,7 +1005,8 @@ class VehicleBreaksFilter : public BasePathFilter {
 VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel& routing_model,
                                          const RoutingDimension& dimension)
     : BasePathFilter(routing_model.Nexts(),
-                     routing_model.Size() + routing_model.vehicles()),
+                     routing_model.Size() + routing_model.vehicles(),
+                     routing_model.GetPathsMetadata()),
       model_(routing_model),
       dimension_(dimension) {
   DCHECK(dimension_.HasBreakConstraints());

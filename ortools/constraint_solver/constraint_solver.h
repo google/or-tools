@@ -1769,14 +1769,26 @@ class Solver {
   /// and the distance between nodes is one, the {force/distance} of nodes
   /// would be: start{0/1} P1{0/1} P2{1/1} D1{3/1} D2{2/1} end{0/0}.
   /// The energy would be 0*1 + 1*1 + 3*1 + 2*1 + 0*1.
-  /// The cost of each path is
-  /// costs[path] = energy[path] * path_unit_costs[path].
+  /// The cost per unit of energy is cost_per_unit_below_threshold until the
+  /// force reaches the threshold, then it is cost_per_unit_above_threshold:
+  /// min(threshold, force.CumulVar(Next(node))) * distance.TransitVar(node) *
+  /// cost_per_unit_below_threshold + max(0, force.CumulVar(Next(node)) -
+  /// threshold) * distance.TransitVar(node) * cost_per_unit_above_threshold.
   struct PathEnergyCostConstraintSpecification {
+    struct EnergyCost {
+      int64_t threshold;
+      int64_t cost_per_unit_below_threshold;
+      int64_t cost_per_unit_above_threshold;
+      bool IsNull() const {
+        return (cost_per_unit_below_threshold == 0 || threshold == 0) &&
+               (cost_per_unit_above_threshold == 0 || threshold == kint64max);
+      }
+    };
     std::vector<IntVar*> nexts;
     std::vector<IntVar*> paths;
     std::vector<IntVar*> forces;
     std::vector<IntVar*> distances;
-    std::vector<int64_t> path_unit_costs;
+    std::vector<EnergyCost> path_energy_costs;
     std::vector<bool> path_used_when_empty;
     std::vector<int64_t> path_starts;
     std::vector<int64_t> path_ends;

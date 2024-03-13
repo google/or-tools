@@ -108,13 +108,17 @@ class SolutionCallback:
         self.objectives = []
 
     def __call__(self):
-        objective = int(self._routing_model_ref().CostVar().Value())
+        objective = int(
+            self._routing_model_ref().CostVar().Value()
+        )  # pytype: disable=attribute-error
         if not self.objectives or objective < self.objectives[-1]:
             self.objectives.append(objective)
-            print_solution(self._routing_manager_ref(), self._routing_model_ref())
+            print_solution(
+                self._routing_manager_ref(), self._routing_model_ref()
+            )  # pytype: disable=attribute-error
             self._counter += 1
         if self._counter > self._counter_limit:
-            self._routing_model_ref().solver().FinishCurrentSearch()
+            self._routing_model_ref().solver().FinishCurrentSearch()  # pytype: disable=attribute-error
 
 # [END solution_callback]
 

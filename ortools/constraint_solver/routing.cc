@@ -48,6 +48,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "google/protobuf/util/message_differencer.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
@@ -411,6 +412,7 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       num_visit_types_(0),
       paths_metadata_(index_manager),
       manager_(index_manager),
+      search_parameters_(DefaultRoutingSearchParameters()),
       finalizer_variables_(std::make_unique<FinalizerVariables>(solver_.get())),
       interrupt_cp_sat_(false),
       interrupt_cp_(false) {
@@ -1065,7 +1067,8 @@ void ResourceGroup::ComputeResourceClasses() {
     std::vector<bool>& assignable_to_v = resource_class.assignable_to_vehicle;
     assignable_to_v.resize(model_->vehicles_, false);
     for (int v : vehicles_requiring_resource_) {
-      assignable_to_v[v] = IsResourceAllowedForVehicle(r, v);
+      assignable_to_v[v] = IsResourceAllowedForVehicle(r, v) &&
+                           model_->ResourceVar(v, index_)->Contains(r);
     }
 
     DCHECK_EQ(resource_indices_per_class_.size(), resource_class_map.size());
@@ -1173,19 +1176,36 @@ void RoutingModel::SetFixedCostOfVehicle(int64_t cost, int vehicle) {
 
 void RoutingModel::SetPathEnergyCostOfVehicle(const std::string& force,
                                               const std::string& distance,
-                                              int64_t unit_cost, int vehicle) {
+                                              int64_t cost_per_unit,
+                                              int vehicle) {
+  SetPathEnergyCostsOfVehicle(force, distance, /*threshold=*/0,
+                              /*cost_per_unit_below_threshold=*/0,
+                              /*cost_per_unit_above_threshold=*/cost_per_unit,
+                              vehicle);
+}
+
+void RoutingModel::SetPathEnergyCostsOfVehicle(
+    const std::string& force, const std::string& distance, int64_t threshold,
+    int64_t cost_per_unit_below_threshold,
+    int64_t cost_per_unit_above_threshold, int vehicle) {
   DCHECK_LE(0, vehicle);
   DCHECK_LT(vehicle, vehicles_);
-  DCHECK_LE(0, unit_cost);
-  // When unit_cost is 0, the path energy cost is 0, we can avoid useless
-  // computations.
-  if (unit_cost == 0) return;
-  std::vector<int64_t>& vehicle_unit_costs =
-      force_distance_to_vehicle_unit_costs_[std::make_pair(force, distance)];
-  if (vehicle_unit_costs.size() < vehicles_) {
-    vehicle_unit_costs.resize(vehicles_, 0);
+  DCHECK_LE(0, threshold);
+  DCHECK_LE(0, cost_per_unit_below_threshold);
+  DCHECK_LE(0, cost_per_unit_above_threshold);
+  // When costs are 0, we can avoid useless computations.
+  if (cost_per_unit_below_threshold == 0 && cost_per_unit_above_threshold == 0)
+    return;
+  using Limit = Solver::PathEnergyCostConstraintSpecification::EnergyCost;
+  std::vector<Limit>& energy_costs =
+      force_distance_to_energy_costs_[std::make_pair(force, distance)];
+  if (energy_costs.size() < vehicles_) {
+    energy_costs.resize(vehicles_, {0, 0, 0});
   }
-  vehicle_unit_costs[vehicle] = unit_cost;
+  energy_costs[vehicle] = {
+      .threshold = threshold,
+      .cost_per_unit_below_threshold = cost_per_unit_below_threshold,
+      .cost_per_unit_above_threshold = cost_per_unit_above_threshold};
 }
 
 void RoutingModel::SetAmortizedCostFactorsOfAllVehicles(
@@ -2030,7 +2050,7 @@ class RoutingModelInspector : public ModelVisitor {
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64_t>& values) override {
     gtl::FindWithDefault(array_inspectors_, arg_name,
-                         [](const std::vector<int64_t>&) {})(values);
+                         [](absl::Span<const int64_t>) {})(values);
   }
 
  private:
@@ -2170,9 +2190,10 @@ absl::Duration GetTimeLimit(const RoutingSearchParameters& parameters) {
 
 void RoutingModel::CloseModelWithParameters(
     const RoutingSearchParameters& parameters) {
-  std::string error = FindErrorInRoutingSearchParameters(parameters);
+  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
+  const std::string error = FindErrorInRoutingSearchParameters(parameters);
   if (!error.empty()) {
-    status_ = ROUTING_INVALID;
+    status_ = RoutingSearchStatus::ROUTING_INVALID;
     LOG(ERROR) << "Invalid RoutingSearchParameters: " << error;
     return;
   }
@@ -2510,18 +2531,16 @@ void RoutingModel::CloseModelWithParameters(
     cost_elements.push_back(CreateSameVehicleCost(i));
   }
   // Energy costs
-  {
-    for (const auto& [force_distance, vehicle_unit_costs] :
-         force_distance_to_vehicle_unit_costs_) {
-      std::vector<IntVar*> vehicle_costs(vehicles_, nullptr);
+  for (const auto& [force_distance, costs] : force_distance_to_energy_costs_) {
+    std::vector<IntVar*> energy_costs(vehicles_, nullptr);
 
-      for (int vehicle = 0; vehicle < vehicles_; ++vehicle) {
-        const int64_t cost_ub =
-            vehicle_unit_costs[vehicle] == 0 ? 0 : kint64max;
-        vehicle_costs[vehicle] = solver_->MakeIntVar(0, cost_ub);
-        cost_elements.push_back(vehicle_costs[vehicle]);
-        AddWeightedVariableMinimizedByFinalizer(vehicle_costs[vehicle],
-                                                vehicle_unit_costs[vehicle]);
+    for (int v = 0; v < vehicles_; ++v) {
+      const int64_t cost_ub = costs[v].IsNull() ? 0 : kint64max;
+      energy_costs[v] = solver_->MakeIntVar(0, cost_ub);
+      cost_elements.push_back(energy_costs[v]);
+      AddWeightedVariableMinimizedByFinalizer(
+          energy_costs[v], std::max(costs[v].cost_per_unit_below_threshold,
+                                    costs[v].cost_per_unit_above_threshold));
       }
 
       const RoutingDimension* force_dimension =
@@ -2537,16 +2556,15 @@ void RoutingModel::CloseModelWithParameters(
           .paths = VehicleVars(),
           .forces = force_dimension->cumuls(),
           .distances = distance_dimension->transits(),
-          .path_unit_costs = vehicle_unit_costs,
+        .path_energy_costs = costs,
           .path_used_when_empty = vehicle_used_when_empty_,
           .path_starts = paths_metadata_.Starts(),
           .path_ends = paths_metadata_.Ends(),
-          .costs = vehicle_costs,
+        .costs = energy_costs,
       };
 
       solver_->AddConstraint(
           solver_->MakePathEnergyCostConstraint(specification));
-    }
   }
   // cost_ is the sum of cost_elements.
   cost_ = solver_->MakeSum(cost_elements)->Var();
@@ -2645,12 +2663,10 @@ void RoutingModel::CloseModelWithParameters(
   // parameters.
   CreateNeighborhoodOperators(parameters);
   CreateFirstSolutionDecisionBuilders(parameters);
-  error = FindErrorInSearchParametersForModel(parameters);
-  if (!error.empty()) {
-    status_ = ROUTING_INVALID;
-    LOG(ERROR) << "Invalid RoutingSearchParameters for this model: " << error;
-    return;
-  }
+  monitors_before_setup_ = monitors_.size();
+  // This must set here as SetupSearch needs to be aware of previously existing
+  // monitors.
+  monitors_after_setup_ = monitors_.size();
   SetupSearch(parameters);
 }
 
@@ -2790,8 +2806,10 @@ const Assignment* RoutingModel::FastSolveFromAssignmentWithParameters(
   }
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(search_parameters);
-  if (status_ == ROUTING_INVALID) return nullptr;
-  status_ = ROUTING_NOT_SOLVED;
+  UpdateSearchFromParametersIfNeeded(search_parameters);
+
+  if (status_ == RoutingSearchStatus::ROUTING_INVALID) return nullptr;
+  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
   if (assignment == nullptr) return nullptr;
   limit_->UpdateLimits(
       GetTimeLimit(search_parameters), std::numeric_limits<int64_t>::max(),
@@ -2810,14 +2828,14 @@ const Assignment* RoutingModel::FastSolveFromAssignmentWithParameters(
     if (!check_solution_in_cp ||
         CheckIfAssignmentIsFeasible(*solution,
                                     /*call_at_solution_monitors=*/false)) {
-      status_ = ROUTING_SUCCESS;
+      status_ = RoutingSearchStatus::ROUTING_SUCCESS;
     }
   }
-  if (status_ != ROUTING_SUCCESS) {
+  if (status_ != RoutingSearchStatus::ROUTING_SUCCESS) {
     if (elapsed_time >= GetTimeLimit(search_parameters)) {
-      status_ = ROUTING_FAIL_TIMEOUT;
+      status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     } else {
-      status_ = ROUTING_FAIL;
+      status_ = RoutingSearchStatus::ROUTING_FAIL;
     }
   }
   return solution;
@@ -2829,16 +2847,16 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     std::vector<const Assignment*>* solutions) {
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(parameters);
-  VLOG(1) << "Search parameters:\n" << parameters;
+  UpdateSearchFromParametersIfNeeded(parameters);
   if (solutions != nullptr) solutions->clear();
-  if (status_ == ROUTING_INVALID) {
+  if (status_ == RoutingSearchStatus::ROUTING_INVALID) {
     return nullptr;
   }
-  status_ = ROUTING_NOT_SOLVED;
+  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
 
   // Detect infeasibilities at the root of the search tree.
   if (!solver_->CheckConstraint(solver_->MakeTrueConstraint())) {
-    status_ = ROUTING_INFEASIBLE;
+    status_ = RoutingSearchStatus::ROUTING_INFEASIBLE;
     return nullptr;
   }
 
@@ -2872,7 +2890,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
         return true;
       };
   if (!update_time_limits()) {
-    status_ = ROUTING_FAIL_TIMEOUT;
+    status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     return nullptr;
   }
   lns_limit_->UpdateLimits(
@@ -2988,8 +3006,9 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
 
   if (solution_collector->has_solution() || !solution_pool.empty()) {
     status_ = local_optimum_reached_
-                  ? ROUTING_SUCCESS
-                  : ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED;
+                  ? RoutingSearchStatus::ROUTING_SUCCESS
+                  : RoutingSearchStatus::
+                        ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED;
     if (solutions != nullptr) {
       std::vector<Assignment*> temp_solutions;
       for (int i = 0; i < solution_collector->solution_count(); ++i) {
@@ -3033,7 +3052,7 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
       solutions->insert(solutions->end(), temp_solutions.begin(),
                         temp_solutions.end());
       if (min_objective_value <= objective_lower_bound_) {
-        status_ = ROUTING_OPTIMAL;
+        status_ = RoutingSearchStatus::ROUTING_OPTIMAL;
       }
       return solutions->back();
     }
@@ -3045,14 +3064,14 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
       }
     }
     if (best_assignment->ObjectiveValue() <= objective_lower_bound_) {
-      status_ = ROUTING_OPTIMAL;
+      status_ = RoutingSearchStatus::ROUTING_OPTIMAL;
     }
     return solver_->MakeAssignment(best_assignment);
   } else {
     if (elapsed_time >= GetTimeLimit(parameters)) {
-      status_ = ROUTING_FAIL_TIMEOUT;
+      status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     } else {
-      status_ = ROUTING_FAIL;
+      status_ = RoutingSearchStatus::ROUTING_FAIL;
     }
     return nullptr;
   }
@@ -3062,15 +3081,22 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     const RoutingSearchParameters& parameters) {
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(parameters);
+  UpdateSearchFromParametersIfNeeded(parameters);
+  if (status_ == RoutingSearchStatus::ROUTING_INVALID) {
+    return nullptr;
+  }
 
   // Build an initial solution.
   solver_->Solve(solve_db_, monitors_);
-  uint64_t explored_solutions = solver_->solutions();
+  int64_t explored_solutions = solver_->solutions();
 
   Assignment* best_solution = collect_assignments_->last_solution_or_null();
   if (!best_solution) {
     return nullptr;
   }
+
+  // The solution that tracks the search trajectory.
+  Assignment* last_accepted_solution = solver_->MakeAssignment(best_solution);
 
   LocalSearchFilterManager* filter_manager =
       GetOrCreateLocalSearchFilterManager(parameters,
@@ -3078,7 +3104,7 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
                                            /*filter_with_cp_solver=*/false});
 
   DecisionBuilder* perturbation_db = MakePerturbationDecisionBuilder(
-      parameters, this, best_solution,
+      parameters, this, last_accepted_solution,
       [this]() { return CheckLimit(time_buffer_); }, filter_manager);
 
   // TODO(user): This lambda can probably be refactored into a function as a
@@ -3114,27 +3140,37 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     solver_->Solve(perturbation_db, monitors_);
     explored_solutions += solver_->solutions();
 
-    Assignment* neighbor = collect_assignments_->last_solution_or_null();
-    if (!neighbor) {
+    Assignment* neighbor_solution =
+        collect_assignments_->last_solution_or_null();
+    if (!neighbor_solution) {
       continue;
     }
 
-    if (improve_perturbed_solution) {
-    assignment_->CopyIntersection(neighbor);
+    if (improve_perturbed_solution && update_time_limits()) {
+      assignment_->CopyIntersection(neighbor_solution);
 
     solver_->Solve(improve_db_, monitors_);
+      explored_solutions += solver_->solutions();
 
-    neighbor = collect_assignments_->last_solution_or_null();
-    if (!neighbor) {
+      neighbor_solution = collect_assignments_->last_solution_or_null();
+      if (!neighbor_solution) {
       continue;
     }
     }
 
-    if (acceptance_criterion->Accept(best_solution, neighbor)) {
-      // Note that the ruin_and_recreate_db is using best_solution as reference
-      // assignment. By updating best_solution here we thus also keep the
-      // ruin_and_recreate_db reference assignment up to date.
-      best_solution->CopyIntersection(neighbor);
+    if (neighbor_solution->ObjectiveValue() < best_solution->ObjectiveValue()) {
+      best_solution->CopyIntersection(neighbor_solution);
+    }
+
+    absl::Duration elapsed_time =
+        absl::Milliseconds(solver_->wall_time() - start_time_ms);
+    if (acceptance_criterion->Accept({elapsed_time, explored_solutions},
+                                     neighbor_solution,
+                                     last_accepted_solution)) {
+      // Note that the perturbation_db is using last_accepted_solution as
+      // reference assignment. By updating last_accepted_solution here we thus
+      // also keep the perturbation_db reference assignment up to date.
+      last_accepted_solution->CopyIntersection(neighbor_solution);
     }
   }
 
@@ -3483,15 +3519,15 @@ Assignment* RoutingModel::RestoreAssignment(const Assignment& solution) {
 }
 
 Assignment* RoutingModel::DoRestoreAssignment() {
-  if (status_ == ROUTING_INVALID) {
+  if (status_ == RoutingSearchStatus::ROUTING_INVALID) {
     return nullptr;
   }
   solver_->Solve(restore_assignment_, monitors_);
   if (collect_assignments_->solution_count() == 1) {
-    status_ = ROUTING_SUCCESS;
+    status_ = RoutingSearchStatus::ROUTING_SUCCESS;
     return collect_assignments_->solution(0);
   } else {
-    status_ = ROUTING_FAIL;
+    status_ = RoutingSearchStatus::ROUTING_FAIL;
     return nullptr;
   }
   return nullptr;
@@ -3785,9 +3821,9 @@ int64_t RoutingModel::GetDimensionTransitCostSum(
        cost_class.dimension_transit_evaluator_class_and_cost_coefficient) {
     DCHECK_GE(span_cost_coefficient, 0);
     if (span_cost_coefficient == 0) continue;
-    cost = CapAdd(cost, CapProd(span_cost_coefficient,
-                                dimension->GetTransitValueFromClass(
-                                    i, j, transit_evaluator_class)));
+    CapAddTo(CapProd(span_cost_coefficient, dimension->GetTransitValueFromClass(
+                                                i, j, transit_evaluator_class)),
+             &cost);
   }
   return cost;
 }
@@ -4740,15 +4776,19 @@ RoutingModel::CreateLocalSearchFilters(
   }
   if (options.filter_objective) {
     const int num_vehicles = vehicles();
-    for (const auto& [force_distance, unit_costs] :
-         force_distance_to_vehicle_unit_costs_) {
+    for (const auto& [force_distance, energy_costs] :
+         force_distance_to_energy_costs_) {
       const auto& [force, distance] = force_distance;
       const RoutingDimension* force_dimension = GetMutableDimension(force);
       DCHECK_NE(force_dimension, nullptr);
       if (force_dimension == nullptr) continue;
+      std::vector<int64_t> force_start_min(num_vehicles);
+      std::vector<int64_t> force_end_min(num_vehicles);
       std::vector<int> force_class(num_vehicles);
       std::vector<const std::function<int64_t(int64_t)>*> force_evaluators;
       for (int v = 0; v < num_vehicles; ++v) {
+        force_start_min[v] = force_dimension->GetCumulVarMin(Start(v));
+        force_end_min[v] = force_dimension->GetCumulVarMin(End(v));
         const int c = force_dimension->vehicle_to_class(v);
         force_class[v] = c;
         if (c >= force_evaluators.size()) {
@@ -4777,10 +4817,22 @@ RoutingModel::CreateLocalSearchFilters(
               &(distance_dimension->GetBinaryTransitEvaluator(v));
         }
       }
+      std::vector<PathEnergyCostChecker::EnergyCost> path_energy_costs;
+      for (const auto& limit : energy_costs) {
+        path_energy_costs.push_back({
+            .threshold = limit.threshold,
+            .cost_per_unit_below_threshold =
+                limit.cost_per_unit_below_threshold,
+            .cost_per_unit_above_threshold =
+                limit.cost_per_unit_above_threshold,
+        });
+      }
       auto checker = std::make_unique<PathEnergyCostChecker>(
-          path_state_reference, std::move(force_class),
+          path_state_reference, std::move(force_start_min),
+          std::move(force_end_min), std::move(force_class),
           std::move(force_evaluators), std::move(distance_class),
-          std::move(distance_evaluators), unit_costs, vehicle_used_when_empty_);
+          std::move(distance_evaluators), std::move(path_energy_costs),
+          vehicle_used_when_empty_);
       filter_events.push_back(
           {MakePathEnergyCostFilter(solver(), std::move(checker),
                                     absl::StrCat(force_dimension->name(),
@@ -5405,41 +5457,41 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
         {/*filter_objective=*/false, /*filter_with_cp_solver=*/false});
   }
 
-  if (search_parameters.savings_parallel_routes()) {
-    IntVarFilteredDecisionBuilder* savings_db =
+  IntVarFilteredDecisionBuilder* parallel_savings_db =
         CreateIntVarFilteredDecisionBuilder<ParallelSavingsFilteredHeuristic>(
             savings_parameters, filter_manager);
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
       first_solution_filtered_decision_builders_
-          [FirstSolutionStrategy::SAVINGS] = savings_db;
+        [FirstSolutionStrategy::PARALLEL_SAVINGS] = parallel_savings_db;
     }
 
-    first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
-        solver_->Try(savings_db, CreateIntVarFilteredDecisionBuilder<
-                                     ParallelSavingsFilteredHeuristic>(
+  first_solution_decision_builders_[FirstSolutionStrategy::PARALLEL_SAVINGS] =
+      solver_->Try(
+          parallel_savings_db,
+          CreateIntVarFilteredDecisionBuilder<ParallelSavingsFilteredHeuristic>(
                                      savings_parameters,
                                      GetOrCreateLocalSearchFilterManager(
-                                         search_parameters,
-                                         {/*filter_objective=*/false,
+                  search_parameters, {/*filter_objective=*/false,
                                           /*filter_with_cp_solver=*/true})));
-  } else {
-    IntVarFilteredDecisionBuilder* savings_db =
+
+  IntVarFilteredDecisionBuilder* sequential_savings_db =
         CreateIntVarFilteredDecisionBuilder<SequentialSavingsFilteredHeuristic>(
             savings_parameters, filter_manager);
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
-      first_solution_filtered_decision_builders_
-          [FirstSolutionStrategy::SAVINGS] = savings_db;
+    first_solution_filtered_decision_builders_[FirstSolutionStrategy::SAVINGS] =
+        sequential_savings_db;
     }
 
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
-        solver_->Try(savings_db, CreateIntVarFilteredDecisionBuilder<
+      solver_->Try(
+          sequential_savings_db,
+          CreateIntVarFilteredDecisionBuilder<
                                      SequentialSavingsFilteredHeuristic>(
                                      savings_parameters,
                                      GetOrCreateLocalSearchFilterManager(
-                                         search_parameters,
-                                         {/*filter_objective=*/false,
+                  search_parameters, {/*filter_objective=*/false,
                                           /*filter_with_cp_solver=*/true})));
-  }
+
   // Sweep
   first_solution_decision_builders_[FirstSolutionStrategy::SWEEP] =
       MakeSweepDecisionBuilder(this, true);
@@ -5813,6 +5865,11 @@ SearchMonitor* MakeLocalOptimumWatcher(
 
 void RoutingModel::SetupSearchMonitors(
     const RoutingSearchParameters& search_parameters) {
+  std::vector<SearchMonitor*> old_monitors = monitors_;
+  monitors_.clear();
+  for (int i = 0; i < monitors_before_setup_; ++i) {
+    monitors_.push_back(old_monitors[i]);
+  }
   monitors_.push_back(GetOrCreateLimit());
   monitors_.push_back(MakeLocalOptimumWatcher(
       solver(),
@@ -5830,6 +5887,11 @@ void RoutingModel::SetupSearchMonitors(
   SetupMetaheuristics(search_parameters);
   SetupAssignmentCollector(search_parameters);
   SetupTrace(search_parameters);
+  int new_monitors_after_setup = monitors_.size();
+  for (int i = monitors_after_setup_; i < old_monitors.size(); ++i) {
+    monitors_.push_back(old_monitors[i]);
+  }
+  monitors_after_setup_ = new_monitors_after_setup;
 }
 
 bool RoutingModel::UsesLightPropagation(
@@ -5870,8 +5932,34 @@ void RoutingModel::AddVariableMinimizedByFinalizer(IntVar* var) {
 
 void RoutingModel::SetupSearch(
     const RoutingSearchParameters& search_parameters) {
+  const std::string error =
+      FindErrorInSearchParametersForModel(search_parameters);
+  if (!error.empty()) {
+    status_ = RoutingSearchStatus::ROUTING_INVALID;
+    LOG(ERROR) << "Invalid RoutingSearchParameters for this model: " << error;
+    return;
+  }
   SetupDecisionBuilders(search_parameters);
   SetupSearchMonitors(search_parameters);
+  search_parameters_ = search_parameters;
+}
+
+void RoutingModel::UpdateSearchFromParametersIfNeeded(
+    const RoutingSearchParameters& search_parameters) {
+  // TODO(user): Cache old configs instead of overwriting them. This will
+  // avoid consuming extra memory for configs that were already considered.
+  if (!google::protobuf::util::MessageDifferencer::Equivalent(
+          search_parameters_, search_parameters)) {
+    status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
+    std::string error = FindErrorInRoutingSearchParameters(search_parameters);
+    if (!error.empty()) {
+      status_ = RoutingSearchStatus::ROUTING_INVALID;
+      LOG(ERROR) << "Invalid RoutingSearchParameters: " << error;
+    } else {
+      SetupSearch(search_parameters);
+    }
+  }
+  VLOG(1) << "Search parameters:\n" << search_parameters;
 }
 
 void RoutingModel::AddToAssignment(IntVar* const var) {

@@ -310,7 +310,7 @@ int MakePairActiveOperator::FindNextInactivePair(int pair_index) const {
 }
 
 bool MakePairActiveOperator::ContainsActiveNodes(
-    const std::vector<int64_t>& nodes) const {
+    absl::Span<const int64_t> nodes) const {
   for (int64_t node : nodes) {
     if (!IsInactive(node)) return true;
   }
@@ -1044,7 +1044,7 @@ RelocateSubtrip::RelocateSubtrip(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::function<const std::vector<int>&(int, int)> get_neighbors,
-    const std::vector<PickupDeliveryPair>& pairs)
+    absl::Span<const PickupDeliveryPair> pairs)
     : PathOperator(vars, secondary_vars,
                    /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
                    /*skip_locally_optimal_paths=*/true,
@@ -1172,7 +1172,7 @@ ExchangeSubtrip::ExchangeSubtrip(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::function<const std::vector<int>&(int, int)> get_neighbors,
-    const std::vector<PickupDeliveryPair>& pairs)
+    absl::Span<const PickupDeliveryPair> pairs)
     : PathOperator(vars, secondary_vars,
                    /*number_of_base_nodes=*/get_neighbors == nullptr ? 2 : 1,
                    /*skip_locally_optimal_paths=*/true,
@@ -1182,7 +1182,7 @@ ExchangeSubtrip::ExchangeSubtrip(
   opened_pairs_set_.resize(pairs.size(), false);
 }
 
-void ExchangeSubtrip::SetPath(const std::vector<int64_t>& path, int path_id) {
+void ExchangeSubtrip::SetPath(absl::Span<const int64_t> path, int path_id) {
   for (int i = 1; i < path.size(); ++i) {
     SetNext(path[i - 1], path[i], path_id);
   }

@@ -45,7 +45,7 @@ message RuinRecreateParameters {
   FirstSolutionStrategy.Value recreate_strategy = 2;
 
   // Number of routes removed during a ruin application defined on routes.
-  uint32 num_ruined_routes = 3;
+  optional uint32 num_ruined_routes = 3;
 }
 
 // Defines how a reference solution is perturbed.
@@ -59,6 +59,34 @@ message PerturbationStrategy {
   }
 }
 
+// The cooling schedule strategy defines how the simulated annealing temperature
+// moves from the initial to the final value.
+message CoolingScheduleStrategy {
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Exponential cooldown.
+    EXPONENTIAL = 1;
+  }
+}
+
+// Specifies the behavior of a simulated annealing acceptance strategy.
+message SimulatedAnnealingParameters {
+  // Determines the speed at which the temperature changes from initial to
+  // final.
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
+
+  // The initial temperature.
+  optional double initial_temperature = 2;
+
+  // The final temperature.
+  optional double final_temperature = 3;
+
+  // TODO(user): support automatic definition of initial and final
+  // temperatures.
+}
+
 // Determines when a neighbor solution, obtained by the application of a
 // perturbation and improvement step to a reference solution, is used to
 // replace the reference solution.
@@ -67,9 +95,13 @@ message AcceptanceStrategy {
     // Unspecified value.
     UNSET = 0;
 
-    // Accept only solutions that are improving with respect to the reference
+    // Accepts only solutions that are improving with respect to the reference
     // one.
     GREEDY_DESCENT = 1;
+
+    // Accepts a candidate solution with a probability that depends on its
+    // quality and on the current state of the search.
+    SIMULATED_ANNEALING = 2;
   }
 }
 
@@ -84,9 +116,13 @@ message IteratedLocalSearchParameters {
 
   // Determines whether solution S', obtained from the perturbation, should be
   // optimized with a local search application.
-  bool improve_perturbed_solution = 3;
+  optional bool improve_perturbed_solution = 3;
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
   AcceptanceStrategy.Value acceptance_strategy = 4;
+
+  // Parameters to customize a simulated annealing acceptance strategy. These
+  // parameters are required iff the acceptance_strategy is SIMULATED_ANNEALING.
+  SimulatedAnnealingParameters simulated_annealing_parameters = 5;
 }

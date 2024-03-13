@@ -28,10 +28,12 @@
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
+class RoutingSearchStatus;
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
 %{
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -98,6 +100,10 @@ struct FirstSolutionStrategy {
 };
 
 struct LocalSearchMetaheuristic {
+  enum Value {};
+};
+
+struct RoutingSearchStatus {
   enum Value {};
 };
 

@@ -33,6 +33,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/bitmap.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
@@ -112,7 +113,7 @@ bool SearchLog::AtSolution() {
   std::string obj_str = "";
   std::vector<int64_t> current;
   bool objective_updated = false;
-  const auto scaled_str = [this](const std::vector<int64_t>& values) {
+  const auto scaled_str = [this](absl::Span<const int64_t> values) {
     std::vector<std::string> value_strings(values.size());
     for (int i = 0; i < values.size(); ++i) {
       if (scaling_factors_[i] != 1.0 || offsets_[i] != 0.0) {
@@ -2983,6 +2984,7 @@ void ObjectiveMonitor::EnterSearch() {
   found_initial_solution_ = false;
   best_values_.assign(Size(), std::numeric_limits<int64_t>::max());
   current_values_ = best_values_;
+  solver()->SetUseFastLocalSearch(true);
 }
 
 bool ObjectiveMonitor::AtSolution() {

@@ -60,6 +60,11 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   rr->set_num_ruined_routes(2);
   ils.set_improve_perturbed_solution(true);
   ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
+  SimulatedAnnealingParameters* sa =
+      ils.mutable_simulated_annealing_parameters();
+  sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
+  sa->set_initial_temperature(100.0);
+  sa->set_final_temperature(0.01);
   return ils;
 }
 
@@ -71,7 +76,6 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_savings_max_memory_usage_bytes(6e9);
   p.set_savings_add_reverse_arcs(false);
   p.set_savings_arc_coefficient(1);
-  p.set_savings_parallel_routes(false);
   p.set_cheapest_insertion_farthest_seeds_ratio(0);
   p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
   p.set_cheapest_insertion_first_solution_min_neighbors(1);
@@ -229,6 +233,127 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
   return status_or_duration.ok() &&
          status_or_duration.value() >= absl::ZeroDuration();
 }
+
+// Searches for errors in ILS parameters and appends them to the given `errors`
+// vector.
+void FindErrorsInIteratedLocalSearchParameters(
+    const RoutingSearchParameters& search_parameters,
+    std::vector<std::string>& errors) {
+  using absl::StrCat;
+  if (!search_parameters.use_iterated_local_search()) {
+    return;
+  }
+
+  if (!search_parameters.has_iterated_local_search_parameters()) {
+    errors.emplace_back(
+        "use_iterated_local_search is true but "
+        "iterated_local_search_parameters are missing.");
+    return;
+  }
+
+  const IteratedLocalSearchParameters& ils =
+      search_parameters.iterated_local_search_parameters();
+
+  if (ils.perturbation_strategy() == PerturbationStrategy::UNSET) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "iterated_local_search_parameters.perturbation_strategy: ",
+               ils.perturbation_strategy()));
+  }
+
+  if (ils.perturbation_strategy() == PerturbationStrategy::RUIN_AND_RECREATE) {
+    if (!ils.has_ruin_recreate_parameters()) {
+      errors.emplace_back(StrCat(
+          "iterated_local_search_parameters.perturbation_strategy is ",
+          PerturbationStrategy::RUIN_AND_RECREATE,
+          " but iterated_local_search_parameters.ruin_recreate_parameters are "
+          "missing."));
+      return;
+    }
+
+    const RuinRecreateParameters& rr = ils.ruin_recreate_parameters();
+
+    if (rr.ruin_strategy() == RuinStrategy::UNSET) {
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "ruin_strategy: ",
+                 rr.ruin_strategy()));
+    }
+
+    if (rr.ruin_strategy() == RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL &&
+        rr.num_ruined_routes() <= 0) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "ruin_strategy is set to ",
+                 rr.ruin_strategy(),
+                 " but "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "num_ruined_routes is ",
+                 rr.num_ruined_routes()));
+    }
+
+    if (rr.recreate_strategy() == FirstSolutionStrategy::UNSET) {
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "recreate_strategy: ",
+                 rr.recreate_strategy()));
+    }
+  }
+
+  if (ils.acceptance_strategy() == AcceptanceStrategy::UNSET) {
+    errors.emplace_back(
+        StrCat("Invalid value for "
+               "iterated_local_search_parameters.acceptance_strategy: ",
+               ils.acceptance_strategy()));
+  }
+
+  if (ils.acceptance_strategy() == AcceptanceStrategy::SIMULATED_ANNEALING) {
+    if (!ils.has_simulated_annealing_parameters()) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.acceptance_strategy is ",
+                 AcceptanceStrategy::SIMULATED_ANNEALING,
+                 " but "
+                 "iterated_local_search_parameters.simulated_annealing_"
+                 "parameters are missing."));
+      return;
+    }
+
+    const SimulatedAnnealingParameters& sa_params =
+        ils.simulated_annealing_parameters();
+
+    if (sa_params.cooling_schedule_strategy() ==
+        CoolingScheduleStrategy::UNSET) {
+      errors.emplace_back(
+          StrCat("Invalid value for "
+                 "iterated_local_search_parameters.simulated_annealing_"
+                 "parameters.cooling_schedule_strategy: ",
+                 sa_params.cooling_schedule_strategy()));
+    }
+
+    if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+      errors.emplace_back(
+          "iterated_local_search_parameters.simulated_annealing_parameters."
+          "initial_temperature cannot be lower than "
+          "iterated_local_search_parameters.simulated_annealing_parameters."
+          "final_temperature.");
+    }
+
+    if (sa_params.initial_temperature() < 1e-9) {
+      errors.emplace_back(
+          "iterated_local_search_parameters.simulated_annealing_parameters."
+          "initial_temperature cannot be lower than 1e-9.");
+    }
+
+    if (sa_params.final_temperature() < 1e-9) {
+      errors.emplace_back(
+          "iterated_local_search_parameters.simulated_annealing_parameters."
+          "final_temperature cannot be lower than 1e-9.");
+    }
+  }
+}
+
 }  // namespace
 
 std::string FindErrorInRoutingSearchParameters(
@@ -484,6 +609,8 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
         "sat_parameters.enumerate_all_solutions cannot be true in parallel"
         " search");
   }
+
+  FindErrorsInIteratedLocalSearchParameters(search_parameters, errors);
 
   return errors;
 }

@@ -149,8 +149,7 @@ public class InitialRoutes
 
         // Solve the problem.
         // [START solve]
-        Assignment solution = routing.SolveFromAssignmentWithParameters(
-            initialSolution, searchParameters);
+        Assignment solution = routing.SolveFromAssignmentWithParameters(initialSolution, searchParameters);
         // [END solve]
 
         // Print solution on console.

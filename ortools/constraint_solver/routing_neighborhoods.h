@@ -187,7 +187,7 @@ class MakePairActiveOperator : public PathOperator {
  private:
   void OnNodeInitialization() override;
   int FindNextInactivePair(int pair_index) const;
-  bool ContainsActiveNodes(const std::vector<int64_t>& nodes) const;
+  bool ContainsActiveNodes(absl::Span<const int64_t> nodes) const;
 
   int inactive_pair_;
   int inactive_pair_first_index_;
@@ -659,11 +659,11 @@ class RelocateSubtrip : public PathOperator {
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       std::function<const std::vector<int>&(int, int)> get_neighbors,
-      const std::vector<PickupDeliveryPair>& pairs);
+      absl::Span<const PickupDeliveryPair> pairs);
   RelocateSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
-                  const std::vector<PickupDeliveryPair>& pairs)
+                  absl::Span<const PickupDeliveryPair> pairs)
       : RelocateSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
                         nullptr, pairs) {}
 
@@ -696,7 +696,7 @@ class ExchangeSubtrip : public PathOperator {
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       std::function<const std::vector<int>&(int, int)> get_neighbors,
-      const std::vector<PickupDeliveryPair>& pairs);
+      absl::Span<const PickupDeliveryPair> pairs);
   ExchangeSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
@@ -734,7 +734,7 @@ class ExchangeSubtrip : public PathOperator {
   bool ExtractChainsFromDelivery(int64_t base_node,
                                  std::vector<int64_t>* rejects,
                                  std::vector<int64_t>* subtrip);
-  void SetPath(const std::vector<int64_t>& path, int path_id);
+  void SetPath(absl::Span<const int64_t> path, int path_id);
 
   const PickupAndDeliveryData pd_data_;
   // Represents the set of opened pairs during ExtractChainsFromXXX().

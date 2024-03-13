@@ -86,13 +86,23 @@ IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model);
 
 class PathEnergyCostChecker {
  public:
+  struct EnergyCost {
+    int64_t threshold;
+    int64_t cost_per_unit_below_threshold;
+    int64_t cost_per_unit_above_threshold;
+    bool IsNull() const {
+      return (cost_per_unit_below_threshold == 0 || threshold == 0) &&
+             (cost_per_unit_above_threshold == 0 || threshold == kint64max);
+    }
+  };
   PathEnergyCostChecker(
-      const PathState* path_state, std::vector<int> force_class,
+      const PathState* path_state, std::vector<int64_t> force_start_min,
+      std::vector<int64_t> force_end_min, std::vector<int> force_class,
       std::vector<const std::function<int64_t(int64_t)>*> force_per_class,
       std::vector<int> distance_class,
       std::vector<const std::function<int64_t(int64_t, int64_t)>*>
           distance_per_class,
-      std::vector<int64_t> path_unit_costs,
+      std::vector<EnergyCost> path_energy_cost,
       std::vector<bool> path_has_cost_when_empty);
   bool Check();
   void Commit();
@@ -100,14 +110,16 @@ class PathEnergyCostChecker {
   int64_t AcceptedCost() const { return accepted_total_cost_; }
 
  private:
-  int64_t ComputePathCost(int64_t path_start) const;
+  int64_t ComputePathCost(int64_t path) const;
   const PathState* const path_state_;
+  const std::vector<int64_t> force_start_min_;
+  const std::vector<int64_t> force_end_min_;
   const std::vector<int> force_class_;
   const std::vector<int> distance_class_;
   const std::vector<const std::function<int64_t(int64_t)>*> force_per_class_;
   const std::vector<const std::function<int64_t(int64_t, int64_t)>*>
       distance_per_class_;
-  const std::vector<int64_t> path_unit_costs_;
+  const std::vector<EnergyCost> path_energy_cost_;
   const std::vector<bool> path_has_cost_when_empty_;
 
   // Incremental cost computation.
@@ -137,7 +149,8 @@ void AppendDimensionCumulFilters(
 
 class BasePathFilter : public IntVarLocalSearchFilter {
  public:
-  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size);
+  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
+                 const PathsMetadata& paths_metadata);
   ~BasePathFilter() override {}
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64_t objective_min, int64_t objective_max) override;
@@ -151,9 +164,16 @@ class BasePathFilter : public IntVarLocalSearchFilter {
                ? (IsVarSynced(node) ? Value(node) : kUnassigned)
                : new_nexts_[node];
   }
-  int NumPaths() const { return starts_.size(); }
-  int64_t Start(int i) const { return starts_[i]; }
-  int GetPath(int64_t node) const { return paths_[node]; }
+  bool HasAnySyncedPath() const {
+    for (int64_t start : paths_metadata_.Starts()) {
+      if (IsVarSynced(start)) return true;
+    }
+    return false;
+  }
+  int NumPaths() const { return paths_metadata_.NumPaths(); }
+  int64_t Start(int i) const { return paths_metadata_.Start(i); }
+  int64_t End(int i) const { return paths_metadata_.End(i); }
+  int GetPath(int64_t node) const { return paths_metadata_.GetPath(node); }
   int Rank(int64_t node) const { return ranks_[node]; }
   bool IsDisabled() const { return status_ == DISABLED; }
   const std::vector<int64_t>& GetTouchedPathStarts() const {
@@ -185,9 +205,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   void UpdateAllRanks();
   void UpdatePathRanksFromStart(int start);
 
+  const PathsMetadata& paths_metadata_;
   std::vector<int64_t> node_path_starts_;
-  std::vector<int64_t> starts_;
-  std::vector<int> paths_;
   SparseBitset<int64_t> new_synchronized_unperformed_nodes_;
   std::vector<int64_t> new_nexts_;
   std::vector<int> delta_touched_;

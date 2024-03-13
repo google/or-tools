@@ -4397,7 +4397,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
                             "First solution statistics:\n%*s | Time (s)\n",
                             max_name_size, "");
       ParseFirstSolutionStatistics(
-          [&overview, max_name_size](const std::string& name,
+          [&overview, max_name_size](absl::string_view name,
                                      double duration_seconds) {
             absl::StrAppendFormat(&overview, "%*s | %7.2g\n", max_name_size,
                                   name, duration_seconds);

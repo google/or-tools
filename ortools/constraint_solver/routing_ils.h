@@ -20,6 +20,7 @@
 #include <memory>
 #include <random>
 
+#include "absl/time/time.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
@@ -67,10 +68,20 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
 // Neighbor acceptance criterion interface.
 class NeighborAcceptanceCriterion {
  public:
+  // Representation of the search process state.
+  struct SearchState {
+    // Search duration.
+    absl::Duration duration;
+    // Explored solutions.
+    int64_t solutions;
+  };
+
   virtual ~NeighborAcceptanceCriterion() = default;
-  // Returns whether `candidate` should replace `reference`.
-  virtual bool Accept(const Assignment* candidate,
-                      const Assignment* reference) const = 0;
+  // Returns whether `candidate` should replace `reference` given the provided
+  // search state.
+  virtual bool Accept(const SearchState& search_state,
+                      const Assignment* candidate,
+                      const Assignment* reference) = 0;
 };
 
 // Returns a neighbor acceptance criterion based on the given parameters.

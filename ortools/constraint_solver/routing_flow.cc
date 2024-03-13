@@ -291,7 +291,7 @@ bool RoutingModel::SolveMatchingModel(
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },
-                      &cumul_cost_value) !=
+                      /*resource=*/nullptr, &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {
@@ -316,7 +316,7 @@ bool RoutingModel::SolveMatchingModel(
                       [&nexts](int64_t node) {
                         return nexts.find(node)->second;
                       },
-                      &cumul_cost_value) !=
+                      /*resource=*/nullptr, &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {

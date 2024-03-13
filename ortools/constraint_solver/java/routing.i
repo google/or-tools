@@ -28,10 +28,16 @@
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
+
+struct RoutingSearchStatus {
+  enum Value {};
+};
+
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
 %{
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
@@ -227,6 +233,7 @@ import java.util.function.LongUnaryOperator;
 %rename (solveFromAssignmentWithParameters) RoutingModel::SolveFromAssignmentWithParameters;
 %rename (solveWithParameters) RoutingModel::SolveWithParameters;
 %rename (start) RoutingModel::Start;
+%rename (status) RoutingModel::status;
 %rename (unperformedPenalty) RoutingModel::UnperformedPenalty;
 %rename (unperformedPenaltyOrValue) RoutingModel::UnperformedPenaltyOrValue;
 %rename (vehicleVar) RoutingModel::VehicleVar;
@@ -370,6 +377,8 @@ PROTO2_RETURN(operations_research::RoutingSearchParameters,
               com.google.ortools.constraintsolver.RoutingSearchParameters)
 PROTO2_RETURN(operations_research::RoutingModelParameters,
               com.google.ortools.constraintsolver.RoutingModelParameters)
+PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
+                  com.google.ortools.constraintsolver.RoutingSearchStatus.Value)
 
 // Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall

@@ -101,9 +101,13 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertIsNotNone(manager)
         model = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(model)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
-        self.assertEqual(model.ROUTING_OPTIMAL, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, model.status()
+        )
         self.assertIsNotNone(assignment)
         self.assertEqual(0, assignment.ObjectiveValue())
 
@@ -112,9 +116,13 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertIsNotNone(manager)
         model = pywrapcp.RoutingModel(manager)
         self.assertIsNotNone(model)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
-        self.assertEqual(model.ROUTING_OPTIMAL, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, model.status()
+        )
         self.assertIsNotNone(assignment)
         self.assertEqual(0, assignment.ObjectiveValue())
 
@@ -128,10 +136,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         )
         self.assertEqual(1, transit_idx)
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(pywrapcp.RoutingModel.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
         self.assertTrue(assignment)
-        self.assertEqual(pywrapcp.RoutingModel.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(20, assignment.ObjectiveValue())
 
     def testTransitLambda(self):
@@ -142,9 +154,13 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         transit_id = model.RegisterTransitCallback(lambda from_index, to_index: 1)
         self.assertEqual(1, transit_id)
         model.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertIsNotNone(assignment)
         self.assertEqual(5, assignment.ObjectiveValue())
 
@@ -157,10 +173,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         transit_idx = model.RegisterTransitMatrix(matrix)
         self.assertEqual(1, transit_idx)
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
         self.assertTrue(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(15, assignment.ObjectiveValue())
 
     def testUnaryTransitCallback(self):
@@ -173,10 +193,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         )
         self.assertEqual(1, transit_idx)
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
         self.assertTrue(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(10, assignment.ObjectiveValue())
 
     def testUnaryTransitLambda(self):
@@ -187,9 +211,13 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         transit_id = model.RegisterUnaryTransitCallback(lambda from_index: 1)
         self.assertEqual(1, transit_id)
         model.SetArcCostEvaluatorOfAllVehicles(transit_id)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertIsNotNone(assignment)
         self.assertEqual(5, assignment.ObjectiveValue())
 
@@ -202,10 +230,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         transit_idx = model.RegisterUnaryTransitVector(vector)
         self.assertEqual(1, transit_idx)
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.Solve()
         self.assertTrue(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(45, assignment.ObjectiveValue())
 
     def testTSP(self):
@@ -219,14 +251,18 @@ class TestPyWrapRoutingModel(absltest.TestCase):
             functools.partial(TransitDistance, manager)
         )
         model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         # Solve
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
         assignment = model.SolveWithParameters(search_parameters)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(90, assignment.ObjectiveValue())
         # Inspect solution
         index = model.Start(0)
@@ -451,10 +487,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.SolveWithParameters(search_parameters)
         self.assertIsNotNone(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(90, assignment.ObjectiveValue())
         # Inspect solution
         node = model.Start(0)
@@ -486,10 +526,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.SolveWithParameters(search_parameters)
         self.assertIsNotNone(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(20, assignment.ObjectiveValue())
         # Inspect solution
         index = model.Start(0)
@@ -520,10 +564,14 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(model.ROUTING_NOT_SOLVED, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
+        )
         assignment = model.SolveWithParameters(search_parameters)
         self.assertIsNotNone(assignment)
-        self.assertEqual(model.ROUTING_SUCCESS, model.status())
+        self.assertEqual(
+            routing_enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS, model.status()
+        )
         self.assertEqual(20, assignment.ObjectiveValue())
         # Inspect solution
         for v in range(manager.GetNumberOfVehicles()):

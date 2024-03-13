@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
+
 namespace operations_research {
 
 // Tracks whether bins constrained by several nonnegative dimensions can contain
@@ -51,7 +53,7 @@ class BinCapacities {
 
   // Checks whether adding item(s) is feasible w.r.t. dimensions.
   bool CheckAdditionFeasibility(int item, int bin) const;
-  bool CheckAdditionsFeasibility(const std::vector<int>& items, int bin) const;
+  bool CheckAdditionsFeasibility(absl::Span<const int> items, int bin) const;
   // Adds item to bin, returns whether the bin is feasible.
   // The item is still added even when infeasible.
   bool AddItemToBin(int item, int bin);

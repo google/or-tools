@@ -243,6 +243,8 @@ class PathsMetadata {
   int NumPaths() const { return start_of_path_.size(); }
   const std::vector<int64_t>& Paths() const { return path_of_node_; }
   const std::vector<int64_t>& Starts() const { return start_of_path_; }
+  int64_t Start(int path) const { return start_of_path_[path]; }
+  int64_t End(int path) const { return end_of_path_[path]; }
   const std::vector<int64_t>& Ends() const { return end_of_path_; }
 
  private:
@@ -255,28 +257,6 @@ class PathsMetadata {
 
 class RoutingModel {
  public:
-  /// Status of the search.
-  enum Status {
-    /// Problem not solved yet (before calling RoutingModel::Solve()).
-    ROUTING_NOT_SOLVED,
-    /// Problem solved successfully after calling RoutingModel::Solve().
-    ROUTING_SUCCESS,
-    /// Problem solved successfully after calling RoutingModel::Solve(), except
-    /// that a local optimum has not been reached. Leaving more time would allow
-    /// improving the solution.
-    ROUTING_PARTIAL_SUCCESS_LOCAL_OPTIMUM_NOT_REACHED,
-    /// No solution found to the problem after calling RoutingModel::Solve().
-    ROUTING_FAIL,
-    /// Time limit reached before finding a solution with RoutingModel::Solve().
-    ROUTING_FAIL_TIMEOUT,
-    /// Model, model parameters or flags are not valid.
-    ROUTING_INVALID,
-    /// Problem proven to be infeasible.
-    ROUTING_INFEASIBLE,
-    /// Problem has been solved to optimality.
-    ROUTING_OPTIMAL
-  };
-
   /// Types of precedence policy applied to pickup and delivery pairs.
   enum PickupAndDeliveryPolicy {
     /// Any precedence is accepted.
@@ -548,6 +528,14 @@ class RoutingModel {
     ResourceClassIndex GetResourceClassIndex(int resource_index) const {
       DCHECK_LT(resource_index, resource_class_indices_.size());
       return resource_class_indices_[resource_index];
+    }
+    const Attributes& GetDimensionAttributesForClass(
+        const RoutingDimension* dimension, ResourceClassIndex rc_index) const {
+      DCHECK_LT(rc_index, resource_indices_per_class_.size());
+      const std::vector<int>& resource_indices =
+          resource_indices_per_class_[rc_index];
+      DCHECK(!resource_indices.empty());
+      return resources_[resource_indices[0]].GetDimensionAttributes(dimension);
     }
 
     int Size() const { return resources_.size(); }
@@ -1200,14 +1188,27 @@ class RoutingModel {
   /// than the first and last nodes.
   int64_t GetFixedCostOfVehicle(int vehicle) const;
   // Sets the energy cost of a vehicle.
-  // The energy used by a vehicle is the integral of the force dimension over
-  // the distance dimension: it is the sum over nodes visited by the vehicle of
+  // The energy used by a vehicle is defined as the integral of the
+  // force dimension over the distance dimension:
+  // it is the sum over nodes visited by the vehicle of
   // force.CumulVar(Next(node)) * distance.TransitVar(node).
   // The energy cost of a vehicle is linear in the energy used by the vehicle,
-  // this call sets the coefficient to unit_cost, it is zero if unset.
+  // this call sets the coefficient to cost_per_unit. The cost is zero if unset.
   void SetPathEnergyCostOfVehicle(const std::string& force,
                                   const std::string& distance,
-                                  int64_t unit_cost, int vehicle);
+                                  int64_t cost_per_unit, int vehicle);
+  // Sets the energy cost of a vehicle, relative to a threshold.
+  // The cost per unit of energy is cost_per_unit_below_threshold until the
+  // force reaches the threshold, then it is cost_per_unit_above_threshold:
+  // min(threshold, force.CumulVar(Next(node))) * distance.TransitVar(node) *
+  // cost_per_unit_below_threshold + max(0, force.CumulVar(Next(node)) -
+  // threshold) * distance.TransitVar(node) * cost_per_unit_above_threshold.
+  void SetPathEnergyCostsOfVehicle(const std::string& force,
+                                   const std::string& distance,
+                                   int64_t threshold,
+                                   int64_t cost_per_unit_below_threshold,
+                                   int64_t cost_per_unit_above_threshold,
+                                   int vehicle);
 
   /// The following methods set the linear and quadratic cost factors of
   /// vehicles (must be positive values). The default value of these parameters
@@ -1366,7 +1367,7 @@ class RoutingModel {
   /// search.
   int64_t objective_lower_bound() const { return objective_lower_bound_; }
   /// Returns the current status of the routing model.
-  Status status() const { return status_; }
+  RoutingSearchStatus::Value status() const { return status_; }
   /// Returns the value of the internal enable_deep_serialization_ parameter.
   bool enable_deep_serialization() const { return enable_deep_serialization_; }
   /// Applies a lock chain to the next search. 'locks' represents an ordered
@@ -2145,6 +2146,9 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   /// Sets up search objects, such as decision builders and monitors.
   void SetupSearch(const RoutingSearchParameters& search_parameters);
+  /// Updates search objects if parameters have changed.
+  void UpdateSearchFromParametersIfNeeded(
+      const RoutingSearchParameters& search_parameters);
   /// Set of auxiliary methods used to setup the search.
   // TODO(user): Document each auxiliary method.
   Assignment* GetOrCreateAssignment();
@@ -2402,9 +2406,11 @@ class RoutingModel {
   /// considered for constraints.
   std::vector<bool> vehicle_used_when_empty_;
 #ifndef SWIG
-  absl::flat_hash_map<std::pair<std::string, std::string>, std::vector<int64_t>,
+  absl::flat_hash_map<
+      std::pair<std::string, std::string>,
+      std::vector<Solver::PathEnergyCostConstraintSpecification::EnergyCost>,
                       absl::Hash<std::pair<std::string, std::string>>>
-      force_distance_to_vehicle_unit_costs_;
+      force_distance_to_energy_costs_;
   absl::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
@@ -2499,7 +2505,7 @@ class RoutingModel {
   int start_end_count_;
   // Model status
   bool closed_ = false;
-  Status status_ = ROUTING_NOT_SOLVED;
+  RoutingSearchStatus::Value status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
   bool enable_deep_serialization_ = true;
 
   // Secondary routing solver
@@ -2518,6 +2524,8 @@ class RoutingModel {
   std::vector<SearchMonitor*> monitors_;
   std::vector<SearchMonitor*> secondary_ls_monitors_;
   std::vector<SearchMonitor*> at_solution_monitors_;
+  int monitors_before_setup_ = 0;
+  int monitors_after_setup_ = 0;
   SearchMonitor* metaheuristic_ = nullptr;
   SearchMonitor* search_log_ = nullptr;
   bool local_optimum_reached_ = false;
@@ -2527,6 +2535,7 @@ class RoutingModel {
   SolutionCollector* collect_secondary_ls_assignments_ = nullptr;
   SolutionCollector* collect_one_assignment_ = nullptr;
   SolutionCollector* optimized_dimensions_assignment_collector_ = nullptr;
+  RoutingSearchParameters search_parameters_;
   DecisionBuilder* solve_db_ = nullptr;
   DecisionBuilder* improve_db_ = nullptr;
   DecisionBuilder* secondary_ls_db_ = nullptr;
@@ -3063,6 +3072,19 @@ class RoutingDimension {
     return fixed_transits_[index];
   }
   IntVar* SlackVar(int64_t index) const { return slacks_[index]; }
+
+  /// Some functions to allow users to use the interface without knowing about
+  /// the underlying CP model.
+  // TODO(user): Routing should not store its data in a CP model.
+
+  /// Restricts the range of the cumul variable associated to index.
+  void SetCumulVarRange(int64_t index, int64_t min, int64_t max) {
+    CumulVar(index)->SetRange(min, max);
+  }
+  /// Gets the current minimum of the cumul variable associated to index.
+  int64_t GetCumulVarMin(int64_t index) const { return CumulVar(index)->Min(); }
+  /// Gets the current maximum of the cumul variable associated to index.
+  int64_t GetCumulVarMax(int64_t index) const { return CumulVar(index)->Max(); }
 
 #if !defined(SWIGPYTHON)
   /// Like CumulVar(), TransitVar(), SlackVar() but return the whole variable

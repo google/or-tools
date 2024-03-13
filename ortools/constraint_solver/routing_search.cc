@@ -297,9 +297,9 @@ void IntVarFilteredHeuristic::ResetSolution() {
   number_of_rejects_ = 0;
   // Wiping assignment when starting a new search.
   assignment_->MutableIntVarContainer()->Clear();
-  assignment_->MutableIntVarContainer()->Resize(vars_.size());
   delta_->MutableIntVarContainer()->Clear();
   SynchronizeFilters();
+  assignment_->MutableIntVarContainer()->Resize(vars_.size());
 }
 
 Assignment* IntVarFilteredHeuristic::BuildSolution() {
@@ -2530,7 +2530,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
                                  : Value(insertion.pred);
             const int64_t cost = GetInsertionCostForNodeAtPosition(
                 insertion.node, insertion.pred, succ, sequence.Vehicle());
-            sequence_cost = CapAdd(sequence_cost, cost);
+            CapAddTo(cost, &sequence_cost);
             previous_node = insertion.node;
             previous_succ = succ;
           }
@@ -2544,7 +2544,7 @@ void LocalCheapestInsertionFilteredHeuristic::InsertBestPairMultitour(
           }
           const int64_t new_cost = bin_capacities->TotalCost();
           const int64_t delta_cost = CapSub(new_cost, old_cost);
-          sequence.Cost() = CapAdd(sequence.Cost(), delta_cost);
+          CapAddTo(delta_cost, &sequence.Cost());
           for (const Insertion& insertion : sequence) {
             bin_capacities->RemoveItemFromBin(insertion.node,
                                               sequence.Vehicle());
@@ -2762,8 +2762,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPositions(
       const int64_t delta_cost = CapSub(new_cost, old_cost);
       // Add soft cost to new insertions.
       for (size_t i = old_num_insertions; i < sorted_insertions.size(); ++i) {
-        sorted_insertions[i].value =
-            CapAdd(sorted_insertions[i].value, delta_cost);
+        CapAddTo(delta_cost, &sorted_insertions[i].value);
       }
     }
   }
@@ -2836,7 +2835,7 @@ LocalCheapestInsertionFilteredHeuristic::ComputeEvaluatorSortedPairPositions(
             bin_capacities_->AddItemToBin(pickup, vehicle);
             bin_capacities_->AddItemToBin(delivery, vehicle);
             const int64_t new_cost = bin_capacities_->TotalCost();
-            total_cost = CapAdd(total_cost, CapSub(new_cost, old_cost));
+            CapAddTo(CapSub(new_cost, old_cost), &total_cost);
             bin_capacities_->RemoveItemFromBin(pickup, vehicle);
             bin_capacities_->RemoveItemFromBin(delivery, vehicle);
           }

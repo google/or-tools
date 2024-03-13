@@ -584,7 +584,7 @@ void AddGeneralizedDimensions(
 
 std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
                                         const ArcVarMap& arc_vars,
-                                        const std::vector<int>& is_unperformed,
+                                        absl::Span<const int> is_unperformed,
                                         CpModelProto* cp_model) {
   const int depot = 0;
   const int num_cp_nodes = model.Nexts().size() + model.vehicles() + 1;
@@ -612,7 +612,7 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
 
 void AddGeneralizedPickupDeliveryConstraints(
     const RoutingModel& model, const ArcVarMap& arc_vars,
-    const std::vector<absl::flat_hash_map<int, int>>& vehicle_performs_node,
+    absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
     const std::vector<int>& is_unperformed, CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks =

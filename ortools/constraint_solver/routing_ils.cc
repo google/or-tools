@@ -13,16 +13,21 @@
 
 #include "ortools/constraint_solver/routing_ils.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <random>
 #include <utility>
 #include <vector>
 
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_ils.pb.h"
@@ -53,14 +58,24 @@ MakeGlobalCheapestInsertionParameters(
   return gci_parameters;
 }
 
+SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
+    const RoutingSearchParameters& search_parameters) {
+  SavingsFilteredHeuristic::SavingsParameters savings_parameters;
+  savings_parameters.neighbors_ratio =
+      search_parameters.savings_neighbors_ratio();
+  savings_parameters.max_memory_usage_bytes =
+      search_parameters.savings_max_memory_usage_bytes();
+  savings_parameters.add_reverse_arcs =
+      search_parameters.savings_add_reverse_arcs();
+  savings_parameters.arc_coefficient =
+      search_parameters.savings_arc_coefficient();
+  return savings_parameters;
+}
+
 // Returns a ruin procedure based to the given parameters.
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
     const RuinRecreateParameters& parameters, RoutingModel* model) {
   switch (parameters.ruin_strategy()) {
-    case RuinStrategy::UNSET:
-      LOG(ERROR) << "Unset ruin procedure, using "
-                    "RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL.";
-      [[fallthrough]];
     case RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL:
       return std::make_unique<CloseRoutesRemovalRuinProcedure>(
           model, parameters.num_ruined_routes());
@@ -79,10 +94,6 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
   switch (parameters.iterated_local_search_parameters()
               .ruin_recreate_parameters()
               .recreate_strategy()) {
-    case FirstSolutionStrategy::UNSET:
-      LOG(ERROR) << "Unset recreate procedure, using "
-                    "FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION";
-      [[fallthrough]];
     case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
@@ -117,6 +128,16 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           [model](int64_t i) { return model->UnperformedPenaltyOrValue(0, i); },
           filter_manager, gci_parameters);
     }
+    case FirstSolutionStrategy::SAVINGS: {
+      return std::make_unique<SequentialSavingsFilteredHeuristic>(
+          model, std::move(stop_search), MakeSavingsParameters(parameters),
+          filter_manager);
+    }
+    case FirstSolutionStrategy::PARALLEL_SAVINGS: {
+      return std::make_unique<ParallelSavingsFilteredHeuristic>(
+          model, std::move(stop_search), MakeSavingsParameters(parameters),
+          filter_manager);
+    }
     default:
       LOG(ERROR) << "Unsupported recreate procedure.";
       return nullptr;
@@ -129,10 +150,107 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
 // improving candidate assignment.
 class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
  public:
-  bool Accept(const Assignment* candidate,
-              const Assignment* reference) const override {
+  bool Accept([[maybe_unused]] const SearchState& search_state,
+              const Assignment* candidate,
+              const Assignment* reference) override {
     return candidate->ObjectiveValue() < reference->ObjectiveValue();
   }
+};
+
+// Simulated annealing cooling schedule interface.
+class CoolingSchedule {
+ public:
+  CoolingSchedule(NeighborAcceptanceCriterion::SearchState final_search_state,
+                  double initial_temperature)
+      : final_search_state_(std::move(final_search_state)),
+        initial_temperature_(initial_temperature) {}
+  virtual ~CoolingSchedule() = default;
+
+  // Returns the temperature according to given search state.
+  virtual double GetTemperature(
+      const NeighborAcceptanceCriterion::SearchState& search_state) const = 0;
+
+ protected:
+  const NeighborAcceptanceCriterion::SearchState final_search_state_;
+  const double initial_temperature_;
+};
+
+// A cooling schedule that lowers the temperature in an exponential way.
+class ExponentialCoolingSchedule : public CoolingSchedule {
+ public:
+  ExponentialCoolingSchedule(
+      NeighborAcceptanceCriterion::SearchState final_search_state,
+      double initial_temperature, double final_temperature)
+      : CoolingSchedule(std::move(final_search_state), initial_temperature),
+        temperature_ratio_(final_temperature / initial_temperature) {}
+
+  double GetTemperature(const NeighborAcceptanceCriterion::SearchState&
+                            search_state) const override {
+    const double duration_progress =
+        absl::FDivDuration(search_state.duration, final_search_state_.duration);
+    const double solutions_progress =
+        static_cast<double>(search_state.solutions) /
+        final_search_state_.solutions;
+    // We take the min with 1 as at the end of the search we may go a bit above
+    // 1 with duration_progress depending on when we check the time limit.
+    const double progress =
+        std::min(1.0, std::max(duration_progress, solutions_progress));
+    return initial_temperature_ * std::pow(temperature_ratio_, progress);
+  }
+
+ private:
+  const double temperature_ratio_;
+};
+
+std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
+    const RoutingSearchParameters& parameters) {
+  const absl::Duration final_duration =
+      !parameters.has_time_limit()
+          ? absl::InfiniteDuration()
+          : util_time::DecodeGoogleApiProto(parameters.time_limit()).value();
+
+  const SimulatedAnnealingParameters& sa_params =
+      parameters.iterated_local_search_parameters()
+          .simulated_annealing_parameters();
+
+  switch (sa_params.cooling_schedule_strategy()) {
+    case CoolingScheduleStrategy::EXPONENTIAL:
+      return std::make_unique<ExponentialCoolingSchedule>(
+          NeighborAcceptanceCriterion::SearchState{final_duration,
+                                                   parameters.solution_limit()},
+          sa_params.initial_temperature(), sa_params.final_temperature());
+    default:
+      LOG(ERROR) << "Unsupported cooling schedule strategy.";
+      return nullptr;
+  }
+}
+
+// Simulated annealing acceptance criterion in which the reference assignment is
+// replaced with a probability given by the quality of the candidate solution,
+// the current search state and the chosen cooling schedule.
+class SimulatedAnnealingAcceptanceCriterion
+    : public NeighborAcceptanceCriterion {
+ public:
+  explicit SimulatedAnnealingAcceptanceCriterion(
+      std::unique_ptr<CoolingSchedule> cooling_schedule)
+      : cooling_schedule_(std::move(cooling_schedule)),
+        rnd_(std::mt19937(/*seed=*/0)),
+        probability_distribution_(0.0, 1.0) {}
+
+  bool Accept(const SearchState& search_state, const Assignment* candidate,
+              const Assignment* reference) override {
+    double temperature = cooling_schedule_->GetTemperature(search_state);
+    return candidate->ObjectiveValue() +
+               temperature * std::log(probability_distribution_(rnd_)) <
+           reference->ObjectiveValue();
+  }
+
+ private:
+  std::unique_ptr<CoolingSchedule> cooling_schedule_;
+  // TODO(user): consider sharing a single rnd engine among all ILS
+  // components.
+  std::mt19937 rnd_;
+  std::uniform_real_distribution<double> probability_distribution_;
 };
 
 }  // namespace
@@ -253,10 +371,6 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
     LocalSearchFilterManager* filter_manager) {
   switch (
       parameters.iterated_local_search_parameters().perturbation_strategy()) {
-    case PerturbationStrategy::UNSET:
-      LOG(ERROR) << "Unset perturbation strategy, using "
-                    "PerturbationStrategy::RUIN_AND_RECREATE.";
-      [[fallthrough]];
     case PerturbationStrategy::RUIN_AND_RECREATE:
       return MakeRuinAndRecreateDecisionBuilder(parameters, model, assignment,
                                                 std::move(stop_search),
@@ -271,12 +385,11 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     const RoutingSearchParameters& parameters) {
   CHECK(parameters.has_iterated_local_search_parameters());
   switch (parameters.iterated_local_search_parameters().acceptance_strategy()) {
-    case AcceptanceStrategy::UNSET:
-      LOG(ERROR) << "Unset acceptance strategy, using "
-                    "AcceptanceStrategy::GREEDY_DESCENT.";
-      [[fallthrough]];
     case AcceptanceStrategy::GREEDY_DESCENT:
       return std::make_unique<GreedyDescentAcceptanceCriterion>();
+    case AcceptanceStrategy::SIMULATED_ANNEALING:
+      return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
+          MakeCoolingSchedule(parameters));
     default:
       LOG(ERROR) << "Unsupported acceptance strategy.";
       return nullptr;
