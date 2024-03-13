@@ -71,23 +71,23 @@ func TestDomain_FromValues(t *testing.T) {
 		want   Domain
 	}{
 		{
-			values: []int64_t{},
+			values: []int64{},
 			want:   Domain{},
 		},
 		{
-			values: []int64_t{4},
+			values: []int64{4},
 			want:   Domain{[]ClosedInterval{{4, 4}}},
 		},
 		{
-			values: []int64_t{1, 1, 3, 1, 2, 3, 2, 3},
+			values: []int64{1, 1, 3, 1, 2, 3, 2, 3},
 			want:   Domain{[]ClosedInterval{{1, 3}}},
 		},
 		{
-			values: []int64_t{1, 2, 3, 7, 8, -4},
+			values: []int64{1, 2, 3, 7, 8, -4},
 			want:   Domain{[]ClosedInterval{{-4, -4}, {1, 3}, {7, 8}}},
 		},
 		{
-			values: []int64_t{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8},
+			values: []int64{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8},
 			want:   Domain{[]ClosedInterval{{1, 6}, {8, 8}, {10, 12}, {15, 15}}},
 		},
 	}
@@ -142,27 +142,27 @@ func TestDomain_FromFlatIntervals(t *testing.T) {
 		wantError     string
 	}{
 		{
-			flatIntervals: []int64_t{},
+			flatIntervals: []int64{},
 			wantDomain:    Domain{},
 		},
 		{
-			flatIntervals: []int64_t{1},
+			flatIntervals: []int64{1},
 			wantError:     "must be a multiple of 2",
 		},
 		{
-			flatIntervals: []int64_t{-1, 1, 3, 3, 5, 10},
+			flatIntervals: []int64{-1, 1, 3, 3, 5, 10},
 			wantDomain:    Domain{[]ClosedInterval{{-1, 1}, {3, 3}, {5, 10}}},
 		},
 		{
-			flatIntervals: []int64_t{3, 9, 6, 10},
+			flatIntervals: []int64{3, 9, 6, 10},
 			wantDomain:    Domain{[]ClosedInterval{{3, 10}}},
 		},
 		{
-			flatIntervals: []int64_t{3, 5, 5, 10},
+			flatIntervals: []int64{3, 5, 5, 10},
 			wantDomain:    Domain{[]ClosedInterval{{3, 10}}},
 		},
 		{
-			flatIntervals: []int64_t{5, 3, 4, -1},
+			flatIntervals: []int64{5, 3, 4, -1},
 			wantDomain:    Domain{},
 		},
 	}
@@ -182,7 +182,7 @@ func TestDomain_FlattenedIntervals(t *testing.T) {
 	d := Domain{[]ClosedInterval{{-1, 1}, {3, 3}, {5, 10}}}
 
 	got := d.FlattenedIntervals()
-	want := []int64_t{-1, 1, 3, 3, 5, 10}
+	want := []int64{-1, 1, 3, 3, 5, 10}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("FlattenedIntervals() returned with unexpected diff (-want+got);\n%s", diff)
 	}

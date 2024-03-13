@@ -156,8 +156,8 @@ func TestVar_IntVarDomain(t *testing.T) {
 		},
 		{
 			name:   "DomainWithMultipleIntervals",
-			intVar: model.NewIntVarFromDomain(FromValues([]int64_t{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8})),
-			want:   FromValues([]int64_t{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}),
+			intVar: model.NewIntVarFromDomain(FromValues([]int64{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8})),
+			want:   FromValues([]int64{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}),
 		},
 	}
 
@@ -187,7 +187,7 @@ func TestVar_IntegerVariableProto(t *testing.T) {
 				return bv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: []int64_t{0, 1},
+				Domain: []int64{0, 1},
 			}.Build(),
 		},
 		{
@@ -197,17 +197,17 @@ func TestVar_IntegerVariableProto(t *testing.T) {
 				return iv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: []int64_t{-10, 10},
+				Domain: []int64{-10, 10},
 			}.Build(),
 		},
 		{
 			name: "IntVarFromDomain",
 			varIndex: func(model *Builder) VarIndex {
-				iv := model.NewIntVarFromDomain(FromValues([]int64_t{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}))
+				iv := model.NewIntVarFromDomain(FromValues([]int64{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}))
 				return iv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: FromValues([]int64_t{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}).FlattenedIntervals(),
+				Domain: FromValues([]int64{1, 2, 3, 5, 4, 6, 10, 12, 11, 15, 8}).FlattenedIntervals(),
 			}.Build(),
 		},
 		{
@@ -217,7 +217,7 @@ func TestVar_IntegerVariableProto(t *testing.T) {
 				return cv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: []int64_t{10, 10},
+				Domain: []int64{10, 10},
 			}.Build(),
 		},
 		{
@@ -227,7 +227,7 @@ func TestVar_IntegerVariableProto(t *testing.T) {
 				return tv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: []int64_t{1, 1},
+				Domain: []int64{1, 1},
 			}.Build(),
 		},
 		{
@@ -237,7 +237,7 @@ func TestVar_IntegerVariableProto(t *testing.T) {
 				return fv.Index()
 			},
 			want: cmpb.IntegerVariableProto_builder{
-				Domain: []int64_t{0, 0},
+				Domain: []int64{0, 0},
 			}.Build(),
 		},
 	}
@@ -267,7 +267,7 @@ func TestVar_EvaluateSolutionValue(t *testing.T) {
 				model := NewCpModelBuilder()
 				iv := model.NewIntVar(0, 10)
 				response := cmpb.CpSolverResponse_builder{
-					Solution: []int64_t{5},
+					Solution: []int64{5},
 				}.Build()
 				return iv.evaluateSolutionValue(response)
 			},
@@ -279,7 +279,7 @@ func TestVar_EvaluateSolutionValue(t *testing.T) {
 				model := NewCpModelBuilder()
 				bv := model.NewBoolVar()
 				response := cmpb.CpSolverResponse_builder{
-					Solution: []int64_t{0},
+					Solution: []int64{0},
 				}.Build()
 				return bv.evaluateSolutionValue(response)
 			},
@@ -291,7 +291,7 @@ func TestVar_EvaluateSolutionValue(t *testing.T) {
 				model := NewCpModelBuilder()
 				bv := model.NewBoolVar()
 				response := cmpb.CpSolverResponse_builder{
-					Solution: []int64_t{0},
+					Solution: []int64{0},
 				}.Build()
 				return bv.Not().evaluateSolutionValue(response)
 			},
@@ -305,7 +305,7 @@ func TestVar_EvaluateSolutionValue(t *testing.T) {
 				bv := model.NewBoolVar()
 				le := NewLinearExpr().AddTerm(iv, 10).AddTerm(bv, 20).AddConstant(5)
 				response := cmpb.CpSolverResponse_builder{
-					Solution: []int64_t{5, 1},
+					Solution: []int64{5, 1},
 				}.Build()
 				return le.evaluateSolutionValue(response)
 			},
@@ -429,7 +429,7 @@ func TestVar_AsLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(iv.Index())},
-				Coeffs: []int64_t{1},
+				Coeffs: []int64{1},
 			}.Build(),
 		},
 		{
@@ -439,7 +439,7 @@ func TestVar_AsLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(bv.Index())},
-				Coeffs: []int64_t{1},
+				Coeffs: []int64{1},
 			}.Build(),
 		},
 		{
@@ -449,7 +449,7 @@ func TestVar_AsLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(bv.Index())},
-				Coeffs: []int64_t{-1},
+				Coeffs: []int64{-1},
 				Offset: 1,
 			}.Build(),
 		},
@@ -460,7 +460,7 @@ func TestVar_AsLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(iv.Index()), int32_t(bv.Index())},
-				Coeffs: []int64_t{10, 20},
+				Coeffs: []int64{10, 20},
 				Offset: 5,
 			}.Build(),
 		},
@@ -497,7 +497,7 @@ func TestVar_AsNegatedLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(iv.Index())},
-				Coeffs: []int64_t{-1},
+				Coeffs: []int64{-1},
 			}.Build(),
 		},
 		{
@@ -507,7 +507,7 @@ func TestVar_AsNegatedLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(bv.Index())},
-				Coeffs: []int64_t{-1},
+				Coeffs: []int64{-1},
 			}.Build(),
 		},
 		{
@@ -517,7 +517,7 @@ func TestVar_AsNegatedLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(bv.Index())},
-				Coeffs: []int64_t{1},
+				Coeffs: []int64{1},
 				Offset: -1,
 			}.Build(),
 		},
@@ -528,7 +528,7 @@ func TestVar_AsNegatedLinearExpressionProto(t *testing.T) {
 			},
 			want: cmpb.LinearExpressionProto_builder{
 				Vars:   []int32{int32_t(iv.Index()), int32_t(bv.Index())},
-				Coeffs: []int64_t{-10, -20},
+				Coeffs: []int64{-10, -20},
 				Offset: -5,
 			}.Build(),
 		},
@@ -550,7 +550,7 @@ func TestLinearExpr(t *testing.T) {
 	iv1 := model.NewIntVar(2, 8).WithName("iv1")
 	iv2 := model.NewIntVar(1, 5).WithName("iv2")
 	bv := model.NewBoolVar().WithName("bv1")
-	lin := NewLinearExpr().AddWeightedSum([]LinearArgument{iv1, bv}, []int64_t{10, 20})
+	lin := NewLinearExpr().AddWeightedSum([]LinearArgument{iv1, bv}, []int64{10, 20})
 
 	testCases := []struct {
 		name      string
@@ -648,7 +648,7 @@ func TestLinearExpr(t *testing.T) {
 		{
 			name: "AddWeightedSumIntVar",
 			buildExpr: func() *LinearExpr {
-				return NewLinearExpr().AddWeightedSum([]LinearArgument{iv1}, []int64_t{10})
+				return NewLinearExpr().AddWeightedSum([]LinearArgument{iv1}, []int64{10})
 			},
 			want: &LinearExpr{
 				varCoeffs: []varCoeff{{ind: iv1.Index(), coeff: 10}},
@@ -658,7 +658,7 @@ func TestLinearExpr(t *testing.T) {
 		{
 			name: "AddWeightedSumBoolVar",
 			buildExpr: func() *LinearExpr {
-				return NewLinearExpr().AddWeightedSum([]LinearArgument{bv}, []int64_t{-10})
+				return NewLinearExpr().AddWeightedSum([]LinearArgument{bv}, []int64{-10})
 			},
 			want: &LinearExpr{
 				varCoeffs: []varCoeff{{ind: bv.Index(), coeff: -10}},
@@ -668,7 +668,7 @@ func TestLinearExpr(t *testing.T) {
 		{
 			name: "AddWeightedSumManyVars",
 			buildExpr: func() *LinearExpr {
-				return NewLinearExpr().AddWeightedSum([]LinearArgument{iv1, iv2, bv, bv.Not()}, []int64_t{10, 20, 30, 40})
+				return NewLinearExpr().AddWeightedSum([]LinearArgument{iv1, iv2, bv, bv.Not()}, []int64{10, 20, 30, 40})
 			},
 			want: &LinearExpr{
 				varCoeffs: []varCoeff{
@@ -683,7 +683,7 @@ func TestLinearExpr(t *testing.T) {
 		{
 			name: "AddWeightedSumLinearExpr",
 			buildExpr: func() *LinearExpr {
-				return NewLinearExpr().AddWeightedSum([]LinearArgument{lin}, []int64_t{3})
+				return NewLinearExpr().AddWeightedSum([]LinearArgument{lin}, []int64{3})
 			},
 			want: &LinearExpr{
 				varCoeffs: []varCoeff{
@@ -738,11 +738,11 @@ func TestIntervalVar(t *testing.T) {
 					Start: cmpb.LinearExpressionProto_builder{Offset: 1}.Build(),
 					Size: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					End: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv2.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 				}.Build(),
 			}.Build(),
@@ -759,12 +759,12 @@ func TestIntervalVar(t *testing.T) {
 				Interval: cmpb.IntervalConstraintProto_builder{
 					Start: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Size: cmpb.LinearExpressionProto_builder{Offset: 5}.Build(),
 					End: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 						Offset: 5,
 					}.Build(),
 				}.Build(),
@@ -783,11 +783,11 @@ func TestIntervalVar(t *testing.T) {
 					Start: cmpb.LinearExpressionProto_builder{Offset: 1}.Build(),
 					Size: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					End: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv2.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 				}.Build(),
 			}.Build(),
@@ -804,12 +804,12 @@ func TestIntervalVar(t *testing.T) {
 				Interval: cmpb.IntervalConstraintProto_builder{
 					Start: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Size: cmpb.LinearExpressionProto_builder{Offset: 5}.Build(),
 					End: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 						Offset: 5,
 					}.Build(),
 				}.Build(),
@@ -970,8 +970,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index()), int32_t(bv1.Index())},
-					Coeffs: []int64_t{1, 1},
-					Domain: []int64_t{-5, -4, -2, -1, 6, 15},
+					Coeffs: []int64{1, 1},
+					Domain: []int64{-5, -4, -2, -1, 6, 15},
 				}.Build(),
 			}.Build(),
 		},
@@ -985,8 +985,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index()), int32_t(bv1.Index())},
-					Coeffs: []int64_t{1, 1},
-					Domain: []int64_t{2, 6},
+					Coeffs: []int64{1, 1},
+					Domain: []int64{2, 6},
 				}.Build(),
 			}.Build(),
 		},
@@ -1000,8 +1000,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{10, 10},
+					Coeffs: []int64{1},
+					Domain: []int64{10, 10},
 				}.Build(),
 			}.Build(),
 		},
@@ -1015,8 +1015,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{math.MinInt64, 10},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 10},
 				}.Build(),
 			}.Build(),
 		},
@@ -1030,8 +1030,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{math.MinInt64, 9},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 9},
 				}.Build(),
 			}.Build(),
 		},
@@ -1045,8 +1045,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{10, math.MaxInt64},
+					Coeffs: []int64{1},
+					Domain: []int64{10, math.MaxInt64},
 				}.Build(),
 			}.Build(),
 		},
@@ -1060,8 +1060,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{11, math.MaxInt64},
+					Coeffs: []int64{1},
+					Domain: []int64{11, math.MaxInt64},
 				}.Build(),
 			}.Build(),
 		},
@@ -1075,8 +1075,8 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Linear: cmpb.LinearConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index())},
-					Coeffs: []int64_t{1},
-					Domain: []int64_t{math.MinInt64, 9, 11, math.MaxInt64},
+					Coeffs: []int64{1},
+					Domain: []int64{math.MinInt64, 9, 11, math.MaxInt64},
 				}.Build(),
 			}.Build(),
 		},
@@ -1092,20 +1092,20 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv1.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(bv1.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(bv2.Index())},
-							Coeffs: []int64_t{-1},
+							Coeffs: []int64{-1},
 							Offset: 1,
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{},
-							Coeffs: []int64_t{},
+							Coeffs: []int64{},
 							Offset: 10,
 						}.Build(),
 					},
@@ -1130,7 +1130,7 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 		{
 			name: "AddElement",
 			constraint: func() *cmpb.ConstraintProto {
-				c := model.AddElement(iv1, []int64_t{10, 20}, iv4)
+				c := model.AddElement(iv1, []int64{10, 20}, iv4)
 				m := mustModel(t, model)
 				return m.GetConstraints()[c.Index()]
 			},
@@ -1170,16 +1170,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				LinMax: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{-1},
+						Coeffs: []int64{-1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{-1},
+							Coeffs: []int64{-1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv3.Index())},
-							Coeffs: []int64_t{-1},
+							Coeffs: []int64{-1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1196,16 +1196,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				LinMax: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv3.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1222,16 +1222,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				IntProd: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv3.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1248,16 +1248,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				IntDiv: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv3.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1274,16 +1274,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				LinMax: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{-1},
+							Coeffs: []int64{-1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1300,16 +1300,16 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				IntMod: cmpb.LinearArgumentProto_builder{
 					Target: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Exprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv3.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1388,7 +1388,7 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 			want: cmpb.ConstraintProto_builder{
 				Table: cmpb.TableConstraintProto_builder{
 					Vars:   []int32{int32_t(iv1.Index()), int32_t(iv2.Index())},
-					Values: []int64_t{0, 2, 1, 3},
+					Values: []int64{0, 2, 1, 3},
 				}.Build(),
 			}.Build(),
 		},
@@ -1407,7 +1407,7 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 					TimeExprs: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv1.Index())},
-							Coeffs: []int64_t{2},
+							Coeffs: []int64{2},
 						}.Build(),
 					},
 					LevelChanges: []*cmpb.LinearExpressionProto{
@@ -1422,7 +1422,7 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 		{
 			name: "AddAutomaton",
 			constraint: func() *cmpb.ConstraintProto {
-				c := model.AddAutomaton([]IntVar{iv1, iv2}, 0, []int64_t{5, 10})
+				c := model.AddAutomaton([]IntVar{iv1, iv2}, 0, []int64{5, 10})
 				c.AddTransition(0, 1, 10)
 				c.AddTransition(2, 3, 15)
 				m := mustModel(t, model)
@@ -1432,10 +1432,10 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				Automaton: cmpb.AutomatonConstraintProto_builder{
 					Vars:            []int32{int32_t(iv1.Index()), int32_t(iv2.Index())},
 					StartingState:   0,
-					FinalStates:     []int64_t{5, 10},
-					TransitionTail:  []int64_t{0, 2},
-					TransitionHead:  []int64_t{1, 3},
-					TransitionLabel: []int64_t{10, 15},
+					FinalStates:     []int64{5, 10},
+					TransitionTail:  []int64{0, 2},
+					TransitionHead:  []int64{1, 3},
+					TransitionLabel: []int64{10, 15},
 				}.Build(),
 			}.Build(),
 		},
@@ -1451,13 +1451,13 @@ func TestCpModelBuilder_Constraints(t *testing.T) {
 				Cumulative: cmpb.CumulativeConstraintProto_builder{
 					Capacity: cmpb.LinearExpressionProto_builder{
 						Vars:   []int32{int32_t(iv1.Index())},
-						Coeffs: []int64_t{1},
+						Coeffs: []int64{1},
 					}.Build(),
 					Intervals: []int32{int32_t(interval1.Index())},
 					Demands: []*cmpb.LinearExpressionProto{
 						cmpb.LinearExpressionProto_builder{
 							Vars:   []int32{int32_t(iv2.Index())},
-							Coeffs: []int64_t{1},
+							Coeffs: []int64{1},
 						}.Build(),
 					},
 				}.Build(),
@@ -1486,7 +1486,7 @@ func TestCpModelBuilder_Minimize(t *testing.T) {
 	m := mustModel(t, model)
 	want := cmpb.CpObjectiveProto_builder{
 		Vars:   []int32{int32_t(iv1.Index()), int32_t(iv2.Index())},
-		Coeffs: []int64_t{3, 5},
+		Coeffs: []int64{3, 5},
 	}.Build()
 	got := m.GetObjective()
 
@@ -1504,7 +1504,7 @@ func TestCpModelBuilder_Maximize(t *testing.T) {
 	model.Maximize(NewLinearExpr().AddTerm(iv1, 3).AddTerm(iv2, 5).AddConstant(7))
 	want := cmpb.CpObjectiveProto_builder{
 		Vars:          []int32{int32_t(iv1.Index()), int32_t(iv2.Index())},
-		Coeffs:        []int64_t{-3, -5},
+		Coeffs:        []int64{-3, -5},
 		ScalingFactor: -1.0,
 		Offset:        -7,
 	}.Build()
@@ -1562,12 +1562,12 @@ func TestCpModelBuilder_ConstantVars(t *testing.T) {
 
 func TestCpModelBuilder_IndexValueSlices(t *testing.T) {
 	indices := []int32{5, 1, 3}
-	values := []int64_t{10, 11, 8}
+	values := []int64{10, 11, 8}
 
 	sort.Sort(indexValueSlices{indices, values})
 
 	wantIndices := []int32{1, 3, 5}
-	wantValues := []int64_t{11, 8, 10}
+	wantValues := []int64{11, 8, 10}
 
 	if diff := cmp.Diff(wantIndices, indices); diff != "" {
 		t.Errorf("Sort indexValueSlices return unexpected indices diff (-want+got): %v", diff)
@@ -1584,7 +1584,7 @@ func TestCpModelBuilder_SetHint(t *testing.T) {
 	bv1 := model.NewBoolVar()
 	bv2 := model.NewBoolVar()
 	hint := &Hint{
-		Ints:  map[IntVar]int64_t{iv: 7},
+		Ints:  map[IntVar]int64{iv: 7},
 		Bools: map[BoolVar]bool{bv2.Not(): false, bv1: true},
 	}
 	model.SetHint(hint)
@@ -1593,7 +1593,7 @@ func TestCpModelBuilder_SetHint(t *testing.T) {
 	got := m.GetSolutionHint()
 	want := cmpb.PartialVariableAssignment_builder{
 		Vars:   []int32{int32_t(iv.Index()), int32_t(bv1.Index()), int32_t(bv2.Index())},
-		Values: []int64_t{7, 1, 1},
+		Values: []int64{7, 1, 1},
 	}.Build()
 
 	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
@@ -1608,7 +1608,7 @@ func TestCpModelBuilder_ClearHint(t *testing.T) {
 	bv1 := model.NewBoolVar()
 	bv2 := model.NewBoolVar()
 	hint := &Hint{
-		Ints:  map[IntVar]int64_t{iv: 7},
+		Ints:  map[IntVar]int64{iv: 7},
 		Bools: map[BoolVar]bool{bv1: true, bv2.Not(): false},
 	}
 	model.SetHint(hint)
@@ -1759,7 +1759,7 @@ func TestCpModelBuilder_ErrorHandling(t *testing.T) {
 			builder: func() *Builder {
 				model1 := NewCpModelBuilder()
 				model2 := NewCpModelBuilder()
-				model1.AddAutomaton([]IntVar{model2.NewIntVar(0, 10)}, 0, []int64_t{10})
+				model1.AddAutomaton([]IntVar{model2.NewIntVar(0, 10)}, 0, []int64{10})
 				return model1
 			},
 		},
