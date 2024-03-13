@@ -74,7 +74,7 @@
                                    __Unused__, Args...)
 // The macro expansions can be hard to follow, so we show an example of the
 // expected macro expansion with: ReturnType=int64_t, Args=int64_t, bool.
-// EXPANSION EXAMPLE: "int64_t(int64_t, bool)".
+// EXPANSION EXAMPLE: "int64(int64_t, bool)".
 %typemap(in) std::function<PARENTHIZE(ReturnType, Args)> {
   jclass object_class = jenv->FindClass(ClassPath ClassName);
   if (nullptr == object_class) return $null;
@@ -84,7 +84,7 @@
   operations_research::swig_util::CppClass* const fun =
       reinterpret_cast<operations_research::swig_util::CppClass*>(
           jenv->CallStaticLongMethod(object_class, method_id, $input));
-  // EXPANSION EXAMPLE: "int64_t i0, bool i1".
+  // EXPANSION EXAMPLE: "int64 i0, bool i1".
   $1 = [fun](INSERT_NAMES(NumArgs)(Args))  {
     // EXPANSION EXAMPLE: "i0, i1".
     return fun->Run(NAMES(NumArgs));

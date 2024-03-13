@@ -324,7 +324,7 @@ inline uint32_t IntervalDown32(uint32_t s) {
 }
 
 // ----- Bitset operators -----
-// Bitset: array of uint32_t/uint64_t words
+// Bitset: array of uint32_t/uint64 words
 
 // Bit operators used to manipulates bitsets.
 
