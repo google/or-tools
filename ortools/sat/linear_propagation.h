@@ -66,6 +66,8 @@ class CustomFifoQueue {
   void SortByPos(absl::Span<int> elements);
 
  private:
+  void FillAndSortTmpPositions(absl::Span<const int> elements);
+
   // The queue is stored in [left_, right_) with eventual wrap around % size.
   // The positions of each element is in pos_[element] and never changes during
   // normal operation. A position of -1 means that the element is not in the
@@ -226,7 +228,8 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
   void AddToQueueIfNeeded(int id);
-  void AddWatchedToQueue(IntegerVariable var);
+  void AddWatchedToQueue(IntegerVariable var,
+                         bool push_delayed_right_away = true);
   void SetPropagatedBy(IntegerVariable var, int id);
   std::string ConstraintDebugString(int id);
 
@@ -298,6 +301,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<int> tmp_to_reorder_;
   SparseBitset<int> disassemble_to_reorder_;
   std::vector<int> disassemble_reverse_topo_order_;
+
+  // Heuristic to enqueue interesting constraint first.
+  std::vector<bool> id_propagated_something_;
+  std::vector<int> tmp_delayed_;
 
   // Staging queue.
   // Initially, we add the constraint to the priority queue, and we extract

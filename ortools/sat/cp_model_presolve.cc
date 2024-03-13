@@ -9877,7 +9877,6 @@ void CpModelPresolver::FindBigHorizontalLinearOverlap(
 
   int64_t num_blocks = 0;
   int64_t nz_reduction = 0;
-  absl::flat_hash_set<int> processed;
   for (int i = 0; i < sorted_linear.size(); ++i) {
     const int c = sorted_linear[i];
     if (c < 0) continue;

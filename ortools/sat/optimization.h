@@ -168,6 +168,7 @@ class CoreBasedOptimizer {
 
   SatParameters* parameters_;
   SatSolver* sat_solver_;
+  ClauseManager* clauses_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;

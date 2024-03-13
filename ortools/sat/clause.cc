@@ -1765,7 +1765,6 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   }
 
   // Remove clique (before extension) that are included in an extended one.
-  absl::flat_hash_set<int> cannot_be_superset;
   detector.DetectInclusions([&](int subset, int superset) {
     const int subset_index = detector_clique_index[subset];
     const int superset_index = detector_clique_index[superset];

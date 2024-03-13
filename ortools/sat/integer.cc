@@ -2123,7 +2123,8 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     //
     // TODO(user): The queue will not be emptied, but I am not sure the solver
     // will be left in an usable state. Fix if it become needed to resume
-    // the solve from the last time it was interrupted.
+    // the solve from the last time it was interrupted. In particular, we might
+    // want to call UpdateCallingNeeds()?
     if (test_limit > 100) {
       test_limit = 0;
       if (time_limit_->LimitReached()) break;
@@ -2234,8 +2235,12 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   if (propagation_trail_index_ <= trail_index) {
     // Nothing to do since we found a conflict before Propagate() was called.
-    CHECK_EQ(propagation_trail_index_, trail_index)
-        << " level " << trail.CurrentDecisionLevel();
+    if (DEBUG_MODE) {
+      // The assumption is not always true if we are currently aborting.
+      if (time_limit_->LimitReached()) return;
+      CHECK_EQ(propagation_trail_index_, trail_index)
+          << " level " << trail.CurrentDecisionLevel();
+    }
     return;
   }
 

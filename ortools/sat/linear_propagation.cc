@@ -85,6 +85,20 @@ void CustomFifoQueue::Push(int id) {
   if (right_ == queue_.size()) right_ = 0;
 }
 
+void CustomFifoQueue::FillAndSortTmpPositions(absl::Span<const int> elements) {
+  int index = 0;
+  const int capacity = queue_.size();
+  for (const int id : elements) {
+    const int p = pos_[id];
+    DCHECK_GE(p, 0);
+    DCHECK_EQ(queue_[p], id);
+    tmp_positions_[index++] = p >= left_ ? p : p + capacity;
+  }
+  std::sort(&tmp_positions_[0], &tmp_positions_[index]);
+  DCHECK(std::unique(&tmp_positions_[0], &tmp_positions_[index]) ==
+         &tmp_positions_[index]);
+}
+
 void CustomFifoQueue::Reorder(absl::Span<const int> order) {
   if (order.size() <= 1) return;
 
@@ -94,20 +108,12 @@ void CustomFifoQueue::Reorder(absl::Span<const int> order) {
     return ReorderDense(order);
   }
 
-  int index = 0;
-  for (const int id : order) {
-    const int p = pos_[id];
-    DCHECK_GE(p, 0);
-    tmp_positions_[index++] = p >= left_ ? p : p + capacity;
-  }
-  std::sort(&tmp_positions_[0], &tmp_positions_[index]);
-  DCHECK(std::unique(&tmp_positions_[0], &tmp_positions_[index]) ==
-         &tmp_positions_[index]);
-
-  index = 0;
-  for (const int id : order) {
-    int p = tmp_positions_[index++];
+  FillAndSortTmpPositions(order);
+  for (int i = 0; i < order.size(); ++i) {
+    int p = tmp_positions_[i];
     if (p >= capacity) p -= capacity;
+
+    const int id = order[i];
     pos_[id] = p;
     queue_[p] = id;
   }
@@ -144,20 +150,15 @@ void CustomFifoQueue::ReorderDense(absl::Span<const int> order) {
   DCHECK_EQ(order_index, order.size());
 }
 
+// TODO(user): combine this with reorder.
+// This is slow, especially if we are dense.
 void CustomFifoQueue::SortByPos(absl::Span<int> elements) {
-  std::sort(elements.begin(), elements.end(),
-            [this](const int id1, const int id2) {
-              const int p1 = pos_[id1];
-              const int p2 = pos_[id2];
-              if (p1 >= left_) {
-                if (p2 >= left_) return p1 < p2;
-                return true;
-              } else {
-                // p1 < left_.
-                if (p2 < left_) return p1 < p2;
-                return false;
-              }
-            });
+  FillAndSortTmpPositions(elements);
+  const int capacity = queue_.size();
+  for (int i = 0; i < elements.size(); ++i) {
+    const int p = tmp_positions_[i];
+    elements[i] = queue_[p < capacity ? p : p - capacity];
+  }
 }
 
 std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
@@ -538,8 +539,12 @@ bool LinearPropagator::Propagate() {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     if (var >= var_to_constraint_ids_.size()) continue;
     SetPropagatedBy(var, -1);
-    AddWatchedToQueue(var);
+    AddWatchedToQueue(var, /*push_delayed_right_away=*/false);
   }
+  for (const int id : tmp_delayed_) {
+    AddToQueueIfNeeded(id);
+  }
+  tmp_delayed_.clear();
 
   // We abort this propagator as soon as a Boolean is propagated, so that we
   // always finish the Boolean propagation first. This can happen when we push a
@@ -549,6 +554,26 @@ bool LinearPropagator::Propagate() {
   // propagator might have pushed the same variable further.
   //
   // Empty FIFO queue.
+  //
+  // TODO(user): More than the propagation speed, I think it is important to
+  // have proper explanation, so if A pushes B, but later on the queue we have C
+  // that push A that push B again, that might be bad? We can try to avoid this
+  // even further, by organizing the queue in passes:
+  //  - Scan all relevant constraints, remember who pushes but DO NOT push yet!
+  //  - If no cycle, do not pushes constraint whose slack will changes due to
+  //    other pushes.
+  //  - consider the new constraint that need to be scanned and repeat.
+  // I think it is okay to scan twice the constraints that push something in
+  // order to get better explanation. We tend to diverge from the class shortest
+  // path algo in this regard.
+  //
+  // TODO(user): If we push the idea further, can we first compute the fix point
+  // without pushing anything, then compute a good order of constraints for the
+  // explanations? what is tricky is that we might need to "scan" more than once
+  // a constraint I think. ex: Y, Z, T >=0
+  //  - 2 * Y + Z + T <= 11   ==>   Y <= 5, Z <= 11, T <= 11  (1)
+  //  - Z + Y >= 6            ==>   Z >= 1
+  //  - (1) again to push T <= 10  and reach the propagation fixed point.
   bool result = true;
   num_terms_for_dtime_update_ = 0;
   const int saved_index = trail_->Index();
@@ -607,6 +632,7 @@ bool LinearPropagator::AddConstraint(
   }
 
   id_to_propagation_count_.push_back(0);
+  id_propagated_something_.push_back(false);
   variables_buffer_.insert(variables_buffer_.end(), vars.begin(), vars.end());
   coeffs_buffer_.insert(coeffs_buffer_.end(), coeffs.begin(), coeffs.end());
   CanonicalizeConstraint(id);
@@ -675,6 +701,7 @@ bool LinearPropagator::AddConstraint(
   }
 
   // Propagate this new constraint.
+  // TODO(user): Do we want to do that?
   num_terms_for_dtime_update_ = 0;
   const bool result = PropagateOneConstraint(id);
   time_limit_->AdvanceDeterministicTime(
@@ -713,10 +740,12 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // default though, even VLOG_IS_ON(1) so we disable it.
   if (/* DISABLES CODE */ (false)) {
     ++num_scanned_;
-    if (id_scanned_at_least_once_[id]) {
-      ++num_extra_scans_;
-    } else {
-      id_scanned_at_least_once_.Set(id);
+    if (id < id_scanned_at_least_once_.size()) {
+      if (id_scanned_at_least_once_[id]) {
+        ++num_extra_scans_;
+      } else {
+        id_scanned_at_least_once_.Set(id);
+      }
     }
   }
 
@@ -800,6 +829,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
 
   // Negative slack means the constraint is false.
   if (max_variation <= slack) return true;
+  id_propagated_something_[id] = true;
   if (slack < 0) {
     // Fill integer reason.
     integer_reason_.clear();
@@ -1056,6 +1086,9 @@ bool LinearPropagator::ReportConflictingCycle() {
 //
 // TODO(user): If one of the var coeff is > previous slack we push an id again,
 // we can stop early with a conflict by propagating the ids in sequence.
+//
+// TODO(user): Revisit the algo, no point exploring twice the same var, also
+// the queue reordering heuristic might not be the best.
 bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
   disassemble_to_reorder_.ClearAndResize(in_queue_.size());
   disassemble_reverse_topo_order_.clear();
@@ -1090,16 +1123,11 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
     }
 
     disassemble_branch_.push_back({prev_id, var});
+
     time_limit_->AdvanceDeterministicTime(
         static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
     for (const int id : var_to_constraint_ids_[var]) {
-      if (prev_id == root_id) {
-        // Root id was just propagated, so there is no need to reorder what
-        // it pushes.
-        DCHECK_NE(id, root_id);
-        if (disassemble_to_reorder_[id]) continue;
-        disassemble_to_reorder_.Set(id);
-      } else if (id == root_id) {
+      if (id == root_id) {
         // TODO(user): Check previous slack vs var coeff?
         // TODO(user): Make sure there are none or detect cycle not going back
         // to the root.
@@ -1136,8 +1164,8 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
         }
       }
 
-      if (id_to_count[id] == 0) continue;  // Didn't push.
       disassemble_to_reorder_.Set(id);
+      if (id_to_count[id] == 0) continue;  // Didn't push or was desassembled.
 
       // The constraint pushed some variable. Identify which ones will be pushed
       // further. Disassemble the whole info since we are about to propagate
@@ -1225,12 +1253,28 @@ void LinearPropagator::AddToQueueIfNeeded(int id) {
   propagation_queue_.Push(id);
 }
 
-void LinearPropagator::AddWatchedToQueue(IntegerVariable var) {
+void LinearPropagator::AddWatchedToQueue(IntegerVariable var,
+                                         bool push_delayed_right_away) {
   if (var >= static_cast<int>(var_to_constraint_ids_.size())) return;
   time_limit_->AdvanceDeterministicTime(
       static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
+
+  // If a constraint propagated something and is getting tighter, then it
+  // will likely propagate again, and we want to propagate it first.
   for (const int id : var_to_constraint_ids_[var]) {
-    AddToQueueIfNeeded(id);
+    if (in_queue_[id]) continue;
+    if (true || id_propagated_something_[id]) {
+      id_propagated_something_[id] = false;  // reset.
+      AddToQueueIfNeeded(id);
+    } else {
+      tmp_delayed_.push_back(id);
+    }
+  }
+  if (push_delayed_right_away) {
+    for (const int id : tmp_delayed_) {
+      AddToQueueIfNeeded(id);
+    }
+    tmp_delayed_.clear();
   }
 }
 

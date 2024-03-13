@@ -47,7 +47,6 @@ rather than for solving specific optimization problems.
 
 import collections
 import itertools
-import numbers
 import threading
 import time
 from typing import (
@@ -120,15 +119,15 @@ PARTIAL_FIXED_SEARCH = sat_parameters_pb2.SatParameters.PARTIAL_FIXED_SEARCH
 RANDOMIZED_SEARCH = sat_parameters_pb2.SatParameters.RANDOMIZED_SEARCH
 
 # Type aliases
-IntegralT = Union[int, np.int8, np.uint8, np.int32, np.uint32, np.int64_t, np.uint64]
+IntegralT = Union[int, np.int8, np.uint8, np.int32, np.uint32, np.int64, np.uint64]
 IntegralTypes = (
     int,
     np.int8,
     np.uint8,
     np.int32,
     np.uint32,
-    np.int64_t,
-    np.uint64_t,
+    np.int64,
+    np.uint64,
 )
 NumberT = Union[
     int,
@@ -137,8 +136,8 @@ NumberT = Union[
     np.uint8,
     np.int32,
     np.uint32,
-    np.int64_t,
-    np.uint64_t,
+    np.int64,
+    np.uint64,
     np.double,
 ]
 NumberTypes = (
@@ -148,8 +147,8 @@ NumberTypes = (
     np.uint8,
     np.int32,
     np.uint32,
-    np.int64_t,
-    np.uint64_t,
+    np.int64,
+    np.uint64,
     np.double,
 )
 
