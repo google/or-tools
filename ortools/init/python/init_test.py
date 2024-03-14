@@ -19,6 +19,7 @@ from ortools.init.python import init
 
 
 class InitTest(absltest.TestCase):
+
     def test_logging(self):
         print("test_logging")
         init.CppBridge.init_logging("pywrapinit_test.py")

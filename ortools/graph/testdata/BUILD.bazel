@@ -12,5 +12,5 @@
 # limitations under the License.
 
 exports_files([
-  "max_flow_test1.pb.txt",
+    "max_flow_test1.pb.txt",
 ])
