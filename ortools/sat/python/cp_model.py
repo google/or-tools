@@ -3026,11 +3026,11 @@ class CpModel:
     AddMultiplicationEquality = add_multiplication_equality
     NewIntervalVar = new_interval_var
     NewIntervalVarSeries = new_interval_var_series
-    NewFixedSizedIntervalVar = new_fixed_size_interval_var
+    NewFixedSizeIntervalVar = new_fixed_size_interval_var
     NewOptionalIntervalVar = new_optional_interval_var
     NewOptionalIntervalVarSeries = new_optional_interval_var_series
-    NewOptionalFixedSizedIntervalVar = new_optional_fixed_size_interval_var
-    NewOptionalFixedSizedIntervalVarSeries = new_optional_fixed_size_interval_var_series
+    NewOptionalFixedSizeIntervalVar = new_optional_fixed_size_interval_var
+    NewOptionalFixedSizeIntervalVarSeries = new_optional_fixed_size_interval_var_series
     AddNoOverlap = add_no_overlap
     AddNoOverlap2D = add_no_overlap_2d
     AddCumulative = add_cumulative
