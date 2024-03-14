@@ -197,20 +197,29 @@ void IntegerEncoder::AddImplications(
   if (!add_implications_) return;
   DCHECK_EQ(it->second, associated_lit);
 
-  // Literal(after) => associated_lit
-  auto after_it = it;
-  ++after_it;
-  if (after_it != map.end()) {
-    sat_solver_->AddClauseDuringSearch(
-        {after_it->second.Negated(), associated_lit});
-  }
-
-  // associated_lit => Literal(before)
+  // Tricky: We compute the literal first because AddClauseDuringSearch() might
+  // propagate at level zero and mess up the map.
+  LiteralIndex before_index = kNoLiteralIndex;
   if (it != map.begin()) {
     auto before_it = it;
     --before_it;
+    before_index = before_it->second.Index();
+  }
+  LiteralIndex after_index = kNoLiteralIndex;
+  {
+    auto after_it = it;
+    ++after_it;
+    if (after_it != map.end()) after_index = after_it->second.Index();
+  }
+
+  // Then we add the two implications.
+  if (after_index != kNoLiteralIndex) {
     sat_solver_->AddClauseDuringSearch(
-        {associated_lit.Negated(), before_it->second});
+        {Literal(after_index).Negated(), associated_lit});
+  }
+  if (before_index != kNoLiteralIndex) {
+    sat_solver_->AddClauseDuringSearch(
+        {associated_lit.Negated(), Literal(before_index)});
   }
 }
 

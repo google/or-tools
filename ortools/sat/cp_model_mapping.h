@@ -59,6 +59,10 @@ struct ObjectiveDefinition {
   double ScaleIntegerObjective(IntegerValue value) const {
     return (ToDouble(value) + offset) * scaling_factor;
   }
+
+  double ScaleObjective(double value) const {
+    return (value + offset) * scaling_factor;
+  }
 };
 
 // Holds the mapping between CpModel proto indices and the sat::model ones.

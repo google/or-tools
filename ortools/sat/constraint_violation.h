@@ -490,9 +490,18 @@ class CompiledIntDivConstraint : public CompiledConstraint {
   int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 };
 
-// The violation of an int_mod constraint is
-//     abs(value(target) - value(expr0) % value(expr1)).
-// Note: the modulo is always fixed.
+// The violation of an int_mod constraint is defined as follow:
+//
+// if target and expr0 have the same sign:
+//   min(
+//     abs(value(target) - (value(expr0) % value(expr1))),
+//     abs(value(target)) + abs((value(expr0) % value(expr1)) - value(expr1)),
+//     abs(value(expr0) % value(expr1)) + abs(value(target) - value(expr1)),
+//   )
+//
+// if target and expr0 have different sign:
+//   abs(target) + abs(expr0)
+// Note: the modulo (expr1) is always fixed.
 class CompiledIntModConstraint : public CompiledConstraint {
  public:
   explicit CompiledIntModConstraint(const ConstraintProto& ct_proto);

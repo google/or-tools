@@ -47,7 +47,7 @@ namespace operations_research {
 namespace sat {
 
 LbTreeSearch::LbTreeSearch(Model* model)
-    : name_(model->Name().empty() ? "lb_tree_search" : model->Name()),
+    : name_(model->Name()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
