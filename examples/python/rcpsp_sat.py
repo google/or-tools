@@ -22,6 +22,7 @@ Data use in flags:
 """
 
 import collections
+import time
 from typing import Optional
 
 from absl import app
@@ -50,9 +51,9 @@ _ADD_REDUNDANT_ENERGETIC_CONSTRAINTS = flags.DEFINE_bool(
     + " precedence graph.",
 )
 _DELAY_TIME_LIMIT = flags.DEFINE_float(
-    "delay_time_limit",
-    20.0,
-    "Time limit when computing min delay between tasks."
+    "pairwise_delay_total_time_limit",
+    120.0,
+    "Total time limit when computing min delay between tasks."
     + " A non-positive time limit disable min delays computation.",
 )
 _PREEMPTIVE_LB_TIME_LIMIT = flags.DEFINE_float(
@@ -601,21 +602,30 @@ def compute_delays_between_nodes(
     ):
         return delays, None, False
 
+    time_limit = _DELAY_TIME_LIMIT.value
     complete_problem_assignment = None
     num_optimal_delays = 0
     num_delays_not_found = 0
     optimal_found = True
     for start_task, end_task, active_tasks in task_intervals:
+        if time_limit <= 0:
+            optimal_found = False
+            print(f"  - #timeout ({_DELAY_TIME_LIMIT.value}s) reached", flush=True)
+            break
+
+        start_time = time.time()
         min_delay, feasible_delay, assignment = solve_rcpsp(
             problem,
             "",
-            f"num_search_workers:16,max_time_in_seconds:{_DELAY_TIME_LIMIT.value}",
+            f"num_search_workers:16,max_time_in_seconds:{time_limit}",
             set(active_tasks),
             start_task,
             end_task,
             [],
             delays,
         )
+        time_limit -= time.time() - start_time
+
         if min_delay != -1:
             delays[(start_task, end_task)] = min_delay, feasible_delay
             if start_task == 0 and end_task == len(problem.tasks) - 1:

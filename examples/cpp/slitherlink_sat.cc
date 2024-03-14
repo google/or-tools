@@ -66,7 +66,7 @@ void PrintSolution(absl::Span<const std::vector<int>> data,
   std::cout << last_line << std::endl;
 }
 
-void SlitherLink(const std::vector<std::vector<int>>& data) {
+void SlitherLink(absl::Span<const std::vector<int>> data) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
