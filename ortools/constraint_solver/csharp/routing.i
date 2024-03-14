@@ -33,15 +33,18 @@ using System.Collections.Generic;
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
+
+class RoutingSearchStatus;
 }  // namespace operations_research
 
 // Include the file we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
-#include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing.h"
 %}
 
 %module(directors="1") operations_research;
@@ -192,6 +195,8 @@ PROTO2_RETURN(operations_research::RoutingSearchParameters,
               Google.OrTools.ConstraintSolver.RoutingSearchParameters)
 PROTO2_RETURN(operations_research::RoutingModelParameters,
               Google.OrTools.ConstraintSolver.RoutingModelParameters)
+PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
+                  Google.OrTools.ConstraintSolver.RoutingSearchStatus.Types.Value)
 
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
