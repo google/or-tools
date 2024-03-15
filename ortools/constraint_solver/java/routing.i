@@ -29,10 +29,7 @@ namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 
-struct RoutingSearchStatus {
-  enum Value {};
-};
-
+class RoutingSearchStatus;
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
