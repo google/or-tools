@@ -54,13 +54,20 @@ public class Vrp
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
-                              in Assignment solution)
+    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
     {
+        RoutingSearchStatus.Types.Value status = routing.GetStatus();
+        Console.WriteLine("Status: {0}", status);
+        if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
+            status != RoutingSearchStatus.Types.Value.RoutingSuccess)
+        {
+            Console.WriteLine("No solution found!");
+            return;
+        }
         Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
         // Inspect solution.
         long totalDistance = 0;
-        for (int i = 0; i < data.VehicleNumber; ++i)
+        for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)
         {
             Console.WriteLine("Route for Vehicle {0}:", i);
             long routeDistance = 0;
@@ -129,7 +136,7 @@ public class Vrp
 
         // Print solution on console.
         // [START print_solution]
-        PrintSolution(data, routing, manager, solution);
+        PrintSolution(routing, manager, solution);
         // [END print_solution]
     }
 }

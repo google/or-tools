@@ -22,6 +22,7 @@ import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.RoutingSearchStatus;
 import com.google.ortools.constraintsolver.main;
 import java.util.function.LongBinaryOperator;
 import java.util.logging.Logger;
@@ -96,12 +97,20 @@ public class Tsp {
     private final long[][] distanceMatrix;
     private final RoutingIndexManager indexManager;
   }
+
   // [END manhattan_distance]
 
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    RoutingSearchStatus.Value status = routing.status();
+    logger.info("Status: " + status);
+    if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
+        && status != RoutingSearchStatus.Value.ROUTING_SUCCESS) {
+      logger.warning("No solution found!");
+      return;
+    }
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
@@ -166,7 +175,7 @@ public class Tsp {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    printSolution(routing, manager, solution);
     // [END print_solution]
   }
 }

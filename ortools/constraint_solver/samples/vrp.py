@@ -26,6 +26,9 @@
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
+FirstSolutionStrategy = routing_enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = routing_enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -61,20 +64,28 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, solution):
-    """Prints solution on console."""
+def print_solution(manager, routing, solution):
+    """Prints assignment on console."""
+    status = routing.status()
+    print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
+    if (
+        status != RoutingSearchStatus.ROUTING_OPTIMAL
+        and status != RoutingSearchStatus.ROUTING_SUCCESS
+    ):
+        print("No solution found!")
+        return
     print(f"Objective: {solution.ObjectiveValue()}")
     total_distance = 0
-    for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        plan_output = f"Route for vehicle {vehicle_id}:\n"
+    for vehicle_index in range(manager.GetNumberOfVehicles()):
+        index = routing.Start(vehicle_index)
+        plan_output = f"Route for vehicle {vehicle_index}:\n"
         route_distance = 0
         while not routing.IsEnd(index):
             plan_output += f" {manager.IndexToNode(index)} ->"
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id
+                previous_index, index, vehicle_index
             )
         plan_output += f" {manager.IndexToNode(index)}\n"
         plan_output += f"Distance of the route: {route_distance}m\n"
@@ -124,9 +135,7 @@ def main():
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
+    search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]
 
     # Solve the problem.
@@ -136,10 +145,7 @@ def main():
 
     # Print solution on console.
     # [START print_solution]
-    if solution:
-        print_solution(data, manager, routing, solution)
-    else:
-        print("No solution found !")
+    print_solution(manager, routing, solution)
     # [END print_solution]
 
 

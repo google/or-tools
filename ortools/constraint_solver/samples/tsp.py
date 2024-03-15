@@ -22,6 +22,9 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 # [START import]
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
+FirstSolutionStrategy = routing_enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = routing_enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -79,16 +82,24 @@ def create_distance_callback(data, manager):
 
 
 # [START solution_printer]
-def print_solution(manager, routing, assignment):
+def print_solution(manager, routing, solution):
     """Prints assignment on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    status = routing.status()
+    print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
+    if (
+        status != RoutingSearchStatus.ROUTING_OPTIMAL
+        and status != RoutingSearchStatus.ROUTING_SUCCESS
+    ):
+        print("No solution found!")
+        return
+    print(f"Objective: {solution.ObjectiveValue()}")
     index = routing.Start(0)
     plan_output = "Route for vehicle 0:\n"
     route_distance = 0
     while not routing.IsEnd(index):
         plan_output += f" {manager.IndexToNode(index)} ->"
         previous_index = index
-        index = assignment.Value(routing.NextVar(index))
+        index = solution.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
     plan_output += f" {manager.IndexToNode(index)}\n"
     plan_output += f"Distance of the route: {route_distance}m\n"
@@ -129,20 +140,17 @@ def main():
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
+    search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    solution = routing.SolveWithParameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    if assignment:
-        print_solution(manager, routing, assignment)
+    print_solution(manager, routing, solution)
     # [END print_solution]
 
 
