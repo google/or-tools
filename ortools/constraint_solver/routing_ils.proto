@@ -21,6 +21,10 @@
 
 syntax = "proto3";
 
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
 import "ortools/constraint_solver/routing_enums.proto";
 
 package operations_research;
