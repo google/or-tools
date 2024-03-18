@@ -74,11 +74,12 @@ SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
 
 // Returns a ruin procedure based to the given parameters.
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
-    const RuinRecreateParameters& parameters, RoutingModel* model) {
+    const RuinRecreateParameters& parameters, RoutingModel* model,
+    std::mt19937* rnd) {
   switch (parameters.ruin_strategy()) {
     case RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL:
       return std::make_unique<CloseRoutesRemovalRuinProcedure>(
-          model, parameters.num_ruined_routes());
+          model, rnd, parameters.num_ruined_routes());
       break;
     default:
       LOG(ERROR) << "Unsupported ruin procedure.";
@@ -232,9 +233,9 @@ class SimulatedAnnealingAcceptanceCriterion
     : public NeighborAcceptanceCriterion {
  public:
   explicit SimulatedAnnealingAcceptanceCriterion(
-      std::unique_ptr<CoolingSchedule> cooling_schedule)
+      std::unique_ptr<CoolingSchedule> cooling_schedule, std::mt19937* rnd)
       : cooling_schedule_(std::move(cooling_schedule)),
-        rnd_(std::mt19937(/*seed=*/0)),
+        rnd_(*rnd),
         probability_distribution_(0.0, 1.0) {}
 
   bool Accept(const SearchState& search_state, const Assignment* candidate,
@@ -247,8 +248,6 @@ class SimulatedAnnealingAcceptanceCriterion
 
  private:
   std::unique_ptr<CoolingSchedule> cooling_schedule_;
-  // TODO(user): consider sharing a single rnd engine among all ILS
-  // components.
   std::mt19937 rnd_;
   std::uniform_real_distribution<double> probability_distribution_;
 };
@@ -256,13 +255,13 @@ class SimulatedAnnealingAcceptanceCriterion
 }  // namespace
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
-    RoutingModel* model, size_t num_routes)
+    RoutingModel* model, std::mt19937* rnd, size_t num_routes)
     : model_(*model),
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
           /*TODO(user): use a parameter*/ 100,
           /*add_vehicle_starts_to_neighbors=*/false)),
       num_routes_(num_routes),
-      rnd_(/*fixed seed=*/0),
+      rnd_(*rnd),
       customer_dist_(0, model->Size() - 1),
       removed_routes_(model->vehicles()) {}
 
@@ -352,11 +351,12 @@ class RuinAndRecreateDecisionBuilder : public DecisionBuilder {
 
 DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
     const RoutingSearchParameters& parameters, RoutingModel* model,
-    const Assignment* assignment, std::function<bool()> stop_search,
+    std::mt19937* rnd, const Assignment* assignment,
+    std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager) {
   std::unique_ptr<RuinProcedure> ruin = MakeRuinProcedure(
       parameters.iterated_local_search_parameters().ruin_recreate_parameters(),
-      model);
+      model, rnd);
 
   std::unique_ptr<RoutingFilteredHeuristic> recreate = MakeRecreateProcedure(
       parameters, model, std::move(stop_search), filter_manager);
@@ -367,13 +367,14 @@ DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
 
 DecisionBuilder* MakePerturbationDecisionBuilder(
     const RoutingSearchParameters& parameters, RoutingModel* model,
-    const Assignment* assignment, std::function<bool()> stop_search,
+    std::mt19937* rnd, const Assignment* assignment,
+    std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager) {
   switch (
       parameters.iterated_local_search_parameters().perturbation_strategy()) {
     case PerturbationStrategy::RUIN_AND_RECREATE:
-      return MakeRuinAndRecreateDecisionBuilder(parameters, model, assignment,
-                                                std::move(stop_search),
+      return MakeRuinAndRecreateDecisionBuilder(
+          parameters, model, rnd, assignment, std::move(stop_search),
                                                 filter_manager);
     default:
       LOG(ERROR) << "Unsupported perturbation strategy.";
@@ -382,14 +383,14 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
 }
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingSearchParameters& parameters) {
+    const RoutingSearchParameters& parameters, std::mt19937* rnd) {
   CHECK(parameters.has_iterated_local_search_parameters());
   switch (parameters.iterated_local_search_parameters().acceptance_strategy()) {
     case AcceptanceStrategy::GREEDY_DESCENT:
       return std::make_unique<GreedyDescentAcceptanceCriterion>();
     case AcceptanceStrategy::SIMULATED_ANNEALING:
       return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
-          MakeCoolingSchedule(parameters));
+          MakeCoolingSchedule(parameters), rnd);
     default:
       LOG(ERROR) << "Unsupported acceptance strategy.";
       return nullptr;

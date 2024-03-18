@@ -39,7 +39,8 @@ class RuinProcedure {
 // Remove a number of routes that are spatially close together.
 class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
  public:
-  CloseRoutesRemovalRuinProcedure(RoutingModel* model, size_t num_routes);
+  CloseRoutesRemovalRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+                                  size_t num_routes);
   // Returns next accessors where at most num_routes routes have been shortcut,
   // i.e., next(shortcut route begin) = shortcut route end.
   // Next accessors for customers belonging to shortcut routes are still set to
@@ -62,7 +63,8 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
 // Local Search approach.
 DecisionBuilder* MakePerturbationDecisionBuilder(
     const RoutingSearchParameters& parameters, RoutingModel* model,
-    const Assignment* assignment, std::function<bool()> stop_search,
+    std::mt19937* rnd, const Assignment* assignment,
+    std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager);
 
 // Neighbor acceptance criterion interface.
@@ -86,7 +88,7 @@ class NeighborAcceptanceCriterion {
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingSearchParameters& parameters);
+    const RoutingSearchParameters& parameters, std::mt19937* rnd);
 
 }  // namespace operations_research
 

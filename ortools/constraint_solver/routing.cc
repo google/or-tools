@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <set>
 #include <string>
 #include <tuple>
@@ -3103,8 +3104,10 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
                                           {/*filter_objective=*/false,
                                            /*filter_with_cp_solver=*/false});
 
+  std::mt19937 rnd(/*seed=*/0);
+
   DecisionBuilder* perturbation_db = MakePerturbationDecisionBuilder(
-      parameters, this, last_accepted_solution,
+      parameters, this, &rnd, last_accepted_solution,
       [this]() { return CheckLimit(time_buffer_); }, filter_manager);
 
   // TODO(user): This lambda can probably be refactored into a function as a
@@ -3129,7 +3132,7 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
   };
 
   std::unique_ptr<NeighborAcceptanceCriterion> acceptance_criterion =
-      MakeNeighborAcceptanceCriterion(parameters);
+      MakeNeighborAcceptanceCriterion(parameters, &rnd);
 
   const bool improve_perturbed_solution =
       parameters.iterated_local_search_parameters()
