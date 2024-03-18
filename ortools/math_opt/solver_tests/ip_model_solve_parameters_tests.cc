@@ -367,23 +367,27 @@ TEST_P(LazyConstraintsTest, LazyConstraintsImposedOnModel) {
 }
 
 // The problem is:
-// min  x
-// s.t. x >= 0      (c)
-//      -1 <= x <= 1
-//      x integer
+// min  y
+// s.t. y >= x          (c)
+//      y >= -x         (d)
+//      -1 <= x, y <= 1
+//      x, y integer
 //
 // With a node limit of 0 and solver parameters set to disable presolve, we
 // expect a dual bound equal to the LP relaxation bound (which is 0). However,
-// if c is a lazy constraint, it is not included in the LP relaxation, and the
-// bound instead is -1.
+// if c and d are lazy constraints, they are not included in the LP relaxation,
+// and the bound instead is -1.
 TEST_P(LazyConstraintsTest, AnnotationsAreSetProperly) {
   Model model;
   Variable x = model.AddIntegerVariable(-1, 1, "x");
-  const LinearConstraint c = model.AddLinearConstraint(x >= 0);
-  model.Minimize(x);
+  Variable y = model.AddIntegerVariable(-1, 1, "y");
+  const LinearConstraint c = model.AddLinearConstraint(y >= x);
+  const LinearConstraint d = model.AddLinearConstraint(y >= -x);
+  model.Minimize(y);
 
-  SolveArguments args = {.parameters = NerfedSolveParams(),
-                         .model_parameters = {.lazy_linear_constraints = {c}}};
+  SolveArguments args = {
+      .parameters = NerfedSolveParams(),
+      .model_parameters = {.lazy_linear_constraints = {c, d}}};
   args.parameters.node_limit = 0;
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(model, TestedSolver(), args));
@@ -394,17 +398,20 @@ TEST_P(LazyConstraintsTest, AnnotationsAreSetProperly) {
 // Same setting as in AnnotationsAreSetProperly above, but we solve twice with
 // an incremental solver: first with the lazy constraint annotations, and then
 // without. If the annotations are cleared after the first, then we expect the
-// second to solve the entire LP (including c), giving a dual bound of 0.
+// second to solve the entire LP (including c and d), giving a dual bound of 0.
 TEST_P(LazyConstraintsTest, AnnotationsAreClearedAfterSolve) {
   Model model;
   Variable x = model.AddIntegerVariable(-1, 1, "x");
-  const LinearConstraint c = model.AddLinearConstraint(x >= 0);
-  model.Minimize(x);
+  Variable y = model.AddIntegerVariable(-1, 1, "y");
+  const LinearConstraint c = model.AddLinearConstraint(y >= x);
+  const LinearConstraint d = model.AddLinearConstraint(y >= -x);
+  model.Minimize(y);
   ASSERT_OK_AND_ASSIGN(const auto solver,
                        IncrementalSolver::New(&model, TestedSolver()));
 
-  SolveArguments args = {.parameters = NerfedSolveParams(),
-                         .model_parameters = {.lazy_linear_constraints = {c}}};
+  SolveArguments args = {
+      .parameters = NerfedSolveParams(),
+      .model_parameters = {.lazy_linear_constraints = {c, d}}};
   args.parameters.node_limit = 0;
   ASSERT_OK_AND_ASSIGN(const SolveResult bad_result, solver->Solve(args));
   ASSERT_THAT(bad_result, TerminatesWithReasonNoSolutionFound(Limit::kNode));
