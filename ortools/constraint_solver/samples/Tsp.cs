@@ -95,6 +95,14 @@ public class Tsp
     /// </summary>
     static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
     {
+        RoutingSearchStatus.Types.Value status = routing.GetStatus();
+        Console.WriteLine("Status: {0}", status);
+        if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
+            status != RoutingSearchStatus.Types.Value.RoutingSuccess)
+        {
+            Console.WriteLine("No solution found!");
+            return;
+        }
         Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
         // Inspect solution.
         Console.WriteLine("Route for Vehicle 0:");

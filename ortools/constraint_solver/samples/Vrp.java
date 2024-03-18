@@ -20,6 +20,7 @@ import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.RoutingSearchStatus;
 import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
@@ -52,17 +53,25 @@ public class Vrp {
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
+
   // [END data_model]
 
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    RoutingSearchStatus.Value status = routing.status();
+    logger.info("Status: " + status);
+    if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
+        && status != RoutingSearchStatus.Value.ROUTING_SUCCESS) {
+      logger.warning("No solution found!");
+      return;
+    }
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
     long totalDistance = 0;
-    for (int i = 0; i < data.vehicleNumber; ++i) {
+    for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       String route = "";
@@ -132,7 +141,7 @@ public class Vrp {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    printSolution(routing, manager, solution);
     // [END print_solution]
   }
 }
