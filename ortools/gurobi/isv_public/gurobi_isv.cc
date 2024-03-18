@@ -52,7 +52,7 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key) {
   RETURN_IF_ERROR(handle_failure(GRBemptyenv(&primary_env), "GRBemptyenv()"));
   RETURN_IF_ERROR(
       handle_failure(GRBsetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG, 0),
-                     "setting GRB_INT_PAR_OUTPUTFLAG"));
+                     "turning off GRB_INT_PAR_OUTPUTFLAG"));
   RETURN_IF_ERROR(handle_failure(
       GRBsetstrparam(primary_env, "GURO_PAR_ISVNAME", isv_key.name.c_str()),
       "setting GURO_PAR_ISVNAME"));
