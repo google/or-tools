@@ -1149,6 +1149,7 @@ cc_library(
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/log",

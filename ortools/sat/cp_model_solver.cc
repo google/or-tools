@@ -3252,6 +3252,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   const SatParameters lns_params = GetNamedParameters(params).at("lns");
+  LOG(INFO) << "lns_params = " << lns_params.DebugString();
 
   // By default we use the user provided parameters.
   // TODO(user): for now this is not deterministic so we disable it on
@@ -3468,7 +3469,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
               helper, "packing_precedences_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SlicePackingNeighborhoodGenerator>(
               helper, "packing_slice_lns"),

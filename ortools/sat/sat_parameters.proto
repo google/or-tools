@@ -469,7 +469,7 @@ message SatParameters {
   // target == y.
   //
   // This is mainly for experimenting compared to a custom lin_max propagator.
-  optional bool expand_binary_lin_max = 280 [default = false];
+  optional int32 max_lin_max_size_for_expansion = 280 [default = 0];
 
   // If true, it disable all constraint expansion.
   // This should only be used to test the presolve of expanded constraints.
@@ -1224,8 +1224,10 @@ message SatParameters {
   // breaking during search.
   optional int32 symmetry_level = 183 [default = 2];
 
-  // Experimental. Use new code to propagate linear constraint.
-  optional bool new_linear_propagation = 224 [default = false];
+  // The new linear propagation code treat all constraints at once and use
+  // an adaptation of Bellman-Ford-Tarjan to propagate constraint in a smarter
+  // order and potentially detect propagation cycle earlier.
+  optional bool new_linear_propagation = 224 [default = true];
 
   // Linear constraints that are not pseudo-Boolean and that are longer than
   // this size will be split into sqrt(size) intermediate sums in order to have

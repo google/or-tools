@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -752,7 +753,22 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // Skip constraint not enforced or that cannot propagate if false.
   ConstraintInfo& info = infos_[id];
   const EnforcementStatus enf_status = EnforcementStatus(info.enf_status);
-  DCHECK_EQ(enf_status, enforcement_propagator_->DebugStatus(info.enf_id));
+  if (DEBUG_MODE) {
+    const EnforcementStatus debug_status =
+        enforcement_propagator_->DebugStatus(info.enf_id);
+    if (enf_status != debug_status) {
+      if (enf_status == EnforcementStatus::CANNOT_PROPAGATE &&
+          debug_status == EnforcementStatus::IS_FALSE) {
+        // This case might happen because in our two watched literals scheme,
+        // we might watch two unassigned literal without knowing another one is
+        // already false.
+      } else {
+        LOG(FATAL) << "Enforcement status not up to date: " << enf_status
+                   << " vs debug: " << debug_status;
+      }
+    }
+  }
+
   if (enf_status == EnforcementStatus::IS_FALSE ||
       enf_status == EnforcementStatus::CANNOT_PROPAGATE) {
     DCHECK(!in_queue_[id]);
