@@ -103,7 +103,6 @@ def main():
                 and smcf.tail(arc) != 12
                 and smcf.head(arc) != sink
             ):
-
                 # Arcs in the solution will have a flow value of 1.
                 # There start and end nodes give an assignment of worker to task.
                 if smcf.flow(arc) > 0:
