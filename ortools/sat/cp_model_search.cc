@@ -705,7 +705,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_find_big_linear_overlap(false);
     new_params.set_log_search_progress(false);
     new_params.set_solution_pool_size(1);  // Keep the best solution found.
-    LOG(INFO) << "Create " << new_params.DebugString();
     strategies["lns"] = new_params;
   }
 

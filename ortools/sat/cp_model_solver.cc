@@ -3252,7 +3252,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   const SatParameters lns_params = GetNamedParameters(params).at("lns");
-  LOG(INFO) << "lns_params = " << lns_params.DebugString();
 
   // By default we use the user provided parameters.
   // TODO(user): for now this is not deterministic so we disable it on
