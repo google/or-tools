@@ -2973,6 +2973,7 @@ class CpModel:
     AddAutomaton = add_automaton
     AddInverse = add_inverse
     AddReservoirConstraint = add_reservoir_constraint
+    AddReservoirConstraintWithActive = add_reservoir_constraint_with_active
     AddImplication = add_implication
     AddBoolOr = add_bool_or
     AddAtLeastOne = add_at_least_one
