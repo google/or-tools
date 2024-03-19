@@ -11,11 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-edition = "2023";
+syntax = "proto3";
 
 package operations_research;
-
-option features.enum_type = CLOSED;
 
 // This is the proto for describing the multicommodity fixed-charged network
 // design problem.

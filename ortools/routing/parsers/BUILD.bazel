@@ -11,7 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
 package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "capacity_planning_proto",
+    srcs = ["capacity_planning.proto"],
+)
+
+cc_proto_library(
+    name = "capacity_planning_cc_proto",
+    deps = [":capacity_planning_proto"],
+)
 
 cc_library(
     name = "simple_graph",
@@ -331,6 +344,7 @@ cc_library(
     srcs = ["dow_parser.cc"],
     hdrs = ["dow_parser.h"],
     deps = [
+        ":capacity_planning_cc_proto",
         "//ortools/base",
         "//ortools/constraint_solver:routing",
         "//ortools/util:random_engine",
