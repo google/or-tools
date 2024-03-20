@@ -175,6 +175,7 @@ cc_library(
         "linear_solver_callback.cc",
         "sat_interface.cc",
         "xpress_interface.cc",
+        "knitro_interface.cc",
     ] + select({
         ":use_bop": ["bop_interface.cc"],
         "//conditions:default": [],
