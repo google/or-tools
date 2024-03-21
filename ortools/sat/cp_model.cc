@@ -497,7 +497,7 @@ Constraint Constraint::WithName(absl::string_view name) {
   return *this;
 }
 
-const std::string& Constraint::Name() const { return proto_->name(); }
+absl::string_view Constraint::Name() const { return proto_->name(); }
 
 Constraint Constraint::OnlyEnforceIf(absl::Span<const BoolVar> literals) {
   for (const BoolVar& var : literals) {

@@ -1001,6 +1001,35 @@ int64_t CompiledIntDivConstraint::ComputeViolation(
   return std::abs(target_value - div_value);
 }
 
+// ----- CompiledIntModConstraint -----
+
+CompiledIntModConstraint::CompiledIntModConstraint(
+    const ConstraintProto& ct_proto)
+    : CompiledConstraint(ct_proto) {}
+
+int64_t CompiledIntModConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  const int64_t target_value =
+      ExprValue(ct_proto().int_mod().target(), solution);
+  DCHECK_EQ(ct_proto().int_mod().exprs_size(), 2);
+  // Note: The violation computation assumes the modulo is constant.
+  const int64_t expr_value = ExprValue(ct_proto().int_mod().exprs(0), solution);
+  const int64_t mod_value = ExprValue(ct_proto().int_mod().exprs(1), solution);
+  const int64_t rhs = expr_value % mod_value;
+  if ((expr_value >= 0 && target_value >= 0) ||
+      (expr_value <= 0 && target_value <= 0)) {
+    // Easy case.
+    return std::min({std::abs(target_value - rhs),
+                     std::abs(target_value) + std::abs(mod_value - rhs),
+                     std::abs(rhs) + std::abs(mod_value - target_value)});
+  } else {
+    // Different signs.
+    // We use the sum of the absolute value to have a better gradiant.
+    // We could also use the min of target_move and the expr_move.
+    return std::abs(target_value) + std::abs(expr_value);
+  }
+}
+
 // ----- CompiledAllDiffConstraint -----
 
 CompiledAllDiffConstraint::CompiledAllDiffConstraint(
@@ -1499,6 +1528,12 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kIntDiv: {
       constraints_.emplace_back(new CompiledIntDivConstraint(ct));
+      break;
+    }
+    case ConstraintProto::ConstraintCase::kIntMod: {
+      DCHECK_EQ(ExprMin(ct.int_mod().exprs(1), cp_model_),
+                ExprMax(ct.int_mod().exprs(1), cp_model_));
+      constraints_.emplace_back(new CompiledIntModConstraint(ct));
       break;
     }
     case ConstraintProto::ConstraintCase::kLinear: {

@@ -336,7 +336,7 @@ enum SatFormat {
 // Prints the given clauses in the file at the given path, using the given file
 // format. Returns true iff the file was successfully written.
 bool PrintClauses(const std::string& file_path, SatFormat format,
-                  const std::vector<std::vector<Literal>>& clauses,
+                  absl::Span<const std::vector<Literal>> clauses,
                   int num_variables);
 
 }  // namespace sat

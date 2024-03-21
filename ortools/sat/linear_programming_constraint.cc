@@ -693,7 +693,9 @@ bool LinearProgrammingConstraint::SolveLp() {
           << " lvl:" << trail_->CurrentDecisionLevel() << " "
           << simplex_.GetProblemStatus()
           << " iter:" << simplex_.GetNumberOfIterations()
-          << " obj:" << simplex_.GetObjectiveValue();
+          << " obj:" << simplex_.GetObjectiveValue() << " scaled:"
+          << objective_definition_->ScaleObjective(
+                 simplex_.GetObjectiveValue());
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     lp_solution_is_set_ = true;

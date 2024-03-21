@@ -138,6 +138,7 @@ class LbTreeSearch {
   std::string SmallProgressString() const;
 
   // Model singleton class used here.
+  const std::string name_;
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
   SatSolver* sat_solver_;

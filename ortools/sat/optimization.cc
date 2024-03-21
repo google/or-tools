@@ -439,6 +439,7 @@ CoreBasedOptimizer::CoreBasedOptimizer(
     std::function<void()> feasible_solution_observer, Model* model)
     : parameters_(model->GetOrCreate<SatParameters>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      clauses_(model->GetOrCreate<ClauseManager>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       implications_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -666,9 +667,8 @@ bool CoreBasedOptimizer::CoverOptimization() {
 }
 
 SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
-    const std::vector<Literal>& literals,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<Coefficient>& coefficients, Coefficient offset) {
+    absl::Span<const Literal> literals, absl::Span<const IntegerVariable> vars,
+    absl::Span<const Coefficient> coefficients, Coefficient offset) {
   // Create one initial nodes per variables with cost.
   // TODO(user): We could create EncodingNode out of IntegerVariable.
   //
@@ -758,9 +758,10 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
       const int num_bools = sat_solver_->NumVariables();
       const int num_fixed = sat_solver_->NumFixedVariables();
       model_->GetOrCreate<SharedResponseManager>()->UpdateInnerObjectiveBounds(
-          absl::StrFormat("bool_core (num_cores=%d [%s] a=%u d=%d fixed=%d/%d)",
-                          iter, previous_core_info, encoder.nodes().size(),
-                          max_depth, num_fixed, num_bools),
+          absl::StrFormat(
+              "bool_core (num_cores=%d [%s] a=%u d=%d fixed=%d/%d clauses=%s)",
+              iter, previous_core_info, encoder.nodes().size(), max_depth,
+              num_fixed, num_bools, FormatCounter(clauses_->num_clauses())),
           new_obj_lb, integer_trail_->LevelZeroUpperBound(objective_var_));
     }
 

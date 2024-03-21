@@ -1253,6 +1253,27 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     max_sum += std::max(term_a, term_b);
   }
 
+  // Load conditional precedences.
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
+  if (params.auto_detect_greater_than_at_least_one_of() &&
+      ct.enforcement_literal().size() == 1 && vars.size() <= 2) {
+    // To avoid overflow in the code below, we tighten the bounds.
+    int64_t rhs_min = ct.linear().domain(0);
+    int64_t rhs_max = ct.linear().domain(ct.linear().domain().size() - 1);
+    rhs_min = std::max(rhs_min, min_sum.value());
+    rhs_max = std::min(rhs_max, max_sum.value());
+
+    auto* detector = m->GetOrCreate<GreaterThanAtLeastOneOfDetector>();
+    const Literal lit = mapping->Literal(ct.enforcement_literal(0));
+    const Domain domain = ReadDomainFromProto(ct.linear());
+    if (vars.size() == 1) {
+      detector->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+    } else if (vars.size() == 2) {
+      detector->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]}, rhs_min,
+                    rhs_max);
+    }
+  }
+
   // Load precedences.
   if (!HasEnforcementLiteral(ct)) {
     auto* precedences = m->GetOrCreate<PrecedenceRelations>();
@@ -1311,7 +1332,6 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
 
-  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   const IntegerValue domain_size_limit(
       params.max_domain_size_when_encoding_eq_neq_constraints());
   if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&

@@ -121,6 +121,10 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
     literal_reason_.push_back(l.Negated());
   }
   for (int i = 0; i < exprs_.size(); ++i) {
+    // If the level zero bounds is good enough, no reason needed.
+    if (integer_trail_->LevelZeroLowerBound(exprs_[i]) >= target_min) {
+      continue;
+    }
     if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
       literal_reason_.push_back(selectors_[i]);
     } else {
@@ -139,7 +143,11 @@ void GreaterThanAtLeastOneOfPropagator::RegisterWith(
   const int id = watcher->Register(this);
   for (const Literal l : selectors_) watcher->WatchLiteral(l.Negated(), id);
   for (const Literal l : enforcements_) watcher->WatchLiteral(l, id);
-  for (const AffineExpression e : exprs_) watcher->WatchLowerBound(e, id);
+  for (const AffineExpression e : exprs_) {
+    if (!e.IsConstant()) {
+      watcher->WatchLowerBound(e, id);
+    }
+  }
 }
 
 }  // namespace sat

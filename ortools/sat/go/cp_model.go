@@ -108,7 +108,7 @@ func (l *LinearExpr) AddSum(las ...LinearArgument) *LinearExpr {
 
 // AddWeightedSum adds the linear arguments with the corresponding coefficients to the LinearExpr
 // and returns itself.
-func (l *LinearExpr) AddWeightedSum(las []LinearArgument, coeffs []int64_t) *LinearExpr {
+func (l *LinearExpr) AddWeightedSum(las []LinearArgument, coeffs []int64) *LinearExpr {
 	if len(coeffs) != len(las) {
 		log.Fatalf("las and coeffs must be the same length: %v != %v", len(las), len(coeffs))
 	}
@@ -190,7 +190,7 @@ func (i IntVar) asLinearExpressionProto() *cmpb.LinearExpressionProto {
 	linExprProto := &cmpb.LinearExpressionProto{}
 
 	linExprProto.SetVars([]int32{int32_t(i.ind)})
-	linExprProto.SetCoeffs([]int64_t{1})
+	linExprProto.SetCoeffs([]int64{1})
 
 	return linExprProto
 }
@@ -253,7 +253,7 @@ func (b BoolVar) asLinearExpressionProto() *cmpb.LinearExpressionProto {
 		coeff = -1
 		offset = 1
 	}
-	linExprProto.SetCoeffs([]int64_t{coeff})
+	linExprProto.SetCoeffs([]int64{coeff})
 	linExprProto.SetOffset(offset)
 
 	return linExprProto
@@ -484,7 +484,7 @@ func NewCpModelBuilder() *Builder {
 func (cp *Builder) NewIntVar(lb, ub int64_t) IntVar {
 	intVar := IntVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
 
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64_t{lb, ub}}.Build()
+	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{lb, ub}}.Build()
 	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
 
 	return intVar
@@ -504,7 +504,7 @@ func (cp *Builder) NewIntVarFromDomain(d Domain) IntVar {
 func (cp *Builder) NewBoolVar() BoolVar {
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
 
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64_t{0, 1}}.Build()
+	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{0, 1}}.Build()
 	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
 
 	return boolVar
@@ -531,7 +531,7 @@ func (cp *Builder) TrueVar() BoolVar {
 	}
 
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64_t{1, 1}}.Build()
+	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{1, 1}}.Build()
 	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
 
 	cp.constants[1] = boolVar.ind
@@ -547,7 +547,7 @@ func (cp *Builder) FalseVar() BoolVar {
 	}
 
 	boolVar := BoolVar{cpb: cp, ind: VarIndex(len(cp.cmpb.GetVariables()))}
-	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64_t{0, 0}}.Build()
+	pVar := cmpb.IntegerVariableProto_builder{Domain: []int64{0, 0}}.Build()
 	cp.cmpb.SetVariables(append(cp.cmpb.GetVariables(), pVar))
 
 	cp.constants[0] = boolVar.ind
@@ -762,7 +762,7 @@ func (cp *Builder) AddVariableElement(ind IntVar, vars []IntVar, target IntVar) 
 }
 
 // AddElement adds the element constraint: values[ind] == target
-func (cp *Builder) AddElement(ind IntVar, values []int64_t, target IntVar) Constraint {
+func (cp *Builder) AddElement(ind IntVar, values []int64, target IntVar) Constraint {
 	vars := make([]IntVar, len(values))
 	for i, v := range values {
 		vars[i] = cp.NewConstant(v)
@@ -982,7 +982,7 @@ func (cp *Builder) AddReservoirConstraint(min, max int64_t) ReservoirConstraint 
 //
 // It returns an AutomatonConstraint that allows adding transition
 // incrementally after construction.
-func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64_t, finalStates []int64_t) AutomatonConstraint {
+func (cp *Builder) AddAutomaton(transitionVars []IntVar, startState int64_t, finalStates []int64) AutomatonConstraint {
 	var transitions []int32
 	for _, v := range transitionVars {
 		cp.checkSameModelAndSetErrorf(v.cpb, "invalid parameter intVar %v added to the AutomatonConstraint %v", v.Index(), len(cp.cmpb.GetConstraints()))

@@ -547,18 +547,20 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
   {
     SatParameters new_params = base_params;
     new_params.set_optimize_with_lb_tree_search(true);
+    // We do not want to change the objective_var lb from outside as it gives
+    // better result to only use locally derived reason in that algo.
+    new_params.set_share_objective_bounds(false);
+
+    new_params.set_linearization_level(0);
+    strategies["lb_tree_search_no_lp"] = new_params;
+
     new_params.set_linearization_level(2);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddDualSchedulingHeuristics(new_params);
     }
-
     // We want to spend more time on the LP here.
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
-
-    // We do not want to change the objective_var lb from outside as it gives
-    // better result to only use locally derived reason in that algo.
-    new_params.set_share_objective_bounds(false);
     strategies["lb_tree_search"] = new_params;
   }
 
@@ -628,6 +630,21 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
+  }
+
+  // Inprocessing
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_sat_inprocessing(false);
+    strategies["no_inprocessing"] = new_params;
+
+    new_params.set_use_sat_inprocessing(true);
+    new_params.set_inprocessing_dtime_ratio(1.0);
+    strategies["max_inprocessing"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["max_inprocessing_no_lp"] = new_params;
   }
 
   // Quick restart.

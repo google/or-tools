@@ -14,7 +14,10 @@
 #include "ortools/sat/disjunctive.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -136,9 +139,8 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
   if (params.use_precedences_in_disjunctive_constraint() &&
       !params.use_combined_no_overlap()) {
     for (const bool time_direction : {true, false}) {
-      DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
-          time_direction, helper, model->GetOrCreate<IntegerTrail>(),
-          model->GetOrCreate<PrecedencesPropagator>());
+      DisjunctivePrecedences* precedences =
+          new DisjunctivePrecedences(time_direction, helper, model);
       const int id = precedences->RegisterWith(watcher);
       watcher->SetPropagatorPriority(id, 5);
       model->TakeOwnership(precedences);
@@ -910,6 +912,14 @@ int DisjunctiveDetectablePrecedences::RegisterWith(
   return id;
 }
 
+DisjunctivePrecedences::~DisjunctivePrecedences() {
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"disj_precedences/num_propagations_", num_propagations_});
+  shared_stats_->AddStats(stats);
+}
+
 bool DisjunctivePrecedences::Propagate() {
   if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
   window_.clear();
@@ -1016,6 +1026,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 
       // TODO(user): If var is actually a start-min of an interval, we
       // could push the end-min and check the interval consistency right away.
+      ++num_propagations_;
       if (!helper_->PushIntegerLiteral(
               IntegerLiteral::GreaterOrEqual(var, new_lb))) {
         return false;
@@ -1354,6 +1365,7 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
     // tasks in the tree actually), otherwise there will be no way to schedule
     // the critical_tasks inside their time window.
     while (theta_tree_.GetOptionalEnvelope() > non_gray_end_max) {
+      const IntegerValue end_min_with_gray = theta_tree_.GetOptionalEnvelope();
       int critical_event_with_gray;
       int gray_event;
       IntegerValue available_energy;
@@ -1405,13 +1417,13 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
           use_energy_reason = false;
           window_end = helper_->EndMin(gray_task) - 1;
         } else {
-          window_end = non_gray_end_min + event_size_[gray_event] - 1;
+          window_end = end_min_with_gray - 1;
         }
         CHECK_GE(window_end, non_gray_end_max);
 
         // The non-gray part of the explanation as detailed above.
         helper_->ClearReason();
-        bool one_before = false;
+        bool all_before = true;
         for (int event = first_event; event < window_size; event++) {
           const int task = window_[event].task_index;
           if (is_gray_[task]) continue;
@@ -1422,22 +1434,21 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
 
           const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
               task, gray_task, /*add_reason_if_after=*/true);
-          if (dist >= 0) {
-            one_before = true;
-          } else {
+          if (dist < 0) {
+            all_before = false;
             helper_->AddEndMaxReason(task, window_end);
           }
         }
 
         // Add the reason for the gray_task (we don't need the end-max or
-        // presence reason).
-        if (one_before) {
-          helper_->AddSizeMinReason(gray_task);
-        } else if (use_energy_reason) {
-          helper_->AddEnergyAfterReason(gray_task, event_size_[gray_event],
-                                        window_[critical_event_with_gray].time);
-        } else {
-          helper_->AddEndMinReason(gray_task, helper_->EndMin(gray_task));
+        // presence reason) needed for the precedences.
+        if (!all_before) {
+          if (use_energy_reason) {
+            helper_->AddEnergyAfterReason(gray_task, event_size_[gray_event],
+                                          first_start);
+          } else {
+            helper_->AddEndMinReason(gray_task, helper_->EndMin(gray_task));
+          }
         }
 
         // If we detect precedences at level zero, lets add them to the

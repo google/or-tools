@@ -121,10 +121,13 @@ def main() -> None:
 
         for b in active_bins:
             print(f"Bin {b}")
-            items_in_bin = x_values.xs(b, level="bin").loc[lambda x: x].index
-            for item in items_in_bin:
+            items_in_active_bin = x_values.xs(b, level="bin").loc[lambda x: x].index
+            for item in items_in_active_bin:
                 print(f"  Item {item} - weight {items.loc[item].weight}")
-            print(f"  Packed items weight: {items.loc[items_in_bin].sum().to_string()}")
+            print(
+                "  Packed items weight:"
+                f" {items.loc[items_in_active_bin].sum().to_string()}"
+            )
             print()
 
         print(f"Total packed weight: {items.weight.sum()}")

@@ -37,7 +37,7 @@ def is_zero(x: Any) -> bool:
     """Checks if the x is 0 or 0.0."""
     if isinstance(x, numbers.Integral):
         return int(x) == 0
-    if isinstance(x, numbers.Number):
+    if isinstance(x, numbers.Real):
         return float(x) == 0.0
     return False
 
@@ -46,7 +46,7 @@ def is_one(x: Any) -> bool:
     """Checks if x is 1 or 1.0."""
     if isinstance(x, numbers.Integral):
         return int(x) == 1
-    if isinstance(x, numbers.Number):
+    if isinstance(x, numbers.Real):
         return float(x) == 1.0
     return False
 
@@ -55,7 +55,7 @@ def is_minus_one(x: Any) -> bool:
     """Checks if x is -1 or -1.0 ."""
     if isinstance(x, numbers.Integral):
         return int(x) == -1
-    if isinstance(x, numbers.Number):
+    if isinstance(x, numbers.Real):
         return float(x) == -1.0
     return False
 
@@ -89,7 +89,7 @@ def assert_is_a_number(x: Any) -> Union[int, float]:
     """Asserts that x is a number and returns it casted to an int or a float."""
     if isinstance(x, numbers.Integral):
         return int(x)
-    if isinstance(x, numbers.Number):
+    if isinstance(x, numbers.Real):
         return float(x)
     raise TypeError("Not a number: %s" % x)
 

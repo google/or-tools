@@ -460,6 +460,90 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("inverse: expanded");
 }
 
+void ExpandLinMaxWithTwoTerms(ConstraintProto* ct, PresolveContext* context) {
+  CHECK_EQ(ct->lin_max().exprs().size(), 2);
+
+  // We will create 4 constraints for target = max(a, b).
+  // First.
+  // - target >= a.
+  // - target >= b.
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    LinearConstraintProto* lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(std::numeric_limits<int64_t>::max());
+    AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(expr, -1, lin);
+  }
+
+  // And then, a new boolean b, and
+  // - b => target == a
+  // - not(b) => target == b
+  const int new_bool = context->NewBoolVar();
+  bool first_loop = true;
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    new_ct->add_enforcement_literal(first_loop ? new_bool
+                                               : NegatedRef(new_bool));
+    first_loop = false;
+
+    LinearConstraintProto* lin = new_ct->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(0);
+    AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(expr, -1, lin);
+  }
+
+  ct->Clear();
+  context->UpdateRuleStats("lin_max: expanded lin_max with two terms");
+}
+
+void ExpandGeneralLinMax(ConstraintProto* ct, PresolveContext* context) {
+  CHECK_GT(ct->lin_max().exprs().size(), 2);
+
+  // We will create 2 * n constraints for target = max(a1, .., an).
+  // First.
+  // - target >= ai
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    LinearConstraintProto* lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(std::numeric_limits<int64_t>::max());
+    AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(expr, -1, lin);
+  }
+
+  // And then, a new boolean bi, and
+  // - bi => target == ai
+  // With exactly_one(bi)
+  ConstraintProto* exo = context->working_model->add_constraints();
+
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    const int new_bool = context->NewBoolVar();
+    exo->mutable_exactly_one()->add_literals(new_bool);
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    new_ct->add_enforcement_literal(new_bool);
+
+    LinearConstraintProto* lin = new_ct->mutable_linear();
+    lin->add_domain(0);
+    lin->add_domain(0);
+    AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
+    AddLinearExpressionToLinearConstraint(expr, -1, lin);
+  }
+
+  ct->Clear();
+  context->UpdateRuleStats("lin_max: expanded lin_max");
+}
+
+void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
+  if (ct->lin_max().exprs().size() < 2) return;
+  if (ct->lin_max().exprs().size() == 2) {
+    ExpandLinMaxWithTwoTerms(ct, context);
+  } else {
+    ExpandGeneralLinMax(ct, context);
+  }
+}
+
 // A[V] == V means for all i, V == i => A_i == i
 void ExpandElementWithTargetEqualIndex(ConstraintProto* ct,
                                        PresolveContext* context) {
@@ -2225,6 +2309,12 @@ void ExpandCpModel(PresolveContext* context) {
           ExpandNegativeTable(ct, context);
         } else {
           ExpandPositiveTable(ct, context);
+        }
+        break;
+      case ConstraintProto::kLinMax:
+        if (ct->lin_max().exprs().size() <=
+            context->params().max_lin_max_size_for_expansion()) {
+          ExpandLinMax(ct, context);
         }
         break;
       case ConstraintProto::kAllDiff:

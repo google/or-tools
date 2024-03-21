@@ -556,7 +556,7 @@ class Constraint {
   Constraint WithName(absl::string_view name);
 
   /// Returns the name of the constraint (or the empty string if not set).
-  const std::string& Name() const;
+  absl::string_view Name() const;
 
   /// Returns the underlying protobuf object (useful for testing).
   const ConstraintProto& Proto() const { return *proto_; }
