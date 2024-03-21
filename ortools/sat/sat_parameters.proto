@@ -464,9 +464,9 @@ message SatParameters {
   // possible precedences between event and encoding the constraint.
   optional bool expand_reservoir_constraints = 182 [default = true];
 
-  // If true, replace target = max(x, y) by linear constraint with the
-  // introduction of a new boolean b such that b => target == x and not(b) =>
-  // target == y.
+  // If the number of expressions in the lin_max is less that the max size
+  // parameter, model expansion replaces target = max(xi) by linear constraint
+  // with the introduction of new booleans bi such that bi => target == xi.
   //
   // This is mainly for experimenting compared to a custom lin_max propagator.
   optional int32 max_lin_max_size_for_expansion = 280 [default = 0];

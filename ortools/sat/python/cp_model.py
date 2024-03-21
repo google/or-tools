@@ -844,6 +844,8 @@ class IntVar(LinearExpr):
         name: Optional[str],
     ) -> None:
         """See CpModel.new_int_var below."""
+        self.__index: int
+        self.__var: cp_model_pb2.IntegerVariableProto
         self.__negation: Optional[_NotBooleanVariable] = None
         # Python do not support multiple __init__ methods.
         # This method is only called from the CpModel class.
@@ -853,15 +855,16 @@ class IntVar(LinearExpr):
         # case 2:
         #     model is a CpModelProto, domain is an index (int), and name is None.
         if isinstance(domain, IntegralTypes) and name is None:
-            self.__index: int = int(domain)
-            self.__var: cp_model_pb2.IntegerVariableProto = model.variables[domain]
+            self.__index = int(domain)
+            self.__var = model.variables[domain]
         else:
-            self.__index: int = len(model.variables)
-            self.__var: cp_model_pb2.IntegerVariableProto = model.variables.add()
+            self.__index = len(model.variables)
+            self.__var = model.variables.add()
             self.__var.domain.extend(
                 cast(sorted_interval_list.Domain, domain).flattened_intervals()
             )
-            self.__var.name = name
+            if name:
+                self.__var.name = name
 
     @property
     def index(self) -> int:
@@ -1175,6 +1178,9 @@ class IntervalVar:
     enforcement literals assigned to false. Conversely, these constraints will
     also set these enforcement literals to false if they cannot fit these
     intervals into the schedule.
+
+    Raises:
+      TypeError: if start, size, end are not defined, or have the wrong type.
     """
 
     def __init__(
@@ -1187,6 +1193,8 @@ class IntervalVar:
         name: Optional[str],
     ) -> None:
         self.__model: cp_model_pb2.CpModelProto = model
+        self.__index: int
+        self.__ct: cp_model_pb2.ConstraintProto
         # As with the IntVar::__init__ method, we hack the __init__ method to
         # support two use cases:
         #   case 1: called when creating a new interval variable.
@@ -1194,14 +1202,26 @@ class IntervalVar:
         #      None or the index of a Boolean literal. name is a string
         #   case 2: called when querying an existing interval variable.
         #      start_index is an int, all parameters after are None.
-        if size is None and end is None and is_present_index is None and name is None:
-            self.__index: int = cast(int, start)
-            self.__ct: cp_model_pb2.ConstraintProto = model.constraints[self.__index]
+        if isinstance(start, int):
+            if size is not None:
+                raise TypeError("size should be None")
+            if end is not None:
+                raise TypeError("end should be None")
+            if is_present_index is not None:
+                raise TypeError("is_present_index should be None")
+            self.__index = cast(int, start)
+            self.__ct = model.constraints[self.__index]
         else:
-            self.__index: int = len(model.constraints)
-            self.__ct: cp_model_pb2.ConstraintProto = self.__model.constraints.add()
+            self.__index = len(model.constraints)
+            self.__ct = self.__model.constraints.add()
+            if start is None:
+                raise TypeError("start is not defined")
             self.__ct.interval.start.CopyFrom(start)
+            if size is None:
+                raise TypeError("size is not defined")
             self.__ct.interval.size.CopyFrom(size)
+            if end is None:
+                raise TypeError("end is not defined")
             self.__ct.interval.end.CopyFrom(end)
             if is_present_index is not None:
                 self.__ct.enforcement_literal.append(is_present_index)
@@ -2003,7 +2023,8 @@ class CpModel:
             model_ct = self.__model.constraints.add()
             model_ct.linear.vars.append(var_index)
             model_ct.linear.coeffs.append(1)
-            model_ct.linear.domain.extend([offset + i, offset + i])
+            offset_as_int = int(offset)
+            model_ct.linear.domain.extend([offset_as_int + i, offset_as_int + i])
             model_ct.enforcement_literal.append(b_index)
 
             model_ct = self.__model.constraints.add()
@@ -2011,9 +2032,9 @@ class CpModel:
             model_ct.linear.coeffs.append(1)
             model_ct.enforcement_literal.append(-b_index - 1)
             if offset + i - 1 >= INT_MIN:
-                model_ct.linear.domain.extend([INT_MIN, offset + i - 1])
+                model_ct.linear.domain.extend([INT_MIN, offset_as_int + i - 1])
             if offset + i + 1 <= INT_MAX:
-                model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
+                model_ct.linear.domain.extend([offset_as_int + i + 1, INT_MAX])
 
     def add_implication(self, a: LiteralT, b: LiteralT) -> Constraint:
         """Adds `a => b` (`a` implies `b`)."""
@@ -2826,7 +2847,8 @@ class CpModel:
                     self.__model.objective.scaling_factor = -1
                     self.__model.objective.offset = -constant
                 for v, c in coeffs_map.items():
-                    self.__model.objective.coeffs.append(c)
+                    c_as_int = int(c)
+                    self.__model.objective.coeffs.append(c_as_int)
                     if minimize:
                         self.__model.objective.vars.append(v.index)
                     else:
@@ -2877,7 +2899,9 @@ class CpModel:
             solve() will fail.
         """
 
-        strategy = self.__model.search_strategy.add()
+        strategy: cp_model_pb2.DecisionStrategyProto = (
+            self.__model.search_strategy.add()
+        )
         for v in variables:
             expr = strategy.exprs.add()
             if v.index >= 0:
@@ -3110,7 +3134,7 @@ class CpSolver:
         self.parameters: sat_parameters_pb2.SatParameters = (
             sat_parameters_pb2.SatParameters()
         )
-        self.log_callback: Optional[swig_helper.LogCallback] = None
+        self.log_callback: Optional[Callable[[str], None]] = None
         self.__solve_wrapper: Optional[swig_helper.SolveWrapper] = None
         self.__lock: threading.Lock = threading.Lock()
 
@@ -3130,7 +3154,10 @@ class CpSolver:
         if self.log_callback is not None:
             self.__solve_wrapper.add_log_callback(self.log_callback)
 
-        self.__solution = self.__solve_wrapper.solve(model.proto)
+        solution: cp_model_pb2.CpSolverResponse = self.__solve_wrapper.solve(
+            model.proto
+        )
+        self.__solution = solution
 
         if solution_callback is not None:
             self.__solve_wrapper.clear_solution_callback(solution_callback)
@@ -3138,7 +3165,7 @@ class CpSolver:
         with self.__lock:
             self.__solve_wrapper = None
 
-        return self.__solution.status
+        return solution.status
 
     def stop_search(self) -> None:
         """Stops the current search asynchronously."""
@@ -3376,11 +3403,11 @@ class CpSolver:
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
 
-        self.solve(model, callback)
+        status: cp_model_pb2.CpSolverStatus = self.solve(model, callback)
 
         # Restore parameter.
         self.parameters.enumerate_all_solutions = enumerate_all
-        return self.__solution.status
+        return status
 
 
 # pylint: enable=invalid-name
