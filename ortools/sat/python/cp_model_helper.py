@@ -85,7 +85,7 @@ def assert_is_zero_or_one(x: Any) -> int:
     if not isinstance(x, numbers.Integral):
         raise TypeError("Not a boolean: %s" % x)
     x_as_int = int(x)
-    if  x_as_int < 0 or x_as_int > 1:
+    if x_as_int < 0 or x_as_int > 1:
         raise TypeError("Not a boolean: %s" % x)
     return x_as_int
 
