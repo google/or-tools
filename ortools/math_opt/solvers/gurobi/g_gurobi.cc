@@ -541,8 +541,15 @@ absl::StatusOr<bool> Gurobi::ComputeIIS(Callback cb) {
     RETURN_IF_ERROR(scope->Release());
     return false;
   } else if (error == kGrbOk) {
+    // If Gurobi v11 terminates at a limit before determining if the model is
+    // feasible or not, it will return an OK error code but then will fail to
+    // return anything about the IIS it does not have. To detect this case, we
+    // query the minimality attribute: we know that our env is valid at this
+    // point, and this should fail iff an IIS is present, i.e., Gurobi proved
+    // that the model was infeasible.
+    const bool has_iis = GetIntAttr(GRB_INT_ATTR_IIS_MINIMAL).ok();
     RETURN_IF_ERROR(scope->Release());
-    return true;
+    return has_iis;
   }
   RETURN_IF_ERROR(ToStatus(error));
   return scope->Release();
