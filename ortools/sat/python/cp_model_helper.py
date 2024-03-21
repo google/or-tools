@@ -63,30 +63,30 @@ def is_minus_one(x: Any) -> bool:
 def assert_is_int64(x: Any) -> int:
     """Asserts that x is integer and x is in [min_int_64, max_int_64] and returns it casted to an int."""
     if not isinstance(x, numbers.Integral):
-        raise TypeError("Not an integer: %s" % x)
+        raise TypeError(f"Not an integer: {x} of type {type(x)}")
     x_as_int = int(x)
     if x_as_int < INT_MIN or x_as_int > INT_MAX:
-        raise OverflowError("Does not fit in an int64_t: %s" % x)
+        raise OverflowError(f"Does not fit in an int64_t: {x}")
     return x_as_int
 
 
 def assert_is_int32(x: Any) -> int:
     """Asserts that x is integer and x is in [min_int_32, max_int_32] and returns it casted to an int."""
     if not isinstance(x, numbers.Integral):
-        raise TypeError("Not an integer: %s" % x)
+        raise TypeError(f"Not an integer: {x} of type {type(x)}")
     x_as_int = int(x)
     if x_as_int < INT32_MIN or x_as_int > INT32_MAX:
-        raise OverflowError("Does not fit in an int32_t: %s" % x)
+        raise OverflowError(f"Does not fit in an int32_t: {x}")
     return x_as_int
 
 
 def assert_is_zero_or_one(x: Any) -> int:
     """Asserts that x is 0 or 1 and returns it as an int."""
     if not isinstance(x, numbers.Integral):
-        raise TypeError("Not a boolean: %s" % x)
+        raise TypeError(f"Not a boolean: {x} of type {type(x)}")
     x_as_int = int(x)
     if x_as_int < 0 or x_as_int > 1:
-        raise TypeError("Not a boolean: %s" % x)
+        raise TypeError(f"Not a boolean: {x}")
     return x_as_int
 
 
@@ -96,7 +96,7 @@ def assert_is_a_number(x: Any) -> Union[int, float]:
         return int(x)
     if isinstance(x, numbers.Real):
         return float(x)
-    raise TypeError("Not a number: %s" % x)
+    raise TypeError(f"Not a number: {x} of type {type(x)}")
 
 
 def to_capped_int64(v: int) -> int:

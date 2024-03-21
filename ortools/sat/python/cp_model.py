@@ -863,7 +863,7 @@ class IntVar(LinearExpr):
             self.__var.domain.extend(
                 cast(sorted_interval_list.Domain, domain).flattened_intervals()
             )
-            if name:
+            if name is not None:
                 self.__var.name = name
 
     @property
@@ -1180,7 +1180,7 @@ class IntervalVar:
     intervals into the schedule.
 
     Raises:
-      TypeError: if start, size, end are not defined, or have the wrong type.
+      ValueError: if start, size, end are not defined, or have the wrong type.
     """
 
     def __init__(
@@ -1204,11 +1204,11 @@ class IntervalVar:
         #      start_index is an int, all parameters after are None.
         if isinstance(start, int):
             if size is not None:
-                raise TypeError("size should be None")
+                raise ValueError("size should be None")
             if end is not None:
-                raise TypeError("end should be None")
+                raise ValueError("end should be None")
             if is_present_index is not None:
-                raise TypeError("is_present_index should be None")
+                raise ValueError("is_present_index should be None")
             self.__index = cast(int, start)
             self.__ct = model.constraints[self.__index]
         else:
