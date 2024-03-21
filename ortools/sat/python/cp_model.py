@@ -1209,7 +1209,7 @@ class IntervalVar:
                 raise TypeError("end should be None")
             if is_present_index is not None:
                 raise TypeError("is_present_index should be None")
-            self.__index= cast(int, start)
+            self.__index = cast(int, start)
             self.__ct = model.constraints[self.__index]
         else:
             self.__index = len(model.constraints)
@@ -2901,7 +2901,7 @@ class CpModel:
 
         strategy: cp_model_pb2.DecisionStrategyProto = (
             self.__model.search_strategy.add()
-            )
+        )
         for v in variables:
             expr = strategy.exprs.add()
             if v.index >= 0:
