@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 280
+// NEXT TAG: 281
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -463,6 +463,13 @@ message SatParameters {
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
   optional bool expand_reservoir_constraints = 182 [default = true];
+
+  // If true, replace target = max(x, y) by linear constraint with the
+  // introduction of a new boolean b such that b => target == x and not(b) =>
+  // target == y.
+  //
+  // This is mainly for experimenting compared to a custom lin_max propagator.
+  optional int32 max_lin_max_size_for_expansion = 280 [default = 0];
 
   // If true, it disable all constraint expansion.
   // This should only be used to test the presolve of expanded constraints.
@@ -1217,8 +1224,10 @@ message SatParameters {
   // breaking during search.
   optional int32 symmetry_level = 183 [default = 2];
 
-  // Experimental. Use new code to propagate linear constraint.
-  optional bool new_linear_propagation = 224 [default = false];
+  // The new linear propagation code treat all constraints at once and use
+  // an adaptation of Bellman-Ford-Tarjan to propagate constraint in a smarter
+  // order and potentially detect propagation cycle earlier.
+  optional bool new_linear_propagation = 224 [default = true];
 
   // Linear constraints that are not pseudo-Boolean and that are longer than
   // this size will be split into sqrt(size) intermediate sums in order to have

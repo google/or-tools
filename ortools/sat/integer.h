@@ -300,9 +300,9 @@ struct AffineExpression {
   AffineExpression(IntegerVariable v)  // NOLINT(runtime/explicit)
       : var(v), coeff(1) {}
   AffineExpression(IntegerVariable v, IntegerValue c)
-      : var(c > 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)) {}
+      : var(c >= 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)) {}
   AffineExpression(IntegerVariable v, IntegerValue c, IntegerValue cst)
-      : var(c > 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)), constant(cst) {}
+      : var(c >= 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)), constant(cst) {}
 
   // Returns the integer literal corresponding to expression >= value or
   // expression <= value.

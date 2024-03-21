@@ -87,7 +87,7 @@ class Prober {
   // the conjunction must be true, we might be able to fix literal or improve
   // integer bounds if all conjunction propagate the same thing.
   bool ProbeDnf(absl::string_view name,
-                const std::vector<std::vector<Literal>>& dnf);
+                absl::Span<const std::vector<Literal>> dnf);
 
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.

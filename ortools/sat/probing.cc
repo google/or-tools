@@ -300,7 +300,7 @@ bool Prober::ProbeBooleanVariables(
 }
 
 bool Prober::ProbeDnf(absl::string_view name,
-                      const std::vector<std::vector<Literal>>& dnf) {
+                      absl::Span<const std::vector<Literal>> dnf) {
   if (dnf.size() <= 1) return true;
 
   // Reset the solver in case it was already used.

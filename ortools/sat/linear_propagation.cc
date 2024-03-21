@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -85,6 +86,20 @@ void CustomFifoQueue::Push(int id) {
   if (right_ == queue_.size()) right_ = 0;
 }
 
+void CustomFifoQueue::FillAndSortTmpPositions(absl::Span<const int> elements) {
+  int index = 0;
+  const int capacity = queue_.size();
+  for (const int id : elements) {
+    const int p = pos_[id];
+    DCHECK_GE(p, 0);
+    DCHECK_EQ(queue_[p], id);
+    tmp_positions_[index++] = p >= left_ ? p : p + capacity;
+  }
+  std::sort(&tmp_positions_[0], &tmp_positions_[index]);
+  DCHECK(std::unique(&tmp_positions_[0], &tmp_positions_[index]) ==
+         &tmp_positions_[index]);
+}
+
 void CustomFifoQueue::Reorder(absl::Span<const int> order) {
   if (order.size() <= 1) return;
 
@@ -94,20 +109,12 @@ void CustomFifoQueue::Reorder(absl::Span<const int> order) {
     return ReorderDense(order);
   }
 
-  int index = 0;
-  for (const int id : order) {
-    const int p = pos_[id];
-    DCHECK_GE(p, 0);
-    tmp_positions_[index++] = p >= left_ ? p : p + capacity;
-  }
-  std::sort(&tmp_positions_[0], &tmp_positions_[index]);
-  DCHECK(std::unique(&tmp_positions_[0], &tmp_positions_[index]) ==
-         &tmp_positions_[index]);
-
-  index = 0;
-  for (const int id : order) {
-    int p = tmp_positions_[index++];
+  FillAndSortTmpPositions(order);
+  for (int i = 0; i < order.size(); ++i) {
+    int p = tmp_positions_[i];
     if (p >= capacity) p -= capacity;
+
+    const int id = order[i];
     pos_[id] = p;
     queue_[p] = id;
   }
@@ -144,20 +151,15 @@ void CustomFifoQueue::ReorderDense(absl::Span<const int> order) {
   DCHECK_EQ(order_index, order.size());
 }
 
+// TODO(user): combine this with reorder.
+// This is slow, especially if we are dense.
 void CustomFifoQueue::SortByPos(absl::Span<int> elements) {
-  std::sort(elements.begin(), elements.end(),
-            [this](const int id1, const int id2) {
-              const int p1 = pos_[id1];
-              const int p2 = pos_[id2];
-              if (p1 >= left_) {
-                if (p2 >= left_) return p1 < p2;
-                return true;
-              } else {
-                // p1 < left_.
-                if (p2 < left_) return p1 < p2;
-                return false;
-              }
-            });
+  FillAndSortTmpPositions(elements);
+  const int capacity = queue_.size();
+  for (int i = 0; i < elements.size(); ++i) {
+    const int p = tmp_positions_[i];
+    elements[i] = queue_[p < capacity ? p : p - capacity];
+  }
 }
 
 std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
@@ -538,8 +540,12 @@ bool LinearPropagator::Propagate() {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     if (var >= var_to_constraint_ids_.size()) continue;
     SetPropagatedBy(var, -1);
-    AddWatchedToQueue(var);
+    AddWatchedToQueue(var, /*push_delayed_right_away=*/false);
   }
+  for (const int id : tmp_delayed_) {
+    AddToQueueIfNeeded(id);
+  }
+  tmp_delayed_.clear();
 
   // We abort this propagator as soon as a Boolean is propagated, so that we
   // always finish the Boolean propagation first. This can happen when we push a
@@ -549,13 +555,35 @@ bool LinearPropagator::Propagate() {
   // propagator might have pushed the same variable further.
   //
   // Empty FIFO queue.
+  //
+  // TODO(user): More than the propagation speed, I think it is important to
+  // have proper explanation, so if A pushes B, but later on the queue we have C
+  // that push A that push B again, that might be bad? We can try to avoid this
+  // even further, by organizing the queue in passes:
+  //  - Scan all relevant constraints, remember who pushes but DO NOT push yet!
+  //  - If no cycle, do not pushes constraint whose slack will changes due to
+  //    other pushes.
+  //  - consider the new constraint that need to be scanned and repeat.
+  // I think it is okay to scan twice the constraints that push something in
+  // order to get better explanation. We tend to diverge from the class shortest
+  // path algo in this regard.
+  //
+  // TODO(user): If we push the idea further, can we first compute the fix point
+  // without pushing anything, then compute a good order of constraints for the
+  // explanations? what is tricky is that we might need to "scan" more than once
+  // a constraint I think. ex: Y, Z, T >=0
+  //  - 2 * Y + Z + T <= 11   ==>   Y <= 5, Z <= 11, T <= 11  (1)
+  //  - Z + Y >= 6            ==>   Z >= 1
+  //  - (1) again to push T <= 10  and reach the propagation fixed point.
+  bool result = true;
+  num_terms_for_dtime_update_ = 0;
   const int saved_index = trail_->Index();
   while (!propagation_queue_.empty()) {
     const int id = propagation_queue_.Pop();
     in_queue_[id] = false;
     if (!PropagateOneConstraint(id)) {
-      modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
-      return false;
+      result = false;
+      break;
     }
 
     if (trail_->Index() > saved_index) {
@@ -565,8 +593,10 @@ bool LinearPropagator::Propagate() {
   }
 
   // Clean-up modified_vars_ to do as little as possible on the next call.
+  time_limit_->AdvanceDeterministicTime(
+      static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
-  return true;
+  return result;
 }
 
 // Adds a new constraint to the propagator.
@@ -603,6 +633,7 @@ bool LinearPropagator::AddConstraint(
   }
 
   id_to_propagation_count_.push_back(0);
+  id_propagated_something_.push_back(false);
   variables_buffer_.insert(variables_buffer_.end(), vars.begin(), vars.end());
   coeffs_buffer_.insert(coeffs_buffer_.end(), coeffs.begin(), coeffs.end());
   CanonicalizeConstraint(id);
@@ -671,7 +702,12 @@ bool LinearPropagator::AddConstraint(
   }
 
   // Propagate this new constraint.
-  return PropagateOneConstraint(id);
+  // TODO(user): Do we want to do that?
+  num_terms_for_dtime_update_ = 0;
+  const bool result = PropagateOneConstraint(id);
+  time_limit_->AdvanceDeterministicTime(
+      static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
+  return result;
 }
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(
@@ -689,8 +725,8 @@ absl::Span<IntegerVariable> LinearPropagator::GetVariables(
 
 void LinearPropagator::CanonicalizeConstraint(int id) {
   const ConstraintInfo& info = infos_[id];
-  auto coeffs = GetCoeffs(info);
-  auto vars = GetVariables(info);
+  const auto coeffs = GetCoeffs(info);
+  const auto vars = GetVariables(info);
   for (int i = 0; i < vars.size(); ++i) {
     if (coeffs[i] < 0) {
       coeffs[i] = -coeffs[i];
@@ -705,17 +741,34 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // default though, even VLOG_IS_ON(1) so we disable it.
   if (/* DISABLES CODE */ (false)) {
     ++num_scanned_;
-    if (id_scanned_at_least_once_[id]) {
-      ++num_extra_scans_;
-    } else {
-      id_scanned_at_least_once_.Set(id);
+    if (id < id_scanned_at_least_once_.size()) {
+      if (id_scanned_at_least_once_[id]) {
+        ++num_extra_scans_;
+      } else {
+        id_scanned_at_least_once_.Set(id);
+      }
     }
   }
 
   // Skip constraint not enforced or that cannot propagate if false.
   ConstraintInfo& info = infos_[id];
   const EnforcementStatus enf_status = EnforcementStatus(info.enf_status);
-  DCHECK_EQ(enf_status, enforcement_propagator_->DebugStatus(info.enf_id));
+  if (DEBUG_MODE) {
+    const EnforcementStatus debug_status =
+        enforcement_propagator_->DebugStatus(info.enf_id);
+    if (enf_status != debug_status) {
+      if (enf_status == EnforcementStatus::CANNOT_PROPAGATE &&
+          debug_status == EnforcementStatus::IS_FALSE) {
+        // This case might happen because in our two watched literals scheme,
+        // we might watch two unassigned literal without knowing another one is
+        // already false.
+      } else {
+        LOG(FATAL) << "Enforcement status not up to date: " << enf_status
+                   << " vs debug: " << debug_status;
+      }
+    }
+  }
+
   if (enf_status == EnforcementStatus::IS_FALSE ||
       enf_status == EnforcementStatus::CANNOT_PROPAGATE) {
     DCHECK(!in_queue_[id]);
@@ -732,44 +785,72 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // Compute the slack and max_variations_ of each variables.
   // We also filter out fixed variables in a reversible way.
   IntegerValue implied_lb(0);
-  auto vars = GetVariables(info);
-  auto coeffs = GetCoeffs(info);
+  const auto vars = GetVariables(info);
   IntegerValue max_variation(0);
   bool first_change = true;
-  time_limit_->AdvanceDeterministicTime(static_cast<double>(info.rev_size) *
-                                        1e-9);
-  for (int i = 0; i < info.rev_size;) {
-    const IntegerVariable var = vars[i];
-    const IntegerValue coeff = coeffs[i];
-    const IntegerValue lb = integer_trail_->LowerBound(var);
-    const IntegerValue ub = integer_trail_->UpperBound(var);
-    if (lb == ub) {
-      if (first_change) {
-        // Note that we can save at most one state per fixed var. Also at
-        // level zero we don't save anything.
-        rev_int_repository_->SaveState(&info.rev_size);
-        rev_integer_value_repository_->SaveState(&info.rev_rhs);
-        first_change = false;
+  num_terms_for_dtime_update_ += info.rev_size;
+  IntegerValue* max_variations = max_variations_.data();
+  if (info.all_coeffs_are_one) {
+    // TODO(user): Avoid duplication?
+    for (int i = 0; i < info.rev_size;) {
+      const IntegerVariable var = vars[i];
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (lb == ub) {
+        if (first_change) {
+          // Note that we can save at most one state per fixed var. Also at
+          // level zero we don't save anything.
+          rev_int_repository_->SaveState(&info.rev_size);
+          rev_integer_value_repository_->SaveState(&info.rev_rhs);
+          first_change = false;
+        }
+        info.rev_size--;
+        std::swap(vars[i], vars[info.rev_size]);
+        info.rev_rhs -= lb;
+      } else {
+        implied_lb += lb;
+        max_variations[i] = (ub - lb);
+        max_variation = std::max(max_variation, max_variations[i]);
+        ++i;
       }
-      info.rev_size--;
-      std::swap(vars[i], vars[info.rev_size]);
-      std::swap(coeffs[i], coeffs[info.rev_size]);
-      info.rev_rhs -= coeff * lb;
-    } else {
-      implied_lb += coeff * lb;
-      max_variations_[i] = (ub - lb) * coeff;
-      max_variation = std::max(max_variation, max_variations_[i]);
-      ++i;
+    }
+  } else {
+    const auto coeffs = GetCoeffs(info);
+    for (int i = 0; i < info.rev_size;) {
+      const IntegerVariable var = vars[i];
+      const IntegerValue coeff = coeffs[i];
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (lb == ub) {
+        if (first_change) {
+          // Note that we can save at most one state per fixed var. Also at
+          // level zero we don't save anything.
+          rev_int_repository_->SaveState(&info.rev_size);
+          rev_integer_value_repository_->SaveState(&info.rev_rhs);
+          first_change = false;
+        }
+        info.rev_size--;
+        std::swap(vars[i], vars[info.rev_size]);
+        std::swap(coeffs[i], coeffs[info.rev_size]);
+        info.rev_rhs -= coeff * lb;
+      } else {
+        implied_lb += coeff * lb;
+        max_variations[i] = (ub - lb) * coeff;
+        max_variation = std::max(max_variation, max_variations[i]);
+        ++i;
+      }
     }
   }
   const IntegerValue slack = info.rev_rhs - implied_lb;
 
   // Negative slack means the constraint is false.
   if (max_variation <= slack) return true;
+  id_propagated_something_[id] = true;
   if (slack < 0) {
     // Fill integer reason.
     integer_reason_.clear();
     reason_coeffs_.clear();
+    const auto coeffs = GetCoeffs(info);
     for (int i = 0; i < info.initial_size; ++i) {
       const IntegerVariable var = vars[i];
       if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
@@ -794,8 +875,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   int num_pushed = 0;
+  const auto coeffs = GetCoeffs(info);
   for (int i = 0; i < info.rev_size; ++i) {
-    if (max_variations_[i] <= slack) continue;
+    if (max_variations[i] <= slack) continue;
 
     // TODO(user): If the new ub fall into an hole of the variable, we can
     // actually relax the reason more by computing a better slack.
@@ -817,8 +899,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
                                                             literal_reason);
               reason_coeffs_.clear();
 
-              auto coeffs = GetCoeffs(info);
-              auto vars = GetVariables(info);
+              const auto coeffs = GetCoeffs(info);
+              const auto vars = GetVariables(info);
               for (int i = 0; i < info.initial_size; ++i) {
                 const IntegerVariable var = vars[i];
                 if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
@@ -873,8 +955,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
 std::string LinearPropagator::ConstraintDebugString(int id) {
   std::string result;
   const ConstraintInfo& info = infos_[id];
-  auto coeffs = GetCoeffs(info);
-  auto vars = GetVariables(info);
+  const auto coeffs = GetCoeffs(info);
+  const auto vars = GetVariables(info);
   IntegerValue implied_lb(0);
   IntegerValue rhs_correction(0);
   for (int i = 0; i < info.initial_size; ++i) {
@@ -908,8 +990,8 @@ bool LinearPropagator::ReportConflictingCycle() {
       const ConstraintInfo& info = infos_[id];
       enforcement_propagator_->AddEnforcementReason(info.enf_id,
                                                     &literal_reason_);
-      auto coeffs = GetCoeffs(info);
-      auto vars = GetVariables(info);
+      const auto coeffs = GetCoeffs(info);
+      const auto vars = GetVariables(info);
       IntegerValue rhs_correction(0);
       for (int i = 0; i < info.initial_size; ++i) {
         if (i >= info.rev_size) {
@@ -1020,6 +1102,9 @@ bool LinearPropagator::ReportConflictingCycle() {
 //
 // TODO(user): If one of the var coeff is > previous slack we push an id again,
 // we can stop early with a conflict by propagating the ids in sequence.
+//
+// TODO(user): Revisit the algo, no point exploring twice the same var, also
+// the queue reordering heuristic might not be the best.
 bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
   disassemble_to_reorder_.ClearAndResize(in_queue_.size());
   disassemble_reverse_topo_order_.clear();
@@ -1033,7 +1118,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
   disassemble_branch_.clear();
   {
     const ConstraintInfo& info = infos_[root_id];
-    auto vars = GetVariables(info);
+    const auto vars = GetVariables(info);
     for (int i = 0; i < num_pushed; ++i) {
       disassemble_queue_.push_back({root_id, NegationOf(vars[i])});
     }
@@ -1041,6 +1126,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
 
   // Note that all var should be unique since there is only one propagated_by_
   // for each one. And each time we explore an id, we disassemble the tree.
+  absl::Span<int> id_to_count = absl::MakeSpan(id_to_propagation_count_);
   while (!disassemble_queue_.empty()) {
     const auto [prev_id, var] = disassemble_queue_.back();
     if (!disassemble_branch_.empty() &&
@@ -1053,16 +1139,11 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
     }
 
     disassemble_branch_.push_back({prev_id, var});
+
     time_limit_->AdvanceDeterministicTime(
         static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
     for (const int id : var_to_constraint_ids_[var]) {
-      if (prev_id == root_id) {
-        // Root id was just propagated, so there is no need to reorder what
-        // it pushes.
-        DCHECK_NE(id, root_id);
-        if (disassemble_to_reorder_[id]) continue;
-        disassemble_to_reorder_.Set(id);
-      } else if (id == root_id) {
+      if (id == root_id) {
         // TODO(user): Check previous slack vs var coeff?
         // TODO(user): Make sure there are none or detect cycle not going back
         // to the root.
@@ -1081,16 +1162,16 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
         // variation in slack might be big enough to push a variable twice and
         // thus push a lower coeff.
         const ConstraintInfo& info = infos_[id];
-        auto coeffs = GetCoeffs(info);
-        auto vars = GetVariables(info);
+        const auto coeffs = GetCoeffs(info);
+        const auto vars = GetVariables(info);
         IntegerValue root_coeff(0);
         IntegerValue var_coeff(0);
         for (int i = 0; i < info.initial_size; ++i) {
           if (vars[i] == var) var_coeff = coeffs[i];
           if (vars[i] == NegationOf(root_var)) root_coeff = coeffs[i];
         }
-        CHECK_NE(root_coeff, 0);
-        CHECK_NE(var_coeff, 0);
+        DCHECK_NE(root_coeff, 0);
+        DCHECK_NE(var_coeff, 0);
         if (var_coeff >= root_coeff) {
           return ReportConflictingCycle();
         } else {
@@ -1099,15 +1180,15 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
         }
       }
 
-      if (id_to_propagation_count_[id] == 0) continue;  // Didn't push.
       disassemble_to_reorder_.Set(id);
+      if (id_to_count[id] == 0) continue;  // Didn't push or was desassembled.
 
       // The constraint pushed some variable. Identify which ones will be pushed
       // further. Disassemble the whole info since we are about to propagate
       // this constraint again. Any pushed variable must be before the rev_size.
       const ConstraintInfo& info = infos_[id];
-      auto coeffs = GetCoeffs(info);
-      auto vars = GetVariables(info);
+      const auto coeffs = GetCoeffs(info);
+      const auto vars = GetVariables(info);
       IntegerValue var_coeff(0);
       disassemble_candidates_.clear();
       ++num_explored_in_disassemble_;
@@ -1124,7 +1205,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
 
           // We will propagate var again later, so clear all this for now.
           propagated_by_[next_var] = -1;
-          id_to_propagation_count_[id]--;
+          id_to_count[id]--;
         }
       }
       for (const auto [next_var, coeff] : disassemble_candidates_) {
@@ -1152,7 +1233,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
     tmp_to_reorder_.push_back(id);
   }
 
-  // TODO(user): Reordering can be sloe since require sort and can touch many
+  // TODO(user): Reordering can be slow since require sort and can touch many
   // entries. Investigate alternatives. We could probably optimize this a bit
   // more.
   if (tmp_to_reorder_.empty()) return true;
@@ -1188,12 +1269,28 @@ void LinearPropagator::AddToQueueIfNeeded(int id) {
   propagation_queue_.Push(id);
 }
 
-void LinearPropagator::AddWatchedToQueue(IntegerVariable var) {
+void LinearPropagator::AddWatchedToQueue(IntegerVariable var,
+                                         bool push_delayed_right_away) {
   if (var >= static_cast<int>(var_to_constraint_ids_.size())) return;
   time_limit_->AdvanceDeterministicTime(
       static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
+
+  // If a constraint propagated something and is getting tighter, then it
+  // will likely propagate again, and we want to propagate it first.
   for (const int id : var_to_constraint_ids_[var]) {
-    AddToQueueIfNeeded(id);
+    if (in_queue_[id]) continue;
+    if (true || id_propagated_something_[id]) {
+      id_propagated_something_[id] = false;  // reset.
+      AddToQueueIfNeeded(id);
+    } else {
+      tmp_delayed_.push_back(id);
+    }
+  }
+  if (push_delayed_right_away) {
+    for (const int id : tmp_delayed_) {
+      AddToQueueIfNeeded(id);
+    }
+    tmp_delayed_.clear();
   }
 }
 

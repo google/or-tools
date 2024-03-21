@@ -37,7 +37,7 @@ non-contiguous domains. Here, the variable can be any of 1, 3, 4, or 6:
     6}), "x");`
 -   **C#**: `model.NewIntVarFromDomain(Domain.FromValues(new long[] {1, 3, 4,
     6}), "x");`
--   **Go**: `model.NewIntVarFromDomain(cpmodel.FromValues([]int64_t{1, 3, 4, 6})`
+-   **Go**: `model.NewIntVarFromDomain(cpmodel.FromValues([]int64{1, 3, 4, 6})`
 
 Variables can also be created using a list of intervals. Below, the variable
 created is constrained to be 1, 2, 4, 5, or 6:
@@ -1157,7 +1157,7 @@ func stepFunctionSampleSat() error {
 
 	// expr == 0 on [5, 6] U [8, 10]
 	b0 := model.NewBoolVar()
-	d0 := cpmodel.FromValues([]int64_t{5, 6, 8, 9, 10})
+	d0 := cpmodel.FromValues([]int64{5, 6, 8, 9, 10})
 	model.AddLinearConstraintForDomain(x, d0).OnlyEnforceIf(b0)
 	model.AddEquality(expr, cpmodel.NewConstant(0)).OnlyEnforceIf(b0)
 

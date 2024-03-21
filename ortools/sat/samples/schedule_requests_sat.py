@@ -15,6 +15,8 @@
 # [START program]
 """Nurse scheduling problem with shift requests."""
 # [START import]
+from typing import Union
+
 from ortools.sat.python import cp_model
 # [END import]
 
@@ -80,7 +82,7 @@ def main() -> None:
     else:
         max_shifts_per_nurse = min_shifts_per_nurse + 1
     for n in all_nurses:
-        num_shifts_worked = 0
+        num_shifts_worked: Union[cp_model.LinearExpr, int] = 0
         for d in all_days:
             for s in all_shifts:
                 num_shifts_worked += shifts[(n, d, s)]

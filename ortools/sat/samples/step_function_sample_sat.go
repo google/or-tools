@@ -45,7 +45,7 @@ func stepFunctionSampleSat() error {
 
 	// expr == 0 on [5, 6] U [8, 10]
 	b0 := model.NewBoolVar()
-	d0 := cpmodel.FromValues([]int64_t{5, 6, 8, 9, 10})
+	d0 := cpmodel.FromValues([]int64{5, 6, 8, 9, 10})
 	model.AddLinearConstraintForDomain(x, d0).OnlyEnforceIf(b0)
 	model.AddEquality(expr, cpmodel.NewConstant(0)).OnlyEnforceIf(b0)
 

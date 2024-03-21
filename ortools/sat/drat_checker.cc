@@ -604,7 +604,7 @@ bool AddInferedAndDeletedClauses(const std::string& file_path,
 }
 
 bool PrintClauses(const std::string& file_path, SatFormat format,
-                  const std::vector<std::vector<Literal>>& clauses,
+                  absl::Span<const std::vector<Literal>> clauses,
                   int num_variables) {
   std::ofstream output_stream(file_path, std::ofstream::out);
   if (format == DIMACS) {

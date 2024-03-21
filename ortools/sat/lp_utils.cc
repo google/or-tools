@@ -733,6 +733,7 @@ struct ConstraintScaler {
                                  const MPConstraintProto& mp_constraint,
                                  CpModelProto* cp_model);
 
+  bool keep_names = false;
   double max_relative_coeff_error = 0.0;
   double max_absolute_rhs_error = 0.0;
   double max_scaling_factor = 0.0;
@@ -755,7 +756,7 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   }
 
   auto* constraint = cp_model->add_constraints();
-  constraint->set_name(mp_constraint.name());
+  if (keep_names) constraint->set_name(mp_constraint.name());
   auto* arg = constraint->mutable_linear();
 
   // First scale the coefficients of the constraints so that the constraint
@@ -959,10 +960,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
   // Add the variables.
   const int num_variables = mp_model.variable_size();
+  const bool keep_names = !params.ignore_names();
   for (int i = 0; i < num_variables; ++i) {
     const MPVariableProto& mp_var = mp_model.variable(i);
     IntegerVariableProto* cp_var = cp_model->add_variables();
-    cp_var->set_name(mp_var.name());
+    if (keep_names) cp_var->set_name(mp_var.name());
 
     // Deal with the corner case of a domain far away from zero.
     //
@@ -1024,6 +1026,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                                  << params.mip_max_activity_exponent();
   scaler.wanted_precision = kWantedPrecision;
   scaler.scaling_target = kScalingTarget;
+  scaler.keep_names = keep_names;
 
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {

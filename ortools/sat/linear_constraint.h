@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
 
 #include <algorithm>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <utility>

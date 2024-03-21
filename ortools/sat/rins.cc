@@ -104,8 +104,8 @@ struct VarWeight {
   bool operator<(const VarWeight& o) const { return weight < o.weight; }
 };
 
-void FillRinsNeighborhood(const std::vector<int64_t>& solution,
-                          const std::vector<double>& relaxation_values,
+void FillRinsNeighborhood(absl::Span<const int64_t> solution,
+                          absl::Span<const double> relaxation_values,
                           double difficulty, absl::BitGenRef random,
                           ReducedDomainNeighborhood& reduced_domains) {
   std::vector<VarWeight> var_lp_gap_pairs;

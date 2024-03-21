@@ -47,7 +47,8 @@ namespace operations_research {
 namespace sat {
 
 LbTreeSearch::LbTreeSearch(Model* model)
-    : time_limit_(model->GetOrCreate<TimeLimit>()),
+    : name_(model->Name()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -298,8 +299,8 @@ SatSolver::Status LbTreeSearch::Search(
       const IntegerValue bound = nodes_[current_branch_[0]].MinObjective();
       if (bound > current_objective_lb_) {
         shared_response_->UpdateInnerObjectiveBounds(
-            absl::StrCat("lb_tree_search (", SmallProgressString(), ") "),
-            bound, integer_trail_->LevelZeroUpperBound(objective_var_));
+            absl::StrCat(name_, " (", SmallProgressString(), ") "), bound,
+            integer_trail_->LevelZeroUpperBound(objective_var_));
         current_objective_lb_ = bound;
         if (VLOG_IS_ON(3)) DebugDisplayTree(current_branch_[0]);
       }

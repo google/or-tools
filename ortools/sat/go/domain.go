@@ -116,7 +116,7 @@ func NewDomain(left, right int64_t) Domain {
 
 // FromValues creates a new domain from `values`. `values` need not be
 // sorted and can repeat.
-func FromValues(values []int64_t) Domain {
+func FromValues(values []int64) Domain {
 	var d Domain
 	for _, v := range values {
 		d.intervals = append(d.intervals, ClosedInterval{v, v})
@@ -138,7 +138,7 @@ func FromIntervals(intervals []ClosedInterval) Domain {
 // FromFlatIntervals creates a new domain from a flattened list of intervals. If there is an
 // interval where the start is greater than the end, the interval is considered empty. Returns
 // an error if the length of `values` is not even.
-func FromFlatIntervals(values []int64_t) (Domain, error) {
+func FromFlatIntervals(values []int64) (Domain, error) {
 	if len(values) == 0 {
 		return NewEmptyDomain(), nil
 	}
@@ -156,7 +156,7 @@ func FromFlatIntervals(values []int64_t) (Domain, error) {
 
 // FlattenedIntervals returns the flattened list of interval bounds of the domain.
 // For example, if Domain d is equal to `[0,2][5,5][9,10]` will return `[0,2,5,5,9,10]`.
-func (d Domain) FlattenedIntervals() []int64_t {
+func (d Domain) FlattenedIntervals() []int64 {
 	var result []int64
 	for _, i := range d.intervals {
 		result = append(result, i.Start, i.End)

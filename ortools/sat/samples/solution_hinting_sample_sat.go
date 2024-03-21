@@ -32,10 +32,10 @@ func solutionHintingSampleSat() error {
 
 	model.AddNotEqual(x, y)
 
-	model.Maximize(cpmodel.NewLinearExpr().AddWeightedSum([]cpmodel.LinearArgument{x, y, z}, []int64_t{1, 2, 3}))
+	model.Maximize(cpmodel.NewLinearExpr().AddWeightedSum([]cpmodel.LinearArgument{x, y, z}, []int64{1, 2, 3}))
 
 	// Solution hinting: x <- 1, y <- 2
-	hint := &cpmodel.Hint{Ints: map[cpmodel.IntVar]int64_t{x: 7}}
+	hint := &cpmodel.Hint{Ints: map[cpmodel.IntVar]int64{x: 7}}
 	model.SetHint(hint)
 
 	m, err := model.Model()

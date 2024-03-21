@@ -1637,9 +1637,8 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // Note that we do that before we finish loading the problem (objective and
   // LP relaxation), because propagation will be faster at this point and it
   // should be enough for the purpose of this auto-detection.
-  if (model->Mutable<PrecedencesPropagator>() != nullptr &&
-      parameters.auto_detect_greater_than_at_least_one_of()) {
-    model->Mutable<PrecedencesPropagator>()
+  if (parameters.auto_detect_greater_than_at_least_one_of()) {
+    model->GetOrCreate<GreaterThanAtLeastOneOfDetector>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);
     if (!sat_solver->FinishPropagation()) return unsat();
   }
@@ -3469,7 +3468,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
               helper, "packing_precedences_lns"),
-          params, helper, &shared));
+          lns_params, helper, &shared));
       subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<SlicePackingNeighborhoodGenerator>(
               helper, "packing_slice_lns"),

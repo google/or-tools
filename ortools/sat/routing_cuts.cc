@@ -89,7 +89,7 @@ class OutgoingCutHelper {
   // Given a subset of nodes, it is easy to identify the best subset A of edge
   // to consider.
   bool TryBlossomSubsetCut(std::string name,
-                           const std::vector<ArcWithLpValue>& symmetrized_edges,
+                           absl::Span<const ArcWithLpValue> symmetrized_edges,
                            absl::Span<const int> subset);
 
  private:
@@ -271,7 +271,7 @@ bool OutgoingCutHelper::TrySubsetCut(std::string name,
 }
 
 bool OutgoingCutHelper::TryBlossomSubsetCut(
-    std::string name, const std::vector<ArcWithLpValue>& symmetrized_edges,
+    std::string name, absl::Span<const ArcWithLpValue> symmetrized_edges,
     absl::Span<const int> subset) {
   DCHECK_GE(subset.size(), 1);
   DCHECK_LT(subset.size(), num_nodes_);
@@ -715,7 +715,7 @@ namespace {
 
 // Returns for each literal its integer view, or the view of its negation.
 std::vector<IntegerVariable> GetAssociatedVariables(
-    const std::vector<Literal>& literals, Model* model) {
+    absl::Span<const Literal> literals, Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   std::vector<IntegerVariable> result;
   for (const Literal l : literals) {
@@ -792,8 +792,8 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes, std::vector<int> tails,
 // This is really similar to SeparateSubtourInequalities, see the reference
 // there.
 void SeparateFlowInequalities(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<AffineExpression>& arc_capacities,
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const AffineExpression> arc_capacities,
     std::function<void(const std::vector<bool>& in_subset,
                        IntegerValue* min_incoming_flow,
                        IntegerValue* min_outgoing_flow)>

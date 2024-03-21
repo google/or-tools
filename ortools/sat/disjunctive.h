@@ -141,7 +141,7 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(int relevat_size, IntegerValue global_window_end);
+  bool PropagateSubwindow(int relevant_size, IntegerValue global_window_end);
 
   SchedulingConstraintHelper* helper_;
 
@@ -262,15 +262,16 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
 class DisjunctivePrecedences : public PropagatorInterface {
  public:
   DisjunctivePrecedences(bool time_direction,
-                         SchedulingConstraintHelper* helper,
-                         IntegerTrail* integer_trail,
-                         PrecedencesPropagator* precedences)
+                         SchedulingConstraintHelper* helper, Model* model)
       : time_direction_(time_direction),
         helper_(helper),
-        integer_trail_(integer_trail),
-        precedences_(precedences),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        precedences_(model->GetOrCreate<PrecedencesPropagator>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
         task_set_(helper->NumTasks()),
         task_to_arc_index_(helper->NumTasks()) {}
+  ~DisjunctivePrecedences() override;
+
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -281,6 +282,9 @@ class DisjunctivePrecedences : public PropagatorInterface {
   SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
   PrecedencesPropagator* precedences_;
+  SharedStatistics* shared_stats_;
+
+  int64_t num_propagations_ = 0;
 
   std::vector<TaskTime> window_;
   std::vector<IntegerVariable> index_to_end_vars_;

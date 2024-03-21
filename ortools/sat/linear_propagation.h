@@ -66,6 +66,8 @@ class CustomFifoQueue {
   void SortByPos(absl::Span<int> elements);
 
  private:
+  void FillAndSortTmpPositions(absl::Span<const int> elements);
+
   // The queue is stored in [left_, right_) with eventual wrap around % size.
   // The positions of each element is in pos_[element] and never changes during
   // normal operation. A position of -1 means that the element is not in the
@@ -226,7 +228,8 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
   void AddToQueueIfNeeded(int id);
-  void AddWatchedToQueue(IntegerVariable var);
+  void AddWatchedToQueue(IntegerVariable var,
+                         bool push_delayed_right_away = true);
   void SetPropagatedBy(IntegerVariable var, int id);
   std::string ConstraintDebugString(int id);
 
@@ -254,9 +257,6 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::deque<ConstraintInfo> infos_;
 
   // Buffer of the constraints data.
-  //
-  // TODO(user): A lot of constrains have all their coeffs at one, we could
-  // exploit this.
   std::vector<IntegerVariable> variables_buffer_;
   std::vector<IntegerValue> coeffs_buffer_;
   std::vector<IntegerValue> buffer_of_ones_;
@@ -302,6 +302,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   SparseBitset<int> disassemble_to_reorder_;
   std::vector<int> disassemble_reverse_topo_order_;
 
+  // Heuristic to enqueue interesting constraint first.
+  std::vector<bool> id_propagated_something_;
+  std::vector<int> tmp_delayed_;
+
   // Staging queue.
   // Initially, we add the constraint to the priority queue, and we extract
   // them one by one, each time reaching the propagation fixed point.
@@ -314,6 +318,9 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // This is only used in --v 1.
   SparseBitset<int> id_scanned_at_least_once_;
   int64_t num_extra_scans_ = 0;
+
+  // This is used to update the deterministic time.
+  int64_t num_terms_for_dtime_update_ = 0;
 
   // Stats.
   int64_t num_pushes_ = 0;
