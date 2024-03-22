@@ -457,6 +457,43 @@ def index_first_solution_true_sample_sat():
 index_first_solution_true_sample_sat()
 ```
 
+This displays the following:
+
+```
+00000 -> 5
+00001 -> 4
+00010 -> 3
+00011 -> 3
+00100 -> 2
+00101 -> 2
+00110 -> 2
+00111 -> 2
+01000 -> 1
+01001 -> 1
+01010 -> 1
+01011 -> 1
+01100 -> 1
+01101 -> 1
+01110 -> 1
+01111 -> 1
+10000 -> 0
+10001 -> 0
+10010 -> 0
+10011 -> 0
+10100 -> 0
+10101 -> 0
+10110 -> 0
+10111 -> 0
+11000 -> 0
+11001 -> 0
+11010 -> 0
+11011 -> 0
+11100 -> 0
+11101 -> 0
+11110 -> 0
+11111 -> 0
+```
+
 ## A bin-packing problem
 
 As another example of a channeling constraint, consider a bin packing problem in
