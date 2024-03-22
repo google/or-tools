@@ -58,6 +58,8 @@ code_sample_py("maze_escape_sat")
 
 code_sample_py("no_wait_baking_scheduling_sat")
 
+code_sample_py("pentominoes_sat")
+
 code_sample_py("prize_collecting_tsp_sat")
 
 code_sample_py("prize_collecting_vrp_sat")
