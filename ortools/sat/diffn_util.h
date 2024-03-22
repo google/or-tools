@@ -588,6 +588,11 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
     const std::vector<RectangleInRange>& intervals, absl::BitGenRef random,
     double temperature, double candidate_energy_usage_factor);
 
+// Render a packing solution as a Graphviz dot file. Only works in the "neato"
+// or "fdp" Graphviz backends.
+std::string RenderDot(std::pair<IntegerValue, IntegerValue> bb_sizes,
+                      absl::Span<const Rectangle> solution);
+
 }  // namespace sat
 }  // namespace operations_research
 

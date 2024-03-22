@@ -43,6 +43,8 @@ code_sample_py(name = "cumulative_variable_profile_sample_sat")
 
 code_sample_cc_py(name = "earliness_tardiness_cost_sample_sat")
 
+code_sample_py(name = "index_first_boolvar_true_sample_sat")
+
 code_sample_cc_py(name = "interval_sample_sat")
 
 code_sample_cc_py(name = "minimal_jobshop_sat")
