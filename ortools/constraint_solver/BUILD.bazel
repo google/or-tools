@@ -274,6 +274,7 @@ cc_library(
         ":solver_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:protoutil",
+        "//ortools/port:proto_utils",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
         "@com_google_absl//absl/status:statusor",

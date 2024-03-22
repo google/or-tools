@@ -690,12 +690,13 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
 }
 
 absl::StatusOr<MPSolutionResponse> ScipSolveProto(
-    const MPModelRequest& request) {
+    LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+      GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
-  const MPModelProto& model = optional_model->get();
+  const MPModelProto& model = **optional_model;
+
   SCIP* scip = nullptr;
   std::vector<SCIP_VAR*> scip_variables(model.variable_size(), nullptr);
   std::vector<SCIP_CONS*> scip_constraints(
@@ -734,7 +735,7 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   }
 
   const auto parameters_status = LegacyScipSetSolverSpecificParameters(
-      request.solver_specific_parameters(), scip);
+      request->solver_specific_parameters(), scip);
   if (!parameters_status.ok()) {
     response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
     response.set_status_str(
@@ -749,12 +750,12 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   // running SCIP with time limit 10s each will both terminate after ~5s.
   RETURN_IF_SCIP_ERROR(
       SCIPsetIntParam(scip, "timing/clocktype", SCIP_CLOCKTYPE_WALL));
-  if (request.solver_time_limit_seconds() > 0 &&
-      request.solver_time_limit_seconds() < 1e20) {
-    RETURN_IF_SCIP_ERROR(SCIPsetRealParam(scip, "limits/time",
-                                          request.solver_time_limit_seconds()));
+  if (request->solver_time_limit_seconds() > 0 &&
+      request->solver_time_limit_seconds() < 1e20) {
+    RETURN_IF_SCIP_ERROR(SCIPsetRealParam(
+        scip, "limits/time", request->solver_time_limit_seconds()));
   }
-  SCIPsetMessagehdlrQuiet(scip, !request.enable_internal_solver_output());
+  SCIPsetMessagehdlrQuiet(scip, !request->enable_internal_solver_output());
 
   RETURN_IF_SCIP_ERROR(SCIPcreateProbBasic(scip, model.name().c_str()));
   if (model.maximize()) {
@@ -901,7 +902,7 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
 
   const int solution_count =
       std::min(SCIPgetNSols(scip),
-               std::min(request.populate_additional_solutions_up_to(),
+               std::min(request->populate_additional_solutions_up_to(),
                         std::numeric_limits<int32_t>::max() - 1) +
                    1);
   if (solution_count > 0) {

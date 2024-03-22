@@ -272,12 +272,12 @@ absl::Status SetSolverSpecificParameters(absl::string_view parameters,
 }
 
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    const MPModelRequest& request, GRBenv* gurobi_env) {
+    LazyMutableCopy<MPModelRequest> request, GRBenv* gurobi_env) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+      GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
-  const MPModelProto& model = optional_model->get();
+  const MPModelProto& model = **optional_model;
 
   // We set `gurobi_env` to point to a new environment if no existing one is
   // provided. We must make sure that we free this environment when we exit this
@@ -316,9 +316,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
                                      /*varnames=*/nullptr));
   GRBenv* const model_env = GRBgetenv(gurobi_model);
 
-  if (request.has_solver_specific_parameters()) {
+  if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
-        request.solver_specific_parameters(), model_env);
+        request->solver_specific_parameters(), model_env);
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
       response.set_status_str(
@@ -326,13 +326,14 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       return response;
     }
   }
-  if (request.solver_time_limit_seconds() > 0) {
-    RETURN_IF_GUROBI_ERROR(GRBsetdblparam(model_env, GRB_DBL_PAR_TIMELIMIT,
-                                          request.solver_time_limit_seconds()));
+  if (request->solver_time_limit_seconds() > 0) {
+    RETURN_IF_GUROBI_ERROR(
+        GRBsetdblparam(model_env, GRB_DBL_PAR_TIMELIMIT,
+                       request->solver_time_limit_seconds()));
   }
   RETURN_IF_GUROBI_ERROR(
       GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG,
-                     request.enable_internal_solver_output()));
+                     request->enable_internal_solver_output()));
 
   const int variable_size = model.variable_size();
   bool has_integer_variables = false;
@@ -348,7 +349,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       lb[v] = variable.lower_bound();
       ub[v] = variable.upper_bound();
       ctype[v] = variable.is_integer() &&
-                         request.solver_type() ==
+                         request->solver_type() ==
                              MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING
                      ? GRB_INTEGER
                      : GRB_CONTINUOUS;
@@ -575,7 +576,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
           response.mutable_dual_value()->mutable_data()));
     }
     const int additional_solutions = std::min(
-        solution_count, std::min(request.populate_additional_solutions_up_to(),
+        solution_count, std::min(request->populate_additional_solutions_up_to(),
                                  std::numeric_limits<int32_t>::max() - 1) +
                             1);
     for (int i = 1; i < additional_solutions; ++i) {

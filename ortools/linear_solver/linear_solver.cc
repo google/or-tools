@@ -1006,16 +1006,24 @@ void AppendStatusStr(const std::string& msg, MPSolutionResponse* response) {
       absl::StrCat(response->status_str(),
                    (response->status_str().empty() ? "" : "\n"), msg));
 }
+
 }  // namespace
 
 // static
 void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                               MPSolutionResponse* response,
                               std::atomic<bool>* interrupt) {
+  return SolveLazyMutableRequest(model_request, response, interrupt);
+}
+
+// static
+void MPSolver::SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
+                                       MPSolutionResponse* response,
+                                       std::atomic<bool>* interrupt) {
   CHECK(response != nullptr);
 
   if (interrupt != nullptr &&
-      !SolverTypeSupportsInterruption(model_request.solver_type())) {
+      !SolverTypeSupportsInterruption(request->solver_type())) {
     response->set_status(MPSOLVER_INCOMPATIBLE_OPTIONS);
     response->set_status_str(
         "Called MPSolver::SolveWithProto with an underlying solver that "
@@ -1023,57 +1031,51 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
 
-  MPSolver solver(model_request.model().name(),
-                  static_cast<MPSolver::OptimizationProblemType>(
-                      model_request.solver_type()));
-  if (model_request.enable_internal_solver_output()) {
+  MPSolver solver(
+      request->model().name(),
+      static_cast<MPSolver::OptimizationProblemType>(request->solver_type()));
+  if (request->enable_internal_solver_output()) {
     solver.EnableOutput();
     std::cout << "MPModelRequest info:\n"
-              << GetMPModelRequestLoggingInfo(model_request) << std::endl;
+              << GetMPModelRequestLoggingInfo(*request) << std::endl;
   }
 
-  // If interruption support is not required, we don't need access to the
-  // underlying solver and can solve it directly if the interface supports it.
-  auto optional_response =
-      solver.interface_->DirectlySolveProto(model_request, interrupt);
-  if (optional_response) {
-    *response = std::move(optional_response).value();
+  // If the solver supports it, we can std::move() the request since we will
+  // return right after this in all cases.
+  if (solver.interface_->SupportsDirectlySolveProto(interrupt)) {
+    *response =
+        solver.interface_->DirectlySolveProto(std::move(request), interrupt);
     return;
   }
 
+  // Validate and extract model delta. Also deal with trivial problems.
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(model_request, response);
-  if (!optional_model) {
-    LOG_IF(WARNING, model_request.enable_internal_solver_output())
-        << "Failed to extract a valid model from protocol buffer. Status: "
-        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
-        << response->status() << "): " << response->status_str();
-    return;
-  }
+      GetMPModelOrPopulateResponse(request, response);
+  if (!optional_model) return;
+
   std::string error_message;
   response->set_status(solver.LoadModelFromProtoInternal(
-      optional_model->get(), /*name_policy=*/DEFAULT_CLEAR_NAMES,
+      **optional_model, /*name_policy=*/DEFAULT_CLEAR_NAMES,
       /*check_model_validity=*/false, &error_message));
   // Even though we don't re-check model validity here, there can be some
   // problems found by LoadModelFromProto, eg. unsupported features.
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
     response->set_status_str(error_message);
-    LOG_IF(WARNING, model_request.enable_internal_solver_output())
+    LOG_IF(WARNING, request->enable_internal_solver_output())
         << "LoadModelFromProtoInternal() failed even though the model was "
         << "valid! Status: "
         << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
         << response->status() << "); Error: " << error_message;
     return;
   }
-  if (model_request.has_solver_time_limit_seconds()) {
-    solver.SetTimeLimit(
-        absl::Seconds(model_request.solver_time_limit_seconds()));
+  if (request->has_solver_time_limit_seconds()) {
+    solver.SetTimeLimit(absl::Seconds(request->solver_time_limit_seconds()));
   }
   std::string warning_message;
-  if (model_request.has_solver_specific_parameters()) {
+  if (request->has_solver_specific_parameters()) {
     if (!solver.SetSolverSpecificParametersAsString(
-            model_request.solver_specific_parameters())) {
-      if (model_request.ignore_solver_specific_parameters_failure()) {
+            request->solver_specific_parameters())) {
+      if (request->ignore_solver_specific_parameters_failure()) {
         // We'll add a warning message in status_str after the solve.
         warning_message =
             "Warning: the solver specific parameters were not successfully "
@@ -1097,8 +1099,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     {
       absl::Notification solve_finished;
       auto polling_func = [&interrupt, &solve_finished, &solver,
-                           &interrupted_by_user, &interrupt_time,
-                           &model_request]() {
+                           &interrupted_by_user, &interrupt_time, &request]() {
         constexpr absl::Duration kPollDelay = absl::Microseconds(100);
         constexpr absl::Duration kMaxInterruptionDelay = absl::Seconds(10);
 
@@ -1141,7 +1142,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                "underlying solver, despite repeated calls over at least "
             << absl::FormatDuration(kMaxInterruptionDelay)
             << ". Solver type used: "
-            << MPModelRequest_SolverType_Name(model_request.solver_type());
+            << MPModelRequest_SolverType_Name(request->solver_type());
 
         // Note that in opt builds, the polling thread terminates here with an
         // error message, but we let Solve() finish, ignoring the user

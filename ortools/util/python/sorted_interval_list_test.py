@@ -19,7 +19,6 @@ from ortools.util.python import sorted_interval_list
 
 
 class SortedIntervalListTest(absltest.TestCase):
-
     def testCtorAndGetter(self):
         bool_domain = sorted_interval_list.Domain(0, 1)
         self.assertEqual(2, bool_domain.size())

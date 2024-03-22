@@ -16,9 +16,13 @@
 
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include "absl/log/check.h"
+#include "absl/status/statusor.h"
 #include "google/protobuf/message.h"
+#include "ortools/base/logging.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
@@ -28,6 +32,25 @@ using google::protobuf::Message;
 #else
 using google::protobuf::Message;
 #endif
+
+// Some SolveWithProto() returns a StatusOr<MPModelResponse>, this utility
+// just convert bad absl::StatusOr to a proper error in MPModelResponse.
+//
+// TODO(user): All SolveWithProto() should just fill the appropriate response
+// instead.
+inline MPSolutionResponse ConvertStatusOrMPSolutionResponse(
+    bool log_error, absl::StatusOr<MPSolutionResponse> response) {
+  if (!response.ok()) {
+    if (log_error) {
+      LOG(ERROR) << "Error status: " << response.status();
+    }
+    MPSolutionResponse error_response;
+    error_response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
+    error_response.set_status_str(response.status().ToString());
+    return error_response;
+  }
+  return std::move(response).value();
+}
 
 // Returns a string that should be used in MPModelRequest's
 // solver_specific_parameters field to encode the glop parameters.

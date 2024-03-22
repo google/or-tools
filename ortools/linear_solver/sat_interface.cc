@@ -29,6 +29,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -39,9 +40,16 @@ class SatInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
   bool InterruptSolve() override;
+
+  // ----- Directly solve proto is supported ---
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override {
+    return true;
+  }
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override {
+    return SatSolveProto(std::move(request), interrupt);
+  }
 
   // ----- Model modifications and extraction -----
   void Reset() override;
@@ -150,11 +158,6 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
   }
 
   return result_status_;
-}
-
-std::optional<MPSolutionResponse> SatInterface::DirectlySolveProto(
-    const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  return SatSolveProto(request, interrupt);
 }
 
 bool SatInterface::InterruptSolve() {

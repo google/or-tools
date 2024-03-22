@@ -24,6 +24,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 
@@ -166,7 +167,6 @@ class ModelSolverHelper {
   void Solve(const ModelBuilderHelper& model);
 
   // Only used by the CVXPY interface. Does not store the response internally.
-  // interrupt_solve_ is passed to the solve method.
   std::optional<MPSolutionResponse> SolveRequest(const MPModelRequest& request);
 
   // Returns true if the interrupt signal was correctly sent, that is if the
@@ -203,6 +203,7 @@ class ModelSolverHelper {
   // TODO(user): set parameters.
 
  private:
+  SolveInterrupter interrupter_;
   std::atomic<bool> interrupt_solve_ = false;
   std::function<void(const std::string&)> log_callback_;
   std::optional<MPSolutionResponse> response_;

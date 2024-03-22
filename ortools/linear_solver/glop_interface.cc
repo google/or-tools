@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -26,9 +27,11 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/time_limit.h"
 namespace operations_research {
 
@@ -42,6 +45,15 @@ class GLOPInterface : public MPSolverInterface {
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
   bool InterruptSolve() override;
+
+  // ----- Directly solve proto is supported ---
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override {
+    return true;
+  }
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override {
+    return GlopSolveProto(std::move(request), interrupt);
+  }
 
   // ----- Model modifications and extraction -----
   void Reset() override;

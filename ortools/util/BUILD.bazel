@@ -513,8 +513,8 @@ cc_library(
     hdrs = ["solve_interrupter.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:linked_hash_map",
         "//ortools/base:intops",
+        "//ortools/base:linked_hash_map",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",

@@ -21,6 +21,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -44,6 +45,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -140,11 +142,11 @@ MPSolutionResponse InvalidParametersResponse(SolverLogger& logger,
 }  // namespace
 
 MPSolutionResponse SatSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve,
+    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt_solve,
     std::function<void(const std::string&)> logging_callback,
     std::function<void(const MPSolution&)> solution_callback) {
   sat::SatParameters params;
-  params.set_log_search_progress(request.enable_internal_solver_output());
+  params.set_log_search_progress(request->enable_internal_solver_output());
 
   // TODO(user): We do not support all the parameters here. In particular the
   // logs before the solver is called will not be appended to the response. Fix
@@ -160,10 +162,10 @@ MPSolutionResponse SatSolveProto(
   logger.SetLogToStdOut(params.log_to_stdout());
 
   // Set it now so that it can be overwritten by the solver specific parameters.
-  if (request.has_solver_specific_parameters()) {
+  if (request->has_solver_specific_parameters()) {
     // See EncodeSatParametersAsString() documentation.
     if constexpr (!std::is_base_of<Message, sat::SatParameters>::value) {
-      if (!params.MergeFromString(request.solver_specific_parameters())) {
+      if (!params.MergeFromString(request->solver_specific_parameters())) {
         return InvalidParametersResponse(
             logger,
             "solver_specific_parameters is not a valid binary stream of the "
@@ -171,7 +173,7 @@ MPSolutionResponse SatSolveProto(
       }
     } else {
       if (!ProtobufTextFormatMergeFromString(
-              request.solver_specific_parameters(), &params)) {
+              request->solver_specific_parameters(), &params)) {
         return InvalidParametersResponse(
             logger,
             "solver_specific_parameters is not a valid textual representation "
@@ -195,14 +197,15 @@ MPSolutionResponse SatSolveProto(
   logger.EnableLogging(params.log_search_progress());
   logger.SetLogToStdOut(params.log_to_stdout());
 
-  if (request.has_solver_time_limit_seconds()) {
-    params.set_max_time_in_seconds(request.solver_time_limit_seconds());
+  if (request->has_solver_time_limit_seconds()) {
+    params.set_max_time_in_seconds(request->solver_time_limit_seconds());
   }
 
   // Model validation and delta handling.
   MPSolutionResponse response;
-  if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,
-                                                          &response)) {
+  std::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      GetMPModelOrPopulateResponse(request, &response);
+  if (!optional_model) {
     // Note that the ExtractValidMPModelInPlaceOrPopulateResponseStatus() can
     // also close trivial model (empty or trivially infeasible). So this is not
     // always the MODEL_INVALID status.
@@ -217,12 +220,20 @@ MPSolutionResponse SatSolveProto(
     return response;
   }
 
+  // We will presolve directly on the MPModelProto, so get a copy or transfer
+  // ownership from the LazyMutableCopy<MPModelProto>().
+  std::unique_ptr<MPModelProto> mp_model =
+      std::move(optional_model).value().copy_or_move_as_unique_ptr();
+
+  // The request is no longer needed after this.
+  // Important: we need to copy the model above before clearing this.
+  std::move(request).dispose();
+
   // We start by some extra validation since our code do not accept any kind
   // of input.
-  MPModelProto* const mp_model = request.mutable_model();
   if (params.mip_treat_high_magnitude_bounds_as_infinity()) {
-    sat::ChangeLargeBoundsToInfinity(params.mip_max_valid_magnitude(), mp_model,
-                                     &logger);
+    sat::ChangeLargeBoundsToInfinity(params.mip_max_valid_magnitude(),
+                                     mp_model.get(), &logger);
   }
   if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
                                                    &logger)) {
@@ -230,22 +241,23 @@ MPSolutionResponse SatSolveProto(
   }
 
   // This is good to do before any presolve.
-  if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model, &logger)) {
+  if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
+                                                &logger)) {
     return InfeasibleResponse(logger,
                               "An integer variable has an empty domain");
   }
 
   // Coefficients really close to zero can cause issues.
   // We remove them right away according to our parameters.
-  RemoveNearZeroTerms(params, mp_model, &logger);
+  RemoveNearZeroTerms(params, mp_model.get(), &logger);
 
   // Note(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
   if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
-    const glop::ProblemStatus status =
-        ApplyMipPresolveSteps(glop_params, mp_model, &for_postsolve, &logger);
+    const glop::ProblemStatus status = ApplyMipPresolveSteps(
+        glop_params, mp_model.get(), &for_postsolve, &logger);
     switch (status) {
       case glop::ProblemStatus::INIT:
         // Continue with the solve.
@@ -276,7 +288,7 @@ MPSolutionResponse SatSolveProto(
   }
 
   // We need to do that before the automatic detection of integers.
-  RemoveNearZeroTerms(params, mp_model, &logger);
+  RemoveNearZeroTerms(params, mp_model.get(), &logger);
 
   SOLVER_LOG(&logger, "");
   SOLVER_LOG(&logger, "Scaling to pure integer problem.");
@@ -284,8 +296,9 @@ MPSolutionResponse SatSolveProto(
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {
-    var_scaling = sat::DetectImpliedIntegers(mp_model, &logger);
-    if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model, &logger)) {
+    var_scaling = sat::DetectImpliedIntegers(mp_model.get(), &logger);
+    if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
+                                                  &logger)) {
       return InfeasibleResponse(
           logger, "A detected integer variable has an empty domain");
     }
@@ -295,7 +308,7 @@ MPSolutionResponse SatSolveProto(
                                  ? std::numeric_limits<double>::infinity()
                                  : params.mip_max_bound();
     const std::vector<double> other_scaling = sat::ScaleContinuousVariables(
-        params.mip_var_scaling(), max_bound, mp_model);
+        params.mip_var_scaling(), max_bound, mp_model.get());
     for (int i = 0; i < var_scaling.size(); ++i) {
       var_scaling[i] *= other_scaling[i];
     }
@@ -330,18 +343,17 @@ MPSolutionResponse SatSolveProto(
   DCHECK_EQ(cp_model.variables().size(), mp_model->variable().size());
 
   // Copy and scale the hint if there is one.
-  if (request.model().has_solution_hint()) {
+  if (mp_model->has_solution_hint()) {
     auto* cp_model_hint = cp_model.mutable_solution_hint();
-    const int size = request.model().solution_hint().var_index().size();
+    const int size = mp_model->solution_hint().var_index().size();
     for (int i = 0; i < size; ++i) {
-      const int var = request.model().solution_hint().var_index(i);
+      const int var = mp_model->solution_hint().var_index(i);
       if (var >= var_scaling.size()) continue;
 
       // To handle weird hint input values, we cap any large value to +/-
       // mip_max_bound() which is also the min/max value of any variable once
       // scaled.
-      double value =
-          request.model().solution_hint().var_value(i) * var_scaling[var];
+      double value = mp_model->solution_hint().var_value(i) * var_scaling[var];
       if (std::abs(value) > params.mip_max_bound()) {
         value = value > 0 ? params.mip_max_bound() : -params.mip_max_bound();
       }
@@ -351,10 +363,11 @@ MPSolutionResponse SatSolveProto(
     }
   }
 
-  // We no longer need the request. Reclaim its memory.
+  // We no longer need the mp_model after this, reclaime its memory.
   const int old_num_variables = mp_model->variable().size();
   const int old_num_constraints = mp_model->constraint().size();
-  request.Clear();
+  const bool is_maximize = mp_model->maximize();
+  mp_model.reset();
 
   // Configure model.
   sat::Model sat_model;
@@ -438,7 +451,6 @@ MPSolutionResponse SatSolveProto(
     temp.set_objective_value(obj);
     *response.add_additional_solutions() = post_solve(temp);
   }
-  const bool is_maximize = request.model().maximize();
   std::sort(response.mutable_additional_solutions()->pointer_begin(),
             response.mutable_additional_solutions()->pointer_end(),
             [is_maximize](const MPSolution* left, const MPSolution* right) {
