@@ -21,6 +21,7 @@ def code_sample_cc(name):
         srcs = [name + ".cc"],
         deps = [
             "//ortools/base",
+            "//ortools/init",
             "//ortools/linear_solver",
             "//ortools/linear_solver:linear_solver_cc_proto",
         ],
@@ -33,6 +34,7 @@ def code_sample_cc(name):
         deps = [
             ":" + name + "_cc",
             "//ortools/base",
+            "//ortools/init",
             "//ortools/linear_solver",
             "//ortools/linear_solver:linear_solver_cc_proto",
         ],
@@ -48,6 +50,7 @@ def code_sample_py(name):
             requirement("protobuf"),
             requirement("numpy"),
             requirement("pandas"),
+            "//ortools/init/python:init",
             "//ortools/linear_solver/python:model_builder",
         ],
         python_version = "PY3",
@@ -60,6 +63,7 @@ def code_sample_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         data = [
+            "//ortools/init/python:init",
             "//ortools/linear_solver/python:model_builder",
         ],
         deps = [
@@ -80,6 +84,7 @@ def code_sample_java(name):
         main_class = "com.google.ortools.linearsolver.samples." + name,
         test_class = "com.google.ortools.linearsolver.samples." + name,
         deps = [
+            "//ortools/init/java:init",
             "//ortools/linear_solver/java:modelbuilder",
             "//ortools/java/com/google/ortools/modelbuilder",
             "//ortools/java/com/google/ortools:Loader",
