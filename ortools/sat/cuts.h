@@ -653,7 +653,7 @@ class BoolRLTCutHelper {
   explicit BoolRLTCutHelper(Model* model)
       : product_detector_(model->GetOrCreate<ProductDetector>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        lp_values_(model->GetOrCreate<ModelLpValues>()){};
+        lp_values_(model->GetOrCreate<ModelLpValues>()) {};
   ~BoolRLTCutHelper();
 
   // Precompute data according to the current lp relaxation.
