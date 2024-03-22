@@ -27,6 +27,7 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/2d_packing_brute_force.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -52,6 +53,14 @@ OrthogonalPackingInfeasibilityDetector::
                    num_conflicts_two_items_});
   stats.push_back({"OrthogonalPackingInfeasibilityDetector/no_energy_conflict",
                    num_scheduling_possible_});
+  stats.push_back({"OrthogonalPackingInfeasibilityDetector/brute_force_calls",
+                   num_brute_force_calls_});
+  stats.push_back(
+      {"OrthogonalPackingInfeasibilityDetector/brute_force_conflicts",
+       num_brute_force_conflicts_});
+  stats.push_back(
+      {"OrthogonalPackingInfeasibilityDetector/brute_force_relaxations",
+       num_brute_force_relaxation_});
 
   shared_stats_->AddStats(stats);
 }
@@ -550,6 +559,55 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
   return best_result;
 }
 
+bool OrthogonalPackingInfeasibilityDetector::RelaxConflictWithBruteForce(
+    OrthogonalPackingResult& result,
+    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
+  const int num_items_originally =
+      result.items_participating_on_conflict_.size();
+  std::vector<IntegerValue> sizes_x;
+  std::vector<IntegerValue> sizes_y;
+  std::vector<int> indexes;
+  std::vector<bool> to_be_removed(num_items_originally, false);
+
+  sizes_x.reserve(num_items_originally - 1);
+  sizes_y.reserve(num_items_originally - 1);
+  for (int i = 0; i < num_items_originally; i++) {
+    sizes_x.clear();
+    sizes_y.clear();
+    // Look for a conflict using all non-removed items but the i-th one.
+    for (int j = 0; j < num_items_originally; j++) {
+      if (i == j || to_be_removed[j]) {
+        continue;
+      }
+      sizes_x.push_back(result.items_participating_on_conflict_[j].size_x);
+      sizes_y.push_back(result.items_participating_on_conflict_[j].size_y);
+    }
+    const auto solution =
+        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
+    if (solution.empty()) {
+      // We still have a conflict if we remove the i-th item!
+      to_be_removed[i] = true;
+    }
+  }
+  if (!std::any_of(to_be_removed.begin(), to_be_removed.end(),
+                   [](bool b) { return b; })) {
+    return false;
+  }
+  OrthogonalPackingResult original = result;
+  result.slack_ = 0;
+  result.conflict_type_ = OrthogonalPackingResult::ConflictType::BRUTE_FORCE;
+  result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
+  result.items_participating_on_conflict_.clear();
+  for (int i = 0; i < num_items_originally; i++) {
+    if (to_be_removed[i]) {
+      continue;
+    }
+    result.items_participating_on_conflict_.push_back(
+        original.items_participating_on_conflict_[i]);
+  }
+  return true;
+}
+
 OrthogonalPackingResult
 OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     absl::Span<const IntegerValue> sizes_x,
@@ -687,6 +745,7 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     return result;
   }
 
+  bool found_scheduling_solution = false;
   if (options.use_dff_f2) {
     // Checking for conflicts using f_2 is expensive, so first try a quick
     // algorithm to check if there is no conflict to be found. See the comments
@@ -701,9 +760,11 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
             scheduling_profile_, new_scheduling_profile_)) {
       num_scheduling_possible_++;
       CHECK(result.result_ != OrthogonalPackingResult::Status::INFEASIBLE);
-      return result;
+      found_scheduling_solution = true;
     }
+  }
 
+  if (!found_scheduling_solution && options.use_dff_f2) {
     // We only check for conflicts applying this DFF on heights and widths, but
     // not on both, which would be too expensive if done naively.
     auto conflict = CheckFeasibilityWithDualFunction2(
@@ -728,6 +789,30 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     if (conflict.IsBetterThan(result)) {
       result = conflict;
     }
+  }
+
+  if (result.result_ == OrthogonalPackingResult::Status::UNKNOWN &&
+      num_items <= options.brute_force_threshold) {
+    num_brute_force_calls_++;
+    auto solution =
+        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
+    if (solution.empty()) {
+      result.conflict_type_ = ConflictType::BRUTE_FORCE;
+      result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
+      result.items_participating_on_conflict_.resize(num_items);
+      for (int i = 0; i < num_items; i++) {
+        result.items_participating_on_conflict_[i] = make_item(i);
+      }
+    } else {
+      result.result_ = OrthogonalPackingResult::Status::FEASIBLE;
+    }
+  }
+
+  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE &&
+      result.items_participating_on_conflict_.size() <=
+          options.brute_force_threshold) {
+    num_brute_force_relaxation_ +=
+        RelaxConflictWithBruteForce(result, bounding_box_size);
   }
 
   return result;
@@ -759,6 +844,9 @@ OrthogonalPackingResult OrthogonalPackingInfeasibilityDetector::TestFeasibility(
       case ConflictType::TRIVIAL:
         // The total area of the items was larger than the area of the box.
         num_trivial_conflicts_++;
+        break;
+      case ConflictType::BRUTE_FORCE:
+        num_brute_force_conflicts_++;
         break;
       case ConflictType::NO_CONFLICT:
         LOG(FATAL) << "Should never happen";

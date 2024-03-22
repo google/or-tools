@@ -21,8 +21,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <optional>
 #include <ostream>
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -31,7 +32,6 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -1488,6 +1488,29 @@ FindRectanglesResult FindRectanglesWithEnergyConflictMC(
     result.conflicts.push_back(ranges.GetCurrentRectangle());
   }
   return result;
+}
+
+std::string RenderDot(std::pair<IntegerValue, IntegerValue> bb_sizes,
+                      absl::Span<const Rectangle> solution) {
+  const std::vector<std::string> colors = {"red",  "green",  "blue",
+                                           "cyan", "yellow", "purple"};
+  std::stringstream ss;
+  ss << "digraph {\n";
+  ss << "  graph [ bgcolor=lightgray width=" << 2 * bb_sizes.first
+     << " height=" << 2 * bb_sizes.second << "]\n";
+  ss << "  node [style=filled]\n";
+  ss << "  bb [fillcolor=\"grey\" pos=\"" << bb_sizes.first << ","
+     << bb_sizes.second << "!\" shape=box width=" << 2 * bb_sizes.first
+     << " height=" << 2 * bb_sizes.second << "]\n";
+  for (int i = 0; i < solution.size(); ++i) {
+    ss << "  " << i << " [fillcolor=\"" << colors[i % colors.size()]
+       << "\" pos=\"" << 2 * solution[i].x_min + solution[i].SizeX() << ","
+       << 2 * solution[i].y_min + solution[i].SizeY()
+       << "!\" shape=box width=" << 2 * solution[i].SizeX()
+       << " height=" << 2 * solution[i].SizeY() << "]\n";
+  }
+  ss << "}\n";
+  return ss.str();
 }
 
 }  // namespace sat
