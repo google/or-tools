@@ -54,6 +54,7 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "examples/cpp/fap_model_printer.h"
 #include "examples/cpp/fap_parser.h"
 #include "examples/cpp/fap_utilities.h"
@@ -100,6 +101,10 @@ class OrderingDecision : public Decision {
         variable2_(variable2),
         value_(value),
         operator_(std::move(operation)) {}
+
+  // This type is neither copyable nor movable.
+  OrderingDecision(const OrderingDecision&) = delete;
+  OrderingDecision& operator=(const OrderingDecision&) = delete;
   ~OrderingDecision() override = default;
 
   // Apply will be called first when the decision is executed.
@@ -131,8 +136,6 @@ class OrderingDecision : public Decision {
   IntVar* const variable2_;
   const int value_;
   const std::string operator_;
-
-  DISALLOW_COPY_AND_ASSIGN(OrderingDecision);
 };
 
 // Decision on whether a soft constraint will be added to a model
@@ -141,6 +144,10 @@ class ConstraintDecision : public Decision {
  public:
   explicit ConstraintDecision(IntVar* const constraint_violation)
       : constraint_violation_(constraint_violation) {}
+
+  // This type is neither copyable nor movable.
+  ConstraintDecision(const ConstraintDecision&) = delete;
+  ConstraintDecision& operator=(const ConstraintDecision&) = delete;
 
   ~ConstraintDecision() override = default;
 
@@ -158,8 +165,6 @@ class ConstraintDecision : public Decision {
 
  private:
   IntVar* const constraint_violation_;
-
-  DISALLOW_COPY_AND_ASSIGN(ConstraintDecision);
 };
 
 // The ordering builder resolves the relative order of the two variables
@@ -191,6 +196,10 @@ class OrderingBuilder : public DecisionBuilder {
     CHECK_EQ(minimum_value_available_.size(), variables_.size());
     CHECK_EQ(variable_state_.size(), variables_.size());
   }
+
+  // This type is neither copyable nor movable.
+  OrderingBuilder(const OrderingBuilder&) = delete;
+  OrderingBuilder& operator=(const OrderingBuilder&) = delete;
 
   ~OrderingBuilder() override = default;
 
@@ -320,8 +329,6 @@ class OrderingBuilder : public DecisionBuilder {
   // Used by Hint() for indicating the most probable ordering.
   std::vector<Order> variable_state_;
   std::vector<int> minimum_value_available_;
-
-  DISALLOW_COPY_AND_ASSIGN(OrderingBuilder);
 };
 
 // A comparator for sorting the constraints depending on their impact.
@@ -373,7 +380,7 @@ int64_t ValueEvaluator(
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
 int64_t VariableEvaluator(
-    const std::vector<int>& key_from_index,
+    absl::Span<const int> key_from_index,
     const absl::btree_map<int, FapVariable>& data_variables,
     int64_t variable_index) {
   FapVariable variable =
@@ -414,7 +421,7 @@ void CreateModelVariables(
 }
 
 // Creates the constraints of the instance from the parsed data.
-void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
+void CreateModelConstraints(absl::Span<const FapConstraint> data_constraints,
                             const std::vector<IntVar*>& variables,
                             const absl::btree_map<int, int>& index_from_key,
                             Solver* solver) {
@@ -649,7 +656,7 @@ void SplitVariablesHardSoft(
 }
 
 // Splits constraints of the instance to hard and soft.
-void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
+void SplitConstraintHardSoft(absl::Span<const FapConstraint> data_constraints,
                              std::vector<FapConstraint>* hard_constraints,
                              std::vector<FapConstraint>* soft_constraints) {
   for (const FapConstraint& ct : data_constraints) {
@@ -683,8 +690,8 @@ void PenalizeVariablesViolation(
 
 // Penalize the violation of soft constraints of the instance.
 void PenalizeConstraintsViolation(
-    const std::vector<FapConstraint>& constraints,
-    const std::vector<FapConstraint>& soft_constraints,
+    absl::Span<const FapConstraint> constraints,
+    absl::Span<const FapConstraint> soft_constraints,
     const absl::btree_map<int, int>& index_from_key,
     const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
     std::vector<IntVar*>* violated_constraints, Solver* solver) {
@@ -733,7 +740,7 @@ void PenalizeConstraintsViolation(
 int SoftFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
                   absl::string_view /*data_objective*/,
-                  const std::vector<int>& /*values*/) {
+                  absl::Span<const int> /*values*/) {
   Solver solver("SoftFapSolver");
   std::vector<SearchMonitor*> monitors;
 

@@ -619,6 +619,7 @@ cc_binary(
         "//ortools/base:file",
         "//ortools/base:mathutil",
         "//ortools/constraint_solver:routing",
+        "//ortools/routing/parsers:lilim_parser",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -680,6 +681,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:solve_mp_model",
     ],
 )
 
@@ -1002,12 +1004,18 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/pdlp:iteration_stats",
         "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
         "//ortools/pdlp:quadratic_program_io",
         "//ortools/pdlp:solve_log_cc_proto",
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
+        "//ortools/util:file_util",
         "//ortools/util:sigint",
-        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/strings",
     ],
 )
