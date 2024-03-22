@@ -34,12 +34,27 @@ from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
     "params",
-    "num_search_workers:16,log_search_progress:true,max_time_in_seconds:45",
+    "num_search_workers:16,log_search_progress:false,max_time_in_seconds:45",
     "Sat solver parameters.",
+)
+
+_PIECES = flags.DEFINE_string(
+    "pieces", "FILNPTUVWXYZ", "The subset of pieces to consider."
 )
 
 
 def is_one(mask: List[List[int]], x: int, y: int, orientation: int) -> bool:
+    """Returns true if the oriented piece is 1 at position [i][j].
+
+    The 3 bits in orientation respectively mean: transposition, symmetry by
+    x axis, symmetry by y axis.
+
+    Args:
+      mask: The shape of the piece.
+      x: position.
+      y: position.
+      orientation: between 0 and 7.
+    """
     if orientation & 1:
         tmp: int = x
         x = y
@@ -98,7 +113,6 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
     ]
 
     for name, mask in pieces.items():
-        print(f"piece:{name} mask:{mask}")
         all_position_variables = []
         for orientation in range(8):
             if orientation_is_redundant(mask, orientation):
@@ -116,7 +130,6 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
 
         # Only one combination is selected.
         model.add_exactly_one(all_position_variables)
-        print(f"        {len(all_position_variables)} possible placement")
 
     for one_column in position_to_variables:
         for all_pieces_in_one_position in one_column:
@@ -128,6 +141,11 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
         text_format.Parse(_PARAMS.value, solver.parameters)
     status = solver.solve(model)
 
+    print(
+        f"Problem {_PIECES.value} solved in {solver.wall_time}s with status"
+        f" {solver.status_name(status)}"
+    )
+
     # Print the solution.
     if status == cp_model.OPTIMAL:
         for y in range(box_height):
@@ -135,7 +153,7 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
             for x in range(box_width):
                 for v in position_to_variables[y][x]:
                     if solver.BooleanValue(v):
-                        line += v.name + " "
+                        line += v.name
                         break
             print(line)
 
@@ -159,7 +177,13 @@ def main(argv: Sequence[str]) -> None:
         "Y": [[1, 1, 1, 1], [0, 1, 0, 0]],
         "Z": [[1, 1, 0], [0, 1, 0], [0, 1, 1]],
     }
-    generate_and_solve_problem(pieces)
+    selected_pieces: Dict[str, List[List[int]]] = {}
+    for p in _PIECES.value:
+        if p not in pieces:
+            print(f"Piece {p} not found in the list of pieces")
+            return
+        selected_pieces[p] = pieces[p]
+    generate_and_solve_problem(selected_pieces)
 
 
 if __name__ == "__main__":
