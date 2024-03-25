@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -127,6 +127,20 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "duplicate_remover",
+    srcs = ["duplicate_remover.cc"],
+    hdrs = ["duplicate_remover.h"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:bits",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
 # Hungarian algorithm
 cc_library(
     name = "hungarian",
@@ -167,20 +181,45 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//ortools/base",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
         "//ortools/base:stl_util",
+        # We don't link any underlying solver to let the linear_solver_knapsack
+        # decide what solvers to include.
         "//ortools/linear_solver",
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
     ],
 )
 
-# Weighted set covering
+cc_test(
+    name = "knapsack_solver_test",
+    size = "medium",
+    srcs = ["knapsack_solver_test.cc"],
+    deps = [
+        ":knapsack_solver_lib",  # buildcleaner: keep
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/util:time_limit",
+    ],
+)
+
+# Partitioning and splitting of vector<int64_t>.
+
+# query matching library.
+
+# Weighted set covering library.
+
 proto_library(
     name = "set_cover_proto",
     srcs = ["set_cover.proto"],
-    deps = ["//ortools/util:int128_proto"],
+    deps = [
+        "//ortools/util:int128_proto",
+    ],
 )
 
 cc_proto_library(
@@ -209,7 +248,6 @@ cc_library(
         ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
@@ -258,6 +296,21 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "set_cover_reader",
+    srcs = ["set_cover_reader.cc"],
+    hdrs = ["set_cover_reader.h"],
+    deps = [
+        ":set_cover_model",
+        "//ortools/base:file",
+        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
 cc_test(
     name = "set_cover_test",
     size = "medium",
@@ -291,12 +344,24 @@ cc_library(
     srcs = ["dynamic_partition.cc"],
     hdrs = ["dynamic_partition.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:murmur",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "dynamic_partition_test",
+    srcs = ["dynamic_partition_test.cc"],
+    deps = [
+        ":dynamic_partition",
+        "//ortools/base:gmock_main",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:bit_gen_ref",
     ],
 )
 
@@ -307,6 +372,18 @@ cc_library(
     deps = [
         "//ortools/base",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "sparse_permutation_test",
+    srcs = ["sparse_permutation_test.cc"],
+    deps = [
+        ":sparse_permutation",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/random:distributions",
     ],
 )
 
@@ -339,7 +416,6 @@ cc_library(
         ":dynamic_partition",
         ":dynamic_permutation",
         ":sparse_permutation",
-        "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:murmur",
         "//ortools/graph",
@@ -368,18 +444,37 @@ cc_test(
         ":dynamic_permutation",
         ":find_graph_symmetries",
         ":sparse_permutation",
-        "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
         "//ortools/base:map_util",
         "//ortools/base:path",
         "//ortools/graph:io",
+        "//ortools/graph:random_graph",
+        "//ortools/graph:util",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:distributions",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "binary_indexed_tree",
+    hdrs = ["binary_indexed_tree.h"],
+    deps = [
+        "@com_google_absl//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "binary_indexed_tree_test",
+    srcs = ["binary_indexed_tree_test.cc"],
+    deps = [
+        ":binary_indexed_tree",
+        "//ortools/base:gmock_main",
     ],
 )

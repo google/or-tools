@@ -19,6 +19,7 @@
 #include <functional>
 #include <limits>
 #include <utility>
+#include <vector>
 
 #include "absl/base/log_severity.h"
 #include "absl/numeric/int128.h"
