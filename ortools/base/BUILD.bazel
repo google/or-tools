@@ -195,9 +195,13 @@ cc_library(
 
 cc_library(
     name = "file",
-    srcs = ["file.cc"],
+    srcs = [
+        "file.cc",
+        "filesystem.cc",
+    ],
     hdrs = [
         "file.h",
+        "filesystem.h",
         "helpers.h",
         "options.h",
     ],
@@ -208,17 +212,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
-    name = "filesystem",
-    srcs = ["filesystem.cc"],
-    hdrs = ["filesystem.h"],
-    deps = [
-        ":file",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
     ],
 )
 
