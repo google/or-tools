@@ -334,8 +334,8 @@ cc_library(
         ":model_solve_parameters",
         ":parameters",
         "//ortools/base:status_macros",
-        "//ortools/math_opt/core:solve_interrupter",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:solve_interrupter",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
     ],
@@ -505,7 +505,7 @@ cc_library(
     deps = [
         ":message_callback",
         ":parameters",
-        "//ortools/math_opt/core:solve_interrupter",
+        "//ortools/util:solve_interrupter",
     ],
 )
 

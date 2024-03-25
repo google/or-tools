@@ -51,7 +51,6 @@
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -69,6 +68,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/solve_interrupter.h"
 #include "ortools/util/testing_utils.h"
 
 namespace operations_research {
