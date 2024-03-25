@@ -50,9 +50,16 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key) {
            << "): " << GRBgeterrormsg(primary_env);
   };
   RETURN_IF_ERROR(handle_failure(GRBemptyenv(&primary_env), "GRBemptyenv()"));
+  // We want to turn off logging before setting the ISV key so that it doesn't
+  // leak. We store the original logging state, and reset it at the end.
+  int original_output_flag;
+  RETURN_IF_ERROR(
+      handle_failure(GRBgetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG,
+                                    &original_output_flag),
+                     "getting original GRB_INT_PAR_OUTPUTFLAG value"));
   RETURN_IF_ERROR(
       handle_failure(GRBsetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG, 0),
-                     "setting GRB_INT_PAR_OUTPUTFLAG"));
+                     "turning off GRB_INT_PAR_OUTPUTFLAG"));
   RETURN_IF_ERROR(handle_failure(
       GRBsetstrparam(primary_env, "GURO_PAR_ISVNAME", isv_key.name.c_str()),
       "setting GURO_PAR_ISVNAME"));
@@ -70,6 +77,10 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key) {
       GRBsetstrparam(primary_env, "GURO_PAR_ISVKEY", isv_key.key.c_str()),
       "setting GURO_PAR_ISVKEY"));
   RETURN_IF_ERROR(handle_failure(GRBstartenv(primary_env), "GRBstartenv()"));
+  // Reset output flag to its original value.
+  RETURN_IF_ERROR(handle_failure(
+      GRBsetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG, original_output_flag),
+      "resetting GRB_INT_PAR_OUTPUTFLAG"));
   // Environment initialization succeeded, we don't want to free it upon exiting
   // this function.
   std::move(primary_env_cleanup).Cancel();

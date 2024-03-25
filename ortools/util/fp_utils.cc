@@ -72,9 +72,9 @@ void ComputeScalingErrors(absl::Span<const double> input,
 }
 
 template <bool use_bounds>
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                    const std::vector<double>& lb,
-                                    const std::vector<double>& ub,
+void GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
+                                    absl::Span<const double> lb,
+                                    absl::Span<const double> ub,
                                     int64_t max_absolute_sum,
                                     double* scaling_factor) {
   const double kInfinity = std::numeric_limits<double>::infinity();

@@ -18,12 +18,16 @@
 
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
 // Uses pdlp::PrimalDualHybridGradient to solve the problem specified by the
 // MPModelRequest. Users of this interface should be aware of the size
 // limitations of MPModelProto (see, e.g., large_linear_program.proto).
+//
+// If possible, std::move the request into this function call so that its
+// memory can be reclaimed early.
 //
 // The optional interrupt_solve can be used to interrupt the solve early. The
 // solver will periodically check its value and stop if it holds true.
@@ -37,7 +41,8 @@ namespace operations_research {
 // pdlp::QuadraticProgram fails. The lack of an error does not imply success.
 // Check the SolveLog's termination_reason for more refined status details.
 absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
-    const MPModelRequest& request, bool relax_integer_variables = false,
+    LazyMutableCopy<MPModelRequest> request,
+    bool relax_integer_variables = false,
     const std::atomic<bool>* interrupt_solve = nullptr);
 
 }  // namespace operations_research

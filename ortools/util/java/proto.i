@@ -23,9 +23,7 @@
 // if the C++ function returns a protocol message:
 //   MyProto* foo();
 // Use PROTO2_RETURN macro:
-//   PROTO2_RETURN(MyProto, com.google.proto.protos.test.MyProto, giveOwnership)
-//   -> the 'giveOwnership' parameter should be true iff the C++ function
-//      returns a new proto which should be deleted by the client.
+//   PROTO2_RETURN(MyProto, com.google.proto.protos.test.MyProto)
 //
 // Passing each protocol message from Java to C++ by value. Each ProtocolMessage
 // is serialized into byte[] when it is passed from Java to C++, the C++ code
@@ -90,3 +88,22 @@
   jenv->SetByteArrayRegion($result, 0, size, buf.get());
 }
 %enddef // PROTO2_RETURN
+
+// SWIG Macro for mapping protocol message enum type.
+// @param CppEnumProto the C++ protocol message enum type
+// @param JavaEnumProto the corresponding Java protocol message enum type
+%define PROTO_ENUM_RETURN(CppEnumProto, JavaEnumProto)
+%typemap(jni) CppEnumProto "jint"
+%typemap(jtype) CppEnumProto "int"
+%typemap(jstype) CppEnumProto "JavaEnumProto"
+
+// From CppEnumProto to jni (in wrap.cxx code)
+%typemap(out) CppEnumProto %{ $result = $1; %}
+
+// From jtype to jstype (in .java code)
+%typemap(javaout) CppEnumProto {
+  return JavaEnumProto.forNumber($jnicall);
+}
+
+%enddef // end PROTO_ENUM_RETURN
+

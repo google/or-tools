@@ -58,6 +58,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -70,6 +71,8 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 0,
@@ -89,8 +92,22 @@ class GurobiInterface : public MPSolverInterface {
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
+
+  // ----- Directly solve proto is supported without interrupt ---
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override {
+    return interrupt == nullptr;
+  }
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override {
+    DCHECK_EQ(interrupt, nullptr);
+    const bool log_error = request->enable_internal_solver_output();
+
+    // Here we reuse the Gurobi environment to support single-use license that
+    // forbids creating a second environment if one already exists.
+    return ConvertStatusOrMPSolutionResponse(
+        log_error, GurobiSolveProto(std::move(request), global_env_));
+  }
+
   // Writes the model.
   void Write(const std::string& filename) override;
 
@@ -1331,28 +1348,6 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   sync_status_ = SOLUTION_SYNCHRONIZED;
   GRBresetparams(GRBgetenv(model_));
   return result_status_;
-}
-
-std::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
-    const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  // Interruption via atomic<bool> is not directly supported by Gurobi.
-  if (interrupt != nullptr) return std::nullopt;
-
-  // Here we reuse the Gurobi environment to support single-use license that
-  // forbids creating a second environment if one already exists.
-  const auto status_or = GurobiSolveProto(request, global_env_);
-  if (status_or.ok()) return status_or.value();
-  // Special case: if something is not implemented yet, fall back to solving
-  // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
-
-  if (request.enable_internal_solver_output()) {
-    LOG(INFO) << "Invalid Gurobi status: " << status_or.status();
-  }
-  MPSolutionResponse response;
-  response.set_status(MPSOLVER_NOT_SOLVED);
-  response.set_status_str(status_or.status().ToString());
-  return response;
 }
 
 bool GurobiInterface::NextSolution() {

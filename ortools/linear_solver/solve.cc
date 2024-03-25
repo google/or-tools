@@ -51,6 +51,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -78,9 +79,11 @@
 ABSL_FLAG(std::string, input, "", "REQUIRED: Input file name.");
 ABSL_FLAG(std::string, sol_hint, "",
           "Input file name with solution in .sol format.");
-ABSL_FLAG(std::string, solver, "glop",
+ABSL_FLAG(std::optional<std::string>, solver, std::nullopt,
           "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
-          "gurobi_lp, gurobi_mip, pdlp, scip, knapsack, sat.");
+          "gurobi_lp, gurobi_mip, pdlp, scip, knapsack, sat. If unspecified "
+          "either use MPModelRequest.solver_type if the --input is an "
+          "MPModelRequest and the field is set or use glop.");
 ABSL_FLAG(int, num_threads, 1,
           "Number of threads to use by the underlying solver.");
 ABSL_FLAG(std::string, params_file, "",
@@ -263,9 +266,15 @@ void Run() {
   QCHECK_GE(absl::GetFlag(FLAGS_time_limit), absl::ZeroDuration())
       << "--time_limit must be given a positive duration";
 
-  MPSolver::OptimizationProblemType type;
-  CHECK(MPSolver::ParseSolverType(absl::GetFlag(FLAGS_solver), &type))
-      << "Unsupported --solver: " << absl::GetFlag(FLAGS_solver);
+  // Parses --solver if set.
+  std::optional<MPSolver::OptimizationProblemType> type;
+  if (const std::optional<std::string> type_flag = absl::GetFlag(FLAGS_solver);
+      type_flag.has_value()) {
+    MPSolver::OptimizationProblemType decoded_type;
+    QCHECK(MPSolver::ParseSolverType(type_flag.value(), &decoded_type))
+        << "Unsupported --solver: " << type_flag.value();
+    type = decoded_type;
+  }
 
   MPModelRequest request_proto = ReadMipModel(absl::GetFlag(FLAGS_input));
 
@@ -302,7 +311,10 @@ void Run() {
   }
 
   // Set or override request proto options from the command line flags.
-  request_proto.set_solver_type(static_cast<MPModelRequest::SolverType>(type));
+  if (type.has_value() || !request_proto.has_solver_type()) {
+    request_proto.set_solver_type(static_cast<MPModelRequest::SolverType>(
+        type.value_or(MPSolver::GLOP_LINEAR_PROGRAMMING)));
+  }
   if (absl::GetFlag(FLAGS_time_limit) != absl::InfiniteDuration()) {
     LOG(INFO) << "Setting a time limit of " << absl::GetFlag(FLAGS_time_limit);
     request_proto.set_solver_time_limit_seconds(

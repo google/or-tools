@@ -685,14 +685,20 @@ std::string FindErrorInMPModelProto(
 std::optional<LazyMutableCopy<MPModelProto>>
 ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
                                             MPSolutionResponse* response) {
+  LazyMutableCopy<MPModelRequest> ref(request);
+  return GetMPModelOrPopulateResponse(ref, response);
+}
+
+std::optional<LazyMutableCopy<MPModelProto>> GetMPModelOrPopulateResponse(
+    LazyMutableCopy<MPModelRequest>& request, MPSolutionResponse* response) {
   CHECK(response != nullptr);
 
-  if (!request.has_model() && !request.has_model_delta()) {
+  if (!request->has_model() && !request->has_model_delta()) {
     response->set_status(MPSOLVER_OPTIMAL);
     response->set_status_str("Requests without model are considered OPTIMAL");
     return std::nullopt;
   }
-  if (request.has_model() && request.has_model_delta()) {
+  if (request->has_model() && request->has_model_delta()) {
     response->set_status(MPSOLVER_MODEL_INVALID);
     response->set_status_str(
         "Fields 'model' and 'model_delta' are mutually exclusive");
@@ -700,13 +706,22 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
   }
 
   // Extract the baseline model.
-  LazyMutableCopy<MPModelProto> model(request.model());
-  if (request.has_model_delta()) {
+  // Note that we move it out of the request if we have ownership.
+  LazyMutableCopy<MPModelProto> model = [&]() {
+    if (request.has_ownership()) {
+      return LazyMutableCopy<MPModelProto>(
+          std::move(*(request.get_mutable()->mutable_model())));
+    } else {
+      return LazyMutableCopy<MPModelProto>(request->model());
+    }
+  }();
+
+  if (request->has_model_delta()) {
     // NOTE(user): This library needs to be portable, so we can't include
-    // ortools/base/helpers.h; see ../port/file.h.
+    // file/base/helpers.h; see ../port/file.h.
     std::string contents;
     const absl::Status file_read_status = PortableFileGetContents(
-        request.model_delta().baseline_model_file_path(), &contents);
+        request->model_delta().baseline_model_file_path(), &contents);
     if (!file_read_status.ok()) {
       response->set_status(MPSOLVER_MODEL_INVALID);
       response->set_status_str(
@@ -719,25 +734,25 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
       response->set_status_str(
           absl::StrFormat("The contents of baseline model file '%s' couldn't "
                           "be parsed as a raw serialized MPModelProto",
-                          request.model_delta().baseline_model_file_path()));
+                          request->model_delta().baseline_model_file_path()));
       return std::nullopt;
     }
   }
 
   // Validate the baseline model.
-  std::string error = FindErrorInMPModelProto(model.get());
+  std::string error = FindErrorInMPModelProto(*model);
 
   // If the baseline is valid and we have a model delta, validate the delta,
   // then apply it.
-  if (error.empty() && request.has_model_delta()) {
-    const MPModelDeltaProto& delta = request.model_delta();
-    error = FindErrorInMPModelDeltaProto(delta, model.get());
+  if (error.empty() && request->has_model_delta()) {
+    const MPModelDeltaProto& delta = request->model_delta();
+    error = FindErrorInMPModelDeltaProto(delta, *model);
     if (error.empty()) ApplyVerifiedMPModelDelta(delta, model.get_mutable());
   }
 
   // Deal with errors.
   if (!error.empty()) {
-    if (request.enable_internal_solver_output()) {
+    if (request->enable_internal_solver_output()) {
       LOG(ERROR) << absl::StrCat("Invalid model: ", error);
     }
     response->set_status(absl::StrContains(error, "Infeasible")
@@ -747,10 +762,10 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
     return std::nullopt;
   }
 
-  if (model.get().variable_size() == 0 && model.get().constraint_size() == 0 &&
-      model.get().general_constraint_size() == 0) {
+  if (model->variable_size() == 0 && model->constraint_size() == 0 &&
+      model->general_constraint_size() == 0) {
     response->set_status(MPSOLVER_OPTIMAL);
-    response->set_objective_value(model.get().objective_offset());
+    response->set_objective_value(model->objective_offset());
     response->set_best_objective_bound(response->objective_value());
     response->set_status_str(
         "Requests without variables and constraints are considered OPTIMAL");
@@ -758,17 +773,6 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
   }
 
   return std::move(model);
-}
-
-bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
-    MPModelRequest* request, MPSolutionResponse* response) {
-  std::optional<LazyMutableCopy<MPModelProto>> lazy_copy =
-      ExtractValidMPModelOrPopulateResponseStatus(*request, response);
-  if (!lazy_copy) return false;
-  if (lazy_copy->was_copied()) {
-    lazy_copy->get_mutable()->Swap(request->mutable_model());
-  }
-  return true;
 }
 
 // TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the

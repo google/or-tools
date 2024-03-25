@@ -14,7 +14,7 @@
 """Data types for the result of calling `mathopt.compute_infeasible_subsystem."""
 
 import dataclasses
-from typing import Mapping
+from typing import FrozenSet, Mapping
 
 import immutabledict
 
@@ -75,7 +75,7 @@ class ModelSubset:
     variable_bounds: Mapping[
         model.Variable, ModelSubsetBounds
     ] = immutabledict.immutabledict()
-    variable_integrality: frozenset[model.Variable] = frozenset()
+    variable_integrality: FrozenSet[model.Variable] = frozenset()
     linear_constraints: Mapping[
         model.LinearConstraint, ModelSubsetBounds
     ] = immutabledict.immutabledict()

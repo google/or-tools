@@ -11,12 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = [
-    "//ortools/graph:__subpackages__",
-    "//ortools/math_opt:__subpackages__",
-    "//ortools/models:__subpackages__",
-    "//ortools/stochastic_optimization:__subpackages__",
-])
+package(default_visibility = ["//ortools:__subpackages__"])
 
 cc_library(
     name = "param_name",

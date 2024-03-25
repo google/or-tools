@@ -14,8 +14,10 @@
 // Minimal example to call the GLOP solver.
 // [START program]
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
+import com.google.ortools.init.OrToolsVersion;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -25,10 +27,19 @@ import com.google.ortools.linearsolver.MPVariable;
 /** Minimal Linear Programming example to showcase calling the solver. */
 public final class BasicExample {
   public static void main(String[] args) {
+    // [START loader]
     Loader.loadNativeLibraries();
+    // [END loader]
+
+    System.out.println("Google OR-Tools version: " + OrToolsVersion.getVersionString());
+
     // [START solver]
     // Create the linear solver with the GLOP backend.
     MPSolver solver = MPSolver.createSolver("GLOP");
+    if (solver == null) {
+      System.out.println("Could not create solver GLOP");
+      return;
+    }
     // [END solver]
 
     // [START variables]
@@ -40,8 +51,9 @@ public final class BasicExample {
     // [END variables]
 
     // [START constraints]
-    // Create a linear constraint, 0 <= x + y <= 2.
-    MPConstraint ct = solver.makeConstraint(0.0, 2.0, "ct");
+    double infinity = Double.POSITIVE_INFINITY;
+    // Create a linear constraint, x + y <= 2.
+    MPConstraint ct = solver.makeConstraint(-infinity, 2.0, "ct");
     ct.setCoefficient(x, 1);
     ct.setCoefficient(y, 1);
 
@@ -57,15 +69,33 @@ public final class BasicExample {
     // [END objective]
 
     // [START solve]
-    solver.solve();
+    System.out.println("Solving with " + solver.solverVersion());
+    final MPSolver.ResultStatus resultStatus = solver.solve();
     // [END solve]
 
     // [START print_solution]
+    System.out.println("Status: " + resultStatus);
+    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("The problem does not have an optimal solution!");
+      if (resultStatus == MPSolver.ResultStatus.FEASIBLE) {
+        System.out.println("A potentially suboptimal solution was found");
+      } else {
+        System.out.println("The solver could not solve the problem.");
+        return;
+      }
+    }
+
     System.out.println("Solution:");
     System.out.println("Objective value = " + objective.value());
     System.out.println("x = " + x.solutionValue());
     System.out.println("y = " + y.solutionValue());
     // [END print_solution]
+
+    // [START advanced]
+    System.out.println("Advanced usage:");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    // [END advanced]
   }
 
   private BasicExample() {}

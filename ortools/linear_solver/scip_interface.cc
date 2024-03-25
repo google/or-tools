@@ -39,9 +39,11 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #include "ortools/linear_solver/scip_callback.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
 #include "scip/scip_copy.h"
@@ -69,8 +71,11 @@ class SCIPInterface : public MPSolverInterface {
 
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
+
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override;
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override;
+
   void Reset() override;
 
   double infinity() override;
@@ -865,27 +870,22 @@ void SCIPInterface::SetSolution(SCIP_SOL* solution) {
   }
 }
 
-std::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
-    const MPModelRequest& request, std::atomic<bool>* interrupt) {
+bool SCIPInterface::SupportsDirectlySolveProto(
+    std::atomic<bool>* interrupt) const {
   // ScipSolveProto doesn't solve concurrently.
-  if (solver_->GetNumThreads() > 1) return std::nullopt;
+  if (solver_->GetNumThreads() > 1) return false;
 
   // Interruption via atomic<bool> is not directly supported by SCIP.
-  if (interrupt != nullptr) return std::nullopt;
+  if (interrupt != nullptr) return false;
 
-  const auto status_or = ScipSolveProto(request);
-  if (status_or.ok()) return status_or.value();
-  // Special case: if something is not implemented yet, fall back to solving
-  // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status())) return std::nullopt;
-
-  if (request.enable_internal_solver_output()) {
-    LOG(INFO) << "Invalid SCIP status: " << status_or.status();
+  return true;
   }
-  MPSolutionResponse response;
-  response.set_status(MPSOLVER_NOT_SOLVED);
-  response.set_status_str(status_or.status().ToString());
-  return response;
+
+MPSolutionResponse SCIPInterface::DirectlySolveProto(
+    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt) {
+  const bool log_error = request->enable_internal_solver_output();
+  return ConvertStatusOrMPSolutionResponse(log_error,
+                                           ScipSolveProto(std::move(request)));
 }
 
 int SCIPInterface::SolutionCount() { return SCIPgetNSols(scip_); }

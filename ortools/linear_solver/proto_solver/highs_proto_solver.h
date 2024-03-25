@@ -19,11 +19,13 @@
 
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
 // Solve the input MIP model with the HIGHS solver.
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(MPModelRequest request);
+absl::StatusOr<MPSolutionResponse> HighsSolveProto(
+    LazyMutableCopy<MPModelRequest> request);
 
 }  // namespace operations_research
 

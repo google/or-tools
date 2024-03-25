@@ -26,10 +26,12 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
-absl::StatusOr<MPSolutionResponse> HighsSolveProto(MPModelRequest request) {
+absl::StatusOr<MPSolutionResponse> HighsSolveProto(
+    LazyMutableCopy<MPModelRequest> request) {
   return absl::UnimplementedError("Highs support is not yet implemented");
 }
 

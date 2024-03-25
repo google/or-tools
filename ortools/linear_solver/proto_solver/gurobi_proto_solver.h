@@ -21,6 +21,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -34,11 +35,11 @@ namespace operations_research {
 // Please note though that the provided environment should not be actively used
 // by another thread at the same time.
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    const MPModelRequest& request, GRBenv* gurobi_env = nullptr);
+    LazyMutableCopy<MPModelRequest> request, GRBenv* gurobi_env = nullptr);
 
 // Set parameters specified in the string. The format of the string is a series
 // of tokens separated by either '\n' or by ',' characters.
-// Any token whose first character is a '#' or has zero length is skiped.
+// Any token whose first character is a '#' or has zero length is skipped.
 // Comment tokens (i.e. those starting with #) can contain ',' characters.
 // Any other token has the form:
 // parameter_name(separator)value

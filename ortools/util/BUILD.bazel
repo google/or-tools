@@ -506,3 +506,17 @@ cc_library(
         "@com_google_protobuf//:protobuf",
     ],
 )
+
+cc_library(
+    name = "solve_interrupter",
+    srcs = ["solve_interrupter.cc"],
+    hdrs = ["solve_interrupter.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:intops",
+        "//ortools/base:linked_hash_map",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+)

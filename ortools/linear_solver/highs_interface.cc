@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -30,7 +31,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -41,8 +44,18 @@ class HighsInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
+
+  // ----- Directly solve proto is supported without interrupt ---
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override {
+    return interrupt == nullptr;
+  }
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override {
+    DCHECK_EQ(interrupt, nullptr);
+    const bool log_error = request->enable_internal_solver_output();
+    return ConvertStatusOrMPSolutionResponse(
+        log_error, HighsSolveProto(std::move(request)));
+  }
 
   // ----- Model modifications and extraction -----
   void Reset() override;
@@ -150,10 +163,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   sync_status_ = SOLUTION_SYNCHRONIZED;
   result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
   LOG_IF(DFATAL, !response->has_solver_specific_info()) << *response;
-  // if (!solve_log_.ParseFromString(response->solver_specific_info())) {
-  //   LOG(DFATAL) << "Unable to parse Highs's SolveLog from
-  //   solver_specific_info";
-  // }
 
   if (response->status() == MPSOLVER_FEASIBLE ||
       response->status() == MPSOLVER_OPTIMAL) {
@@ -164,22 +173,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   }
 
   return result_status_;
-}
-
-std::optional<MPSolutionResponse> HighsInterface::DirectlySolveProto(
-    const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  if (interrupt) return std::nullopt;
-  absl::StatusOr<MPSolutionResponse> response = HighsSolveProto(request);
-
-  if (!response.ok()) {
-    LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
-    MPSolutionResponse error_response;
-    error_response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
-    error_response.set_status_str(response.status().ToString());
-    return error_response;
-  }
-
-  return *response;
 }
 
 void HighsInterface::Reset() { ResetExtractionInformation(); }

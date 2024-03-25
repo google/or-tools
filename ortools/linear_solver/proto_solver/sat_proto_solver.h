@@ -19,6 +19,7 @@
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -49,7 +50,8 @@ namespace operations_research {
 // threads, but it will ensure that at most one thread executes
 // solution_callback at a time.
 MPSolutionResponse SatSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
+    LazyMutableCopy<MPModelRequest> request,
+    std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const std::string&)> logging_callback = nullptr,
     std::function<void(const MPSolution&)> solution_callback = nullptr);
 

@@ -32,19 +32,14 @@
 // if the C++ function returns a protocol message:
 //   MyProto* foo();
 // Use PROTO2_RETURN macro:
-//   PROTO2_RETURN(MyProto, Google.Proto.Protos.Test.MyProto, true)
-//
-// Replace true by false if the C++ function returns a pointer to a
-// protocol message object whose ownership is not transferred to the
-// (C++) caller.
+//   PROTO2_RETURN(MyProto, Google.Proto.Protos.Test.MyProto)
 //
 // Passing each protocol message from C# to C++ by value. Each ProtocolMessage
 // is serialized into byte[] when it is passed from C# to C++, the C++ code
 // deserializes into C++ native protocol message.
 //
 // @param CppProtoType the fully qualified C++ protocol message type
-// @param CSharpProtoType the corresponding fully qualified C# protocol message
-//        type
+// @param CSharpProtoType the corresponding fully qualified C# protocol message type
 // @param param_name the parameter name
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
 %typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8_t*"
@@ -69,6 +64,12 @@
 %apply PROTO_TYPE* INPUT { CppProtoType* param_name }
 %enddef // end PROTO_INPUT
 
+// Return protocol message from C++ to C#.
+// Each protocol message is serialized into byte[] when it is returned
+// from C++.
+//
+// @param CppProtoType the fully qualified C++ protocol message type
+// @param CSharpProtoType the corresponding fully qualified C# protocol message type
 %define PROTO2_RETURN(CppProtoType, CSharpProtoType)
 %typemap(ctype)  CppProtoType "uint8_t*"
 %typemap(imtype) CppProtoType "System.IntPtr"
@@ -103,4 +104,21 @@
 }
 
 %enddef // end PROTO2_RETURN
+
+// SWIG Macro for mapping protocol message enum type.
+// @param CppEnumProto the C++ protocol message enum type
+// @param CSharpEnumProto the corresponding C# protocol message enum type
+%define PROTO_ENUM_RETURN(CppEnumProto, CSharpEnumProto)
+%typemap(ctype)  CppEnumProto "int"
+%typemap(imtype) CppEnumProto "int"
+%typemap(cstype) CppEnumProto "CSharpEnumProto"
+
+// From CppEnumProto to ctype (in wrap.cxx code)
+%typemap(out) CppEnumProto %{ $result = $1; %}
+
+// From imtype to cstype (in .cs code)
+%typemap(csout) CppEnumProto {
+  return (CSharpEnumProto) $imcall;
+}
+%enddef // end PROTO_ENUM_RETURN
 

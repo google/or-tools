@@ -60,7 +60,7 @@ using ::testing::status::StatusIs;
 
 // A bit larger than expected; as of 2023-01-31 Gurobi produces slightly
 // inaccurate solutions on some of the tests.
-constexpr double kTolerance = 1.0e-4;
+constexpr double kTolerance = 1.0e-3;
 constexpr absl::string_view kNoSocSupportMessage =
     "This test is disabled as the solver does not support second-order cone "
     "constraints";

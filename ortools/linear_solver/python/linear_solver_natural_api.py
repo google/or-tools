@@ -30,7 +30,7 @@ import numbers
 inf = float("inf")
 
 
-class _FakeMPVariableRepresentingTheConstantOffset(object):
+class _FakeMPVariableRepresentingTheConstantOffset:
     """A dummy class for a singleton instance used to represent the constant.
 
     To represent linear expressions, we store a dictionary
@@ -56,7 +56,7 @@ def CastToLinExp(v):
         return v
 
 
-class LinearExpr(object):
+class LinearExpr:
     """Holds linear expressions.
 
     A linear expression is essentially an offset (floating-point value), and a
@@ -178,6 +178,9 @@ class VariableExpr(LinearExpr):
     def __init__(self, mpvar):
         self.__var = mpvar
 
+    def __str__(self):
+        return str(self.__var)
+
     def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
         coeffs[self.__var] += multiplier
 
@@ -222,7 +225,16 @@ class SumArray(LinearExpr):
         self.__array = [CastToLinExp(elem) for elem in array]
 
     def __str__(self):
-        return "({})".format(" + ".join(map(str, self.__array)))
+        parts = []
+        for term in map(str, self.__array):
+            if not parts:
+                parts.append(term)
+                continue
+            if term[0] == "-":
+                parts.append(" - " + term[1:])
+            else:
+                parts.append(" + " + term)
+        return f'({"".join(parts)})'
 
     def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
         # Append elements in reversed order so that the first popped from the stack
@@ -240,7 +252,7 @@ def Sum(*args):
 SumCst = Sum  # pylint: disable=invalid-name
 
 
-class LinearConstraint(object):
+class LinearConstraint:
     """Represents a linear constraint: LowerBound <= LinearExpr <= UpperBound."""
 
     def __init__(self, expr, lb, ub):

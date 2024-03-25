@@ -20,6 +20,7 @@
 
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -44,7 +45,8 @@ namespace operations_research {
 // too unless log_to_stdout is set to false. The enable_internal_solver_output
 // in the request will act as the GLOP parameter log_search_progress.
 MPSolutionResponse GlopSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr,
+    LazyMutableCopy<MPModelRequest> request,
+    std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const std::string&)> logging_callback = nullptr);
 
 // Returns a string that describes the version of the GLOP solver.

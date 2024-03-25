@@ -466,9 +466,8 @@ class Gurobi {
   //
   // Returns:
   // * a status if Gurobi errors,
-  // * false if Gurobi determines that the model is feasible, or
-  // * true otherwise (e.g., infeasibility is proven or a limit is reached).
-  // setup/teardown, and true otherwise.
+  // * true if Gurobi proves that the model is infeasible, or
+  // * false otherwise (e.g., feasibility is proven or a limit is reached).
   //
   // The callback, if specified, is set before solving and cleared after.
   absl::StatusOr<bool> ComputeIIS(Callback cb = nullptr);
