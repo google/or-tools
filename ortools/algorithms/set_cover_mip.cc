@@ -14,6 +14,7 @@
 #include "ortools/algorithms/set_cover_mip.h"
 
 #include <cstdint>
+#include <limits>
 
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_invariant.h"

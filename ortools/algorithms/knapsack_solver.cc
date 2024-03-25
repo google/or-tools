@@ -1282,7 +1282,7 @@ int64_t KnapsackMIPSolver::Solve(TimeLimit* /*time_limit*/,
 // ----- KnapsackCpSat -----
 class KnapsackCpSat : public BaseKnapsackSolver {
  public:
-  explicit KnapsackCpSat(const std::string& solver_name);
+  explicit KnapsackCpSat(absl::string_view solver_name);
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
@@ -1305,7 +1305,7 @@ class KnapsackCpSat : public BaseKnapsackSolver {
   std::vector<bool> best_solution_;
 };
 
-KnapsackCpSat::KnapsackCpSat(const std::string& solver_name)
+KnapsackCpSat::KnapsackCpSat(absl::string_view solver_name)
     : BaseKnapsackSolver(solver_name),
       profits_(),
       weights_(),
