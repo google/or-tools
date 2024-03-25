@@ -26,6 +26,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
@@ -171,7 +172,7 @@ absl::btree_set<int> FindFixedItems(
 }
 
 // Solves a subset sum problem to find the maximum reachable max size.
-int64_t MaxSubsetSumSize(const std::vector<int64_t>& sizes, int64_t max_size) {
+int64_t MaxSubsetSumSize(absl::Span<const int64_t> sizes, int64_t max_size) {
   CpModelBuilder builder;
   LinearExpr weighed_sum;
   for (const int size : sizes) {
@@ -280,7 +281,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
   const absl::btree_set<int> fixed_items = FindFixedItems(problem);
 
   // Fix the fixed_items to the first fixed_items.size() bins.
-  CHECK_LT(fixed_items.size(), max_bins)
+  CHECK_LE(fixed_items.size(), max_bins)
       << "Infeasible problem, increase max_bins";
   int count = 0;
   for (const int item : fixed_items) {
@@ -437,9 +438,10 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 
   // Objective definition.
   cp_model.Minimize(obj);
-  for (int b = trivial_lb; b + 1 < max_bins; ++b) {
+  CHECK_GT(trivial_lb, 0);
+  for (int b = trivial_lb; b < max_bins; ++b) {
     cp_model.AddGreaterOrEqual(obj, b + 1).OnlyEnforceIf(bin_is_used[b]);
-    cp_model.AddImplication(bin_is_used[b + 1], bin_is_used[b]);
+    cp_model.AddImplication(bin_is_used[b], bin_is_used[b - 1]);
   }
 
   if (absl::GetFlag(FLAGS_symmetry_breaking)) {

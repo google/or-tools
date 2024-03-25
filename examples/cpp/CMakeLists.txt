@@ -42,8 +42,6 @@ file(GLOB CXX_SRCS "*.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/binpacking_2d_sat.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling_run.cc") # missing proto
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling.cc") # missing proto
-list(FILTER CXX_SRCS EXCLUDE REGEX ".*/cvrptw_with_breaks.cc") # too long
-list(FILTER CXX_SRCS EXCLUDE REGEX ".*/cvrptw_with_refueling.cc") # too long
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/dimacs_assignment.cc") # crash
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/dobble_ls.cc") # Too long
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/frequency_assignment_problem.cc") # crash

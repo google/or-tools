@@ -322,7 +322,7 @@ std::vector<std::vector<MachineTaskData>> GetDataPerMachine(
 
 void CreateMachines(
     const JsspInputProblem& problem,
-    const std::vector<std::vector<std::vector<AlternativeTaskData>>>&
+    absl::Span<const std::vector<std::vector<AlternativeTaskData>>>
         job_task_to_alternatives,
     IntervalVar makespan_interval, CpModelBuilder& cp_model) {
   const int num_jobs = problem.jobs_size();
@@ -733,12 +733,6 @@ void Solve(const JsspInputProblem& problem) {
   // Setup parameters.
   SatParameters parameters;
   parameters.set_log_search_progress(true);
-  // Parse the --params flag.
-  if (!absl::GetFlag(FLAGS_params).empty()) {
-    CHECK(google::protobuf::TextFormat::MergeFromString(
-        absl::GetFlag(FLAGS_params), &parameters))
-        << absl::GetFlag(FLAGS_params);
-  }
 
   // Prefer objective_shaving_search over objective_lb_search.
   if (parameters.num_workers() >= 16 && parameters.num_workers() < 24) {
@@ -750,6 +744,13 @@ void Solve(const JsspInputProblem& problem) {
   // Also take decision based on precedence, this usually work better.
   parameters.set_push_all_tasks_toward_start(true);
   parameters.set_use_dynamic_precedence_in_disjunctive(true);
+
+  // Parse the --params flag.
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(google::protobuf::TextFormat::MergeFromString(
+        absl::GetFlag(FLAGS_params), &parameters))
+        << absl::GetFlag(FLAGS_params);
+  }
 
   const CpSolverResponse response =
       SolveWithParameters(cp_model.Build(), parameters);
