@@ -37,7 +37,7 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/graph/graph_builder.h"
-#include "ortools/routing/cvrptw_lib.h"
+#include "ortools/routing/parsers/cvrptw_lib.h"
 
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;

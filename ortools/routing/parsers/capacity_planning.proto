@@ -1,0 +1,56 @@
+// Copyright 2010-2024 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research;
+
+// This is the proto for describing the multicommodity fixed-charged network
+// design problem.
+
+message NetworkTopology {
+  // The start node of an arc. Must be >= 0.
+  // We do allow multi-arcs but not self-arcs.
+  repeated int32 from_node = 1;
+
+  // The end node of arcs.  Must be >= 0.
+  repeated int32 to_node = 2;
+
+  // The variable cost per unit of commodity demand on arcs. Must be >= 0.
+  repeated double variable_cost = 3;
+
+  // The fixed charge for using an arc. Must be >= 0.
+  repeated double fixed_cost = 4;
+
+  // The total capacity of arcs. Must be > 0.
+  repeated double capacity = 5;
+}
+
+message Commodities {
+  // The departure node of the demand. Must be >= 0.
+  repeated int32 from_node = 1;
+
+  // The destination node of the demand. Must be >= 0.
+  repeated int32 to_node = 2;
+
+  // The quantity to carry (must be > 0).
+  repeated double demand = 3;
+}
+
+message CapacityPlanningInstance {
+  // The network on which to operate.
+  NetworkTopology topology = 1;
+
+  // What to deliver.
+  Commodities commodities = 2;
+}
