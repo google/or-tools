@@ -191,8 +191,8 @@ TEST(SimpleMaxFlowTest, ProblematicProblemWithMaxCapacity) {
       FlowModelProto model,
       ReadFileToProto<FlowModelProto>(
           file::JoinPathRespectAbsolute(absl::GetFlag(FLAGS_test_srcdir),
-          "ortools/graph/"
-          "testdata/max_flow_test1.pb.txt")));
+                                        "ortools/graph/"
+                                        "testdata/max_flow_test1.pb.txt")));
   SimpleMaxFlow solver;
   EXPECT_EQ(SimpleMaxFlow::OPTIMAL, LoadAndSolveFlowModel(model, &solver));
   EXPECT_EQ(10290243, solver.OptimalFlow());

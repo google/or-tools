@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/random/distributions.h"
+#include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/commandlineflags.h"
@@ -743,7 +744,7 @@ class ReorderedGraphTest : public testing::Test {
 
   ReorderedGraphTest() {}
 
-  void TestMe(const size_t left_nodes, const std::vector<Edge>& ordered_edges) {
+  void TestMe(const size_t left_nodes, absl::Span<const Edge> ordered_edges) {
     std::vector<int64_t> edge_costs;
     typedef util::StaticGraph<size_t, size_t> GraphType;
     GraphType graph(2 * left_nodes, ordered_edges.size());

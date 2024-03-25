@@ -72,7 +72,7 @@ std::unique_ptr<Graph> CopyGraph(const Graph& graph);
 // Note that you can call IsValidPermutation() to check it yourself.
 template <class Graph>
 std::unique_ptr<Graph> RemapGraph(const Graph& graph,
-                                  const std::vector<int>& new_node_index);
+                                  absl::Span<const int> new_node_index);
 
 // Gets the induced subgraph of "graph" restricted to the nodes in "nodes":
 // the resulting graph will have exactly nodes.size() nodes, and its
@@ -277,7 +277,7 @@ std::unique_ptr<Graph> CopyGraph(const Graph& graph) {
 
 template <class Graph>
 std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
-                                  const std::vector<int>& new_node_index) {
+                                  absl::Span<const int> new_node_index) {
   DCHECK(IsValidPermutation(new_node_index)) << "Invalid permutation";
   const int num_nodes = old_graph.num_nodes();
   CHECK_EQ(new_node_index.size(), num_nodes);
