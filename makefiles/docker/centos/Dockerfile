@@ -20,11 +20,11 @@ RUN dnf -y update \
 RUN echo "source /opt/rh/gcc-toolset-11/enable" >> /etc/bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 
-# Install CMake 3.26.4
-RUN wget -q "https://cmake.org/files/v3.26/cmake-3.26.4-linux-x86_64.sh" \
-&& chmod a+x cmake-3.26.4-linux-x86_64.sh \
-&& ./cmake-3.26.4-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.26.4-linux-x86_64.sh
+# Install CMake 3.28.3
+RUN wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
+&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
+&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.28.3-linux-x86_64.sh
 CMD [ "/usr/bin/bash" ]
 
 # Install SWIG 4.1.1

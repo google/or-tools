@@ -4,3 +4,7 @@ install_make
 build_cross
 dependencies/install
 dependencies/sources
+temp_cpp
+temp_dotnet
+temp_java
+temp_python

@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/debian
-FROM debian:10 AS env
+FROM debian:13 AS env
 
 #############
 ##  SETUP  ##
@@ -21,10 +21,10 @@ RUN ARCH=$(uname -m) \
 && rm cmake-3.28.3-linux-${ARCH}.sh
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-10-
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-11-
 RUN apt-get update -qq \
 && apt-get install -qq gpg apt-transport-https \
-&& wget -q "https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
+&& wget -q "https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && rm packages-microsoft-prod.deb \
 && apt-get update -qq \
@@ -34,7 +34,7 @@ RUN apt-get update -qq \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Install Java
+# Java Install
 RUN apt-get update -qq \
 && apt-get install -qq default-jdk maven \
 && apt-get clean \
