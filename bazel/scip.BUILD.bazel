@@ -88,7 +88,8 @@ cc_library(
         ],
     ) + BLISS_FILE + [
         "src/scip/exprinterpret_none.c",
-        "src/tpi/tpi_tnycthrd.c",
+        #"src/tpi/tpi_tnycthrd.c",
+        "src/tpi/tpi_none.c",
     ],
     hdrs = glob(
         [
@@ -104,7 +105,8 @@ cc_library(
         ]),
         copts = [
         "$(STACK_FRAME_UNLIMITED)",  # src/scip/reader_cnf.c
-        "-DTPI_TNY",  # src/tpi/type_tpi_tnycthrd.h
+        #"-DTPI_TNY",  # src/tpi/type_tpi_tnycthrd.h
+        "-DTPI_NONE",  # src/tpi/type_tpi_none.h
         "-Isrc",
         "-Isrc/scip",
     ] + PLATFORM_FLAGS,
