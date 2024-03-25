@@ -18,14 +18,20 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/filelineiter.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(std::string, input, "examples/cpp/wt40.txt", "wt data file name.");
 ABSL_FLAG(int, size, 40, "Size of the problem in the wt file.");

@@ -81,7 +81,7 @@ void CheckConstraintViolators(absl::Span<const int64_t> vars,
 }
 
 // Check that all pairwise differences are unique
-bool CheckCostas(const std::vector<int64_t>& vars) {
+bool CheckCostas(absl::Span<const int64_t> vars) {
   std::vector<int> violators;
 
   CheckConstraintViolators(vars, &violators);
