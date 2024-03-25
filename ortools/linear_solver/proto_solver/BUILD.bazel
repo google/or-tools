@@ -39,6 +39,7 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/lp_data:proto_utils",
         "//ortools/port:proto_utils",
+        "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/log",
@@ -99,6 +100,7 @@ cc_library(
         "//ortools/sat:model",
         "//ortools/sat:parameters_validation",
         "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/log",
@@ -169,6 +171,7 @@ cc_library(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/port:proto_utils",
+        "//ortools/util:lazy_mutable_copy",
         "@com_google_absl//absl/status:statusor",
     ],
 )
