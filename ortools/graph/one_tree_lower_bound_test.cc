@@ -23,7 +23,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 #include "ortools/base/types.h"
-#include "ortools/routing/tsplib_parser.h"
+#include "ortools/routing/parsers/tsplib_parser.h"
 
 namespace operations_research {
 namespace {
