@@ -730,10 +730,15 @@ TEST_P(CallbackTest, EventNodeCut) {
     }
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
-    if (use_cut) {
+    // Even with use_cut: False, SCIP v900 return OPTIMAL
+    if (GetParam().solver_type == SolverType::kGscip) {
       EXPECT_THAT(result, IsOptimal(2.0));
     } else {
-      EXPECT_THAT(result.termination, LimitIs(Limit::kNode));
+      if (use_cut) {
+        EXPECT_THAT(result, IsOptimal(2.0));
+      } else {
+        EXPECT_THAT(result.termination, LimitIs(Limit::kNode));
+      }
     }
   }
 }
