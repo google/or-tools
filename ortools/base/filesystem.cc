@@ -14,7 +14,7 @@
 #include "ortools/base/filesystem.h"
 
 #include <filesystem>  // NOLINT(build/c++17)
-#include <regex>  // NOLINT
+#include <regex>       // NOLINT
 
 #include "absl/status/status.h"
 #include "absl/strings/str_replace.h"
