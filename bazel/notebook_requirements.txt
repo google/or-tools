@@ -128,7 +128,7 @@ jupyter-core==5.3.1
     #   qtconsole
 jupyter-events==0.9.0
     # via jupyter-server
-jupyter-lsp==2.2.0
+jupyter-lsp==2.2.2
     # via jupyterlab
 jupyter-server==2.12.5
     # via
@@ -140,7 +140,7 @@ jupyter-server==2.12.5
     #   notebook-shim
 jupyter-server-terminals==0.4.4
     # via jupyter-server
-jupyterlab==4.0.5
+jupyterlab==4.0.11
     # via notebook
 jupyterlab-pygments==0.2.2
     # via nbconvert
@@ -181,7 +181,7 @@ nbformat==5.9.2
     #   nbconvert
 nest-asyncio==1.5.7
     # via ipykernel
-notebook==7.0.3
+notebook==7.0.7
     # via jupyter
 notebook-shim==0.2.3
     # via

@@ -18,11 +18,11 @@ RUN apt update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CC=gcc-11 CXX=g++-11
 
-# Install CMake v3.26.4
-RUN wget -q "https://cmake.org/files/v3.26/cmake-3.26.4-linux-x86_64.sh" \
-&& chmod a+x cmake-3.26.4-linux-x86_64.sh \
-&& ./cmake-3.26.4-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.26.4-linux-x86_64.sh
+# Install CMake 3.28.3
+RUN wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-x86_64.sh" \
+&& chmod a+x cmake-3.28.3-linux-x86_64.sh \
+&& ./cmake-3.28.3-linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.28.3-linux-x86_64.sh
 
 FROM env AS devel
 WORKDIR /root

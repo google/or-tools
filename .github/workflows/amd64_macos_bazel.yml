@@ -32,11 +32,6 @@ jobs:
           python-version: ${{ matrix.python.version }}
       - name: Check Python
         run: python --version
-      - name: Install Bazel
-        run: |
-          brew update
-          brew unlink bazelisk
-          brew install bazel
       - name: Check Bazel
         run: bazel version
       - name: Build

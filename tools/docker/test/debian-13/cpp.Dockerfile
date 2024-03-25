@@ -1,5 +1,5 @@
 # ref: https://hub.docker.com/_/debian
-FROM debian:11
+FROM debian:13
 
 RUN apt-get update \
 && apt-get install -y -q wget build-essential zlib1g-dev \
@@ -16,6 +16,6 @@ RUN ARCH=$(uname -m) \
 && rm cmake-3.28.3-linux-${ARCH}.sh
 
 WORKDIR /root
-ADD or-tools_amd64_debian-11_cpp_v*.tar.gz .
+ADD or-tools_amd64_debian-13_cpp_v*.tar.gz .
 
 RUN cd or-tools_*_v* && make test

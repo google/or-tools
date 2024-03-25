@@ -21,12 +21,12 @@ ENTRYPOINT ["/usr/bin/bash", "--login", "-c"]
 CMD ["/usr/bin/bash", "--login"]
 # RUN g++ --version
 
-# Install CMake v3.26.4
+# Install CMake 3.28.3
 RUN ARCH=$(uname -m) \
-&& wget -q "https://cmake.org/files/v3.26/cmake-3.26.4-linux-${ARCH}.sh" \
-&& chmod a+x cmake-3.26.4-linux-${ARCH}.sh \
-&& ./cmake-3.26.4-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.26.4-linux-${ARCH}.sh
+&& wget -q "https://cmake.org/files/v3.28/cmake-3.28.3-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.28.3-linux-${ARCH}.sh \
+&& ./cmake-3.28.3-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.28.3-linux-${ARCH}.sh
 
 WORKDIR /root
 ADD or-tools_amd64_centos-7_cpp_v*.tar.gz .
