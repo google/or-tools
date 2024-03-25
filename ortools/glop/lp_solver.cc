@@ -36,6 +36,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
 
@@ -177,7 +178,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     SOLVER_LOG(&logger_, "Initial problem: ", lp.GetDimensionString());
     SOLVER_LOG(&logger_, "Objective stats: ", lp.GetObjectiveStatsString());
     SOLVER_LOG(&logger_, "Bounds stats: ", lp.GetBoundsStatsString());
-    SOLVER_LOG(&logger_, "Parameters: ", parameters_.ShortDebugString());
+    SOLVER_LOG(&logger_, "Parameters: ", ProtobufShortDebugString(parameters_));
   }
 
   // Check some preconditions.
