@@ -11,18 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_XPRESS_PROTO_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_XPRESS_PROTO_SOLVER_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_USERS_ALLOWING_MODEL_STORAGE_H_
+#define OR_TOOLS_LINEAR_SOLVER_USERS_ALLOWING_MODEL_STORAGE_H_
 
-#include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/util/lazy_mutable_copy.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research {
-
-// Solves the input request.
-MPSolutionResponse XPressSolveProto(
-    LazyMutableCopy<MPModelRequest> request);
-
+// List of *exact* MDB users who agreed that we store their MIP/LP/math
+// (anonymized) models.
+// IMPORTANT: The MDB user has to match exactly with an item in this list: we
+// don't do ACL expansion, regexp matching or anything alike.
+const absl::flat_hash_set<absl::string_view>& UsersAllowingModelStorage();
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_XPRESS_PROTO_SOLVER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_USERS_ALLOWING_MODEL_STORAGE_H_

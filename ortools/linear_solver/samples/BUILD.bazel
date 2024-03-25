@@ -28,6 +28,8 @@ code_sample_cc(name = "mip_var_array")
 
 code_sample_cc(name = "multiple_knapsack_mip")
 
+#code_sample_cc(name = "network_design_ilph")
+
 code_sample_cc(name = "simple_lp_program")
 
 code_sample_cc(name = "simple_mip_program")

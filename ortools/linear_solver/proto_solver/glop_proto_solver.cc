@@ -17,8 +17,10 @@
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
@@ -32,6 +34,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -41,11 +44,21 @@ namespace {
 
 MPSolutionResponse ModelInvalidResponse(SolverLogger& logger,
                                         std::string message) {
-  SOLVER_LOG(&logger, "Invalid model/parameters in glop_solve_proto.\n",
-             message);
+  SOLVER_LOG(&logger, "Invalid model in glop_solve_proto.\n", message);
 
   MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_MODEL_INVALID);
+  response.set_status_str(message);
+  return response;
+}
+
+MPSolutionResponse ModelInvalidParametersResponse(SolverLogger& logger,
+                                                  std::string message) {
+  SOLVER_LOG(&logger, "Invalid parameters in glop_solve_proto.\n", message);
+
+  MPSolutionResponse response;
+  response.set_status(
+      MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
   response.set_status_str(message);
   return response;
 }
@@ -92,10 +105,10 @@ MPSolverResponseStatus ToMPSolverResultStatus(glop::ProblemStatus s) {
 }  // namespace
 
 MPSolutionResponse GlopSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve,
+    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt_solve,
     std::function<void(const std::string&)> logging_callback) {
   glop::GlopParameters params;
-  params.set_log_search_progress(request.enable_internal_solver_output());
+  params.set_log_search_progress(request->enable_internal_solver_output());
 
   // TODO(user): We do not support all the parameters here. In particular the
   // logs before the solver is called will not be appended to the response. Fix
@@ -111,54 +124,56 @@ MPSolutionResponse GlopSolveProto(
   logger.SetLogToStdOut(params.log_to_stdout());
 
   // Set it now so that it can be overwritten by the solver specific parameters.
-  if (request.has_solver_specific_parameters()) {
+  if (request->has_solver_specific_parameters()) {
     // See EncodeParametersAsString() documentation.
     if (!std::is_base_of<Message, glop::GlopParameters>::value) {
-      if (!params.MergeFromString(request.solver_specific_parameters())) {
-        return ModelInvalidResponse(
+      if (!params.MergeFromString(request->solver_specific_parameters())) {
+        return ModelInvalidParametersResponse(
             logger,
             "solver_specific_parameters is not a valid binary stream of the "
             "GLOPParameters proto");
       }
     } else {
       if (!ProtobufTextFormatMergeFromString(
-              request.solver_specific_parameters(), &params)) {
-        return ModelInvalidResponse(
+              request->solver_specific_parameters(), &params)) {
+        return ModelInvalidParametersResponse(
             logger,
             "solver_specific_parameters is not a valid textual representation "
             "of the GlopParameters proto");
       }
     }
   }
-  if (request.has_solver_time_limit_seconds()) {
-    params.set_max_time_in_seconds(request.solver_time_limit_seconds());
-  }
-
-  if (!request.model().general_constraint().empty()) {
-    return ModelInvalidResponse(logger,
-                                "GLOP does not support general constraints");
-  }
-
-  // Model validation and delta handling.
-  MPSolutionResponse response;
-  if (!ExtractValidMPModelInPlaceOrPopulateResponseStatus(&request,
-                                                          &response)) {
-    // Note that the ExtractValidMPModelInPlaceOrPopulateResponseStatus() can
-    // also close trivial model (empty or trivially infeasible). So this is not
-    // always the MODEL_INVALID status.
-    return response;
+  if (request->has_solver_time_limit_seconds()) {
+    params.set_max_time_in_seconds(request->solver_time_limit_seconds());
   }
 
   {
     const std::string error = glop::ValidateParameters(params);
     if (!error.empty()) {
-      return ModelInvalidResponse(
+      return ModelInvalidParametersResponse(
           logger, absl::StrCat("Invalid Glop parameters: ", error));
     }
   }
 
+  MPSolutionResponse response;
   glop::LinearProgram linear_program;
-  MPModelProtoToLinearProgram(request.model(), &linear_program);
+
+  // Model validation and delta handling.
+  {
+    std::optional<LazyMutableCopy<MPModelProto>> optional_model =
+        GetMPModelOrPopulateResponse(request, &response);
+    if (!optional_model) return response;
+
+    const MPModelProto& mp_model = **optional_model;
+    if (!mp_model.general_constraint().empty()) {
+      return ModelInvalidResponse(logger,
+                                  "GLOP does not support general constraints");
+    }
+
+    // Convert and clear the request and mp_model as it is no longer needed.
+    MPModelProtoToLinearProgram(mp_model, &linear_program);
+    std::move(request).dispose();
+  }
 
   glop::LPSolver lp_solver;
   lp_solver.SetParameters(params);
@@ -189,7 +204,7 @@ MPSolutionResponse GlopSolveProto(
   if (result_status == MPSOLVER_OPTIMAL || result_status == MPSOLVER_FEASIBLE) {
     response.set_objective_value(lp_solver.GetObjectiveValue());
 
-    const int num_vars = request.model().variable_size();
+    const int num_vars = linear_program.num_variables().value();
     for (int var_id = 0; var_id < num_vars; ++var_id) {
       const glop::Fractional solution_value =
           lp_solver.variable_values()[glop::ColIndex(var_id)];
@@ -206,7 +221,7 @@ MPSolutionResponse GlopSolveProto(
     response.set_status(MPSOLVER_CANCELLED_BY_USER);
   }
 
-  const size_t num_constraints = request.model().constraint_size();
+  const int num_constraints = linear_program.num_constraints().value();
   for (int ct_id = 0; ct_id < num_constraints; ++ct_id) {
     const glop::Fractional dual_value =
         lp_solver.dual_values()[glop::RowIndex(ct_id)];

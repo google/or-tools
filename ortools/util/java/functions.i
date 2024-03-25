@@ -54,7 +54,7 @@
 
 // Abbreviation of the java type corresponding to the given CType.
 // Eg. JAVA_ABBREV(int64_t) expands to "J".
-#define JAVA_ABBREV_int64 "J"
+#define JAVA_ABBREV_int64_t "J"
 #define JAVA_ABBREV_int "I"
 #define JAVA_ABBREV_bool "Z"
 #define JAVA_ABBREV(x) JAVA_ABBREV_ ## x

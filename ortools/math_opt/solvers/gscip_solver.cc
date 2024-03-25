@@ -111,7 +111,7 @@ int64_t SafeId(const LinearConstraintsProto& linear_constraints, int index) {
   return linear_constraints.ids(index);
 }
 
-const std::string& SafeName(const LinearConstraintsProto& linear_constraints,
+absl::string_view SafeName(const LinearConstraintsProto& linear_constraints,
                             int index) {
   if (linear_constraints.names().empty()) {
     return EmptyString();

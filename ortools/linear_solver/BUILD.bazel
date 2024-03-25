@@ -413,5 +413,6 @@ cc_library(
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",
+        "//ortools/util:solve_interrupter",
     ],
 )

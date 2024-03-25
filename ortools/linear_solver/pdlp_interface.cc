@@ -25,14 +25,15 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
+#include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -43,8 +44,17 @@ class PdlpInterface : public MPSolverInterface {
 
   // ----- Solve -----
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
-  std::optional<MPSolutionResponse> DirectlySolveProto(
-      const MPModelRequest& request, std::atomic<bool>* interrupt) override;
+
+  bool SupportsDirectlySolveProto(std::atomic<bool>* interrupt) const override {
+    return true;
+  }
+  MPSolutionResponse DirectlySolveProto(LazyMutableCopy<MPModelRequest> request,
+                                        std::atomic<bool>* interrupt) override {
+    const bool log_error = request->enable_internal_solver_output();
+    return ConvertStatusOrMPSolutionResponse(
+        log_error, PdlpSolveProto(std::move(request),
+                                  /*relax_integer_variables=*/true, interrupt));
+  }
 
   // ----- Model modifications and extraction -----
   void Reset() override;
@@ -143,7 +153,7 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   if (!google::protobuf::TextFormat::PrintToString(
           parameters_, request.mutable_solver_specific_parameters())) {
     LOG(QFATAL) << "Error converting parameters to text format: "
-                << parameters_.DebugString();
+                << ProtobufDebugString(parameters_);
   }
   absl::StatusOr<MPSolutionResponse> response = PdlpSolveProto(
       request, /*relax_integer_variables=*/true, &interrupt_solver_);
@@ -178,22 +188,6 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
   }
 
   return result_status_;
-}
-
-std::optional<MPSolutionResponse> PdlpInterface::DirectlySolveProto(
-    const MPModelRequest& request, std::atomic<bool>* interrupt) {
-  absl::StatusOr<MPSolutionResponse> response =
-      PdlpSolveProto(request, /*relax_integer_variables=*/true, interrupt);
-
-  if (!response.ok()) {
-    LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
-    MPSolutionResponse error_response;
-    error_response.set_status(MPSolverResponseStatus::MPSOLVER_ABNORMAL);
-    error_response.set_status_str(response.status().ToString());
-    return error_response;
-  }
-
-  return *response;
 }
 
 void PdlpInterface::Reset() { ResetExtractionInformation(); }

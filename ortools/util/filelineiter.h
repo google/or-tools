@@ -142,7 +142,7 @@ class FileLines {
   // Please prefer the other constructor combined with file::Open() in new code
   // so that missing files are properly detected. This version would only print
   // a warning and act as if the file was empty.
-  explicit FileLines(const std::string& filename,
+  explicit FileLines(absl::string_view filename,
                      int options = FileLineIterator::DEFAULT)
       : FileLines(
             filename,

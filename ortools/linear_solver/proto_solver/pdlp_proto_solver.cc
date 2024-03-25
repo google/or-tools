@@ -34,53 +34,49 @@
 namespace operations_research {
 
 absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
-    const MPModelRequest& request, const bool relax_integer_variables,
+    LazyMutableCopy<MPModelRequest> request, const bool relax_integer_variables,
     const std::atomic<bool>* interrupt_solve) {
   pdlp::PrimalDualHybridGradientParams params;
-  if (request.enable_internal_solver_output()) {
+  if (request->enable_internal_solver_output()) {
     params.set_verbosity_level(3);
   } else {
     params.set_verbosity_level(0);
   }
 
-  MPSolutionResponse error_response;
-  if (!ProtobufTextFormatMergeFromString(request.solver_specific_parameters(),
+  MPSolutionResponse response;
+  if (!ProtobufTextFormatMergeFromString(request->solver_specific_parameters(),
                                          &params)) {
-    error_response.set_status(
+    response.set_status(
         MPSolverResponseStatus::MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-    return error_response;
+    return response;
   }
   if (interrupt_solve != nullptr && interrupt_solve->load() == true) {
-    error_response.set_status(MPSolverResponseStatus::MPSOLVER_NOT_SOLVED);
-    return error_response;
+    response.set_status(MPSolverResponseStatus::MPSOLVER_NOT_SOLVED);
+    return response;
   }
-  if (request.has_solver_time_limit_seconds()) {
+  if (request->has_solver_time_limit_seconds()) {
     params.mutable_termination_criteria()->set_time_sec_limit(
-        request.solver_time_limit_seconds());
+        request->solver_time_limit_seconds());
   }
 
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
-      ExtractValidMPModelOrPopulateResponseStatus(request, &error_response);
-  if (!optional_model) {
-    LOG_IF(WARNING, request.enable_internal_solver_output())
-        << "Failed to extract a valid model from protocol buffer. Status: "
-        << ProtoEnumToString<MPSolverResponseStatus>(error_response.status())
-        << " (" << error_response.status()
-        << "): " << error_response.status_str();
-    return error_response;
-  }
+  std::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      GetMPModelOrPopulateResponse(request, &response);
+  if (!optional_model) return response;
 
   ASSIGN_OR_RETURN(
       pdlp::QuadraticProgram qp,
-      pdlp::QpFromMpModelProto(optional_model->get(), relax_integer_variables));
-  const double objective_scaling_factor = qp.objective_scaling_factor;
+      pdlp::QpFromMpModelProto(**optional_model, relax_integer_variables));
 
+  // We can now clear the request and optional_model.
+  std::move(request).dispose();
+  optional_model.reset();
+
+  const double objective_scaling_factor = qp.objective_scaling_factor;
   pdlp::SolverResult pdhg_result =
       pdlp::PrimalDualHybridGradient(std::move(qp), params, interrupt_solve);
 
   // PDLP's statuses don't map very cleanly to MPSolver statuses. Do the best
   // we can for now.
-  MPSolutionResponse response;
   switch (pdhg_result.solve_log.termination_reason()) {
     case pdlp::TERMINATION_REASON_OPTIMAL:
       response.set_status(MPSOLVER_OPTIMAL);
