@@ -1384,39 +1384,27 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   }
 
   if (ct.linear().domain_size() == 2) {
-    int64_t lb = ct.linear().domain(0);
-    int64_t ub = ct.linear().domain(1);
-    if (min_sum >= lb) lb = std::numeric_limits<int64_t>::min();
-    if (max_sum <= ub) ub = std::numeric_limits<int64_t>::max();
-
-    if (!HasEnforcementLiteral(ct)) {
-      if (all_booleans) {
-        // TODO(user): we should probably also implement an
-        // half-reified version of this constraint.
-        std::vector<LiteralWithCoeff> cst;
-        for (int i = 0; i < vars.size(); ++i) {
-          const int ref = ct.linear().vars(i);
-          cst.push_back({mapping->Literal(ref), coeffs[i]});
-        }
-        m->Add(BooleanLinearConstraint(lb, ub, &cst));
-      } else {
-        if (lb != std::numeric_limits<int64_t>::min()) {
-          m->Add(WeightedSumGreaterOrEqual(vars, coeffs, lb));
-        }
-        if (ub != std::numeric_limits<int64_t>::max()) {
-          m->Add(WeightedSumLowerOrEqual(vars, coeffs, ub));
-        }
+    const int64_t lb = ct.linear().domain(0);
+    const int64_t ub = ct.linear().domain(1);
+    const std::vector<Literal> enforcement_literals =
+        mapping->Literals(ct.enforcement_literal());
+    if (all_booleans && enforcement_literals.empty()) {
+      // TODO(user): we should probably also implement an
+      // half-reified version of this constraint.
+      std::vector<LiteralWithCoeff> cst;
+      for (int i = 0; i < vars.size(); ++i) {
+        const int ref = ct.linear().vars(i);
+        cst.push_back({mapping->Literal(ref), coeffs[i]});
       }
+      m->GetOrCreate<SatSolver>()->AddLinearConstraint(
+          /*use_lower_bound=*/(min_sum < lb), lb,
+          /*use_upper_bound=*/(max_sum > ub), ub, &cst);
     } else {
-      const std::vector<Literal> enforcement_literals =
-          mapping->Literals(ct.enforcement_literal());
-      if (lb != std::numeric_limits<int64_t>::min()) {
-        m->Add(ConditionalWeightedSumGreaterOrEqual(enforcement_literals, vars,
-                                                    coeffs, lb));
+      if (min_sum < lb) {
+        AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs, lb, m);
       }
-      if (ub != std::numeric_limits<int64_t>::max()) {
-        m->Add(ConditionalWeightedSumLowerOrEqual(enforcement_literals, vars,
-                                                  coeffs, ub));
+      if (max_sum > ub) {
+        AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs, ub, m);
       }
     }
     return;
@@ -1463,12 +1451,10 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     for_enumeration.push_back(subdomain_literal);
 
     if (min_sum < lb) {
-      m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
-                                                  coeffs, lb));
+      AddWeightedSumGreaterOrEqual({subdomain_literal}, vars, coeffs, lb, m);
     }
     if (max_sum > ub) {
-      m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
-                                                coeffs, ub));
+      AddWeightedSumLowerOrEqual({subdomain_literal}, vars, coeffs, ub, m);
     }
   }
 

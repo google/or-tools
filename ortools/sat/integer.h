@@ -1912,7 +1912,7 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
 // is the same as using different underlying variable for an integer literal and
 // its negation.
 inline std::function<void(Model*)> Implication(
-    const std::vector<Literal>& enforcement_literals, IntegerLiteral i) {
+    absl::Span<const Literal> enforcement_literals, IntegerLiteral i) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (i.bound <= integer_trail->LowerBound(i.var)) {
