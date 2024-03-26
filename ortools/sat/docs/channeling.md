@@ -416,7 +416,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(line)
 
 
-def index_first_solution_true_sample_sat():
+def index_of_first_bool_at_true_sample_sat():
     """Compute the index of the first Boolean variable set to true."""
 
     # Model.
@@ -446,15 +446,14 @@ def index_first_solution_true_sample_sat():
 
     # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
 
     # Search and print out all solutions.
+    solver.parameters.enumerate_all_solutions = True
     solution_printer = VarArraySolutionPrinter(index, bool_vars)
     solver.solve(model, solution_printer)
 
 
-index_first_solution_true_sample_sat()
+index_of_first_bool_at_true_sample_sat()
 ```
 
 This displays the following:
