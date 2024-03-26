@@ -554,44 +554,22 @@ inline std::function<void(Model*)> AffineCoeffOneLowerOrEqualWithOffset(
   };
 }
 
-// a + b <= ub.
-inline std::function<void(Model*)> Sum2LowerOrEqual(IntegerVariable a,
-                                                    IntegerVariable b,
-                                                    int64_t ub) {
-  return LowerOrEqualWithOffset(a, NegationOf(b), -ub);
-}
-
 // l => (a + b <= ub).
-inline std::function<void(Model*)> ConditionalSum2LowerOrEqual(
-    IntegerVariable a, IntegerVariable b, int64_t ub,
-    const std::vector<Literal>& enforcement_literals) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddPrecedenceWithAllOptions(a, NegationOf(b), IntegerValue(-ub),
-                                   kNoIntegerVariable, enforcement_literals);
-  };
-}
-
-// a + b + c <= ub.
-inline std::function<void(Model*)> Sum3LowerOrEqual(IntegerVariable a,
-                                                    IntegerVariable b,
-                                                    IntegerVariable c,
-                                                    int64_t ub) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b, {});
-  };
+inline void AddConditionalSum2LowerOrEqual(
+    absl::Span<const Literal> enforcement_literals, IntegerVariable a,
+    IntegerVariable b, int64_t ub, Model* model) {
+  PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+  p->AddPrecedenceWithAllOptions(a, NegationOf(b), IntegerValue(-ub),
+                                 kNoIntegerVariable, enforcement_literals);
 }
 
 // l => (a + b + c <= ub).
-inline std::function<void(Model*)> ConditionalSum3LowerOrEqual(
-    IntegerVariable a, IntegerVariable b, IntegerVariable c, int64_t ub,
-    const std::vector<Literal>& enforcement_literals) {
-  return [=](Model* model) {
-    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
-    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b,
-                                   enforcement_literals);
-  };
+inline void AddConditionalSum3LowerOrEqual(
+    absl::Span<const Literal> enforcement_literals, IntegerVariable a,
+    IntegerVariable b, IntegerVariable c, int64_t ub, Model* model) {
+  PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+  p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b,
+                                 enforcement_literals);
 }
 
 // a >= b.
