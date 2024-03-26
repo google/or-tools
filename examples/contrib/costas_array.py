@@ -91,7 +91,7 @@ def main(n=6):
 
   # Fix the values in the lower triangle in the
   # difference matrix to -n+1. This removes variants
-  # of the difference matrix for the the same Costas array.
+  # of the difference matrix for the same Costas array.
   for i in range(n):
     for j in range(i + 1):
       solver.Add(differences[i, j] == -n + 1)

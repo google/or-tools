@@ -26,7 +26,7 @@
   army placements to secure the Roman Empire.
   '''
 
-  Compare with the the following models:
+  Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/set_covering_deployment.mzn
   * Comet   : http://www.hakank.org/comet/set_covering_deployment.co
   * Gecode  : http://www.hakank.org/gecode/set_covering_deployment.cpp

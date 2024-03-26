@@ -47,7 +47,7 @@
   * Wikipedia http://en.wikipedia.org/wiki/Pandigital_number
 
 
-  Compare with the the following models:
+  Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/pandigital_numbers.mzn
   * Comet   : http://www.hakank.org/comet/pandigital_numbers.co
   * ECLiPSe : http://www.hakank.org/eclipse/pandigital_numbers.ecl
