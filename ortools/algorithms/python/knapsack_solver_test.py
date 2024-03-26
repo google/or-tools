@@ -22,6 +22,7 @@ from ortools.algorithms.python import knapsack_solver
 
 
 class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
+
     def RealSolve(self, profits, weights, capacities, solver_type, use_reduction):
         solver = knapsack_solver.KnapsackSolver(solver_type, "solver")
         solver.set_use_reduction(use_reduction)
