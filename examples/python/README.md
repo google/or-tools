@@ -8,7 +8,7 @@ as this allows you to keep up-to-date with the latest Python frameworks.
 Wherever you have `ortools` package installed, be sure to import it from your python file.
 
 # Execution
-For running the examples you can use the the following command:
+For running the examples you can use the following command:
 ```shell
 python3 -m pip install --upgrade --user ortools
 python3 <example>.py

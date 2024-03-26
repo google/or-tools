@@ -21,7 +21,7 @@
   base**n.
 
 
-  Compare with the the web based programs:
+  Compare with the web based programs:
     http://www.hakank.org/comb/debruijn.cgi
     http://www.hakank.org/comb/debruijn_arb.cgi
 

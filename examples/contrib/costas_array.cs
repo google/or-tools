@@ -62,7 +62,7 @@ public class CostasArray
 
         // Fix the values in the lower triangle in the
         // difference matrix to -n+1. This removes variants
-        // of the difference matrix for the the same Costas array.
+        // of the difference matrix for the same Costas array.
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j <= i; j++)

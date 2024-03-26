@@ -48,7 +48,7 @@ public class KenKen2
         else
         {
             // For length > 2 then res is either the sum
-            // the the product of the segment
+            // the product of the segment
 
             // sum the numbers
             int len = cc.Length / 2;
