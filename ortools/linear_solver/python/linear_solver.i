@@ -375,6 +375,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::nodes;
 %unignore operations_research::MPSolver::iterations;  // No unit test
 %unignore operations_research::MPSolver::BasisStatus;
+%unignore operations_research::MPSolver::SetStartingLpBasis;
 %unignore operations_research::MPSolver::FREE;  // No unit test
 %unignore operations_research::MPSolver::AT_LOWER_BOUND;
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;
