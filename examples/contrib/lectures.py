@@ -18,7 +18,7 @@
   Biggs: Discrete Mathematics (2nd ed), page 187.
   '''
   Suppose we wish to schedule six one-hour lectures, v1, v2, v3, v4, v5, v6.
-  Among the the potential audience there are people who wish to hear both
+  Among the potential audience there are people who wish to hear both
 
    - v1 and v2
    - v1 and v4
