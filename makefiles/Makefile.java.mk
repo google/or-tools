@@ -40,7 +40,7 @@ java:
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo MVN_BIN = $(MVN_BIN)
-	$(warning Either JAVA support was turned off, or the the makefile cannot\
+	$(warning Either JAVA support was turned off, or the makefile cannot\
  find 'java' or 'maven' command which is needed for build. \
  Please make sure it is installed and in system path. \
  Or turn java support ON.)
