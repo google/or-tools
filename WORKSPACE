@@ -215,6 +215,13 @@ load("@ortools_notebook_deps//:requirements.bzl",
      install_notebook_deps="install_deps")
 install_notebook_deps()
 
+# Protobuf
+load("@com_google_protobuf//bazel:system_python.bzl", "system_python")
+system_python(
+    name = "system_python",
+    minimum_python_version = "3.8",
+)
+
 # Absl python library
 http_archive(
     name = "com_google_absl_py",
