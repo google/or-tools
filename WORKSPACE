@@ -78,13 +78,6 @@ new_git_repository(
     remote = "https://github.com/madler/zlib.git",
 )
 
-## Re2
-git_repository(
-    name = "com_google_re2",
-    tag = "2024-03-01",
-    remote = "https://github.com/google/re2.git",
-)
-
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
@@ -92,6 +85,14 @@ git_repository(
     patches = ["//patches:abseil-cpp-20240116.1.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/abseil/abseil-cpp.git",
+)
+
+## Re2
+git_repository(
+    name = "com_google_re2",
+    tag = "2024-03-01",
+    remote = "https://github.com/google/re2.git",
+    repo_mapping = {"@abseil-cpp": "@com_google_absl"},
 )
 
 ## Protobuf
