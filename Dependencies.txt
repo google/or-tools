@@ -1,7 +1,7 @@
 abseil-cpp=20240116.1
 Protobuf=v25.3
 Eigen=3.4.0
-Re2=2024-02-01
+Re2=2024-03-01
 CoinUtils=2.11.6
 Osi=0.108.7
 Clp=1.17.7

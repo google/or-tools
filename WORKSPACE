@@ -81,7 +81,7 @@ new_git_repository(
 ## Re2
 git_repository(
     name = "com_google_re2",
-    tag = "2024-02-01",
+    tag = "2024-03-01",
     remote = "https://github.com/google/re2.git",
 )
 
