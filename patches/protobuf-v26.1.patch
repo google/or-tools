@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 4137ce2e9..56fbd6bf7 100644
+index 312eeb928..3e154785b 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -41,7 +41,7 @@ else (BUILD_SHARED_LIBS)
@@ -52,10 +52,10 @@ index 4137ce2e9..56fbd6bf7 100644
  include_directories(
 -  ${ZLIB_INCLUDE_DIRECTORIES}
    ${protobuf_BINARY_DIR}
-   ${protobuf_SOURCE_DIR}/src)
- 
+   # Support #include-ing other top-level directories, i.e. upb_generator.
+   ${protobuf_SOURCE_DIR}
 diff --git a/cmake/install.cmake b/cmake/install.cmake
-index 998c2e31a..99f0707a9 100644
+index 52914a8ea..d7dc5f232 100644
 --- a/cmake/install.cmake
 +++ b/cmake/install.cmake
 @@ -31,6 +31,7 @@ foreach(_library ${_protobuf_libraries})
@@ -66,16 +66,3 @@ index 998c2e31a..99f0707a9 100644
      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
    if (UNIX AND NOT APPLE)
      set_property(TARGET ${_library}
-diff --git a/src/google/protobuf/map_field.h b/src/google/protobuf/map_field.h
-index 8aa9e45fe..8388f8a2e 100644
---- a/src/google/protobuf/map_field.h
-+++ b/src/google/protobuf/map_field.h
-@@ -678,7 +678,7 @@ class MapField final : public TypeDefinedMapFieldBase<Key, T> {
- template <typename Derived, typename Key, typename T,
-           WireFormatLite::FieldType kKeyFieldType_,
-           WireFormatLite::FieldType kValueFieldType_>
--constexpr MapFieldBase::VTable
-+PROTOBUF_CONSTINIT const MapFieldBase::VTable
-     MapField<Derived, Key, T, kKeyFieldType_, kValueFieldType_>::kVTable =
-         MapField::template MakeVTable<MapField>();
- 

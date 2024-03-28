@@ -69,7 +69,7 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.25.3</version>
+    <version>4.26.1</version>
   </dependency>
   <dependency>
     <groupId>junit</groupId>

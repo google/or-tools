@@ -1,5 +1,5 @@
 abseil-cpp=20240116.1
-Protobuf=v25.3
+Protobuf=v26.1
 Eigen=3.4.0
 Re2=2024-03-01
 CoinUtils=2.11.6

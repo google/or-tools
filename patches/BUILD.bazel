@@ -13,7 +13,7 @@
 
 exports_files([
     "abseil-cpp-20240116.1.patch",
-    "protobuf-v25.3.patch",
+    "protobuf-v26.1.patch",
     "pybind11_abseil.patch",
     "pybind11_bazel.patch",
     "pybind11_protobuf.patch",
