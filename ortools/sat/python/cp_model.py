@@ -2829,13 +2829,13 @@ class CpModel:
         """Sets the objective of the model."""
         self.clear_objective()
         if isinstance(obj, IntVar):
-            self.__model.objective.coeffs.append(1)
+            self.__model.objective.vars.append(obj.index)
             self.__model.objective.offset = 0
             if minimize:
-                self.__model.objective.vars.append(obj.index)
+                self.__model.objective.coeffs.append(1)
                 self.__model.objective.scaling_factor = 1
             else:
-                self.__model.objective.vars.append(self.negated(obj.index))
+                self.__model.objective.coeffs.append(-1)
                 self.__model.objective.scaling_factor = -1
         elif isinstance(obj, LinearExpr):
             coeffs_map, constant, is_integer = obj.get_float_var_value_map()
@@ -2848,11 +2848,11 @@ class CpModel:
                     self.__model.objective.offset = -constant
                 for v, c in coeffs_map.items():
                     c_as_int = int(c)
-                    self.__model.objective.coeffs.append(c_as_int)
+                    self.__model.objective.vars.append(v.index)
                     if minimize:
-                        self.__model.objective.vars.append(v.index)
+                        self.__model.objective.coeffs.append(c_as_int)
                     else:
-                        self.__model.objective.vars.append(self.negated(v.index))
+                        self.__model.objective.coeffs.append(-c_as_int)
             else:
                 self.__model.floating_point_objective.maximize = not minimize
                 self.__model.floating_point_objective.offset = constant

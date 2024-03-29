@@ -13,9 +13,9 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
-load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -1139,6 +1139,7 @@ cc_library(
     deps = [
         ":integer",
         ":model",
+        ":precedences",
         ":sat_base",
         ":sat_solver",
         ":synchronization",
@@ -2267,6 +2268,7 @@ cc_library(
         ":integer",
         ":integer_search",
         ":model",
+        ":restart",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",

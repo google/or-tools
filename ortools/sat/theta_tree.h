@@ -244,7 +244,7 @@ class ThetaLambdaTree {
   std::vector<TreeNode> tree_;
 };
 
-// Explicit instantiations in theta_Tree.cc.
+// Explicit instantiations in theta_tree.cc.
 extern template class ThetaLambdaTree<IntegerValue>;
 extern template class ThetaLambdaTree<int64_t>;
 
