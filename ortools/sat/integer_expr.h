@@ -155,6 +155,10 @@ class LinearConstraintPropagator : public PropagatorInterface {
 using IntegerSumLE = LinearConstraintPropagator<false>;
 using IntegerSumLE128 = LinearConstraintPropagator<true>;
 
+// Explicit instantiations in integer_expr.cc.
+extern template class LinearConstraintPropagator<true>;
+extern template class LinearConstraintPropagator<false>;
+
 // This assumes target = SUM_i coeffs[i] * vars[i], and detects that the target
 // must be of the form (a*X + b).
 //

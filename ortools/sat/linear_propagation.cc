@@ -35,6 +35,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
@@ -230,7 +231,7 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
   for (int i = size - 1; i >= rev_stack_size_; --i) {
     const auto [id, status] = untrail_stack_[i];
     statuses_[id] = status;
-    if (callbacks_[id] != nullptr) callbacks_[id](status);
+    if (callbacks_[id] != nullptr) callbacks_[id](id, status);
   }
   untrail_stack_.resize(rev_stack_size_);
   propagation_trail_index_ = trail_index;
@@ -243,7 +244,7 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
 // constraint is never enforced, and should be ignored.
 EnforcementId EnforcementPropagator::Register(
     absl::Span<const Literal> enforcement,
-    std::function<void(EnforcementStatus)> callback) {
+    std::function<void(EnforcementId, EnforcementStatus)> callback) {
   int num_true = 0;
   int num_false = 0;
   bool is_always_false = false;
@@ -271,11 +272,13 @@ EnforcementId EnforcementPropagator::Register(
 
   // Return special indices if never/always enforced.
   if (is_always_false) {
-    if (callback != nullptr) callback(EnforcementStatus::IS_FALSE);
+    if (callback != nullptr)
+      callback(EnforcementId(-1), EnforcementStatus::IS_FALSE);
     return EnforcementId(-1);
   }
   if (temp_literals_.empty()) {
-    if (callback != nullptr) callback(EnforcementStatus::IS_ENFORCED);
+    if (callback != nullptr)
+      callback(EnforcementId(-1), EnforcementStatus::IS_ENFORCED);
     return EnforcementId(-1);
   }
 
@@ -331,7 +334,7 @@ EnforcementId EnforcementPropagator::Register(
     // Because this is the default status, we still need to call the callback.
     if (temp_literals_.size() == 1) {
       if (callbacks_[id] != nullptr) {
-        callbacks_[id](EnforcementStatus::CAN_PROPAGATE);
+        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE);
       }
     }
   }
@@ -445,7 +448,7 @@ void EnforcementPropagator::ChangeStatus(EnforcementId id,
     untrail_stack_.push_back({id, old_status});
   }
   statuses_[id] = new_status;
-  if (callbacks_[id] != nullptr) callbacks_[id](new_status);
+  if (callbacks_[id] != nullptr) callbacks_[id](id, new_status);
 }
 
 EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
@@ -473,6 +476,7 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()),
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
+      precedences_(model->GetOrCreate<PrecedenceRelations>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)) {
   // Note that we need this class always in sync.
@@ -660,7 +664,8 @@ bool LinearPropagator::AddConstraint(
     infos_.back().enf_status =
         static_cast<int>(EnforcementStatus::CANNOT_PROPAGATE);
     infos_.back().enf_id = enforcement_propagator_->Register(
-        enforcement_literals, [this, id](EnforcementStatus status) {
+        enforcement_literals,
+        [this, id](EnforcementId enf_id, EnforcementStatus status) {
           infos_[id].enf_status = static_cast<int>(status);
           // TODO(user): With some care, when we cannot propagate or the
           // constraint is not enforced, we could leave in_queue_[] at true but
@@ -670,8 +675,27 @@ bool LinearPropagator::AddConstraint(
             AddToQueueIfNeeded(id);
             watcher_->CallOnNextPropagate(watcher_id_);
           }
+
+          // When a conditional precedence becomes enforced, add it. Note that
+          // we cannot just use rev_size == 2 since we might miss some
+          // explanation if a longer constraint only have 2 non-fixed variable
+          // now.. It is however okay not to push precedence involving a fixed
+          // variable, since these should be reflected in the variable domain
+          // anyway.
+          if (status == EnforcementStatus::IS_ENFORCED) {
+            const auto info = infos_[id];
+            if (info.initial_size == 2 && info.rev_size == 2 &&
+                info.all_coeffs_are_one) {
+              const auto vars = GetVariables(info);
+              precedences_->PushConditionalRelation(
+                  enforcement_propagator_->GetEnforcementLiterals(enf_id),
+                  vars[0], vars[1], info.rev_rhs);
+            }
+          }
         });
   } else {
+    // TODO(user): Shall we register root level precedence from here rather than
+    // separately?
     AddToQueueIfNeeded(id);
     infos_.back().enf_id = -1;
     infos_.back().enf_status = static_cast<int>(EnforcementStatus::IS_ENFORCED);

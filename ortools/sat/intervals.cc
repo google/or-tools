@@ -499,24 +499,24 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     int a, int b, bool add_reason_if_after) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  if (before.var == kNoIntegerVariable) return kMinIntegerValue;
-  if (after.var == kNoIntegerVariable) return kMinIntegerValue;
-
-  const IntegerValue needed = before.constant - after.constant;
-  const IntegerValue static_known =
-      precedence_relations_->GetOffset(before.var, after.var);
-
-  const std::pair<Literal, IntegerValue> dynamic_known =
-      precedences_->GetConditionalOffset(before.var, after.var);
-
-  const IntegerValue best = std::max(static_known, dynamic_known.second);
-  if (best == kMinIntegerValue) return kMinIntegerValue;
-
-  if (add_reason_if_after && dynamic_known.second > static_known &&
-      dynamic_known.second >= needed) {
-    literal_reason_.push_back(dynamic_known.first.Negated());
+  if (before.var == kNoIntegerVariable || before.coeff != 1 ||
+      after.var == kNoIntegerVariable || after.coeff != 1) {
+    return kMinIntegerValue;
   }
-  return best - needed;
+
+  const IntegerValue offset =
+      precedence_relations_->GetConditionalOffset(before.var, after.var);
+  if (offset == kMinIntegerValue) return kMinIntegerValue;
+
+  const IntegerValue needed_offset = before.constant - after.constant;
+  const IntegerValue distance = offset - needed_offset;
+  if (add_reason_if_after && distance >= 0) {
+    for (const Literal l : precedence_relations_->GetConditionalEnforcements(
+             before.var, after.var)) {
+      literal_reason_.push_back(l.Negated());
+    }
+  }
+  return distance;
 }
 
 void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
