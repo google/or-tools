@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,13 +25,11 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/sort.h"
@@ -923,6 +920,9 @@ DisjunctivePrecedences::~DisjunctivePrecedences() {
 bool DisjunctivePrecedences::Propagate() {
   if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) return false;
   window_.clear();
+
+  // We only need to consider "critical" set of tasks given how we compute the
+  // min-offset in PropagateSubwindow().
   IntegerValue window_end = kMinIntegerValue;
   for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
     const int task = task_time.task_index;
@@ -969,66 +969,151 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     index_to_end_vars_.push_back(end_exp.var);
   }
   window_.resize(new_size);
-  precedences_->ComputePrecedences(index_to_end_vars_, &before_);
+
+  // Because we use the cached value in the window, we don't really care
+  // on which order we process them.
+  precedences_->ComputePrecedences(index_to_end_vars_, &before_,
+                                   /*sort_by_var_lb=*/false);
 
   const int size = before_.size();
-  for (int i = 0; i < size;) {
-    const IntegerVariable var = before_[i].var;
+  for (int global_i = 0; global_i < size;) {
+    const int global_start_i = global_i;
+    const IntegerVariable var = before_[global_i].var;
     DCHECK_NE(var, kNoIntegerVariable);
-    task_set_.Clear();
 
-    const int initial_i = i;
-    IntegerValue min_offset = kMaxIntegerValue;
-    for (; i < size && before_[i].var == var; ++i) {
-      // Because we resized the window, the index is valid.
-      const TaskTime task_time = window_[before_[i].index];
-
-      // We have var >= end_exp.var + offset, so
-      // var >= (end_exp.var + end_exp.constant) + (offset - end_exp.constant)
-      // var >= task end + new_offset.
-      const AffineExpression& end_exp = helper_->Ends()[task_time.task_index];
-      min_offset = std::min(min_offset, before_[i].offset - end_exp.constant);
-
-      // The task are actually in sorted order, so we do not need to call
-      // task_set_.Sort(). This property is DCHECKed.
-      task_set_.AddUnsortedEntry({task_time.task_index, task_time.time,
-                                  helper_->SizeMin(task_time.task_index)});
+    // Decode the set of task before var.
+    // Note that like in Propagate() we split this set of task into critical
+    // subpart as there is no point considering them together.
+    //
+    // TODO(user): we should probably change the api to return a Span.
+    //
+    // TODO(user): If more than one set of task push the same variable, we
+    // probabaly only want to keep the best push? Maybe we want to process them
+    // in reverse order of what we do here?
+    //
+    // TODO(user): Currently we don't really use the inner_offsets_ except for
+    // checking that our hash-maps are up to date. The idea is to get rid of
+    // them for a faster and maybe more dynamic ComputePrecedences().
+    indices_before_.clear();
+    inner_offsets_.clear();
+    IntegerValue local_start;
+    IntegerValue local_end;
+    for (; global_i < size; ++global_i) {
+      const PrecedencesPropagator::IntegerPrecedences& data = before_[global_i];
+      if (data.var != var) break;
+      const int index = data.index;
+      const auto [t, start_of_t] = window_[index];
+      if (global_i == global_start_i) {
+        local_start = start_of_t;
+        local_end = local_start + helper_->SizeMin(t);
+      } else {
+        if (start_of_t >= local_end) break;
+        local_end += helper_->SizeMin(t);
+      }
+      indices_before_.push_back(index);
+      inner_offsets_.push_back(data.offset);
     }
-    DCHECK_GE(task_set_.SortedTasks().size(), 2);
 
-    // TODO(user): Only use the min_offset of the critical task? Or maybe do a
-    // more general computation to find by how much we can push var?
-    const IntegerValue new_lb = task_set_.ComputeEndMin() + min_offset;
-    if (new_lb > integer_trail_->LowerBound(var)) {
-      const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
+    // No need to consider if we don't have at least two tasks before var.
+    const int num_before = indices_before_.size();
+    if (num_before < 2) continue;
+    skip_.assign(num_before, false);
+
+    // Heuristic.
+    // We will use the current end-min of all the task in indices_before_
+    // to skip task with an offset not large enough.
+    const IntegerValue best_end_min = local_end;
+
+    // We will consider the end-min of all the subsets [i, num_items) to try to
+    // push var using the min-offset between var and items of such subset. This
+    // can be done in linear time by scanning from i = num_items - 1 to 0.
+    //
+    // Note that this needs the items in indices_before_ to be sorted by
+    // their shifted start min (it should be the case).
+    int best_index = -1;
+    IntegerValue best_new_lb = kMinIntegerValue;
+    IntegerValue min_offset = kMaxIntegerValue;
+    IntegerValue sum_of_duration = 0;
+    const IntegerValue current_var_lb = integer_trail_->LowerBound(var);
+    for (int i = num_before; --i >= 0;) {
+      const TaskTime task_time = window_[indices_before_[i]];
+      const AffineExpression& end_exp = helper_->Ends()[task_time.task_index];
+
+      // Heuristic: do not consider this relations if its offset is clearly bad.
+      // If we want to get rid of inner_offsets_[], we will have to only do it
+      // below after the somewhat costly hash lookup to find the offset.
+      const IntegerValue known_offset = inner_offsets_[i] - end_exp.constant;
+      if (best_end_min + known_offset <= current_var_lb) {
+        skip_[i] = true;
+        continue;
+      }
+
+      // TODO(user): The hash lookup here is a bit slow.
+      const IntegerValue inner_offset =
+          precedence_relations_->GetConditionalOffset(end_exp.var, var);
+
+      // TODO(user): This happens for relations true at level zero, maybe we
+      // should deal with them differently.
+      if (inner_offset == kMinIntegerValue) {
+        skip_[i] = true;
+        continue;
+      }
+
+      // TODO(user): The code should work in all cases, but this DCHECK still
+      // fail rarely in multithread. I think this happens for linear of size 3
+      // with some fixed variable that get converted in the precedence
+      // propagator to size 2.
+      DCHECK_GE(inner_offset, inner_offsets_[i]);
+
+      // We have var >= end_exp.var + inner_offset, so
+      // var >= (end_exp.var + end_exp.constant)
+      //        + (inner_offset - end_exp.constant)
+      // var >= task end + offset.
+      const IntegerValue offset = inner_offset - end_exp.constant;
+
+      // Heuristic: do not consider this relations if its offset is clearly bad.
+      // Same as what is done above with inner_offsets_[i].
+      if (best_end_min + offset <= current_var_lb) {
+        skip_[i] = true;
+        continue;
+      }
+
+      // Add this task to the current subset and compute the new bound.
+      min_offset = std::min(min_offset, offset);
+      sum_of_duration += helper_->SizeMin(task_time.task_index);
+      const IntegerValue start = task_time.time;
+      const IntegerValue new_lb = start + sum_of_duration + min_offset;
+
+      if (new_lb > best_new_lb) {
+        best_new_lb = new_lb;
+        best_index = i;
+      }
+    }
+
+    // Push?
+    if (best_new_lb > current_var_lb) {
+      DCHECK_NE(best_index, -1);
       helper_->ClearReason();
-
-      // Fill task_to_arc_index_ since we need it for the reason.
-      // Note that we do not care about the initial content of this vector.
-      for (int j = initial_i; j < i; ++j) {
-        const int task = window_[before_[j].index].task_index;
-        task_to_arc_index_[task] = before_[j].arc_index;
-      }
-
-      const int critical_index = task_set_.GetCriticalIndex();
-      const IntegerValue window_start = sorted_tasks[critical_index].start_min;
-      for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-        const int ct = sorted_tasks[i].task;
+      const IntegerValue window_start =
+          window_[indices_before_[best_index]].time;
+      for (int i = best_index; i < num_before; ++i) {
+        if (skip_[i]) continue;
+        const int ct = window_[indices_before_[i]].task_index;
         helper_->AddPresenceReason(ct);
-        helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min,
-                                      window_start);
+        helper_->AddEnergyAfterReason(ct, helper_->SizeMin(ct), window_start);
 
+        // Fetch the explanation.
+        // This is okay if a bit slow since we only do that when we push.
         const AffineExpression& end_exp = helper_->Ends()[ct];
-        precedences_->AddPrecedenceReason(
-            task_to_arc_index_[ct], min_offset + end_exp.constant,
-            helper_->MutableLiteralReason(), helper_->MutableIntegerReason());
+        for (const Literal l :
+             precedence_relations_->GetConditionalEnforcements(end_exp.var,
+                                                               var)) {
+          helper_->MutableLiteralReason()->push_back(l.Negated());
+        }
       }
-
-      // TODO(user): If var is actually a start-min of an interval, we
-      // could push the end-min and check the interval consistency right away.
       ++num_propagations_;
       if (!helper_->PushIntegerLiteral(
-              IntegerLiteral::GreaterOrEqual(var, new_lb))) {
+              IntegerLiteral::GreaterOrEqual(var, best_new_lb))) {
         return false;
       }
     }
@@ -1218,6 +1303,14 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
 
       // Add the reason for t, we only need the start-max.
       helper_->AddStartMaxReason(t, end_min_of_critical_tasks - 1);
+
+      // If largest_ct_start_max == kMinIntegerValue, we have a conflict. To
+      // avoid integer overflow, we report it directly. This might happen
+      // because the task is known to be after all the other, and thus it cannot
+      // be "not last".
+      if (largest_ct_start_max == kMinIntegerValue) {
+        return helper_->ReportConflict();
+      }
 
       // Enqueue the new end-max for t.
       // Note that changing it will not influence the rest of the loop.
