@@ -391,7 +391,7 @@ ENDATA
         x = model.new_num_var(0.0, math.inf, "x")
 
         ct = model.add(False)
-        self.assertTrue(ct.is_always_false())
+        self.assertTrue(ct.is_under_specified)
         self.assertRaises(ValueError, ct.add_term, x, 1)
 
         model.maximize(x)
@@ -408,7 +408,8 @@ ENDATA
         ct = model.add(True)
         self.assertEqual(ct.lower_bound, 0.0)
         self.assertEqual(ct.upper_bound, 0.0)
-        ct.add_term(var=x, coeff=1)
+        self.assertTrue(ct.is_under_specified)
+        self.assertRaises(ValueError, ct.add_term, x, 1)
 
         model.maximize(x)
 
@@ -416,8 +417,6 @@ ENDATA
         status = solver.solve(model)
 
         self.assertEqual(status, mb.SolveStatus.OPTIMAL)
-        # Note that ct is binding.
-        self.assertEqual(0.0, solver.objective_value)
 
 
 class InternalHelperTest(absltest.TestCase):
