@@ -879,7 +879,7 @@ bool SCIPInterface::SupportsDirectlySolveProto(
   if (interrupt != nullptr) return false;
 
   return true;
-  }
+}
 
 MPSolutionResponse SCIPInterface::DirectlySolveProto(
     LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt) {
