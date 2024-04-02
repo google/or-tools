@@ -632,21 +632,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["fixed"] = new_params;
   }
 
-  // Inprocessing
-  {
-    SatParameters new_params = base_params;
-    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_use_sat_inprocessing(false);
-    strategies["no_inprocessing"] = new_params;
-
-    new_params.set_use_sat_inprocessing(true);
-    new_params.set_inprocessing_dtime_ratio(1.0);
-    strategies["max_inprocessing"] = new_params;
-
-    new_params.set_linearization_level(0);
-    strategies["max_inprocessing_no_lp"] = new_params;
-  }
-
   // Quick restart.
   {
     // TODO(user): Experiment with search_random_variable_pool_size.

@@ -344,6 +344,7 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
 
   // Detect first if we have a conflict using the relation start + size = end.
   if (dmax < 0) {
+    ClearReason();
     AddSizeMaxReason(t, dmax);
     return PushTaskAbsence(t);
   }

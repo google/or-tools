@@ -826,33 +826,37 @@ func main() {
 }
 ```
 
-## Cumulative constraint with varying capacity profile.
+## Cumulative constraint with min and max capacity profile.
 
 A cumulative constraint takes a list of intervals, and a list of demands, and a
 capacity. It enforces that at any time point, the sum of demands of tasks active
 at that time point is less than a given capacity.
 
-Modeling a varying profile can be done using fixed (interval, demand) to occupy
-the capacity between the actual profile and it max capacity.
+Modeling a non constant max profile can be done using fixed (interval, demand)
+to occupy the capacity between the actual profile and it max capacity.
+
+Modeling a non zero min profile can be done using fixed (interval, demand)
+on the complementary cumulative constraint.
 
 ### Python code
 
 ```python
 #!/usr/bin/env python3
-"""Solves a simple scheduling problem with a variable work load."""
+"""Solves a scheduling problem with a min and max profile for the work load."""
 
 import io
 
+from absl import app
 import pandas as pd
 
 from ortools.sat.python import cp_model
 
 
-def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
+def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Creates the two dataframes that describes the model."""
 
-    capacity_str: str = """
-  start_hour  capacity
+    max_load_str: str = """
+  start_hour  max_load
      0            0
      2            0
      4            1
@@ -864,6 +868,22 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
     16           10
     18            4
     20            2
+    22            0
+  """
+
+    min_load_str: str = """
+  start_hour  min_load
+     0            0
+     2            0
+     4            0
+     6            0
+     8            3
+    10            3
+    12            1
+    14            3
+    16            3
+    18            1
+    20            1
     22            0
   """
 
@@ -901,24 +921,25 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
    t30     90      4      2
   """
 
-    capacity_df = pd.read_table(io.StringIO(capacity_str), sep=r"\s+")
+    max_load_df = pd.read_table(io.StringIO(max_load_str), sep=r"\s+")
+    min_load_df = pd.read_table(io.StringIO(min_load_str), sep=r"\s+")
     tasks_df = pd.read_table(io.StringIO(tasks_str), index_col=0, sep=r"\s+")
-    return capacity_df, tasks_df
+    return max_load_df, min_load_df, tasks_df
 
 
-def main() -> None:
+def main(_) -> None:
     """Create the model and solves it."""
-    capacity_df, tasks_df = create_data_model()
+    max_load_df, min_load_df, tasks_df = create_data_model()
 
     # Create the model.
     model = cp_model.CpModel()
 
     # Get the max capacity from the capacity dataframe.
-    max_capacity = capacity_df.capacity.max()
-    print(f"Max capacity = {max_capacity}")
+    max_load = max_load_df.max_load.max()
+    print(f"Max capacity = {max_load}")
     print(f"#tasks = {len(tasks_df)}")
 
-    minutes_per_period: int = 120
+    minutes_per_hour: int = 60
     horizon: int = 24 * 60
 
     # Variables
@@ -935,21 +956,67 @@ def main() -> None:
         are_present=performed,
     )
 
-    # Set up the profile. We use fixed (intervals, demands) to fill in the space
-    # between the actual load profile and the max capacity.
-    time_period_intervals = model.new_fixed_size_interval_var_series(
-        name="time_period_intervals",
-        index=capacity_df.index,
-        starts=capacity_df.start_hour * minutes_per_period,
-        sizes=minutes_per_period,
+    # Set up complement intervals (from 0 to start, and from start + size to
+    # horizon).
+    prefix_intervals = model.new_optional_interval_var_series(
+        name="prefix_intervals",
+        index=tasks_df.index,
+        starts=0,
+        sizes=starts,
+        ends=starts,
+        are_present=performed,
     )
-    time_period_heights = max_capacity - capacity_df.capacity
 
-    # Cumulative constraint.
+    suffix_intervals = model.new_optional_interval_var_series(
+        name="suffix_intervals",
+        index=tasks_df.index,
+        starts=starts + tasks_df.duration,
+        sizes=horizon - starts - tasks_df.duration,
+        ends=horizon,
+        are_present=performed,
+    )
+
+    # Set up the max profile. We use fixed (intervals, demands) to fill in the
+    # space between the actual max load profile and the max capacity.
+    time_period_max_intervals = model.new_fixed_size_interval_var_series(
+        name="time_period_max_intervals",
+        index=max_load_df.index,
+        starts=max_load_df.start_hour * minutes_per_hour,
+        sizes=minutes_per_hour * 2,
+    )
+    time_period_max_heights = max_load - max_load_df.max_load
+
+    # Cumulative constraint for the max profile.
     model.add_cumulative(
-        intervals.to_list() + time_period_intervals.to_list(),
-        tasks_df.load.to_list() + time_period_heights.to_list(),
-        max_capacity,
+        intervals.to_list() + time_period_max_intervals.to_list(),
+        tasks_df.load.to_list() + time_period_max_heights.to_list(),
+        max_load,
+    )
+
+    # Set up the min profile. We use complement intervals to maintain the
+    # complement of the work load, and fixed intervals to enforce the min
+    # number of active workers per time period.
+    time_period_min_intervals = model.new_fixed_size_interval_var_series(
+        name="time_period_min_intervals",
+        index=min_load_df.index,
+        starts=min_load_df.start_hour * minutes_per_hour,
+        sizes=minutes_per_hour * 2,
+    )
+    time_period_min_heights = min_load_df.min_load
+
+    sum_of_demands = sum(tasks_df.load)
+    complement_capacity = model.new_int_var(0, sum_of_demands, "complement_capacity")
+    model.add(complement_capacity == performed.dot(tasks_df.load))
+
+    # Cumulative constraint for the min profile.
+    model.add_cumulative(
+        prefix_intervals.to_list()
+        + suffix_intervals.to_list()
+        + time_period_min_intervals.to_list(),
+        tasks_df.load.to_list()
+        + tasks_df.load.to_list()
+        + time_period_min_heights.to_list(),
+        complement_capacity,
     )
 
     # Objective: maximize the value of performed intervals.
@@ -960,7 +1027,7 @@ def main() -> None:
     # Create the solver and solve the model.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
-    solver.parameters.num_workers = 8
+    solver.parameters.num_workers = 16
     solver.parameters.max_time_in_seconds = 30.0
     status = solver.solve(model)
 
@@ -979,7 +1046,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    app.run(main)
 ```
 
 ## Alternative resources for one interval
