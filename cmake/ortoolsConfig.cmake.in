@@ -54,8 +54,8 @@ if(@USE_GLPK@)
 endif()
 
 if(@USE_HIGHS@)
-  if(NOT TARGET HIGHS::HIGHS)
-    find_dependency(HIGHS REQUIRED ${CONFIG_FLAG})
+  if(NOT TARGET highs::highs)
+    find_dependency(highs REQUIRED ${CONFIG_FLAG})
   endif()
 endif()
 
