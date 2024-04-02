@@ -252,7 +252,7 @@ class Variable(LinearExpr):
         ub: Optional[NumberT],
         is_integral: Optional[bool],
         name: Optional[str],
-    ):
+    ) -> None:
         """See Model.new_var below."""
         LinearExpr.__init__(self)
         self.__helper: mbh.ModelBuilderHelper = helper
@@ -420,6 +420,10 @@ def _add_linear_constraint_to_helper(
     It handles boolean values (which might arise in the construction of
     BoundedLinearExpressions).
 
+    If bounded_expr is a Boolean value, the created constraint is different.
+    In that case, the constraint will be immutable and marked as under-specified.
+    It will be always feasible or infeasible whether the value is True or False.
+
     Args:
       bounded_expr: The bounded expression used to create the constraint.
       helper: The helper to create the constraint.
@@ -432,7 +436,7 @@ def _add_linear_constraint_to_helper(
       TypeError: If constraint is an invalid type.
     """
     if isinstance(bounded_expr, bool):
-        c = LinearConstraint(helper, None, True)
+        c = LinearConstraint(helper, is_under_specified=True)
         if name is not None:
             helper.set_constraint_name(c.index, name)
         if bounded_expr:
@@ -462,6 +466,12 @@ def _add_enforced_linear_constraint_to_helper(
     It handles boolean values (which might arise in the construction of
     BoundedLinearExpressions).
 
+    If bounded_expr is a Boolean value, the linear part of the constraint is
+    different.
+    In that case, the constraint will be immutable and marked as under-specified.
+    Its linear part will be always feasible or infeasible whether the value is
+    True or False.
+
     Args:
       bounded_expr: The bounded expression used to create the constraint.
       helper: The helper to create the constraint.
@@ -478,7 +488,7 @@ def _add_enforced_linear_constraint_to_helper(
     """
     if isinstance(bounded_expr, bool):
         # TODO(user): create indicator variable assignment instead ?
-        c = EnforcedLinearConstraint(helper, None, True)
+        c = EnforcedLinearConstraint(helper, is_under_specified=True)
         c.indicator_variable = var
         c.indicator_value = value
         if name is not None:
@@ -559,7 +569,7 @@ class BoundedLinearExpression(_BoundedLinearExpr):
         model.Add(x + 2 * y -1 >= z)
     """
 
-    def __init__(self, expr: LinearExprT, lb: NumberT, ub: NumberT):
+    def __init__(self, expr: LinearExprT, lb: NumberT, ub: NumberT) -> None:
         self.__expr: LinearExprT = expr
         self.__lb: np.double = mbn.assert_is_a_number(lb)
         self.__ub: np.double = mbn.assert_is_a_number(ub)
@@ -654,9 +664,18 @@ class LinearConstraint:
     def __init__(
         self,
         helper: mbh.ModelBuilderHelper,
+        *,
         index: Optional[IntegerT] = None,
         is_under_specified: bool = False,
-    ):
+    ) -> None:
+        """LinearConstraint constructor.
+
+        Args:
+          helper: The pybind11 ModelBuilderHelper.
+          index: If specified, recreates a wrapper to an existing linear constraint.
+          is_under_specified: indicates if the constraint was created by
+            model.add(bool).
+        """
         if index is None:
             self.__index = helper.add_linear_constraint()
         else:
@@ -680,6 +699,7 @@ class LinearConstraint:
 
     @lower_bound.setter
     def lower_bound(self, bound: NumberT) -> None:
+        self.assert_constraint_is_well_defined()
         self.__helper.set_constraint_lower_bound(self.__index, bound)
 
     @property
@@ -688,6 +708,7 @@ class LinearConstraint:
 
     @upper_bound.setter
     def upper_bound(self, bound: NumberT) -> None:
+        self.assert_constraint_is_well_defined()
         self.__helper.set_constraint_upper_bound(self.__index, bound)
 
     @property
@@ -758,9 +779,18 @@ class EnforcedLinearConstraint:
     def __init__(
         self,
         helper: mbh.ModelBuilderHelper,
+        *,
         index: Optional[IntegerT] = None,
         is_under_specified: bool = False,
-    ):
+    ) -> None:
+        """EnforcedLinearConstraint constructor.
+
+        Args:
+          helper: The pybind11 ModelBuilderHelper.
+          index: If specified, recreates a wrapper to an existing linear constraint.
+          is_under_specified: indicates if the constraint was created by
+            model.add(bool).
+        """
         if index is None:
             self.__index = helper.add_enforced_linear_constraint()
         else:
@@ -790,6 +820,7 @@ class EnforcedLinearConstraint:
 
     @lower_bound.setter
     def lower_bound(self, bound: NumberT) -> None:
+        self.assert_constraint_is_well_defined()
         self.__helper.set_enforced_constraint_lower_bound(self.__index, bound)
 
     @property
@@ -798,6 +829,7 @@ class EnforcedLinearConstraint:
 
     @upper_bound.setter
     def upper_bound(self, bound: NumberT) -> None:
+        self.assert_constraint_is_well_defined()
         self.__helper.set_enforced_constraint_upper_bound(self.__index, bound)
 
     @property
@@ -1338,16 +1370,16 @@ class Model:
         Note that a special treatment is done when the argument does not contain any
         variable, and thus evaluates to True or False.
 
-        model.add(True) will create a constraint 0 <= empty sum <= 0.
+        `model.add(True)` will create a constraint 0 <= empty sum <= 0.
         The constraint will be marked as under specified, and cannot be modified
-        further.
+        thereafter.
 
-        model.add(False) will create a constraint inf <= empty sum <= -inf. The
+        `model.add(False)` will create a constraint inf <= empty sum <= -inf. The
         constraint will be marked as under specified, and cannot be modified
-        further.
+        thereafter.
 
-        you can check the if a constraint is under specified by
-        checking  LinearConstraint.is_under_specified.
+        you can check the if a constraint is under specified by reading the
+        `LinearConstraint.is_under_specified` property.
         """
         if isinstance(ct, _BoundedLinearExpr):
             return ct._add_linear_constraint(self.__helper, name)
@@ -1368,7 +1400,7 @@ class Model:
 
     def linear_constraint_from_index(self, index: IntegerT) -> LinearConstraint:
         """Rebuilds a linear constraint object from the model and its index."""
-        return LinearConstraint(self.__helper, index)
+        return LinearConstraint(self.__helper, index=index)
 
     # EnforcedLinear constraints.
 
@@ -1473,7 +1505,7 @@ class Model:
         self, index: IntegerT
     ) -> EnforcedLinearConstraint:
         """Rebuilds an enforced linear constraint object from the model and its index."""
-        return EnforcedLinearConstraint(self.__helper, index)
+        return EnforcedLinearConstraint(self.__helper, index=index)
 
     # Objective.
     def minimize(self, linear_expr: LinearExprT) -> None:
