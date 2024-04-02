@@ -43,7 +43,7 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
   absl::strings
-  Eigen3::Eigen
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
+  $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAMESPACE}::math_opt_proto)
