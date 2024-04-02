@@ -36,11 +36,16 @@ class TextFormatErrorCollector : public google::protobuf::io::ErrorCollector {
   TextFormatErrorCollector() = default;
   ~TextFormatErrorCollector() override = default;
 
-  void RecordError(int line, int column, absl::string_view message) override {
-    collected_errors_.push_back({false, line, column, std::string(message)});
+  void RecordError(const int line, const int column,
+                   absl::string_view message) override {
+    collected_errors_.push_back(
+        {/*warning=*/false, line, column, std::string(message)});
   }
-  void RecordWarning(int line, int column, absl::string_view message) override {
-    collected_errors_.push_back({true, line, column, std::string(message)});
+
+  void RecordWarning(const int line, const int column,
+                     absl::string_view message) override {
+    collected_errors_.push_back(
+        {/*warning=*/true, line, column, std::string(message)});
   }
 
   // Returns a string listing each collected error.  When an error is associated
@@ -80,7 +85,7 @@ bool ParseTextProtoForFlag(const absl::string_view text,
   TextFormatErrorCollector errors;
   google::protobuf::TextFormat::Parser parser;
   parser.RecordErrorsTo(&errors);
-  const bool success = parser.ParseFromString(text, message_out);
+  const bool success = parser.ParseFromString(std::string(text), message_out);
   *error_out = errors.RenderErrorMessage(text);
   return success;
 }

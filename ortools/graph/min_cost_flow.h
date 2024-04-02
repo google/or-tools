@@ -673,6 +673,22 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
 #if !SWIG
 
+// Note: SWIG does not seem to understand explicit template specialization and
+// instantiation declarations.
+
+extern template class GenericMinCostFlow<StarGraph>;
+extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
+extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
+extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
+extern template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
+extern template class GenericMinCostFlow<
+    ::util::ReverseArcListGraph<int64_t, int64_t>, int64_t, int64_t>;
+extern template class GenericMinCostFlow<
+    ::util::ReverseArcStaticGraph<uint16_t, int32_t>,
+    /*ArcFlowType=*/int16_t,
+    /*ArcScaledCostType=*/int32_t>;
+
 // Default MinCostFlow instance that uses StarGraph.
 // New clients should use SimpleMinCostFlow if they can.
 class MinCostFlow : public GenericMinCostFlow<StarGraph> {

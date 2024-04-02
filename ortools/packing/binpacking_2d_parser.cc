@@ -18,6 +18,7 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/filelineiter.h"
 
@@ -30,7 +31,7 @@ BinPacking2dParser::BinPacking2dParser()
       num_items_(0),
       instances_seen_(0) {}
 
-bool BinPacking2dParser::Load2BPFile(const std::string& file_name,
+bool BinPacking2dParser::Load2BPFile(absl::string_view file_name,
                                      int instance) {
   if (load_status_ != NOT_STARTED) {
     return false;

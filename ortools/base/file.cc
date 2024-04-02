@@ -240,7 +240,8 @@ namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
  public:
   ~NoOpErrorCollector() override = default;
-  void RecordError(int line, int column, absl::string_view message) override {}
+  void RecordError(int /*line*/, int /*column*/,
+                   absl::string_view /*message*/) override {}
 };
 }  // namespace
 
