@@ -622,7 +622,7 @@ TEST_P(IpParameterTest, NodeLimit) {
            "https://paste.googleplex.com/5694421105377280";
   }
   if (GetParam().solver_type == SolverType::kGscip) {
-    GTEST_SKIP() << "This test does not work for SCIP v900";
+    GTEST_SKIP() << "This test does not work with SCIP v900";
   }
   const std::unique_ptr<const Model> model = DenseIndependentSet(true);
   SolveParameters params = {.node_limit = 1};
@@ -1001,7 +1001,7 @@ TEST_P(IpParameterTest, SolutionLimitOneAndCutoff) {
 // Tests the interaction between cutoff and an additional limit.
 TEST_P(IpParameterTest, NoSolutionsBelowCutoffEarlyTermination) {
   if (GetParam().solver_type == SolverType::kGscip) {
-    GTEST_SKIP() << "This test does not work for SCIP v900";
+    GTEST_SKIP() << "This test does not work with SCIP v900";
   }
   if (!(GetParam().parameter_support.supports_cutoff)) {
     // We have already tested that the right error message is returned.

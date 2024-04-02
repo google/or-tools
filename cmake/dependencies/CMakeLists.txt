@@ -235,7 +235,8 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.6.0"
+    GIT_TAG        "v1.7.0"
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs.patch"
   )
   FetchContent_MakeAvailable(highs)
   list(POP_BACK CMAKE_MESSAGE_INDENT)

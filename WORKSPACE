@@ -65,7 +65,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.29.0",
+    tag = "0.31.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -156,7 +156,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "bazel",
+    branch = "v1.7.0",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 

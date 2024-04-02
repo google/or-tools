@@ -381,7 +381,6 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
     ],
 )
 
