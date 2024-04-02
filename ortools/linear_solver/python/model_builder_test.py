@@ -430,7 +430,7 @@ class InternalHelperTest(absltest.TestCase):
     def test_anonymous_constraints(self):
         helper = mb.Model().helper
         index = helper.add_linear_constraint()
-        constraint = mb.LinearConstraint(helper, index)
+        constraint = mb.LinearConstraint(helper, index=index)
         self.assertEqual(constraint.name, f"linear_constraint#{index}")
 
 
