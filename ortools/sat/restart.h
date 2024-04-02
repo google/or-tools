@@ -57,6 +57,10 @@ class RestartPolicy {
   // Returns a string with the current restart statistics.
   std::string InfoString() const;
 
+  const RunningAverage& LbdRunningAverage() const {
+    return lbd_running_average_;
+  }
+
  private:
   const SatParameters& parameters_;
   SatDecisionPolicy* decision_policy_;

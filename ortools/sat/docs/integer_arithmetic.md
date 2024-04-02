@@ -1163,7 +1163,7 @@ func stepFunctionSampleSat() error {
 
 	// expr == 2 on [0, 1] U [3, 4] U [11, 20]
 	b2 := model.NewBoolVar()
-	d2 := cpmodel.FromIntervals([]cpmodel.ClosedInterval{{0, 1}, {3, 4}, {11, 20}})
+	d2 := cpmodel.FromIntervals([]cpmodel.ClosedInterval{{Start: 0, End: 1}, {Start: 3, End: 4}, {Start: 11, End: 20}})
 	model.AddLinearConstraintForDomain(x, d2).OnlyEnforceIf(b2)
 	model.AddEquality(expr, cpmodel.NewConstant(2)).OnlyEnforceIf(b2)
 
