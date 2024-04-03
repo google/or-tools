@@ -277,13 +277,12 @@ class MPCallbackWrapper {
     for (const std::exception_ptr& ex : caught_exceptions_) {
       try {
         std::rethrow_exception(ex);
-      } catch (std::exception& ex) {
+      } catch (std::exception &ex) {
         // We don't want the interface to throw exceptions, plus it causes
         // SWIG issues in Java & Python. Instead, we'll only log them.
         // (The use cases where the user has to raise an exception inside their
         // call-back does not seem to be frequent, anyway.)
-        LOG(ERROR) << "Caught exception during user-defined call-back: "
-                   << ex.what();
+        LOG(ERROR) << "Caught exception during user-defined call-back: " << ex.what();
       }
     }
     caught_exceptions_.clear();
@@ -1244,7 +1243,7 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
+MPSolver::BasisStatus XpressToMPSolverBasisStatus(
     int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
@@ -1466,13 +1465,7 @@ void XpressInterface::ExtractNewVariables() {
         CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(),
                                  cmatbeg.data(), cmatind.get(), cmatval.get(),
                                  lb.get(), ub.get()));
-        // TODO fixme
-        //  Writing all names worsen the performance significantly
-        // if (have_names) {
-        //    CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN,
-        //    col_names.data(), 0,
-        //                             new_col_count - 1));
-        // }
+
         int const cols = getnumcols(mLp);
         unique_ptr<int[]> ind(new int[new_col_count]);
         for (int j = 0; j < cols; ++j) ind[j] = j;
@@ -1735,14 +1728,13 @@ std::vector<int> XpressBasisStatusesFrom(
 
 void XpressInterface::SetStartingLpBasis(
     const std::vector<MPSolver::BasisStatus>& variable_statuses,
-    const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+    const std::vector<MPSolver::BasisStatus>& constraint_statuses){
   if (mMip) {
     LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
     return;
   }
   initial_variables_basis_status_ = XpressBasisStatusesFrom(variable_statuses);
-  initial_constraint_basis_status_ =
-      XpressBasisStatusesFrom(constraint_statuses);
+  initial_constraint_basis_status_ = XpressBasisStatusesFrom(constraint_statuses);
 }
 
 bool XpressInterface::readParameters(std::istream& is, char sep) {
@@ -1855,8 +1847,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Load basis if present
   // TODO : check number of variables / constraints
-  if (!mMip && !initial_variables_basis_status_.empty() &&
-      !initial_constraint_basis_status_.empty()) {
+  if (!mMip && !initial_variables_basis_status_.empty() && !initial_constraint_basis_status_.empty()) {
     CHECK_STATUS(XPRSloadbasis(mLp, initial_constraint_basis_status_.data(),
                                initial_variables_basis_status_.data()));
   }
@@ -1880,10 +1871,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   int xpress_stat = 0;
   if (mMip) {
-    status = XPRSmipoptimize(mLp, "");
+    status = XPRSmipoptimize(mLp,"");
     XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpress_stat);
   } else {
-    status = XPRSlpoptimize(mLp, "");
+    status = XPRSlpoptimize(mLp,"");
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpress_stat);
   }
 
@@ -2045,11 +2036,60 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   return result_status_;
 }
 
+namespace {
+template <class T>
+struct getNameFlag;
+
+template <>
+struct getNameFlag<MPVariable> {
+  enum { value = XPRS_NAMES_COLUMN };
+};
+
+template <>
+struct getNameFlag<MPConstraint> {
+  enum { value = XPRS_NAMES_ROW };
+};
+
+template <class T>
+// T = MPVariable | MPConstraint
+// or any class that has a public method name() const
+void ExtractNames(XPRSprob mLp, const std::vector<T*>& objects) {
+  const bool have_names =
+      std::any_of(objects.begin(), objects.end(),
+                  [](const T* x) { return !x->name().empty(); });
+
+  // FICO XPRESS requires a single large const char* such as
+  // "name1\0name2\0name3"
+  // See
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddnames.html
+  if (have_names) {
+    std::vector<char> all_names;
+    for (const auto& x : objects) {
+      const std::string& current_name = x->name();
+      std::copy(current_name.begin(), current_name.end(),
+                std::back_inserter(all_names));
+      all_names.push_back('\0');
+    }
+
+    // Remove trailing '\0', if any
+    // Note : Calling pop_back on an empty container is undefined behavior.
+    if (!all_names.empty() && all_names.back() == '\0') all_names.pop_back();
+
+    CHECK_STATUS(XPRSaddnames(mLp, getNameFlag<T>::value, all_names.data(), 0,
+                              objects.size() - 1));
+  }
+}
+}  // namespace
+
 void XpressInterface::Write(const std::string& filename) {
   if (sync_status_ == MUST_RELOAD) {
     Reset();
   }
   ExtractModel();
+
+  ExtractNames(mLp, solver_->constraints_);
+  ExtractNames(mLp, solver_->variables_);
+
   VLOG(1) << "Writing Xpress MPS \"" << filename << "\".";
   const int status = XPRSwriteprob(mLp, filename.c_str(), "");
   if (status) {
