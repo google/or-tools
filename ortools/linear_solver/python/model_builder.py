@@ -932,10 +932,12 @@ class Model:
         return clone
 
     @typing.overload
-    def _get_linear_constraints(self, constraints: Optional[pd.Index]) -> pd.Index: ...
+    def _get_linear_constraints(self, constraints: Optional[pd.Index]) -> pd.Index:
+        ...
 
     @typing.overload
-    def _get_linear_constraints(self, constraints: pd.Series) -> pd.Series: ...
+    def _get_linear_constraints(self, constraints: pd.Series) -> pd.Series:
+        ...
 
     def _get_linear_constraints(
         self, constraints: Optional[_IndexOrSeries] = None
@@ -945,10 +947,12 @@ class Model:
         return constraints
 
     @typing.overload
-    def _get_variables(self, variables: Optional[pd.Index]) -> pd.Index: ...
+    def _get_variables(self, variables: Optional[pd.Index]) -> pd.Index:
+        ...
 
     @typing.overload
-    def _get_variables(self, variables: pd.Series) -> pd.Series: ...
+    def _get_variables(self, variables: pd.Series) -> pd.Series:
+        ...
 
     def _get_variables(
         self, variables: Optional[_IndexOrSeries] = None

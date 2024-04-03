@@ -420,7 +420,6 @@ ENDATA
 
 
 class InternalHelperTest(absltest.TestCase):
-
     def test_anonymous_variables(self):
         helper = mb.Model().helper
         index = helper.add_var()
@@ -435,7 +434,6 @@ class InternalHelperTest(absltest.TestCase):
 
 
 class LinearBaseTest(parameterized.TestCase):
-
     def setUp(self):
         super().setUp()
         simple_model = mb.Model()
@@ -616,7 +614,6 @@ class LinearBaseTest(parameterized.TestCase):
 
 
 class LinearBaseErrorsTest(absltest.TestCase):
-
     def test_unknown_linear_type(self):
         with self.assertRaisesRegex(TypeError, r"Unrecognized linear expression"):
 
@@ -639,7 +636,6 @@ class LinearBaseErrorsTest(absltest.TestCase):
 
 
 class BoundedLinearBaseTest(parameterized.TestCase):
-
     def setUp(self):
         super().setUp()
         simple_model = mb.Model()
@@ -733,7 +729,6 @@ class BoundedLinearBaseTest(parameterized.TestCase):
 
 
 class BoundedLinearBaseErrorsTest(absltest.TestCase):
-
     def test_bounded_linear_expression_as_bool(self):
         with self.assertRaisesRegex(NotImplementedError, "Boolean value"):
             model = mb.Model()
@@ -742,7 +737,6 @@ class BoundedLinearBaseErrorsTest(absltest.TestCase):
 
 
 class ModelBuilderErrorsTest(absltest.TestCase):
-
     def test_new_var_series_errors(self):
         with self.assertRaisesRegex(TypeError, r"Non-index object"):
             model = mb.Model()
@@ -1571,7 +1565,6 @@ class ModelBuilderObjectiveTest(parameterized.TestCase):
 
 
 class ModelBuilderProtoTest(absltest.TestCase):
-
     def test_export_to_proto(self):
         expected = linear_solver_pb2.MPModelProto()
         text_format.Parse(

@@ -261,7 +261,8 @@ class LinearExpr:
         cls,
         expressions: Sequence[LinearExprT],
         coefficients: Sequence[IntegralT],
-    ) -> LinearExprT: ...
+    ) -> LinearExprT:
+        ...
 
     @overload
     @classmethod
@@ -269,7 +270,8 @@ class LinearExpr:
         cls,
         expressions: Sequence[ObjLinearExprT],
         coefficients: Sequence[NumberT],
-    ) -> ObjLinearExprT: ...
+    ) -> ObjLinearExprT:
+        ...
 
     @classmethod
     def weighted_sum(cls, expressions, coefficients):
@@ -287,7 +289,8 @@ class LinearExpr:
         cls,
         expressions: LinearExprT,
         coefficients: IntegralT,
-    ) -> LinearExprT: ...
+    ) -> LinearExprT:
+        ...
 
     @overload
     @classmethod
@@ -295,7 +298,8 @@ class LinearExpr:
         cls,
         expressions: ObjLinearExprT,
         coefficients: NumberT,
-    ) -> ObjLinearExprT: ...
+    ) -> ObjLinearExprT:
+        ...
 
     @classmethod
     def term(cls, expression, coefficient):
@@ -430,10 +434,12 @@ class LinearExpr:
         )
 
     @overload
-    def __add__(self, arg: "LinearExpr") -> "LinearExpr": ...
+    def __add__(self, arg: "LinearExpr") -> "LinearExpr":
+        ...
 
     @overload
-    def __add__(self, arg: NumberT) -> "LinearExpr": ...
+    def __add__(self, arg: NumberT) -> "LinearExpr":
+        ...
 
     def __add__(self, arg):
         if cmh.is_zero(arg):
@@ -441,19 +447,23 @@ class LinearExpr:
         return _Sum(self, arg)
 
     @overload
-    def __radd__(self, arg: "LinearExpr") -> "LinearExpr": ...
+    def __radd__(self, arg: "LinearExpr") -> "LinearExpr":
+        ...
 
     @overload
-    def __radd__(self, arg: NumberT) -> "LinearExpr": ...
+    def __radd__(self, arg: NumberT) -> "LinearExpr":
+        ...
 
     def __radd__(self, arg):
         return self.__add__(arg)
 
     @overload
-    def __sub__(self, arg: "LinearExpr") -> "LinearExpr": ...
+    def __sub__(self, arg: "LinearExpr") -> "LinearExpr":
+        ...
 
     @overload
-    def __sub__(self, arg: NumberT) -> "LinearExpr": ...
+    def __sub__(self, arg: NumberT) -> "LinearExpr":
+        ...
 
     def __sub__(self, arg):
         if cmh.is_zero(arg):
@@ -465,19 +475,23 @@ class LinearExpr:
             return _Sum(self, -arg)
 
     @overload
-    def __rsub__(self, arg: "LinearExpr") -> "LinearExpr": ...
+    def __rsub__(self, arg: "LinearExpr") -> "LinearExpr":
+        ...
 
     @overload
-    def __rsub__(self, arg: NumberT) -> "LinearExpr": ...
+    def __rsub__(self, arg: NumberT) -> "LinearExpr":
+        ...
 
     def __rsub__(self, arg):
         return _Sum(-self, arg)
 
     @overload
-    def __mul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]: ...
+    def __mul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]:
+        ...
 
     @overload
-    def __mul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]: ...
+    def __mul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]:
+        ...
 
     def __mul__(self, arg):
         arg = cmh.assert_is_a_number(arg)
@@ -488,10 +502,12 @@ class LinearExpr:
         return _ProductCst(self, arg)
 
     @overload
-    def __rmul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]: ...
+    def __rmul__(self, arg: IntegralT) -> Union["LinearExpr", IntegralT]:
+        ...
 
     @overload
-    def __rmul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]: ...
+    def __rmul__(self, arg: NumberT) -> Union["LinearExpr", NumberT]:
+        ...
 
     def __rmul__(self, arg):
         return self.__mul__(arg)
@@ -630,7 +646,8 @@ class LinearExpr:
         cls,
         expressions: Sequence[LinearExprT],
         coefficients: Sequence[IntegralT],
-    ) -> LinearExprT: ...
+    ) -> LinearExprT:
+        ...
 
     @overload
     @classmethod
@@ -638,7 +655,8 @@ class LinearExpr:
         cls,
         expressions: Sequence[ObjLinearExprT],
         coefficients: Sequence[NumberT],
-    ) -> ObjLinearExprT: ...
+    ) -> ObjLinearExprT:
+        ...
 
     @classmethod
     def WeightedSum(cls, expressions, coefficients):
@@ -651,7 +669,8 @@ class LinearExpr:
         cls,
         expressions: LinearExprT,
         coefficients: IntegralT,
-    ) -> LinearExprT: ...
+    ) -> LinearExprT:
+        ...
 
     @overload
     @classmethod
@@ -659,7 +678,8 @@ class LinearExpr:
         cls,
         expressions: ObjLinearExprT,
         coefficients: NumberT,
-    ) -> ObjLinearExprT: ...
+    ) -> ObjLinearExprT:
+        ...
 
     @classmethod
     def Term(cls, expression, coefficient):
@@ -1080,10 +1100,12 @@ class Constraint:
         )
 
     @overload
-    def only_enforce_if(self, boolvar: Iterable[LiteralT]) -> "Constraint": ...
+    def only_enforce_if(self, boolvar: Iterable[LiteralT]) -> "Constraint":
+        ...
 
     @overload
-    def only_enforce_if(self, *boolvar: LiteralT) -> "Constraint": ...
+    def only_enforce_if(self, *boolvar: LiteralT) -> "Constraint":
+        ...
 
     def only_enforce_if(self, *boolvar) -> "Constraint":
         """Adds an enforcement literal to the constraint.
@@ -1527,10 +1549,12 @@ class CpModel:
         )
 
     @overload
-    def add(self, ct: BoundedLinearExpression) -> Constraint: ...
+    def add(self, ct: BoundedLinearExpression) -> Constraint:
+        ...
 
     @overload
-    def add(self, ct: Union[bool, np.bool_]) -> Constraint: ...
+    def add(self, ct: Union[bool, np.bool_]) -> Constraint:
+        ...
 
     def add(self, ct):
         """Adds a `BoundedLinearExpression` to the model.
@@ -1555,10 +1579,12 @@ class CpModel:
     # General Integer Constraints.
 
     @overload
-    def add_all_different(self, expressions: Iterable[LinearExprT]) -> Constraint: ...
+    def add_all_different(self, expressions: Iterable[LinearExprT]) -> Constraint:
+        ...
 
     @overload
-    def add_all_different(self, *expressions: LinearExprT) -> Constraint: ...
+    def add_all_different(self, *expressions: LinearExprT) -> Constraint:
+        ...
 
     def add_all_different(self, *expressions):
         """Adds AllDifferent(expressions).
@@ -2045,10 +2071,12 @@ class CpModel:
         return ct
 
     @overload
-    def add_bool_or(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_or(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_bool_or(self, *literals: LiteralT) -> Constraint: ...
+    def add_bool_or(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_bool_or(self, *literals):
         """Adds `Or(literals) == true`: sum(literals) >= 1."""
@@ -2063,20 +2091,24 @@ class CpModel:
         return ct
 
     @overload
-    def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_at_least_one(self, *literals: LiteralT) -> Constraint: ...
+    def add_at_least_one(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_at_least_one(self, *literals):
         """Same as `add_bool_or`: `sum(literals) >= 1`."""
         return self.add_bool_or(*literals)
 
     @overload
-    def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_at_most_one(self, *literals: LiteralT) -> Constraint: ...
+    def add_at_most_one(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_at_most_one(self, *literals):
         """Adds `AtMostOne(literals)`: `sum(literals) <= 1`."""
@@ -2091,10 +2123,12 @@ class CpModel:
         return ct
 
     @overload
-    def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_exactly_one(self, *literals: LiteralT) -> Constraint: ...
+    def add_exactly_one(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_exactly_one(self, *literals):
         """Adds `ExactlyOne(literals)`: `sum(literals) == 1`."""
@@ -2109,10 +2143,12 @@ class CpModel:
         return ct
 
     @overload
-    def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_bool_and(self, *literals: LiteralT) -> Constraint: ...
+    def add_bool_and(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_bool_and(self, *literals):
         """Adds `And(literals) == true`."""
@@ -2127,10 +2163,12 @@ class CpModel:
         return ct
 
     @overload
-    def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
+    def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint:
+        ...
 
     @overload
-    def add_bool_xor(self, *literals: LiteralT) -> Constraint: ...
+    def add_bool_xor(self, *literals: LiteralT) -> Constraint:
+        ...
 
     def add_bool_xor(self, *literals):
         """Adds `XOr(literals) == true`.
@@ -3036,13 +3074,15 @@ class CpModel:
 @overload
 def expand_generator_or_tuple(
     args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]]
-) -> Union[Iterable[LiteralT], LiteralT]: ...
+) -> Union[Iterable[LiteralT], LiteralT]:
+    ...
 
 
 @overload
 def expand_generator_or_tuple(
     args: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]]
-) -> Union[Iterable[LinearExprT], LinearExprT]: ...
+) -> Union[Iterable[LinearExprT], LinearExprT]:
+    ...
 
 
 def expand_generator_or_tuple(args):
