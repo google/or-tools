@@ -13,15 +13,25 @@
 
 #include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
 
+#include <cassert>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
 #include "Highs.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "absl/types/optional.h"
 #include "google/protobuf/repeated_field.h"
+#include "lp_data/HConst.h"
+#include "lp_data/HighsStatus.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -41,7 +51,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const MPModelProto& model = **optional_model;
 
   Highs highs;
-  // highs.setOptionValue("model_name", model.name());
+  // TODO(user): Set model name.
 
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
@@ -70,7 +80,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     std::vector<double> obj_coeffs(variable_size, 0);
     std::vector<double> lb(variable_size);
     std::vector<double> ub(variable_size);
-    std::vector<int> integrality(variable_size);
+    std::vector<HighsVarType> integrality(variable_size);
     std::vector<const char*> varnames(variable_size);
     for (int v = 0; v < variable_size; ++v) {
       const MPVariableProto& variable = model.variable(v);
@@ -81,27 +91,30 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           variable.is_integer() &&
                   request->solver_type() ==
                       MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
-              ? 1
-              : 0;
+              ? HighsVarType::kInteger
+              : HighsVarType::kContinuous;
       if (variable.is_integer()) has_integer_variables = true;
       if (!variable.name().empty()) varnames[v] = variable.name().c_str();
     }
 
     highs.addVars(variable_size, lb.data(), ub.data());
+
+    // Mark integrality.
+    if (has_integer_variables) {
+      for (int v = 0; v < variable_size; ++v) {
+        highs.changeColIntegrality(v, integrality[v]);
+      }
+    }
+
+    // Objective coefficients.
+    assert(obj_coeffs.size() == variable_size);
     for (int column = 0; column < variable_size; column++) {
-      assert(obj_coeffs.size() == variable_size);
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    //  /*varnames=*/const_cast<char**>(varnames.data())));
+    // TODO(user): Set var name.
 
-    // Set solution hints if any.
-    // for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
-    //   RETURN_IF_GUROBI_ERROR(GRBsetdblattrelement(
-    //       gurobi_model, GRB_DBL_ATTR_START,
-    //       model.solution_hint().var_index(i),
-    //       model.solution_hint().var_value(i)));
-    // }
+    // TODO(user): Support hints.
   }
 
   {
@@ -152,9 +165,8 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           response.set_status_str("ct addRow");
           return response;
         }
-
-        // /*constrname=*/constraint.name().c_str()));
       }
+      // TODO(user): add constraint name.
     }
 
     if (!model.general_constraint().empty()) {
@@ -172,7 +184,15 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     const double offset = model.objective_offset();
     highs.changeObjectiveOffset(offset);
   }
-  // if (model.has_quadratic_objective()) {
+
+  // Logging.
+  if (request->enable_internal_solver_output()) {
+    highs.setOptionValue("log_to_console", true);
+    highs.setOptionValue("output_flag", true);
+  } else {
+    highs.setOptionValue("log_to_console", false);
+    highs.setOptionValue("output_flag", false);
+  }
 
   const absl::Time time_before = absl::Now();
   UserTimer user_timer;
@@ -195,9 +215,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           response.set_status(MPSOLVER_OPTIMAL);
           break;
         case HighsModelStatus::kUnboundedOrInfeasible:
-          // DLOG(INFO) << "HiGHSsolve returned kUnboundedOrInfeasible, which we
-          // treat as "
-          //               "INFEASIBLE even though it may mean UNBOUNDED.";
           response.set_status_str(
               "The model may actually be unbounded: HiGHS returned "
               "kUnboundedOrInfeasible");
@@ -210,8 +227,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           response.set_status(MPSOLVER_UNBOUNDED);
           break;
         default: {
-          // todo
-          // if (solution_count > 0)
+          // TODO(user): report feasible status.
           break;
         }
       }
@@ -220,8 +236,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
 
   const absl::Duration solving_duration = absl::Now() - time_before;
   user_timer.Stop();
-  // VLOG(1) << "Finished solving in GurobiSolveProto(), walltime = "
-  //         << solving_duration << ", usertime = " << user_timer.GetDuration();
   response.mutable_solve_info()->set_solve_wall_time_seconds(
       absl::ToDoubleSeconds(solving_duration));
   response.mutable_solve_info()->set_solve_user_time_seconds(
@@ -238,9 +252,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           highs.getSolution().col_value[column];
     }
 
-    // NOTE, HighsSolveProto() is exposed to external clients via MPSolver API,
-    // which assumes the solution values of integer variables are rounded to
-    // integer values.
     auto round_values_of_integer_variables_fn =
         [&](google::protobuf::RepeatedField<double>* values) {
           for (int v = 0; v < variable_size; ++v) {
