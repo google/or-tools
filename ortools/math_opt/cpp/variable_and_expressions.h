@@ -237,7 +237,7 @@ class LinearExpression {
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   // We have to define a custom move constructor as we need to reset storage_ to
   // nullptr.
-  inline LinearExpression(LinearExpression&& other);
+  inline LinearExpression(LinearExpression&& other) noexcept;
   // Usually users should use the overloads of operators to build linear
   // expressions. For example, assuming `x` and `y` are Variable, then `x + 2*y
   // + 5` will build a LinearExpression automatically.
@@ -249,7 +249,7 @@ class LinearExpression {
   LinearExpression& operator=(const LinearExpression& other) = default;
   // We have to define a custom move assignment operator as we need to reset
   // storage_ to nullptr.
-  inline LinearExpression& operator=(LinearExpression&& other);
+  inline LinearExpression& operator=(LinearExpression&& other) noexcept;
 
   inline LinearExpression& operator+=(const LinearExpression& other);
   inline LinearExpression& operator+=(const LinearTerm& term);
@@ -753,7 +753,7 @@ class QuadraticExpression {
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
   // We have to define a custom move constructor as we need to reset storage_ to
   // nullptr.
-  inline QuadraticExpression(QuadraticExpression&& other);
+  inline QuadraticExpression(QuadraticExpression&& other) noexcept;
   // Users should prefer the default constructor and operator overloads to build
   // expressions.
   inline QuadraticExpression(
@@ -767,7 +767,7 @@ class QuadraticExpression {
   QuadraticExpression& operator=(const QuadraticExpression& other) = default;
   // We have to define a custom move assignment operator as we need to reset
   // storage_ to nullptr.
-  inline QuadraticExpression& operator=(QuadraticExpression&& other);
+  inline QuadraticExpression& operator=(QuadraticExpression&& other) noexcept;
 
   inline double offset() const;
   inline const VariableMap<double>& linear_terms() const;
@@ -1372,7 +1372,7 @@ void LinearExpression::SetOrCheckStorage(const ModelStorage* const storage) {
   CHECK_EQ(storage, storage_) << internal::kObjectsFromOtherModelStorage;
 }
 
-LinearExpression::LinearExpression(LinearExpression&& other)
+LinearExpression::LinearExpression(LinearExpression&& other) noexcept
     : storage_(std::exchange(other.storage_, nullptr)),
       terms_(std::move(other.terms_)),
       offset_(std::exchange(other.offset_, 0.0)) {
@@ -1382,7 +1382,8 @@ LinearExpression::LinearExpression(LinearExpression&& other)
 #endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 }
 
-LinearExpression& LinearExpression::operator=(LinearExpression&& other) {
+LinearExpression& LinearExpression::operator=(
+    LinearExpression&& other) noexcept {
   storage_ = std::exchange(other.storage_, nullptr);
   terms_ = std::move(other.terms_);
   other.terms_.clear();
@@ -2127,7 +2128,7 @@ void QuadraticExpression::SetOrCheckStorage(const ModelStorage* const storage) {
   CHECK_EQ(storage, storage_) << internal::kObjectsFromOtherModelStorage;
 }
 
-QuadraticExpression::QuadraticExpression(QuadraticExpression&& other)
+QuadraticExpression::QuadraticExpression(QuadraticExpression&& other) noexcept
     : storage_(std::exchange(other.storage_, nullptr)),
       quadratic_terms_(std::move(other.quadratic_terms_)),
       linear_terms_(std::move(other.linear_terms_)),
@@ -2140,7 +2141,7 @@ QuadraticExpression::QuadraticExpression(QuadraticExpression&& other)
 }
 
 QuadraticExpression& QuadraticExpression::operator=(
-    QuadraticExpression&& other) {
+    QuadraticExpression&& other) noexcept {
   storage_ = std::exchange(other.storage_, nullptr);
   quadratic_terms_ = std::move(other.quadratic_terms_);
   other.quadratic_terms_.clear();

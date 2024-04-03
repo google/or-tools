@@ -25,6 +25,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -621,7 +622,9 @@ TEST_P(InfeasibleSubsystemTest, NoStdoutOutputByDefault) {
   const std::string standard_output =
       std::move(stdout_capture).StopCaptureAndReturnContents();
   ASSERT_OK(result);
-  EXPECT_EQ(standard_output, "");
+  EXPECT_THAT(standard_output,
+              EmptyOrGurobiLicenseWarningIfGurobi(
+                  /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
   EXPECT_EQ(result->feasibility, FeasibilityStatus::kInfeasible);
 }
 
@@ -661,7 +664,9 @@ TEST_P(InfeasibleSubsystemTest, EnableOutputIgnoredWithMessageCallback) {
   const std::string standard_output =
       std::move(stdout_capture).StopCaptureAndReturnContents();
   ASSERT_OK(result);
-  EXPECT_EQ(standard_output, "");
+  EXPECT_THAT(standard_output,
+              EmptyOrGurobiLicenseWarningIfGurobi(
+                  /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
   EXPECT_EQ(result->feasibility, FeasibilityStatus::kInfeasible);
   EXPECT_THAT(absl::StrJoin(logs, "\n"), HasSubstr("IIS computed"));
 }

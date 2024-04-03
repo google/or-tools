@@ -30,6 +30,7 @@
 #include <utility>
 #include <vector>
 
+#include "Highs.h"
 #include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
@@ -40,7 +41,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "Highs.h"
 #include "io/HighsIO.h"
 #include "lp_data/HConst.h"
 #include "lp_data/HStruct.h"
@@ -50,7 +50,6 @@
 #include "lp_data/HighsOptions.h"
 #include "lp_data/HighsStatus.h"
 #include "model/HighsModel.h"
-#include "util/HighsInt.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
@@ -67,6 +66,7 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/util/solve_interrupter.h"
 #include "ortools/util/status_macros.h"
+#include "util/HighsInt.h"
 
 namespace operations_research::math_opt {
 namespace {

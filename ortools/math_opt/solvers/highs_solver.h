@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
+#include "Highs.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "Highs.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
