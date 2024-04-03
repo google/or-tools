@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB_RECURSE _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_gurobi)
+
+file(GLOB_RECURSE _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX "/gurobi_stdout_matchers\..*$")
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
