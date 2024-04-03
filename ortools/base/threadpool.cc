@@ -29,6 +29,8 @@ void RunWorker(void* data) {
   }
 }
 
+ThreadPool::ThreadPool(int num_workers) : num_workers_(num_workers) {}
+
 ThreadPool::ThreadPool(absl::string_view prefix, int num_workers)
     : num_workers_(num_workers) {}
 

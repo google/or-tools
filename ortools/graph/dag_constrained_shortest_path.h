@@ -26,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/threadpool.h"
 #include "ortools/graph/dag_shortest_path.h"
 #include "ortools/graph/graph.h"
 
@@ -135,8 +136,6 @@ class ConstrainedShortestPathsOnDagWrapper {
   //
   // IMPORTANT: You cannot modify anything except `arc_lengths` between calls to
   // the `RunConstrainedShortestPathOnDag()` function.
-  // TODO(b/330285675): Change API to copy everything internally except the
-  // lengths.
   ConstrainedShortestPathsOnDagWrapper(
       const GraphType* graph, const std::vector<double>* arc_lengths,
       const std::vector<std::vector<double>>* arc_resources,
@@ -402,33 +401,64 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   }
 
   // Get reachable subgraph.
+  std::vector<bool> is_reachable(num_nodes, true);
   std::vector<NodeIndex> sub_topological_order;
   sub_topological_order.reserve(num_nodes);
   for (const NodeIndex node_index : topological_order) {
-    bool is_reachable = true;
     for (int r = 0; r < num_resources_; ++r) {
       if (full_min_arc_resources[FORWARD][r][node_index] +
               full_min_arc_resources[BACKWARD][r][node_index] >
           (*max_resources)[r]) {
-        is_reachable = false;
+        is_reachable[node_index] = false;
         break;
       }
     }
-    if (is_reachable) {
+    if (is_reachable[node_index]) {
       sub_topological_order.push_back(node_index);
     }
   }
   const int reachable_node_count = sub_topological_order.size();
 
-  // Split sub-graphs and related information.
-  const int mid_index = reachable_node_count / 2;
   // We split the number of labels evenly between each search (+1 for the
-  // additional source node)
-  // TODO(329206892): Could be optimized depending on the split and number of
-  // arcs in the sub-graph.
-  max_num_created_labels_[FORWARD] = max_num_created_labels / 2;
-  max_num_created_labels_[BACKWARD] =
-      max_num_created_labels - max_num_created_labels_[FORWARD];
+  // additional source node).
+  max_num_created_labels_[BACKWARD] = max_num_created_labels / 2 + 1;
+  max_num_created_labels_[FORWARD] =
+      max_num_created_labels - max_num_created_labels / 2 + 1;
+
+  // Split sub-graphs and related information.
+  // The split is based on the number of paths. This is used as a simple proxy
+  // for the number of labels.
+  int mid_index = 0;
+  {
+    // We use double to avoid overflow. Note that this is an heuristic, so we
+    // don't care too much if we are not precise enough.
+    std::vector<double> path_count[2];
+    for (const Direction dir : {FORWARD, BACKWARD}) {
+      const GraphType& reverse_full_graph = *(full_graph[Reverse(dir)]);
+      path_count[dir].resize(num_nodes);
+      for (const NodeIndex source : full_sources[dir]) {
+        ++path_count[dir][source];
+      }
+      for (const NodeIndex to : full_topological_order[dir]) {
+        if (!is_reachable[to]) continue;
+        for (const ArcIndex arc : reverse_full_graph.OutgoingArcs(to)) {
+          const NodeIndex from = reverse_full_graph.Head(arc);
+          if (!is_reachable[from]) continue;
+          path_count[dir][to] += path_count[dir][from];
+        }
+      }
+    }
+    for (const NodeIndex node_index : sub_topological_order) {
+      if (path_count[FORWARD][node_index] > path_count[BACKWARD][node_index]) {
+        break;
+      }
+      ++mid_index;
+    }
+    if (mid_index == reachable_node_count) {
+      mid_index = reachable_node_count / 2;
+    }
+  }
+
   for (const Direction dir : {FORWARD, BACKWARD}) {
     absl::Span<const NodeIndex> const sub_nodes =
         dir == FORWARD
@@ -499,9 +529,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
       util::Permute(sub_permutation, &sub_arc_resources_[dir][r]);
     }
     util::Permute(sub_permutation, &sub_full_arc_indices_[dir]);
-    // We add labels corresponding to the sources in the sub-graph as these will
-    // be artificially created labels due to the
-    max_num_created_labels_[dir] += full_sources[dir].size();
   }
 
   // Memory allocation is done here and only once in order to avoid
@@ -535,12 +562,11 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
     }
   }
 
-  // TODO(b/329036127): Each search could be done in parallel as no data is
-  // shared except `best_label_pair_`.
-  LabelPair best_label_pair = {
-      .length = std::numeric_limits<double>::infinity(),
-      .label_index = {-1, -1}};
+  {
+    ThreadPool search_threads(2);
+    search_threads.StartWorkers();
   for (const Direction dir : {FORWARD, BACKWARD}) {
+      search_threads.Schedule([this, dir, &sub_arc_lengths]() {
     RunHalfConstrainedShortestPathOnDag(
         /*reverse_graph=*/sub_reverse_graph_[dir],
         /*arc_lengths=*/sub_arc_lengths[dir],
@@ -554,9 +580,14 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
         incoming_arc_indices_from_sources_[dir],
         /*first_label=*/node_first_label_[dir],
         /*num_labels=*/node_num_labels_[dir]);
+      });
+    }
   }
 
   // Check destinations within relevant half sub-graphs.
+  LabelPair best_label_pair = {
+      .length = std::numeric_limits<double>::infinity(),
+      .label_index = {-1, -1}};
   for (const Direction dir : {FORWARD, BACKWARD}) {
     absl::Span<const NodeIndex> destinations =
         dir == FORWARD ? destinations_ : sources_;
@@ -777,8 +808,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
   absl::Span<const int> backward_first_label = first_label[BACKWARD];
   absl::Span<const int> backward_num_labels = num_labels[BACKWARD];
   ArcIndex merging_arc_index = -1;
-  // TODO(b/328745703): These operations could be run in parallel with a mutex
-  // over `best_label_pair`.
   for (ArcIndex arc_index = 0; arc_index < graph.num_arcs(); ++arc_index) {
     const NodeIndex sub_from = forward_sub_node_indices[graph.Tail(arc_index)];
     if (sub_from == -1) {

@@ -423,16 +423,16 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, LimitMaximumNumberOfLabels) {
           &graph, &arc_lengths, &arc_resources, topological_order, sources,
           destinations, &max_resources, /*max_num_created_labels=*/1);
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
-      constrained_shortest_path_on_dag_with_three_labels(
+      constrained_shortest_path_on_dag_with_four_labels(
           &graph, &arc_lengths, &arc_resources, topological_order, sources,
-          destinations, &max_resources, /*max_num_created_labels=*/3);
+          destinations, &max_resources, /*max_num_created_labels=*/4);
 
   EXPECT_THAT(constrained_shortest_path_on_dag_with_one_label
                   .RunConstrainedShortestPathOnDag(),
               FieldsAre(/*length=*/kInf,
                         /*arc_path=*/IsEmpty(),
                         /*node_path=*/IsEmpty()));
-  EXPECT_THAT(constrained_shortest_path_on_dag_with_three_labels
+  EXPECT_THAT(constrained_shortest_path_on_dag_with_four_labels
                   .RunConstrainedShortestPathOnDag(),
               FieldsAre(/*length=*/3.0, /*arc_path=*/ElementsAre(0, 1),
                         /*node_path=*/ElementsAre(source, a, destination)));
@@ -631,15 +631,102 @@ void BM_RandomDag(benchmark::State& state) {
 }
 
 BENCHMARK(BM_RandomDag)
-    ->ArgPair(1 << 6, 4)
-    ->ArgPair(1 << 6, 16)
-    ->ArgPair(1 << 9, 4)
-    ->ArgPair(1 << 9, 16)
-    ->ArgPair(1 << 12, 4)
-    ->ArgPair(1 << 12, 16)
-    ->ArgPair(1 << 15, 4)
-    ->ArgPair(1 << 15, 16)
-    ->ArgPair(1 << 18, 4);
+    ->ArgPair(1 << 10, 16)
+    ->ArgPair(1 << 16, 4)
+    ->ArgPair(1 << 16, 16)
+    ->ArgPair(1 << 19, 4)
+    ->ArgPair(1 << 19, 16)
+    ->ArgPair(1 << 22, 4);
+
+// Generate a 2-dimensional grid DAG.
+// Eg. for width=3, height=2, it generates this:
+// 0 ----> 1 ----> 2
+// |       |       |
+// |       |       |
+// v       v       v
+// 3 ----> 4 ----> 5
+void BM_GridDAG(benchmark::State& state) {
+  const int64_t width = state.range(0);
+  const int64_t height = state.range(1);
+  const int num_resources = state.range(2);
+  const int num_nodes = width * height;
+  const int num_arcs = 2 * num_nodes - width - height;
+  util::StaticGraph<> graph(num_nodes, num_arcs);
+  // Add horizontal edges.
+  for (int i = 0; i < height; ++i) {
+    for (int j = 1; j < width; ++j) {
+      const int left = i * width + (j - 1);
+      const int right = i * width + j;
+      graph.AddArc(left, right);
+    }
+  }
+  // Add vertical edges.
+  for (int i = 1; i < height; ++i) {
+    for (int j = 0; j < width; ++j) {
+      const int up = (i - 1) * width + j;
+      const int down = i * width + j;
+      graph.AddArc(up, down);
+    }
+  }
+  graph.Build();
+  std::vector<int> topological_order(num_nodes);
+  absl::c_iota(topological_order, 0);
+
+  // Generate 20 scenarios of random arc lengths.
+  absl::BitGen bit_gen;
+  const int kNumScenarios = 20;
+  std::vector<std::vector<double>> arc_lengths_scenarios;
+  for (int unused = 0; unused < kNumScenarios; ++unused) {
+    std::vector<double> arc_lengths(graph.num_arcs());
+    for (int i = 0; i < graph.num_arcs(); ++i) {
+      arc_lengths[i] = absl::Uniform<double>(bit_gen, 0, 1);
+    }
+    arc_lengths_scenarios.push_back(arc_lengths);
+  }
+
+  std::vector<std::vector<double>> arc_resources(num_resources);
+  for (int r = 0; r < num_resources; ++r) {
+    arc_resources[r].resize(graph.num_arcs());
+    for (int i = 0; i < graph.num_arcs(); ++i) {
+      arc_resources[r][i] = absl::Uniform<double>(bit_gen, 0, 1);
+    }
+  }
+
+  std::vector<double> arc_lengths(num_arcs);
+  const std::vector<int> sources = {0};
+  const std::vector<int> destinations = {num_nodes - 1};
+  std::vector<double> max_resources(num_resources);
+  // Each path from source to destination has `(width + height - 2)` arcs. Each
+  // arc has mean resource(s) 0.5. We want to consider paths with half (0.5) the
+  // mean resource(s).
+  const double max_resource = (width + height - 2) * 0.5 * 0.5;
+  for (int r = 0; r < num_resources; ++r) {
+    max_resources[r] = max_resource;
+  }
+
+  ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
+      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
+                                       topological_order, sources, destinations,
+                                       &max_resources);
+
+  int total_label_count = 0;
+  for (auto _ : state) {
+    // Pick a arc lengths scenario at random.
+    arc_lengths =
+        arc_lengths_scenarios[absl::Uniform<int>(bit_gen, 0, kNumScenarios)];
+    const PathWithLength path_with_length =
+        constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
+    total_label_count += constrained_shortest_path_on_dag.label_count();
+    CHECK_GE(path_with_length.length, 0.0);
+  }
+  state.SetItemsProcessed(std::max(1, total_label_count));
+}
+
+BENCHMARK(BM_GridDAG)
+    ->Args({100, 100, 1})
+    ->Args({100, 100, 2})
+    ->Args({1000, 100, 1})
+    ->Args({1000, 100, 2});
 
 // -----------------------------------------------------------------------------
 // Debug tests.
