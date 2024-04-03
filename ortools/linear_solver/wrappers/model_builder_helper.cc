@@ -38,6 +38,9 @@
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 #endif  // defined(USE_SCIP)
+#if defined(USE_HIGHS)
+#include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
+#endif  // defined(USE_HIGHS)
 #if defined(USE_PDLP)
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
 #endif  // defined(USE_PDLP)
@@ -534,6 +537,12 @@ bool ModelSolverHelper::SolverIsSupported() const {
     return true;
   }
 #endif  // USE_SCIP
+#ifdef USE_HIGHS
+  if (solver_type_.value() == MPModelRequest::HIGHS_LINEAR_PROGRAMMING ||
+      solver_type_.value() == MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
+#endif  // USE_HIGHS
   if (solver_type_.value() ==
           MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING ||
       solver_type_.value() == MPModelRequest::GUROBI_LINEAR_PROGRAMMING) {
@@ -605,6 +614,18 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       }
       break;
     }
+#if defined(USE_HIGHS)
+    case MPModelRequest::HIGHS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
+    case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING: {
+      // TODO(user): Enable log_callback support.
+      // TODO(user): Enable interrupt_solve.
+      const auto temp = HighsSolveProto(std::move(request));
+      if (temp.ok()) {
+        response_ = std::move(temp.value());
+      }
+      break;
+    }
+#endif  // defined(USE_HIGHS)
     case MPModelRequest::
         XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
