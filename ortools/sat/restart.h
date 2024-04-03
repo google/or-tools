@@ -57,8 +57,8 @@ class RestartPolicy {
   // Returns a string with the current restart statistics.
   std::string InfoString() const;
 
-  const RunningAverage& LbdRunningAverage() const {
-    return lbd_running_average_;
+  double LbdAverageSinceReset() const {
+    return lbd_running_average_.GlobalAverage();
   }
 
  private:

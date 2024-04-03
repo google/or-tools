@@ -2274,6 +2274,7 @@ cc_library(
         ":sat_solver",
         ":synchronization",
         ":util",
+        "//ortools/util:running_stat",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",

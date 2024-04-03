@@ -91,6 +91,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(mip_max_valid_magnitude);
   TEST_IS_FINITE(mip_drop_tolerance);
   TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
+  TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
 
   TEST_POSITIVE(at_most_one_max_expansion_size);
 
@@ -128,6 +129,7 @@ std::string ValidateParameters(const SatParameters& params) {
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
+  TEST_POSITIVE(shared_tree_open_leaves_per_worker);
   TEST_POSITIVE(mip_var_scaling);
 
   // Test LP tolerances.

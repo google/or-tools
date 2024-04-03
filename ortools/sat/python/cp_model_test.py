@@ -994,10 +994,10 @@ class CpModelTest(absltest.TestCase):
         x = model.new_int_var(0, 4, "x")
         y = model.new_int_var(0, 3, "y")
         i = model.new_interval_var(x, 3, y, "i")
-        self.assertEqual(1, i.index)
+        self.assertEqual(0, i.index)
 
         j = model.new_fixed_size_interval_var(x, 2, "j")
-        self.assertEqual(2, j.index)
+        self.assertEqual(1, j.index)
         start_expr = j.start_expr()
         size_expr = j.size_expr()
         end_expr = j.end_expr()
@@ -1015,16 +1015,16 @@ class CpModelTest(absltest.TestCase):
         j = model.new_optional_interval_var(x, y, 10, b, "j")
         k = model.new_optional_interval_var(x, -y, 10, b, "k")
         l = model.new_optional_interval_var(x, 10, -y, b, "l")
-        self.assertEqual(1, i.index)
-        self.assertEqual(3, j.index)
-        self.assertEqual(5, k.index)
-        self.assertEqual(7, l.index)
+        self.assertEqual(0, i.index)
+        self.assertEqual(1, j.index)
+        self.assertEqual(2, k.index)
+        self.assertEqual(3, l.index)
         self.assertRaises(TypeError, model.new_optional_interval_var, 1, 2, 3, x, "x")
         self.assertRaises(
             TypeError, model.new_optional_interval_var, b + x, 2, 3, b, "x"
         )
         self.assertRaises(
-            AttributeError, model.new_optional_interval_var, 1, 2, 3, b + 1, "x"
+            TypeError, model.new_optional_interval_var, 1, 2, 3, b + 1, "x"
         )
 
     def testNoOverlap(self):
@@ -1036,10 +1036,10 @@ class CpModelTest(absltest.TestCase):
         i = model.new_interval_var(x, 3, y, "i")
         j = model.new_interval_var(x, 5, z, "j")
         ct = model.add_no_overlap([i, j])
-        self.assertEqual(4, ct.index)
+        self.assertEqual(2, ct.index)
         self.assertLen(ct.proto.no_overlap.intervals, 2)
-        self.assertEqual(1, ct.proto.no_overlap.intervals[0])
-        self.assertEqual(3, ct.proto.no_overlap.intervals[1])
+        self.assertEqual(0, ct.proto.no_overlap.intervals[0])
+        self.assertEqual(1, ct.proto.no_overlap.intervals[1])
 
     def testNoOverlap2D(self):
         print("testNoOverlap2D")
@@ -1050,13 +1050,13 @@ class CpModelTest(absltest.TestCase):
         i = model.new_interval_var(x, 3, y, "i")
         j = model.new_interval_var(x, 5, z, "j")
         ct = model.add_no_overlap_2d([i, j], [j, i])
-        self.assertEqual(4, ct.index)
+        self.assertEqual(2, ct.index)
         self.assertLen(ct.proto.no_overlap_2d.x_intervals, 2)
-        self.assertEqual(1, ct.proto.no_overlap_2d.x_intervals[0])
-        self.assertEqual(3, ct.proto.no_overlap_2d.x_intervals[1])
+        self.assertEqual(0, ct.proto.no_overlap_2d.x_intervals[0])
+        self.assertEqual(1, ct.proto.no_overlap_2d.x_intervals[1])
         self.assertLen(ct.proto.no_overlap_2d.y_intervals, 2)
-        self.assertEqual(3, ct.proto.no_overlap_2d.y_intervals[0])
-        self.assertEqual(1, ct.proto.no_overlap_2d.y_intervals[1])
+        self.assertEqual(1, ct.proto.no_overlap_2d.y_intervals[0])
+        self.assertEqual(0, ct.proto.no_overlap_2d.y_intervals[1])
 
     def testCumulative(self):
         print("testCumulative")
@@ -1073,7 +1073,7 @@ class CpModelTest(absltest.TestCase):
         demands = [1, 3, 5, 2, 4, 5, 3, 4, 2, 3]
         capacity = 4
         ct = model.add_cumulative(intervals, demands, capacity)
-        self.assertEqual(20, ct.index)
+        self.assertEqual(10, ct.index)
         self.assertLen(ct.proto.cumulative.intervals, 10)
         self.assertRaises(TypeError, model.add_cumulative, [intervals[0], 3], [2, 3], 3)
 
@@ -1614,7 +1614,7 @@ class CpModelTest(absltest.TestCase):
             + fixed_intervals.to_list()
             + absent_fixed_intervals.to_list()
         )
-        self.assertLen(model.proto.constraints, 19)
+        self.assertLen(model.proto.constraints, 13)
 
 
 if __name__ == "__main__":
