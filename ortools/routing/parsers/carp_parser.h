@@ -60,6 +60,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
@@ -156,7 +157,7 @@ class CarpParser {
   };
 
   void Initialize();
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(absl::string_view file_name);
   bool ParseMetadataLine(absl::Span<const std::string> words);
   bool ParseEdge(std::string_view line, bool with_servicing);
 

@@ -43,7 +43,7 @@ File* OpenReadOnly(absl::string_view file_name) {
 
 PdTspParser::PdTspParser() : section_(SIZE_SECTION) {}
 
-bool PdTspParser::LoadFile(const std::string& file_name) {
+bool PdTspParser::LoadFile(absl::string_view file_name) {
   for (const std::string& line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);

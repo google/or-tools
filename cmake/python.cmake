@@ -147,6 +147,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
@@ -340,6 +341,8 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
 endif()
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/__init__.py CONTENT "")
+
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")

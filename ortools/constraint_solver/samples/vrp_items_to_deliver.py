@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # [START program]
 """Vehicles Routing Problem (VRP) for delivering items from any suppliers.
-Description:
-Need to deliver some item X and Y at end nodes (at least 11 X and 13 Y).
-Several locations provide them and even few provide both.
+
+Description: Need to deliver some item X and Y at end nodes (at least 11 X and
+13 Y). Several locations provide them and even few provide both.
 
 fleet:
   * vehicles: 2
@@ -14,8 +14,8 @@ fleet:
 """
 
 # [START import]
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver import routing_enums_pb2
 
 # [END import]
 
@@ -79,76 +79,331 @@ def create_data_model():
     # [END demands_capacities]
     data["distance_matrix"] = [
         [
-            0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354,
-            468, 776, 662
+            0,
+            548,
+            776,
+            696,
+            582,
+            274,
+            502,
+            194,
+            308,
+            194,
+            536,
+            502,
+            388,
+            354,
+            468,
+            776,
+            662,
         ],
         [
-            548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674,
-            1016, 868, 1210
+            548,
+            0,
+            684,
+            308,
+            194,
+            502,
+            730,
+            354,
+            696,
+            742,
+            1084,
+            594,
+            480,
+            674,
+            1016,
+            868,
+            1210,
         ],
         [
-            776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
-            1130, 788, 1552, 754
+            776,
+            684,
+            0,
+            992,
+            878,
+            502,
+            274,
+            810,
+            468,
+            742,
+            400,
+            1278,
+            1164,
+            1130,
+            788,
+            1552,
+            754,
         ],
         [
-            696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628, 822,
-            1164, 560, 1358
+            696,
+            308,
+            992,
+            0,
+            114,
+            650,
+            878,
+            502,
+            844,
+            890,
+            1232,
+            514,
+            628,
+            822,
+            1164,
+            560,
+            1358,
         ],
         [
-            582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514, 708,
-            1050, 674, 1244
+            582,
+            194,
+            878,
+            114,
+            0,
+            536,
+            764,
+            388,
+            730,
+            776,
+            1118,
+            400,
+            514,
+            708,
+            1050,
+            674,
+            1244,
         ],
         [
-            274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628,
-            514, 1050, 708
+            274,
+            502,
+            502,
+            650,
+            536,
+            0,
+            228,
+            308,
+            194,
+            240,
+            582,
+            776,
+            662,
+            628,
+            514,
+            1050,
+            708,
         ],
         [
-            502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890, 856,
-            514, 1278, 480
+            502,
+            730,
+            274,
+            878,
+            764,
+            228,
+            0,
+            536,
+            194,
+            468,
+            354,
+            1004,
+            890,
+            856,
+            514,
+            1278,
+            480,
         ],
         [
-            194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320,
-            662, 742, 856
+            194,
+            354,
+            810,
+            502,
+            388,
+            308,
+            536,
+            0,
+            342,
+            388,
+            730,
+            468,
+            354,
+            320,
+            662,
+            742,
+            856,
         ],
         [
-            308, 696, 468, 844, 730, 194, 194, 342, 0, 274, 388, 810, 696, 662,
-            320, 1084, 514
+            308,
+            696,
+            468,
+            844,
+            730,
+            194,
+            194,
+            342,
+            0,
+            274,
+            388,
+            810,
+            696,
+            662,
+            320,
+            1084,
+            514,
         ],
         [
-            194, 742, 742, 890, 776, 240, 468, 388, 274, 0, 342, 536, 422, 388,
-            274, 810, 468
+            194,
+            742,
+            742,
+            890,
+            776,
+            240,
+            468,
+            388,
+            274,
+            0,
+            342,
+            536,
+            422,
+            388,
+            274,
+            810,
+            468,
         ],
         [
-            536, 1084, 400, 1232, 1118, 582, 354, 730, 388, 342, 0, 878, 764,
-            730, 388, 1152, 354
+            536,
+            1084,
+            400,
+            1232,
+            1118,
+            582,
+            354,
+            730,
+            388,
+            342,
+            0,
+            878,
+            764,
+            730,
+            388,
+            1152,
+            354,
         ],
         [
-            502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0, 114,
-            308, 650, 274, 844
+            502,
+            594,
+            1278,
+            514,
+            400,
+            776,
+            1004,
+            468,
+            810,
+            536,
+            878,
+            0,
+            114,
+            308,
+            650,
+            274,
+            844,
         ],
         [
-            388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0, 194,
-            536, 388, 730
+            388,
+            480,
+            1164,
+            628,
+            514,
+            662,
+            890,
+            354,
+            696,
+            422,
+            764,
+            114,
+            0,
+            194,
+            536,
+            388,
+            730,
         ],
         [
-            354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0,
-            342, 422, 536
+            354,
+            674,
+            1130,
+            822,
+            708,
+            628,
+            856,
+            320,
+            662,
+            388,
+            730,
+            308,
+            194,
+            0,
+            342,
+            422,
+            536,
         ],
         [
-            468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536,
-            342, 0, 764, 194
+            468,
+            1016,
+            788,
+            1164,
+            1050,
+            514,
+            514,
+            662,
+            320,
+            274,
+            388,
+            650,
+            536,
+            342,
+            0,
+            764,
+            194,
         ],
         [
-            776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274,
-            388, 422, 764, 0, 798
+            776,
+            868,
+            1552,
+            560,
+            674,
+            1050,
+            1278,
+            742,
+            1084,
+            810,
+            1152,
+            274,
+            388,
+            422,
+            764,
+            0,
+            798,
         ],
         [
-            662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730,
-            536, 194, 798, 0
+            662,
+            1210,
+            754,
+            1358,
+            1244,
+            708,
+            480,
+            856,
+            514,
+            468,
+            354,
+            844,
+            730,
+            536,
+            194,
+            798,
+            0,
         ],
     ]
-    assert len(data['providers_x']) == len(data['distance_matrix'])
-    assert len(data['providers_y']) == len(data['distance_matrix'])
+    assert len(data["providers_x"]) == len(data["distance_matrix"])
+    assert len(data["providers_y"]) == len(data["distance_matrix"])
     return data
     # [END data_model]
 
@@ -156,14 +411,14 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
-    print(f'Objective: {assignment.ObjectiveValue()}')
+    print(f"Objective: {assignment.ObjectiveValue()}")
     # Display dropped nodes.
-    dropped_nodes = 'Dropped nodes:'
+    dropped_nodes = "Dropped nodes:"
     for node in range(routing.Size()):
         if routing.IsStart(node) or routing.IsEnd(node):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += f' {manager.IndexToNode(node)}'
+            dropped_nodes += f" {manager.IndexToNode(node)}"
     print(dropped_nodes)
     # Display routes
     total_distance = 0
@@ -171,31 +426,31 @@ def print_solution(data, manager, routing, assignment):
     total_load_y = 0
     for vehicle_id in range(manager.GetNumberOfVehicles()):
         index = routing.Start(vehicle_id)
-        plan_output = f'Route for vehicle {vehicle_id}:\n'
+        plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         route_load_x = 0
         route_load_y = 0
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
-            route_load_x += data['providers_x'][node_index]
-            route_load_y += data['providers_y'][node_index]
-            plan_output += f' {node_index} Load(X:{route_load_x}, Y:{route_load_y}) -> '
+            route_load_x += data["providers_x"][node_index]
+            route_load_y += data["providers_y"][node_index]
+            plan_output += f" {node_index} Load(X:{route_load_x}, Y:{route_load_y}) -> "
             previous_index = index
             previous_node_index = node_index
             index = assignment.Value(routing.NextVar(index))
             node_index = manager.IndexToNode(index)
-            #route_distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
-            route_distance += data['distance_matrix'][previous_node_index][node_index]
+            # route_distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+            route_distance += data["distance_matrix"][previous_node_index][node_index]
         node_index = manager.IndexToNode(index)
-        plan_output += f' {node_index} Load({route_load_x}, {route_load_y})\n'
-        plan_output += f'Distance of the route: {route_distance}m\n'
-        plan_output += f'Load of the route: X:{route_load_x}, Y:{route_load_y}\n'
+        plan_output += f" {node_index} Load({route_load_x}, {route_load_y})\n"
+        plan_output += f"Distance of the route: {route_distance}m\n"
+        plan_output += f"Load of the route: X:{route_load_x}, Y:{route_load_y}\n"
         print(plan_output)
         total_distance += route_distance
         total_load_x += route_load_x
         total_load_y += route_load_y
-    print(f'Total Distance of all routes: {total_distance}m')
-    print(f'Total load of all routes: X:{total_load_x}, Y:{total_load_y}')
+    print(f"Total Distance of all routes: {total_distance}m")
+    print(f"Total load of all routes: X:{total_load_x}, Y:{total_load_y}")
     # [END solution_printer]
 
 
@@ -209,7 +464,10 @@ def main():
     # Create the routing index manager.
     # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["starts"], data["ends"]
+        len(data["distance_matrix"]),
+        data["num_vehicles"],
+        data["starts"],
+        data["ends"],
     )
     # [END index_manager]
 

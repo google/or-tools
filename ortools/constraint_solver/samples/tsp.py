@@ -20,11 +20,11 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 """
 
 # [START import]
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 
-FirstSolutionStrategy = routing_enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = routing_enums_pb2.RoutingSearchStatus
+FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 # [END import]
 
 

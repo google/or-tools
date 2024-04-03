@@ -15,18 +15,18 @@
 # [START program]
 """Capacitated Vehicle Routing Problem with Time Windows (CVRPTW).
 
-   This is a sample using the routing library python wrapper to solve a CVRPTW
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a CVRPTW
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters and time in minutes.
+Distances are in meters and time in minutes.
 """
 
 # [START import]
 import functools
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 # [END import]
 
 
@@ -326,7 +326,11 @@ def main():
         vehicle_break = data["breaks"][v]
         break_intervals[v] = [
             routing.solver().FixedDurationIntervalVar(
-                15, 100, vehicle_break[0], vehicle_break[1], f"Break for vehicle {v}"
+                15,
+                100,
+                vehicle_break[0],
+                vehicle_break[1],
+                f"Break for vehicle {v}",
             )
         ]
         time_dimension.SetBreakIntervalsOfVehicle(
@@ -337,7 +341,7 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )  # pylint: disable=no-member
     # [END parameters]
 

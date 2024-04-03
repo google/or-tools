@@ -69,17 +69,6 @@ cc_proto_library(
 )
 
 proto_library(
-    name = "routing_ils_proto",
-    srcs = ["routing_ils.proto"],
-    deps = [":routing_enums_proto"],
-)
-
-cc_proto_library(
-    name = "routing_ils_cc_proto",
-    deps = ["routing_ils_proto"],
-)
-
-proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
 )
@@ -175,7 +164,6 @@ cc_library(
         ":search_limit_cc_proto",
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
-        ":routing_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:recordio",
@@ -220,61 +208,18 @@ cc_library(
 
 # ----- Routing and ArcRouting -----
 
-proto_library(
-    name = "routing_enums_proto",
-    srcs = ["routing_enums.proto"],
-)
-
-cc_proto_library(
-    name = "routing_enums_cc_proto",
-    deps = [":routing_enums_proto"],
-)
-
-# java_proto_library(
-#     name = "routing_enums_java_proto",
-#     deps = [":routing_enums_proto"],
-# )
-
-proto_library(
-    name = "routing_parameters_proto",
-    srcs = ["routing_parameters.proto"],
-    deps = [
-        ":routing_enums_proto",
-        ":routing_ils_proto",
-        ":solver_parameters_proto",
-        "//ortools/sat:sat_parameters_proto",
-        "//ortools/util:optional_boolean_proto",
-        "@com_google_protobuf//:duration_proto",
-    ],
-)
-
-cc_proto_library(
-    name = "routing_parameters_cc_proto",
-    deps = [":routing_parameters_proto"],
-)
-
-# java_proto_library(
-#     name = "routing_parameters_java_proto",
-#     deps = [":routing_parameters_proto"],
-# )
-
-#py_proto_library(
-#    name = "routing_parameters_py_pb2",
-#    deps = [":routing_parameters_proto"],
-#)
-
 cc_library(
     name = "routing_parameters",
     srcs = ["routing_parameters.cc"],
     hdrs = ["routing_parameters.h"],
     deps = [
         ":cp",
-        ":routing_enums_cc_proto",
-        ":routing_parameters_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/port:proto_utils",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
         "@com_google_absl//absl/status:statusor",
@@ -363,11 +308,9 @@ cc_library(
     }),
     deps = [
         ":cp",
-        ":routing_enums_cc_proto",
         ":routing_index_manager",
         ":routing_neighborhoods",
         ":routing_parameters",
-        ":routing_parameters_cc_proto",
         ":routing_types",
         ":routing_utils",
         "//ortools/base",
@@ -389,6 +332,8 @@ cc_library(
         "//ortools/graph:topologicalsorter",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:parameters_cc_proto",
         "//ortools/sat:boolean_problem",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model",

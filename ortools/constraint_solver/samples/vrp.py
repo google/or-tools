@@ -15,20 +15,20 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 
-FirstSolutionStrategy = routing_enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = routing_enums_pb2.RoutingSearchStatus
+FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -92,7 +92,6 @@ def print_solution(manager, routing, solution):
         print(plan_output)
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
-
 # [END solution_printer]
 
 

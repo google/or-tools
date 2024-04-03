@@ -39,12 +39,12 @@ class RoutingSearchStatus;
 
 // Include the file we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/parameters.pb.h"
 %}
 
 %module(directors="1") operations_research;
@@ -186,17 +186,17 @@ using System.Collections.Generic;
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
-            Google.OrTools.ConstraintSolver.RoutingSearchParameters,
+            Google.OrTools.Routing.RoutingSearchParameters,
             search_parameters)
 PROTO_INPUT(operations_research::RoutingModelParameters,
-            Google.OrTools.ConstraintSolver.RoutingModelParameters,
+            Google.OrTools.Routing.RoutingModelParameters,
             parameters)
 PROTO2_RETURN(operations_research::RoutingSearchParameters,
-              Google.OrTools.ConstraintSolver.RoutingSearchParameters)
+              Google.OrTools.Routing.RoutingSearchParameters)
 PROTO2_RETURN(operations_research::RoutingModelParameters,
-              Google.OrTools.ConstraintSolver.RoutingModelParameters)
+              Google.OrTools.Routing.RoutingModelParameters)
 PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
-                  Google.OrTools.ConstraintSolver.RoutingSearchStatus.Types.Value)
+                  Google.OrTools.Routing.RoutingSearchStatus.Types.Value)
 
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals

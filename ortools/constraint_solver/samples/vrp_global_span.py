@@ -15,17 +15,17 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Vehicle_routing_problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 # [END import]
 
 
@@ -81,7 +81,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print(f"Maximum of the route distances: {max_route_distance}m")
-
 # [END solution_printer]
 
 
@@ -139,7 +138,7 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     # [END parameters]
 

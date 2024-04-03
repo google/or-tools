@@ -14,13 +14,12 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/routing_types.h"
 
 namespace operations_research {

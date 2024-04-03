@@ -30,10 +30,10 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_ils.pb.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/routing/ils.pb.h"
+#include "ortools/routing/parameters.pb.h"
 
 namespace operations_research {
 namespace {
@@ -76,10 +76,17 @@ SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
     const RuinRecreateParameters& parameters, RoutingModel* model,
     std::mt19937* rnd) {
+  const int num_non_start_end_nodes = model->Size() - model->vehicles();
+  const uint32_t preferred_num_neighbors =
+      parameters.route_selection_neighbors_ratio() * num_non_start_end_nodes;
+
   switch (parameters.ruin_strategy()) {
     case RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL:
       return std::make_unique<CloseRoutesRemovalRuinProcedure>(
-          model, rnd, parameters.num_ruined_routes());
+          model, rnd, parameters.num_ruined_routes(),
+          std::min(parameters.route_selection_max_neighbors(),
+                   std::max(parameters.route_selection_min_neighbors(),
+                            preferred_num_neighbors)));
       break;
     default:
       LOG(ERROR) << "Unsupported ruin procedure.";
@@ -162,9 +169,12 @@ class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
 class CoolingSchedule {
  public:
   CoolingSchedule(NeighborAcceptanceCriterion::SearchState final_search_state,
-                  double initial_temperature)
+                  double initial_temperature, double final_temperature)
       : final_search_state_(std::move(final_search_state)),
-        initial_temperature_(initial_temperature) {}
+        initial_temperature_(initial_temperature),
+        final_temperature_(final_temperature) {
+    DCHECK_GE(initial_temperature_, final_temperature_);
+  }
   virtual ~CoolingSchedule() = default;
 
   // Returns the temperature according to given search state.
@@ -172,8 +182,24 @@ class CoolingSchedule {
       const NeighborAcceptanceCriterion::SearchState& search_state) const = 0;
 
  protected:
+  // Returns the progress of the given search state with respect to the final
+  // search state.
+  double GetProgress(
+      const NeighborAcceptanceCriterion::SearchState& search_state) const {
+    const double duration_progress =
+        absl::FDivDuration(search_state.duration, final_search_state_.duration);
+    const double solutions_progress =
+        static_cast<double>(search_state.solutions) /
+        final_search_state_.solutions;
+    const double progress = std::max(duration_progress, solutions_progress);
+    // We take the min with 1 as at the end of the search we may go a bit above
+    // 1 with duration_progress depending on when we check the time limit.
+    return std::min(1.0, progress);
+  }
+
   const NeighborAcceptanceCriterion::SearchState final_search_state_;
   const double initial_temperature_;
+  const double final_temperature_;
 };
 
 // A cooling schedule that lowers the temperature in an exponential way.
@@ -182,25 +208,36 @@ class ExponentialCoolingSchedule : public CoolingSchedule {
   ExponentialCoolingSchedule(
       NeighborAcceptanceCriterion::SearchState final_search_state,
       double initial_temperature, double final_temperature)
-      : CoolingSchedule(std::move(final_search_state), initial_temperature),
+      : CoolingSchedule(std::move(final_search_state), initial_temperature,
+                        final_temperature),
         temperature_ratio_(final_temperature / initial_temperature) {}
 
   double GetTemperature(const NeighborAcceptanceCriterion::SearchState&
                             search_state) const override {
-    const double duration_progress =
-        absl::FDivDuration(search_state.duration, final_search_state_.duration);
-    const double solutions_progress =
-        static_cast<double>(search_state.solutions) /
-        final_search_state_.solutions;
-    // We take the min with 1 as at the end of the search we may go a bit above
-    // 1 with duration_progress depending on when we check the time limit.
-    const double progress =
-        std::min(1.0, std::max(duration_progress, solutions_progress));
+    const double progress = GetProgress(search_state);
+
     return initial_temperature_ * std::pow(temperature_ratio_, progress);
   }
 
  private:
   const double temperature_ratio_;
+};
+
+// A cooling schedule that lowers the temperature in a linear way.
+class LinearCoolingSchedule : public CoolingSchedule {
+ public:
+  LinearCoolingSchedule(
+      NeighborAcceptanceCriterion::SearchState final_search_state,
+      double initial_temperature, double final_temperature)
+      : CoolingSchedule(std::move(final_search_state), initial_temperature,
+                        final_temperature) {}
+
+  double GetTemperature(const NeighborAcceptanceCriterion::SearchState&
+                            search_state) const override {
+    const double progress = GetProgress(search_state);
+    return initial_temperature_ -
+           progress * (initial_temperature_ - final_temperature_);
+  }
 };
 
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
@@ -214,12 +251,19 @@ std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
       parameters.iterated_local_search_parameters()
           .simulated_annealing_parameters();
 
+  NeighborAcceptanceCriterion::SearchState final_search_state{
+      final_duration, parameters.solution_limit()};
+
   switch (sa_params.cooling_schedule_strategy()) {
     case CoolingScheduleStrategy::EXPONENTIAL:
       return std::make_unique<ExponentialCoolingSchedule>(
           NeighborAcceptanceCriterion::SearchState{final_duration,
                                                    parameters.solution_limit()},
           sa_params.initial_temperature(), sa_params.final_temperature());
+    case CoolingScheduleStrategy::LINEAR:
+      return std::make_unique<LinearCoolingSchedule>(
+          std::move(final_search_state), sa_params.initial_temperature(),
+          sa_params.final_temperature());
     default:
       LOG(ERROR) << "Unsupported cooling schedule strategy.";
       return nullptr;
@@ -255,10 +299,11 @@ class SimulatedAnnealingAcceptanceCriterion
 }  // namespace
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
-    RoutingModel* model, std::mt19937* rnd, size_t num_routes)
+    RoutingModel* model, std::mt19937* rnd, size_t num_routes,
+    int num_neighbors_for_route_selection)
     : model_(*model),
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
-          /*TODO(user): use a parameter*/ 100,
+          num_neighbors_for_route_selection,
           /*add_vehicle_starts_to_neighbors=*/false)),
       num_routes_(num_routes),
       rnd_(*rnd),
@@ -278,6 +323,8 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
     } while (model_.IsStart(seed_node) || seed_route == -1);
     DCHECK(!model_.IsEnd(seed_node));
 
+    removed_routes_.Set(seed_route);
+
     const RoutingCostClassIndex cost_class_index =
         model_.GetCostClassIndexOfVehicle(seed_route);
 
@@ -286,15 +333,15 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
             cost_class_index.value(), seed_node);
 
     for (int neighbor : neighbors) {
+      if (removed_routes_.NumberOfSetCallsWithDifferentArguments() ==
+          num_routes_) {
+        break;
+      }
       const int64_t route = assignment->Value(model_.VehicleVar(neighbor));
       if (route < 0 || removed_routes_[route]) {
         continue;
       }
       removed_routes_.Set(route);
-      if (removed_routes_.NumberOfSetCallsWithDifferentArguments() ==
-          num_routes_) {
-        break;
-      }
     }
   }
 
@@ -375,7 +422,7 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
     case PerturbationStrategy::RUIN_AND_RECREATE:
       return MakeRuinAndRecreateDecisionBuilder(
           parameters, model, rnd, assignment, std::move(stop_search),
-                                                filter_manager);
+          filter_manager);
     default:
       LOG(ERROR) << "Unsupported perturbation strategy.";
       return nullptr;

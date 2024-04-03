@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 using Google.Protobuf.WellKnownTypes; // Duration
 // [END import]
 

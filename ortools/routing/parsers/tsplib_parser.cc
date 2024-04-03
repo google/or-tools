@@ -747,7 +747,7 @@ TspLibTourParser::TspLibTourParser() : section_(UNDEFINED_SECTION), size_(0) {}
 
 // TODO(user): Return false when issues were encountered while parsing the
 // file.
-bool TspLibTourParser::LoadFile(const std::string& file_name) {
+bool TspLibTourParser::LoadFile(absl::string_view file_name) {
   section_ = UNDEFINED_SECTION;
   comments_.clear();
   tour_.clear();
@@ -818,7 +818,7 @@ CVRPToursParser::CVRPToursParser() : cost_(0) {}
 
 // TODO(user): Return false when issues were encountered while parsing the
 // file.
-bool CVRPToursParser::LoadFile(const std::string& file_name) {
+bool CVRPToursParser::LoadFile(absl::string_view file_name) {
   tours_.clear();
   cost_ = 0;
   std::shared_ptr<zipfile::ZipArchive> zip_archive(

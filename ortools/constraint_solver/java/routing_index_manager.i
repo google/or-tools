@@ -14,7 +14,7 @@
 // Wrapper for RoutingIndexManager.
 
 %include "ortools/base/base.i"
-%include "ortools/util/java/vector.i"
+%import "ortools/util/java/vector.i"
 
 %{
 #include "ortools/constraint_solver/routing_index_manager.h"

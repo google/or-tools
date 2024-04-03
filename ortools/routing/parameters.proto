@@ -17,14 +17,14 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.constraintsolver";
+option java_package = "com.google.ortools.routing";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.ConstraintSolver";
+option csharp_namespace = "Google.OrTools.Routing";
 
 import "google/protobuf/duration.proto";
-import "ortools/constraint_solver/routing_enums.proto";
-import "ortools/constraint_solver/routing_ils.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
+import "ortools/routing/enums.proto";
+import "ortools/routing/ils.proto";
 import "ortools/sat/sat_parameters.proto";
 import "ortools/util/optional_boolean.proto";
 

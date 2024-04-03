@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.auto.value.AutoValue;
 import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.RoutingModelParameters;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.RoutingSearchStatus;
+import com.google.ortools.routing.Enums.RoutingSearchStatus;
+import com.google.ortools.routing.Parameters.RoutingModelParameters;
+import com.google.ortools.routing.Parameters.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;

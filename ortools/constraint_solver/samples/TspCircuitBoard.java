@@ -13,14 +13,15 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 
 // [END import]

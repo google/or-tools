@@ -29,16 +29,19 @@ namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 
-class RoutingSearchStatus;
+struct RoutingSearchStatus {
+  enum Value {};
+};
+
 }  // namespace operations_research
 
 // Include the files we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include <memory>
 %}
 
@@ -365,17 +368,17 @@ import java.lang.Runnable;
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
-            com.google.ortools.constraintsolver.RoutingSearchParameters,
+            com.google.ortools.routing.Parameters.RoutingSearchParameters,
             search_parameters)
 PROTO_INPUT(operations_research::RoutingModelParameters,
-            com.google.ortools.constraintsolver.RoutingModelParameters,
+            com.google.ortools.routing.Parameters.RoutingModelParameters,
             parameters)
 PROTO2_RETURN(operations_research::RoutingSearchParameters,
-              com.google.ortools.constraintsolver.RoutingSearchParameters)
+              com.google.ortools.routing.Parameters.RoutingSearchParameters)
 PROTO2_RETURN(operations_research::RoutingModelParameters,
-              com.google.ortools.constraintsolver.RoutingModelParameters)
+              com.google.ortools.routing.Parameters.RoutingModelParameters)
 PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
-                  com.google.ortools.constraintsolver.RoutingSearchStatus.Value)
+                  com.google.ortools.routing.Enums.RoutingSearchStatus.Value)
 
 // Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall

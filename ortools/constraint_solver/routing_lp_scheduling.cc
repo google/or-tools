@@ -43,10 +43,11 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/util/flat_matrix.h"
@@ -2544,7 +2545,7 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
 
         const auto& add_domain_constraint =
             [&solver, cumul_offset, assign_rc_to_v](const Domain& domain,
-                                                   int cumul_variable) {
+                                                    int cumul_variable) {
               if (domain == Domain::AllValues()) {
                 return;
               }
@@ -3141,7 +3142,7 @@ std::string ConstraintToString(const sat::ConstraintProto& constraint,
       }
     }
   } else {
-    s += constraint.ShortDebugString();
+    s += ProtobufShortDebugString(constraint);
   }
   return s;
 }

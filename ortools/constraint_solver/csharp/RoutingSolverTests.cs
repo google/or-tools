@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using Xunit;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 namespace Google.OrTools.Tests
 {

@@ -33,9 +33,9 @@ class RoutingSearchStatus;
 
 // Include the files we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/routing/enums.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/util/optional_boolean.pb.h"
@@ -64,10 +64,10 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 %ignore operations_research::RoutingModel::AddResourceGroup;
 %ignore operations_research::RoutingModel::GetResourceGroups;
 
-PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingModelParameters,
                  operations_research::RoutingModelParameters)
-PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingSearchParameters,
                  operations_research::RoutingSearchParameters)
 

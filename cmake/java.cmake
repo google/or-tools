@@ -96,6 +96,7 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
   )

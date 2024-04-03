@@ -18,13 +18,13 @@ import static java.lang.Math.max;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.LocalSearchMetaheuristic;
 import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import com.google.ortools.routing.Enums.FirstSolutionStrategy;
+import com.google.ortools.routing.Enums.LocalSearchMetaheuristic;
+import com.google.ortools.routing.Parameters.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]

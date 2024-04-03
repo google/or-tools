@@ -219,6 +219,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"

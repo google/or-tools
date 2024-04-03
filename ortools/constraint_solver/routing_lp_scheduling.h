@@ -19,7 +19,6 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <map>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -32,15 +31,16 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "ortools/base/dump_vars.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
@@ -588,7 +588,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   }
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
     parameters_.set_max_time_in_seconds(absl::ToDoubleSeconds(duration_limit));
-    VLOG(2) << model_.DebugString();
+    VLOG(2) << ProtobufDebugString(model_);
     if (hint_.vars_size() == model_.variables_size()) {
       *model_.mutable_solution_hint() = hint_;
     }
