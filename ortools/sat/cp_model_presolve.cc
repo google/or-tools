@@ -11395,6 +11395,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(const CpModelProto& in_model,
         break;
       case ConstraintProto::kInterval:
         if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
+        if (first_copy) {
+          AddLinearConstraintForInterval(ct);
+        }
         break;
       case ConstraintProto::kNoOverlap:
         if (first_copy) {
@@ -11762,14 +11765,49 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   if (ignore_names) {
     *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
-    *new_ct->mutable_interval()->mutable_start() = ct.interval().start();
-    *new_ct->mutable_interval()->mutable_size() = ct.interval().size();
-    *new_ct->mutable_interval()->mutable_end() = ct.interval().end();
+    *new_ct->mutable_interval() = ct.interval();
   } else {
     *new_ct = ct;
   }
 
   return true;
+}
+
+void ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
+  // Add the linear constraint enforcement => (start + size == end).
+  //
+  // We rely on the presolve for simplification, but deal with the trivial
+  // case of (start, offset, start + offset) here.
+  const IntervalConstraintProto& itv = ct.interval();
+  if (itv.size().vars().empty() &&
+      itv.start().offset() + itv.size().offset() == itv.end().offset() &&
+      absl::Span<const int>(itv.start().vars()) ==
+          absl::Span<const int>(itv.end().vars()) &&
+      absl::Span<const int64_t>(itv.start().coeffs()) ==
+          absl::Span<const int64_t>(itv.end().coeffs())) {
+    // Trivial constraint, nothing to do.
+  } else {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+
+    LinearConstraintProto* mutable_linear = new_ct->mutable_linear();
+    mutable_linear->add_domain(0);
+    mutable_linear->add_domain(0);
+    AddLinearExpressionToLinearConstraint(itv.start(), 1, mutable_linear);
+    AddLinearExpressionToLinearConstraint(itv.size(), 1, mutable_linear);
+    AddLinearExpressionToLinearConstraint(itv.end(), -1, mutable_linear);
+  }
+
+  // An enforced interval must have is size non-negative.
+  const LinearExpressionProto& size_expr = itv.size();
+  if (context_->MinOf(size_expr) < 0) {
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+    *new_ct->mutable_linear()->mutable_vars() = size_expr.vars();
+    *new_ct->mutable_linear()->mutable_coeffs() = size_expr.coeffs();
+    new_ct->mutable_linear()->add_domain(-size_expr.offset());
+    new_ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  }
 }
 
 void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {

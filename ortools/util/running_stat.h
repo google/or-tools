@@ -62,7 +62,7 @@ class RunningAverage {
   std::deque<int> values_;
 };
 
-// Simple class to compute efficiently the maximum over a fixed size window
+// Simple class to efficiently compute the maximum over a fixed size window
 // of a numeric stream. This works in constant average amortized time.
 template <class Number = double>
 class RunningMax {

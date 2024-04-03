@@ -37,11 +37,11 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -191,7 +191,8 @@ SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
       num_workers_(std::max(1, params_.shared_tree_num_workers())),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
-      num_splits_wanted_(num_workers_ - 1),
+      num_splits_wanted_(
+          num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
       max_nodes_(params_.shared_tree_max_nodes_per_worker() >=
                          std::numeric_limits<int>::max() / num_workers_
                      ? std::numeric_limits<int>::max()
@@ -213,7 +214,7 @@ int SharedTreeManager::NumNodes() const {
 
 int SharedTreeManager::SplitsToGeneratePerWorker() const {
   absl::MutexLock mutex_lock(&mu_);
-  return std::min<int>(num_splits_wanted_,
+  return std::min<int>(num_splits_wanted_ / 2 + 1,
                        max_nodes_ - static_cast<int>(nodes_.size()));
 }
 
@@ -488,7 +489,8 @@ void SharedTreeManager::RestartLockHeld() {
   nodes_[0].id = node_id_offset_;
   nodes_[0].children = {nullptr, nullptr};
   unassigned_leaves_.clear();
-  num_splits_wanted_ = num_workers_ - 1;
+  num_splits_wanted_ =
+      num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1;
   num_restarts_ += 1;
   num_syncs_since_restart_ = 0;
 }
@@ -511,7 +513,9 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       objective_(model->Get<ObjectiveDefinition>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       helper_(model->GetOrCreate<IntegerSearchHelper>()),
-      heuristics_(model->GetOrCreate<SearchHeuristics>()) {}
+      heuristics_(model->GetOrCreate<SearchHeuristics>()),
+      restart_policy_(model->GetOrCreate<RestartPolicy>()),
+      assigned_tree_lbds_(/*window_size=*/8) {}
 
 const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
   CHECK_LE(level, assigned_tree_literals_.size());
@@ -667,21 +671,32 @@ void SharedTreeWorker::MaybeProposeSplit() {
   }
 }
 
+bool SharedTreeWorker::ShouldReplaceSubtree() {
+  // If we have no assignment, try to get one.
+  if (assigned_tree_.MaxLevel() == 0) return true;
+  if (restart_policy_->NumRestarts() <
+      parameters_->shared_tree_worker_min_restarts_per_subtree()) {
+    return false;
+  }
+  return assigned_tree_lbds_.WindowAverage() <
+         restart_policy_->LbdAverageSinceReset();
+}
+
 void SharedTreeWorker::SyncWithSharedTree() {
   splits_wanted_ = manager_->SplitsToGeneratePerWorker();
   VLOG(2) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
   manager_->SyncTree(assigned_tree_);
-  // If we have no assignment, try to get one.
-  // We also want to ensure unassigned nodes have their lower bounds bumped
-  // periodically, so workers need to occasionally replace open trees, but only
-  // at most once per restart.
-  // TODO(user): Ideally we should use some metric to replace a
-  // subtree when the worker is doing badly.
-  if (assigned_tree_.MaxLevel() == 0 ||
-      (tree_assignment_restart_ < num_restarts_ &&
-       absl::Bernoulli(*random_, 1e-2))) {
+  if (ShouldReplaceSubtree()) {
+    ++num_trees_;
+    VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
+            << " after " << num_restarts_ - tree_assignment_restart_
+            << " restarts prev depth: " << assigned_tree_.MaxLevel()
+            << " target: " << assigned_tree_lbds_.WindowAverage()
+            << " lbd: " << restart_policy_->LbdAverageSinceReset();
     manager_->ReplaceTree(assigned_tree_);
     tree_assignment_restart_ = num_restarts_;
+    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
+    restart_policy_->Reset();
   }
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();
