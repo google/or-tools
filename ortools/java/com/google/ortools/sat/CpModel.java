@@ -730,7 +730,6 @@ public final class CpModel {
    */
   public IntervalVar newIntervalVar(
       LinearArgument start, LinearArgument size, LinearArgument end, String name) {
-    addEquality(LinearExpr.newBuilder().add(start).add(size), end);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
@@ -784,7 +783,6 @@ public final class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(LinearArgument start, LinearArgument size,
       LinearArgument end, Literal isPresent, String name) {
-    addEquality(LinearExpr.newBuilder().add(start).add(size), end).onlyEnforceIf(isPresent);
     return new IntervalVar(modelBuilder,
         getLinearExpressionProtoBuilderFromLinearArgument(start, /*negate=*/false),
         getLinearExpressionProtoBuilderFromLinearArgument(size, /*negate=*/false),
