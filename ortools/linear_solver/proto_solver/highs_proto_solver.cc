@@ -58,8 +58,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         request->solver_specific_parameters(), highs);
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      response.set_status_str(
-          std::string(parameters_status.message()));  // NOLINT
+      response.set_status_str(parameters_status.message());
       return response;
     }
   }
@@ -81,7 +80,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     std::vector<double> lb(variable_size);
     std::vector<double> ub(variable_size);
     std::vector<HighsVarType> integrality(variable_size);
-    std::vector<const char*> varnames(variable_size);
     for (int v = 0; v < variable_size; ++v) {
       const MPVariableProto& variable = model.variable(v);
       obj_coeffs[v] = variable.objective_coefficient();
@@ -93,8 +91,9 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
                       MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
               ? HighsVarType::kInteger
               : HighsVarType::kContinuous;
-      if (variable.is_integer()) has_integer_variables = true;
-      if (!variable.name().empty()) varnames[v] = variable.name().c_str();
+      if (integrality[v] == HighsVarType::kInteger) {
+        has_integer_variables = true;
+      }
     }
 
     highs.addVars(variable_size, lb.data(), ub.data());
@@ -107,36 +106,25 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     }
 
     // Objective coefficients.
-    assert(obj_coeffs.size() == variable_size);
     for (int column = 0; column < variable_size; column++) {
       highs.changeColCost(column, obj_coeffs[column]);
     }
 
-    // TODO(user): Set var name.
-
+    // TODO(user): Support variable names.
     // TODO(user): Support hints.
   }
 
   {
-    std::vector<int> ct_variables;
-    std::vector<double> ct_coefficients;
     for (int c = 0; c < model.constraint_size(); ++c) {
       const MPConstraintProto& constraint = model.constraint(c);
-      const int size = constraint.var_index_size();
-      ct_variables.resize(size, 0);
-      ct_coefficients.resize(size, 0);
-      for (int i = 0; i < size; ++i) {
-        ct_variables[i] = constraint.var_index(i);
-        ct_coefficients[i] = constraint.coefficient(i);
-      }
-
       if (constraint.lower_bound() ==
           -std::numeric_limits<double>::infinity()) {
-        HighsStatus status = highs.addRow(/*lhs=*/-kHighsInf,
-                                          /*rhs=*/constraint.upper_bound(),
-                                          /*numnz=*/size,
-                                          /*cind=*/ct_variables.data(),
-                                          /*cval=*/ct_coefficients.data());
+        HighsStatus status =
+            highs.addRow(/*lhs=*/-kHighsInf,
+                         /*rhs=*/constraint.upper_bound(),
+                         /*numnz=*/constraint.var_index_size(),
+                         /*cind=*/constraint.var_index().data(),
+                         /*cval=*/constraint.coefficient().data());
         if (status == HighsStatus::kError) {
           response.set_status(MPSOLVER_MODEL_INVALID);
           response.set_status_str("ct addRow");
@@ -144,29 +132,31 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         }
       } else if (constraint.upper_bound() ==
                  std::numeric_limits<double>::infinity()) {
-        HighsStatus status = highs.addRow(/*lhs=*/constraint.lower_bound(),
-                                          /*rhs=*/kHighsInf,
-                                          /*numnz=*/size,
-                                          /*cind=*/ct_variables.data(),
-                                          /*cval=*/ct_coefficients.data());
+        HighsStatus status =
+            highs.addRow(/*lhs=*/constraint.lower_bound(),
+                         /*rhs=*/kHighsInf,
+                         /*numnz=*/constraint.var_index_size(),
+                         /*cind=*/constraint.var_index().data(),
+                         /*cval=*/constraint.coefficient().data());
         if (status == HighsStatus::kError) {
           response.set_status(MPSOLVER_MODEL_INVALID);
           response.set_status_str("ct addRow");
           return response;
         }
       } else {
-        HighsStatus status = highs.addRow(/*lhs=*/constraint.lower_bound(),
-                                          /*rhs=*/constraint.upper_bound(),
-                                          /*numnz=*/size,
-                                          /*cind=*/ct_variables.data(),
-                                          /*cval=*/ct_coefficients.data());
+        HighsStatus status =
+            highs.addRow(/*lhs=*/constraint.lower_bound(),
+                         /*rhs=*/constraint.upper_bound(),
+                         /*numnz=*/constraint.var_index_size(),
+                         /*cind=*/constraint.var_index().data(),
+                         /*cval=*/constraint.coefficient().data());
         if (status == HighsStatus::kError) {
           response.set_status(MPSOLVER_MODEL_INVALID);
           response.set_status_str("ct addRow");
           return response;
         }
       }
-      // TODO(user): add constraint name.
+      // TODO(user): Support constraint names.
     }
 
     if (!model.general_constraint().empty()) {
@@ -175,6 +165,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       return response;
     }
   }
+
   if (model.maximize()) {
     const ObjSense pass_sense = ObjSense::kMaximize;
     highs.changeObjectiveSense(pass_sense);
@@ -252,21 +243,19 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
           highs.getSolution().col_value[column];
     }
 
-    auto round_values_of_integer_variables_fn =
-        [&](google::protobuf::RepeatedField<double>* values) {
-          for (int v = 0; v < variable_size; ++v) {
-            if (model.variable(v).is_integer()) {
-              (*values)[v] = std::round((*values)[v]);
-            }
-          }
-        };
-    round_values_of_integer_variables_fn(response.mutable_variable_value());
+    if (has_integer_variables) {
+      for (int v = 0; v < variable_size; ++v) {
+        if (model.variable(v).is_integer()) {
+          response.set_variable_value(v,
+                                      std::round(response.variable_value(v)));
+        }
+      }
+    }
 
     if (!has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       for (int row = 0; row < model.constraint_size(); row++) {
-        response.mutable_variable_value()->mutable_data()[row] =
-            highs.getSolution().row_value[row];
+        response.set_dual_value(row, highs.getSolution().row_value[row]);
       }
     }
   }
