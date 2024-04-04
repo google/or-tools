@@ -29,7 +29,6 @@
 %unignore operations_research::CppFlags::log_prefix;
 %unignore operations_research::CppFlags::cp_model_dump_prefix;
 %unignore operations_research::CppFlags::cp_model_dump_models;
-%unignore operations_research::CppFlags::cp_model_dump_lns;
 %unignore operations_research::CppFlags::cp_model_dump_response;
 
 // Expose the static methods of the bridge class.

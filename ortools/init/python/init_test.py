@@ -31,7 +31,6 @@ class InitTest(absltest.TestCase):
         assert hasattr(cpp_flags, "log_prefix")
         assert hasattr(cpp_flags, "cp_model_dump_prefix")
         assert hasattr(cpp_flags, "cp_model_dump_models")
-        assert hasattr(cpp_flags, "cp_model_dump_lns")
         assert hasattr(cpp_flags, "cp_model_dump_response")
         init.CppBridge.set_flags(cpp_flags)
 
