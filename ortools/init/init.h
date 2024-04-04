@@ -29,6 +29,7 @@
 
 ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
 ABSL_DECLARE_FLAG(int, stderrthreshold);
 
@@ -66,6 +67,14 @@ struct CppFlags {
    * 'FLAGS_cp_model_dump_prefix'{model|presolved_model|mapping_model}.pbtxt.
    */
   bool cp_model_dump_models = false;
+
+  /**
+   * DEBUG ONLY: Dump CP-SAT LNS models during solve.
+   *
+   * When set to true, solve will dump all lns models proto in text format to
+   * 'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.
+   */
+  bool cp_model_dump_submodels;
 
   /**
    * DEBUG ONLY: Dump the CP-SAT final response found during solve.
@@ -113,6 +122,8 @@ class CppBridge {
       absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
     }
     absl::SetFlag(&FLAGS_cp_model_dump_models, flags.cp_model_dump_models);
+    absl::SetFlag(&FLAGS_cp_model_dump_submodels,
+                  flags.cp_model_dump_submodels);
     absl::SetFlag(&FLAGS_cp_model_dump_response, flags.cp_model_dump_response);
   }
 
