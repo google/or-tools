@@ -12,23 +12,24 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
+import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.routing.FirstSolutionStrategy;
-import com.google.ortools.routing.RoutingSearchStatus;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class Vrp {
-  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
+/** Minimal Pickup & Delivery Problem (PDP).*/
+public class VrpPickupDeliveryFifo {
+  private static final Logger logger = Logger.getLogger(VrpPickupDeliveryFifo.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -51,40 +52,43 @@ public class Vrp {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
+    // [START pickups_deliveries]
+    public final int[][] pickupsDeliveries = {
+        {1, 6},
+        {2, 10},
+        {4, 3},
+        {5, 9},
+        {7, 8},
+        {15, 11},
+        {13, 12},
+        {16, 14},
+    };
+    // [END pickups_deliveries]
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
-
   // [END data_model]
 
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
-    RoutingSearchStatus.Value status = routing.status();
-    logger.info("Status: " + status);
-    if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
-        && status != RoutingSearchStatus.Value.ROUTING_SUCCESS) {
-      logger.warning("No solution found!");
-      return;
-    }
+      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
     long totalDistance = 0;
-    for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
+    for (int i = 0; i < data.vehicleNumber; ++i) {
+      long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       String route = "";
-      long index = routing.start(i);
       while (!routing.isEnd(index)) {
         route += manager.indexToNode(index) + " -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      route += manager.indexToNode(routing.end(i));
-      logger.info(route);
+      logger.info(route + manager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
       totalDistance += routeDistance;
     }
@@ -126,12 +130,38 @@ public class Vrp {
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
+    // Add Distance constraint.
+    // [START distance_constraint]
+    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback index
+        0, // no slack
+        3000, // vehicle maximum travel distance
+        true, // start cumul to zero
+        "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
+
+    // Define Transportation Requests.
+    // [START pickup_delivery_constraint]
+    Solver solver = routing.solver();
+    for (int[] request : data.pickupsDeliveries) {
+      long pickupIndex = manager.nodeToIndex(request[0]);
+      long deliveryIndex = manager.nodeToIndex(request[1]);
+      routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
+      solver.addConstraint(
+          solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
+      solver.addConstraint(solver.makeLessOrEqual(
+          distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
+    }
+    routing.setPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.PICKUP_AND_DELIVERY_FIFO);
+    // [END pickup_delivery_constraint]
+
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION)
             .build();
     // [END parameters]
 
@@ -142,7 +172,7 @@ public class Vrp {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(routing, manager, solution);
+    printSolution(data, routing, manager, solution);
     // [END print_solution]
   }
 }

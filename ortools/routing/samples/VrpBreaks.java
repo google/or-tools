@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
@@ -21,13 +21,13 @@ import com.google.ortools.constraintsolver.AssignmentIntervalContainer;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.IntervalVar;
 import com.google.ortools.constraintsolver.IntervalVarElement;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.Enums.FirstSolutionStrategy;
-import com.google.ortools.routing.Parameters.RoutingSearchParameters;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
 
@@ -154,7 +154,7 @@ public final class VrpBreaks {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, 10, 180,
+    boolean unused = routing.addDimension(transitCallbackIndex, 10, 180,
         true, // start cumul to zero
         "Time");
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
@@ -184,7 +184,7 @@ public final class VrpBreaks {
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();

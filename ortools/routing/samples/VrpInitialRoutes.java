@@ -12,24 +12,22 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.FirstSolutionStrategy;
-import com.google.ortools.routing.LocalSearchMetaheuristic;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
-import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
 /** Minimal VRP. */
-public final class VrpCapacity {
-  private static final Logger logger = Logger.getLogger(VrpCapacity.class.getName());
+public class VrpInitialRoutes {
+  private static final Logger logger = Logger.getLogger(VrpInitialRoutes.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -52,10 +50,14 @@ public final class VrpCapacity {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
-    // [START demands_capacities]
-    public final long[] demands = {0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8};
-    public final long[] vehicleCapacities = {15, 15, 15, 15};
-    // [END demands_capacities]
+    // [START initial_routes]
+    public final long[][] initialRoutes = {
+        {8, 16, 14, 13, 12, 11},
+        {3, 4, 9, 10},
+        {15, 1},
+        {7, 5, 2, 6},
+    };
+    // [END initial_routes]
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
@@ -66,32 +68,25 @@ public final class VrpCapacity {
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
-    logger.info("Objective: " + solution.objectiveValue());
+    logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    long totalDistance = 0;
-    long totalLoad = 0;
+    long maxRouteDistance = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
-      long routeLoad = 0;
       String route = "";
       while (!routing.isEnd(index)) {
-        long nodeIndex = manager.indexToNode(index);
-        routeLoad += data.demands[(int) nodeIndex];
-        route += nodeIndex + " Load(" + routeLoad + ") -> ";
+        route += manager.indexToNode(index) + " -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      route += manager.indexToNode(routing.end(i));
-      logger.info(route);
+      logger.info(route + manager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
-      totalDistance += routeDistance;
-      totalLoad += routeLoad;
+      maxRouteDistance = Math.max(routeDistance, maxRouteDistance);
     }
-    logger.info("Total distance of all routes: " + totalDistance + "m");
-    logger.info("Total load of all routes: " + totalLoad);
+    logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
   }
   // [END solution_printer]
 
@@ -129,41 +124,37 @@ public final class VrpCapacity {
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
-    // Add Capacity constraint.
-    // [START capacity_constraint]
-    final int demandCallbackIndex = routing.registerUnaryTransitCallback((long fromIndex) -> {
-      // Convert from routing variable Index to user NodeIndex.
-      int fromNode = manager.indexToNode(fromIndex);
-      return data.demands[fromNode];
-    });
-    routing.addDimensionWithVehicleCapacity(demandCallbackIndex, 0, // null capacity slack
-        data.vehicleCapacities, // vehicle maximum capacities
+    // Add Distance constraint.
+    // [START distance_constraint]
+    boolean unused = routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
-        "Capacity");
-    // [END capacity_constraint]
+        "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
+
+    // [START print_initial_solution]
+    Assignment initialSolution = routing.readAssignmentFromRoutes(data.initialRoutes, true);
+    logger.info("Initial solution:");
+    printSolution(data, routing, manager, initialSolution);
+    // [END print_initial_solution]
 
     // Setting first solution heuristic.
     // [START parameters]
-    RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
-            .toBuilder()
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
-            .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
-            .setTimeLimit(Duration.newBuilder().setSeconds(1).build())
-            .build();
+    RoutingSearchParameters searchParameters = Globals.defaultRoutingSearchParameters();
     // [END parameters]
 
     // Solve the problem.
     // [START solve]
-    Assignment solution = routing.solveWithParameters(searchParameters);
+    Assignment solution =
+        routing.solveFromAssignmentWithParameters(initialSolution, searchParameters);
     // [END solve]
 
     // Print solution on console.
     // [START print_solution]
+    logger.info("Solution after search:");
     printSolution(data, routing, manager, solution);
     // [END print_solution]
   }
-
-  private VrpCapacity() {}
 }
 // [END program]

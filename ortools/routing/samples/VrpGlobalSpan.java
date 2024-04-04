@@ -12,22 +12,23 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP. */
-public class VrpInitialRoutes {
-  private static final Logger logger = Logger.getLogger(VrpInitialRoutes.class.getName());
+/** Minimal VRP.*/
+public class VrpGlobalSpan {
+  private static final Logger logger = Logger.getLogger(VrpGlobalSpan.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -50,14 +51,6 @@ public class VrpInitialRoutes {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
-    // [START initial_routes]
-    public final long[][] initialRoutes = {
-        {8, 16, 14, 13, 12, 11},
-        {3, 4, 9, 10},
-        {15, 1},
-        {7, 5, 2, 6},
-    };
-    // [END initial_routes]
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
@@ -126,33 +119,29 @@ public class VrpInitialRoutes {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, 0, 3000,
+    boolean unused = routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
         "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
 
-    // [START print_initial_solution]
-    Assignment initialSolution = routing.readAssignmentFromRoutes(data.initialRoutes, true);
-    logger.info("Initial solution:");
-    printSolution(data, routing, manager, initialSolution);
-    // [END print_initial_solution]
-
     // Setting first solution heuristic.
     // [START parameters]
-    RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters();
+    RoutingSearchParameters searchParameters =
+        Globals.defaultRoutingSearchParameters()
+            .toBuilder()
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
     // [END parameters]
 
     // Solve the problem.
     // [START solve]
-    Assignment solution =
-        routing.solveFromAssignmentWithParameters(initialSolution, searchParameters);
+    Assignment solution = routing.solveWithParameters(searchParameters);
     // [END solve]
 
     // Print solution on console.
     // [START print_solution]
-    logger.info("Solution after search:");
     printSolution(data, routing, manager, solution);
     // [END print_solution]
   }

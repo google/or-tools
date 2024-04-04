@@ -437,6 +437,7 @@ foreach(SAMPLES IN ITEMS
  graph
  glop
  constraint_solver
+ routing
  linear_solver
  ${MATH_OPT_DIR}
  ${PDLP_DIR}

@@ -13,6 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+// Used for free functions.
+%module(directors="1") Globals;
+
 %include "enumsimple.swg"
 %include "exception.i"
 
@@ -21,6 +24,12 @@
 %include "ortools/util/java/tuple_set.i"
 %include "ortools/util/java/vector.i"
 %include "ortools/util/java/proto.i"
+
+// Make the SWIG-generated constructor public.
+// This is necessary as it will be called from the routing package.
+SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
+                    /*CPTR_VISIBILITY=*/public,
+                    /*TYPE...=*/SWIGTYPE)
 
 // Remove swig warnings
 %warnfilter(473) operations_research::DecisionBuilder;
@@ -123,8 +132,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 }  // namespace operations_research
 
 // ############ END DUPLICATED CODE BLOCK ############
-
-%module(directors="1") operations_research;
 
 %{
 #include <setjmp.h>
@@ -1551,7 +1558,7 @@ CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 %rename (toString) *::DebugString;
 %rename("%(lowercamelcase)s", %$isvariable) "";
 
-// Add needed import to mainJNI.java
+// Add needed import to GlobalsJNI.java
 %pragma(java) jniclassimports=%{
 // Used to wrap std::function<std::string()>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
@@ -1615,11 +1622,14 @@ PROTO_INPUT(operations_research::RegularLimitParameters,
 PROTO2_RETURN(operations_research::RegularLimitParameters,
               com.google.ortools.constraintsolver.RegularLimitParameters)
 
-namespace operations_research {
+// Add needed import to Globals.java
+%pragma(java) moduleimports=%{
+%}
 
+namespace operations_research {
 // Globals
-// IMPORTANT(user): Globals will be placed in main.java
-// i.e. use `import com.[...].constraintsolver.main`
+// IMPORTANT(user): Globals will be placed in Globals.java
+// i.e. use `import com.[...].constraintsolver.Globals`
 %ignore FillValues;
 %rename (areAllBooleans) AreAllBooleans;
 %rename (areAllBound) AreAllBound;

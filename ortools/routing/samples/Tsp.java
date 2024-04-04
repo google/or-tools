@@ -12,23 +12,25 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
+
 // [START import]
 import static java.lang.Math.abs;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
 import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.routing.RoutingSearchStatus;
 import java.util.function.LongBinaryOperator;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal TSP.*/
+/** Minimal TSP. */
 public class Tsp {
   private static final Logger logger = Logger.getLogger(Tsp.class.getName());
 
@@ -55,6 +57,7 @@ public class Tsp {
     };
     public final int vehicleNumber = 1;
     public final int depot = 0;
+
     public DataModel() {
       // Convert locations in meters using a city block dimension of 114m x 80m.
       for (int[] element : locations) {
@@ -63,6 +66,7 @@ public class Tsp {
       }
     }
   }
+
   // [END data_model]
 
   // [START manhattan_distance]
@@ -87,6 +91,7 @@ public class Tsp {
         }
       }
     }
+
     @Override
     public long applyAsLong(long fromIndex, long toIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
@@ -94,6 +99,7 @@ public class Tsp {
       int toNode = indexManager.indexToNode(toIndex);
       return distanceMatrix[fromNode][toNode];
     }
+
     private final long[][] distanceMatrix;
     private final RoutingIndexManager indexManager;
   }
@@ -128,6 +134,7 @@ public class Tsp {
     logger.info(route);
     logger.info("Distance of the route: " + routeDistance + "m");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
@@ -162,7 +169,7 @@ public class Tsp {
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();

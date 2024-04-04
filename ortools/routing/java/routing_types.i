@@ -22,6 +22,27 @@
 
 %{
 #include "ortools/constraint_solver/routing_types.h"
+
+/* Global JNI reference deleter */
+class GlobalRefGuard {
+  JavaVM *jvm_;
+  jobject jref_;
+  // non-copyable
+  GlobalRefGuard(const GlobalRefGuard &) = delete;
+  GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
+  public:
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
+};
 %}
 
 // This macro defines typemaps for IndexT, std::vector<IndexT> and

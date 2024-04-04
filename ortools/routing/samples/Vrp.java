@@ -12,23 +12,23 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
 import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
+import com.google.ortools.routing.RoutingSearchStatus;
 import java.util.logging.Logger;
 // [END import]
 
 /** Minimal VRP.*/
-public class VrpGlobalSpan {
-  private static final Logger logger = Logger.getLogger(VrpGlobalSpan.class.getName());
+public class Vrp {
+  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -54,32 +54,41 @@ public class VrpGlobalSpan {
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
+
   // [END data_model]
 
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+    RoutingSearchStatus.Value status = routing.status();
+    logger.info("Status: " + status);
+    if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
+        && status != RoutingSearchStatus.Value.ROUTING_SUCCESS) {
+      logger.warning("No solution found!");
+      return;
+    }
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    long maxRouteDistance = 0;
-    for (int i = 0; i < data.vehicleNumber; ++i) {
-      long index = routing.start(i);
+    long totalDistance = 0;
+    for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       String route = "";
+      long index = routing.start(i);
       while (!routing.isEnd(index)) {
         route += manager.indexToNode(index) + " -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      logger.info(route + manager.indexToNode(index));
+      route += manager.indexToNode(routing.end(i));
+      logger.info(route);
       logger.info("Distance of the route: " + routeDistance + "m");
-      maxRouteDistance = Math.max(routeDistance, maxRouteDistance);
+      totalDistance += routeDistance;
     }
-    logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
+    logger.info("Total Distance of all routes: " + totalDistance + "m");
   }
   // [END solution_printer]
 
@@ -117,19 +126,10 @@ public class VrpGlobalSpan {
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
-    // Add Distance constraint.
-    // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, 0, 3000,
-        true, // start cumul to zero
-        "Distance");
-    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
-    distanceDimension.setGlobalSpanCostCoefficient(100);
-    // [END distance_constraint]
-
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
@@ -142,7 +142,7 @@ public class VrpGlobalSpan {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    printSolution(routing, manager, solution);
     // [END print_solution]
   }
 }

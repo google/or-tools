@@ -12,23 +12,24 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.Enums.FirstSolutionStrategy;
-import com.google.ortools.routing.Parameters.RoutingSearchParameters;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.LocalSearchMetaheuristic;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
+import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpStartsEnds {
-  private static final Logger logger = Logger.getLogger(VrpStartsEnds.class.getName());
+/** Minimal VRP. */
+public final class VrpCapacity {
+  private static final Logger logger = Logger.getLogger(VrpCapacity.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -51,11 +52,12 @@ public class VrpStartsEnds {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
+    // [START demands_capacities]
+    public final long[] demands = {0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8};
+    public final long[] vehicleCapacities = {15, 15, 15, 15};
+    // [END demands_capacities]
     public final int vehicleNumber = 4;
-    // [START starts_ends]
-    public final int[] starts = {1, 2, 15, 16};
-    public final int[] ends = {0, 0, 0, 0};
-    // [END starts_ends]
+    public final int depot = 0;
   }
   // [END data_model]
 
@@ -64,25 +66,32 @@ public class VrpStartsEnds {
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
-    logger.info("Objective : " + solution.objectiveValue());
+    logger.info("Objective: " + solution.objectiveValue());
     // Inspect solution.
-    long maxRouteDistance = 0;
+    long totalDistance = 0;
+    long totalLoad = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
+      long routeLoad = 0;
       String route = "";
       while (!routing.isEnd(index)) {
-        route += manager.indexToNode(index) + " -> ";
+        long nodeIndex = manager.indexToNode(index);
+        routeLoad += data.demands[(int) nodeIndex];
+        route += nodeIndex + " Load(" + routeLoad + ") -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      logger.info(route + manager.indexToNode(index));
+      route += manager.indexToNode(routing.end(i));
+      logger.info(route);
       logger.info("Distance of the route: " + routeDistance + "m");
-      maxRouteDistance = Math.max(routeDistance, maxRouteDistance);
+      totalDistance += routeDistance;
+      totalLoad += routeLoad;
     }
-    logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
+    logger.info("Total distance of all routes: " + totalDistance + "m");
+    logger.info("Total load of all routes: " + totalLoad);
   }
   // [END solution_printer]
 
@@ -95,8 +104,8 @@ public class VrpStartsEnds {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(
-        data.distanceMatrix.length, data.vehicleNumber, data.starts, data.ends);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(data.distanceMatrix.length, data.vehicleNumber, data.depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -120,21 +129,28 @@ public class VrpStartsEnds {
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
-    // Add Distance constraint.
-    // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, 0, 2000,
+    // Add Capacity constraint.
+    // [START capacity_constraint]
+    final int demandCallbackIndex = routing.registerUnaryTransitCallback((long fromIndex) -> {
+      // Convert from routing variable Index to user NodeIndex.
+      int fromNode = manager.indexToNode(fromIndex);
+      return data.demands[fromNode];
+    });
+    boolean unused = routing.addDimensionWithVehicleCapacity(demandCallbackIndex,
+        0, // null capacity slack
+        data.vehicleCapacities, // vehicle maximum capacities
         true, // start cumul to zero
-        "Distance");
-    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
-    distanceDimension.setGlobalSpanCostCoefficient(100);
-    // [END distance_constraint]
+        "Capacity");
+    // [END capacity_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
+            .setTimeLimit(Duration.newBuilder().setSeconds(1).build())
             .build();
     // [END parameters]
 
@@ -148,5 +164,7 @@ public class VrpStartsEnds {
     printSolution(data, routing, manager, solution);
     // [END print_solution]
   }
+
+  private VrpCapacity() {}
 }
 // [END program]

@@ -12,24 +12,25 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.Enums.FirstSolutionStrategy;
-import com.google.ortools.routing.Parameters.RoutingSearchParameters;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.LocalSearchMetaheuristic;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
+import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal Pickup & Delivery Problem (PDP).*/
-public class VrpPickupDeliveryFifo {
-  private static final Logger logger = Logger.getLogger(VrpPickupDeliveryFifo.class.getName());
+/** Minimal VRP. */
+public final class VrpSolutionCallback {
+  private static final Logger logger = Logger.getLogger(VrpSolutionCallback.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -52,51 +53,72 @@ public class VrpPickupDeliveryFifo {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
-    // [START pickups_deliveries]
-    public final int[][] pickupsDeliveries = {
-        {1, 6},
-        {2, 10},
-        {4, 3},
-        {5, 9},
-        {7, 8},
-        {15, 11},
-        {13, 12},
-        {16, 14},
-    };
-    // [END pickups_deliveries]
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
   // [END data_model]
 
-  // [START solution_printer]
+  // [START solution_callback_printer]
   /// @brief Print the solution.
-  static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+  static void printSolution(RoutingIndexManager routingManager, RoutingModel routingModel) {
     // Solution cost.
-    logger.info("Objective : " + solution.objectiveValue());
+    logger.info("################");
+    logger.info("Solution objective : " + routingModel.costVar().value());
     // Inspect solution.
     long totalDistance = 0;
-    for (int i = 0; i < data.vehicleNumber; ++i) {
-      long index = routing.start(i);
+    for (int i = 0; i < routingManager.getNumberOfVehicles(); ++i) {
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
+      long index = routingModel.start(i);
       String route = "";
-      while (!routing.isEnd(index)) {
-        route += manager.indexToNode(index) + " -> ";
+      while (!routingModel.isEnd(index)) {
+        route += routingManager.indexToNode(index) + " -> ";
         long previousIndex = index;
-        index = solution.value(routing.nextVar(index));
-        routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
+        index = routingModel.nextVar(index).value();
+        routeDistance += routingModel.getArcCostForVehicle(previousIndex, index, i);
       }
-      logger.info(route + manager.indexToNode(index));
+      logger.info(route + routingManager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
       totalDistance += routeDistance;
     }
-    logger.info("Total Distance of all routes: " + totalDistance + "m");
+    logger.info("Total distance of all routes: " + totalDistance + "m");
   }
-  // [END solution_printer]
+  // [END solution_callback_printer]
 
-  public static void main(String[] args) throws Exception {
+  // [START solution_callback]
+  static class SolutionCallback implements Runnable {
+    public final long[] objectives;
+    private final RoutingIndexManager routingManager;
+    private final RoutingModel routingModel;
+    private final int maxSolution;
+    private int counter;
+
+    public SolutionCallback(
+        final RoutingIndexManager manager, final RoutingModel routing, int limit) {
+      routingManager = manager;
+      routingModel = routing;
+      maxSolution = limit;
+      counter = 0;
+      objectives = new long[maxSolution];
+    }
+
+    @Override
+    public void run() {
+      long objective = routingModel.costVar().value();
+      if (counter == 0 || objective < objectives[counter - 1]) {
+        objectives[counter] = objective;
+        printSolution(routingManager, routingModel);
+        counter++;
+      }
+      if (counter >= maxSolution) {
+        routingModel.solver().finishCurrentSearch();
+      }
+    }
+  };
+
+  // [END solution_callback]
+
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
@@ -105,75 +127,76 @@ public class VrpPickupDeliveryFifo {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
+    final RoutingIndexManager routingManager =
         new RoutingIndexManager(data.distanceMatrix.length, data.vehicleNumber, data.depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    RoutingModel routing = new RoutingModel(manager);
+    final RoutingModel routingModel = new RoutingModel(routingManager);
     // [END routing_model]
 
     // Create and register a transit callback.
     // [START transit_callback]
     final int transitCallbackIndex =
-        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
+        routingModel.registerTransitCallback((long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
-          int fromNode = manager.indexToNode(fromIndex);
-          int toNode = manager.indexToNode(toIndex);
+          int fromNode = routingManager.indexToNode(fromIndex);
+          int toNode = routingManager.indexToNode(toIndex);
           return data.distanceMatrix[fromNode][toNode];
         });
     // [END transit_callback]
 
     // Define cost of each arc.
     // [START arc_cost]
-    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+    routingModel.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex, // transit callback index
+    boolean unused = routingModel.addDimension(transitCallbackIndex,
         0, // no slack
         3000, // vehicle maximum travel distance
         true, // start cumul to zero
         "Distance");
-    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    RoutingDimension distanceDimension = routingModel.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
 
-    // Define Transportation Requests.
-    // [START pickup_delivery_constraint]
-    Solver solver = routing.solver();
-    for (int[] request : data.pickupsDeliveries) {
-      long pickupIndex = manager.nodeToIndex(request[0]);
-      long deliveryIndex = manager.nodeToIndex(request[1]);
-      routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
-      solver.addConstraint(
-          solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
-      solver.addConstraint(solver.makeLessOrEqual(
-          distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
-    }
-    routing.setPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.PICKUP_AND_DELIVERY_FIFO);
-    // [END pickup_delivery_constraint]
+    // Attach a solution callback.
+    // [START attach_callback]
+    final SolutionCallback solutionCallback =
+        new SolutionCallback(routingManager, routingModel, 15);
+    routingModel.addAtSolutionCallback(solutionCallback);
+    // [END attach_callback]
 
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION)
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
+            .setTimeLimit(Duration.newBuilder().setSeconds(5).build())
             .build();
     // [END parameters]
 
     // Solve the problem.
     // [START solve]
-    Assignment solution = routing.solveWithParameters(searchParameters);
+    Assignment solution = routingModel.solveWithParameters(searchParameters);
     // [END solve]
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    if (solution != null) {
+      logger.info(
+          "Best objective: " + solutionCallback.objectives[solutionCallback.objectives.length - 1]);
+    } else {
+      logger.info("No solution found !");
+    }
     // [END print_solution]
   }
+
+  private VrpSolutionCallback() {}
 }
 // [END program]

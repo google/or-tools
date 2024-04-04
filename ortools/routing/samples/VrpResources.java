@@ -12,25 +12,28 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.Enums.FirstSolutionStrategy;
-import com.google.ortools.routing.Parameters.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.IntervalVar;
+import com.google.ortools.constraintsolver.Solver;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
+import java.util.Arrays;
 import java.util.logging.Logger;
 // [END import]
 
-/** VRPTW. */
-public class VrpTimeWindows {
-  private static final Logger logger = Logger.getLogger(VrpTimeWindows.class.getName());
-  // [START program_part1]
+/** Minimal VRP with Resource Constraints.*/
+public class VrpResources {
+  private static final Logger logger = Logger.getLogger(VrpResources.class.getName());
+
   // [START data_model]
   static class DataModel {
     public final long[][] timeMatrix = {
@@ -56,22 +59,27 @@ public class VrpTimeWindows {
         {0, 5}, // depot
         {7, 12}, // 1
         {10, 15}, // 2
-        {16, 18}, // 3
-        {10, 13}, // 4
+        {5, 14}, // 3
+        {5, 13}, // 4
         {0, 5}, // 5
         {5, 10}, // 6
-        {0, 4}, // 7
+        {0, 10}, // 7
         {5, 10}, // 8
-        {0, 3}, // 9
+        {0, 5}, // 9
         {10, 16}, // 10
         {10, 15}, // 11
         {0, 5}, // 12
         {5, 10}, // 13
-        {7, 8}, // 14
+        {7, 12}, // 14
         {10, 15}, // 15
-        {11, 15}, // 16
+        {5, 15}, // 16
     };
     public final int vehicleNumber = 4;
+    // [START resources_data]
+    public final int vehicleLoadTime = 5;
+    public final int vehicleUnloadTime = 5;
+    public final int depotCapacity = 2;
+    // [END resources_data]
     public final int depot = 0;
   }
   // [END data_model]
@@ -142,7 +150,7 @@ public class VrpTimeWindows {
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCallbackIndex, // transit callback
+    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero
@@ -160,6 +168,26 @@ public class VrpTimeWindows {
     }
     // [END time_constraint]
 
+    // Add resource constraints at the depot.
+    // [START depot_load_time]
+    Solver solver = routing.solver();
+    IntervalVar[] intervals = new IntervalVar[data.vehicleNumber * 2];
+    for (int i = 0; i < data.vehicleNumber; ++i) {
+      // Add load duration at start of routes
+      intervals[2 * i] = solver.makeFixedDurationIntervalVar(
+          timeDimension.cumulVar(routing.start(i)), data.vehicleLoadTime, "depot_interval");
+      // Add unload duration at end of routes.
+      intervals[2 * i + 1] = solver.makeFixedDurationIntervalVar(
+          timeDimension.cumulVar(routing.end(i)), data.vehicleUnloadTime, "depot_interval");
+    }
+    // [END depot_load_time]
+
+    // [START depot_capacity]
+    long[] depotUsage = new long[intervals.length];
+    Arrays.fill(depotUsage, 1);
+    solver.addConstraint(solver.makeCumulative(intervals, depotUsage, data.depotCapacity, "depot"));
+    // [END depot_capacity]
+
     // Instantiate route start and end times to produce feasible times.
     // [START depot_start_end_times]
     for (int i = 0; i < data.vehicleNumber; ++i) {
@@ -171,7 +199,7 @@ public class VrpTimeWindows {
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
@@ -188,5 +216,4 @@ public class VrpTimeWindows {
     // [END print_solution]
   }
 }
-// [END_program_part1]
 // [END program]

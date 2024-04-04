@@ -12,22 +12,24 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
+import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal TSP using distance matrix.*/
-public class TspDistanceMatrix {
-  private static final Logger logger = Logger.getLogger(TspDistanceMatrix.class.getName());
+/** Minimal Pickup & Delivery Problem (PDP).*/
+public class VrpPickupDelivery {
+  private static final Logger logger = Logger.getLogger(VrpPickupDelivery.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -50,7 +52,19 @@ public class TspDistanceMatrix {
         {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
         {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
     };
-    public final int vehicleNumber = 1;
+    // [START pickups_deliveries]
+    public final int[][] pickupsDeliveries = {
+        {1, 6},
+        {2, 10},
+        {4, 3},
+        {5, 9},
+        {7, 8},
+        {15, 11},
+        {13, 12},
+        {16, 14},
+    };
+    // [END pickups_deliveries]
+    public final int vehicleNumber = 4;
     public final int depot = 0;
   }
   // [END data_model]
@@ -62,19 +76,23 @@ public class TspDistanceMatrix {
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    logger.info("Route for Vehicle 0:");
-    long routeDistance = 0;
-    String route = "";
-    long index = routing.start(0);
-    while (!routing.isEnd(index)) {
-      route += manager.indexToNode(index) + " -> ";
-      long previousIndex = index;
-      index = solution.value(routing.nextVar(index));
-      routeDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
+    long totalDistance = 0;
+    for (int i = 0; i < data.vehicleNumber; ++i) {
+      long index = routing.start(i);
+      logger.info("Route for Vehicle " + i + ":");
+      long routeDistance = 0;
+      String route = "";
+      while (!routing.isEnd(index)) {
+        route += manager.indexToNode(index) + " -> ";
+        long previousIndex = index;
+        index = solution.value(routing.nextVar(index));
+        routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
+      }
+      logger.info(route + manager.indexToNode(index));
+      logger.info("Distance of the route: " + routeDistance + "m");
+      totalDistance += routeDistance;
     }
-    route += manager.indexToNode(routing.end(0));
-    logger.info(route);
-    logger.info("Distance of the route: " + routeDistance + "m");
+    logger.info("Total Distance of all routes: " + totalDistance + "m");
   }
   // [END solution_printer]
 
@@ -112,12 +130,37 @@ public class TspDistanceMatrix {
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
+    // Add Distance constraint.
+    // [START distance_constraint]
+    boolean unused = routing.addDimension(transitCallbackIndex, // transit callback index
+        0, // no slack
+        3000, // vehicle maximum travel distance
+        true, // start cumul to zero
+        "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
+
+    // Define Transportation Requests.
+    // [START pickup_delivery_constraint]
+    Solver solver = routing.solver();
+    for (int[] request : data.pickupsDeliveries) {
+      long pickupIndex = manager.nodeToIndex(request[0]);
+      long deliveryIndex = manager.nodeToIndex(request[1]);
+      routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
+      solver.addConstraint(
+          solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
+      solver.addConstraint(solver.makeLessOrEqual(
+          distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
+    }
+    // [END pickup_delivery_constraint]
+
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
-            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION)
             .build();
     // [END parameters]
 

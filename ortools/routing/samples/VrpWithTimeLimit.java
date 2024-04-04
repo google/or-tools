@@ -12,19 +12,20 @@
 // limitations under the License.
 
 // [START program]
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
+
 // [START import]
 import static java.lang.Math.max;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.RoutingDimension;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.routing.Enums.FirstSolutionStrategy;
-import com.google.ortools.routing.Enums.LocalSearchMetaheuristic;
-import com.google.ortools.routing.Parameters.RoutingSearchParameters;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.LocalSearchMetaheuristic;
+import com.google.ortools.routing.RoutingDimension;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
@@ -92,10 +93,10 @@ public final class VrpWithTimeLimit {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCallbackIndex,
-        /*slack_max=*/0,
-        /*capacity=*/3000,
-        /*fix_start_cumul_to_zero=*/true, "Distance");
+    boolean unused = routing.addDimension(transitCallbackIndex,
+        /* slack_max= */ 0,
+        /* capacity= */ 3000,
+        /* fix_start_cumul_to_zero= */ true, "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
@@ -103,7 +104,7 @@ public final class VrpWithTimeLimit {
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
