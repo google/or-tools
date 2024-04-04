@@ -972,8 +972,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 
   // Because we use the cached value in the window, we don't really care
   // on which order we process them.
-  precedences_->ComputePrecedences(index_to_end_vars_, &before_,
-                                   /*sort_by_var_lb=*/false);
+  precedence_relations_->CollectPrecedences(index_to_end_vars_, &before_);
 
   const int size = before_.size();
   for (int global_i = 0; global_i < size;) {
@@ -990,20 +989,15 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // TODO(user): If more than one set of task push the same variable, we
     // probabaly only want to keep the best push? Maybe we want to process them
     // in reverse order of what we do here?
-    //
-    // TODO(user): Currently we don't really use the inner_offsets_ except for
-    // checking that our hash-maps are up to date. The idea is to get rid of
-    // them for a faster and maybe more dynamic ComputePrecedences().
     indices_before_.clear();
-    inner_offsets_.clear();
     IntegerValue local_start;
     IntegerValue local_end;
     for (; global_i < size; ++global_i) {
-      const PrecedencesPropagator::IntegerPrecedences& data = before_[global_i];
+      const PrecedenceRelations::PrecedenceData& data = before_[global_i];
       if (data.var != var) break;
       const int index = data.index;
       const auto [t, start_of_t] = window_[index];
-      if (global_i == global_start_i) {
+      if (global_i == global_start_i) {  // First loop.
         local_start = start_of_t;
         local_end = local_start + helper_->SizeMin(t);
       } else {
@@ -1011,7 +1005,6 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         local_end += helper_->SizeMin(t);
       }
       indices_before_.push_back(index);
-      inner_offsets_.push_back(data.offset);
     }
 
     // No need to consider if we don't have at least two tasks before var.
@@ -1022,7 +1015,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // Heuristic.
     // We will use the current end-min of all the task in indices_before_
     // to skip task with an offset not large enough.
-    const IntegerValue best_end_min = local_end;
+    IntegerValue end_min_when_all_present = local_end;
 
     // We will consider the end-min of all the subsets [i, num_items) to try to
     // push var using the min-offset between var and items of such subset. This
@@ -1031,39 +1024,21 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // Note that this needs the items in indices_before_ to be sorted by
     // their shifted start min (it should be the case).
     int best_index = -1;
-    IntegerValue best_new_lb = kMinIntegerValue;
+    const IntegerValue current_var_lb = integer_trail_->LowerBound(var);
+    IntegerValue best_new_lb = current_var_lb;
     IntegerValue min_offset = kMaxIntegerValue;
     IntegerValue sum_of_duration = 0;
-    const IntegerValue current_var_lb = integer_trail_->LowerBound(var);
     for (int i = num_before; --i >= 0;) {
       const TaskTime task_time = window_[indices_before_[i]];
       const AffineExpression& end_exp = helper_->Ends()[task_time.task_index];
 
-      // Heuristic: do not consider this relations if its offset is clearly bad.
-      // If we want to get rid of inner_offsets_[], we will have to only do it
-      // below after the somewhat costly hash lookup to find the offset.
-      const IntegerValue known_offset = inner_offsets_[i] - end_exp.constant;
-      if (best_end_min + known_offset <= current_var_lb) {
-        skip_[i] = true;
-        continue;
-      }
-
-      // TODO(user): The hash lookup here is a bit slow.
+      // TODO(user): The hash lookup here is a bit slow, so we avoid fetching
+      // the offset as much as possible. Note that the alternative of storing it
+      // in PrecedenceData is not necessarily better and harder to update as we
+      // dive/backtrack.
       const IntegerValue inner_offset =
           precedence_relations_->GetConditionalOffset(end_exp.var, var);
-
-      // TODO(user): This happens for relations true at level zero, maybe we
-      // should deal with them differently.
-      if (inner_offset == kMinIntegerValue) {
-        skip_[i] = true;
-        continue;
-      }
-
-      // TODO(user): The code should work in all cases, but this DCHECK still
-      // fail rarely in multithread. I think this happens for linear of size 3
-      // with some fixed variable that get converted in the precedence
-      // propagator to size 2.
-      DCHECK_GE(inner_offset, inner_offsets_[i]);
+      DCHECK_NE(inner_offset, kMinIntegerValue);
 
       // We have var >= end_exp.var + inner_offset, so
       // var >= (end_exp.var + end_exp.constant)
@@ -1072,18 +1047,27 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       const IntegerValue offset = inner_offset - end_exp.constant;
 
       // Heuristic: do not consider this relations if its offset is clearly bad.
-      // Same as what is done above with inner_offsets_[i].
-      if (best_end_min + offset <= current_var_lb) {
+      const IntegerValue task_size = helper_->SizeMin(task_time.task_index);
+      if (end_min_when_all_present + offset <= best_new_lb) {
+        // This is true if we skipped all task so far in this block.
+        if (min_offset == kMaxIntegerValue) {
+          // If only one task is left, we can abort.
+          // This avoid a GetConditionalOffset() lookup.
+          if (i == 1) break;
+
+          // Lower the end_min_when_all_present for better filtering later.
+          end_min_when_all_present -= task_size;
+        }
+
         skip_[i] = true;
         continue;
       }
 
       // Add this task to the current subset and compute the new bound.
       min_offset = std::min(min_offset, offset);
-      sum_of_duration += helper_->SizeMin(task_time.task_index);
+      sum_of_duration += task_size;
       const IntegerValue start = task_time.time;
       const IntegerValue new_lb = start + sum_of_duration + min_offset;
-
       if (new_lb > best_new_lb) {
         best_new_lb = new_lb;
         best_index = i;

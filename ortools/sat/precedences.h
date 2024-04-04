@@ -55,7 +55,8 @@ struct FullIntegerPrecedence {
 class PrecedenceRelations : public ReversibleInterface {
  public:
   explicit PrecedenceRelations(Model* model)
-      : trail_(model->GetOrCreate<Trail>()),
+      : params_(*model->GetOrCreate<SatParameters>()),
+        trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()) {
     integer_trail_->RegisterReversibleClass(this);
   }
@@ -99,11 +100,22 @@ class PrecedenceRelations : public ReversibleInterface {
   void ComputeFullPrecedences(const std::vector<IntegerVariable>& vars,
                               std::vector<FullIntegerPrecedence>* output);
 
+  // Returns a set of precedences (var, index) such that var is after
+  // vars[index]. All entries for the same variable will be contiguous and
+  // sorted by index. We only list variable with at least two entries. The
+  // offset can be retrieved via GetConditionalOffset(vars[index], var).
+  struct PrecedenceData {
+    IntegerVariable var;
+    int index;
+  };
+  void CollectPrecedences(const std::vector<IntegerVariable>& vars,
+                          std::vector<PrecedenceData>* output);
+
   // If we don't have too many variable, we compute the full transitive closure
   // and can query in O(1) if there is a relation between two variables.
   // This can be used to optimize some scheduling propagation and reasons.
   //
-  // Warning: If we there are too many, this will NOT contain all relations.
+  // Warning: If there are too many, this will NOT contain all relations.
   //
   // Returns kMinIntegerValue if there are none.
   // Otherwise a + offset <= b.
@@ -141,13 +153,42 @@ class PrecedenceRelations : public ReversibleInterface {
   // Which is the same as tail - head <= -offset.
   bool AddInternal(IntegerVariable tail, IntegerVariable head,
                    IntegerValue offset) {
-    const auto [it, inserted] =
-        root_relations_.insert({GetKey(tail, NegationOf(head)), -offset});
-    if (inserted) return true;
+    const auto key = GetKey(tail, NegationOf(head));
+    const auto [it, inserted] = root_relations_.insert({key, -offset});
+    UpdateBestRelationIfBetter(key, -offset);
+    if (inserted) {
+      const int new_size = std::max(tail.value(), NegationOf(head).value()) + 1;
+      if (new_size > after_.size()) after_.resize(new_size);
+      after_[tail].push_back(head);
+      after_[NegationOf(head)].push_back(NegationOf(tail));
+      return true;
+    }
     it->second = std::min(it->second, -offset);
     return false;
   }
 
+  void UpdateBestRelationIfBetter(
+      std::pair<IntegerVariable, IntegerVariable> key, IntegerValue rhs) {
+    const auto [it, inserted] = best_relations_.insert({key, rhs});
+    if (!inserted) {
+      it->second = std::min(it->second, rhs);
+    }
+  }
+
+  void UpdateBestRelation(std::pair<IntegerVariable, IntegerVariable> key,
+                          IntegerValue rhs) {
+    const auto it = root_relations_.find(key);
+    if (it != root_relations_.end()) {
+      rhs = std::min(rhs, it->second);
+    }
+    if (rhs == kMaxIntegerValue) {
+      best_relations_.erase(key);
+    } else {
+      best_relations_[key] = rhs;
+    }
+  }
+
+  const SatParameters& params_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
 
@@ -182,6 +223,24 @@ class PrecedenceRelations : public ReversibleInterface {
       root_relations_;
   absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>, int>
       conditional_relations_;
+
+  // Contains std::min() of the offset from root_relations_ and
+  // conditional_relations_.
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>, IntegerValue>
+      best_relations_;
+
+  // Store for each variable x, the variables y that appears in GetOffset(x, y)
+  // or GetConditionalOffset(x, y). That is the variable that are after x with
+  // an offset. Note that conditional_after_ is updated on dive/backtrack.
+  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> after_;
+  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
+      conditional_after_;
+
+  // Temp data for CollectPrecedences.
+  std::vector<IntegerVariable> var_with_positive_degree_;
+  absl::StrongVector<IntegerVariable, int> var_to_degree_;
+  absl::StrongVector<IntegerVariable, int> var_to_last_index_;
+  std::vector<PrecedenceData> tmp_precedences_;
 };
 
 // This class implement a propagator on simple inequalities between integer
@@ -256,38 +315,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // This version check current precedence. It is however "slow".
   bool AddPrecedenceWithOffsetIfNew(IntegerVariable i1, IntegerVariable i2,
                                     IntegerValue offset);
-
-  // Finds all the IntegerVariable that are "after" at least two of the
-  // IntegerVariable in vars. Returns a vector of these precedences relation so
-  // that it is efficient to find all the IntegerVariable "before" another one.
-  //
-  // If sort_by_var_lb is true, then the returned precedences will be in order
-  // of the var current lower bound. This should be a topological order for
-  // the relations with positive offset.
-  //
-  // Note that we only consider direct precedences here. Given our usage, it may
-  // be better to compute the full reachability in the precedence graph, but in
-  // pratice that may be too slow.
-  //
-  // Important: For identical vars, the entry are sorted by index.
-  struct IntegerPrecedences {
-    int index;            // position in vars.
-    IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
-    IntegerValue offset;  // we have: vars[index] + offset <= var
-  };
-  void ComputePrecedences(const std::vector<IntegerVariable>& vars,
-                          std::vector<IntegerPrecedences>* output,
-                          bool sort_by_var_lb = true);
-
-  // This just wrap ComputePrecedences() above and convert its output format to
-  // the same format as PrecedenceRelations::ComputeFullPrecedences(). This is
-  // less efficient but more convenient to use.
-  //
-  //
-  // Returns a bunch of precedences relations:
-  // An IntegerVariable >= to vars[indices[i]] + offset[i], for i in indices.
-  void ComputePartialPrecedences(const std::vector<IntegerVariable>& vars,
-                                 std::vector<FullIntegerPrecedence>* output);
 
  private:
   DEFINE_STRONG_INDEX_TYPE(ArcIndex);
@@ -396,19 +423,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   absl::StrongVector<IntegerVariable, absl::InlinedVector<OptionalArcIndex, 6>>
       impacted_potential_arcs_;
   absl::StrongVector<OptionalArcIndex, ArcInfo> potential_arcs_;
-
-  // Temporary vectors used by ComputePrecedences().
-  absl::StrongVector<IntegerVariable, int> var_to_degree_;
-  absl::StrongVector<IntegerVariable, int> var_to_last_index_;
-  struct SortedVar {
-    IntegerVariable var;
-    IntegerValue lower_bound;
-    bool operator<(const SortedVar& other) const {
-      return lower_bound < other.lower_bound;
-    }
-  };
-  std::vector<SortedVar> tmp_sorted_vars_;
-  std::vector<IntegerPrecedences> tmp_precedences_;
 
   // Each time a literal becomes true, this list the set of arcs for which we
   // need to decrement their count. When an arc count reach zero, it must be
