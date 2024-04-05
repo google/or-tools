@@ -814,13 +814,14 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   bool first_change = true;
   num_terms_for_dtime_update_ += info.rev_size;
   IntegerValue* max_variations = max_variations_.data();
+  const IntegerValue* lower_bounds = integer_trail_->LowerBoundsData();
   if (info.all_coeffs_are_one) {
     // TODO(user): Avoid duplication?
     for (int i = 0; i < info.rev_size;) {
       const IntegerVariable var = vars[i];
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) {
+      const IntegerValue lb = lower_bounds[var.value()];
+      const IntegerValue diff = -lower_bounds[NegationOf(var).value()] - lb;
+      if (diff == 0) {
         if (first_change) {
           // Note that we can save at most one state per fixed var. Also at
           // level zero we don't save anything.
@@ -833,8 +834,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
         info.rev_rhs -= lb;
       } else {
         implied_lb += lb;
-        max_variations[i] = (ub - lb);
-        max_variation = std::max(max_variation, max_variations[i]);
+        max_variations[i] = diff;
+        max_variation = std::max(max_variation, diff);
         ++i;
       }
     }
@@ -843,9 +844,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     for (int i = 0; i < info.rev_size;) {
       const IntegerVariable var = vars[i];
       const IntegerValue coeff = coeffs[i];
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) {
+      const IntegerValue lb = lower_bounds[var.value()];
+      const IntegerValue diff = -lower_bounds[NegationOf(var).value()] - lb;
+      if (diff == 0) {
         if (first_change) {
           // Note that we can save at most one state per fixed var. Also at
           // level zero we don't save anything.
@@ -859,7 +860,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
         info.rev_rhs -= coeff * lb;
       } else {
         implied_lb += coeff * lb;
-        max_variations[i] = (ub - lb) * coeff;
+        max_variations[i] = diff * coeff;
         max_variation = std::max(max_variation, max_variations[i]);
         ++i;
       }
@@ -1305,14 +1306,17 @@ void LinearPropagator::AddWatchedToQueue(IntegerVariable var,
     if (in_queue_[id]) continue;
     if (id_propagated_something_[id]) {
       id_propagated_something_[id] = false;  // reset.
-      AddToQueueIfNeeded(id);
+      in_queue_[id] = true;
+      propagation_queue_.Push(id);
     } else {
       tmp_delayed_.push_back(id);
     }
   }
   if (push_delayed_right_away) {
     for (const int id : tmp_delayed_) {
-      AddToQueueIfNeeded(id);
+      DCHECK(!in_queue_[id]);
+      in_queue_[id] = true;
+      propagation_queue_.Push(id);
     }
     tmp_delayed_.clear();
   }
