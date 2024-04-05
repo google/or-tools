@@ -819,12 +819,12 @@ class _WeightedSum(LinearExpr):
                 output += f" + {coeff} * {expr}"
             elif coeff < -1:
                 output += f" - {-coeff} * {expr}"
-        if self.__constant > 0:
+        if output is None:
+            output = str(self.__constant)
+        elif self.__constant > 0:
             output += f" + {self.__constant}"
         elif self.__constant < 0:
             output += f" - {-self.__constant}"
-        if output is None:
-            output = "0"
         return output
 
     def __repr__(self):
