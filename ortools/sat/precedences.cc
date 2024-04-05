@@ -49,19 +49,23 @@
 namespace operations_research {
 namespace sat {
 
-void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
+bool PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
                               IntegerValue offset) {
   // Ignore trivial relation: tail + offset <= head.
   if (integer_trail_->LevelZeroUpperBound(tail) + offset <=
       integer_trail_->LevelZeroLowerBound(head)) {
-    return;
+    return false;
   }
 
   // TODO(user): Return infeasible if tail == head and offset > 0.
   // TODO(user): if tail = Negation(head) also update Domain.
-  if (tail == head) return;
+  if (tail == head) return false;
 
   // Add to root_relations_.
+  //
+  // TODO(user): AddInternal() only returns true if this is the first relation
+  // between head and tail. But we can still avoid an extra lookup.
+  if (offset <= GetOffset(tail, head)) return false;
   AddInternal(tail, head, offset);
 
   // If we are not built, make sure there is enough room in the graph.
@@ -71,6 +75,7 @@ void PrecedenceRelations::Add(IntegerVariable tail, IntegerVariable head,
   if (!is_built_ && max_node >= graph_.num_nodes()) {
     graph_.AddNode(max_node);
   }
+  return true;
 }
 
 void PrecedenceRelations::PushConditionalRelation(

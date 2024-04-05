@@ -863,12 +863,12 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
           new_start_min = window_start + energy_of_task_before + min_slack;
         }
 
-        // If we detect precedences at level zero, lets add them to the
-        // precedence propagator. The hope is that this leads to faster
-        // propagation with better reason if they ever trigger.
+        // Process detected precedence.
         if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
           for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-            helper_->AddLevelZeroPrecedence(sorted_tasks[i].task, t);
+            if (!helper_->PropagatePrecedence(sorted_tasks[i].task, t)) {
+              return false;
+            }
           }
         }
 
@@ -1528,15 +1528,15 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
           }
         }
 
-        // If we detect precedences at level zero, lets add them to the
-        // precedence propagator. The hope is that this leads to faster
-        // propagation with better reason if they ever trigger.
+        // Process detected precedence.
         if (helper_->CurrentDecisionLevel() == 0 &&
             helper_->IsPresent(gray_task)) {
           for (int i = first_event; i < window_size; ++i) {
             const int task = window_[i].task_index;
             if (!is_gray_[task]) {
-              helper_->AddLevelZeroPrecedence(task, gray_task);
+              if (!helper_->PropagatePrecedence(task, gray_task)) {
+                return false;
+              }
             }
           }
         }

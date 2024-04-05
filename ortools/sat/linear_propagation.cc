@@ -1303,7 +1303,7 @@ void LinearPropagator::AddWatchedToQueue(IntegerVariable var,
   // will likely propagate again, and we want to propagate it first.
   for (const int id : var_to_constraint_ids_[var]) {
     if (in_queue_[id]) continue;
-    if (true || id_propagated_something_[id]) {
+    if (id_propagated_something_[id]) {
       id_propagated_something_[id] = false;  // reset.
       AddToQueueIfNeeded(id);
     } else {

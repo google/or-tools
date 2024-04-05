@@ -358,8 +358,11 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue GetCurrentMinDistanceBetweenTasks(
       int a, int b, bool add_reason_if_after = false);
 
-  // Add a new level zero precedence between two tasks.
-  void AddLevelZeroPrecedence(int a, int b);
+  // We detected a precedence between two tasks.
+  // If we are at level zero, we might want to add the constraint.
+  // If we are at positive level, we might want to propagate the associated
+  // precedence literal if it exists.
+  bool PropagatePrecedence(int a, int b);
 
   // Return the minimum overlap of interval i with the time window [start..end].
   //
@@ -517,10 +520,10 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   // Import the reasons on the other helper into this helper.
   void ImportOtherReasons();
 
+  Model* model_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
   PrecedenceRelations* precedence_relations_;
-  PrecedencesPropagator* precedences_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;

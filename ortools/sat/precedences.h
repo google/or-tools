@@ -67,7 +67,8 @@ class PrecedenceRelations : public ReversibleInterface {
   }
 
   // Add a relation tail + offset <= head.
-  void Add(IntegerVariable tail, IntegerVariable head, IntegerValue offset);
+  // Returns true if it was added and is considered "new".
+  bool Add(IntegerVariable tail, IntegerVariable head, IntegerValue offset);
 
   // Adds add relation (enf => a + b <= rhs) that is assumed to be true at
   // the current level.
