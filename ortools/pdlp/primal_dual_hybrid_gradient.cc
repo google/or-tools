@@ -992,6 +992,9 @@ SolverResult PreprocessSolver::PreprocessAndSolve(
   WallTimer timer;
   timer.Start();
   SolveLog solve_log;
+  if (params.verbosity_level() >= 1) {
+    SOLVER_LOG(&logger_, "Solving with PDLP parameters: ", params);
+  }
   if (Qp().problem_name.has_value()) {
     solve_log.set_instance_name(*Qp().problem_name);
   }

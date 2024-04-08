@@ -45,7 +45,7 @@ platformdirs==3.10.0
     # via
     #   black
     #   virtualenv
-protobuf==4.25.3
+protobuf==5.26.1
     # via
     #   -r ortools_requirements.in
     #   mypy-protobuf

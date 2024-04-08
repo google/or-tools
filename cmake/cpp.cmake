@@ -358,7 +358,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${COINOR_DEPS}
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
-  $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
+  $<$<BOOL:${USE_HIGHS}>:highs::highs>
   ${PDLP_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
   Threads::Threads)

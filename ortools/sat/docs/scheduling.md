@@ -835,8 +835,8 @@ at that time point is less than a given capacity.
 Modeling a non constant max profile can be done using fixed (interval, demand)
 to occupy the capacity between the actual profile and it max capacity.
 
-Modeling a non zero min profile can be done using fixed (interval, demand)
-on the complementary cumulative constraint.
+Modeling a non zero min profile can be done using fixed (interval, demand) on
+the complementary cumulative constraint.
 
 ### Python code
 

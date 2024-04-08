@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
@@ -122,26 +121,26 @@ const char data_dir[] =
 
 #define ORLIB_TEST(name, best_objective, expected_objective, size, function) \
   TEST(OrlibTest, APPEND_AND_EVAL(TestOnLine, __LINE__)) {                   \
-    auto filespec = file::JoinPathRespectAbsolute(                           \
-        absl::GetFlag(FLAGS_test_srcdir), data_dir, name);                   \
+    auto filespec =                                                          \
+        file::JoinPathRespectAbsolute(::testing::SrcDir(), data_dir, name);  \
     LOG(INFO) << "Reading " << name;                                         \
     operations_research::SetCoverModel model = function(filespec);           \
     double cost = RunSolver(name, &model);                                   \
     (void)cost;                                                              \
   }
 
-#define ORLIB_UNICOST_TEST(name, best_objective, expected_objective, size, \
-                           function)                                       \
-  TEST(OrlibUnicostTest, APPEND_AND_EVAL(TestOnLine, __LINE__)) {          \
-    auto filespec = file::JoinPathRespectAbsolute(                         \
-        absl::GetFlag(FLAGS_test_srcdir), data_dir, name);                 \
-    LOG(INFO) << "Reading " << name;                                       \
-    operations_research::SetCoverModel model = function(filespec);         \
-    for (int i = 0; i < model.num_subsets(); ++i) {                        \
-      model.SetSubsetCost(i, 1.0);                                         \
-    }                                                                      \
-    double cost = RunSolver(absl::StrCat(name, "_unicost"), &model);       \
-    (void)cost;                                                            \
+#define ORLIB_UNICOST_TEST(name, best_objective, expected_objective, size,  \
+                           function)                                        \
+  TEST(OrlibUnicostTest, APPEND_AND_EVAL(TestOnLine, __LINE__)) {           \
+    auto filespec =                                                         \
+        file::JoinPathRespectAbsolute(::testing::SrcDir(), data_dir, name); \
+    LOG(INFO) << "Reading " << name;                                        \
+    operations_research::SetCoverModel model = function(filespec);          \
+    for (int i = 0; i < model.num_subsets(); ++i) {                         \
+      model.SetSubsetCost(i, 1.0);                                          \
+    }                                                                       \
+    double cost = RunSolver(absl::StrCat(name, "_unicost"), &model);        \
+    (void)cost;                                                             \
   }
 
 #define SCP_TEST(name, best_objective, expected_objective, size)     \

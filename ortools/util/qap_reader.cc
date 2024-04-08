@@ -20,13 +20,14 @@
 #include "absl/log/check.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 
 // TODO(user): Unit test cases when the function dies, or return
 // (and test) a status instead.
-QapProblem ReadQapProblemOrDie(const std::string& filepath) {
+QapProblem ReadQapProblemOrDie(absl::string_view filepath) {
   QapProblem qap_problem;
 
   int n = 0;

@@ -163,7 +163,7 @@ absl::Status WriteProtoToFile(absl::string_view filename,
     case ProtoWriteFormat::kJson: {
       google::protobuf::util::JsonPrintOptions options;
       options.add_whitespace = true;
-      options.always_print_primitive_fields = true;
+      options.always_print_fields_with_no_presence = true;
       options.preserve_proto_field_names = true;
       if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
                                                        options)

@@ -40,12 +40,10 @@
 //
 // Warning(rander): the interactions between callbacks and incrementalism are
 // poorly tested, proceed with caution.
-//
 
 #include <algorithm>
 #include <atomic>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -57,14 +55,16 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/gurobi/gurobi_util.h"
@@ -641,6 +641,8 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
                                 nullptr,    // vtype
                                 nullptr));  // varnanes
   SetIntAttr(GRB_INT_ATTR_MODELSENSE, maximize_ ? GRB_MAXIMIZE : GRB_MINIMIZE);
+  CheckedGurobiCall(
+      GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_OUTPUTFLAG, 0));
   CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_THREADS,
                                    absl::GetFlag(FLAGS_num_gurobi_threads)));
 }
@@ -673,6 +675,9 @@ void GurobiInterface::Reset() {
   // The current code only reapplies the parameters stored in
   // solver_specific_parameter_string_ at the start of the solve; other
   // parameters set by previous calls are only kept in the Gurobi model.
+  //
+  // TODO - b/328604189: Fix logging issue upstream, switch to a different API
+  // for copying parameters, or avoid calling Reset() in more places.
   CheckedGurobiCall(GRBcopyparams(GRBgetenv(model_), GRBgetenv(old_model)));
 
   CheckedGurobiCall(GRBfreemodel(old_model));

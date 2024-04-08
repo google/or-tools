@@ -230,7 +230,7 @@ prompt-toolkit==3.0.39
     # via
     #   ipython
     #   jupyter-console
-protobuf==4.25.3
+protobuf==5.26.1
     # via
     #   -r notebook_requirements.in
     #   mypy-protobuf

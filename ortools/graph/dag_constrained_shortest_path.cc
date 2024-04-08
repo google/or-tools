@@ -78,8 +78,8 @@ PathWithLength ConstrainedShortestPathsOnDag(
   std::vector<NodeIndex> destinations = {destination};
   ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
       constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       &(*topological_order), &sources,
-                                       &destinations, &max_resources);
+                                       *topological_order, sources,
+                                       destinations, &max_resources);
 
   PathWithLength path_with_length =
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();

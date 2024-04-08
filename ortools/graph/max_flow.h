@@ -247,7 +247,7 @@ class SimpleMaxFlow {
   // instance that uses it.
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   std::unique_ptr<Graph> underlying_graph_;
-  std::unique_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
+  std::unique_ptr<GenericMaxFlow<Graph>> underlying_max_flow_;
 };
 
 // Specific but efficient priority queue implementation. The priority type must
@@ -294,13 +294,13 @@ class PriorityQueueWithRestrictedPush {
 
  private:
   // Helper function to get the last element of a vector and pop it.
-  Element PopBack(std::vector<std::pair<Element, IntegerPriority> >* queue);
+  Element PopBack(std::vector<std::pair<Element, IntegerPriority>>* queue);
 
   // This is the heart of the algorithm. basically we split the elements by
   // parity of their priority and the precondition on the Push() ensures that
   // both vectors are always sorted by increasing priority.
-  std::vector<std::pair<Element, IntegerPriority> > even_queue_;
-  std::vector<std::pair<Element, IntegerPriority> > odd_queue_;
+  std::vector<std::pair<Element, IntegerPriority>> even_queue_;
+  std::vector<std::pair<Element, IntegerPriority>> odd_queue_;
 };
 
 // We want an enum for the Status of a max flow run, and we want this
@@ -660,6 +660,26 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
 #if !SWIG
 
+// Note: SWIG does not seem to understand explicit template specialization and
+// instantiation declarations.
+
+template <>
+const FlowQuantity GenericMaxFlow<StarGraph>::kMaxFlowQuantity;
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcListGraph<>>::kMaxFlowQuantity;
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcStaticGraph<>>::kMaxFlowQuantity;
+template <>
+const FlowQuantity
+    GenericMaxFlow<::util::ReverseArcMixedGraph<>>::kMaxFlowQuantity;
+
+extern template class GenericMaxFlow<StarGraph>;
+extern template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
+extern template class GenericMaxFlow<::util::ReverseArcStaticGraph<>>;
+extern template class GenericMaxFlow<::util::ReverseArcMixedGraph<>>;
+
 // Default instance MaxFlow that uses StarGraph. Note that we cannot just use a
 // typedef because of dependent code expecting MaxFlow to be a real class.
 // TODO(user): Modify this code and remove it.
@@ -716,7 +736,7 @@ Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::Pop() {
 
 template <typename Element, typename IntegerPriority>
 Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::PopBack(
-    std::vector<std::pair<Element, IntegerPriority> >* queue) {
+    std::vector<std::pair<Element, IntegerPriority>>* queue) {
   DCHECK(!queue->empty());
   Element element = queue->back().first;
   queue->pop_back();
@@ -724,4 +744,5 @@ Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::PopBack(
 }
 
 }  // namespace operations_research
+
 #endif  // OR_TOOLS_GRAPH_MAX_FLOW_H_

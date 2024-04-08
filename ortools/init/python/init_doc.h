@@ -88,7 +88,7 @@ static const char* __doc_operations_research_CppFlags =
     R"doc(Simple structure that holds useful C++ flags to setup from non-C++
 languages.)doc";
 
-static const char* __doc_operations_research_CppFlags_cp_model_dump_lns =
+static const char* __doc_operations_research_CppFlags_cp_model_dump_submodels =
     R"doc(Dump CP-SAT LNS models during solve. (DEBUG ONLY)
 
 When set to true, solve will dump all lns models proto in text format
