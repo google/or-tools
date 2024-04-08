@@ -59,7 +59,7 @@ class JsspParser {
 
   // Parses a file to load a jobshop problem.
   // Tries to auto detect the file format.
-  bool ParseFile(const std::string& filename);
+  bool ParseFile(absl::string_view filename);
 
   // Returns the loaded problem.
   const JsspInputProblem& problem() const { return problem_; }
