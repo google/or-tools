@@ -40,8 +40,9 @@ PYBIND11_MODULE(init, m) {
                      DOC(operations_research, CppFlags, cp_model_dump_prefix))
       .def_readwrite("cp_model_dump_models", &CppFlags::cp_model_dump_models,
                      DOC(operations_research, CppFlags, cp_model_dump_models))
-      .def_readwrite("cp_model_dump_lns", &CppFlags::cp_model_dump_lns,
-                     DOC(operations_research, CppFlags, cp_model_dump_lns))
+      .def_readwrite(
+          "cp_model_dump_submodels", &CppFlags::cp_model_dump_submodels,
+          DOC(operations_research, CppFlags, cp_model_dump_submodels))
       .def_readwrite(
           "cp_model_dump_response", &CppFlags::cp_model_dump_response,
           DOC(operations_research, CppFlags, cp_model_dump_response));

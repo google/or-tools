@@ -44,7 +44,7 @@ public final class InitTest {
     cppFlags.setLog_prefix(true);
     cppFlags.setCp_model_dump_prefix("init");
     cppFlags.setCp_model_dump_models(true);
-    cppFlags.setCp_model_dump_lns(true);
+    cppFlags.setCp_model_dump_submodels(true);
     cppFlags.setCp_model_dump_response(true);
     CppBridge.setFlags(cppFlags);
   }

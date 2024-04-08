@@ -1864,32 +1864,39 @@ bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!ModelIsUnsat());
 
-  // Because we might potentially iterate often on this list below, we remove
-  // empty propagators.
-  //
-  // TODO(user): This might not really be needed.
-  non_empty_propagators_.clear();
-  for (SatPropagator* propagator : propagators_) {
-    if (!propagator->IsEmpty()) {
-      non_empty_propagators_.push_back(propagator);
-    }
-  }
-
   while (true) {
-    // The idea here is to abort the inspection as soon as at least one
-    // propagation occurs so we can loop over and test again the highest
-    // priority constraint types using the new information.
+    // Because we might potentially iterate often on this list below, we remove
+    // empty propagators.
     //
-    // Note that the first propagators_ should be the binary_implication_graph_
-    // and that its Propagate() functions will not abort on the first
-    // propagation to be slightly more efficient.
-    const int old_index = trail_->Index();
-    for (SatPropagator* propagator : non_empty_propagators_) {
-      DCHECK(propagator->PropagatePreconditionsAreSatisfied(*trail_));
-      if (!propagator->Propagate(trail_)) return false;
-      if (trail_->Index() > old_index) break;
+    // TODO(user): This might not really be needed.
+    non_empty_propagators_.clear();
+    for (SatPropagator* propagator : propagators_) {
+      if (!propagator->IsEmpty()) {
+        non_empty_propagators_.push_back(propagator);
+      }
     }
-    if (trail_->Index() == old_index) break;
+
+    while (true) {
+      // The idea here is to abort the inspection as soon as at least one
+      // propagation occurs so we can loop over and test again the highest
+      // priority constraint types using the new information.
+      //
+      // Note that the first propagators_ should be the
+      // binary_implication_graph_ and that its Propagate() functions will not
+      // abort on the first propagation to be slightly more efficient.
+      const int old_index = trail_->Index();
+      for (SatPropagator* propagator : non_empty_propagators_) {
+        DCHECK(propagator->PropagatePreconditionsAreSatisfied(*trail_));
+        if (!propagator->Propagate(trail_)) return false;
+        if (trail_->Index() > old_index) break;
+      }
+      if (trail_->Index() == old_index) break;
+    }
+
+    // In some corner cases, we might add new constraint during propagation,
+    // which might trigger new propagator addition or some propagator to become
+    // non-empty() now.
+    if (PropagationIsDone()) return true;
   }
   return true;
 }

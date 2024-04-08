@@ -203,9 +203,6 @@ std::function<void(Model*)> Cumulative(
       if (parameters.exploit_all_precedences()) {
         model->GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
             index_to_end_vars, &full_precedences);
-      } else {
-        model->GetOrCreate<PrecedencesPropagator>()->ComputePartialPrecedences(
-            index_to_end_vars, &full_precedences);
       }
       for (const FullIntegerPrecedence& data : full_precedences) {
         const int size = data.indices.size();

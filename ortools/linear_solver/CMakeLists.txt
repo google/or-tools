@@ -42,7 +42,7 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Clp>
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
-  $<$<BOOL:${USE_HIGHS}>:HIGHS::HIGHS>
+  $<$<BOOL:${USE_HIGHS}>:highs::highs>
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)

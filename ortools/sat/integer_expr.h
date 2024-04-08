@@ -598,36 +598,9 @@ inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
 }
 
 // LinearConstraint version.
-inline void LoadLinearConstraint(const LinearConstraint& cst, Model* model) {
-  if (cst.num_terms == 0) {
-    if (cst.lb <= 0 && cst.ub >= 0) return;
-    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-    return;
-  }
-
-  // TODO(user): Remove the conversion!
-  std::vector<IntegerVariable> vars(cst.num_terms);
-  std::vector<int64_t> converted_coeffs(cst.num_terms);
-  for (int i = 0; i < cst.num_terms; ++i) {
-    vars[i] = cst.vars[i];
-    converted_coeffs[i] = cst.coeffs[i].value();
-  }
-
-  if (cst.ub < kMaxIntegerValue) {
-    model->Add(WeightedSumLowerOrEqual(vars, converted_coeffs, cst.ub.value()));
-  }
-  if (cst.lb > kMinIntegerValue) {
-    model->Add(
-        WeightedSumGreaterOrEqual(vars, converted_coeffs, cst.lb.value()));
-  }
-}
-
 inline void LoadConditionalLinearConstraint(
     const absl::Span<const Literal> enforcement_literals,
     const LinearConstraint& cst, Model* model) {
-  if (enforcement_literals.empty()) {
-    return LoadLinearConstraint(cst, model);
-  }
   if (cst.num_terms == 0) {
     if (cst.lb <= 0 && cst.ub >= 0) return;
 
@@ -640,29 +613,29 @@ inline void LoadConditionalLinearConstraint(
   }
 
   // TODO(user): Remove the conversion!
-  std::vector<Literal> converted_literals(enforcement_literals.begin(),
-                                          enforcement_literals.end());
-
-  // TODO(user): Remove the conversion!
   std::vector<IntegerVariable> vars(cst.num_terms);
-  std::vector<int64_t> converted_coeffs(cst.num_terms);
+  std::vector<int64_t> coeffs(cst.num_terms);
   for (int i = 0; i < cst.num_terms; ++i) {
     vars[i] = cst.vars[i];
-    converted_coeffs[i] = cst.coeffs[i].value();
+    coeffs[i] = cst.coeffs[i].value();
   }
 
   if (cst.ub < kMaxIntegerValue) {
-    AddWeightedSumLowerOrEqual(converted_literals, vars, converted_coeffs,
+    AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs,
                                cst.ub.value(), model);
   }
   if (cst.lb > kMinIntegerValue) {
-    AddWeightedSumGreaterOrEqual(converted_literals, vars, converted_coeffs,
+    AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs,
                                  cst.lb.value(), model);
   }
 }
 
+inline void LoadLinearConstraint(const LinearConstraint& cst, Model* model) {
+  LoadConditionalLinearConstraint({}, cst, model);
+}
+
 inline void AddConditionalAffinePrecedence(
-    const std::vector<Literal>& enforcement_literals, AffineExpression left,
+    const absl::Span<const Literal> enforcement_literals, AffineExpression left,
     AffineExpression right, Model* model) {
   LinearConstraintBuilder builder(model, kMinIntegerValue, 0);
   builder.AddTerm(left, 1);

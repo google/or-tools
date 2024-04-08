@@ -1637,6 +1637,14 @@ class SolverTest(parameterized.TestCase):
             "name": "scip",
             "is_integer": True,
         },
+        {
+            "name": "highs_lp",
+            "is_integer": False,
+        },
+        {
+            "name": "highs",
+            "is_integer": True,
+        },
     )
     _variable_indices = (
         pd.Index(range(0)),  # No variables.
@@ -1781,6 +1789,13 @@ class SolverTest(parameterized.TestCase):
                     solve_status,
                     (mb.SolveStatus.INFEASIBLE, mb.SolveStatus.UNBOUNDED),
                 )
+            elif (
+                solver["name"] == "highs"
+                and got_solve_status == mb.SolveStatus.INFEASIBLE
+                and solve_status == mb.SolveStatus.UNBOUNDED
+            ):
+                # Highs is can return INFEASIBLE when UNBOUNDED is expected.
+                pass
             else:
                 self.assertEqual(got_solve_status, solve_status)
         elif solve_status == mb.SolveStatus.UNBOUNDED:

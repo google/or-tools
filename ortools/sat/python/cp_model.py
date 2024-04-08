@@ -368,6 +368,10 @@ class LinearExpr:
             elif isinstance(expr, _NotBooleanVariable):
                 constant += coeff
                 coeffs[expr.negated()] -= coeff
+            elif isinstance(expr, NumberTypes):
+                raise TypeError(
+                    f"Floating point constants are not supported in constraints: {expr}"
+                )
             else:
                 raise TypeError("Unrecognized linear expression: " + str(expr))
 
@@ -672,7 +676,7 @@ class LinearExpr:
 class _Sum(LinearExpr):
     """Represents the sum of two LinearExprs."""
 
-    def __init__(self, left, right):
+    def __init__(self, left, right) -> None:
         for x in [left, right]:
             if not isinstance(x, (NumberTypes, LinearExpr)):
                 raise TypeError("not an linear expression: " + str(x))
@@ -695,7 +699,7 @@ class _Sum(LinearExpr):
 class _ProductCst(LinearExpr):
     """Represents the product of a LinearExpr by a constant."""
 
-    def __init__(self, expr, coeff):
+    def __init__(self, expr, coeff) -> None:
         coeff = cmh.assert_is_a_number(coeff)
         if isinstance(expr, _ProductCst):
             self.__expr = expr.expression()
@@ -723,7 +727,7 @@ class _ProductCst(LinearExpr):
 class _SumArray(LinearExpr):
     """Represents the sum of a list of LinearExpr and a constant."""
 
-    def __init__(self, expressions, constant=0):
+    def __init__(self, expressions, constant=0) -> None:
         self.__expressions = []
         self.__constant = constant
         for x in expressions:
@@ -760,7 +764,7 @@ class _SumArray(LinearExpr):
 class _WeightedSum(LinearExpr):
     """Represents sum(ai * xi) + b."""
 
-    def __init__(self, expressions, coefficients, constant=0):
+    def __init__(self, expressions, coefficients, constant=0) -> None:
         self.__expressions = []
         self.__coefficients = []
         self.__constant = constant
@@ -799,12 +803,12 @@ class _WeightedSum(LinearExpr):
                 output += f" + {coeff} * {expr}"
             elif coeff < -1:
                 output += f" - {-coeff} * {expr}"
-        if self.__constant > 0:
+        if output is None:
+            output = str(self.__constant)
+        elif self.__constant > 0:
             output += f" + {self.__constant}"
         elif self.__constant < 0:
             output += f" - {-self.__constant}"
-        if output is None:
-            output = "0"
         return output
 
     def __repr__(self):
@@ -944,7 +948,7 @@ class IntVar(LinearExpr):
 class _NotBooleanVariable(LinearExpr):
     """Negation of a boolean variable."""
 
-    def __init__(self, boolvar: IntVar):
+    def __init__(self, boolvar: IntVar) -> None:
         self.__boolvar: IntVar = boolvar
 
     @property

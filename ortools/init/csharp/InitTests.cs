@@ -35,7 +35,7 @@ public class InitTest
         cpp_flags.log_prefix = true;
         cpp_flags.cp_model_dump_prefix = "init";
         cpp_flags.cp_model_dump_models = true;
-        cpp_flags.cp_model_dump_lns = true;
+        cpp_flags.cp_model_dump_submodels = true;
         cpp_flags.cp_model_dump_response = true;
         Init.CppBridge.SetFlags(cpp_flags);
     }

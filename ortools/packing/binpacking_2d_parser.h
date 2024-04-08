@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/types.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 
@@ -50,7 +51,7 @@ class BinPacking2dParser {
   // file. The instance are 1 based (first is 1).
   // Only one call to a Load*() function is supported. All the subsequent
   // calls will do nothing and return false.
-  bool Load2BPFile(const std::string& file_name, int instance);
+  bool Load2BPFile(absl::string_view file_name, int instance);
   MultipleDimensionsBinPackingProblem problem() const { return problem_; }
 
  private:

@@ -27,6 +27,7 @@
 namespace operations_research {
 class ThreadPool {
  public:
+  explicit ThreadPool(int num_threads);
   ThreadPool(absl::string_view prefix, int num_threads);
   ~ThreadPool();
 
