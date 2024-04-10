@@ -282,9 +282,10 @@ foreach(SUBPROJECT IN ITEMS
  init
  algorithms
  graph
- constraint_solver
  linear_solver
  ${PDLP_DIR}
+ constraint_solver
+ routing
  sat
  scheduling
  util)
@@ -467,6 +468,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
    $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:routing_pybind11> ${PYTHON_PROJECT}/routing/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
