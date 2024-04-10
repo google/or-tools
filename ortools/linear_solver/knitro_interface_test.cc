@@ -33,6 +33,15 @@ namespace operations_research {
     EXPECT_EQ(0, status_) << "Nonzero return status"; \
   } while (0)
 
+inline bool file_exists(const std::string& name) {
+  if (FILE *file = fopen(name.c_str(), "r")) {
+    fclose(file);
+    return true;
+  } else {
+    return false;
+  }   
+}
+
 class KnitroGetter {
  public:
   KnitroGetter(MPSolver* solver) : solver_(solver) {}
@@ -123,28 +132,40 @@ TEST(Env, CheckEnv) { EXPECT_EQ(KnitroIsCorrectlyInstalled(), true); }
 
 // ----- Empty model
 
+/** Unit Test to solve an empty LP */ 
 TEST(KnitroInterface, EmptyLP) {
   UNITTEST_INIT_LP();
   solver.Solve();
   EXPECT_EQ(solver.MutableObjective()->Value(), 0);
 }
 
+/** Unit Test to solve an empty MIP */
 TEST(KnitroInterface, EmptyMIP) {
   UNITTEST_INIT_MIP();
   solver.Solve();
   EXPECT_EQ(solver.MutableObjective()->Value(), 0);
 }
 
+/** Unit Test to write an empty MIP */ 
 TEST(KnitroInterface, WriteEmpty) {
   UNITTEST_INIT_MIP();
   solver.Write("knitro_interface_test_empty");
+  // check the file exists
+  EXPECT_TRUE(file_exists("knitro_interface_test_empty"));
 }
 
 // ----- Modeling functions
 
-TEST(KnitroInterface, AddVariable) {
+/** Unit Test of the method infinity()*/
+TEST(KnitroInterface, infinity){
   UNITTEST_INIT_LP();
-  MPVariable* const x = solver.MakeNumVar(0, 10, "x");
+  EXPECT_EQ(solver.solver_infinity(), KN_INFINITY);
+}
+
+/** Unit Test of the method AddVariable()*/
+TEST(KnitroInterface, AddVariable){
+  UNITTEST_INIT_LP();
+  MPVariable* const x = solver.MakeNumVar(0,10,"x");
   solver.Solve();
   double lb, ub;
   char name[20];
@@ -156,6 +177,7 @@ TEST(KnitroInterface, AddVariable) {
   EXPECT_STREQ(name, "x");
 }
 
+/** Unit Test of the method AddRowConstraint()*/
 TEST(KnitroInterface, AddRowConstraint) {
   UNITTEST_INIT_LP();
   MPConstraint* const ct = solver.MakeRowConstraint(0, 10, "ct");
@@ -170,6 +192,7 @@ TEST(KnitroInterface, AddRowConstraint) {
   EXPECT_STREQ(name, "ct");
 }
 
+/** Unit Test of the method SetCoefficient()*/
 TEST(KnitroInterface, SetCoefficient) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
@@ -184,6 +207,7 @@ TEST(KnitroInterface, SetCoefficient) {
   EXPECT_EQ(coef, 2);
 }
 
+/** Unit Test of the method ClearConstraint()*/
 TEST(KnitroInterface, ClearConstraint) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
@@ -201,6 +225,7 @@ TEST(KnitroInterface, ClearConstraint) {
   EXPECT_EQ(nnz, 0);
 }
 
+/** Unit Test of the method SetObjectiveCoefficient()*/
 TEST(KnitroInterface, SetObjectiveCoefficient) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
@@ -214,6 +239,7 @@ TEST(KnitroInterface, SetObjectiveCoefficient) {
   EXPECT_EQ(coef, 1);
 }
 
+/** Unit Test of the method SetOptimizationDirection()*/
 TEST(KnitroInterface, SetOptimizationDirection) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
@@ -227,6 +253,7 @@ TEST(KnitroInterface, SetOptimizationDirection) {
   EXPECT_EQ(obj->Value(), 0);
 }
 
+/** Unit Test of the method SetObjectiveOffset()*/
 TEST(KnitroInterface, SetObjectiveOffset) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
@@ -239,6 +266,7 @@ TEST(KnitroInterface, SetObjectiveOffset) {
   EXPECT_EQ(obj->Value(), 1);
 }
 
+/** Unit Test of the method ClearObjective()*/
 TEST(KnitroInterface, ClearObjective) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
@@ -246,7 +274,7 @@ TEST(KnitroInterface, ClearObjective) {
   obj->SetCoefficient(x, 1);
   int nnz;
   getter.Obj_nb_coef(&nnz);
-  // The objective coefficeint has not been extracted yet
+  // The objective coefficient has not been extracted yet
   EXPECT_EQ(nnz, 0);
   solver.Solve();
   getter.Obj_nb_coef(&nnz);
@@ -256,6 +284,7 @@ TEST(KnitroInterface, ClearObjective) {
   EXPECT_EQ(nnz, 0);
 }
 
+/** Unit Test of the method Reset()*/
 TEST(KnitroInterface, Reset){
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
@@ -291,6 +320,7 @@ TEST(KnitroInterface, Reset){
 
 // ----- Test Param
 
+/** Unit Test of the method SetScaling()*/
 TEST(KnitroInterface, SetScaling) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
@@ -307,6 +337,7 @@ TEST(KnitroInterface, SetScaling) {
   EXPECT_EQ(value, KN_LINSOLVER_SCALING_ALWAYS);
 }
 
+/** Unit Test of the method SetRelativeMipGap()*/
 TEST(KnitroInterface, SetRelativeMipGap) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
@@ -321,6 +352,7 @@ TEST(KnitroInterface, SetRelativeMipGap) {
   EXPECT_EQ(value, 1e-6);
 }
 
+/** Unit Test of the method SetPresolveMode()*/
 TEST(KnitroInterface, SetPresolveMode) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
@@ -337,6 +369,7 @@ TEST(KnitroInterface, SetPresolveMode) {
   EXPECT_EQ(value, KN_PRESOLVE_YES);
 }
 
+/** Unit Test of the method SetSolverSpecificParametersAsString()*/
 TEST(KnitroInterface, SetSolverSpecificParametersAsString) {
   UNITTEST_INIT_MIP();
   std::ofstream param_file;
@@ -355,6 +388,7 @@ TEST(KnitroInterface, SetSolverSpecificParametersAsString) {
   EXPECT_EQ(value2, 1e-8);
 }
 
+/** Unit Test of the method SetLpAlgorithm()*/
 TEST(KnitroInterface, SetLpAlgorithm) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
@@ -376,6 +410,7 @@ TEST(KnitroInterface, SetLpAlgorithm) {
   EXPECT_EQ(value, KN_ACT_LPALG_BARRIER);
 }
 
+/** Unit Test of the method SetPrimalTolerance()*/
 TEST(KnitroInterface, SetPrimalTolerance) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
@@ -390,6 +425,7 @@ TEST(KnitroInterface, SetPrimalTolerance) {
   EXPECT_EQ(value, 1e-6);
 }
 
+/** Unit Test of the method SetDualTolerance()*/
 TEST(KnitroInterface, SetDualTolerance) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
@@ -404,6 +440,7 @@ TEST(KnitroInterface, SetDualTolerance) {
   EXPECT_EQ(value, 1e-6);
 }
 
+/** Unit Test of the method SetNumThreads()*/
 TEST(KnitroInterface, SetNumThreads) {
   UNITTEST_INIT_MIP();
   auto status = solver.SetNumThreads(4);
@@ -413,8 +450,7 @@ TEST(KnitroInterface, SetNumThreads) {
   EXPECT_EQ(value, 4);
 }
 
-// ----- Solve
-
+/** Unit Test of the method underlying_solver()*/
 TEST(KnitroInterface, underlying_solver){
   UNITTEST_INIT_LP();
   auto ptr = solver.underlying_solver();
@@ -423,6 +459,7 @@ TEST(KnitroInterface, underlying_solver){
 
 // ----- Getting post-solve informations
 
+/** Unit Test of the method nodes()*/
 TEST(KitroInterface, nodes){
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
@@ -430,6 +467,7 @@ TEST(KitroInterface, nodes){
   EXPECT_NE(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
 }
 
+/** Unit Test of the method iterations()*/
 TEST(KitroInterface, iterations){
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
@@ -439,12 +477,18 @@ TEST(KitroInterface, iterations){
 
 /*-------------------- TF --------------------*/
 
-TEST(KnitroInterface, SetAndWriteModel) {
-  // max  x + 2y
-  // st. 3x - 4y >= 10
-  //     2x + 3y <= 18
-  //      x,   y \in R+
-
+/**
+ * Writes the following linear problem 
+ * using KnitroInterface Write function
+ *    max  x + 2y
+ *    st. 3x - 4y >= 10
+ *        2x + 3y <= 18
+ *         x,   y \in R+
+ * 
+ * Then loads it in a Knitro model and solves it
+ */
+TEST(KnitroInterface, WriteLoadModel) {
+  // Write model using OR-Tools
   UNITTEST_INIT_LP();
   std::string version = solver.SolverVersion();
   version.resize(30);
@@ -467,6 +511,7 @@ TEST(KnitroInterface, SetAndWriteModel) {
   obj->SetMaximization();
 
   solver.Write("knitro_interface_test_LP_model");
+  EXPECT_TRUE(file_exists("knitro_interface_test_LP_model"));
 
   // Check variable x
   double lb, ub;
@@ -485,27 +530,20 @@ TEST(KnitroInterface, SetAndWriteModel) {
   EXPECT_EQ(lb, 10.0);
   EXPECT_EQ(ub, infinity);
   EXPECT_STREQ(name, "c1");
-}
 
-TEST(KnitroInterface, CheckWrittenModel) {
-  // Read model using Knitro and solve it
-  // max  x + 2y
-  // st. 3x - 4y >= 10
-  //     2x + 3y <= 18
-  //      x,   y \in R+
-
+  // Load directly from Knitro model
   KN_context* kc;
   KN_new(&kc);
   KN_load_mps_file(kc, "knitro_interface_test_LP_model");
   KN_set_int_param(kc, KN_PARAM_OUTLEV, KN_OUTLEV_NONE);
   // Check variables
-  double lb[2], ub[2];
-  KN_get_var_lobnds_all(kc, lb);
-  KN_get_var_upbnds_all(kc, ub);
-  EXPECT_EQ(lb[0], 0);
-  EXPECT_EQ(lb[1], 0);
-  EXPECT_EQ(ub[0], KN_INFINITY);
-  EXPECT_EQ(ub[1], KN_INFINITY);
+  double kc_lb[2], kc_ub[2];
+  KN_get_var_lobnds_all(kc, kc_lb);
+  KN_get_var_upbnds_all(kc, kc_ub);
+  EXPECT_EQ(kc_lb[0], 0);
+  EXPECT_EQ(kc_lb[1], 0);
+  EXPECT_EQ(kc_ub[0], KN_INFINITY);
+  EXPECT_EQ(kc_ub[1], KN_INFINITY);
   char* names[2];
   names[0] = new char[20];
   names[1] = new char[20];
@@ -513,22 +551,22 @@ TEST(KnitroInterface, CheckWrittenModel) {
   EXPECT_STREQ(names[0], "x");
   EXPECT_STREQ(names[1], "y");
   // Check constraints
-  KN_get_con_lobnds_all(kc, lb);
-  KN_get_con_upbnds_all(kc, ub);
-  EXPECT_EQ(lb[0], 10);
-  EXPECT_EQ(lb[1], -KN_INFINITY);
-  EXPECT_EQ(ub[0], KN_INFINITY);
-  EXPECT_EQ(ub[1], 18);
+  KN_get_con_lobnds_all(kc, kc_lb);
+  KN_get_con_upbnds_all(kc, kc_ub);
+  EXPECT_EQ(kc_lb[0], 10);
+  EXPECT_EQ(kc_lb[1], -KN_INFINITY);
+  EXPECT_EQ(kc_ub[0], KN_INFINITY);
+  EXPECT_EQ(kc_ub[1], 18);
   KN_get_con_names_all(kc, 20, names);
   EXPECT_STREQ(names[0], "c1");
   EXPECT_STREQ(names[1], "c2");
   // Check everything else by solving the lp
   double objSol;
   int nStatus = KN_solve(kc);
-  double x[2];
-  KN_get_solution(kc, &nStatus, &objSol, x, NULL);
-  EXPECT_NEAR(x[0], 6, 1e-6);
-  EXPECT_NEAR(x[1], 2, 1e-6);
+  double kc_x[2];
+  KN_get_solution(kc, &nStatus, &objSol, kc_x, NULL);
+  EXPECT_NEAR(kc_x[0], 6, 1e-6);
+  EXPECT_NEAR(kc_x[1], 2, 1e-6);
   EXPECT_NEAR(objSol, 10, 1e-6);
 
   delete[] names[0];
@@ -536,13 +574,15 @@ TEST(KnitroInterface, CheckWrittenModel) {
   KN_free(&kc);
 }
 
+/**
+ * Solves the following LP
+ *    max   x + 2y + 2
+ *    st.  -x +  y <= 1
+ *         3x + 2y <= 12
+ *         2x + 3y <= 12
+ *          x ,  y \in R+
+ */
 TEST(KnitroInterface, SolveLP) {
-  // max   x + 2y + 2
-  // st.  -x +  y <= 1
-  //      3x + 2y <= 12
-  //      2x + 3y <= 12
-  //       x ,  y \in R+
-
   UNITTEST_INIT_LP();
   EXPECT_FALSE(solver.IsMIP());
   double inf = solver.infinity();
@@ -574,14 +614,16 @@ TEST(KnitroInterface, SolveLP) {
   EXPECT_NEAR(c3->dual_value(), 0.6, 1e-6);
 }
 
+/** 
+ * Solves the following MIP
+ *    max  x -  y + 5z
+ *    st.  x + 2y -  z <= 19.5
+ *         x +  y +  z >= 3.14
+ *         x           <= 10
+ *              y +  z <= 6
+ *         x,   y,   z \in R+
+ */
 TEST(KnitroInterface, SolveMIP) {
-  // max  x -  y + 5z
-  // st.  x + 2y -  z <= 19.5
-  //      x +  y +  z >= 3.14
-  //      x           <= 10
-  //           y +  z <= 6
-  //      x,   y,   z \in R+
-
   UNITTEST_INIT_MIP();
   EXPECT_TRUE(solver.IsMIP());
   const double infinity = solver.infinity();
@@ -636,13 +678,16 @@ TEST(KnitroInterface, SolveMIP) {
   EXPECT_NE(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
 }
 
+/**
+ * Checks that KnitroInterface convert correctly the infinity values
+ *    max  x + 2y
+ *    st.  x + 4y >= -8
+ *         x + 4y <= 17
+ *        -x +  y >= -2
+ *        -x +  y <=  3
+ *         x,   y >= 0
+ */
 TEST(KnitroInterface, SupportInfinity) {
-  // max  x + 2y
-  // st.  x + 4y >= -8
-  //      x + 4y <= 17
-  //     -x +  y >= -2
-  //     -x +  y <=  3
-  //      x,   y >= 0
   UNITTEST_INIT_LP();
   double infinity = solver.infinity();
   MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
@@ -665,6 +710,7 @@ TEST(KnitroInterface, SupportInfinity) {
   EXPECT_NEAR(5, x->solution_value(), 1e-6);
   EXPECT_NEAR(3, y->solution_value(), 1e-6);
 
+  // change boundaries to infinity
   x->SetBounds(-infinity, infinity);
   c2->SetBounds(-2, infinity);
   solver.Solve();
@@ -673,10 +719,13 @@ TEST(KnitroInterface, SupportInfinity) {
   EXPECT_NEAR(3, y->solution_value(), 1e-6);
 }
 
+/**
+ * Solves a LP without counstraints
+ *    max x + y + z
+ *    st. x,  y,  z >= 0
+ *        x,  y,  z <= 1
+ */
 TEST(KnitroInterface, JustVar) {
-  // max x + y + z
-  // st. x,  y,  z >= 0
-  //     x,  y,  z <= 1
   UNITTEST_INIT_LP();
   std::vector<MPVariable*> x;
   solver.MakeNumVarArray(3, 0, 1, "x", &x);
@@ -690,6 +739,11 @@ TEST(KnitroInterface, JustVar) {
   EXPECT_NEAR(obj->Value(), 3, 1e-6);
 }
 
+/**
+ * MIP without objective
+ * It solves the [3x3 magic square problem](https://en.wikipedia.org/wiki/Magic_square)
+ * by finding feasible solution
+*/
 TEST(KnitroInterface, FindFeasSol) {
   // find a 3x3 non trivial magic square config
   UNITTEST_INIT_MIP();
@@ -742,14 +796,17 @@ TEST(KnitroInterface, FindFeasSol) {
 
 // Change Var/Con/obj
 
+/**
+ * Solves the initial problem 
+ *    max   x
+ *    st.   x +  y >= 2
+ *        -2x +  y <= 4
+ *          x +  y <= 10
+ *          x -  y <= 8
+ *          x ,  y >= 0
+ * Then applues changes in the problem
+ */
 TEST(KnitroInterface, ChangePostsolve) {
-  // max   x
-  // st.   x +  y >= 2
-  //     -2x +  y <= 4
-  //       x +  y <= 10
-  //       x -  y <= 8
-  //       x ,  y >= 0
-
   UNITTEST_INIT_LP();
   const double infinity = solver.solver_infinity();
 
@@ -776,16 +833,21 @@ TEST(KnitroInterface, ChangePostsolve) {
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 9, 1e-7);
 
+  // change the objective
   obj->SetCoefficient(x, 0);
   obj->SetCoefficient(y, 1);
 
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 8, 1e-7);
 
+  // change the boundaries of y
   y->SetBounds(2, 4);
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 4, 1e-7);
 
+  // change the boundaries of y
+  //        the objective
+  //        the boundaries of c4
   y->SetBounds(0, infinity);
   obj->SetCoefficient(x, 1);
   obj->SetCoefficient(y, 0);
@@ -794,10 +856,14 @@ TEST(KnitroInterface, ChangePostsolve) {
   EXPECT_NEAR(obj->Value(), 8, 1e-7);
 }
 
+/**
+ * Solves the initial problem 
+ *    max   x - y
+ *    st. .5x + y <= 3
+ *          x + y <= 3
+ * Then removes a constraint and solves the new problem
+ */
 TEST(KnitroInterface, ClearConstraint2) {
-  // max   x - y
-  // st. .5x + y <= 3
-  //       x + y <= 3
   UNITTEST_INIT_LP();
   double infinity = solver.infinity();
   MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
@@ -825,10 +891,15 @@ TEST(KnitroInterface, ClearConstraint2) {
   EXPECT_NEAR(0, y->solution_value(), 1e-6);
 }
 
+/**
+ * Solves the initial problem 
+ *    max   x - y
+ *    st. .5x + y <= 3
+ *          x + y <= 3
+ * Then changes the objective and solves the new problem
+*/
 TEST(KnitroInterface, ClearObjective2) {
-  // max   x - y
-  // st. .5x + y <= 3
-  //       x + y <= 3
+
   UNITTEST_INIT_LP();
   double infinity = solver.infinity();
   MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
@@ -858,13 +929,17 @@ TEST(KnitroInterface, ClearObjective2) {
   EXPECT_NEAR(0, y->solution_value(), 1e-6);
 }
 
+/**
+ * Solves the initial problem 
+ *    max   x
+ *    st.   x + y >= 2.5
+ *          x + y >= -2.5
+ *          x - y <= 2.5
+ *          x - y >= -2.5
+ *          x , y \in R
+ * Then changes x into integer type and solves the new problem
+ */
 TEST(KnitroInterface, ChangeVarIntoInteger) {
-  // max   x
-  // st.   x + y >= 2.5
-  //       x + y >= -2.5
-  //       x - y <= 2.5
-  //       x - y >= -2.5
-  //       x , y \in R
   UNITTEST_INIT_MIP();
   double infinity = solver.solver_infinity();
   MPVariable* const x = solver.MakeNumVar(-infinity, infinity, "x");
@@ -894,10 +969,17 @@ TEST(KnitroInterface, ChangeVarIntoInteger) {
   EXPECT_NEAR(obj->Value(), 2, 1e-7);
 }
 
+/**
+ * Solves the initial problem 
+ *    max x + y
+ *    st. 0 <= x,y <= 1
+ * Then changes the problem into 
+ *    max x + y + z
+ *    st. 0 <= z <= 1 (c)
+ *        0 <= x,y <= 1
+ *        z >= 0 
+ */
 TEST(KnitroInterface, AddVarAndConstraint) {
-  // max x + y                max x + y + z
-  // st. x , y <= 1;    ->    st. x , y , z >= 0
-  //     x , y >= 0;              x , y , z <= 1
   UNITTEST_INIT_MIP();
   double infinity = solver.solver_infinity();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
