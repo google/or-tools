@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
 
   operations_research::SolverLogger logger;
   if (absl::GetFlag(FLAGS_ortools_mode)) {
-    logger.EnableLogging(true);
+    logger.EnableLogging(absl::GetFlag(FLAGS_fz_logging));
     // log_to_stdout is disabled later.
     logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
   } else {
