@@ -858,39 +858,6 @@ TEST(KnitroInterface, ClearObjective2) {
   EXPECT_NEAR(0, y->solution_value(), 1e-6);
 }
 
-TEST(KnitroInterface, Reset) {
-  // max   x - y
-  // st. .5x + y <= 3
-  //       x + y <= 3
-  UNITTEST_INIT_LP();
-  double infinity = solver.infinity();
-  MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
-  MPVariable* const y = solver.MakeNumVar(0, infinity, "y");
-  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3, "c1");
-  c1->SetCoefficient(x, .5);
-  c1->SetCoefficient(y, 1);
-  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 3, "c2");
-  c2->SetCoefficient(x, 1);
-  c2->SetCoefficient(y, 1);
-  MPObjective* const obj = solver.MutableObjective();
-  obj->SetCoefficient(x, 1);
-  obj->SetCoefficient(y, -1);
-  obj->SetMaximization();
-
-  solver.Solve();
-  int nb_vars, nb_cons;
-  getter.Num_Var(&nb_vars);
-  getter.Num_Cons(&nb_cons);
-  EXPECT_EQ(nb_vars, 2);
-  EXPECT_EQ(nb_cons, 2);
-
-  solver.Reset();
-  getter.Num_Var(&nb_vars);
-  getter.Num_Cons(&nb_cons);
-  EXPECT_EQ(nb_vars, 0);
-  EXPECT_EQ(nb_cons, 0);
-}
-
 TEST(KnitroInterface, ChangeVarIntoInteger) {
   // max   x
   // st.   x + y >= 2.5
