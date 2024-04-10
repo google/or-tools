@@ -20,9 +20,9 @@ using Google.OrTools.Routing;
 // [END import]
 
 /// <summary>
-///   VRP with initial routes.
+///   Minimal Pickup & Delivery Problem (PDP).
 /// </summary>
-public class InitialRoutes
+public class VrpPickupDeliveryLifo
 {
     // [START data_model]
     class DataModel
@@ -44,16 +44,14 @@ public class InitialRoutes
             { 354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0, 342, 422, 536 },
             { 468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194 },
             { 776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798 },
-            { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 },
+            { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
-        // [START initial_routes]
-        public long[][] InitialRoutes = {
-            new long[] { 8, 16, 14, 13, 12, 11 },
-            new long[] { 3, 4, 9, 10 },
-            new long[] { 15, 1 },
-            new long[] { 7, 5, 2, 6 },
+        // [START pickups_deliveries]
+        public int[][] PickupsDeliveries = {
+            new int[] { 1, 6 }, new int[] { 2, 10 },  new int[] { 4, 3 },   new int[] { 5, 9 },
+            new int[] { 7, 8 }, new int[] { 15, 11 }, new int[] { 13, 12 }, new int[] { 16, 14 },
         };
-        // [END initial_routes]
+        // [END pickups_deliveries]
         public int VehicleNumber = 4;
         public int Depot = 0;
     };
@@ -69,7 +67,7 @@ public class InitialRoutes
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
         // Inspect solution.
-        long maxRouteDistance = 0;
+        long totalDistance = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {
             Console.WriteLine("Route for Vehicle {0}:", i);
@@ -83,10 +81,10 @@ public class InitialRoutes
                 routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
             }
             Console.WriteLine("{0}", manager.IndexToNode((int)index));
-            Console.WriteLine("Distance of the route: {0}", routeDistance);
-            maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
+            Console.WriteLine("Distance of the route: {0}m", routeDistance);
+            totalDistance += routeDistance;
         }
-        Console.WriteLine("Maximum distance of the routes: {0}", maxRouteDistance);
+        Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
     }
     // [END solution_printer]
 
@@ -134,28 +132,34 @@ public class InitialRoutes
         distanceDimension.SetGlobalSpanCostCoefficient(100);
         // [END distance_constraint]
 
-        // Get initial solution from routes.
-        // [START print_initial_solution]
-        Assignment initialSolution = routing.ReadAssignmentFromRoutes(data.InitialRoutes, true);
-        // Print initial solution on console.
-        Console.WriteLine("Initial solution:");
-        PrintSolution(data, routing, manager, initialSolution);
-        // [END print_initial_solution]
+        // Define Transportation Requests.
+        // [START pickup_delivery_constraint]
+        Solver solver = routing.solver();
+        for (int i = 0; i < data.PickupsDeliveries.GetLength(0); i++)
+        {
+            long pickupIndex = manager.NodeToIndex(data.PickupsDeliveries[i][0]);
+            long deliveryIndex = manager.NodeToIndex(data.PickupsDeliveries[i][1]);
+            routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
+            solver.Add(solver.MakeEquality(routing.VehicleVar(pickupIndex), routing.VehicleVar(deliveryIndex)));
+            solver.Add(solver.MakeLessOrEqual(distanceDimension.CumulVar(pickupIndex),
+                                              distanceDimension.CumulVar(deliveryIndex)));
+        }
+        routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.PICKUP_AND_DELIVERY_LIFO);
+        // [END pickup_delivery_constraint]
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
+        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 
         // Solve the problem.
         // [START solve]
-        Assignment solution = routing.SolveFromAssignmentWithParameters(initialSolution, searchParameters);
+        Assignment solution = routing.SolveWithParameters(searchParameters);
         // [END solve]
 
         // Print solution on console.
         // [START print_solution]
-        Console.WriteLine("Solution after search:");
         PrintSolution(data, routing, manager, solution);
         // [END print_solution]
     }

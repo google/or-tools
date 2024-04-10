@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 %include "enums.swg"
 %import "ortools/util/csharp/vector.i"
@@ -22,12 +20,6 @@
 %}
 
 %module(directors="1") operations_research_model_builder
-
-%template(IntVector) std::vector<int>;
-VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
-
-%template(DoubleVector) std::vector<double>;
-VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 %extend operations_research::ModelBuilderHelper {
   std::string ExportToMpsString(bool obfuscate) {
@@ -48,6 +40,9 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 %unignore operations_research;
 
 // Wrap the ModelBuilderHelper class.
+%typemap(csimports) operations_research::ModelBuilderHelper %{
+using Google.OrTools.Util;
+%}
 %unignore operations_research::ModelBuilderHelper;
 %unignore operations_research::ModelBuilderHelper::ModelBuilderHelper;
 %unignore operations_research::ModelBuilderHelper::~ModelBuilderHelper;

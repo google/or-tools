@@ -14,16 +14,16 @@
 // [START program]
 // [START import]
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
 // [END import]
 
-// [START program_part1]
 /// <summary>
-///   Vehicles Routing Problem (VRP) with Time Windows.
+///   Vehicles Routing Problem (VRP) with Resource Constraints.
 /// </summary>
-public class VrpTimeWindows
+public class VrpResources
 {
     // [START data_model]
     class DataModel
@@ -51,22 +51,27 @@ public class VrpTimeWindows
             { 0, 5 },   // depot
             { 7, 12 },  // 1
             { 10, 15 }, // 2
-            { 16, 18 }, // 3
-            { 10, 13 }, // 4
+            { 5, 14 },  // 3
+            { 5, 13 },  // 4
             { 0, 5 },   // 5
             { 5, 10 },  // 6
-            { 0, 4 },   // 7
+            { 0, 10 },  // 7
             { 5, 10 },  // 8
-            { 0, 3 },   // 9
+            { 0, 5 },   // 9
             { 10, 16 }, // 10
             { 10, 15 }, // 11
             { 0, 5 },   // 12
             { 5, 10 },  // 13
-            { 7, 8 },   // 14
+            { 7, 12 },  // 14
             { 10, 15 }, // 15
-            { 11, 15 }, // 16
+            { 5, 15 },  // 16
         };
         public int VehicleNumber = 4;
+        // [START resources_data]
+        public int VehicleLoadTime = 5;
+        public int VehicleUnloadTime = 5;
+        public int DepotCapacity = 2;
+        // [END resources_data]
         public int Depot = 0;
     };
     // [END data_model]
@@ -126,8 +131,8 @@ public class VrpTimeWindows
         // [START transit_callback]
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                    {
-                                                                       // Convert from routing variable Index to time
-                                                                       // matrix NodeIndex.
+                                                                       // Convert from routing variable Index to
+                                                                       // distance matrix NodeIndex.
                                                                        var fromNode = manager.IndexToNode(fromIndex);
                                                                        var toNode = manager.IndexToNode(toIndex);
                                                                        return data.TimeMatrix[fromNode, toNode];
@@ -139,7 +144,7 @@ public class VrpTimeWindows
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
-        // Add Time constraint.
+        // Add Distance constraint.
         // [START time_constraint]
         routing.AddDimension(transitCallbackIndex, // transit callback
                              30,                   // allow waiting time
@@ -161,6 +166,26 @@ public class VrpTimeWindows
         }
         // [END time_constraint]
 
+        // Add resource constraints at the depot.
+        // [START depot_load_time]
+        Solver solver = routing.solver();
+        IntervalVar[] intervals = new IntervalVar[data.VehicleNumber * 2];
+        for (int i = 0; i < data.VehicleNumber; ++i)
+        {
+            // Add load duration at start of routes
+            intervals[2 * i] = solver.MakeFixedDurationIntervalVar(timeDimension.CumulVar(routing.Start(i)),
+                                                                   data.VehicleLoadTime, "depot_interval");
+            // Add unload duration at end of routes.
+            intervals[2 * i + 1] = solver.MakeFixedDurationIntervalVar(timeDimension.CumulVar(routing.End(i)),
+                                                                       data.VehicleUnloadTime, "depot_interval");
+        }
+        // [END depot_load_time]
+
+        // [START depot_capacity]
+        long[] depot_usage = Enumerable.Repeat<long>(1, intervals.Length).ToArray();
+        solver.Add(solver.MakeCumulative(intervals, depot_usage, data.DepotCapacity, "depot"));
+        // [END depot_capacity]
+
         // Instantiate route start and end times to produce feasible times.
         // [START depot_start_end_times]
         for (int i = 0; i < data.VehicleNumber; ++i)
@@ -172,8 +197,7 @@ public class VrpTimeWindows
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 
@@ -188,5 +212,4 @@ public class VrpTimeWindows
         // [END print_solution]
     }
 }
-// [END program_part1]
 // [END program]

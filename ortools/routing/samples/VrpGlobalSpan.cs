@@ -22,7 +22,7 @@ using Google.OrTools.Routing;
 /// <summary>
 ///   Minimal TSP using distance matrix.
 /// </summary>
-public class VrpStartsEnds
+public class VrpGlobalSpan
 {
     // [START data_model]
     class DataModel
@@ -47,10 +47,7 @@ public class VrpStartsEnds
             { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
         public int VehicleNumber = 4;
-        // [START starts_ends]
-        public int[] Starts = { 1, 2, 15, 16 };
-        public int[] Ends = { 0, 0, 0, 0 };
-        // [END starts_ends]
+        public int Depot = 0;
     };
     // [END data_model]
 
@@ -95,7 +92,8 @@ public class VrpStartsEnds
         // Create Routing Index Manager
         // [START index_manager]
         RoutingIndexManager manager =
-            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Starts, data.Ends);
+            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+
         // [END index_manager]
 
         // Create Routing Model.
@@ -122,7 +120,7 @@ public class VrpStartsEnds
 
         // Add Distance constraint.
         // [START distance_constraint]
-        routing.AddDimension(transitCallbackIndex, 0, 2000,
+        routing.AddDimension(transitCallbackIndex, 0, 3000,
                              true, // start cumul to zero
                              "Distance");
         RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
@@ -131,8 +129,7 @@ public class VrpStartsEnds
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 

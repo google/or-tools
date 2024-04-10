@@ -13,8 +13,7 @@
 
 // Wrapper for RoutingIndexManager.
 
-%include "ortools/base/base.i"
-%import "ortools/util/csharp/vector.i"
+%include "ortools/routing/csharp/routing_types.i"
 
 %{
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -26,10 +25,12 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 %ignoreall
 
 %unignore operations_research;
-
 namespace operations_research {
 
 %unignore RoutingIndexManager;
+%typemap(csimports) RoutingIndexManager %{
+using Google.OrTools.Util;
+%}
 %unignore RoutingIndexManager::GetStartIndex;
 %unignore RoutingIndexManager::GetEndIndex;
 %unignore RoutingIndexManager::IndexToNode;

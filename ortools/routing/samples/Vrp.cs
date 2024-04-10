@@ -20,9 +20,9 @@ using Google.OrTools.Routing;
 // [END import]
 
 /// <summary>
-///   Minimal Pickup & Delivery Problem (PDP).
+///   Minimal TSP using distance matrix.
 /// </summary>
-public class VrpPickupDelivery
+public class Vrp
 {
     // [START data_model]
     class DataModel
@@ -46,12 +46,6 @@ public class VrpPickupDelivery
             { 776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798 },
             { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
-        // [START pickups_deliveries]
-        public int[][] PickupsDeliveries = {
-            new int[] { 1, 6 }, new int[] { 2, 10 },  new int[] { 4, 3 },   new int[] { 5, 9 },
-            new int[] { 7, 8 }, new int[] { 15, 11 }, new int[] { 13, 12 }, new int[] { 16, 14 },
-        };
-        // [END pickups_deliveries]
         public int VehicleNumber = 4;
         public int Depot = 0;
     };
@@ -61,14 +55,20 @@ public class VrpPickupDelivery
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
-                              in Assignment solution)
+    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
     {
-        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
-
+        RoutingSearchStatus.Types.Value status = routing.GetStatus();
+        Console.WriteLine("Status: {0}", status);
+        if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
+            status != RoutingSearchStatus.Types.Value.RoutingSuccess)
+        {
+            Console.WriteLine("No solution found!");
+            return;
+        }
+        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
         // Inspect solution.
         long totalDistance = 0;
-        for (int i = 0; i < data.VehicleNumber; ++i)
+        for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)
         {
             Console.WriteLine("Route for Vehicle {0}:", i);
             long routeDistance = 0;
@@ -99,7 +99,6 @@ public class VrpPickupDelivery
         // [START index_manager]
         RoutingIndexManager manager =
             new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
-
         // [END index_manager]
 
         // Create Routing Model.
@@ -124,33 +123,9 @@ public class VrpPickupDelivery
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
-        // Add Distance constraint.
-        // [START distance_constraint]
-        routing.AddDimension(transitCallbackIndex, 0, 3000,
-                             true, // start cumul to zero
-                             "Distance");
-        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
-        distanceDimension.SetGlobalSpanCostCoefficient(100);
-        // [END distance_constraint]
-
-        // Define Transportation Requests.
-        // [START pickup_delivery_constraint]
-        Solver solver = routing.solver();
-        for (int i = 0; i < data.PickupsDeliveries.GetLength(0); i++)
-        {
-            long pickupIndex = manager.NodeToIndex(data.PickupsDeliveries[i][0]);
-            long deliveryIndex = manager.NodeToIndex(data.PickupsDeliveries[i][1]);
-            routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
-            solver.Add(solver.MakeEquality(routing.VehicleVar(pickupIndex), routing.VehicleVar(deliveryIndex)));
-            solver.Add(solver.MakeLessOrEqual(distanceDimension.CumulVar(pickupIndex),
-                                              distanceDimension.CumulVar(deliveryIndex)));
-        }
-        // [END pickup_delivery_constraint]
-
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 
@@ -161,7 +136,7 @@ public class VrpPickupDelivery
 
         // Print solution on console.
         // [START print_solution]
-        PrintSolution(data, routing, manager, solution);
+        PrintSolution(routing, manager, solution);
         // [END print_solution]
     }
 }

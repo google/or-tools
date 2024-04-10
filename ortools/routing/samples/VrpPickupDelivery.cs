@@ -17,13 +17,12 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
-using Google.Protobuf.WellKnownTypes; // Duration
 // [END import]
 
 /// <summary>
-///   Minimal Vrp with drop nodes.
+///   Minimal Pickup & Delivery Problem (PDP).
 /// </summary>
-public class VrpDropNodes
+public class VrpPickupDelivery
 {
     // [START data_model]
     class DataModel
@@ -47,10 +46,12 @@ public class VrpDropNodes
             { 776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798 },
             { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
-        // [START demands_capacities]
-        public long[] Demands = { 0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8 };
-        public long[] VehicleCapacities = { 15, 15, 15, 15 };
-        // [END demands_capacities]
+        // [START pickups_deliveries]
+        public int[][] PickupsDeliveries = {
+            new int[] { 1, 6 }, new int[] { 2, 10 },  new int[] { 4, 3 },   new int[] { 5, 9 },
+            new int[] { 7, 8 }, new int[] { 15, 11 }, new int[] { 13, 12 }, new int[] { 16, 14 },
+        };
+        // [END pickups_deliveries]
         public int VehicleNumber = 4;
         public int Depot = 0;
     };
@@ -66,34 +67,15 @@ public class VrpDropNodes
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
         // Inspect solution.
-        // Display dropped nodes.
-        string droppedNodes = "Dropped nodes:";
-        for (int index = 0; index < routing.Size(); ++index)
-        {
-            if (routing.IsStart(index) || routing.IsEnd(index))
-            {
-                continue;
-            }
-            if (solution.Value(routing.NextVar(index)) == index)
-            {
-                droppedNodes += " " + manager.IndexToNode(index);
-            }
-        }
-        Console.WriteLine("{0}", droppedNodes);
-        // Inspect solution.
         long totalDistance = 0;
-        long totalLoad = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {
             Console.WriteLine("Route for Vehicle {0}:", i);
             long routeDistance = 0;
-            long routeLoad = 0;
             var index = routing.Start(i);
             while (routing.IsEnd(index) == false)
             {
-                long nodeIndex = manager.IndexToNode(index);
-                routeLoad += data.Demands[nodeIndex];
-                Console.Write("{0} Load({1}) -> ", nodeIndex, routeLoad);
+                Console.Write("{0} -> ", manager.IndexToNode((int)index));
                 var previousIndex = index;
                 index = solution.Value(routing.NextVar(index));
                 routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
@@ -101,10 +83,8 @@ public class VrpDropNodes
             Console.WriteLine("{0}", manager.IndexToNode((int)index));
             Console.WriteLine("Distance of the route: {0}m", routeDistance);
             totalDistance += routeDistance;
-            totalLoad += routeLoad;
         }
         Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
-        Console.WriteLine("Total Load of all routes: {0}m", totalLoad);
     }
     // [END solution_printer]
 
@@ -119,6 +99,7 @@ public class VrpDropNodes
         // [START index_manager]
         RoutingIndexManager manager =
             new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+
         // [END index_manager]
 
         // Create Routing Model.
@@ -143,35 +124,33 @@ public class VrpDropNodes
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
-        // Add Capacity constraint.
-        // [START capacity_constraint]
-        int demandCallbackIndex = routing.RegisterUnaryTransitCallback((long fromIndex) =>
-                                                                       {
-                                                                           // Convert from routing variable Index to
-                                                                           // demand NodeIndex.
-                                                                           var fromNode =
-                                                                               manager.IndexToNode(fromIndex);
-                                                                           return data.Demands[fromNode];
-                                                                       });
-        routing.AddDimensionWithVehicleCapacity(demandCallbackIndex, 0, // null capacity slack
-                                                data.VehicleCapacities, // vehicle maximum capacities
-                                                true,                   // start cumul to zero
-                                                "Capacity");
-        // Allow to drop nodes.
-        long penalty = 1000;
-        for (int i = 1; i < data.DistanceMatrix.GetLength(0); ++i)
+        // Add Distance constraint.
+        // [START distance_constraint]
+        routing.AddDimension(transitCallbackIndex, 0, 3000,
+                             true, // start cumul to zero
+                             "Distance");
+        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+        distanceDimension.SetGlobalSpanCostCoefficient(100);
+        // [END distance_constraint]
+
+        // Define Transportation Requests.
+        // [START pickup_delivery_constraint]
+        Solver solver = routing.solver();
+        for (int i = 0; i < data.PickupsDeliveries.GetLength(0); i++)
         {
-            routing.AddDisjunction(new long[] { manager.NodeToIndex(i) }, penalty);
+            long pickupIndex = manager.NodeToIndex(data.PickupsDeliveries[i][0]);
+            long deliveryIndex = manager.NodeToIndex(data.PickupsDeliveries[i][1]);
+            routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
+            solver.Add(solver.MakeEquality(routing.VehicleVar(pickupIndex), routing.VehicleVar(deliveryIndex)));
+            solver.Add(solver.MakeLessOrEqual(distanceDimension.CumulVar(pickupIndex),
+                                              distanceDimension.CumulVar(deliveryIndex)));
         }
-        // [END capacity_constraint]
+        // [END pickup_delivery_constraint]
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
-        searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
-        searchParameters.TimeLimit = new Duration { Seconds = 1 };
         // [END parameters]
 
         // Solve the problem.

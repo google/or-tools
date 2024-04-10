@@ -15,6 +15,7 @@ namespace Google.OrTools.ConstraintSolver
 {
 using System;
 using System.Collections.Generic;
+using Google.OrTools.Util;
 
 // IntVar[] helper class.
 public static class IntVarArrayHelper

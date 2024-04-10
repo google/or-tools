@@ -48,8 +48,7 @@ public class RoutingSolverTest
             GC.Collect();
         }
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+4)-> 0 := +8
@@ -74,8 +73,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
@@ -103,8 +101,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         Assert.Equal(8, solution.ObjectiveValue());
@@ -130,8 +127,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(result.first);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
@@ -153,8 +149,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5
@@ -182,8 +177,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+2)-> 2 --(+3)-> 3 --(+4)-> 4 --(+5)-> 0 := +15
@@ -207,8 +201,7 @@ public class RoutingSolverTest
         // Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(result.first);
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+1)-> 0 := +5

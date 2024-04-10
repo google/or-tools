@@ -20,9 +20,9 @@ using Google.OrTools.Routing;
 // [END import]
 
 /// <summary>
-///   Minimal TSP using distance matrix.
+///   VRP with initial routes.
 /// </summary>
-public class TspDistanceMatrix
+public class InitialRoutes
 {
     // [START data_model]
     class DataModel
@@ -44,9 +44,17 @@ public class TspDistanceMatrix
             { 354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0, 342, 422, 536 },
             { 468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194 },
             { 776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798 },
-            { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
+            { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 },
         };
-        public int VehicleNumber = 1;
+        // [START initial_routes]
+        public long[][] InitialRoutes = {
+            new long[] { 8, 16, 14, 13, 12, 11 },
+            new long[] { 3, 4, 9, 10 },
+            new long[] { 15, 1 },
+            new long[] { 7, 5, 2, 6 },
+        };
+        // [END initial_routes]
+        public int VehicleNumber = 4;
         public int Depot = 0;
     };
     // [END data_model]
@@ -55,22 +63,30 @@ public class TspDistanceMatrix
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
+    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
+                              in Assignment solution)
     {
-        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
-        Console.WriteLine("Route for Vehicle 0:");
-        long routeDistance = 0;
-        var index = routing.Start(0);
-        while (routing.IsEnd(index) == false)
+        long maxRouteDistance = 0;
+        for (int i = 0; i < data.VehicleNumber; ++i)
         {
-            Console.Write("{0} -> ", manager.IndexToNode((int)index));
-            var previousIndex = index;
-            index = solution.Value(routing.NextVar(index));
-            routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+            Console.WriteLine("Route for Vehicle {0}:", i);
+            long routeDistance = 0;
+            var index = routing.Start(i);
+            while (routing.IsEnd(index) == false)
+            {
+                Console.Write("{0} -> ", manager.IndexToNode((int)index));
+                var previousIndex = index;
+                index = solution.Value(routing.NextVar(index));
+                routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+            }
+            Console.WriteLine("{0}", manager.IndexToNode((int)index));
+            Console.WriteLine("Distance of the route: {0}", routeDistance);
+            maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
         }
-        Console.WriteLine("{0}", manager.IndexToNode((int)index));
-        Console.WriteLine("Distance of the route: {0}m", routeDistance);
+        Console.WriteLine("Maximum distance of the routes: {0}", maxRouteDistance);
     }
     // [END solution_printer]
 
@@ -109,21 +125,37 @@ public class TspDistanceMatrix
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
+        // Add Distance constraint.
+        // [START distance_constraint]
+        routing.AddDimension(transitCallbackIndex, 0, 3000,
+                             true, // start cumul to zero
+                             "Distance");
+        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+        distanceDimension.SetGlobalSpanCostCoefficient(100);
+        // [END distance_constraint]
+
+        // Get initial solution from routes.
+        // [START print_initial_solution]
+        Assignment initialSolution = routing.ReadAssignmentFromRoutes(data.InitialRoutes, true);
+        // Print initial solution on console.
+        Console.WriteLine("Initial solution:");
+        PrintSolution(data, routing, manager, initialSolution);
+        // [END print_initial_solution]
+
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
-        searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         // [END parameters]
 
         // Solve the problem.
         // [START solve]
-        Assignment solution = routing.SolveWithParameters(searchParameters);
+        Assignment solution = routing.SolveFromAssignmentWithParameters(initialSolution, searchParameters);
         // [END solve]
 
         // Print solution on console.
         // [START print_solution]
-        PrintSolution(routing, manager, solution);
+        Console.WriteLine("Solution after search:");
+        PrintSolution(data, routing, manager, solution);
         // [END print_solution]
     }
 }

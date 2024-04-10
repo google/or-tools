@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(user): Refactor this file to adhere to the SWIG style guide.
+
 %typemap(csimports) SWIGTYPE %{
 using System;
 using System.Runtime.InteropServices;
@@ -18,14 +20,30 @@ using System.Collections;
 using System.Collections.Generic;
 %}
 
-// TODO(user): Refactor this file to adhere to the SWIG style guide.
-%include "std_pair.i"
+%include "ortools/base/base.i"
 %template(IntBoolPair) std::pair<int, bool>;
+%include "enumsimple.swg"
+%import "ortools/util/csharp/absl_string_view.i"
+%import "ortools/util/csharp/vector.i"
 
-%include "ortools/constraint_solver/csharp/constraint_solver.i"
-%include "ortools/constraint_solver/csharp/routing_types.i"
-%include "ortools/constraint_solver/csharp/routing_index_manager.i"
-%include "ortools/util/csharp/sorted_interval_list.i"
+%{
+#include <algorithm>
+%}
+
+%template(IntVector) std::vector<int>;
+%template(IntVectorVector) std::vector<std::vector<int> >;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
+
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+
+%import "ortools/constraint_solver/csharp/constraint_solver.i"
+%import "ortools/util/csharp/sorted_interval_list.i" // Domain
+
+%include "ortools/routing/csharp/routing_index_manager.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -33,21 +51,20 @@ using System.Collections.Generic;
 namespace operations_research {
 class RoutingModelParameters;
 class RoutingSearchParameters;
-
 class RoutingSearchStatus;
 }  // namespace operations_research
+
+%module(directors="1") RoutingGlobals;
 
 // Include the file we want to wrap a first time.
 %{
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing.h"
 %}
-
-%module(directors="1") operations_research;
 
 // RoutingModel methods.
 DEFINE_INDEX_TYPE_TYPEDEF(
@@ -68,12 +85,49 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 
 namespace operations_research {
 
-// RoutingModel
-%unignore RoutingModel;
-%typemap(csimports) RoutingModel
-%{
+// GlobalVehicleBreaksConstraint
+%unignore GlobalVehicleBreaksConstraint;
+%typemap(csimports) GlobalVehicleBreaksConstraint %{
+using Google.OrTools.ConstraintSolver;
+%}
+
+// PathsMetadata
+%unignore PathsMetadata;
+
+// RoutingDimension
+%unignore RoutingDimension;
+%typemap(csimports) RoutingDimension %{
 using System;
 using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
+%}
+%typemap(cscode) RoutingDimension %{
+  // Keep reference to delegate to avoid GC to collect them early.
+  private List<IntIntToLong> limitCallbacks;
+  private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
+    if (limitCallbacks == null)
+      limitCallbacks = new List<IntIntToLong>();
+    limitCallbacks.Add(limit);
+    return limit;
+  }
+
+  private List<LongLongToLong> groupDelayCallbacks;
+  private LongLongToLong StoreLongLongToLong(LongLongToLong groupDelay) {
+    if (groupDelayCallbacks == null)
+      groupDelayCallbacks = new List<LongLongToLong>();
+    groupDelayCallbacks.Add(groupDelay);
+    return groupDelay;
+  }
+%}
+%ignore RoutingDimension::GetBreakDistanceDurationOfVehicle;
+
+// RoutingModel
+%unignore RoutingModel;
+%typemap(csimports) RoutingModel %{
+using System;
+using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
+using Domain = Google.OrTools.Util.Domain;
 %}
 %typemap(cscode) RoutingModel %{
   // Keep reference to delegate to avoid GC to collect them early.
@@ -101,6 +155,7 @@ using System.Collections.Generic;
     return c;
   }
 %}
+%rename("GetStatus") RoutingModel::status;
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
@@ -142,36 +197,11 @@ using System.Collections.Generic;
 %ignore RoutingModel::TransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;
 
-// RoutingDimension
-%unignore RoutingDimension;
-%typemap(csimports) RoutingDimension
-%{
-using System;
-using System.Collections.Generic;
+// RoutingModelVisitor
+%unignore RoutingModelVisitor;
+%typemap(csimports) RoutingModelVisitor %{
+using Google.OrTools.ConstraintSolver;
 %}
-%typemap(cscode) RoutingDimension %{
-  // Keep reference to delegate to avoid GC to collect them early.
-  private List<IntIntToLong> limitCallbacks;
-  private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
-    if (limitCallbacks == null)
-      limitCallbacks = new List<IntIntToLong>();
-    limitCallbacks.Add(limit);
-    return limit;
-  }
-
-  private List<LongLongToLong> groupDelayCallbacks;
-  private LongLongToLong StoreLongLongToLong(LongLongToLong groupDelay) {
-    if (groupDelayCallbacks == null)
-      groupDelayCallbacks = new List<LongLongToLong>();
-    groupDelayCallbacks.Add(groupDelay);
-    return groupDelay;
-  }
-%}
-%ignore RoutingDimension::GetBreakDistanceDurationOfVehicle;
-
-// TypeRegulationsChecker
-%unignore TypeRegulationsChecker;
-%ignore TypeRegulationsChecker::CheckVehicle;
 
 // SimpleBoundCosts
 %unignore BoundCost;
@@ -179,10 +209,25 @@ using System.Collections.Generic;
 %rename("GetBoundCost") SimpleBoundCosts::bound_cost;
 %rename("GetSize") SimpleBoundCosts::Size;
 
+// TypeRegulationsConstraint
+%unignore TypeRegulationsConstraint;
+%typemap(csimports) TypeRegulationsConstraint %{
+using Google.OrTools.ConstraintSolver;
+%}
+
+// TypeRegulationsChecker
+%unignore TypeRegulationsChecker;
+%ignore TypeRegulationsChecker::CheckVehicle;
+
 }  // namespace operations_research
 
-%rename("GetStatus") operations_research::RoutingModel::status;
 %rename("%(camelcase)s", %$isfunction) "";
+
+// Add needed import to RoutingGlobalsPINVOKE.cs
+%pragma(csharp) imclassimports=%{
+// Types from ConstraintSolver
+using Google.OrTools.ConstraintSolver;
+%}
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
@@ -198,6 +243,13 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
                   Google.OrTools.Routing.RoutingSearchStatus.Types.Value)
 
+// Add needed import to RoutingGlobals.cs
+%pragma(csharp) moduleimports=%{
+// Types from ConstraintSolver
+using Google.OrTools.ConstraintSolver;
+%}
+
+// Wrap routing includes
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/routing_parameters.h"

@@ -14,60 +14,27 @@
 // [START program]
 // [START import]
 using System;
-using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
-using Google.Protobuf.WellKnownTypes; // Duration
 // [END import]
 
 /// <summary>
-///   Minimal Vrp using a time limit.
+///   This is a sample using the routing library .Net wrapper.
 /// </summary>
-public class Vrp
+public class SimpleRoutingProgram
 {
-    // [START solution_printer]
-    /// <summary>
-    ///   Print the solution.
-    /// </summary>
-    static void PrintSolution(in RoutingIndexManager manager, in RoutingModel routing, in Assignment solution)
-    {
-        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
-
-        // Inspect solution.
-        long maxRouteDistance = 0;
-        for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)
-        {
-            Console.WriteLine("Route for Vehicle {0}:", i);
-            long routeDistance = 0;
-            var index = routing.Start(i);
-            while (routing.IsEnd(index) == false)
-            {
-                Console.Write("{0} -> ", manager.IndexToNode((int)index));
-                var previousIndex = index;
-                index = solution.Value(routing.NextVar(index));
-                routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
-            }
-            Console.WriteLine("{0}", manager.IndexToNode((int)index));
-            Console.WriteLine("Distance of the route: {0}m", routeDistance);
-            maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
-        }
-        Console.WriteLine("Maximum distance of the routes: {0}m", maxRouteDistance);
-    }
-    // [END solution_printer]
-
     public static void Main(String[] args)
     {
         // Instantiate the data problem.
         // [START data]
-        int locationNumber = 20;
-        int vehicleNumber = 5;
-        int depot = 0;
+        const int numLocation = 5;
+        const int numVehicles = 1;
+        const int depot = 0;
         // [END data]
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager = new RoutingIndexManager(locationNumber, vehicleNumber, depot);
-
+        RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
         // [END index_manager]
 
         // Create Routing Model.
@@ -83,7 +50,7 @@ public class Vrp
                                                                        // distance matrix NodeIndex.
                                                                        var fromNode = manager.IndexToNode(fromIndex);
                                                                        var toNode = manager.IndexToNode(toIndex);
-                                                                       return 1;
+                                                                       return Math.Abs(toNode - fromNode);
                                                                    });
         // [END transit_callback]
 
@@ -92,24 +59,10 @@ public class Vrp
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
-        // Add Distance constraint.
-        // [START distance_constraint]
-        routing.AddDimension(transitCallbackIndex,
-                             /*slack=*/0,
-                             /*horizon=*/3000,
-                             /*start_cumul_to_zero=*/true, "Distance");
-        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
-        distanceDimension.SetGlobalSpanCostCoefficient(100);
-        // [END distance_constraint]
-
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
-        searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
-        searchParameters.LogSearch = true;
-        searchParameters.TimeLimit = new Duration { Seconds = 5 };
         // [END parameters]
 
         // Solve the problem.
@@ -119,7 +72,20 @@ public class Vrp
 
         // Print solution on console.
         // [START print_solution]
-        PrintSolution(manager, routing, solution);
+        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+        // Inspect solution.
+        long index = routing.Start(0);
+        Console.WriteLine("Route for Vehicle 0:");
+        long route_distance = 0;
+        while (routing.IsEnd(index) == false)
+        {
+            Console.Write("{0} -> ", manager.IndexToNode((int)index));
+            long previousIndex = index;
+            index = solution.Value(routing.NextVar(index));
+            route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+        }
+        Console.WriteLine("{0}", manager.IndexToNode(index));
+        Console.WriteLine("Distance of the route: {0}m", route_distance);
         // [END print_solution]
     }
 }

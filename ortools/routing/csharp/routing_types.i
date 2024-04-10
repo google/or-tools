@@ -17,7 +17,6 @@
 // int).
 // This file is to be %included when wrapped objects need to use these typemaps.
 
-%include "ortools/base/base.i"
 %import "ortools/util/csharp/vector.i"
 
 %{
@@ -78,6 +77,19 @@ DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);
 
-// TODO(user): Replace with %ignoreall/%unignoreall
-//swiglint: disable include-h-allglobals
+%ignoreall
+
+%unignore operations_research;
+namespace operations_research {
+
+// PickupDeliveryPair
+%unignore PickupDeliveryPair;
+%typemap(csimports) PickupDeliveryPair %{
+using Google.OrTools.Util; // Int64Vector
+%}
+
+}  // namespace operations_research
+
 %include "ortools/constraint_solver/routing_types.h"
+
+%unignoreall

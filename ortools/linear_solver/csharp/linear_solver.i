@@ -28,11 +28,8 @@
 // - examples/csharp/cslinearprogramming.cs
 // - examples/csharp/csintegerprogramming.cs
 
-%include "enums.swg"
-%include "stdint.i"
-%include "std_vector.i"
-
 %include "ortools/base/base.i"
+%include "enums.swg"
 %import "ortools/util/csharp/vector.i"
 
 %{
@@ -59,9 +56,6 @@ class MPSolutionResponse;
 %typemap(csclassmodifiers) operations_research::MPVariable "public partial class"
 %typemap(csclassmodifiers) operations_research::MPSolver "public partial class"
 
-%template(DoubleVector) std::vector<double>;
-VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
-
 %define CONVERT_VECTOR(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(CTYPE*);
 %template(TYPE ## Vector) std::vector<CTYPE*>;
@@ -78,6 +72,9 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 
 // Rename all the exposed classes, by removing the "MP" prefix.
 %rename (Solver) operations_research::MPSolver;
+%typemap(csimports) operations_research::MPSolver %{
+using Google.OrTools.Util;
+%}
 %rename (Variable) operations_research::MPVariable;
 %rename (Constraint) operations_research::MPConstraint;
 %rename (Objective) operations_research::MPObjective;

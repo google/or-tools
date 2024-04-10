@@ -22,7 +22,7 @@ using Google.OrTools.Routing;
 /// <summary>
 ///   Minimal TSP using distance matrix.
 /// </summary>
-public class Vrp
+public class VrpStartsEnds
 {
     // [START data_model]
     class DataModel
@@ -47,7 +47,10 @@ public class Vrp
             { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
         public int VehicleNumber = 4;
-        public int Depot = 0;
+        // [START starts_ends]
+        public int[] Starts = { 1, 2, 15, 16 };
+        public int[] Ends = { 0, 0, 0, 0 };
+        // [END starts_ends]
     };
     // [END data_model]
 
@@ -55,20 +58,14 @@ public class Vrp
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
+    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
+                              in Assignment solution)
     {
-        RoutingSearchStatus.Types.Value status = routing.GetStatus();
-        Console.WriteLine("Status: {0}", status);
-        if (status != RoutingSearchStatus.Types.Value.RoutingOptimal &&
-            status != RoutingSearchStatus.Types.Value.RoutingSuccess)
-        {
-            Console.WriteLine("No solution found!");
-            return;
-        }
-        Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+        Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
+
         // Inspect solution.
-        long totalDistance = 0;
-        for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)
+        long maxRouteDistance = 0;
+        for (int i = 0; i < data.VehicleNumber; ++i)
         {
             Console.WriteLine("Route for Vehicle {0}:", i);
             long routeDistance = 0;
@@ -82,9 +79,9 @@ public class Vrp
             }
             Console.WriteLine("{0}", manager.IndexToNode((int)index));
             Console.WriteLine("Distance of the route: {0}m", routeDistance);
-            totalDistance += routeDistance;
+            maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
         }
-        Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+        Console.WriteLine("Maximum distance of the routes: {0}m", maxRouteDistance);
     }
     // [END solution_printer]
 
@@ -98,7 +95,7 @@ public class Vrp
         // Create Routing Index Manager
         // [START index_manager]
         RoutingIndexManager manager =
-            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Starts, data.Ends);
         // [END index_manager]
 
         // Create Routing Model.
@@ -123,10 +120,18 @@ public class Vrp
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
         // [END arc_cost]
 
+        // Add Distance constraint.
+        // [START distance_constraint]
+        routing.AddDimension(transitCallbackIndex, 0, 2000,
+                             true, // start cumul to zero
+                             "Distance");
+        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+        distanceDimension.SetGlobalSpanCostCoefficient(100);
+        // [END distance_constraint]
+
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 
@@ -137,7 +142,7 @@ public class Vrp
 
         // Print solution on console.
         // [START print_solution]
-        PrintSolution(routing, manager, solution);
+        PrintSolution(data, routing, manager, solution);
         // [END print_solution]
     }
 }

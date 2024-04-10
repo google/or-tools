@@ -230,6 +230,7 @@ public class SimpleRoutingProgram {
 ```cs
 using System;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 /// <summary>
 ///   This is a sample using the routing library .Net wrapper.
@@ -263,8 +264,7 @@ public class SimpleRoutingProgram
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
         // Solve the problem.

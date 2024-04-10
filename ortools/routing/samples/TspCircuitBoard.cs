@@ -15,6 +15,7 @@
 // [START import]
 using System;
 using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
 // [END import]
 
@@ -162,8 +163,7 @@ public class TspCircuitBoard
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         // [END parameters]
 

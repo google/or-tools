@@ -21,9 +21,9 @@ using Google.Protobuf.WellKnownTypes; // Duration
 // [END import]
 
 /// <summary>
-///   Minimal TSP using distance matrix.
+///   Minimal Vrp with drop nodes.
 /// </summary>
-public class VrpCapacity
+public class VrpDropNodes
 {
     // [START data_model]
     class DataModel
@@ -48,7 +48,7 @@ public class VrpCapacity
             { 662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0 }
         };
         // [START demands_capacities]
-        public long[] Demands = { 0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8 };
+        public long[] Demands = { 0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8 };
         public long[] VehicleCapacities = { 15, 15, 15, 15 };
         // [END demands_capacities]
         public int VehicleNumber = 4;
@@ -65,6 +65,21 @@ public class VrpCapacity
     {
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
+        // Inspect solution.
+        // Display dropped nodes.
+        string droppedNodes = "Dropped nodes:";
+        for (int index = 0; index < routing.Size(); ++index)
+        {
+            if (routing.IsStart(index) || routing.IsEnd(index))
+            {
+                continue;
+            }
+            if (solution.Value(routing.NextVar(index)) == index)
+            {
+                droppedNodes += " " + manager.IndexToNode(index);
+            }
+        }
+        Console.WriteLine("{0}", droppedNodes);
         // Inspect solution.
         long totalDistance = 0;
         long totalLoad = 0;
@@ -88,8 +103,8 @@ public class VrpCapacity
             totalDistance += routeDistance;
             totalLoad += routeLoad;
         }
-        Console.WriteLine("Total distance of all routes: {0}m", totalDistance);
-        Console.WriteLine("Total load of all routes: {0}m", totalLoad);
+        Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+        Console.WriteLine("Total Load of all routes: {0}m", totalLoad);
     }
     // [END solution_printer]
 
@@ -142,12 +157,17 @@ public class VrpCapacity
                                                 data.VehicleCapacities, // vehicle maximum capacities
                                                 true,                   // start cumul to zero
                                                 "Capacity");
+        // Allow to drop nodes.
+        long penalty = 1000;
+        for (int i = 1; i < data.DistanceMatrix.GetLength(0); ++i)
+        {
+            routing.AddDisjunction(new long[] { manager.NodeToIndex(i) }, penalty);
+        }
         // [END capacity_constraint]
 
         // Setting first solution heuristic.
         // [START parameters]
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
         searchParameters.TimeLimit = new Duration { Seconds = 1 };
