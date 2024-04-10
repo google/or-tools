@@ -831,7 +831,7 @@ void KnitroInterface::AddSolutionHintToOptimizer() {
 int64_t KnitroInterface::iterations() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   int numIters;
-  CHECK_STATUS(KN_get_number_iters(kc_, &numIters));
+  CHECK_STATUS(KN_get_mip_number_solves(kc_, &numIters));
   return static_cast<int64_t>(numIters);
 }
 

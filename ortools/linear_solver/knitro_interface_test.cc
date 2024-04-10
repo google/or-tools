@@ -149,6 +149,11 @@ TEST(KnitroInterface, WriteEmpty){
 
 // ----- Modeling functions
 
+TEST(KnitroInterface, infinity){
+  UNITTEST_INIT_LP();
+  EXPECT_EQ(solver.solver_infinity(), KN_INFINITY);
+}
+
 TEST(KnitroInterface, AddVariable){
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0,10,"x");
@@ -262,6 +267,39 @@ TEST(KnitroInterface, ClearObjective){
   getter.Obj_nb_coef(&nnz);
   EXPECT_EQ(nnz, 0);
 }
+
+TEST(KnitroInterface, Reset){
+  UNITTEST_INIT_LP();
+  MPVariable* const x = solver.MakeNumVar(0, 1, "x");
+  MPVariable* const y = solver.MakeNumVar(0, 1, "y");
+  MPConstraint* const c1 = solver.MakeRowConstraint(0, 3, "c1");
+  c1->SetCoefficient(x, .5);
+  c1->SetCoefficient(y, 1);
+  MPConstraint* const c2 = solver.MakeRowConstraint(0, 3, "c2");
+  c2->SetCoefficient(x, 1);
+  c2->SetCoefficient(y, 1);
+  MPObjective* const obj = solver.MutableObjective();
+  obj->SetCoefficient(x, 1);
+  obj->SetCoefficient(y, -1);
+
+  solver.Solve(); // to extract the model
+  int nb_vars, nb_cons, nnz;
+  getter.Num_Var(&nb_vars);
+  getter.Num_Cons(&nb_cons);
+  getter.Obj_nb_coef(&nnz);
+  EXPECT_EQ(nb_vars, 2);
+  EXPECT_EQ(nb_cons, 2);
+  EXPECT_EQ(nnz, 2);
+
+  solver.Reset();
+  getter.Num_Var(&nb_vars);
+  getter.Num_Cons(&nb_cons);
+  getter.Obj_nb_coef(&nnz);
+  EXPECT_EQ(nb_vars, 0);
+  EXPECT_EQ(nb_cons, 0);
+  EXPECT_EQ(nnz, 0);
+}
+
 
 // ----- Test Param
 
@@ -390,6 +428,30 @@ TEST(KnitroInterface, SetNumThreads) {
   int value;
   getter.Int_Param(KN_PARAM_NUMTHREADS, &value);
   EXPECT_EQ(value, 4);
+}
+
+// ----- Solve
+
+TEST(KnitroInterface, underlying_solver){
+  UNITTEST_INIT_LP();
+  auto ptr = solver.underlying_solver();
+  EXPECT_NE(ptr, nullptr);
+}
+
+// ----- Getting post-solve informations
+
+TEST(KitroInterface, nodes){
+  UNITTEST_INIT_MIP();
+  EXPECT_EQ(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
+  solver.Solve();
+  EXPECT_NE(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
+}
+
+TEST(KitroInterface, iterations){
+  UNITTEST_INIT_MIP();
+  EXPECT_EQ(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
+  solver.Solve();
+  EXPECT_NE(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
 }
 
 /*-------------------- TF --------------------*/
@@ -818,39 +880,6 @@ TEST(KnitroInterface, ClearObjective2){
   EXPECT_NEAR(0, obj->Value(), 1e-6);
   EXPECT_NEAR(0, x->solution_value(), 1e-6);
   EXPECT_NEAR(0, y->solution_value(), 1e-6);
-}
-
-TEST(KnitroInterface, Reset){
-  // max   x - y
-  // st. .5x + y <= 3
-  //       x + y <= 3
-  UNITTEST_INIT_LP();
-  double infinity = solver.infinity();
-  MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
-  MPVariable* const y = solver.MakeNumVar(0, infinity, "y");
-  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3, "c1");
-  c1->SetCoefficient(x, .5);
-  c1->SetCoefficient(y, 1);
-  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 3, "c2");
-  c2->SetCoefficient(x, 1);
-  c2->SetCoefficient(y, 1);
-  MPObjective* const obj = solver.MutableObjective();
-  obj->SetCoefficient(x, 1);
-  obj->SetCoefficient(y, -1);
-  obj->SetMaximization();
-
-  solver.Solve();
-  int nb_vars, nb_cons;
-  getter.Num_Var(&nb_vars);
-  getter.Num_Cons(&nb_cons);
-  EXPECT_EQ(nb_vars, 2);
-  EXPECT_EQ(nb_cons, 2);
-
-  solver.Reset();
-  getter.Num_Var(&nb_vars);
-  getter.Num_Cons(&nb_cons);
-  EXPECT_EQ(nb_vars, 0);
-  EXPECT_EQ(nb_cons, 0);
 }
 
 TEST(KnitroInterface, ChangeVarIntoInteger){
