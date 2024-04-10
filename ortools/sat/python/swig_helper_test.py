@@ -22,6 +22,7 @@ from ortools.sat.python import swig_helper
 
 
 class Callback(swig_helper.SolutionCallback):
+
     def __init__(self):
         swig_helper.SolutionCallback.__init__(self)
         self.__solution_count = 0
@@ -35,6 +36,7 @@ class Callback(swig_helper.SolutionCallback):
 
 
 class SwigHelperTest(absltest.TestCase):
+
     def testVariableDomain(self):
         model_string = """
       variables { domain: [ -10, 10 ] }

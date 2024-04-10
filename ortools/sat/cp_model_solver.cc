@@ -887,7 +887,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 
 IntegerVariable GetOrCreateVariableLinkedToSumOf(
     const std::vector<std::pair<IntegerVariable, int64_t>>& terms,
-    bool use_equality, Model* model) {
+    bool lb_required, bool ub_required, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -896,7 +896,6 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
     return NegationOf(terms.front().first);
   }
 
-  // Add var == terms or var >= terms if use_equality = false.
   const IntegerVariable new_var =
       GetOrCreateVariableWithTightBound(terms, model);
 
@@ -910,17 +909,13 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
   vars.push_back(new_var);
   coeffs.push_back(-1);
 
-  // We want == 0 or <= 0 if use_equality = false.
-  const bool lb_required = use_equality;
-  const bool ub_required = true;
-
   // Split if linear is large.
   if (vars.size() > model->GetOrCreate<SatParameters>()->linear_split_size()) {
     SplitAndLoadIntermediateConstraints(lb_required, ub_required, &vars,
                                         &coeffs, model);
   }
 
-  // Load the top-level constraint.
+  // Load the top-level constraint with the required sides.
   if (lb_required) {
     model->Add(WeightedSumGreaterOrEqual(vars, coeffs, 0));
   }
@@ -1058,7 +1053,7 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     for (int c = 0; c < num_components; ++c) {
       if (component_to_cp_terms[c].empty()) continue;
       const IntegerVariable sub_obj_var = GetOrCreateVariableLinkedToSumOf(
-          component_to_cp_terms[c], objective_need_to_be_tight, m);
+          component_to_cp_terms[c], objective_need_to_be_tight, true, m);
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
       lp_constraints[c]->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
@@ -1067,8 +1062,8 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
 
   const IntegerVariable main_objective_var =
       model_proto.has_objective()
-          ? GetOrCreateVariableLinkedToSumOf(top_level_cp_terms,
-                                             objective_need_to_be_tight, m)
+          ? GetOrCreateVariableLinkedToSumOf(
+                top_level_cp_terms, objective_need_to_be_tight, true, m)
           : kNoIntegerVariable;
 
   // Register LP constraints. Note that this needs to be done after all the
@@ -1710,11 +1705,24 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
       terms.push_back(
           std::make_pair(mapping->Integer(obj.vars(i)), obj.coeffs(i)));
     }
-    if (parameters.optimize_with_core() && !objective_need_to_be_tight) {
-      objective_var = GetOrCreateVariableWithTightBound(terms, model);
+    if (parameters.optimize_with_core()) {
+      if (objective_need_to_be_tight) {
+        // We do not care about the <= obj for core, we only need the other side
+        // to enforce a restriction of the objective lower bound.
+        //
+        // TODO(user): This might still create intermediate variables to
+        // decompose the objective for no reason. Just deal directly with the
+        // objective domain in the core algo by forbidding bad assumptions?
+        // Alternatively, just ignore the core solution if it is "too" good and
+        // rely on other solvers?
+        objective_var =
+            GetOrCreateVariableLinkedToSumOf(terms, true, false, model);
+      } else {
+        objective_var = GetOrCreateVariableWithTightBound(terms, model);
+      }
     } else {
       objective_var = GetOrCreateVariableLinkedToSumOf(
-          terms, objective_need_to_be_tight, model);
+          terms, objective_need_to_be_tight, true, model);
     }
   }
 

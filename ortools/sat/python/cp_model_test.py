@@ -111,6 +111,7 @@ class LogToString:
 
 
 class CpModelTest(absltest.TestCase):
+
     def testCreateIntegerVariable(self):
         print("testCreateIntegerVariable")
         model = cp_model.CpModel()

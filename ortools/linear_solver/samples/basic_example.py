@@ -65,12 +65,12 @@ def main():
     # [START print_solution]
     print(f"Status: {result_status}")
     if result_status != pywraplp.Solver.OPTIMAL:
-      print("The problem does not have an optimal solution!")
-      if result_status == pywraplp.Solver.FEASIBLE:
-        print("A potentially suboptimal solution was found")
-      else:
-        print("The solver could not solve the problem.")
-        return
+        print("The problem does not have an optimal solution!")
+        if result_status == pywraplp.Solver.FEASIBLE:
+            print("A potentially suboptimal solution was found")
+        else:
+            print("The solver could not solve the problem.")
+            return
 
     print("Solution:")
     print("Objective value =", objective.Value())

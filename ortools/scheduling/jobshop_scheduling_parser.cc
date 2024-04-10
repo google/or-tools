@@ -57,7 +57,7 @@ void JsspParser::SetMachines(int machine_count) {
   }
 }
 
-bool JsspParser::ParseFile(const std::string& filename) {
+bool JsspParser::ParseFile(absl::string_view filename) {
   problem_.Clear();
   // Try to detect the type of the data file.
   //  - fjs suffix -> Flexible Jobshop

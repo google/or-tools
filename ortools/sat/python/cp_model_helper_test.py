@@ -20,6 +20,7 @@ from ortools.sat.python import cp_model_helper
 
 
 class CpModelHelperTest(absltest.TestCase):
+
     def test_is_boolean(self):
         print("test_is_boolean")
         self.assertTrue(cp_model_helper.is_boolean(True))
@@ -34,9 +35,7 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertRaises(TypeError, cp_model_helper.assert_is_int64, "Hello")
         self.assertRaises(TypeError, cp_model_helper.assert_is_int64, 1.2)
         self.assertRaises(OverflowError, cp_model_helper.assert_is_int64, 2**63)
-        self.assertRaises(
-            OverflowError, cp_model_helper.assert_is_int64, -(2**63) - 1
-        )
+        self.assertRaises(OverflowError, cp_model_helper.assert_is_int64, -(2**63) - 1)
         cp_model_helper.assert_is_int64(123)
         cp_model_helper.assert_is_int64(2**63 - 1)
         cp_model_helper.assert_is_int64(-(2**63))

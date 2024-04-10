@@ -23,6 +23,7 @@ FLAGS = flags.FLAGS
 
 
 class RcpspTest(absltest.TestCase):
+
     def testParseAndAccess(self):
         parser = rcpsp.RcpspParser()
         data = "ortools/scheduling/testdata/j301_1.sm"
