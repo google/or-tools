@@ -24,17 +24,17 @@ from ortools.constraint_solver import pywrapcp
 def create_data_model():
     """Stores the data for the problem."""
     data = {}
-    data['num_vehicles'] = 2
+    data["num_vehicles"] = 2
     # [START starts_ends]
-    data['starts'] = [0] * data['num_vehicles']
-    data['ends'] = [1] * data['num_vehicles']
-    assert len(data['starts']) == data['num_vehicles']
-    assert len(data['ends']) == data['num_vehicles']
+    data["starts"] = [0] * data["num_vehicles"]
+    data["ends"] = [1] * data["num_vehicles"]
+    assert len(data["starts"]) == data["num_vehicles"]
+    assert len(data["ends"]) == data["num_vehicles"]
     # [END starts_ends]
 
     # [START demands_capacities]
     # Need 11 X and 13 Y
-    data['providers_x'] = [
+    data["providers_x"] = [
         0,  # start
         -11,  # end
         2,  # X supply 1
@@ -53,7 +53,7 @@ def create_data_model():
         0,  # Y supply 5
         0,  # Y supply 6
     ]
-    data['providers_y'] = [
+    data["providers_y"] = [
         0,  # start
         -13,  # ends
         0,  # X supply 1
@@ -72,12 +72,12 @@ def create_data_model():
         3,  # Y supply 5
         5,  # Y supply 6
     ]
-    data['vehicle_capacities_x'] = [15] * data['num_vehicles']
-    data['vehicle_capacities_y'] = [15] * data['num_vehicles']
-    assert len(data['vehicle_capacities_x']) == data['num_vehicles']
-    assert len(data['vehicle_capacities_y']) == data['num_vehicles']
+    data["vehicle_capacities_x"] = [15] * data["num_vehicles"]
+    data["vehicle_capacities_y"] = [15] * data["num_vehicles"]
+    assert len(data["vehicle_capacities_x"]) == data["num_vehicles"]
+    assert len(data["vehicle_capacities_y"]) == data["num_vehicles"]
     # [END demands_capacities]
-    data['distance_matrix'] = [
+    data["distance_matrix"] = [
         [
             0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354,
             468, 776, 662
@@ -208,9 +208,9 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
-                                           data['num_vehicles'], data['starts'],
-                                           data['ends'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data["distance_matrix"]), data["num_vehicles"], data["starts"], data["ends"]
+    )
     # [END index_manager]
 
     # Create Routing Model.
@@ -226,7 +226,7 @@ def main():
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['distance_matrix'][from_node][to_node]
+        return data["distance_matrix"][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
     # [END transit_callback]
@@ -238,13 +238,14 @@ def main():
 
     # Add Distance constraint.
     # [START distance_constraint]
-    dimension_name = 'Distance'
+    dimension_name = "Distance"
     routing.AddDimension(
         transit_callback_index,
         0,  # no slack
         2000,  # vehicle maximum travel distance
         True,  # start cumul to zero
-        dimension_name)
+        dimension_name,
+    )
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
     # Minimize the longest road
     distance_dimension.SetGlobalSpanCostCoefficient(100)
@@ -257,65 +258,69 @@ def main():
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.IndexToNode(from_index)
-        return data['providers_x'][from_node]
+        return data["providers_x"][from_node]
 
-    demand_callback_x_index = routing.RegisterUnaryTransitCallback(
-        demand_callback_x)
+    demand_callback_x_index = routing.RegisterUnaryTransitCallback(demand_callback_x)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_x_index,
         0,  # null capacity slack
-        data['vehicle_capacities_x'],  # vehicle maximum capacities
+        data["vehicle_capacities_x"],  # vehicle maximum capacities
         True,  # start cumul to zero
-        'Load_x')
+        "Load_x",
+    )
 
     def demand_callback_y(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.IndexToNode(from_index)
-        return data['providers_y'][from_node]
+        return data["providers_y"][from_node]
 
-    demand_callback_y_index = routing.RegisterUnaryTransitCallback(
-        demand_callback_y)
+    demand_callback_y_index = routing.RegisterUnaryTransitCallback(demand_callback_y)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_y_index,
         0,  # null capacity slack
-        data['vehicle_capacities_y'],  # vehicle maximum capacities
+        data["vehicle_capacities_y"],  # vehicle maximum capacities
         True,  # start cumul to zero
-        'Load_y')
+        "Load_y",
+    )
     # [END capacity_constraint]
 
     # Add constraint at end
     solver = routing.solver()
-    load_x_dim = routing.GetDimensionOrDie('Load_x')
-    load_y_dim = routing.GetDimensionOrDie('Load_y')
+    load_x_dim = routing.GetDimensionOrDie("Load_x")
+    load_y_dim = routing.GetDimensionOrDie("Load_y")
     ends = []
     for v in range(manager.GetNumberOfVehicles()):
         ends.append(routing.End(v))
 
-    node_end = data['ends'][0]
+    node_end = data["ends"][0]
     solver.Add(
-        solver.Sum([load_x_dim.CumulVar(l)
-                    for l in ends]) >= -data['providers_x'][node_end])
+        solver.Sum([load_x_dim.CumulVar(l) for l in ends])
+        >= -data["providers_x"][node_end]
+    )
     solver.Add(
-        solver.Sum([load_y_dim.CumulVar(l)
-                    for l in ends]) >= -data['providers_y'][node_end])
-    #solver.Add(load_y_dim.CumulVar(end) >= -data['providers_y'][node_end])
+        solver.Sum([load_y_dim.CumulVar(l) for l in ends])
+        >= -data["providers_y"][node_end]
+    )
+    # solver.Add(load_y_dim.CumulVar(end) >= -data['providers_y'][node_end])
 
     # Allow to freely drop any nodes.
     penalty = 0
-    for node in range(0, len(data['distance_matrix'])):
-        if node not in data['starts'] and node not in data['ends']:
+    for node in range(0, len(data["distance_matrix"])):
+        if node not in data["starts"] and node not in data["ends"]:
             routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
 
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    )
     # Sets a time limit; default is 100 milliseconds.
-    #search_parameters.log_search = True
+    # search_parameters.log_search = True
     search_parameters.time_limit.FromSeconds(1)
     # [END parameters]
 
@@ -329,10 +334,10 @@ def main():
     if solution:
         print_solution(data, manager, routing, solution)
     else:
-        print('no solution found !')
+        print("no solution found !")
     # [END print_solution]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 # [END program]
