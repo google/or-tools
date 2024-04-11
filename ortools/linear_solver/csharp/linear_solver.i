@@ -38,6 +38,8 @@
 #include "ortools/linear_solver/model_exporter.h"
 %}
 
+%template(DoubleVector) std::vector<double>;
+VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -72,9 +74,6 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 
 // Rename all the exposed classes, by removing the "MP" prefix.
 %rename (Solver) operations_research::MPSolver;
-%typemap(csimports) operations_research::MPSolver %{
-using Google.OrTools.Util;
-%}
 %rename (Variable) operations_research::MPVariable;
 %rename (Constraint) operations_research::MPConstraint;
 %rename (Objective) operations_research::MPObjective;

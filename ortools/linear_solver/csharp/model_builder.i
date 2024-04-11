@@ -19,6 +19,12 @@
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
 %}
 
+%template(IntVector) std::vector<int>;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+
+%template(DoubleVector) std::vector<double>;
+VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
+
 %module(directors="1") operations_research_model_builder
 
 %extend operations_research::ModelBuilderHelper {
@@ -40,9 +46,6 @@
 %unignore operations_research;
 
 // Wrap the ModelBuilderHelper class.
-%typemap(csimports) operations_research::ModelBuilderHelper %{
-using Google.OrTools.Util;
-%}
 %unignore operations_research::ModelBuilderHelper;
 %unignore operations_research::ModelBuilderHelper::ModelBuilderHelper;
 %unignore operations_research::ModelBuilderHelper::~ModelBuilderHelper;

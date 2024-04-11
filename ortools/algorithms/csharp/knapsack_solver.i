@@ -24,18 +24,14 @@
 
 // by default vector<vector<int64_t>> is mapped to a jagged array i.e. .Net type long[][]
 // but here we want a regular matrix i.e. .Net type long[,]
-%typemap(csimports) std::vector<std::vector<int64_t> > %{
-using Google.OrTools.Util;
-%}
+%template(Int64Vector) std::vector<int64_t>;
 %template(Int64Matrix) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
 REGULAR_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Matrix);
 
 namespace operations_research {
 
 %unignore KnapsackSolver;
-%typemap(csimports) KnapsackSolver %{
-using Google.OrTools.Util;
-%}
 %rename (UseReduction) KnapsackSolver::use_reduction;
 %rename (SetUseReduction) KnapsackSolver::set_use_reduction;
 

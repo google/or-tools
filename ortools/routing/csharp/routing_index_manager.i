@@ -28,9 +28,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
-%typemap(csimports) RoutingIndexManager %{
-using Google.OrTools.Util;
-%}
 %unignore RoutingIndexManager::GetStartIndex;
 %unignore RoutingIndexManager::GetEndIndex;
 %unignore RoutingIndexManager::IndexToNode;

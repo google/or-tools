@@ -31,7 +31,6 @@ using System.Collections.Generic;
 // before the %{ #include ".../constraint_solver.h" %}.
 namespace operations_research {
 class ConstraintSolverParameters;
-class IntTupleSet;
 class RegularLimitParameters;
 }  // namespace operations_research
 
@@ -66,6 +65,16 @@ struct FailureProtect {
   }
 };
 %}
+
+%template(IntVector) std::vector<int>;
+%template(IntVectorVector) std::vector<std::vector<int> >;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
+
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -123,6 +132,8 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 %apply int64_t * INOUT { int64_t * marker };
 %apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
+
+%include "ortools/util/csharp/tuple_set.i"
 
 // Types in Proxy class:
 // Solver.cs:
@@ -240,10 +251,6 @@ namespace operations_research {
 
 // Assignment
 %unignore Assignment;
-%typemap(csimports) Assignment %{
-using Google.OrTools.Util;
-%}
-
 // Ignored:
 %ignore Assignment::Load;
 %ignore Assignment::Save;
@@ -276,32 +283,19 @@ using Google.OrTools.Util;
 
 // SequenceVarElement
 %unignore SequenceVarElement;
-%typemap(csimports) SequenceVarElement %{
-using Google.OrTools.Util;
-%}
 // Ignored:
 %ignore SequenceVarElement::LoadFromProto;
 %ignore SequenceVarElement::WriteToProto;
 
 // ModelVisitor
 %unignore ModelVisitor;
-%typemap(csimports) ModelVisitor %{
-using Google.OrTools.Util;
-%}
 
 // SolutionCollector
 %feature("director") SolutionCollector;
-%typemap(csimports) SolutionCollector %{
-using Google.OrTools.Util;
-%}
 %unignore SolutionCollector;
 
 // Solver
 %unignore Solver;
-%typemap(csimports) Solver %{
-using System.Collections.Generic;
-using Google.OrTools.Util;
-%}
 %typemap(cscode) Solver %{
   // Store list of delegates to avoid the GC to reclaim them.
   // This avoid the GC to collect any callback (i.e. delegate) set from C#.
@@ -419,10 +413,6 @@ using Google.OrTools.Util;
 
 // IntExpr
 %unignore IntExpr;
-%typemap(csimports) IntExpr %{
-using System.Collections.Generic;
-using Google.OrTools.Util;
-%}
 %typemap(cscode) IntExpr %{
   // Keep reference to delegate to avoid GC to collect them early
   private List<VoidToVoid> closureCallbacks;
@@ -502,10 +492,6 @@ using Google.OrTools.Util;
 
 // IntVar
 %unignore IntVar;
-%typemap(csimports) IntVar %{
-using System.Collections.Generic;
-using Google.OrTools.Util;
-%}
 %typemap(cscode) IntVar %{
   // Keep reference to delegate to avoid GC to collect them early
   private List<VoidToVoid> closureCallbacks;
@@ -628,9 +614,6 @@ using Google.OrTools.Util;
 // OptimizeVar
 %feature("director") OptimizeVar;
 %unignore OptimizeVar;
-%typemap(csimports) OptimizeVar %{
-using Google.OrTools.Util;
-%}
 // Methods:
 %unignore OptimizeVar::ApplyBound;
 %unignore OptimizeVar::Print;
@@ -638,9 +621,6 @@ using Google.OrTools.Util;
 
 // SequenceVar
 %unignore SequenceVar;
-%typemap(csimports) SequenceVar %{
-using Google.OrTools.Util;
-%}
 // Ignored:
 %ignore SequenceVar::ComputePossibleFirstsAndLasts;
 %ignore SequenceVar::FillSequence;
@@ -676,22 +656,12 @@ using Google.OrTools.Util;
 
 // ModelCache
 %unignore ModelCache;
-%typemap(csimports) ModelCache %{
-using Google.OrTools.Util;
-%}
 
 // ObjectiveMonitor
 %unignore ObjectiveMonitor;
-%typemap(csimports) ObjectiveMonitor %{
-using Google.OrTools.Util;
-%}
 
 // Pack
 %unignore Pack;
-%typemap(csimports) Pack %{
-using System.Collections.Generic;
-using Google.OrTools.Util;
-%}
 %typemap(cscode) Pack %{
   // Store list of delegates to avoid the GC to reclaim them.
   private List<LongToLong> LongToLongCallbacks;
@@ -721,15 +691,9 @@ using Google.OrTools.Util;
 
 // PropagationMonitor
 %unignore PropagationMonitor;
-%typemap(csimports) PropagationMonitor %{
-using Google.OrTools.Util;
-%}
 
 // RevPartialSequence
 %unignore RevPartialSequence;
-%typemap(csimports) RevPartialSequence %{
-using Google.OrTools.Util;
-%}
 
 // SearchMonitor
 %feature("director") SearchMonitor;
@@ -743,9 +707,6 @@ using Google.OrTools.Util;
 
 // ImprovementSearchLimit
 %unignore ImprovementSearchLimit;
-%typemap(csimports) ImprovementSearchLimit %{
-using Google.OrTools.Util;
-%}
 
 // RegularLimit
 %feature("director") RegularLimit;
@@ -769,9 +730,6 @@ using Google.OrTools.Util;
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
-%typemap(csimports) LocalSearchOperator %{
-using Google.OrTools.Util;
-%}
 // Methods:
 %unignore LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Reset;
@@ -779,9 +737,6 @@ using Google.OrTools.Util;
 
 // LocalSearchOperatorState
 %unignore LocalSearchOperatorState;
-%typemap(csimports) LocalSearchOperatorState %{
-using Google.OrTools.Util;
-%}
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
@@ -994,7 +949,6 @@ PROTO2_RETURN(operations_research::CpModel,
 
 // Add needed import to ConstraintSolverGlobals.cs
 %pragma(csharp) moduleimports=%{
-using Google.OrTools.Util;
 %}
 
 namespace operations_research {

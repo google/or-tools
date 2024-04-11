@@ -84,9 +84,6 @@ namespace operations_research {
 
 // PickupDeliveryPair
 %unignore PickupDeliveryPair;
-%typemap(csimports) PickupDeliveryPair %{
-using Google.OrTools.Util; // Int64Vector
-%}
 
 }  // namespace operations_research
 
