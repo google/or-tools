@@ -18,7 +18,7 @@ distlib==0.3.7
     # via virtualenv
 filelock==3.12.2
     # via virtualenv
-idna==3.4
+idna==3.7
     # via requests
 immutabledict==3.0.0
     # via -r ortools_requirements.in
