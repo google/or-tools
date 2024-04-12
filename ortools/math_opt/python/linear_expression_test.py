@@ -37,6 +37,7 @@ _QUADRATIC_TYPES = (
 
 
 class BoundedExprTest(absltest.TestCase):
+
     def test_eq_float(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -334,6 +335,7 @@ class BoundedExprTest(absltest.TestCase):
 
 
 class BoundedExprErrorTest(absltest.TestCase):
+
     def test_ne(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -589,6 +591,7 @@ class BoundedExprErrorTest(absltest.TestCase):
 
 
 class BoundedExprStrAndReprTest(absltest.TestCase):
+
     def test_upper_bounded_expr(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -628,6 +631,7 @@ class BoundedExprStrAndReprTest(absltest.TestCase):
 
 # TODO(b/216492143): change __str__ to match C++ implementation in cl/421649402.
 class LinearStrAndReprTest(parameterized.TestCase):
+
     def test_sorting_ok(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -720,6 +724,7 @@ class LinearStrAndReprTest(parameterized.TestCase):
 
 # TODO(b/216492143): change __str__ to match C++ implementation in cl/421649402.
 class QuadraticStrAndReprTest(parameterized.TestCase):
+
     def test_sorting_ok(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -858,6 +863,7 @@ def all_linear_number_op_parameters() -> List[LinearNumberOpTestsParameters]:
 
 # Test all operations (including inplace) between a number and a Linear object
 class LinearNumberOpTests(parameterized.TestCase):
+
     @parameterized.named_parameters(
         (p.test_suffix(), p.linear_type, p.constant, p.linear_first)
         for p in all_linear_number_op_parameters()
@@ -1087,6 +1093,7 @@ class LinearNumberOpTests(parameterized.TestCase):
 
 
 class QuadraticTermKey(absltest.TestCase):
+
     # Mock QuadraticTermKey.__hash__ to have a collision in the dictionary lookup
     # so that a correct behavior of term1 == term2 is needed to recover the
     # values. For instance, if QuadraticTermKey.__eq__ only compared equality of
@@ -1141,6 +1148,7 @@ def all_quadratic_number_op_parameters() -> List[QuadraticNumberOpTestsParameter
     for p in all_quadratic_number_op_parameters()
 )
 class QuadraticNumberOpTests(parameterized.TestCase):
+
     def test_mult(
         self,
         quadratic_type: str,
@@ -1436,6 +1444,7 @@ def all_linear_linear_add_sub_params() -> List[LinearLinearAddSubTestParams]:
 
 # Test add/sub operations (including inplace) between two Linear objects.
 class LinearLinearAddSubTest(parameterized.TestCase):
+
     @parameterized.named_parameters(
         (p.test_suffix(), p.lhs_type, p.rhs_type, p.subtract)
         for p in all_linear_linear_add_sub_params()
@@ -1543,6 +1552,7 @@ def all_linear_quadratic_add_sub_params() -> List[LinearQuadraticAddSubTestParam
 # objects. Also re-checks the operations for the pure Linear check when the
 # result is intereted as a QuadraticExpression.
 class LinearQuadraticAddSubTest(parameterized.TestCase):
+
     def assertDictEqualWithZeroDefault(
         self, dict1: dict[Any, float], dict2: dict[Any, float]
     ) -> None:
@@ -1710,6 +1720,7 @@ class LinearQuadraticAddSubTest(parameterized.TestCase):
 
 # Test multiplication of two Linear objects.
 class LinearLinearMulTest(parameterized.TestCase):
+
     def assertDictEqualWithZeroDefault(
         self, dict1: dict[Any, float], dict2: dict[Any, float]
     ) -> None:
@@ -2038,6 +2049,7 @@ class LinearLinearMulTest(parameterized.TestCase):
 
 # Test negate on Linear and Quadratic objects.
 class NegateTest(parameterized.TestCase):
+
     def test_negate_var(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -2230,6 +2242,7 @@ def get_linear_or_quadratic_for_unsupported_operand_test(
 
 
 class UnsupportedProductOperandTest(parameterized.TestCase):
+
     @parameterized.named_parameters(
         (p.test_suffix(), p.lhs_type, p.rhs_type)
         for p in all_unsupported_product_operand_params()
@@ -2308,6 +2321,7 @@ def all_unsupported_addition_operand_params() -> (
     for p in all_unsupported_addition_operand_params()
 )
 class UnsupportedAdditionOperandTest(parameterized.TestCase):
+
     def test_add(
         self, linear_or_quadratic_type: str, linear_or_quadratic_first: bool
     ) -> None:
@@ -2382,6 +2396,7 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
 
 
 class UnsupportedInitializationTest(parameterized.TestCase):
+
     def test_linear_sum_not_tuple(self):
         # pytype: disable=wrong-arg-types
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
@@ -2469,6 +2484,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
 
 @parameterized.named_parameters(("_python_sum", True), ("LinearSum", False))
 class SumTest(parameterized.TestCase):
+
     def test_sum_vars(self, python_sum: bool) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
@@ -2637,6 +2653,7 @@ class SumTest(parameterized.TestCase):
 
 
 class AstTest(parameterized.TestCase):
+
     def assertDictEqualWithZeroDefault(
         self, dict1: dict[Any, float], dict2: dict[Any, float]
     ) -> None:
@@ -2739,6 +2756,7 @@ class AstTest(parameterized.TestCase):
 # Test behavior of LinearExpression and as_flat_linear_expression that is
 # not covered by other tests.
 class LinearExpressionTest(absltest.TestCase):
+
     def test_init_to_zero(self) -> None:
         expression = model.LinearExpression()
         self.assertEqual(expression.offset, 0.0)
@@ -2775,6 +2793,7 @@ class LinearExpressionTest(absltest.TestCase):
 # Test behavior of QuadraticExpression and as_flat_quadratic_expression that is
 # not covered by other tests.
 class QuadraticExpressionTest(absltest.TestCase):
+
     def test_terms_read_only(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable(name="x")

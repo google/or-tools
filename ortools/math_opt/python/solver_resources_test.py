@@ -21,6 +21,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class SolverResourcesTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_to_proto_empty(self):
         self.assert_protos_equiv(
             solver_resources.SolverResources().to_proto(),

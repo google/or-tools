@@ -25,6 +25,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class CallbackDataTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_parse_callback_data_no_solution(self) -> None:
         mod = model.Model(name="test_model")
         cb_data_proto = callback_pb2.CallbackDataProto(
@@ -86,6 +87,7 @@ class CallbackDataTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
 
 class CallbackRegistrationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -123,6 +125,7 @@ class CallbackRegistrationTest(compare_proto.MathOptProtoAssertions, absltest.Te
 class GeneratedLinearConstraintTest(
     compare_proto.MathOptProtoAssertions, absltest.TestCase
 ):
+
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -148,6 +151,7 @@ class GeneratedLinearConstraintTest(
 
 
 class CallbackResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def testToProto(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")

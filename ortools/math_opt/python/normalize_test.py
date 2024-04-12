@@ -26,6 +26,7 @@ from ortools.math_opt.python import normalize
 
 
 class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
+
     def test_removes_empty_message(self) -> None:
         model_with_empty_vars = model_pb2.ModelProto()
         model_with_empty_vars.variables.SetInParent()

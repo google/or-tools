@@ -117,6 +117,7 @@ class StorageUpdateTracker(abc.ABC):
 
 
 class UsedUpdateTrackerAfterRemovalError(RuntimeError):
+
     def __init__(self):
         super().__init__(
             "Attempted to use update tracker after removing it from model storage."

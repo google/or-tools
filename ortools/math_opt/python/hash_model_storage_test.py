@@ -19,6 +19,7 @@ from ortools.math_opt.python import hash_model_storage
 
 
 class HashModelStorageTest(absltest.TestCase):
+
     def test_quadratic_term_storage(self):
         storage = hash_model_storage._QuadraticTermStorage()
         storage.set_coefficient(0, 1, 1.0)
