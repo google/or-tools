@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -214,8 +215,17 @@ int SharedTreeManager::NumNodes() const {
 
 int SharedTreeManager::SplitsToGeneratePerWorker() const {
   absl::MutexLock mutex_lock(&mu_);
-  return std::min<int>(num_splits_wanted_ / 2 + 1,
-                       max_nodes_ - static_cast<int>(nodes_.size()));
+  const int max_additional_nodes = max_nodes_ - static_cast<int>(nodes_.size());
+  const int total_splits_wanted =
+      std::min(num_splits_wanted_,
+               // Each split generates 2 nodes, so divide by 2, rounding up.
+               CeilOfRatio(max_additional_nodes, 2));
+  // We want workers to propose too many splits as we expect to reject some,
+  // and it's more efficient to generate several splits on the same worker
+  // restart so we don't want to divide by num_workers_.
+  // But we also don't want more than half the splits to come from a single
+  // restart on a single worker so we divide by 2.
+  return CeilOfRatio(total_splits_wanted, 2);
 }
 
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
@@ -246,7 +256,7 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   }
   // Restart after processing updates - we might learn a new objective bound.
   if (++num_syncs_since_restart_ / num_workers_ > kSyncsPerWorkerPerRestart &&
-      (num_restarts_ < kNumInitialRestarts || nodes_.size() >= max_nodes_)) {
+      num_restarts_ < kNumInitialRestarts) {
     RestartLockHeld();
     path.Clear();
     return false;
@@ -278,6 +288,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     VLOG(2) << "Enough splits for now";
     return;
   }
+  const int num_desired_leaves =
+      params_.shared_tree_open_leaves_per_worker() * num_workers_;
   if (params_.shared_tree_split_strategy() ==
           SatParameters::SPLIT_STRATEGY_DISCREPANCY ||
       params_.shared_tree_split_strategy() ==
@@ -293,7 +305,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     // TODO(user): Need to write up the shape this creates.
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + path.MaxLevel() >
-        MaxAllowedDiscrepancyPlusDepth(num_workers_)) {
+        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves)) {
       VLOG(2) << "Too high discrepancy to accept split";
       return;
     }
@@ -307,7 +319,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
-    if (path.MaxLevel() + 1 > log2(num_workers_)) {
+    if (path.MaxLevel() + 1 > log2(num_desired_leaves)) {
       VLOG(2) << "Tree too unbalanced to accept split";
       return;
     }
@@ -375,12 +387,15 @@ SharedTreeManager::Node* SharedTreeManager::MakeSubtree(Node* parent,
 }
 
 void SharedTreeManager::ProcessNodeChanges() {
+  int num_newly_closed = 0;
   while (!to_close_.empty()) {
     Node* node = to_close_.back();
     CHECK_NE(node, nullptr);
     to_close_.pop_back();
     // Iterate over open parents while each sibling is closed.
     while (node != nullptr && !node->closed) {
+      ++num_newly_closed;
+      ++num_closed_nodes_;
       node->closed = true;
       node->objective_lb = kMaxIntegerValue;
       // If we are closing a leaf, try to maintain the same number of leaves;
@@ -403,6 +418,13 @@ void SharedTreeManager::ProcessNodeChanges() {
     } else {
       to_update_.push_back(node->parent);
     }
+  }
+  if (num_newly_closed > 0) {
+    shared_response_manager_->LogMessageWithThrottling(
+        "Tree", absl::StrCat("nodes:", nodes_.size(), "/", max_nodes_,
+                             " closed:", num_closed_nodes_,
+                             " unassigned:", unassigned_leaves_.size(),
+                             " restarts:", num_restarts_));
   }
   bool root_updated = false;
   while (!to_update_.empty()) {
@@ -491,6 +513,7 @@ void SharedTreeManager::RestartLockHeld() {
   unassigned_leaves_.clear();
   num_splits_wanted_ =
       num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1;
+  num_closed_nodes_ = 0;
   num_restarts_ += 1;
   num_syncs_since_restart_ = 0;
 }
@@ -663,9 +686,8 @@ void SharedTreeWorker::MaybeProposeSplit() {
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
-      assigned_tree_literals_.push_back(split_decision);
       --splits_wanted_;
-      CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
+      assigned_tree_literals_.push_back(split_decision);
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   }
