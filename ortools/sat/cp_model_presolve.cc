@@ -762,27 +762,185 @@ bool CpModelPresolver::DivideLinMaxByGcd(int c, ConstraintProto* ct) {
   return true;
 }
 
-bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-  if (HasEnforcementLiteral(*ct)) return false;
-  const LinearExpressionProto& target = ct->lin_max().target();
+namespace {
 
-  // x = max(x, xi...) => forall i, x >= xi.
-  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-    if (LinearExpressionProtosAreEqual(expr, target)) {
-      for (const LinearExpressionProto& e : ct->lin_max().exprs()) {
-        if (LinearExpressionProtosAreEqual(e, target)) continue;
-        LinearConstraintProto* prec =
-            context_->working_model->add_constraints()->mutable_linear();
-        prec->add_domain(0);
-        prec->add_domain(std::numeric_limits<int64_t>::max());
-        AddLinearExpressionToLinearConstraint(target, 1, prec);
-        AddLinearExpressionToLinearConstraint(e, -1, prec);
-      }
-      context_->UpdateRuleStats("lin_max: x = max(x, ...)");
-      return RemoveConstraint(ct);
+int64_t EvaluateSingleVariableExpression(const LinearExpressionProto& expr,
+                                         int var, int64_t value) {
+  int64_t result = expr.offset();
+  for (int i = 0; i < expr.vars().size(); ++i) {
+    CHECK_EQ(expr.vars(i), var);
+    result += expr.coeffs(i) * value;
+  }
+  return result;
+}
+
+template <class ExpressionList>
+int GetFirstVar(ExpressionList exprs) {
+  for (const LinearExpressionProto& expr : exprs) {
+    for (const int var : expr.vars()) {
+      DCHECK(RefIsPositive(var));
+      return var;
     }
   }
+  return -1;
+}
+
+bool IsAffineIntAbs(const ConstraintProto& ct) {
+  if (ct.constraint_case() != ConstraintProto::kLinMax ||
+      ct.lin_max().exprs_size() != 2 || ct.lin_max().target().vars_size() > 1 ||
+      ct.lin_max().exprs(0).vars_size() != 1 ||
+      ct.lin_max().exprs(1).vars_size() != 1) {
+    return false;
+  }
+
+  const LinearArgumentProto& lin_max = ct.lin_max();
+  if (lin_max.exprs(0).offset() != -lin_max.exprs(1).offset()) return false;
+  if (PositiveRef(lin_max.exprs(0).vars(0)) !=
+      PositiveRef(lin_max.exprs(1).vars(0))) {
+    return false;
+  }
+
+  const int64_t left_coeff = RefIsPositive(lin_max.exprs(0).vars(0))
+                                 ? lin_max.exprs(0).coeffs(0)
+                                 : -lin_max.exprs(0).coeffs(0);
+  const int64_t right_coeff = RefIsPositive(lin_max.exprs(1).vars(0))
+                                  ? lin_max.exprs(1).coeffs(0)
+                                  : -lin_max.exprs(1).coeffs(0);
+  return left_coeff == -right_coeff;
+}
+
+}  // namespace
+
+bool CpModelPresolver::PropagateAndReduceAffineMax(ConstraintProto* ct) {
+  // Get the unique variable appearing in the expressions.
+  const int unique_var = GetFirstVar(ct->lin_max().exprs());
+
+  const auto& lin_max = ct->lin_max();
+  const int num_exprs = lin_max.exprs_size();
+  const auto& target = lin_max.target();
+  std::vector<int> num_wins(num_exprs, 0);
+  std::vector<int64_t> reachable_target_values;
+  std::vector<int64_t> valid_variable_values;
+  std::vector<int64_t> tmp_values(num_exprs);
+
+  const bool target_has_same_unique_var =
+      target.vars_size() == 1 && target.vars(0) == unique_var;
+
+  CHECK_LE(context_->DomainOf(unique_var).Size(), 1000);
+
+  for (const int64_t value : context_->DomainOf(unique_var).Values()) {
+    int64_t current_max = std::numeric_limits<int64_t>::min();
+
+    // Fill tmp_values and compute current_max;
+    for (int i = 0; i < num_exprs; ++i) {
+      const int64_t v =
+          EvaluateSingleVariableExpression(lin_max.exprs(i), unique_var, value);
+      current_max = std::max(current_max, v);
+      tmp_values[i] = v;
+    }
+
+    // Check if any expr produced a value compatible with the target.
+    if (!context_->DomainContains(target, current_max)) continue;
+
+    // Special case: affine(x) == max(exprs(x)). We can check if the affine()
+    // and the max(exprs) are compatible.
+    if (target_has_same_unique_var &&
+        EvaluateSingleVariableExpression(target, unique_var, value) !=
+            current_max) {
+      continue;
+    }
+
+    valid_variable_values.push_back(value);
+    reachable_target_values.push_back(current_max);
+    for (int i = 0; i < num_exprs; ++i) {
+      DCHECK_LE(tmp_values[i], current_max);
+      if (tmp_values[i] == current_max) {
+        num_wins[i]++;
+      }
+    }
+  }
+
+  if (reachable_target_values.empty() || valid_variable_values.empty()) {
+    context_->UpdateRuleStats("lin_max: infeasible affine_max constraint");
+    return MarkConstraintAsFalse(ct);
+  }
+
+  {
+    bool reduced = false;
+    if (!context_->IntersectDomainWith(
+            target, Domain::FromValues(reachable_target_values), &reduced)) {
+      return true;
+    }
+    if (reduced) {
+      context_->UpdateRuleStats("lin_max: affine_max target domain reduced");
+    }
+  }
+
+  {
+    bool reduced = false;
+    if (!context_->IntersectDomainWith(
+            unique_var, Domain::FromValues(valid_variable_values), &reduced)) {
+      return true;
+    }
+    if (reduced) {
+      context_->UpdateRuleStats(
+          "lin_max: unique affine_max var domain reduced");
+    }
+  }
+
+  // If one expression always wins, even tied, we can eliminate all the others.
+  for (int i = 0; i < num_exprs; ++i) {
+    if (num_wins[i] == valid_variable_values.size()) {
+      const LinearExpressionProto winner_expr = lin_max.exprs(i);
+      ct->mutable_lin_max()->clear_exprs();
+      *ct->mutable_lin_max()->add_exprs() = winner_expr;
+      break;
+    }
+  }
+
+  bool changed = false;
+  if (ct->lin_max().exprs_size() > 1) {
+    int new_size = 0;
+    for (int i = 0; i < num_exprs; ++i) {
+      if (num_wins[i] == 0) continue;
+      *ct->mutable_lin_max()->mutable_exprs(new_size) = ct->lin_max().exprs(i);
+      new_size++;
+    }
+    if (new_size < ct->lin_max().exprs_size()) {
+      context_->UpdateRuleStats("lin_max: removed affine_max exprs");
+      google::protobuf::util::Truncate(ct->mutable_lin_max()->mutable_exprs(),
+                                       new_size);
+      changed = true;
+    }
+  }
+
+  if (context_->IsFixed(target)) {
+    context_->UpdateRuleStats("lin_max: fixed affine_max target");
+    return RemoveConstraint(ct);
+  }
+
+  if (target_has_same_unique_var) {
+    context_->UpdateRuleStats("lin_max: target_affine(x) = max(affine_i(x))");
+    return RemoveConstraint(ct);
+  }
+
+  // Remove the affine_max constraint if the target is removable and if domains
+  // have been propagated without loss. For now, we known that there is no loss
+  // if the target is a single ref. Since all the expression are affine, in this
+  // case we are fine.
+  if (ExpressionContainsSingleRef(target) &&
+      context_->VariableIsUniqueAndRemovable(target.vars(0))) {
+    context_->MarkVariableAsRemoved(target.vars(0));
+    *context_->mapping_model->add_constraints() = *ct;
+    context_->UpdateRuleStats("lin_max: unused affine_max target");
+    return RemoveConstraint(ct);
+  }
+
+  return changed;
+}
+
+bool CpModelPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
+  const LinearExpressionProto& target = ct->lin_max().target();
 
   // Compute the infered min/max of the target.
   // Update target domain (if it is not a complex expression).
@@ -819,7 +977,6 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
 
   // Filter the expressions which are smaller than target_min.
   const int64_t target_min = context_->MinOf(target);
-  const int64_t target_max = context_->MaxOf(target);
   bool changed = false;
   {
     // If one expression is >= target_min,
@@ -864,6 +1021,59 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
     }
   }
 
+  return changed;
+}
+
+bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
+  const LinearExpressionProto& target = ct->lin_max().target();
+
+  // x = max(x, xi...) => forall i, x >= xi.
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    if (LinearExpressionProtosAreEqual(expr, target)) {
+      for (const LinearExpressionProto& e : ct->lin_max().exprs()) {
+        if (LinearExpressionProtosAreEqual(e, target)) continue;
+        LinearConstraintProto* prec =
+            context_->working_model->add_constraints()->mutable_linear();
+        prec->add_domain(0);
+        prec->add_domain(std::numeric_limits<int64_t>::max());
+        AddLinearExpressionToLinearConstraint(target, 1, prec);
+        AddLinearExpressionToLinearConstraint(e, -1, prec);
+      }
+      context_->UpdateRuleStats("lin_max: x = max(x, ...)");
+      return RemoveConstraint(ct);
+    }
+  }
+
+  const bool is_one_var_affine_max =
+      ExpressionsContainsOnlyOneVar(ct->lin_max().exprs()) &&
+      ct->lin_max().target().vars_size() <= 1;
+  bool unique_var_is_small_enough = false;
+  const bool is_int_abs = IsAffineIntAbs(*ct);
+
+  if (is_one_var_affine_max) {
+    const int unique_var = GetFirstVar(ct->lin_max().exprs());
+    unique_var_is_small_enough = context_->DomainOf(unique_var).Size() <= 1000;
+  }
+
+  // This is a test.12y
+
+  bool changed;
+  if (is_one_var_affine_max && unique_var_is_small_enough) {
+    changed = PropagateAndReduceAffineMax(ct);
+  } else if (is_int_abs) {
+    changed = PropagateAndReduceIntAbs(ct);
+  } else {
+    changed = PropagateAndReduceLinMax(ct);
+  }
+
+  if (context_->ModelIsUnsat()) return false;
+  if (ct->constraint_case() != ConstraintProto::kLinMax) {
+    // The constraint was removed by the propagate helpers.
+    return changed;
+  }
+
   if (ct->lin_max().exprs().empty()) {
     context_->UpdateRuleStats("lin_max: no exprs");
     return MarkConstraintAsFalse(ct);
@@ -895,6 +1105,8 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
   // Cut everything above the max if possible.
   // If one of the linear expression has many term and is above the max, we
   // abort early since none of the other rule can be applied.
+  const int64_t target_min = context_->MinOf(target);
+  const int64_t target_max = context_->MaxOf(target);
   {
     bool abort = false;
     for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
@@ -1133,8 +1345,9 @@ bool CpModelPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
   return RemoveConstraint(ct);
 }
 
-// This presolve expect that the constraint only contains affine expressions.
-bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
+// This presolve expect that the constraint only contains 1-var affine
+// expressions.
+bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   CHECK_EQ(ct->enforcement_literal_size(), 0);
   if (context_->ModelIsUnsat()) return false;
   const LinearExpressionProto& target_expr = ct->lin_max().target();
@@ -1153,11 +1366,11 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
       return false;
     }
     if (expr_domain.IsFixed()) {
-      context_->UpdateRuleStats("int_abs: fixed expression");
+      context_->UpdateRuleStats("lin_max: fixed expression in int_abs");
       return RemoveConstraint(ct);
     }
     if (target_domain_modified) {
-      context_->UpdateRuleStats("int_abs: propagate domain from x to abs(x)");
+      context_->UpdateRuleStats("lin_max: propagate domain from x to abs(x)");
     }
   }
 
@@ -1176,17 +1389,17 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
     // This is the only reason why we don't support fully generic linear
     // expression.
     if (context_->IsFixed(target_expr)) {
-      context_->UpdateRuleStats("int_abs: fixed target");
+      context_->UpdateRuleStats("lin_max: fixed abs target");
       return RemoveConstraint(ct);
     }
     if (expr_domain_modified) {
-      context_->UpdateRuleStats("int_abs: propagate domain from abs(x) to x");
+      context_->UpdateRuleStats("lin_max: propagate domain from abs(x) to x");
     }
   }
 
   // Convert to equality if the sign of expr is fixed.
   if (context_->MinOf(expr) >= 0) {
-    context_->UpdateRuleStats("int_abs: converted to equality");
+    context_->UpdateRuleStats("lin_max: converted abs to equality");
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     new_ct->set_name(ct->name());
     auto* arg = new_ct->mutable_linear();
@@ -1200,7 +1413,7 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
   }
 
   if (context_->MaxOf(expr) <= 0) {
-    context_->UpdateRuleStats("int_abs: converted to equality");
+    context_->UpdateRuleStats("lin_max: converted abs to equality");
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     new_ct->set_name(ct->name());
     auto* arg = new_ct->mutable_linear();
@@ -1221,7 +1434,7 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
       context_->VariableIsUniqueAndRemovable(target_expr.vars(0))) {
     context_->MarkVariableAsRemoved(target_expr.vars(0));
     *context_->mapping_model->add_constraints() = *ct;
-    context_->UpdateRuleStats("int_abs: unused target");
+    context_->UpdateRuleStats("lin_max: unused abs target");
     return RemoveConstraint(ct);
   }
 
@@ -1514,7 +1727,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   return RemoveConstraint(ct);
 }
 
-bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
+bool CpModelPresolver::PresolveIntDiv(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   const LinearExpressionProto target = ct->int_div().target();
@@ -1533,6 +1746,34 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     }
     context_->UpdateRuleStats("int_div: y = - x / x");
     return RemoveConstraint(ct);
+  }
+
+  // Sometimes we have only a single variable appearing in the whole constraint.
+  // If the domain is small enough, we can just restrict the domain and remove
+  // the constraint.
+  if (ct->enforcement_literal().empty() &&
+      context_->ConstraintToVars(c).size() == 1) {
+    const int var = context_->ConstraintToVars(c)[0];
+    if (context_->DomainOf(var).Size() >= 100) {
+      context_->UpdateRuleStats(
+          "TODO int_div: single variable with large domain");
+    } else {
+      std::vector<int64_t> possible_values;
+      for (const int64_t v : context_->DomainOf(var).Values()) {
+        const int64_t target_v =
+            EvaluateSingleVariableExpression(target, var, v);
+        const int64_t expr_v = EvaluateSingleVariableExpression(expr, var, v);
+        const int64_t div_v = EvaluateSingleVariableExpression(div, var, v);
+        if (div_v == 0) continue;
+        if (target_v == expr_v / div_v) {
+          possible_values.push_back(v);
+        }
+      }
+      (void)context_->IntersectDomainWith(var,
+                                          Domain::FromValues(possible_values));
+      context_->UpdateRuleStats("int_div: single variable");
+      return RemoveConstraint(ct);
+    }
   }
 
   // For now, we only presolve the case where the divisor is constant.
@@ -7796,34 +8037,6 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   }
 }
 
-namespace {
-
-bool IsAffineIntAbs(const ConstraintProto& ct) {
-  if (ct.constraint_case() != ConstraintProto::kLinMax ||
-      ct.lin_max().exprs_size() != 2 || ct.lin_max().target().vars_size() > 1 ||
-      ct.lin_max().exprs(0).vars_size() != 1 ||
-      ct.lin_max().exprs(1).vars_size() != 1) {
-    return false;
-  }
-
-  const LinearArgumentProto& lin_max = ct.lin_max();
-  if (lin_max.exprs(0).offset() != -lin_max.exprs(1).offset()) return false;
-  if (PositiveRef(lin_max.exprs(0).vars(0)) !=
-      PositiveRef(lin_max.exprs(1).vars(0))) {
-    return false;
-  }
-
-  const int64_t left_coeff = RefIsPositive(lin_max.exprs(0).vars(0))
-                                 ? lin_max.exprs(0).coeffs(0)
-                                 : -lin_max.exprs(0).coeffs(0);
-  const int64_t right_coeff = RefIsPositive(lin_max.exprs(1).vars(0))
-                                  ? lin_max.exprs(1).coeffs(0)
-                                  : -lin_max.exprs(1).coeffs(0);
-  return left_coeff == -right_coeff;
-}
-
-}  // namespace
-
 bool CpModelPresolver::PresolveOneConstraint(int c) {
   if (context_->ModelIsUnsat()) return false;
   ConstraintProto* ct = context_->working_model->mutable_constraints(c);
@@ -7855,11 +8068,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (!DivideLinMaxByGcd(c, ct)) return false;
-      if (IsAffineIntAbs(*ct)) {
-        return PresolveIntAbs(ct);
-      } else {
-        return PresolveLinMax(ct);
-      }
+      return PresolveLinMax(ct);
     case ConstraintProto::kIntProd:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_prod())) {
         context_->UpdateConstraintVariableUsage(c);
@@ -7869,7 +8078,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_div())) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      return PresolveIntDiv(ct);
+      return PresolveIntDiv(c, ct);
     case ConstraintProto::kIntMod:
       if (CanonicalizeLinearArgument(*ct, ct->mutable_int_mod())) {
         context_->UpdateConstraintVariableUsage(c);

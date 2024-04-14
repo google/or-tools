@@ -113,8 +113,7 @@ class CpModelPresolver {
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);
-  bool PresolveIntAbs(ConstraintProto* ct);
-  bool PresolveIntDiv(ConstraintProto* ct);
+  bool PresolveIntDiv(int c, ConstraintProto* ct);
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
@@ -122,6 +121,9 @@ class CpModelPresolver {
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
+  bool PropagateAndReduceAffineMax(ConstraintProto* ct);
+  bool PropagateAndReduceIntAbs(ConstraintProto* ct);
+  bool PropagateAndReduceLinMax(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
   void DetectDuplicateIntervals(
       int c, google::protobuf::RepeatedField<int32_t>* intervals);

@@ -1048,7 +1048,8 @@ message SatParameters {
     // bounds are equal. This rule allows twice as many workers to work in the
     // preferred subtree as non-preferred.
     SPLIT_STRATEGY_DISCREPANCY = 1;
-    // Only split nodes with an objective lb equal to the global lb.
+    // Only split nodes with an objective lb equal to the global lb. If there is
+    // no objective, this is equivalent to SPLIT_STRATEGY_FIRST_PROPOSAL.
     SPLIT_STRATEGY_OBJECTIVE_LB = 2;
     // Attempt to keep the shared tree balanced.
     SPLIT_STRATEGY_BALANCED_TREE = 3;

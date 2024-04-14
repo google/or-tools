@@ -27,6 +27,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"

@@ -233,6 +233,11 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
   ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_pushed);
 
+  // Returns (slack, num_to_push) of the given constraint.
+  // If slack < 0 we have a conflict or might push the enforcement.
+  // If slack >= 0 the first num_to_push variables can be pushed.
+  std::pair<IntegerValue, int> AnalyzeConstraint(int id);
+
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
   void AddToQueueIfNeeded(int id);
@@ -250,6 +255,7 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
   PrecedenceRelations* precedences_;
+  ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
 
