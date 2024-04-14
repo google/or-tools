@@ -248,7 +248,7 @@ struct PairwiseRestriction {
 // Find pair of items that are either in conflict or could have their range
 // shrinked to avoid conflict.
 void AppendPairwiseRestrictions(
-    const std::vector<ItemForPairwiseRestriction>& items,
+    absl::Span<const ItemForPairwiseRestriction> items,
     std::vector<PairwiseRestriction>* result);
 
 // Same as above, but test `items` against `other_items` and append the

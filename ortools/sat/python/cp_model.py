@@ -324,7 +324,9 @@ class LinearExpr:
         if num_elements == 0:
             return offset
         elif num_elements == 1:
-            return IntVar(model, proto.vars[0], None) * proto.coeffs[0] + offset
+            return (
+                IntVar(model, proto.vars[0], None) * proto.coeffs[0] + offset
+            )  # pytype: disable=bad-return-type
         else:
             variables = []
             coeffs = []

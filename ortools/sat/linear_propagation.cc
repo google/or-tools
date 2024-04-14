@@ -39,6 +39,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -477,6 +478,7 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
       precedences_(model->GetOrCreate<PrecedenceRelations>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)) {
   // Note that we need this class always in sync.
@@ -760,7 +762,7 @@ void LinearPropagator::CanonicalizeConstraint(int id) {
 }
 
 // TODO(user): template everything for the case info.all_coeffs_are_one ?
-bool LinearPropagator::PropagateOneConstraint(int id) {
+std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
   // This is here for development purpose, it is a bit too slow to check by
   // default though, even VLOG_IS_ON(1) so we disable it.
   if (/* DISABLES CODE */ (false)) {
@@ -803,7 +805,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       unenforced_constraints_.push_back(id);
     }
     ++num_ignored_;
-    return true;
+    return {0, 0};
   }
 
   // Compute the slack and max_variations_ of each variables.
@@ -866,16 +868,45 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       }
     }
   }
+
+  // What we call slack here is the "room" between the implied_lb and the rhs.
+  // Note that we use slack in other context in this file too.
   const IntegerValue slack = info.rev_rhs - implied_lb;
 
   // Negative slack means the constraint is false.
-  if (max_variation <= slack) return true;
+  // Note that if max_variation > slack, we are sure to propagate something
+  // except if the constraint is enforced and the slack is non-negative.
+  if (slack < 0 || max_variation <= slack) return {slack, 0};
+  if (enf_status == EnforcementStatus::IS_ENFORCED) {
+    // Swap the variable(s) that will be pushed at the beginning.
+    int num_to_push = 0;
+    const auto coeffs = GetCoeffs(info);
+    for (int i = 0; i < info.rev_size; ++i) {
+      if (max_variations[i] <= slack) continue;
+      std::swap(vars[i], vars[num_to_push]);
+      std::swap(coeffs[i], coeffs[num_to_push]);
+      ++num_to_push;
+    }
+    return {slack, num_to_push};
+  }
+  return {slack, 0};
+}
+
+bool LinearPropagator::PropagateOneConstraint(int id) {
+  // The slack is const after this.
+  const auto [slack, num_to_push] = AnalyzeConstraint(id);
+  if (slack >= 0 && num_to_push == 0) return true;
+
+  // We are sure to propagate something at this stage.
   id_propagated_something_[id] = true;
+  const ConstraintInfo& info = infos_[id];
+  const auto vars = GetVariables(info);
+  const auto coeffs = GetCoeffs(info);
+
   if (slack < 0) {
     // Fill integer reason.
     integer_reason_.clear();
     reason_coeffs_.clear();
-    const auto coeffs = GetCoeffs(info);
     for (int i = 0; i < info.initial_size; ++i) {
       const IntegerVariable var = vars[i];
       if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
@@ -893,17 +924,13 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // We can only propagate more if all the enforcement literals are true.
-  if (info.enf_status != static_cast<int>(EnforcementStatus::IS_ENFORCED)) {
-    return true;
-  }
+  // But this should have been checked by SkipConstraint().
+  CHECK_EQ(info.enf_status, static_cast<int>(EnforcementStatus::IS_ENFORCED));
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   int num_pushed = 0;
-  const auto coeffs = GetCoeffs(info);
-  for (int i = 0; i < info.rev_size; ++i) {
-    if (max_variations[i] <= slack) continue;
-
+  for (int i = 0; i < num_to_push; ++i) {
     // TODO(user): If the new ub fall into an hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     ++num_pushes_;
