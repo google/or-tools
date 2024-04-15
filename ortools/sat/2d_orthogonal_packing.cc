@@ -561,9 +561,14 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
 
 bool OrthogonalPackingInfeasibilityDetector::RelaxConflictWithBruteForce(
     OrthogonalPackingResult& result,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    int brute_force_threshold) {
   const int num_items_originally =
       result.items_participating_on_conflict_.size();
+  if (num_items_originally > 2 * brute_force_threshold) {
+    // Don't even try on problems too big.
+    return false;
+  }
   std::vector<IntegerValue> sizes_x;
   std::vector<IntegerValue> sizes_y;
   std::vector<int> indexes;
@@ -582,9 +587,9 @@ bool OrthogonalPackingInfeasibilityDetector::RelaxConflictWithBruteForce(
       sizes_x.push_back(result.items_participating_on_conflict_[j].size_x);
       sizes_y.push_back(result.items_participating_on_conflict_[j].size_y);
     }
-    const auto solution =
-        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
-    if (solution.empty()) {
+    const auto solution = BruteForceOrthogonalPacking(
+        sizes_x, sizes_y, bounding_box_size, brute_force_threshold);
+    if (solution.status == BruteForceResult::Status::kNoSolutionExists) {
       // We still have a conflict if we remove the i-th item!
       to_be_removed[i] = true;
     }
@@ -791,28 +796,26 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     }
   }
 
-  if (result.result_ == OrthogonalPackingResult::Status::UNKNOWN &&
-      num_items <= options.brute_force_threshold) {
-    num_brute_force_calls_++;
-    auto solution =
-        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
-    if (solution.empty()) {
+  if (result.result_ == OrthogonalPackingResult::Status::UNKNOWN) {
+    auto solution = BruteForceOrthogonalPacking(
+        sizes_x, sizes_y, bounding_box_size, options.brute_force_threshold);
+    num_brute_force_calls_ +=
+        (solution.status != BruteForceResult::Status::kTooBig);
+    if (solution.status == BruteForceResult::Status::kNoSolutionExists) {
       result.conflict_type_ = ConflictType::BRUTE_FORCE;
       result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
       result.items_participating_on_conflict_.resize(num_items);
       for (int i = 0; i < num_items; i++) {
         result.items_participating_on_conflict_[i] = make_item(i);
       }
-    } else {
+    } else if (solution.status == BruteForceResult::Status::kFoundSolution) {
       result.result_ = OrthogonalPackingResult::Status::FEASIBLE;
     }
   }
 
-  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE &&
-      result.items_participating_on_conflict_.size() <=
-          options.brute_force_threshold) {
-    num_brute_force_relaxation_ +=
-        RelaxConflictWithBruteForce(result, bounding_box_size);
+  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE) {
+    num_brute_force_relaxation_ += RelaxConflictWithBruteForce(
+        result, bounding_box_size, options.brute_force_threshold);
   }
 
   return result;

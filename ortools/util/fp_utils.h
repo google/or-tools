@@ -215,9 +215,9 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 //  -  The sum over i of min(0, round(factor * x[i])) >= -max_sum.
 //  -  The sum over i of max(0, round(factor * x[i])) <= max_sum.
 // For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
-double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                      const std::vector<double>& lb,
-                                      const std::vector<double>& ub,
+double GetBestScalingOfDoublesToInt64(absl::Span<const double> input,
+                                      absl::Span<const double> lb,
+                                      absl::Span<const double> ub,
                                       int64_t max_absolute_sum);
 // This computes:
 //
@@ -227,9 +227,9 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 // The max_scaled_sum_error which is a bound on the maximum difference between
 // the exact scaled sum and the rounded one. One needs to divide this by
 // scaling_factor to have the maximum absolute error on the original sum.
-void ComputeScalingErrors(const std::vector<double>& input,
-                          const std::vector<double>& lb,
-                          const std::vector<double>& ub, double scaling_factor,
+void ComputeScalingErrors(absl::Span<const double> input,
+                          absl::Span<const double> lb,
+                          absl::Span<const double> ub, double scaling_factor,
                           double* max_relative_coeff_error,
                           double* max_scaled_sum_error);
 
