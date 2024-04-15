@@ -24,8 +24,10 @@ from ortools.math_opt.python import message_callback
 
 
 class PrinterMessageCallbackTest(absltest.TestCase):
+
     def test_no_prefix(self):
         class FlushCountingStringIO(io.StringIO):
+
             def __init__(self):
                 super().__init__()
                 self.num_flushes: int = 0
@@ -54,6 +56,7 @@ class PrinterMessageCallbackTest(absltest.TestCase):
 
 
 class LogMessagesTest(absltest.TestCase):
+
     def test_defaults(self):
         with self.assertLogs(logger="absl", level="INFO") as logs:
             message_callback.log_messages(["line 1", "line 2"])
@@ -111,6 +114,7 @@ class VLogMessagesTest(absltest.TestCase):
 
 
 class ListMessageCallbackTest(absltest.TestCase):
+
     def test_empty(self):
         msgs = []
         cb = message_callback.list_message_callback(msgs)

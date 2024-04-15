@@ -172,7 +172,7 @@ class GraphSymmetryFinder {
   std::unique_ptr<SparsePermutation> FindOneSuitablePermutation(
       int root_node, int root_image_node, DynamicPartition* base_partition,
       DynamicPartition* image_partition,
-      const std::vector<std::unique_ptr<SparsePermutation>>&
+      absl::Span<const std::unique_ptr<SparsePermutation>>
           generators_found_so_far,
       absl::Span<const std::vector<int>> permutations_displacing_node);
 

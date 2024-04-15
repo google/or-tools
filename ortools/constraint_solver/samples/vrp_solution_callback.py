@@ -15,19 +15,19 @@
 # [START program]
 """Simple Vehicles Routing Problem (VRP).
 
-   This is a sample using the routing library python wrapper to solve a VRP
-   problem.
+This is a sample using the routing library python wrapper to solve a VRP
+problem.
 
-   The solver stop after improving its solution 15 times or after 5 seconds.
+The solver stop after improving its solution 15 times or after 5 seconds.
 
-   Distances are in meters.
+Distances are in meters.
 """
 
 # [START import]
 import weakref
 
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 # [END import]
 
 
@@ -64,7 +64,8 @@ def create_data_model():
 
 # [START solution_callback_printer]
 def print_solution(
-    routing_manager: pywrapcp.RoutingIndexManager, routing_model: pywrapcp.RoutingModel
+    routing_manager: pywrapcp.RoutingIndexManager,
+    routing_model: pywrapcp.RoutingModel,
 ):
     """Prints solution on console."""
     print("################")
@@ -86,7 +87,6 @@ def print_solution(
         print(plan_output)
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
-
 # [END solution_callback_printer]
 
 
@@ -119,7 +119,6 @@ class SolutionCallback:
             self._counter += 1
         if self._counter > self._counter_limit:
             self._routing_model_ref().solver().FinishCurrentSearch()  # pytype: disable=attribute-error
-
 # [END solution_callback]
 
 
@@ -184,10 +183,10 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
     search_parameters.time_limit.FromSeconds(5)
     # [END parameters]

@@ -316,6 +316,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
                                      /*varnames=*/nullptr));
   GRBenv* const model_env = GRBgetenv(gurobi_model);
 
+  RETURN_IF_GUROBI_ERROR(
+      GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG,
+                     request->enable_internal_solver_output()));
   if (request->has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
         request->solver_specific_parameters(), model_env);
@@ -331,9 +334,6 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         GRBsetdblparam(model_env, GRB_DBL_PAR_TIMELIMIT,
                        request->solver_time_limit_seconds()));
   }
-  RETURN_IF_GUROBI_ERROR(
-      GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG,
-                     request->enable_internal_solver_output()));
 
   const int variable_size = model.variable_size();
   bool has_integer_variables = false;

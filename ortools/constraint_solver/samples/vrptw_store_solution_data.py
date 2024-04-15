@@ -16,8 +16,8 @@
 """VRPTW example that stores routes and cumulative data in an array."""
 
 # [START import]
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 # [END import]
 
 
@@ -67,7 +67,6 @@ def create_data_model():
     data["num_vehicles"] = 4
     data["depot"] = 0
     return data
-
 # [END data_model]
 
 
@@ -105,7 +104,6 @@ def print_solution(routes, cumul_data):
         total_time += cumul_data[i][len(route) - 1][0]
     route_str += f"Total time: {total_time}min"
     print(route_str)
-
 # [END solution_printer]
 
 
@@ -123,7 +121,6 @@ def get_routes(solution, routing, manager):
             route.append(manager.IndexToNode(index))
         routes.append(route)
     return routes
-
 # [END get_routes]
 
 
@@ -147,7 +144,6 @@ def get_cumul_data(solution, routing, dimension):
             route_data.append([solution.Min(dim_var), solution.Max(dim_var)])
         cumul_data.append(route_data)
     return cumul_data
-
 # [END get_cumulative_data]
 
 
@@ -226,7 +222,7 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     # [END parameters]
 

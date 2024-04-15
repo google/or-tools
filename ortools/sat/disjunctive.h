@@ -266,10 +266,8 @@ class DisjunctivePrecedences : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
-        precedences_(model->GetOrCreate<PrecedencesPropagator>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        task_set_(helper->NumTasks()),
-        task_to_arc_index_(helper->NumTasks()) {}
+        precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
   ~DisjunctivePrecedences() override;
 
   bool Propagate() final;
@@ -281,7 +279,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
-  PrecedencesPropagator* precedences_;
+  PrecedenceRelations* precedence_relations_;
   SharedStatistics* shared_stats_;
 
   int64_t num_propagations_ = 0;
@@ -289,9 +287,9 @@ class DisjunctivePrecedences : public PropagatorInterface {
   std::vector<TaskTime> window_;
   std::vector<IntegerVariable> index_to_end_vars_;
 
-  TaskSet task_set_;
-  std::vector<int> task_to_arc_index_;
-  std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
+  std::vector<int> indices_before_;
+  std::vector<bool> skip_;
+  std::vector<PrecedenceRelations::PrecedenceData> before_;
 };
 
 // This is an optimization for the case when we have a big number of such

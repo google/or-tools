@@ -32,4 +32,3 @@ Samples:
 * [tsp_distance_matrix.py](../samples/tsp_distance_matrix.py)
 * [TspDistanceMatrix.java](../samples/TspDistanceMatrix.java)
 * [TspDistanceMatrix.cs](../samples/TspDistanceMatrix.cs)
-

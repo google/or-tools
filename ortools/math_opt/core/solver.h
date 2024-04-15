@@ -22,7 +22,6 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/concurrent_calls_guard.h"
 #include "ortools/math_opt/core/model_summary.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -30,6 +29,7 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 namespace math_opt {

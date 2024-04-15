@@ -29,8 +29,10 @@ void RunWorker(void* data) {
   }
 }
 
-ThreadPool::ThreadPool(absl::string_view prefix, int num_workers)
-    : num_workers_(num_workers) {}
+ThreadPool::ThreadPool(int num_threads) : num_workers_(num_threads) {}
+
+ThreadPool::ThreadPool(absl::string_view /*prefix*/, int num_threads)
+    : num_workers_(num_threads) {}
 
 ThreadPool::~ThreadPool() {
   if (started_) {

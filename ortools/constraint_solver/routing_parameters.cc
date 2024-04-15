@@ -28,10 +28,11 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
-#include "ortools/constraint_solver/routing_ils.pb.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/ils.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/testing_utils.h"
@@ -58,6 +59,9 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   rr->set_ruin_strategy(RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL);
   rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
   rr->set_num_ruined_routes(2);
+  rr->set_route_selection_neighbors_ratio(1.0);
+  rr->set_route_selection_min_neighbors(10);
+  rr->set_route_selection_max_neighbors(100);
   ils.set_improve_perturbed_solution(true);
   ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
   SimulatedAnnealingParameters* sa =
@@ -281,16 +285,33 @@ void FindErrorsInIteratedLocalSearchParameters(
                  rr.ruin_strategy()));
     }
 
-    if (rr.ruin_strategy() == RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL &&
-        rr.num_ruined_routes() <= 0) {
-      errors.emplace_back(
-          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
-                 "ruin_strategy is set to ",
-                 rr.ruin_strategy(),
-                 " but "
-                 "iterated_local_search_parameters.ruin_recreate_parameters."
-                 "num_ruined_routes is ",
-                 rr.num_ruined_routes()));
+    if (rr.ruin_strategy() == RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL) {
+      if (rr.num_ruined_routes() <= 0) {
+        errors.emplace_back(
+            StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                   "ruin_strategy is set to ",
+                   rr.ruin_strategy(),
+                   " but "
+                   "iterated_local_search_parameters.ruin_recreate_parameters."
+                   "num_ruined_routes is ",
+                   rr.num_ruined_routes()));
+      }
+      if (const double ratio = rr.route_selection_neighbors_ratio();
+          std::isnan(ratio) || ratio < 0 || ratio > 1) {
+        errors.emplace_back(
+            StrCat("Invalid "
+                   "iterated_local_search_parameters.ruin_recreate_parameters."
+                   "route_selection_neighbors_ratio: ",
+                   ratio));
+      }
+      if (rr.route_selection_min_neighbors() >
+          rr.route_selection_max_neighbors()) {
+        errors.emplace_back(
+            StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                   "route_selection_min_neighbors cannot be greater than "
+                   "iterated_local_search_parameters.ruin_recreate_parameters."
+                   "route_selection_max_neighbors"));
+      }
     }
 
     if (rr.recreate_strategy() == FirstSolutionStrategy::UNSET) {
@@ -501,12 +522,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   if (const int64_t lim = search_parameters.solution_limit(); lim < 1)
     errors.emplace_back(StrCat("Invalid solution_limit: ", lim));
   if (!IsValidNonNegativeDuration(search_parameters.time_limit())) {
-    errors.emplace_back("Invalid time_limit: " +
-                        search_parameters.time_limit().ShortDebugString());
+    errors.emplace_back(
+        "Invalid time_limit: " +
+        ProtobufShortDebugString(search_parameters.time_limit()));
   }
   if (!IsValidNonNegativeDuration(search_parameters.lns_time_limit())) {
-    errors.emplace_back("Invalid lns_time_limit: " +
-                        search_parameters.lns_time_limit().ShortDebugString());
+    errors.emplace_back(
+        "Invalid lns_time_limit: " +
+        ProtobufShortDebugString(search_parameters.lns_time_limit()));
   }
   if (const double ratio = search_parameters.secondary_ls_time_limit_ratio();
       std::isnan(ratio) || ratio < 0 || ratio >= 1) {

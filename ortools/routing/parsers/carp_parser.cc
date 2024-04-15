@@ -21,6 +21,7 @@
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
@@ -49,7 +50,7 @@ bool CarpParser::LoadFile(const std::string& file_name) {
   return ParseFile(file_name);
 }
 
-bool CarpParser::ParseFile(const std::string& file_name) {
+bool CarpParser::ParseFile(absl::string_view file_name) {
   static auto section_headers = std::array<const char*, 12>({
       "NOMBRE",
       "COMENTARIO",

@@ -23,6 +23,7 @@ def _type_check_linear_sum(x: model.LinearSum) -> None:
 
 
 class FastSumTest(absltest.TestCase):
+
     def test_variables(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable()
@@ -79,6 +80,7 @@ class FastSumTest(absltest.TestCase):
 
 
 class EvaluateExpressionTest(absltest.TestCase):
+
     def test_scalar_expression(self) -> None:
         mod = model.Model()
         x = mod.add_binary_variable()

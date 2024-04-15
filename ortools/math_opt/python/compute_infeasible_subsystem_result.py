@@ -72,13 +72,13 @@ class ModelSubset:
         constraints are included in the subset.
     """
 
-    variable_bounds: Mapping[
-        model.Variable, ModelSubsetBounds
-    ] = immutabledict.immutabledict()
+    variable_bounds: Mapping[model.Variable, ModelSubsetBounds] = (
+        immutabledict.immutabledict()
+    )
     variable_integrality: FrozenSet[model.Variable] = frozenset()
-    linear_constraints: Mapping[
-        model.LinearConstraint, ModelSubsetBounds
-    ] = immutabledict.immutabledict()
+    linear_constraints: Mapping[model.LinearConstraint, ModelSubsetBounds] = (
+        immutabledict.immutabledict()
+    )
 
     def empty(self) -> bool:
         """Returns true if all the nested constraint collections are empty.

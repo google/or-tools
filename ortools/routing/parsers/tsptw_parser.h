@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
@@ -70,7 +71,7 @@ class TspTWParser final {
   void operator=(const TspTWParser&) = delete;
 #endif
   bool ParseLopezIbanezBlum(const std::string& file_name);
-  bool ParseDaSilvaUrrutia(const std::string& file_name);
+  bool ParseDaSilvaUrrutia(absl::string_view file_name);
 
   int64_t size_;
   int depot_;

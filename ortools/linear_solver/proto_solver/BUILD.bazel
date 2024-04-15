@@ -167,12 +167,18 @@ cc_library(
     name = "highs_proto_solver",
     srcs = ["highs_proto_solver.cc"],
     hdrs = ["highs_proto_solver.h"],
+    defines = select({
+        "//ortools/linear_solver:use_highs": ["USE_HIGHS"],
+        "//conditions:default": [],
+    }),
     deps = [
+        "//ortools/base:timer",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
         "@com_google_absl//absl/status:statusor",
+        "@highs",
     ],
 )
 

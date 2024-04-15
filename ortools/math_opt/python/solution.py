@@ -390,12 +390,16 @@ class Solution:
     def to_proto(self) -> solution_pb2.SolutionProto:
         """Returns an equivalent proto for a solution."""
         return solution_pb2.SolutionProto(
-            primal_solution=self.primal_solution.to_proto()
-            if self.primal_solution is not None
-            else None,
-            dual_solution=self.dual_solution.to_proto()
-            if self.dual_solution is not None
-            else None,
+            primal_solution=(
+                self.primal_solution.to_proto()
+                if self.primal_solution is not None
+                else None
+            ),
+            dual_solution=(
+                self.dual_solution.to_proto()
+                if self.dual_solution is not None
+                else None
+            ),
             basis=self.basis.to_proto() if self.basis is not None else None,
         )
 

@@ -44,7 +44,6 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -59,6 +58,7 @@
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 namespace math_opt {

@@ -154,7 +154,7 @@ bool TspTWParser::ParseLopezIbanezBlum(const std::string& file_name) {
   return entry_count == size_;
 }
 
-bool TspTWParser::ParseDaSilvaUrrutia(const std::string& file_name) {
+bool TspTWParser::ParseDaSilvaUrrutia(absl::string_view file_name) {
   for (const std::string& line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     // Skip header.

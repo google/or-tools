@@ -428,7 +428,7 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
             .use_pairwise = true,
             .use_dff_f0 = true,
             .use_dff_f2 = true,
-            .brute_force_threshold = 6,
+            .brute_force_threshold = 7,
             .dff2_max_number_of_parameters_to_check = 100});
     if (opp_result.GetResult() == OrthogonalPackingResult::Status::INFEASIBLE &&
         (best_conflict.opp_result.GetResult() !=

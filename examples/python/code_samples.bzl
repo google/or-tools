@@ -14,6 +14,7 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 
 PYTHON_DEPS = [
     "//ortools/init/python:init",
@@ -32,7 +33,7 @@ PYTHON_DEPS = [
 ]
 
 def code_sample_compile_py(name):
-    native.py_binary(
+    py_binary(
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
@@ -42,7 +43,7 @@ def code_sample_compile_py(name):
     )
 
 def code_sample_test_py(name):
-    native.py_test(
+    py_test(
         name = name + "_py_test",
         size = "medium",
         srcs = [name + ".py"],
@@ -53,7 +54,7 @@ def code_sample_test_py(name):
     )
 
 def code_sample_test_arg_py(name, suffix, args, data):
-    native.py_test(
+    py_test(
         name = name + "_" + suffix + "_py_test",
         size = "medium",
         srcs = [name + ".py"],

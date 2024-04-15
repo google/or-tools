@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
 #define OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
 
-#include "ortools/math_opt/core/solve_interrupter.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/message_callback.h"    // IWYU pragma: export
 #include "ortools/math_opt/cpp/parameters.h"          // IWYU pragma: export
+#include "ortools/util/solve_interrupter.h"         // IWYU pragma: export
 
 namespace operations_research::math_opt {
 

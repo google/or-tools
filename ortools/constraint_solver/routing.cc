@@ -63,16 +63,13 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_constraints.h"
 #include "ortools/constraint_solver/routing_decision_builders.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_filters.h"
 #include "ortools/constraint_solver/routing_ils.h"
-#include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_insertion_lns.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/constraint_solver/routing_neighborhoods.h"
 #include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
@@ -80,6 +77,9 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/ils.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -239,13 +239,20 @@ SweepArranger* RoutingModel::sweep_arranger() const {
 void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
     const RoutingModel& routing_model, int num_neighbors,
     bool add_vehicle_starts_to_neighbors) {
+  DCHECK_GE(num_neighbors, 0);
   // TODO(user): consider checking search limits.
   const int size = routing_model.Size();
+  const int num_non_start_end_nodes = size - routing_model.vehicles();
   const int size_with_vehicle_nodes = size + routing_model.vehicles();
+
   node_index_to_neighbors_by_cost_class_.clear();
-  if (num_neighbors >= size) {
-    all_nodes_.resize(size);
-    std::iota(all_nodes_.begin(), all_nodes_.end(), 0);
+  if (num_neighbors >= num_non_start_end_nodes) {
+    all_nodes_.reserve(size);
+    for (int node = 0; node < size; node++) {
+      if (add_vehicle_starts_to_neighbors || !routing_model.IsStart(node)) {
+        all_nodes_.push_back(node);
+      }
+    }
     return;
   }
   node_index_to_neighbors_by_cost_class_.resize(size_with_vehicle_nodes);
@@ -283,12 +290,10 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
                              after_node));
         }
       }
-      std::nth_element(cost_nodes.begin(),
-                       cost_nodes.begin() + num_neighbors - 1,
-                       cost_nodes.end());
-      cost_nodes.resize(num_neighbors);
+      DCHECK_GE(cost_nodes.size(), num_neighbors);
       // Make sure the order of the n first element is always the same.
-      std::sort(cost_nodes.begin(), cost_nodes.end());
+      absl::c_partial_sort(cost_nodes, cost_nodes.begin() + num_neighbors);
+      cost_nodes.resize(num_neighbors);
 
       auto& node_neighbors =
           node_index_to_neighbors_by_cost_class_[node_index][cost_class];

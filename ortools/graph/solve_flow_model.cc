@@ -30,6 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
@@ -98,7 +99,7 @@ void ConvertFlowModelToDimacs(const FlowModelProto& flow_model,
 // Note(user): Going from Dimacs to flow adds an extra copy, but for now we
 // don't really care of the Dimacs file reading performance.
 // Returns true if the file was converted correctly.
-bool ConvertDimacsToFlowModel(const std::string& file,
+bool ConvertDimacsToFlowModel(absl::string_view file,
                               FlowModelProto* flow_model) {
   flow_model->Clear();
   FlowModelProto::ProblemType problem_type;

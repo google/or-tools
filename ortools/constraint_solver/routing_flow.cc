@@ -30,8 +30,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

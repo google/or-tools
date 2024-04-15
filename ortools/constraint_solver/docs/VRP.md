@@ -101,4 +101,3 @@ Samples:
 * [vrp_resources.py](../samples/vrp_resources.py)
 * [VrpResources.java](../samples/VrpResources.java)
 * [VrpResources.cs](../samples/VrpResources.cs)
-

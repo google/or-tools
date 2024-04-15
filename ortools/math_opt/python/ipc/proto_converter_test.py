@@ -45,6 +45,7 @@ def _simple_request() -> rpc_pb2.SolveRequest:
 
 
 class ProtoConverterTest(absltest.TestCase, compare.Proto2Assertions):
+
     def test_convert_request(self):
         request = _simple_request()
         expected = optimization_pb2.SolveMathOptModelRequest(

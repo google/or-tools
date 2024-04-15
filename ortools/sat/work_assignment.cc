@@ -37,6 +37,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -191,7 +192,8 @@ SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
       num_workers_(std::max(1, params_.shared_tree_num_workers())),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
-      num_splits_wanted_(num_workers_ - 1),
+      num_splits_wanted_(
+          num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
       max_nodes_(params_.shared_tree_max_nodes_per_worker() >=
                          std::numeric_limits<int>::max() / num_workers_
                      ? std::numeric_limits<int>::max()
@@ -213,8 +215,17 @@ int SharedTreeManager::NumNodes() const {
 
 int SharedTreeManager::SplitsToGeneratePerWorker() const {
   absl::MutexLock mutex_lock(&mu_);
-  return std::min<int>(num_splits_wanted_,
-                       max_nodes_ - static_cast<int>(nodes_.size()));
+  const int max_additional_nodes = max_nodes_ - static_cast<int>(nodes_.size());
+  const int total_splits_wanted =
+      std::min(num_splits_wanted_,
+               // Each split generates 2 nodes, so divide by 2, rounding up.
+               CeilOfRatio(max_additional_nodes, 2));
+  // We want workers to propose too many splits as we expect to reject some,
+  // and it's more efficient to generate several splits on the same worker
+  // restart so we don't want to divide by num_workers_.
+  // But we also don't want more than half the splits to come from a single
+  // restart on a single worker so we divide by 2.
+  return CeilOfRatio(total_splits_wanted, 2);
 }
 
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
@@ -245,7 +256,7 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   }
   // Restart after processing updates - we might learn a new objective bound.
   if (++num_syncs_since_restart_ / num_workers_ > kSyncsPerWorkerPerRestart &&
-      (num_restarts_ < kNumInitialRestarts || nodes_.size() >= max_nodes_)) {
+      num_restarts_ < kNumInitialRestarts) {
     RestartLockHeld();
     path.Clear();
     return false;
@@ -277,6 +288,8 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     VLOG(2) << "Enough splits for now";
     return;
   }
+  const int num_desired_leaves =
+      params_.shared_tree_open_leaves_per_worker() * num_workers_;
   if (params_.shared_tree_split_strategy() ==
           SatParameters::SPLIT_STRATEGY_DISCREPANCY ||
       params_.shared_tree_split_strategy() ==
@@ -292,7 +305,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     // TODO(user): Need to write up the shape this creates.
     // This rule will allow twice as many leaves in the preferred subtree.
     if (discrepancy + path.MaxLevel() >
-        MaxAllowedDiscrepancyPlusDepth(num_workers_)) {
+        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves)) {
       VLOG(2) << "Too high discrepancy to accept split";
       return;
     }
@@ -306,7 +319,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
-    if (path.MaxLevel() + 1 > log2(num_workers_)) {
+    if (path.MaxLevel() + 1 > log2(num_desired_leaves)) {
       VLOG(2) << "Tree too unbalanced to accept split";
       return;
     }
@@ -374,12 +387,15 @@ SharedTreeManager::Node* SharedTreeManager::MakeSubtree(Node* parent,
 }
 
 void SharedTreeManager::ProcessNodeChanges() {
+  int num_newly_closed = 0;
   while (!to_close_.empty()) {
     Node* node = to_close_.back();
     CHECK_NE(node, nullptr);
     to_close_.pop_back();
     // Iterate over open parents while each sibling is closed.
     while (node != nullptr && !node->closed) {
+      ++num_newly_closed;
+      ++num_closed_nodes_;
       node->closed = true;
       node->objective_lb = kMaxIntegerValue;
       // If we are closing a leaf, try to maintain the same number of leaves;
@@ -402,6 +418,13 @@ void SharedTreeManager::ProcessNodeChanges() {
     } else {
       to_update_.push_back(node->parent);
     }
+  }
+  if (num_newly_closed > 0) {
+    shared_response_manager_->LogMessageWithThrottling(
+        "Tree", absl::StrCat("nodes:", nodes_.size(), "/", max_nodes_,
+                             " closed:", num_closed_nodes_,
+                             " unassigned:", unassigned_leaves_.size(),
+                             " restarts:", num_restarts_));
   }
   bool root_updated = false;
   while (!to_update_.empty()) {
@@ -488,7 +511,9 @@ void SharedTreeManager::RestartLockHeld() {
   nodes_[0].id = node_id_offset_;
   nodes_[0].children = {nullptr, nullptr};
   unassigned_leaves_.clear();
-  num_splits_wanted_ = num_workers_ - 1;
+  num_splits_wanted_ =
+      num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1;
+  num_closed_nodes_ = 0;
   num_restarts_ += 1;
   num_syncs_since_restart_ = 0;
 }
@@ -511,7 +536,9 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       objective_(model->Get<ObjectiveDefinition>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       helper_(model->GetOrCreate<IntegerSearchHelper>()),
-      heuristics_(model->GetOrCreate<SearchHeuristics>()) {}
+      heuristics_(model->GetOrCreate<SearchHeuristics>()),
+      restart_policy_(model->GetOrCreate<RestartPolicy>()),
+      assigned_tree_lbds_(/*window_size=*/8) {}
 
 const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
   CHECK_LE(level, assigned_tree_literals_.size());
@@ -659,29 +686,39 @@ void SharedTreeWorker::MaybeProposeSplit() {
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
-      assigned_tree_literals_.push_back(split_decision);
       --splits_wanted_;
-      CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
+      assigned_tree_literals_.push_back(split_decision);
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   }
+}
+
+bool SharedTreeWorker::ShouldReplaceSubtree() {
+  // If we have no assignment, try to get one.
+  if (assigned_tree_.MaxLevel() == 0) return true;
+  if (restart_policy_->NumRestarts() <
+      parameters_->shared_tree_worker_min_restarts_per_subtree()) {
+    return false;
+  }
+  return assigned_tree_lbds_.WindowAverage() <
+         restart_policy_->LbdAverageSinceReset();
 }
 
 void SharedTreeWorker::SyncWithSharedTree() {
   splits_wanted_ = manager_->SplitsToGeneratePerWorker();
   VLOG(2) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
   manager_->SyncTree(assigned_tree_);
-  // If we have no assignment, try to get one.
-  // We also want to ensure unassigned nodes have their lower bounds bumped
-  // periodically, so workers need to occasionally replace open trees, but only
-  // at most once per restart.
-  // TODO(user): Ideally we should use some metric to replace a
-  // subtree when the worker is doing badly.
-  if (assigned_tree_.MaxLevel() == 0 ||
-      (tree_assignment_restart_ < num_restarts_ &&
-       absl::Bernoulli(*random_, 1e-2))) {
+  if (ShouldReplaceSubtree()) {
+    ++num_trees_;
+    VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
+            << " after " << num_restarts_ - tree_assignment_restart_
+            << " restarts prev depth: " << assigned_tree_.MaxLevel()
+            << " target: " << assigned_tree_lbds_.WindowAverage()
+            << " lbd: " << restart_policy_->LbdAverageSinceReset();
     manager_->ReplaceTree(assigned_tree_);
     tree_assignment_restart_ = num_restarts_;
+    assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
+    restart_policy_->Reset();
   }
   VLOG(2) << "Assigned level: " << assigned_tree_.MaxLevel() << " "
           << parameters_->name();

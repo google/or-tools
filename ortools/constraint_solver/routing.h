@@ -184,12 +184,12 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/graph/graph.h"
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -1560,10 +1560,11 @@ class RoutingModel {
     /// Returns the neighbors of the given node for the given cost_class.
     const std::vector<int>& GetNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
-      return all_nodes_.empty() ? node_index_to_neighbors_by_cost_class_
+      return node_index_to_neighbors_by_cost_class_.empty()
+                 ? all_nodes_
+                 : node_index_to_neighbors_by_cost_class_
                                       [node_index][cost_class]
-                                          ->PositionsSetAtLeastOnce()
-                                : all_nodes_;
+                           ->PositionsSetAtLeastOnce();
     }
 
    private:

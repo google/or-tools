@@ -35,9 +35,11 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -230,7 +232,7 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
   for (int i = size - 1; i >= rev_stack_size_; --i) {
     const auto [id, status] = untrail_stack_[i];
     statuses_[id] = status;
-    if (callbacks_[id] != nullptr) callbacks_[id](status);
+    if (callbacks_[id] != nullptr) callbacks_[id](id, status);
   }
   untrail_stack_.resize(rev_stack_size_);
   propagation_trail_index_ = trail_index;
@@ -243,7 +245,7 @@ void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
 // constraint is never enforced, and should be ignored.
 EnforcementId EnforcementPropagator::Register(
     absl::Span<const Literal> enforcement,
-    std::function<void(EnforcementStatus)> callback) {
+    std::function<void(EnforcementId, EnforcementStatus)> callback) {
   int num_true = 0;
   int num_false = 0;
   bool is_always_false = false;
@@ -271,11 +273,13 @@ EnforcementId EnforcementPropagator::Register(
 
   // Return special indices if never/always enforced.
   if (is_always_false) {
-    if (callback != nullptr) callback(EnforcementStatus::IS_FALSE);
+    if (callback != nullptr)
+      callback(EnforcementId(-1), EnforcementStatus::IS_FALSE);
     return EnforcementId(-1);
   }
   if (temp_literals_.empty()) {
-    if (callback != nullptr) callback(EnforcementStatus::IS_ENFORCED);
+    if (callback != nullptr)
+      callback(EnforcementId(-1), EnforcementStatus::IS_ENFORCED);
     return EnforcementId(-1);
   }
 
@@ -331,7 +335,7 @@ EnforcementId EnforcementPropagator::Register(
     // Because this is the default status, we still need to call the callback.
     if (temp_literals_.size() == 1) {
       if (callbacks_[id] != nullptr) {
-        callbacks_[id](EnforcementStatus::CAN_PROPAGATE);
+        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE);
       }
     }
   }
@@ -445,7 +449,7 @@ void EnforcementPropagator::ChangeStatus(EnforcementId id,
     untrail_stack_.push_back({id, old_status});
   }
   statuses_[id] = new_status;
-  if (callbacks_[id] != nullptr) callbacks_[id](new_status);
+  if (callbacks_[id] != nullptr) callbacks_[id](id, new_status);
 }
 
 EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
@@ -473,6 +477,8 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()),
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
+      precedences_(model->GetOrCreate<PrecedenceRelations>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)) {
   // Note that we need this class always in sync.
@@ -660,7 +666,8 @@ bool LinearPropagator::AddConstraint(
     infos_.back().enf_status =
         static_cast<int>(EnforcementStatus::CANNOT_PROPAGATE);
     infos_.back().enf_id = enforcement_propagator_->Register(
-        enforcement_literals, [this, id](EnforcementStatus status) {
+        enforcement_literals,
+        [this, id](EnforcementId enf_id, EnforcementStatus status) {
           infos_[id].enf_status = static_cast<int>(status);
           // TODO(user): With some care, when we cannot propagate or the
           // constraint is not enforced, we could leave in_queue_[] at true but
@@ -670,8 +677,27 @@ bool LinearPropagator::AddConstraint(
             AddToQueueIfNeeded(id);
             watcher_->CallOnNextPropagate(watcher_id_);
           }
+
+          // When a conditional precedence becomes enforced, add it. Note that
+          // we cannot just use rev_size == 2 since we might miss some
+          // explanation if a longer constraint only have 2 non-fixed variable
+          // now.. It is however okay not to push precedence involving a fixed
+          // variable, since these should be reflected in the variable domain
+          // anyway.
+          if (status == EnforcementStatus::IS_ENFORCED) {
+            const auto info = infos_[id];
+            if (info.initial_size == 2 && info.rev_size == 2 &&
+                info.all_coeffs_are_one) {
+              const auto vars = GetVariables(info);
+              precedences_->PushConditionalRelation(
+                  enforcement_propagator_->GetEnforcementLiterals(enf_id),
+                  vars[0], vars[1], info.rev_rhs);
+            }
+          }
         });
   } else {
+    // TODO(user): Shall we register root level precedence from here rather than
+    // separately?
     AddToQueueIfNeeded(id);
     infos_.back().enf_id = -1;
     infos_.back().enf_status = static_cast<int>(EnforcementStatus::IS_ENFORCED);
@@ -736,7 +762,7 @@ void LinearPropagator::CanonicalizeConstraint(int id) {
 }
 
 // TODO(user): template everything for the case info.all_coeffs_are_one ?
-bool LinearPropagator::PropagateOneConstraint(int id) {
+std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
   // This is here for development purpose, it is a bit too slow to check by
   // default though, even VLOG_IS_ON(1) so we disable it.
   if (/* DISABLES CODE */ (false)) {
@@ -779,7 +805,7 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
       unenforced_constraints_.push_back(id);
     }
     ++num_ignored_;
-    return true;
+    return {0, 0};
   }
 
   // Compute the slack and max_variations_ of each variables.
@@ -790,13 +816,14 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   bool first_change = true;
   num_terms_for_dtime_update_ += info.rev_size;
   IntegerValue* max_variations = max_variations_.data();
+  const IntegerValue* lower_bounds = integer_trail_->LowerBoundsData();
   if (info.all_coeffs_are_one) {
     // TODO(user): Avoid duplication?
     for (int i = 0; i < info.rev_size;) {
       const IntegerVariable var = vars[i];
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) {
+      const IntegerValue lb = lower_bounds[var.value()];
+      const IntegerValue diff = -lower_bounds[NegationOf(var).value()] - lb;
+      if (diff == 0) {
         if (first_change) {
           // Note that we can save at most one state per fixed var. Also at
           // level zero we don't save anything.
@@ -809,8 +836,8 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
         info.rev_rhs -= lb;
       } else {
         implied_lb += lb;
-        max_variations[i] = (ub - lb);
-        max_variation = std::max(max_variation, max_variations[i]);
+        max_variations[i] = diff;
+        max_variation = std::max(max_variation, diff);
         ++i;
       }
     }
@@ -819,9 +846,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     for (int i = 0; i < info.rev_size;) {
       const IntegerVariable var = vars[i];
       const IntegerValue coeff = coeffs[i];
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) {
+      const IntegerValue lb = lower_bounds[var.value()];
+      const IntegerValue diff = -lower_bounds[NegationOf(var).value()] - lb;
+      if (diff == 0) {
         if (first_change) {
           // Note that we can save at most one state per fixed var. Also at
           // level zero we don't save anything.
@@ -835,22 +862,51 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
         info.rev_rhs -= coeff * lb;
       } else {
         implied_lb += coeff * lb;
-        max_variations[i] = (ub - lb) * coeff;
+        max_variations[i] = diff * coeff;
         max_variation = std::max(max_variation, max_variations[i]);
         ++i;
       }
     }
   }
+
+  // What we call slack here is the "room" between the implied_lb and the rhs.
+  // Note that we use slack in other context in this file too.
   const IntegerValue slack = info.rev_rhs - implied_lb;
 
   // Negative slack means the constraint is false.
-  if (max_variation <= slack) return true;
+  // Note that if max_variation > slack, we are sure to propagate something
+  // except if the constraint is enforced and the slack is non-negative.
+  if (slack < 0 || max_variation <= slack) return {slack, 0};
+  if (enf_status == EnforcementStatus::IS_ENFORCED) {
+    // Swap the variable(s) that will be pushed at the beginning.
+    int num_to_push = 0;
+    const auto coeffs = GetCoeffs(info);
+    for (int i = 0; i < info.rev_size; ++i) {
+      if (max_variations[i] <= slack) continue;
+      std::swap(vars[i], vars[num_to_push]);
+      std::swap(coeffs[i], coeffs[num_to_push]);
+      ++num_to_push;
+    }
+    return {slack, num_to_push};
+  }
+  return {slack, 0};
+}
+
+bool LinearPropagator::PropagateOneConstraint(int id) {
+  // The slack is const after this.
+  const auto [slack, num_to_push] = AnalyzeConstraint(id);
+  if (slack >= 0 && num_to_push == 0) return true;
+
+  // We are sure to propagate something at this stage.
   id_propagated_something_[id] = true;
+  const ConstraintInfo& info = infos_[id];
+  const auto vars = GetVariables(info);
+  const auto coeffs = GetCoeffs(info);
+
   if (slack < 0) {
     // Fill integer reason.
     integer_reason_.clear();
     reason_coeffs_.clear();
-    const auto coeffs = GetCoeffs(info);
     for (int i = 0; i < info.initial_size; ++i) {
       const IntegerVariable var = vars[i];
       if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
@@ -868,17 +924,13 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   }
 
   // We can only propagate more if all the enforcement literals are true.
-  if (info.enf_status != static_cast<int>(EnforcementStatus::IS_ENFORCED)) {
-    return true;
-  }
+  // But this should have been checked by SkipConstraint().
+  CHECK_EQ(info.enf_status, static_cast<int>(EnforcementStatus::IS_ENFORCED));
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   int num_pushed = 0;
-  const auto coeffs = GetCoeffs(info);
-  for (int i = 0; i < info.rev_size; ++i) {
-    if (max_variations[i] <= slack) continue;
-
+  for (int i = 0; i < num_to_push; ++i) {
     // TODO(user): If the new ub fall into an hole of the variable, we can
     // actually relax the reason more by computing a better slack.
     ++num_pushes_;
@@ -1279,16 +1331,19 @@ void LinearPropagator::AddWatchedToQueue(IntegerVariable var,
   // will likely propagate again, and we want to propagate it first.
   for (const int id : var_to_constraint_ids_[var]) {
     if (in_queue_[id]) continue;
-    if (true || id_propagated_something_[id]) {
+    if (id_propagated_something_[id]) {
       id_propagated_something_[id] = false;  // reset.
-      AddToQueueIfNeeded(id);
+      in_queue_[id] = true;
+      propagation_queue_.Push(id);
     } else {
       tmp_delayed_.push_back(id);
     }
   }
   if (push_delayed_right_away) {
     for (const int id : tmp_delayed_) {
-      AddToQueueIfNeeded(id);
+      DCHECK(!in_queue_[id]);
+      in_queue_[id] = true;
+      propagation_queue_.Push(id);
     }
     tmp_delayed_.clear();
   }

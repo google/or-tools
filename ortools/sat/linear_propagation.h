@@ -30,6 +30,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
@@ -114,7 +115,7 @@ class EnforcementPropagator : SatPropagator {
   // first call to callback() should be necessary, we don't save it.
   EnforcementId Register(
       absl::Span<const Literal> enforcement,
-      std::function<void(EnforcementStatus)> callback = nullptr);
+      std::function<void(EnforcementId, EnforcementStatus)> callback = nullptr);
 
   // Add the enforcement reason to the given vector.
   void AddEnforcementReason(EnforcementId id,
@@ -131,6 +132,12 @@ class EnforcementPropagator : SatPropagator {
   // Recompute the status from the current assignment.
   // This should only used in DCHECK().
   EnforcementStatus DebugStatus(EnforcementId id);
+
+  // Returns the enforcement literals of the given id.
+  absl::Span<const Literal> GetEnforcementLiterals(EnforcementId id) const {
+    if (id < 0) return {};
+    return GetSpan(id);
+  }
 
  private:
   absl::Span<Literal> GetSpan(EnforcementId id);
@@ -154,7 +161,8 @@ class EnforcementPropagator : SatPropagator {
   std::vector<Literal> buffer_;
 
   absl::StrongVector<EnforcementId, EnforcementStatus> statuses_;
-  absl::StrongVector<EnforcementId, std::function<void(EnforcementStatus)>>
+  absl::StrongVector<EnforcementId,
+                     std::function<void(EnforcementId, EnforcementStatus)>>
       callbacks_;
 
   // Used to restore status and call callback on untrail.
@@ -225,6 +233,11 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
   ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_pushed);
 
+  // Returns (slack, num_to_push) of the given constraint.
+  // If slack < 0 we have a conflict or might push the enforcement.
+  // If slack >= 0 the first num_to_push variables can be pushed.
+  std::pair<IntegerValue, int> AnalyzeConstraint(int id);
+
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
   void AddToQueueIfNeeded(int id);
@@ -241,6 +254,8 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   TimeLimit* time_limit_;
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
+  PrecedenceRelations* precedences_;
+  ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
 
@@ -305,14 +320,6 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // Heuristic to enqueue interesting constraint first.
   std::vector<bool> id_propagated_something_;
   std::vector<int> tmp_delayed_;
-
-  // Staging queue.
-  // Initially, we add the constraint to the priority queue, and we extract
-  // them one by one, each time reaching the propagation fixed point.
-  std::vector<bool> pq_was_added_;
-  bool pq_in_heap_form_ = false;
-  std::vector<int> pq_;
-  std::vector<int> pq_to_clean_;
 
   // Stats. Allow to track the time a constraint is scanned more than once.
   // This is only used in --v 1.

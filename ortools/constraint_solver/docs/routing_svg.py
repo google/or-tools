@@ -16,7 +16,7 @@
 # [START import]
 import argparse
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import routing_enums_pb2
+from ortools.routing import enums_pb2
 # [END import]
 
 
@@ -1195,15 +1195,15 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     # pylint: disable=no-member
     if not args["pickup_delivery"]:
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+            enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
         )
     else:
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+            enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
         )
 
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
     search_parameters.time_limit.FromSeconds(2)
 

@@ -147,6 +147,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
@@ -282,9 +283,10 @@ foreach(SUBPROJECT IN ITEMS
  init
  algorithms
  graph
- constraint_solver
  linear_solver
  ${PDLP_DIR}
+ constraint_solver
+ routing
  sat
  scheduling
  util)
@@ -339,6 +341,8 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
 endif()
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/__init__.py CONTENT "")
+
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/colab/__init__.py CONTENT "")
@@ -467,6 +471,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
    $<IF:$<TARGET_EXISTS:pdlp_pybind11>,copy,true>
    $<$<TARGET_EXISTS:pdlp_pybind11>:$<TARGET_FILE:pdlp_pybind11>> ${PYTHON_PROJECT}/pdlp/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:routing_pybind11> ${PYTHON_PROJECT}/routing/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:swig_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy

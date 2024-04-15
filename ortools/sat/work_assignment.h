@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include <array>
+#include <cmath>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -40,6 +41,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/running_stat.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -207,10 +209,11 @@ class SharedTreeManager {
 
   // How many splits we should generate now to keep the desired number of
   // leaves.
-  int num_splits_wanted_;
+  int num_splits_wanted_ ABSL_GUARDED_BY(mu_);
 
   // We limit the total nodes generated per restart to cap the RAM usage and
-  // communication overhead. If we exceed this, we will restart the shared tree.
+  // communication overhead. If we exceed this, workers become portfolio
+  // workers when no unassigned leaves are available.
   const int max_nodes_;
   int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
 
@@ -221,6 +224,7 @@ class SharedTreeManager {
 
   int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
   int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
+  int num_closed_nodes_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
 class SharedTreeWorker {
@@ -242,6 +246,7 @@ class SharedTreeWorker {
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   bool NextDecision(LiteralIndex* decision_index);
   void MaybeProposeSplit();
+  bool ShouldReplaceSubtree();
 
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
@@ -263,8 +268,10 @@ class SharedTreeWorker {
   ModelRandomGenerator* random_;
   IntegerSearchHelper* helper_;
   SearchHeuristics* heuristics_;
+  RestartPolicy* restart_policy_;
 
   int64_t num_restarts_ = 0;
+  int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
@@ -274,6 +281,11 @@ class SharedTreeWorker {
   int splits_wanted_ = 1;
 
   std::vector<Literal> reason_;
+  // Stores the average LBD of learned clauses for each tree assigned since it
+  // was assigned.
+  // If a tree has worse LBD than the average over the last few trees we replace
+  // the tree.
+  RunningAverage assigned_tree_lbds_;
 };
 
 }  // namespace operations_research::sat

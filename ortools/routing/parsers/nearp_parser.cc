@@ -22,6 +22,7 @@
 
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/numbers.h"
 #include "ortools/util/filelineiter.h"
 
@@ -54,7 +55,7 @@ bool NearpParser::LoadFile(const std::string& file_name) {
   return ParseFile(file_name);
 }
 
-bool NearpParser::ParseFile(const std::string& file_name) {
+bool NearpParser::ParseFile(absl::string_view file_name) {
   // Only put the first word as header, as the main check is just done on this
   // first word (no ambiguity is possible for well-formed files; a more precise
   // check is done for metadata).

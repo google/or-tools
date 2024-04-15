@@ -33,6 +33,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
+#include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -218,7 +219,9 @@ TEST_P(GenericTest, NoStdoutOutputByDefault) {
 
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
   ASSERT_OK(SimpleSolve(model));
-  EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "");
+  EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
+              EmptyOrGurobiLicenseWarningIfGurobi(
+                  /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
 }
 
 TEST_P(GenericTest, EnableOutputPrintsToStdOut) {

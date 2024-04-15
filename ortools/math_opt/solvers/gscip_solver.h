@@ -32,7 +32,6 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -42,6 +41,7 @@
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/util/solve_interrupter.h"
 #include "scip/type_cons.h"
 #include "scip/type_var.h"
 

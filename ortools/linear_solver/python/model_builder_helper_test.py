@@ -27,6 +27,7 @@ from ortools.linear_solver.python import model_builder_helper
 
 
 class PywrapModelBuilderHelperTest(absltest.TestCase):
+
     def test_export_model_proto_to_mps_string(self):
         model = model_builder_helper.ModelBuilderHelper()
         model.set_name("testmodel")

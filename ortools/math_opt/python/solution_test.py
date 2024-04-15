@@ -20,6 +20,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_empty_primal_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_solution = solution.PrimalSolution(
@@ -64,6 +65,7 @@ class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, absltest.Tes
 
 
 class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_parse(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -76,6 +78,7 @@ class ParsePrimalRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase
 
 
 class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_empty_primal_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_solution = solution.DualSolution(
@@ -137,6 +140,7 @@ class ParseDualSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestC
 
 
 class ParseDualRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_parse(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -154,6 +158,7 @@ class ParseDualRayTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
 
 class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_empty_basis_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         empty_basis = solution.Basis()
@@ -268,6 +273,7 @@ class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
 
 class ParseSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_solution_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_variable()

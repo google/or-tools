@@ -46,8 +46,8 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -3239,6 +3239,144 @@ void CPFeasibilityFilter::AddDeltaToAssignment(const Assignment* delta,
 IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model) {
   return routing_model->solver()->RevAlloc(
       new CPFeasibilityFilter(routing_model));
+}
+
+void WeightedWaveletTree::Clear() {
+  elements_.clear();
+  tree_location_.clear();
+  nodes_.clear();
+  for (auto& layer : tree_layers_) layer.clear();
+}
+
+void WeightedWaveletTree::MakeTreeFromNewElements() {
+  // New elements are elements_[i] for i in [begin_index, end_index).
+  const int begin_index = tree_location_.size();
+  const int end_index = elements_.size();
+  DCHECK_LE(begin_index, end_index);
+  if (begin_index >= end_index) return;
+  // Gather all heights, sort and unique them, this makes up the list of
+  // pivot heights of the underlying tree, with an inorder traversal.
+  // TODO(user): investigate whether balancing the tree using the
+  // number of occurrences of each height would be beneficial.
+  // TODO(user): use a heap-like encoding for the binary search tree:
+  // children of i at 2*i and 2*i+1. Better cache line utilization.
+  const int old_node_size = nodes_.size();
+  for (int i = begin_index; i < end_index; ++i) {
+    nodes_.push_back({.pivot_height = elements_[i].height, .pivot_index = -1});
+  }
+  std::sort(nodes_.begin() + old_node_size, nodes_.end());
+  nodes_.erase(std::unique(nodes_.begin() + old_node_size, nodes_.end()),
+               nodes_.end());
+
+  // Remember location of the tree representation for this range of elements.
+  // tree_location_ may be smaller than elements_, extend it if needed.
+  const int new_node_size = nodes_.size();
+  tree_location_.resize(end_index, {.node_begin = old_node_size,
+                                    .node_end = new_node_size,
+                                    .sequence_first = begin_index});
+
+  // Add and extend layers if needed.
+  // The amount of layers needed is 1 + ceil(log(sequence size)).
+  const int num_layers =
+      2 + MostSignificantBitPosition32(new_node_size - old_node_size - 1);
+  if (tree_layers_.size() <= num_layers) tree_layers_.resize(num_layers);
+  for (int l = 0; l < num_layers; ++l) {
+    tree_layers_[l].resize(end_index,
+                           {.prefix_sum = 0, .left_index = -1, .is_left = 0});
+  }
+
+  // Fill all relevant locations of the tree, and record tree navigation
+  // information. This recursive function has at most num_layers call depth.
+  const auto fill_subtree = [this](auto& fill_subtree, int layer,
+                                   int node_begin, int node_end,
+                                   int range_begin, int range_end) {
+    DCHECK_LT(node_begin, node_end);
+    DCHECK_LT(range_begin, range_end);
+    // Precompute prefix sums of range [range_begin, range_end).
+    int64_t sum = 0;
+    for (int i = range_begin; i < range_end; ++i) {
+      sum += elements_[i].weight;
+      tree_layers_[layer][i].prefix_sum = sum;
+    }
+    if (node_begin + 1 == node_end) return;
+    // Range has more than one height, partition it.
+    // Record layer l -> l+1 sequence index mapping:
+    // - if height < pivot, record where this element will be in layer l+1.
+    // - if height >= pivot, record where next <= pivot will be in layer l+1.
+    const int node_mid = node_begin + (node_end - node_begin) / 2;
+    const int64_t pivot_height = nodes_[node_mid].pivot_height;
+    int pivot_index = range_begin;
+    for (int i = range_begin; i < range_end; ++i) {
+      tree_layers_[layer][i].left_index = pivot_index;
+      tree_layers_[layer][i].is_left = elements_[i].height < pivot_height;
+      if (elements_[i].height < pivot_height) ++pivot_index;
+    }
+    nodes_[node_mid].pivot_index = pivot_index;
+    // TODO(user): stable_partition allocates memory,
+    // find a way to fill layers without this.
+    std::stable_partition(
+        elements_.begin() + range_begin, elements_.begin() + range_end,
+        [pivot_height](const auto& el) { return el.height < pivot_height; });
+
+    fill_subtree(fill_subtree, layer + 1, node_begin, node_mid, range_begin,
+                 pivot_index);
+    fill_subtree(fill_subtree, layer + 1, node_mid, node_end, pivot_index,
+                 range_end);
+  };
+  fill_subtree(fill_subtree, 0, old_node_size, new_node_size, begin_index,
+               end_index);
+}
+
+int64_t WeightedWaveletTree::RangeSumWithThreshold(int64_t threshold_height,
+                                                   int begin_index,
+                                                   int end_index) const {
+  DCHECK_LE(begin_index, end_index);  // Range can be empty, but not reversed.
+  DCHECK_LE(end_index, tree_location_.size());
+  DCHECK_EQ(tree_location_.size(), elements_.size());  // No pending elements.
+  if (begin_index >= end_index) return 0;
+  auto [node_begin, node_end, sequence_first_index] =
+      tree_location_[begin_index];
+  DCHECK_EQ(tree_location_[end_index - 1].sequence_first,
+            sequence_first_index);  // Range is included in a single sequence.
+  ElementRange range{
+      .range_first_index = begin_index,
+      .range_last_index = end_index - 1,
+      .range_first_is_node_first = begin_index == sequence_first_index};
+  // Answer in O(1) for the common case where max(heights) < threshold.
+  if (nodes_[node_end - 1].pivot_height < threshold_height) return 0;
+
+  int64_t sum = 0;
+  int64_t min_height_of_current_node = nodes_[node_begin].pivot_height;
+  for (int l = 0; !range.Empty(); ++l) {
+    const ElementInfo* elements = tree_layers_[l].data();
+    if (threshold_height <= min_height_of_current_node) {
+      // Query or subquery threshold covers all elements of this node.
+      // This allows to be O(1) when the query's threshold is <= min(heights).
+      sum += range.Sum(elements);
+      return sum;
+    } else if (node_begin + 1 == node_end) {
+      // This node is a leaf, its height is < threshold, stop descent here.
+      return sum;
+    }
+
+    const int node_mid = node_begin + (node_end - node_begin) / 2;
+    const auto [pivot_height, pivot_index] = nodes_[node_mid];
+    const ElementRange right = range.RightSubRange(elements, pivot_index);
+    if (threshold_height < pivot_height) {
+      // All elements of the right child have their height above the threshold,
+      // we can project the range to the right child and add the whole subrange.
+      if (!right.Empty()) sum += right.Sum(tree_layers_[l + 1].data());
+      // Go to the left child.
+      range = range.LeftSubRange(elements);
+      node_end = node_mid;
+    } else {
+      // Go to the right child.
+      range = right;
+      node_begin = node_mid;
+      min_height_of_current_node = pivot_height;
+    }
+  }
+  return sum;
 }
 
 PathEnergyCostChecker::PathEnergyCostChecker(

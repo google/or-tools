@@ -27,6 +27,10 @@ if(NOT USE_GUROBI)
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/gurobi_.*.cc$")
 endif()
+if(NOT USE_HIGHS)
+  list(FILTER _SRCS EXCLUDE REGEX "/highs_.*.h$")
+  list(FILTER _SRCS EXCLUDE REGEX "/highs_.*.cc$")
+endif()
 if(NOT USE_PDLP)
   list(FILTER _SRCS EXCLUDE REGEX "/pdlp_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/pdlp_.*.cc$")
@@ -43,7 +47,8 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
   absl::strings
-  Eigen3::Eigen
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>
+  $<$<BOOL:${USE_HIGHS}>:highs::highs>
+  $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAMESPACE}::math_opt_proto)

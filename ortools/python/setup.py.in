@@ -46,7 +46,7 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
-        'protobuf >= 4.25.3',
+        'protobuf >= 5.26.1',
         'immutabledict >= 3.0.0',
     ],
     package_data={
@@ -99,6 +99,7 @@ setup(
             '$<TARGET_FILE_NAME:pdlp_pybind11>',
             '*.pyi'
         ],
+        '@PYTHON_PROJECT@.routing':['*.pyi'],
         '@PYTHON_PROJECT@.sat':['*.pyi'],
         '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
         '@PYTHON_PROJECT@.sat.python':[

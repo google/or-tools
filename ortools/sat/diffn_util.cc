@@ -571,7 +571,7 @@ void AppendPairwiseRestriction(const ItemForPairwiseRestriction& item1,
 }  // namespace
 
 void AppendPairwiseRestrictions(
-    const std::vector<ItemForPairwiseRestriction>& items,
+    absl::Span<const ItemForPairwiseRestriction> items,
     std::vector<PairwiseRestriction>* result) {
   for (int i1 = 0; i1 + 1 < items.size(); ++i1) {
     for (int i2 = i1 + 1; i2 < items.size(); ++i2) {

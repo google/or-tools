@@ -817,7 +817,6 @@ public class CpModel
         LinearExpr startExpr = GetLinearExpr(start);
         LinearExpr sizeExpr = GetLinearExpr(size);
         LinearExpr endExpr = GetLinearExpr(end);
-        Add(startExpr + sizeExpr == endExpr);
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
         LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);
@@ -875,7 +874,6 @@ public class CpModel
         LinearExpr startExpr = GetLinearExpr(start);
         LinearExpr sizeExpr = GetLinearExpr(size);
         LinearExpr endExpr = GetLinearExpr(end);
-        Add(startExpr + sizeExpr == endExpr).OnlyEnforceIf(is_present);
 
         LinearExpressionProto startProto = GetLinearExpressionProto(startExpr);
         LinearExpressionProto sizeProto = GetLinearExpressionProto(sizeExpr);

@@ -129,6 +129,7 @@ file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
   )
@@ -278,7 +279,15 @@ endfunction()
 list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS
+ algorithms
+ graph
+ init
+ linear_solver
+ constraint_solver
+ routing
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
   target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()

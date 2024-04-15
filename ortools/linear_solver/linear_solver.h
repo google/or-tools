@@ -599,7 +599,7 @@ class MPSolver {
   ABSL_DEPRECATED("Prefer SolveMPModel() from solve_mp_model.h.")
   static void SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
                                       MPSolutionResponse* response,
-                             std::atomic<bool>* interrupt = nullptr);
+                                      std::atomic<bool>* interrupt = nullptr);
 
   ABSL_DEPRECATED(
       "Prefer SolverTypeSupportsInterruption() from solve_mp_model.h.")

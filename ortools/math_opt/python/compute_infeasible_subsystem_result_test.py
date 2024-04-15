@@ -29,6 +29,7 @@ _ComputeInfeasibleSubsystemResult = (
 
 
 class ModelSubsetBoundsTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
+
     def test_empty(self) -> None:
         self.assertTrue(_ModelSubsetBounds().empty())
         self.assertFalse(_ModelSubsetBounds(lower=True).empty())
@@ -61,6 +62,7 @@ class ModelSubsetBoundsTest(absltest.TestCase, compare_proto.MathOptProtoAsserti
 
 
 class ModelSubsetTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
+
     def test_empty(self) -> None:
         m = model.Model()
         x = m.add_binary_variable()
@@ -168,6 +170,7 @@ class ModelSubsetTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
 
 
 class ComputeInfeasibleSubsystemResultTest(absltest.TestCase):
+
     def test_to_proto_round_trip(self) -> None:
         m = model.Model()
         x = m.add_binary_variable()

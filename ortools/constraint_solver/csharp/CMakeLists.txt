@@ -11,18 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME operations_research_constraint_solver)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE constraint_solver.i PROPERTY CPLUSPLUS ON)
+set_property(SOURCE constraint_solver.i PROPERTY SWIG_MODULE_NAME ConstraintSolverGlobals)
+set_property(SOURCE constraint_solver.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE constraint_solver.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.ConstraintSolver
   -dllimport google-ortools-native)
 swig_add_library(dotnet_constraint_solver
   TYPE OBJECT
   LANGUAGE csharp
   OUTPUT_DIR ${DOTNET_PROJECT_DIR}/ortools/constraint_solver
-  SOURCES routing.i)
+  SOURCES constraint_solver.i)
 
 #target_include_directories(dotnet_constraint_solver PRIVATE ${DOTNET_INCLUDE_DIRS})
 set_target_properties(dotnet_constraint_solver PROPERTIES

@@ -14,6 +14,7 @@
 
 using System;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 /// <summary>
 /// Vehicles Routing Problem (VRP) with Time Windows, with the difference that we'll add a fixed penalty for lateness,
@@ -158,7 +159,7 @@ public class VrpTimeWindowFixedPenalty
 
         // Setting first solution heuristic.
         RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+            RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
         // Solve the problem.

@@ -67,7 +67,7 @@ void SolomonParser::Initialize() {
   to_read_ = 1;
 }
 
-bool SolomonParser::ParseFile(const std::string& file_name) {
+bool SolomonParser::ParseFile(absl::string_view file_name) {
   for (const std::string& line :
        FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
     const std::vector<std::string> words =

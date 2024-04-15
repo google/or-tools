@@ -113,8 +113,7 @@ class CpModelPresolver {
   bool PresolveAllDiff(ConstraintProto* ct);
   bool PresolveAutomaton(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);
-  bool PresolveIntAbs(ConstraintProto* ct);
-  bool PresolveIntDiv(ConstraintProto* ct);
+  bool PresolveIntDiv(int c, ConstraintProto* ct);
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
@@ -122,6 +121,9 @@ class CpModelPresolver {
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveLinMaxWhenAllBoolean(ConstraintProto* ct);
+  bool PropagateAndReduceAffineMax(ConstraintProto* ct);
+  bool PropagateAndReduceIntAbs(ConstraintProto* ct);
+  bool PropagateAndReduceLinMax(ConstraintProto* ct);
   bool PresolveTable(ConstraintProto* ct);
   void DetectDuplicateIntervals(
       int c, google::protobuf::RepeatedField<int32_t>* intervals);
@@ -398,7 +400,12 @@ class ModelCopy {
   bool CopyLinear(const ConstraintProto& ct);
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
+
+  // If we "copy" an interval for a first time, we make sure to create the
+  // linear constraint between the start, size and end. This allow to simplify
+  // the input proto and client side code.
   bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
+  void AddLinearConstraintForInterval(const ConstraintProto& ct);
 
   // These function remove unperformed intervals. Note that they requires
   // interval to appear before (validated) as they test unperformed by testing

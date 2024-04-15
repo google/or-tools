@@ -42,6 +42,7 @@ constraint {
 
 
 class PyWrapLp(unittest.TestCase):
+
     def test_proto(self):
         input_proto = linear_solver_pb2.MPModelProto()
         text_format.Merge(TEXT_MODEL, input_proto)

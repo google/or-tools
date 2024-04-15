@@ -24,6 +24,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_solution_hint_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")

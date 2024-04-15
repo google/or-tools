@@ -1079,7 +1079,7 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   //
   // We have a * rep_x + b * rep_y == o
   int64_t a = rx.coeff;
-  int64_t b = coeff * ry.coeff;
+  int64_t b = -coeff * ry.coeff;
   int64_t o = coeff * ry.offset + offset - rx.offset;
   CHECK_NE(a, 0);
   CHECK_NE(b, 0);
@@ -1107,20 +1107,20 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
                                /*debug_no_recursion=*/true);
   }
 
-  // Canonicalize to x = c * y + o
+  // Canonicalize from (a * rep_x + b * rep_y = o) to (x = c * y + o).
   int x, y;
   int64_t c;
   bool negate = false;
   if (std::abs(a) == 1) {
     x = rx.representative;
     y = ry.representative;
-    c = b;
+    c = -b;
     negate = a < 0;
   } else {
     CHECK_EQ(std::abs(b), 1);
     x = ry.representative;
     y = rx.representative;
-    c = a;
+    c = -a;
     negate = b < 0;
   }
   if (negate) {

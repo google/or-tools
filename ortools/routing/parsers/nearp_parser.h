@@ -80,6 +80,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
@@ -211,7 +212,7 @@ class NearpParser {
   };
 
   void Initialize();
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(absl::string_view file_name);
   bool ParseMetadataLine(const std::vector<std::string>& words);
   bool ParseArc(std::string_view line, bool with_servicing);
   bool ParseEdge(std::string_view line, bool with_servicing);

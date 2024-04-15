@@ -180,12 +180,12 @@ class _UpdateTracker(model_storage.StorageUpdateTracker):
                 *quadratic_objective_updates
             )
             result.objective_updates.quadratic_coefficients.row_ids[:] = first_var_ids
-            result.objective_updates.quadratic_coefficients.column_ids[
-                :
-            ] = second_var_ids
-            result.objective_updates.quadratic_coefficients.coefficients[
-                :
-            ] = coefficients
+            result.objective_updates.quadratic_coefficients.column_ids[:] = (
+                second_var_ids
+            )
+            result.objective_updates.quadratic_coefficients.coefficients[:] = (
+                coefficients
+            )
         # Linear constraint matrix updates
         matrix_updates = [
             (l, v, self.model.get_linear_constraint_coefficient(l, v))

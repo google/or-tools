@@ -780,7 +780,7 @@ class IntegerTrail : public SatPropagator {
   // Note that this is twice the number of call to AddIntegerVariable() since
   // we automatically create the NegationOf() variable too.
   IntegerVariable NumIntegerVariables() const {
-    return IntegerVariable(vars_.size());
+    return IntegerVariable(var_lbs_.size());
   }
 
   // Optimization: you can call this before calling AddIntegerVariable()
@@ -834,6 +834,10 @@ class IntegerTrail : public SatPropagator {
   // Returns the current lower/upper bound of the given integer variable.
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
+
+  // If one needs to do a lot of LowerBound()/UpperBound() it will be faster
+  // to cache the current pointer to the underlying vector.
+  const IntegerValue* LowerBoundsData() const { return var_lbs_.data(); }
 
   // Checks if the variable is fixed.
   bool IsFixed(IntegerVariable i) const;
@@ -1061,7 +1065,7 @@ class IntegerTrail : public SatPropagator {
 
   // Returns true if the variable lower bound is still the one from level zero.
   bool VariableLowerBoundIsFromLevelZero(IntegerVariable var) const {
-    return vars_[var].current_trail_index < vars_.size();
+    return var_trail_index_[var] < var_lbs_.size();
   }
 
   // Registers a reversible class. This class will always be synced with the
@@ -1191,15 +1195,10 @@ class IntegerTrail : public SatPropagator {
   // Returns some debugging info.
   std::string DebugString();
 
-  // Information for each internal variable about its current bound.
-  struct VarInfo {
-    // The current bound on this variable.
-    IntegerValue current_bound;
-
-    // Trail index of the last TrailEntry in the trail referring to this var.
-    int current_trail_index;
-  };
-  absl::StrongVector<IntegerVariable, VarInfo> vars_;
+  // Information for each integer variable about its current lower bound and
+  // position of the last TrailEntry in the trail referring to this var.
+  absl::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
+  absl::StrongVector<IntegerVariable, int> var_trail_index_;
 
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
@@ -1215,7 +1214,7 @@ class IntegerTrail : public SatPropagator {
   absl::flat_hash_map<IntegerValue, IntegerVariable> constant_map_;
 
   // The integer trail. It always start by num_vars sentinel values with the
-  // level 0 bounds (in one to one correspondence with vars_).
+  // level 0 bounds (in one to one correspondence with var_lbs_).
   struct TrailEntry {
     IntegerValue bound;
     IntegerVariable var;
@@ -1613,29 +1612,29 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
 }
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
-  return vars_[i].current_bound;
+  return var_lbs_[i];
 }
 
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {
-  return -vars_[NegationOf(i)].current_bound;
+  return -var_lbs_[NegationOf(i)];
 }
 
 inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
-  return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
+  return var_lbs_[i] == -var_lbs_[NegationOf(i)];
 }
 
 inline IntegerValue IntegerTrail::FixedValue(IntegerVariable i) const {
   DCHECK(IsFixed(i));
-  return vars_[i].current_bound;
+  return var_lbs_[i];
 }
 
 inline IntegerValue IntegerTrail::ConditionalLowerBound(
     Literal l, IntegerVariable i) const {
   const auto it = conditional_lbs_.find({l.Index(), i});
   if (it != conditional_lbs_.end()) {
-    return std::max(vars_[i].current_bound, it->second);
+    return std::max(var_lbs_[i], it->second);
   }
-  return vars_[i].current_bound;
+  return var_lbs_[i];
 }
 
 inline IntegerValue IntegerTrail::ConditionalLowerBound(
@@ -1912,7 +1911,7 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64_t value) {
 // is the same as using different underlying variable for an integer literal and
 // its negation.
 inline std::function<void(Model*)> Implication(
-    const std::vector<Literal>& enforcement_literals, IntegerLiteral i) {
+    absl::Span<const Literal> enforcement_literals, IntegerLiteral i) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (i.bound <= integer_trail->LowerBound(i.var)) {

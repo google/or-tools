@@ -65,7 +65,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.29.0",
+    tag = "0.31.0",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -78,13 +78,6 @@ new_git_repository(
     remote = "https://github.com/madler/zlib.git",
 )
 
-## Re2
-git_repository(
-    name = "com_google_re2",
-    tag = "2024-02-01",
-    remote = "https://github.com/google/re2.git",
-)
-
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
@@ -94,15 +87,23 @@ git_repository(
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
+## Re2
+git_repository(
+    name = "com_google_re2",
+    tag = "2024-03-01",
+    remote = "https://github.com/google/re2.git",
+    repo_mapping = {"@abseil-cpp": "@com_google_absl"},
+)
+
 ## Protobuf
 # proto_library, cc_proto_library, and java_proto_library rules implicitly
 # depend on @com_google_protobuf for protoc and proto runtimes.
 # This statement defines the @com_google_protobuf repo.
 git_repository(
     name = "com_google_protobuf",
-    patches = ["//patches:protobuf-v25.3.patch"],
+    patches = ["//patches:protobuf-v26.1.patch"],
     patch_args = ["-p1"],
-    tag = "v25.3",
+    tag = "v26.1",
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 # Load common dependencies.
@@ -155,7 +156,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "bazel",
+    branch = "v1.7.0",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
@@ -213,6 +214,13 @@ pip_parse(
 load("@ortools_notebook_deps//:requirements.bzl",
      install_notebook_deps="install_deps")
 install_notebook_deps()
+
+# Protobuf
+load("@com_google_protobuf//bazel:system_python.bzl", "system_python")
+system_python(
+    name = "system_python",
+    minimum_python_version = "3.8",
+)
 
 # Absl python library
 http_archive(

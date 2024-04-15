@@ -30,6 +30,7 @@ cc_library(
     srcs = ["model_builder_helper.cc"],
     hdrs = ["model_builder_helper.h"],
     copts = [
+        "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
         "-DUSE_LP_PARSER",
@@ -42,6 +43,7 @@ cc_library(
         "//ortools/linear_solver:solve_mp_model",
         "//ortools/linear_solver/proto_solver:glop_proto_solver",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
+        "//ortools/linear_solver/proto_solver:highs_proto_solver",
         "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/linear_solver/proto_solver:scip_proto_solver",
@@ -49,7 +51,6 @@ cc_library(
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:mps_reader",
         "//ortools/util:logging",
-        "//ortools/util:solve_interrupter",
         "//ortools/xpress:environment",
     ],
 )

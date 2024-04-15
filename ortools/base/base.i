@@ -89,6 +89,10 @@ PRIMITIVE_TYPEMAP(unsigned long int, unsigned long long);
 #undef PRIMITIVE_TYPEMAP
 #endif // defined(SWIGWORDSIZE64)
 
+%include "exception.i"
+%include "std_common.i"
+%include "std_pair.i"
+
 #endif // defined(SWIGCSHARP)
 
 // SWIG macros for explicit API declaration.

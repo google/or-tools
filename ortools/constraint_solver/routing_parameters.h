@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/routing/parameters.pb.h"
 
 namespace operations_research {
 

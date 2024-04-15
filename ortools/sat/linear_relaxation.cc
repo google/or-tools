@@ -97,22 +97,6 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   return {min, max};
 }
 
-bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
-  CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
-  int current_var = -1;
-  for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
-    if (expr.vars().empty()) continue;
-    if (expr.vars().size() > 1) return false;
-    const int var = PositiveRef(expr.vars(0));
-    if (current_var == -1) {
-      current_var = var;
-    } else if (var != current_var) {
-      return false;
-    }
-  }
-  return true;
-}
-
 // Collect all the affines expressions in a LinMax constraint.
 // It checks that these are indeed affine expressions, and that they all share
 // the same variable.
@@ -121,7 +105,7 @@ bool LinMaxContainsOnlyOneVarInExpressions(const ConstraintProto& ct) {
 void CollectAffineExpressionWithSingleVariable(
     const ConstraintProto& ct, CpModelMapping* mapping, IntegerVariable* var,
     std::vector<std::pair<IntegerValue, IntegerValue>>* affines) {
-  DCHECK(LinMaxContainsOnlyOneVarInExpressions(ct));
+  DCHECK(ExpressionsContainsOnlyOneVar(ct.lin_max().exprs()));
   CHECK_EQ(ct.constraint_case(), ConstraintProto::ConstraintCase::kLinMax);
   *var = kNoIntegerVariable;
   affines->clear();
@@ -1381,7 +1365,8 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
       AppendLinMaxRelaxationPart1(ct, model, relaxation);
-      const bool is_affine_max = LinMaxContainsOnlyOneVarInExpressions(ct);
+      const bool is_affine_max =
+          ExpressionsContainsOnlyOneVar(ct.lin_max().exprs());
       if (is_affine_max) {
         AppendMaxAffineRelaxation(ct, model, relaxation);
       }

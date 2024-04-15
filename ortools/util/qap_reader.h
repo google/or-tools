@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
+
 namespace operations_research {
 
 // Quadratic assignment problem (QAP) is a classical combinatorial optimization
@@ -63,7 +65,7 @@ struct QapProblem {
 // supply flowing from factory 0 to factory 1, and 3 units of supply flowing
 // from factory 1 to 0. The distance from location 0 to location 1 is equal
 // to 2, and the distance from location 1 to 0 is equal to 1.
-QapProblem ReadQapProblemOrDie(const std::string& filepath);
+QapProblem ReadQapProblemOrDie(absl::string_view filepath);
 
 }  // namespace operations_research
 

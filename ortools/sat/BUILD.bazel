@@ -13,9 +13,9 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
-load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_java//java:defs.bzl", "java_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -570,6 +570,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/numeric:int128",
@@ -1139,9 +1140,11 @@ cc_library(
     deps = [
         ":integer",
         ":model",
+        ":precedences",
         ":sat_base",
         ":sat_solver",
         ":synchronization",
+        ":util",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
@@ -2267,11 +2270,13 @@ cc_library(
         ":integer",
         ":integer_search",
         ":model",
+        ":restart",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":synchronization",
         ":util",
+        "//ortools/util:running_stat",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",

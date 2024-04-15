@@ -26,14 +26,14 @@
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/util/solve_interrupter.h"
 
 struct MathOptInterrupter {
-  operations_research::math_opt::SolveInterrupter cpp_interrupter;
+  operations_research::SolveInterrupter cpp_interrupter;
 };
 
 namespace operations_research::math_opt {

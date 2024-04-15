@@ -14,6 +14,7 @@
 #include "ortools/sat/intervals.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <utility>
@@ -226,10 +227,10 @@ void IntervalsRepository::InitAllDecomposedEnergies() {
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(
     const std::vector<IntervalVariable>& tasks, Model* model)
-    : trail_(model->GetOrCreate<Trail>()),
+    : model_(model),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
       interval_variables_(tasks),
       capacity_(tasks.size()),
       cached_size_min_(new IntegerValue[capacity_]),
@@ -269,10 +270,10 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
                                                        Model* model)
-    : trail_(model->GetOrCreate<Trail>()),
+    : model_(model),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
       capacity_(num_tasks),
       cached_size_min_(new IntegerValue[capacity_]),
       cached_start_min_(new IntegerValue[capacity_]),
@@ -344,6 +345,7 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
 
   // Detect first if we have a conflict using the relation start + size = end.
   if (dmax < 0) {
+    ClearReason();
     AddSizeMaxReason(t, dmax);
     return PushTaskAbsence(t);
   }
@@ -499,43 +501,54 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     int a, int b, bool add_reason_if_after) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  if (before.var == kNoIntegerVariable) return kMinIntegerValue;
-  if (after.var == kNoIntegerVariable) return kMinIntegerValue;
-
-  const IntegerValue needed = before.constant - after.constant;
-  const IntegerValue static_known =
-      precedence_relations_->GetOffset(before.var, after.var);
-
-  const std::pair<Literal, IntegerValue> dynamic_known =
-      precedences_->GetConditionalOffset(before.var, after.var);
-
-  const IntegerValue best = std::max(static_known, dynamic_known.second);
-  if (best == kMinIntegerValue) return kMinIntegerValue;
-
-  if (add_reason_if_after && dynamic_known.second > static_known &&
-      dynamic_known.second >= needed) {
-    literal_reason_.push_back(dynamic_known.first.Negated());
+  if (before.var == kNoIntegerVariable || before.coeff != 1 ||
+      after.var == kNoIntegerVariable || after.coeff != 1) {
+    return kMinIntegerValue;
   }
-  return best - needed;
+
+  const IntegerValue offset =
+      precedence_relations_->GetConditionalOffset(before.var, after.var);
+  if (offset == kMinIntegerValue) return kMinIntegerValue;
+
+  const IntegerValue needed_offset = before.constant - after.constant;
+  const IntegerValue distance = offset - needed_offset;
+  if (add_reason_if_after && distance >= 0) {
+    for (const Literal l : precedence_relations_->GetConditionalEnforcements(
+             before.var, after.var)) {
+      literal_reason_.push_back(l.Negated());
+    }
+  }
+  return distance;
 }
 
-void SchedulingConstraintHelper::AddLevelZeroPrecedence(int a, int b) {
+// Note that we could call this at a positive level to propagate any literal
+// associated to task a before task b. However we only call this for task that
+// are in detectable precedence, which means the normal precedence or linear
+// propagator should have already propagated that Boolean too.
+bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
+  CHECK(IsPresent(a));
+  CHECK(IsPresent(b));
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (!IsPresent(a)) return;
-  if (!IsPresent(b)) return;
+
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  if (after.coeff != 1) return;
-  if (before.coeff != 1) return;
-  if (after.var == kNoIntegerVariable) return;
-  if (before.var == kNoIntegerVariable) return;
+  if (after.coeff != 1) return true;
+  if (before.coeff != 1) return true;
+  if (after.var == kNoIntegerVariable) return true;
+  if (before.var == kNoIntegerVariable) return true;
   const IntegerValue offset = before.constant - after.constant;
-  precedence_relations_->Add(before.var, after.var, offset);
-  if (precedences_->AddPrecedenceWithOffsetIfNew(before.var, after.var,
-                                                 offset)) {
+  if (precedence_relations_->Add(before.var, after.var, offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
+
+    // TODO(user): Adding new constraint during propagation might not be the
+    // best idea as it can create some complication.
+    AddWeightedSumLowerOrEqual({}, {before.var, after.var},
+                               {int64_t{1}, int64_t{-1}}, -offset.value(),
+                               model_);
+    if (model_->GetOrCreate<SatSolver>()->ModelIsUnsat()) return false;
   }
+  return true;
 }
 
 absl::Span<const TaskTime>
@@ -708,7 +721,6 @@ bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
 bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
-  if (!precedences_->PropagateOutgoingArcs(lit.var)) return false;
   if (!UpdateCachedValues(t)) return false;
   return true;
 }

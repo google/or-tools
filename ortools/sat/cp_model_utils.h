@@ -224,6 +224,23 @@ bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
                                     int64_t b_scaling = 1);
 
+// Returns true if there exactly one variable appearing in all the expressions.
+template <class ExpressionList>
+bool ExpressionsContainsOnlyOneVar(const ExpressionList& exprs) {
+  int unique_var = -1;
+  for (const LinearExpressionProto& expr : exprs) {
+    for (const int var : expr.vars()) {
+      CHECK(RefIsPositive(var));
+      if (unique_var == -1) {
+        unique_var = var;
+      } else if (var != unique_var) {
+        return false;
+      }
+    }
+  }
+  return unique_var != -1;
+}
+
 // Default seed for fingerprints.
 constexpr uint64_t kDefaultFingerprintSeed = 0xa5b85c5e198ed849;
 

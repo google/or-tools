@@ -64,7 +64,7 @@ index 0000000000..871fde8e55
 +/* #undef SCIP_NO_SIGACTION */
 +/* #undef SCIP_NO_STRTOK_R */
 +/* #undef TPI_NONE */
-+#define TPI_TNY
++#define TPI_NONE
 +/* #undef TPI_OMP */
 +#define SCIP_THREADSAFE
 +#define WITH_SCIPDEF

@@ -25,9 +25,9 @@ and .Net. Each language have different requirements for the code samples.
 #include <sstream>
 
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/routing/enums.pb.h"
 
 namespace operations_research {
 
@@ -93,8 +93,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
 #!/usr/bin/env python3
 """Vehicle Routing example."""
 
-from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ortools.routing import enums_pb2
 
 
 def main():
@@ -126,7 +126,7 @@ def main():
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )  # pylint: disable=no-member
 
     # Solve the problem.
@@ -154,16 +154,16 @@ if __name__ == "__main__":
 ### Java code samples
 
 ```java
-package com.google.ortools.constraintsolver.samples;
+package com.google.ortools.routing.samples;
 import static java.lang.Math.abs;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.main;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 
 /** Minimal Routing example to showcase calling the solver.*/
@@ -197,7 +197,7 @@ public class SimpleRoutingProgram {
 
     // Setting first solution heuristic.
     RoutingSearchParameters searchParameters =
-        main.defaultRoutingSearchParameters()
+        Globals.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
@@ -230,6 +230,7 @@ public class SimpleRoutingProgram {
 ```cs
 using System;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 /// <summary>
 ///   This is a sample using the routing library .Net wrapper.
@@ -263,8 +264,7 @@ public class SimpleRoutingProgram
         routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
         // Solve the problem.

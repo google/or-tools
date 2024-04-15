@@ -27,6 +27,7 @@ class CppExampleTest(
     log_scraping.LogScraping,
     absltest.TestCase,
 ):
+
     def test_regression(self):
         result = self.assert_binary_succeeds("ortools/math_opt/core/c_api/cpp_example")
         is_optimal = self.assert_has_line_with_prefixed_number(

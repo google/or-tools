@@ -14,7 +14,7 @@
 using System;
 using Xunit;
 using Google.OrTools.ConstraintSolver;
-using static Google.OrTools.ConstraintSolver.operations_research_constraint_solver;
+using static Google.OrTools.ConstraintSolver.ConstraintSolverGlobals;
 
 namespace Google.OrTools.Tests
 {

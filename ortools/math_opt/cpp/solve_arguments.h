@@ -18,12 +18,12 @@
 #define OR_TOOLS_MATH_OPT_CPP_SOLVE_ARGUMENTS_H_
 
 #include "absl/status/status.h"
-#include "ortools/math_opt/core/solve_interrupter.h"      // IWYU pragma: export
 #include "ortools/math_opt/cpp/callback.h"                // IWYU pragma: export
 #include "ortools/math_opt/cpp/message_callback.h"        // IWYU pragma: export
 #include "ortools/math_opt/cpp/model_solve_parameters.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/parameters.h"              // IWYU pragma: export
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/util/solve_interrupter.h"  // IWYU pragma: export
 
 namespace operations_research::math_opt {
 

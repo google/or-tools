@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
@@ -197,7 +198,7 @@ class TspLibTourParser final {
  public:
   TspLibTourParser();
   // Loads and parses a given tour file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Returns a vector corresponding to the sequence of nodes of the tour.
   const std::vector<int>& tour() const { return tour_; }
   // Returns the size of the tour.
@@ -236,7 +237,7 @@ class CVRPToursParser final {
  public:
   CVRPToursParser();
   // Loads and parses a given tours file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Returns a vector corresponding to the sequence of nodes of tours.
   const std::vector<std::vector<int>>& tours() const { return tours_; }
   int64_t cost() const { return cost_; }
