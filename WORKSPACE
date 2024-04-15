@@ -47,7 +47,7 @@ git_repository(
 
 git_repository(
     name = "rules_java",
-    tag = "7.3.2",
+    tag = "7.5.0",
     remote = "https://github.com/bazelbuild/rules_java.git",
 )
 

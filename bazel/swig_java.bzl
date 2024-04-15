@@ -13,6 +13,9 @@
 
 """Build definitions for SWIG Java."""
 
+load("@rules_java//java:java_library.bzl", "java_library")
+load("@rules_java//java/common:java_common.bzl", "java_common")
+
 def _create_src_jar(ctx, java_runtime_info, input_dir, output_jar):
     jar_args = ctx.actions.args()
     jar_args.add("cf", output_jar)
@@ -198,8 +201,7 @@ def ortools_java_wrap_cc(
         visibility = visibility,
         **kwargs
     )
-
-    native.java_library(
+    java_library(
         name = name,
         srcs = [srcjar],
         deps = java_deps,
