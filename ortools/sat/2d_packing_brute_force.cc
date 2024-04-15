@@ -21,6 +21,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
@@ -350,15 +351,14 @@ bool BruteForceOrthogonalPackingImpl(
   return !has_unplaced_item;
 }
 
-}  // namespace
-
-std::vector<Rectangle> BruteForceOrthogonalPacking(
+bool BruteForceOrthogonalPackingNoPreprocessing(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
+    const std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    absl::Span<Rectangle> result) {
   IntegerValue smallest_x = std::numeric_limits<IntegerValue>::max();
   IntegerValue smallest_y = std::numeric_limits<IntegerValue>::max();
-  int num_items = sizes_x.size();
+  const int num_items = sizes_x.size();
   CHECK_LE(num_items, kMaxProblemSize);
   std::vector<int> item_index_sorted_by_area_desc(num_items);
   std::array<absl::InlinedVector<PotentialPositionForItem, 16>, kMaxProblemSize>
@@ -366,11 +366,16 @@ std::vector<Rectangle> BruteForceOrthogonalPacking(
   absl::Span<absl::InlinedVector<PotentialPositionForItem, 16>>
       potential_item_positions(potential_item_positions_storage.data(),
                                num_items);
+
   for (int i = 0; i < num_items; ++i) {
     smallest_x = std::min(smallest_x, sizes_x[i]);
     smallest_y = std::min(smallest_y, sizes_y[i]);
     item_index_sorted_by_area_desc[i] = i;
     potential_item_positions[i].push_back({0, 0, false});
+    if (sizes_x[i] > bounding_box_size.first ||
+        sizes_y[i] > bounding_box_size.second) {
+      return false;
+    }
   }
   std::sort(item_index_sorted_by_area_desc.begin(),
             item_index_sorted_by_area_desc.end(),
@@ -398,15 +403,153 @@ std::vector<Rectangle> BruteForceOrthogonalPacking(
       new_sizes_x, new_sizes_y, bounding_box_size, smallest_x, smallest_y,
       item_positions, placed_item_indexes, potential_item_positions, slack);
   if (!found_solution) {
-    return {};
+    return false;
   }
-  std::vector<Rectangle> result(num_items);
   for (int i = 0; i < num_items; ++i) {
     result[item_index_sorted_by_area_desc[i]] = item_positions[i];
   }
-  VLOG_EVERY_N_SEC(2, 3) << "Found a feasible packing by brute force. Dot:\n "
+  return true;
+}
+
+// Try to find an equivalent smaller OPP problem by fixing large items.
+// The API is a bit unusual: it takes a reference to a mutable Span of sizes and
+// rectangles. When this function finds an item that can be fixed, it first adds
+// it fixed position to `result` then reorders `sizes_x`, `sizes_y`,
+// `result_index_map` and `result` to put that item in the end of the span and
+// then resizes the span so it contain only non-fixed items.
+bool Preprocess(absl::Span<IntegerValue>& sizes_x,
+                absl::Span<IntegerValue>& sizes_y,
+                std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+                absl::Span<int>& result_index_map,
+                absl::Span<Rectangle>& result) {
+  const int num_items = sizes_x.size();
+  if (num_items == 1) {
+    return false;
+  }
+  IntegerValue smallest_x = std::numeric_limits<IntegerValue>::max();
+  IntegerValue largest_x = std::numeric_limits<IntegerValue>::min();
+  IntegerValue smallest_y = std::numeric_limits<IntegerValue>::max();
+  IntegerValue largest_y = std::numeric_limits<IntegerValue>::min();
+  int largest_x_idx = -1;
+  int largest_y_idx = -1;
+  for (int i = 0; i < num_items; ++i) {
+    if (sizes_x[i] > largest_x) {
+      largest_x = sizes_x[i];
+      largest_x_idx = i;
+    }
+    if (sizes_y[i] > largest_y) {
+      largest_y = sizes_y[i];
+      largest_y_idx = i;
+    }
+    smallest_x = std::min(smallest_x, sizes_x[i]);
+    smallest_y = std::min(smallest_y, sizes_y[i]);
+  }
+
+  if (largest_x > bounding_box_size.first ||
+      largest_y > bounding_box_size.second) {
+    // No point in optimizing obviously infeasible instance.
+    return false;
+  }
+  const auto remove_item = [&sizes_x, &sizes_y,
+                            &result_index_map](int index_to_remove) {
+    std::swap(sizes_x[index_to_remove], sizes_x.back());
+    sizes_x.remove_suffix(1);
+    std::swap(sizes_y[index_to_remove], sizes_y.back());
+    sizes_y.remove_suffix(1);
+    std::swap(result_index_map[index_to_remove], result_index_map.back());
+    result_index_map.remove_suffix(1);
+  };
+  if (largest_x + smallest_x > bounding_box_size.first) {
+    // No item (not even the narrowest one) fit alongside the widest item. So we
+    // care only about fitting the remaining items in the remaining space.
+    bounding_box_size.second -= sizes_y[largest_x_idx];
+    result.back() = {
+        .x_min = 0,
+        .x_max = largest_x,
+        .y_min = bounding_box_size.second,
+        .y_max = bounding_box_size.second + sizes_y[largest_x_idx]};
+    result.remove_suffix(1);
+    remove_item(largest_x_idx);
+    Preprocess(sizes_x, sizes_y, bounding_box_size, result_index_map, result);
+    return true;
+  }
+  if (largest_y + smallest_y > bounding_box_size.second) {
+    bounding_box_size.first -= sizes_x[largest_y_idx];
+    result.back() = {.x_min = bounding_box_size.first,
+                     .x_max = bounding_box_size.first + sizes_x[largest_y_idx],
+                     .y_min = 0,
+                     .y_max = largest_y};
+    result.remove_suffix(1);
+    remove_item(largest_y_idx);
+    Preprocess(sizes_x, sizes_y, bounding_box_size, result_index_map, result);
+    return true;
+  }
+  return false;
+}
+
+}  // namespace
+
+BruteForceResult BruteForceOrthogonalPacking(
+    absl::Span<const IntegerValue> sizes_x,
+    absl::Span<const IntegerValue> sizes_y,
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    int max_complexity) {
+  const int num_items = sizes_x.size();
+
+  if (num_items > 2 * max_complexity) {
+    // It is unlikely that preprocessing will remove half of the items, so don't
+    // lose time trying.
+    return {.status = BruteForceResult::Status::kTooBig};
+  }
+  CHECK_LE(num_items, kMaxProblemSize);
+  std::vector<int> preprocessing_order(num_items);
+  std::array<IntegerValue, kMaxProblemSize> new_sizes_x_storage,
+      new_sizes_y_storage;
+  // We need a mutable array of sizes for preprocessing.
+  absl::Span<IntegerValue> new_sizes_x(new_sizes_x_storage.data(), num_items);
+  absl::Span<IntegerValue> new_sizes_y(new_sizes_y_storage.data(), num_items);
+  for (int i = 0; i < num_items; ++i) {
+    preprocessing_order[i] = i;
+    new_sizes_x[i] = sizes_x[i];
+    new_sizes_y[i] = sizes_y[i];
+  }
+  std::array<Rectangle, kMaxProblemSize> unordered_result_storage;
+  absl::Span<Rectangle> unordered_result(unordered_result_storage.data(),
+                                         num_items);
+  absl::Span<IntegerValue> post_processed_sizes_x = new_sizes_x;
+  absl::Span<IntegerValue> post_processed_sizes_y = new_sizes_y;
+  absl::Span<Rectangle> result_after_preprocessing = unordered_result;
+  std::pair<IntegerValue, IntegerValue> post_processed_bounding_box_size =
+      bounding_box_size;
+  absl::Span<int> permutation = absl::MakeSpan(preprocessing_order);
+  const bool post_processed =
+      Preprocess(post_processed_sizes_x, post_processed_sizes_y,
+                 post_processed_bounding_box_size, permutation,
+                 result_after_preprocessing);
+  DCHECK_EQ(result_after_preprocessing.size(), post_processed_sizes_x.size());
+  if (result_after_preprocessing.size() > max_complexity) {
+    return {.status = BruteForceResult::Status::kTooBig};
+  }
+  const bool is_feasible = BruteForceOrthogonalPackingNoPreprocessing(
+      post_processed_sizes_x, post_processed_sizes_y,
+      post_processed_bounding_box_size, result_after_preprocessing);
+  VLOG_EVERY_N_SEC(2, 3)
+      << "Solved by brute force a problem of " << num_items << " items"
+      << (post_processed ? absl::StrCat(" (", post_processed_sizes_x.size(),
+                                        " after preprocessing)")
+                         : "")
+      << ": solution " << (is_feasible ? "found" : "not found") << ".";
+  if (!is_feasible) {
+    return {.status = BruteForceResult::Status::kNoSolutionExists};
+  }
+  std::vector<Rectangle> result(num_items);
+  for (int i = 0; i < num_items; ++i) {
+    result[preprocessing_order[i]] = unordered_result[i];
+  }
+  VLOG_EVERY_N_SEC(3, 3) << "Found a feasible packing by brute force. Dot:\n "
                          << RenderDot(bounding_box_size, result);
-  return result;
+  return {.status = BruteForceResult::Status::kFoundSolution,
+          .positions_for_solution = result};
 }
 
 }  // namespace sat
