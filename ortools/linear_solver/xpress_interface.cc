@@ -2056,7 +2056,6 @@ template <class T>
 // T = MPVariable | MPConstraint
 // or any class that has a public method name() const
 void ExtractNames(XPRSprob mLp, const std::vector<T*>& objects) {
-  MPObjective o;
   const bool have_names =
       std::any_of(objects.begin(), objects.end(),
                   [](const T* x) { return !x->name().empty(); });
