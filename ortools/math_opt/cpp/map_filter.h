@@ -22,8 +22,12 @@
 #include <optional>
 
 #include "absl/algorithm/container.h"
+#include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/key_types.h"
+#include "ortools/math_opt/cpp/linear_constraint.h"
+#include "ortools/math_opt/cpp/model.h"
+#include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
@@ -104,6 +108,20 @@ struct MapFilter {
   // internal consistency of the referenced variables and constraints.
   SparseVectorFilterProto Proto() const;
 };
+
+// Returns the MapFilter<Variable> equivalent to `proto`.
+//
+// Requires that (or returns a status error):
+//  * proto.filtered_ids has elements that are variables in `model`.
+absl::StatusOr<MapFilter<Variable>> VariableFilterFromProto(
+    const Model& model, const SparseVectorFilterProto& proto);
+
+// Returns the MapFilter<LinearConstraint> equivalent to `proto`.
+//
+// Requires that (or returns a status error):
+//  * proto.filtered_ids has elements that are linear constraints in `model`.
+absl::StatusOr<MapFilter<LinearConstraint>> LinearConstraintFilterFromProto(
+    const Model& model, const SparseVectorFilterProto& proto);
 
 // Returns a filter that skips all key-value pairs.
 //

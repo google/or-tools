@@ -92,10 +92,26 @@ message SolveRequest {
 
 // Response for a unary remote solve in MathOpt.
 message SolveResponse {
+  // Either `result` or `status` must be set. This is equivalent to C++
+  // StatusOr<SolveResult>.
+  oneof status_or {
   // Description of the output of solving the model in the request.
   SolveResultProto result = 1;
+
+    // The absl::Status returned by the solver. It should never be OK when set.
+    StatusProto status = 3;
+  }
 
   // If SolveParametersProto.enable_output has been used, this will contain log
   // messages for solvers that support message callbacks.
   repeated string messages = 2;
+}
+
+// The streamed version of absl::Status.
+message StatusProto {
+  // The status code, one of the absl::StatusCode.
+  int32 code = 1;
+
+  // The status message.
+  string message = 2;
 }

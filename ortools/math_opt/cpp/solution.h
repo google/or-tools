@@ -211,7 +211,6 @@ struct Basis {
   // Returns an error if:
   //  * VariableBasisFromProto(basis_proto.variable_status) fails.
   //  * LinearConstraintBasisFromProto(basis_proto.constraint_status) fails.
-  //  * basis_proto.basic_dual_feasibility is unspecified.
   static absl::StatusOr<Basis> FromProto(const ModelStorage* model,
                                          const BasisProto& basis_proto);
 
@@ -238,8 +237,9 @@ struct Basis {
   //
   // If you are providing a starting basis via
   // `ModelSolveParameters.initial_basis`, this value is ignored. It is only
-  // relevant for the basis returned by `Solution.basis`.
-  SolutionStatus basic_dual_feasibility = SolutionStatus::kUndetermined;
+  // relevant for the basis returned by `Solution.basis`, and it is is always
+  // populated in a Basis returned by a call to Solve().
+  std::optional<SolutionStatus> basic_dual_feasibility;
 };
 
 // What is included in a solution depends on the kind of problem and solver.

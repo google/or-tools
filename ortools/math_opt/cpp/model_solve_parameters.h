@@ -182,6 +182,8 @@ struct ModelSolveParameters {
 
     // Returns the proto equivalent of this object.
     ObjectiveParametersProto Proto() const;
+
+    static ObjectiveParameters FromProto(const ObjectiveParametersProto& proto);
   };
   // Parameters for individual objectives in a multi-objective model.
   ObjectiveMap<ObjectiveParameters> objective_parameters;
@@ -204,6 +206,11 @@ struct ModelSolveParameters {
   // The caller should use CheckModelStorage() as this function does not check
   // internal consistency of the referenced variables and constraints.
   ModelSolveParametersProto Proto() const;
+
+  // Returns the ModelSolveParameters corresponding to this proto and the given
+  // model.
+  static absl::StatusOr<ModelSolveParameters> FromProto(
+      const Model& model, const ModelSolveParametersProto& proto);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
