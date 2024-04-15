@@ -15,7 +15,6 @@
 
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 #include "ortools/routing/parsers/simple_graph.h"
@@ -55,10 +54,9 @@ TEST(NearpParserTest, LoadNonExistingFile) {
 }
 
 TEST(NearpParserTest, LoadBHW1) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/testdata/"
-                     "nearp_BHW1.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/testdata/"
+                                         "nearp_BHW1.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "BHW1");
@@ -97,10 +95,9 @@ TEST(NearpParserTest, LoadBHW1) {
 }
 
 TEST(NearpParserTest, LoadToy) {
-  std::string file_name =
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                     "ortools/routing/parsers/"
-                     "testdata/nearp_toy.dat");
+  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                         "ortools/routing/parsers/"
+                                         "testdata/nearp_toy.dat");
   NearpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "Toy");

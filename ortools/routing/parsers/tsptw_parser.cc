@@ -81,7 +81,7 @@ bool TspTWParser::LoadFile(const std::string& file_name) {
   return ParseLopezIbanezBlum(file_name) || ParseDaSilvaUrrutia(file_name);
 }
 
-bool TspTWParser::ParseLopezIbanezBlum(const std::string& file_name) {
+bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
   int section = 0;
   int entry_count = 0;
   for (const std::string& line :

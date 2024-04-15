@@ -70,7 +70,7 @@ class SolomonParser {
   // the instance. Loading a new instance clears the previously loaded instance.
 
   // Loads instance from a file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Loads instance from a file contained in a zipped archive; the archive can
   // contain multiple files.
   bool LoadFile(absl::string_view file_name, const std::string& archive_name);

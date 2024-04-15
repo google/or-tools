@@ -36,7 +36,7 @@ SolomonParser::SolomonParser()
   Initialize();
 }
 
-bool SolomonParser::LoadFile(const std::string& file_name) {
+bool SolomonParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }

@@ -70,7 +70,7 @@ class TspTWParser final {
   TspTWParser(const TspTWParser&) = delete;
   void operator=(const TspTWParser&) = delete;
 #endif
-  bool ParseLopezIbanezBlum(const std::string& file_name);
+  bool ParseLopezIbanezBlum(absl::string_view file_name);
   bool ParseDaSilvaUrrutia(absl::string_view file_name);
 
   int64_t size_;

@@ -17,7 +17,6 @@
 #include <functional>
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
@@ -27,8 +26,6 @@
 #define ROOT_DIR
 #endif  // _MSC_VER
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
-
 namespace operations_research {
 namespace {
 TEST(PdTspParserTest, LoadDataSet) {
@@ -37,8 +34,7 @@ TEST(PdTspParserTest, LoadDataSet) {
                     "pdtsp_prob10b.txt",
        }) {
     PdTspParser parser;
-    EXPECT_TRUE(parser.LoadFile(
-        file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), data)));
+    EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), data)));
     EXPECT_EQ(0, parser.depot());
     EXPECT_EQ(21, parser.Size());
     EXPECT_FALSE(parser.IsPickup(0));   // depot

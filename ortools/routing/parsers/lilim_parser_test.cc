@@ -55,10 +55,9 @@ TEST(LiLimParserTest, LoadNonExistingFile) {
 
 TEST(LiLimParserTest, LoadExistingFile) {
   LiLimParser parser;
-  EXPECT_TRUE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                                     "ortools/routing/parsers"
-                                     "/testdata/pdptw_LRC2_10_6.txt")));
+  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                             "ortools/routing/parsers"
+                                             "/testdata/pdptw_LRC2_10_6.txt")));
   CheckData(parser);
   // Load a non-existing file to check the parser was cleaned.
   EXPECT_FALSE(parser.LoadFile("doesnotexist.txt"));
@@ -78,10 +77,9 @@ TEST(LiLimParserTest, LoadNonExistingArchive) {
 
 TEST(LiLimParserTest, LoadNonExistingInstance) {
   LiLimParser parser;
-  EXPECT_FALSE(
-      parser.LoadFile("doesnotexist.txt",
-                      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                                     ROOT_DIR "ortools/routing/"
+  EXPECT_FALSE(parser.LoadFile("doesnotexist.txt",
+                               file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                              "ortools/routing/"
                                               "/parsers/testdata/lilim.zip")));
 }
 

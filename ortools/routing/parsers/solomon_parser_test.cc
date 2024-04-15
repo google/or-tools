@@ -58,7 +58,7 @@ TEST(SolomonParserTest, LoadNonExistingInstance) {
   SolomonParser parser;
   EXPECT_FALSE(parser.LoadFile(
       "doesnotexist.txt",
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
+      file::JoinPath(::testing::SrcDir(),
                      absl::GetFlag(FLAGS_solomon_test_archive))));
 }
 }  // namespace

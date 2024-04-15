@@ -50,7 +50,7 @@ void NearpParser::Initialize() {
   section_ = METADATA;
 }
 
-bool NearpParser::LoadFile(const std::string& file_name) {
+bool NearpParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }

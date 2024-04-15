@@ -15,7 +15,6 @@
 
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
@@ -24,8 +23,6 @@
 #else
 #define ROOT_DIR
 #endif  // _MSC_VER
-
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
 
 namespace operations_research {
 namespace {
@@ -46,8 +43,7 @@ TEST(TspTWParserTest, LoadDataSet) {
         ROOT_DIR "ortools/routing/parsers/testdata/"
                  "n20w20.002.txt"}) {
     TspTWParser parser;
-    EXPECT_TRUE(parser.LoadFile(
-        file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), data)));
+    EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), data)));
     EXPECT_EQ(0, parser.depot());
     const int size = sizes[count];
     EXPECT_EQ(size, parser.size());
