@@ -148,7 +148,8 @@ class OrthogonalPackingInfeasibilityDetector {
  private:
   bool RelaxConflictWithBruteForce(
       OrthogonalPackingResult& result,
-      std::pair<IntegerValue, IntegerValue> bounding_box_size);
+      std::pair<IntegerValue, IntegerValue> bounding_box_size,
+      int brute_force_threshold);
 
   OrthogonalPackingResult TestFeasibilityImpl(
       absl::Span<const IntegerValue> sizes_x,

@@ -859,15 +859,15 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
   start_hour  max_load
      0            0
      2            0
-     4            1
-     6            3
-     8            6
+     4            3
+     6            6
+     8            8
     10           12
     12            8
     14           12
     16           10
-    18            4
-    20            2
+    18            6
+    20            4
     22            0
   """
 
@@ -927,6 +927,43 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return max_load_df, min_load_df, tasks_df
 
 
+def check_solution(
+    tasks: list[tuple[int, int, int]],
+    min_load_df: pd.DataFrame,
+    max_load_df: pd.DataFrame,
+) -> bool:
+    """Checks the solution validity against the min and max load constraints."""
+    period_length: int = 120
+    horizon: int = 24 * 60
+    actual_load_profile = [0 for _ in range(horizon)]
+    min_load_profile = [0 for _ in range(horizon)]
+    max_load_profile = [0 for _ in range(horizon)]
+    for task in tasks:
+        for t in range(task[1]):
+            actual_load_profile[task[0] + t] += task[2]
+    for row in max_load_df.itertuples():
+        for t in range(period_length):
+            max_load_profile[row.start_hour * 60 + t] = row.max_load
+    for row in min_load_df.itertuples():
+        for t in range(period_length):
+            min_load_profile[row.start_hour * 60 + t] = row.min_load
+
+    for time in range(horizon):
+        if actual_load_profile[time] > max_load_profile[time]:
+            print(
+                f"actual load {actual_load_profile[time]} at time {time} is greater"
+                f" than max load {max_load_profile[time]}"
+            )
+            return False
+        if actual_load_profile[time] < min_load_profile[time]:
+            print(
+                f"actual load {actual_load_profile[time]} at time {time} is"
+                f" less than min load {min_load_profile[time]}"
+            )
+            return False
+    return True
+
+
 def main(_) -> None:
     """Create the model and solves it."""
     max_load_df, min_load_df, tasks_df = create_data_model()
@@ -944,7 +981,10 @@ def main(_) -> None:
 
     # Variables
     starts = model.new_int_var_series(
-        name="starts", lower_bounds=0, upper_bounds=horizon, index=tasks_df.index
+        name="starts",
+        lower_bounds=0,
+        upper_bounds=horizon - tasks_df.duration,
+        index=tasks_df.index,
     )
     performed = model.new_bool_var_series(name="performed", index=tasks_df.index)
 
@@ -956,7 +996,7 @@ def main(_) -> None:
         are_present=performed,
     )
 
-    # Set up complement intervals (from 0 to start, and from start + size to
+    # Set up complemented intervals (from 0 to start, and from start + size to
     # horizon).
     prefix_intervals = model.new_optional_interval_var_series(
         name="prefix_intervals",
@@ -993,9 +1033,12 @@ def main(_) -> None:
         max_load,
     )
 
-    # Set up the min profile. We use complement intervals to maintain the
+    # Set up the min profile. We use complemented intervals to maintain the
     # complement of the work load, and fixed intervals to enforce the min
     # number of active workers per time period.
+    #
+    # Note that this works only if the max load cumulative is also added to the
+    # model.
     time_period_min_intervals = model.new_fixed_size_interval_var_series(
         name="time_period_min_intervals",
         index=min_load_df.index,
@@ -1004,6 +1047,8 @@ def main(_) -> None:
     )
     time_period_min_heights = min_load_df.min_load
 
+    # We take into account optional intervals. The actual capacity of the min load
+    # cumulative is the sum of all the active demands.
     sum_of_demands = sum(tasks_df.load)
     complement_capacity = model.new_int_var(0, sum_of_demands, "complement_capacity")
     model.add(complement_capacity == performed.dot(tasks_df.load))
@@ -1026,7 +1071,7 @@ def main(_) -> None:
 
     # Create the solver and solve the model.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
+    solver.parameters.log_search_progress = False
     solver.parameters.num_workers = 16
     solver.parameters.max_time_in_seconds = 30.0
     status = solver.solve(model)
@@ -1034,11 +1079,19 @@ def main(_) -> None:
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         start_values = solver.values(starts)
         performed_values = solver.boolean_values(performed)
+        tasks: list[tuple[int, int, int]] = []
         for task in tasks_df.index:
             if performed_values[task]:
-                print(f"task {task} starts at {start_values[task]}")
+                print(
+                    f'task {task} duration={tasks_df["duration"][task]} '
+                    f'load={tasks_df["load"][task]} starts at {start_values[task]}'
+                )
+                tasks.append(
+                    (start_values[task], tasks_df.duration[task], tasks_df.load[task])
+                )
             else:
                 print(f"task {task} is not performed")
+        assert check_solution(tasks, min_load_df, max_load_df)
     elif status == cp_model.INFEASIBLE:
         print("No solution found")
     else:
