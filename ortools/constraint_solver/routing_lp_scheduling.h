@@ -852,8 +852,8 @@ class LocalDimensionCumulOptimizer {
   ComputeRouteCumulCostsForResourcesWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-      const std::vector<RoutingModel::ResourceGroup::Resource>& resources,
-      const std::vector<int>& resource_indices, bool optimize_vehicle_costs,
+      absl::Span<const RoutingModel::ResourceGroup::Resource> resources,
+      absl::Span<const int> resource_indices, bool optimize_vehicle_costs,
       std::vector<int64_t>* optimal_costs_without_transits,
       std::vector<std::vector<int64_t>>* optimal_cumuls,
       std::vector<std::vector<int64_t>>* optimal_breaks);
@@ -884,8 +884,8 @@ class LocalDimensionCumulOptimizer {
   DimensionSchedulingStatus ComputeRouteSolutionCostWithoutFixedTransits(
       int vehicle, const std::function<int64_t(int64_t)>& next_accessor,
       const RoutingModel::RouteDimensionTravelInfo& dimension_travel_info,
-      const std::vector<int64_t>& solution_cumul_values,
-      const std::vector<int64_t>& solution_break_values, int64_t* solution_cost,
+      absl::Span<const int64_t> solution_cumul_values,
+      absl::Span<const int64_t> solution_break_values, int64_t* solution_cost,
       int64_t* cost_offset = nullptr,
       bool reuse_previous_model_if_possible = false, bool clear_lp = true,
       absl::Duration* solve_duration = nullptr);

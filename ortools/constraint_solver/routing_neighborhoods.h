@@ -700,7 +700,7 @@ class ExchangeSubtrip : public PathOperator {
   ExchangeSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
                   std::function<int(int64_t)> start_empty_path_class,
-                  const std::vector<PickupDeliveryPair>& pairs)
+                  absl::Span<const PickupDeliveryPair> pairs)
       : ExchangeSubtrip(vars, secondary_vars, std::move(start_empty_path_class),
                         nullptr, pairs) {}
 
