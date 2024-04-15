@@ -688,6 +688,12 @@ void SharedTreeWorker::MaybeProposeSplit() {
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
       --splits_wanted_;
       assigned_tree_literals_.push_back(split_decision);
+    } else {
+      // If we managed to encode the decision and it wasn't accepted, it's
+      // unlikely any splits in this subtree will be accepted, skip the
+      // unnecessary synchronisation until the next time we backtrack to level
+      // 0.
+      splits_wanted_ = 0;
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   }
