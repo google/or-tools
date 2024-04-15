@@ -30,7 +30,10 @@ elseif(UNIX)
     )
 endif()
 
-target_link_libraries(routing_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+target_link_libraries(routing_pybind11 PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  pybind11_native_proto_caster
+)
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
 
 if(BUILD_TESTING)
