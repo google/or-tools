@@ -730,23 +730,33 @@ TEST_F(XpressFixtureMIP, Write) {
   tmpFile.close();
   std::filesystem::remove_all(temporary_working_dir);
 
-  std::string expectedMps =
-      std::string("") + "NAME          newProb" + "\n" + "OBJSENSE  MAXIMIZE" +
-      "\n" + "ROWS" + "\n" + " N  __OBJ___        " + "\n" +
-      " L  R1              " + "\n" + " L  SomeRowName     " + "\n" +
-      "COLUMNS" + "\n" + "    C1                __OBJ___          1" + "\n" +
-      "    C1                R1                3" + "\n" +
-      "    SomeColumnName    __OBJ___          2" + "\n" +
-      "    SomeColumnName    R1                1.5" + "\n" +
-      "    SomeColumnName    SomeRowName       -1.1122334455667788" + "\n" +
-      "RHS" + "\n" + "    RHS00001          R1                1" + "\n" +
-      "    RHS00001          SomeRowName       5" + "\n" + "RANGES" + "\n" +
-      "    RNG00001          SomeRowName       2" + "\n" + "BOUNDS" + "\n" +
-      " UI BND00001          C1                9" + "\n" +
-      " LO BND00001          C1                -1" + "\n" +
-      " UP BND00001          SomeColumnName    5.147593849384714" + "\n" +
-      " LO BND00001          SomeColumnName    -1" + "\n" + "ENDATA" + "\n";
-
+  // disable formatting to keep the expected MPS readable
+  // clang-format off
+  std::string expectedMps = std::string("") +
+                            "NAME          newProb" + "\n" +
+                            "OBJSENSE  MAXIMIZE" + "\n" +
+                            "ROWS" + "\n" +
+                            " N  __OBJ___        " + "\n" +
+                            " L  R1              " + "\n" +
+                            " L  SomeRowName     " + "\n" +
+                            "COLUMNS" + "\n" +
+                            "    C1                __OBJ___          1" + "\n" +
+                            "    C1                R1                3" + "\n" +
+                            "    SomeColumnName    __OBJ___          2" + "\n" +
+                            "    SomeColumnName    R1                1.5" + "\n" +
+                            "    SomeColumnName    SomeRowName       -1.1122334455667788" + "\n" +
+                            "RHS" + "\n" +
+                            "    RHS00001          R1                1" + "\n" +
+                            "    RHS00001          SomeRowName       5" + "\n" +
+                            "RANGES" + "\n" +
+                            "    RNG00001          SomeRowName       2" + "\n" +
+                            "BOUNDS" + "\n" +
+                            " UI BND00001          C1                9" + "\n" +
+                            " LO BND00001          C1                -1" + "\n" +
+                            " UP BND00001          SomeColumnName    5.147593849384714" + "\n" +
+                            " LO BND00001          SomeColumnName    -1" + "\n" +
+                            "ENDATA" + "\n";
+  // clang-format on
   EXPECT_EQ(tmpBuffer.str(), expectedMps);
 }
 
