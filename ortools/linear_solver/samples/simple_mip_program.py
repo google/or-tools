@@ -21,7 +21,7 @@ from ortools.linear_solver import pywraplp
 
 def main():
     # [START solver]
-    # Create the mip solver with the SCIP backend.
+    # Create the mip solver with the CP-SAT backend.
     solver = pywraplp.Solver.CreateSolver("SAT")
     if not solver:
         return
