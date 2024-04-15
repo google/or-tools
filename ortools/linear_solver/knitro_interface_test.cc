@@ -795,7 +795,7 @@ TEST(KnitroInterface, FindFeasSol) {
  *          x +  y <= 10
  *          x -  y <= 8
  *          x ,  y >= 0
- * Then applues changes in the problem
+ * Then applies changes in the problem
  */
 TEST(KnitroInterface, ChangePostsolve) {
   UNITTEST_INIT_LP();
