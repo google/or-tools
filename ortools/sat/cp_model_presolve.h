@@ -146,12 +146,8 @@ class CpModelPresolver {
 
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
-  template <typename ProtoWithVarsAndCoeffs>
-  bool CanonicalizeLinearExpressionInternal(const ConstraintProto& ct,
-                                            ProtoWithVarsAndCoeffs* proto,
-                                            int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* exp);
+                                    LinearExpressionProto* proto);
   bool CanonicalizeLinearArgument(const ConstraintProto& ct,
                                   LinearArgumentProto* proto);
 

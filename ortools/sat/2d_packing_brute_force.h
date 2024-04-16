@@ -48,6 +48,21 @@ BruteForceResult BruteForceOrthogonalPacking(
     std::pair<IntegerValue, IntegerValue> bounding_box_size,
     int max_complexity);
 
+// Note that functions taking a Span<PermutableItems> are free to permute them
+// as they see fit unless documented otherwise.
+struct PermutableItem {
+  IntegerValue size_x;
+  IntegerValue size_y;
+  // Position of the item in the original input.
+  int index;
+  Rectangle position;
+};
+
+// Exposed for testing
+bool Preprocess(absl::Span<PermutableItem>& items,
+                std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+                int max_complexity);
+
 }  // namespace sat
 }  // namespace operations_research
 

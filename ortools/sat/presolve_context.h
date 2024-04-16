@@ -185,6 +185,15 @@ class PresolveContext {
     }
   }
 
+  // Canonicalization of linear constraint. This might also be needed when
+  // creating new constraint to make sure there are no duplicate variables.
+  // Returns true if the set of variables in the expression changed.
+  //
+  // This uses affine relation and regroup duplicate/fixed terms.
+  bool CanonicalizeLinearConstraint(ConstraintProto* ct);
+  bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
+                                    LinearExpressionProto* expr);
+
   // This methods only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 
@@ -730,6 +739,9 @@ class PresolveContext {
 
   // Serialized proto (should be small) to index.
   absl::flat_hash_map<std::string, int> interval_representative_;
+
+  // Used by CanonicalizeLinearExpressionInternal().
+  std::vector<std::pair<int, int64_t>> tmp_terms_;
 
   bool model_is_expanded_ = false;
 };
