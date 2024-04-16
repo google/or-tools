@@ -191,18 +191,20 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
           CapAdd(CapSub(reservoir.min_level(), demand_i), offset));
       level->mutable_linear()->add_domain(
           CapAdd(CapSub(reservoir.max_level(), demand_i), offset));
+      context->CanonicalizeLinearConstraint(level);
     }
   } else {
     // If all level_changes have the same sign, we do not care about the order,
     // just the sum.
-    auto* const sum =
-        context->working_model->add_constraints()->mutable_linear();
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    auto* const sum = new_ct->mutable_linear();
     for (int i = 0; i < num_events; ++i) {
       sum->add_vars(is_active_literal(i));
       sum->add_coeffs(context->FixedValue(reservoir.level_changes(i)));
     }
     sum->add_domain(reservoir.min_level());
     sum->add_domain(reservoir.max_level());
+    context->CanonicalizeLinearConstraint(new_ct);
   }
 
   ct->Clear();
@@ -464,17 +466,22 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   const int num_exprs = ct->lin_max().exprs().size();
   if (num_exprs < 2) return;
 
+  // We have a special treatment for Abs, Earlyness, Tardiness, and all
+  // affine_max where there is only one variable present in all the expressions.
+  if (ExpressionsContainsOnlyOneVar(ct->lin_max().exprs())) return;
+
   // We will create 2 * num_exprs constraints for target = max(a1, .., an).
 
   // First.
   // - target >= ai
   for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
-    LinearConstraintProto* lin =
-        context->working_model->add_constraints()->mutable_linear();
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    LinearConstraintProto* lin = ct->mutable_linear();
     lin->add_domain(0);
     lin->add_domain(std::numeric_limits<int64_t>::max());
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(expr, -1, lin);
+    context->CanonicalizeLinearConstraint(new_ct);
   }
 
   // Second, for each expr, create a new boolean bi, and add bi => target >= ai
@@ -497,16 +504,16 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   for (int i = 0; i < num_exprs; ++i) {
     ConstraintProto* new_ct = context->working_model->add_constraints();
     new_ct->add_enforcement_literal(enforcement_literals[i]);
-
     LinearConstraintProto* lin = new_ct->mutable_linear();
     lin->add_domain(std::numeric_limits<int64_t>::min());
     lin->add_domain(0);
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().exprs(i), -1, lin);
+    context->CanonicalizeLinearConstraint(new_ct);
   }
 
-  ct->Clear();
   context->UpdateRuleStats("lin_max: expanded lin_max");
+  ct->Clear();
 }
 
 // A[V] == V means for all i, V == i => A_i == i
