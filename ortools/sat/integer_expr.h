@@ -720,27 +720,16 @@ inline std::function<void(Model*)> IsEqualToMinOf(
       min_var = integer_trail->AddIntegerVariable(min_lb, min_ub);
 
       // min_var = min_expr
-      std::vector<IntegerVariable> min_sum_vars = min_expr.vars;
-      std::vector<int64_t> min_sum_coeffs;
-      for (IntegerValue coeff : min_expr.coeffs) {
-        min_sum_coeffs.push_back(coeff.value());
-      }
-      min_sum_vars.push_back(min_var);
-      min_sum_coeffs.push_back(-1);
-
-      model->Add(FixedWeightedSum(min_sum_vars, min_sum_coeffs,
-                                  -min_expr.offset.value()));
+      LinearConstraintBuilder builder(0, 0);
+      builder.AddLinearExpression(min_expr, 1);
+      builder.AddTerm(min_var, -1);
+      LoadLinearConstraint(builder.Build(), model);
     }
     for (const LinearExpression& expr : exprs) {
-      // min_var <= expr
-      std::vector<IntegerVariable> vars = expr.vars;
-      std::vector<int64_t> coeffs;
-      for (IntegerValue coeff : expr.coeffs) {
-        coeffs.push_back(coeff.value());
-      }
-      vars.push_back(min_var);
-      coeffs.push_back(-1);
-      model->Add(WeightedSumGreaterOrEqual(vars, coeffs, -expr.offset.value()));
+      LinearConstraintBuilder builder(0, kMaxIntegerValue);
+      builder.AddLinearExpression(expr, 1);
+      builder.AddTerm(min_var, -1);
+      LoadLinearConstraint(builder.Build(), model);
     }
 
     LinMinPropagator* constraint = new LinMinPropagator(exprs, min_var, model);
