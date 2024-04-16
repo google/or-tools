@@ -20,11 +20,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
+#define ROOT_DIR "com_google_ortools/"
 
 namespace operations_research {
 namespace {

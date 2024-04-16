@@ -20,7 +20,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/path.h"
 
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
+#define ROOT_DIR "com_google_ortools/"
 
 ABSL_FLAG(std::string, solomon_test_archive,
           "ortools/bench/solomon/"

@@ -21,13 +21,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
-
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
+#define ROOT_DIR "com_google_ortools/"
 
 namespace operations_research {
 namespace {
