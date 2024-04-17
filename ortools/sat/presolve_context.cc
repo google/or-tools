@@ -27,6 +27,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
@@ -52,6 +53,11 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
+
+ABSL_FLAG(bool, cp_model_debug_postsolve, false,
+          "DEBUG ONLY. When set to true, the mappin_model.proto will contains "
+          "file:line of the code that created that constraint. This is helpful "
+          "for debugging postsolve");
 
 namespace operations_research {
 namespace sat {
@@ -2435,6 +2441,27 @@ bool PresolveContext::CanonicalizeLinearExpression(
       enforcements, expr, &offset, &tmp_terms_, this);
   expr->set_offset(expr->offset() + offset);
   return result;
+}
+
+ConstraintProto* PresolveContext::NewMappingConstraint(absl::string_view file,
+                                                       int line) {
+  const int c = mapping_model->constraints().size();
+  ConstraintProto* new_ct = mapping_model->add_constraints();
+  if (absl::GetFlag(FLAGS_cp_model_debug_postsolve)) {
+    new_ct->set_name(absl::StrCat("#", c, " ", file, ":", line));
+  }
+  return new_ct;
+}
+
+ConstraintProto* PresolveContext::NewMappingConstraint(
+    const ConstraintProto& base_ct, absl::string_view file, int line) {
+  const int c = mapping_model->constraints().size();
+  ConstraintProto* new_ct = mapping_model->add_constraints();
+  *new_ct = base_ct;
+  if (absl::GetFlag(FLAGS_cp_model_debug_postsolve)) {
+    new_ct->set_name(absl::StrCat("#c", c, " ", file, ":", line));
+  }
+  return new_ct;
 }
 
 }  // namespace sat
