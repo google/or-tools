@@ -619,6 +619,15 @@ class PresolveContext {
   // Advanced presolve. See this class comment.
   DomainDeductions deductions;
 
+  // Adds a new constraint to the mapping proto. The version with the base
+  // constraint will copy that constraint to the new constraint.
+  //
+  // If the flag --cp_model_debug_postsolve is set, we will use the caller
+  // file/line number to add debug info in the constraint name() field.
+  ConstraintProto* NewMappingConstraint(absl::string_view file, int line);
+  ConstraintProto* NewMappingConstraint(const ConstraintProto& base_ct,
+                                        absl::string_view file, int line);
+
  private:
   void MaybeResizeIntervalData();
 

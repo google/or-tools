@@ -618,8 +618,8 @@ bool CpModelPresolver::PresolveAtMostOrExactlyOne(ConstraintProto* ct) {
       context_->MarkVariableAsRemoved(PositiveRef(literal));
 
       // Put a constraint in the mapping proto for postsolve.
-      auto* mapping_exo =
-          context_->mapping_model->add_constraints()->mutable_exactly_one();
+      auto* mapping_exo = context_->NewMappingConstraint(__FILE__, __LINE__)
+                              ->mutable_exactly_one();
       for (const int lit : context_->tmp_literals) {
         mapping_exo->add_literals(lit);
       }
@@ -931,7 +931,7 @@ bool CpModelPresolver::PropagateAndReduceAffineMax(ConstraintProto* ct) {
   if (ExpressionContainsSingleRef(target) &&
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {
     context_->MarkVariableAsRemoved(target.vars(0));
-    *context_->mapping_model->add_constraints() = *ct;
+    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     context_->UpdateRuleStats("lin_max: unused affine_max target");
     return RemoveConstraint(ct);
   }
@@ -1194,7 +1194,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
       context_->VariableIsUniqueAndRemovable(target.vars(0))) {
     context_->UpdateRuleStats("lin_max: unused affine target");
     context_->MarkVariableAsRemoved(target.vars(0));
-    *context_->mapping_model->add_constraints() = *ct;
+    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     return RemoveConstraint(ct);
   }
 
@@ -1213,7 +1213,7 @@ bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
       AddLinearExpressionToLinearConstraint(target, 1, prec);
       AddLinearExpressionToLinearConstraint(expr, -1, prec);
     }
-    *context_->mapping_model->add_constraints() = *ct;
+    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     return RemoveConstraint(ct);
   }
 
@@ -1433,7 +1433,7 @@ bool CpModelPresolver::PropagateAndReduceIntAbs(ConstraintProto* ct) {
   if (ExpressionContainsSingleRef(target_expr) &&
       context_->VariableIsUniqueAndRemovable(target_expr.vars(0))) {
     context_->MarkVariableAsRemoved(target_expr.vars(0));
-    *context_->mapping_model->add_constraints() = *ct;
+    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     context_->UpdateRuleStats("lin_max: unused abs target");
     return RemoveConstraint(ct);
   }
@@ -1966,7 +1966,7 @@ bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
                                        Domain::FromValues(values))) {
       return false;
     }
-    *context_->mapping_model->add_constraints() = *ct;
+    context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
     ct->Clear();
     context_->UpdateConstraintVariableUsage(c);
     context_->MarkVariableAsRemoved(target.vars(0));
@@ -2285,7 +2285,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
 
         context_->UpdateRuleStats("linear: singleton column define objective.");
         context_->MarkVariableAsRemoved(var);
-        *(context_->mapping_model->add_constraints()) = *ct;
+        context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
         return RemoveConstraint(ct);
       }
 
@@ -2322,10 +2322,11 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   if (!ct->enforcement_literal().empty()) {
     for (const int i : index_to_erase) {
       const int var = ct->linear().vars(i);
-      auto* l = context_->mapping_model->add_constraints()->mutable_linear();
-      l->add_vars(var);
-      l->add_coeffs(1);
-      FillDomainInProto(context_->DomainOf(var), l);
+      auto* new_lin =
+          context_->NewMappingConstraint(__FILE__, __LINE__)->mutable_linear();
+      new_lin->add_vars(var);
+      new_lin->add_coeffs(1);
+      FillDomainInProto(context_->DomainOf(var), new_lin);
     }
   }
 
@@ -2333,7 +2334,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   // instead of adding a reduced version of it each time a new singleton
   // variable appear in the same constraint later. That would work but would
   // also force the postsolve to take search decisions...
-  *context_->mapping_model->add_constraints() = *ct;
+  *context_->NewMappingConstraint(__FILE__, __LINE__) = *ct;
 
   int new_size = 0;
   for (int i = 0; i < num_vars; ++i) {
@@ -3939,7 +3940,8 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // assign var. We do that by putting it fist.
     CHECK_EQ(context_->VarToConstraints(var).size(), 1);
     context_->MarkVariableAsRemoved(var);
-    ConstraintProto* mapping_ct = context_->mapping_model->add_constraints();
+    ConstraintProto* mapping_ct =
+        context_->NewMappingConstraint(__FILE__, __LINE__);
     *mapping_ct = *ct;
     LinearConstraintProto* mapping_linear_ct = mapping_ct->mutable_linear();
     std::swap(mapping_linear_ct->mutable_vars()->at(0),
@@ -4943,7 +4945,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       // postsolve and get rid of it now.
       context_->UpdateRuleStats("element: trivial target domain reduction");
       context_->MarkVariableAsRemoved(index_ref);
-      *(context_->mapping_model->add_constraints()) = *ct;
+      context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
       return RemoveConstraint(ct);
     } else {
       context_->UpdateRuleStats("TODO element: index not used elsewhere");
@@ -4956,7 +4958,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     if (all_included_in_target_domain) {
       context_->UpdateRuleStats("element: trivial index domain reduction");
       context_->MarkVariableAsRemoved(target_ref);
-      *(context_->mapping_model->add_constraints()) = *ct;
+      context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
       return RemoveConstraint(ct);
     } else {
       context_->UpdateRuleStats("TODO element: target not used elsewhere");
@@ -10430,11 +10432,8 @@ void CpModelPresolver::LookAtVariableWithDegreeTwo(int var) {
   context_->UpdateRuleStats("variables: removable enforcement literal");
   absl::c_sort(constraint_indices_to_remove);  // For determinism
   for (const int c : constraint_indices_to_remove) {
-    *context_->mapping_model->add_constraints() =
-        context_->working_model->constraints(c);
-    context_->mapping_model
-        ->mutable_constraints(context_->mapping_model->constraints().size() - 1)
-        ->set_name("removable enforcement literal");
+    context_->NewMappingConstraint(context_->working_model->constraints(c),
+                                   __FILE__, __LINE__);
     context_->working_model->mutable_constraints(c)->Clear();
     context_->UpdateConstraintVariableUsage(c);
   }
@@ -10557,7 +10556,7 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
 
   if (!context_->ShiftCostInExactlyOne(literals, cost_shift)) return;
   DCHECK(!context_->ObjectiveMap().contains(var));
-  context_->mapping_model->add_constraints()
+  context_->NewMappingConstraint(__FILE__, __LINE__)
       ->mutable_exactly_one()
       ->mutable_literals()
       ->Assign(literals.begin(), literals.end());
@@ -10706,7 +10705,7 @@ void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
   }
 
   // Copy other_ct to the mapping model and delete var!
-  *context_->mapping_model->add_constraints() = other_ct;
+  context_->NewMappingConstraint(other_ct, __FILE__, __LINE__);
   context_->working_model->mutable_constraints(other_c)->Clear();
   context_->UpdateConstraintVariableUsage(other_c);
   context_->MarkVariableAsRemoved(var);
@@ -10987,18 +10986,6 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     }
   }
 
-  // Add enough constraints to the mapping model to recover a valid value
-  // for var when all the booleans are fixed.
-  for (const int64_t value : encoded_values) {
-    const int enf = context_->GetOrCreateVarValueEncoding(var, value);
-    ConstraintProto* ct = context_->mapping_model->add_constraints();
-    ct->add_enforcement_literal(enf);
-    ct->mutable_linear()->add_vars(var);
-    ct->mutable_linear()->add_coeffs(1);
-    ct->mutable_linear()->add_domain(value);
-    ct->mutable_linear()->add_domain(value);
-  }
-
   // This must be done after we removed all the constraint containing var.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   if (is_fully_encoded) {
@@ -11010,7 +10997,10 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     PresolveExactlyOne(new_ct);
   } else {
     // If all literal are false, then var must take one of the other values.
-    ConstraintProto* mapping_ct = context_->mapping_model->add_constraints();
+    // Note that this one must be first in the mapping model, so that if any
+    // of the literal was true, var was assigned to the correct value.
+    ConstraintProto* mapping_ct =
+        context_->NewMappingConstraint(__FILE__, __LINE__);
     mapping_ct->mutable_linear()->add_vars(var);
     mapping_ct->mutable_linear()->add_coeffs(1);
     FillDomainInProto(other_values, mapping_ct->mutable_linear());
@@ -11021,6 +11011,18 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
       new_ct->mutable_at_most_one()->add_literals(literal);
     }
     PresolveAtMostOne(new_ct);
+  }
+
+  // Add enough constraints to the mapping model to recover a valid value
+  // for var when all the booleans are fixed.
+  for (const int64_t value : encoded_values) {
+    const int enf = context_->GetOrCreateVarValueEncoding(var, value);
+    ConstraintProto* ct = context_->NewMappingConstraint(__FILE__, __LINE__);
+    ct->add_enforcement_literal(enf);
+    ct->mutable_linear()->add_vars(var);
+    ct->mutable_linear()->add_coeffs(1);
+    ct->mutable_linear()->add_domain(value);
+    ct->mutable_linear()->add_domain(value);
   }
 
   context_->UpdateNewConstraintsVariableUsage();
@@ -11125,7 +11127,7 @@ bool CpModelPresolver::PresolveAffineRelationIfAny(int var) {
   // any value of the representative.
   if (context_->VariableIsUnique(var)) {
     // Add relation with current representative to the mapping model.
-    ConstraintProto* ct = context_->mapping_model->add_constraints();
+    ConstraintProto* ct = context_->NewMappingConstraint(__FILE__, __LINE__);
     auto* arg = ct->mutable_linear();
     arg->add_vars(var);
     arg->add_coeffs(1);

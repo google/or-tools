@@ -1365,17 +1365,18 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
       // If this tuple is selected, then fix the removed variable value in the
       // mapping model.
       for (int j = 0; j < deleted_vars.size(); ++j) {
-        ConstraintProto* new_ct = context->mapping_model->add_constraints();
+        ConstraintProto* mapping_ct =
+            context->NewMappingConstraint(__FILE__, __LINE__);
         for (int var_index = 0; var_index < new_vars.size(); ++var_index) {
-          new_ct->add_enforcement_literal(context->GetOrCreateVarValueEncoding(
-              new_vars[var_index], (*tuples)[i][var_index]));
+          mapping_ct->add_enforcement_literal(
+              context->GetOrCreateVarValueEncoding(new_vars[var_index],
+                                                   (*tuples)[i][var_index]));
         }
-        new_ct->mutable_linear()->add_vars(deleted_vars[j]);
-        new_ct->mutable_linear()->add_coeffs(1);
-        new_ct->mutable_linear()->add_domain(
-            (*tuples)[i][new_vars.size() + 1 + j]);
-        new_ct->mutable_linear()->add_domain(
-            (*tuples)[i][new_vars.size() + 1 + j]);
+        LinearConstraintProto* new_lin = mapping_ct->mutable_linear();
+        new_lin->add_vars(deleted_vars[j]);
+        new_lin->add_coeffs(1);
+        new_lin->add_domain((*tuples)[i][new_vars.size() + 1 + j]);
+        new_lin->add_domain((*tuples)[i][new_vars.size() + 1 + j]);
       }
       (*tuples)[i].resize(new_vars.size() + 1);
       (*tuples)[new_size++] = (*tuples)[i];

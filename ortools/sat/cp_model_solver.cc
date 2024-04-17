@@ -2987,10 +2987,15 @@ class LnsSolver : public SubSolver {
 
       CpSolverResponse local_response;
       if (presolve_status == CpSolverStatus::UNKNOWN) {
+        // Sometimes when presolve is aborted in the middle, we don't want to
+        // load the model as it might fail some DCHECK.
+        if (shared_->SearchIsDone()) return;
+
         LoadCpModel(lns_fragment, &local_model);
         QuickSolveWithHint(lns_fragment, &local_model);
         SolveLoadedCpModel(lns_fragment, &local_model);
         local_response = local_response_manager->GetResponse();
+
         // In case the LNS model is empty after presolve, the solution
         // repository does not add the solution, and thus does not store the
         // solution info. In that case, we put it back.
