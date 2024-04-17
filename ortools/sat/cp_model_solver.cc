@@ -3913,9 +3913,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     *new_cp_model_proto = model_proto;
   } else if (!ImportModelWithBasicPresolveIntoContext(model_proto,
                                                       context.get())) {
-    VLOG(1) << "Model found infeasible during copy";
-    // TODO(user): At this point, the model is trivial, but we could exit
-    // early.
+    const std::string info = "Problem proven infeasible during initial copy.";
+    SOLVER_LOG(logger, info);
+    CpSolverResponse status_response;
+    status_response.set_status(CpSolverStatus::INFEASIBLE);
+    status_response.set_solution_info(info);
+    shared_response_manager->AppendResponseToBeMerged(status_response);
+    return shared_response_manager->GetResponse();
   }
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
