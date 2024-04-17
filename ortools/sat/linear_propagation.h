@@ -44,44 +44,6 @@ namespace sat {
 
 DEFINE_STRONG_INDEX_TYPE(EnforcementId);
 
-// A FIFO queue that allows some form of reordering of its element.
-class CustomFifoQueue {
- public:
-  CustomFifoQueue() = default;
-
-  void IncreaseSize(int n);
-
-  int Pop();
-  void Push(int id);
-
-  bool empty() const { return left_ == right_; }
-  bool Contains(int id) const { return pos_[id] != -1; }
-
-  // Reorder the given element to match their given order. They must all be in
-  // the queue.
-  void Reorder(absl::Span<const int> order);
-  void ReorderDense(absl::Span<const int> order);
-
-  // Sorts the given elements by their current position from the top.
-  // Elements should all be in the queue.
-  void SortByPos(absl::Span<int> elements);
-
- private:
-  void FillAndSortTmpPositions(absl::Span<const int> elements);
-
-  // The queue is stored in [left_, right_) with eventual wrap around % size.
-  // The positions of each element is in pos_[element] and never changes during
-  // normal operation. A position of -1 means that the element is not in the
-  // queue.
-  std::vector<int> pos_;
-  std::vector<int> queue_;
-  int left_ = 0;
-  int right_ = 0;
-
-  std::vector<int> tmp_positions_;
-  std::vector<int> tmp_order_;
-};
-
 // An enforced constraint can be in one of these 4 states.
 // Note that we rely on the integer encoding to take 2 bits for optimization.
 enum class EnforcementStatus {
@@ -98,7 +60,7 @@ enum class EnforcementStatus {
 std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e);
 
 // This is meant as an helper to deal with enforcement for any constraint.
-class EnforcementPropagator : SatPropagator {
+class EnforcementPropagator : public SatPropagator {
  public:
   explicit EnforcementPropagator(Model* model);
 
@@ -178,6 +140,139 @@ class EnforcementPropagator : SatPropagator {
   std::vector<Literal> temp_reason_;
 };
 
+// Helper class to decide on the constraint propagation order.
+//
+// Each constraint might push some variables which might in turn render other
+// constraint tighter. In general, it seems better to make sure we push first
+// constraints that are not affected by other variables and delay the
+// propagation of constraint that we know will become tigher.
+//
+// Note that we can have cycle in this graph, and that this is not necessarily a
+// conflict.
+class ConstraintPropagationOrder {
+ public:
+  ConstraintPropagationOrder(
+      ModelRandomGenerator* random,
+      std::function<absl::Span<const IntegerVariable>(int)> id_to_vars)
+      : random_(random), id_to_vars_func_(id_to_vars) {}
+
+  void Resize(int num_vars, int num_ids) {
+    var_has_entry_.Resize(IntegerVariable(num_vars));
+    var_to_id_.resize(num_vars);
+    var_to_lb_.resize(num_vars);
+    var_to_pos_.resize(num_vars);
+
+    in_ids_.Resize(num_ids);
+  }
+
+  void Register(int id, IntegerVariable var, IntegerValue lb) {
+    DCHECK_LT(id, in_ids_.size());
+    DCHECK_LT(var.value(), var_to_id_.size());
+    if (var_has_entry_[var]) {
+      if (var_to_lb_[var] >= lb) return;
+    } else {
+      var_has_entry_.Set(var);
+      var_to_pos_[var] = to_clear_.size();
+      to_clear_.push_back(var);
+    }
+    var_to_lb_[var] = lb;
+    var_to_id_[var] = id;
+    if (!in_ids_[id]) {
+      in_ids_.Set(id);
+      ids_.push_back(id);
+
+      // randomize starting pos?
+      const int random_pos = absl::Uniform<int>(*random_, 0, ids_.size());
+      std::swap(ids_[random_pos], ids_.back());
+    }
+  }
+
+  void Clear() {
+    for (const IntegerVariable var : to_clear_) {
+      var_has_entry_.Clear(var);
+    }
+    to_clear_.clear();
+    for (const int id : ids_) {
+      in_ids_.Clear(id);
+    }
+    ids_.clear();
+  }
+
+  // Return -1 if there is none.
+  // This returns a constraint with min degree.
+  //
+  // TODO(user): fix quadratic algo? We can use var_to_ids_func_() to maintain
+  // the degree. But note that with the start_ optim and because we expect
+  // mainly degree zero, this seems to be faster.
+  int NextId() {
+    if (ids_.empty()) return -1;
+
+    int best_pos = 0;
+    int best_degree = std::numeric_limits<int>::max();
+    const int size = ids_.size();
+    const auto var_has_entry = var_has_entry_.const_view();
+    for (int i = 0; i < size; ++i) {
+      const int pos = (i + start_) % size;
+      const int id = ids_[pos];
+      DCHECK(in_ids_[id]);
+
+      int degree = 0;
+      for (const IntegerVariable var : id_to_vars_func_(id)) {
+        if (var_has_entry[var]) ++degree;
+      }
+
+      if (degree < best_degree) {
+        best_degree = degree;
+        best_pos = pos;
+        if (best_degree == 0) break;
+      }
+    }
+    std::swap(ids_[best_pos], ids_.back());
+
+    start_ = best_pos;
+    const int result = ids_.back();
+    ids_.pop_back();
+    in_ids_.Clear(result);
+    return result;
+  }
+
+  void UpdateBound(IntegerVariable var, IntegerValue lb) {
+    if (!var_has_entry_[var]) return;
+    if (lb < var_to_lb_[var]) return;
+
+    var_has_entry_.Clear(var);
+    const int pos = var_to_pos_[var];
+    to_clear_[pos] = to_clear_.back();
+    var_to_pos_[to_clear_.back()] = pos;
+    to_clear_.pop_back();
+  }
+
+  bool IsEmpty() const { return ids_.empty(); }
+
+  bool VarShouldBePushedById(IntegerVariable var, int id) {
+    if (!var_has_entry_[var]) return false;
+    if (var_to_id_[var] != id) return false;
+    return true;
+  }
+
+ public:
+  ModelRandomGenerator* random_;
+  std::function<absl::Span<const IntegerVariable>(int)> id_to_vars_func_;
+
+  // For each variable we only keep the constraint id that pushes it further.
+  // In case of tie, we only keep the first to be registered.
+  Bitset64<IntegerVariable> var_has_entry_;
+  absl::StrongVector<IntegerVariable, int> var_to_id_;
+  absl::StrongVector<IntegerVariable, IntegerValue> var_to_lb_;
+  absl::StrongVector<IntegerVariable, int> var_to_pos_;
+  std::vector<IntegerVariable> to_clear_;
+
+  // Set/vector of constraint to be propagated.
+  int start_ = 0;
+  Bitset64<int> in_ids_;
+  std::vector<int> ids_;
+};
+
 // This is meant to supersede both IntegerSumLE and the PrecedencePropagator.
 //
 // TODO(user): This is a work in progress and is currently incomplete:
@@ -228,8 +323,13 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
 
+  // Called when the lower bound of a variable changed.
+  void OnVariableChange(IntegerVariable var, IntegerValue lb);
+
   // Returns false on conflict.
   ABSL_MUST_USE_RESULT bool PropagateOneConstraint(int id);
+  ABSL_MUST_USE_RESULT bool PropagateInfeasibleConstraint(int id,
+                                                          IntegerValue slack);
   ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
   ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_pushed);
 
@@ -241,8 +341,6 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   void ClearPropagatedBy();
   void CanonicalizeConstraint(int id);
   void AddToQueueIfNeeded(int id);
-  void AddWatchedToQueue(IntegerVariable var,
-                         bool push_delayed_right_away = true);
   void SetPropagatedBy(IntegerVariable var, int id);
   std::string ConstraintDebugString(int id);
 
@@ -285,8 +383,11 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<Literal> literal_reason_;
 
   // Queue of constraint to propagate.
-  std::vector<bool> in_queue_;
-  CustomFifoQueue propagation_queue_;
+  Bitset64<int> in_queue_;
+  std::deque<int> propagation_queue_;
+
+  // This only contain constraint that currently push some bounds.
+  ConstraintPropagationOrder order_;
 
   // Unenforced constraints are marked as "in_queue_" but not actually added
   // to the propagation_queue_.
@@ -313,18 +414,6 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<DissasembleQueueEntry> disassemble_queue_;
   std::vector<std::pair<int, IntegerVariable>> disassemble_branch_;
   std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
-  std::vector<int> tmp_to_reorder_;
-  SparseBitset<int> disassemble_to_reorder_;
-  std::vector<int> disassemble_reverse_topo_order_;
-
-  // Heuristic to enqueue interesting constraint first.
-  std::vector<bool> id_propagated_something_;
-  std::vector<int> tmp_delayed_;
-
-  // Stats. Allow to track the time a constraint is scanned more than once.
-  // This is only used in --v 1.
-  SparseBitset<int> id_scanned_at_least_once_;
-  int64_t num_extra_scans_ = 0;
 
   // This is used to update the deterministic time.
   int64_t num_terms_for_dtime_update_ = 0;
@@ -336,8 +425,9 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   int64_t num_complex_cycles_ = 0;
   int64_t num_scanned_ = 0;
   int64_t num_explored_in_disassemble_ = 0;
-  int64_t num_reordered_ = 0;
+  int64_t num_delayed_ = 0;
   int64_t num_bool_aborts_ = 0;
+  int64_t num_loop_aborts_ = 0;
   int64_t num_ignored_ = 0;
 };
 
