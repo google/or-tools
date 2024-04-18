@@ -308,7 +308,7 @@ contrib_rules_jvm_setup()
 ## Testing
 git_repository(
     name = "com_google_googletest",
-    tag = "v1.13.0",
+    tag = "v1.14.0",
     remote = "https://github.com/google/googletest.git",
 )
 
