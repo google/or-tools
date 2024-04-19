@@ -13,7 +13,7 @@
 
 pybind11_add_module(routing_pybind11 MODULE routing_model.cc)
 set_target_properties(routing_pybind11 PROPERTIES
-  LIBRARY_OUTPUT_NAME "routing")
+  LIBRARY_OUTPUT_NAME "routing_model")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)

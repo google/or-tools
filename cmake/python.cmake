@@ -342,6 +342,7 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/pdlp/python/__init__.py CONTENT "")
 endif()
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/routing/python/__init__.py CONTENT "")
 
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/sat/python/__init__.py CONTENT "")
@@ -489,6 +490,7 @@ add_custom_command(
     max_flow_pybind11
     min_cost_flow_pybind11
     pywrapcp
+    routing_pybind11
     pywraplp
     model_builder_helper_pybind11
     math_opt_pybind11
@@ -529,6 +531,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.routing --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
