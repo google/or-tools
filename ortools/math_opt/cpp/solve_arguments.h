@@ -82,7 +82,7 @@ struct SolveArguments {
   //                    Solve(model, SolverType::kGlop,
   //                          { .interrupter = interrupter.get() });
   //
-  SolveInterrupter* interrupter = nullptr;
+  const SolveInterrupter* interrupter = nullptr;
 
   // Returns a failure if the referenced variables and constraints don't belong
   // to the input expected_storage (which must not be nullptr). Also returns a

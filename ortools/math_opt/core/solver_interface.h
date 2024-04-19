@@ -122,7 +122,7 @@ class SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      SolveInterrupter* interrupter) = 0;
+      const SolveInterrupter* interrupter) = 0;
 
   // Updates the model to solve and returns true, or returns false if this
   // update is not supported.
@@ -151,7 +151,7 @@ class SolverInterface {
   virtual absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
   ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                              MessageCallback message_cb,
-                             SolveInterrupter* interrupter) = 0;
+                             const SolveInterrupter* interrupter) = 0;
 };
 
 class AllSolversRegistry {

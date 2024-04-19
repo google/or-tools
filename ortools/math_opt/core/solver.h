@@ -99,7 +99,7 @@ class Solver {
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* interrupter = nullptr;
   };
 
   // Arguments used when calling ComputeInfeasibleSubsystem().
@@ -115,7 +115,7 @@ class Solver {
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* interrupter = nullptr;
   };
 
   // A shortcut for calling Solver::New() and then Solver::Solve().

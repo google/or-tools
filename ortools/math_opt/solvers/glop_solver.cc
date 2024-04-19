@@ -765,7 +765,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 
@@ -883,7 +883,8 @@ absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GlopSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
-                                       MessageCallback, SolveInterrupter*) {
+                                       MessageCallback,
+                                       const SolveInterrupter*) {
   return absl::UnimplementedError(
       "GLOP does not implement a method to compute an infeasible subsystem");
 }

@@ -37,7 +37,6 @@ option java_multiple_files = true;
 // When using SolveService.StreamSolve these hints are used to dimension the
 // resources available during the execution of every action; thus it is
 // recommended to set them.
-//
 message SolverResourcesProto {
   // The number of solver threads that are expected to actually execute in
   // parallel. Must be finite and >0.0.
@@ -61,6 +60,10 @@ message SolverResourcesProto {
   // Note that if the SolveParametersProto.threads is not set then this
   // parameter should also be left unset.
   optional double cpu = 1;
+
+  // The limit of RAM for the solve in bytes. Must be finite and >=1.0 (even
+  // though it should in practice be much larger).
+  optional double ram = 2;
 }
 
 // Request for a unary remote solve in MathOpt.

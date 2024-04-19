@@ -34,6 +34,12 @@ class SolverResourcesTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
             rpc_pb2.SolverResourcesProto(cpu=3.5),
         )
 
+    def test_to_proto_with_ram(self):
+        self.assert_protos_equiv(
+            solver_resources.SolverResources(ram=50 * 1024 * 1024).to_proto(),
+            rpc_pb2.SolverResourcesProto(ram=50 * 1024 * 1024),
+        )
+
 
 if __name__ == "__main__":
     absltest.main()

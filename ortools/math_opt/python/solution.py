@@ -58,6 +58,24 @@ class SolutionStatus(enum.Enum):
     INFEASIBLE = solution_pb2.SOLUTION_STATUS_INFEASIBLE
 
 
+def parse_optional_solution_status(
+    proto: solution_pb2.SolutionStatusProto,
+) -> Optional[SolutionStatus]:
+    """Converts a proto SolutionStatus to an optional Python SolutionStatus."""
+    return (
+        None
+        if proto == solution_pb2.SOLUTION_STATUS_UNSPECIFIED
+        else SolutionStatus(proto)
+    )
+
+
+def optional_solution_status_to_proto(
+    status: Optional[SolutionStatus],
+) -> solution_pb2.SolutionStatusProto:
+    """Converts an optional Python SolutionStatus to a proto SolutionStatus."""
+    return solution_pb2.SOLUTION_STATUS_UNSPECIFIED if status is None else status.value
+
+
 @dataclasses.dataclass
 class PrimalSolution:
     """A solution to the optimization problem in a Model.
@@ -312,12 +330,13 @@ class Basis:
         For two-sided LPs it may be different in some edge cases (e.g. incomplete
         solves with primal simplex). For more details see
         go/mathopt-basis-advanced#dualfeasibility. If you are providing a starting
-        basis via ModelSolveParameters.initial_basis, this value is ignored. It is
-        only relevant for the basis returned by Solution.basis.   This is an
-        advanced status. For single-sided LPs it should be equal to the
-        feasibility status of the associated dual solution. For two-sided LPs it
-        may be different in some edge cases (e.g. incomplete solves with primal
-        simplex). For more details see go/mathopt-basis-advanced#dualfeasibility.
+        basis via ModelSolveParameters.initial_basis, this value is ignored and
+        can be None. It is only relevant for the basis returned by Solution.basis,
+        and it is never None when returned from solve(). This is an advanced
+        status. For single-sided LPs it should be equal to the feasibility status
+        of the associated dual solution. For two-sided LPs it may be different in
+        some edge cases (e.g. incomplete solves with primal simplex). For more
+        details see go/mathopt-basis-advanced#dualfeasibility.
     """
 
     variable_status: Dict[model.Variable, BasisStatus] = dataclasses.field(
@@ -326,7 +345,7 @@ class Basis:
     constraint_status: Dict[model.LinearConstraint, BasisStatus] = dataclasses.field(
         default_factory=dict
     )
-    basic_dual_feasibility: SolutionStatus = SolutionStatus.UNDETERMINED
+    basic_dual_feasibility: Optional[SolutionStatus] = None
 
     def to_proto(self) -> solution_pb2.BasisProto:
         """Returns an equivalent proto for the basis."""
@@ -335,7 +354,9 @@ class Basis:
             constraint_status=_to_sparse_basis_status_vector_proto(
                 self.constraint_status
             ),
-            basic_dual_feasibility=self.basic_dual_feasibility.value,
+            basic_dual_feasibility=optional_solution_status_to_proto(
+                self.basic_dual_feasibility
+            ),
         )
 
 
@@ -354,10 +375,9 @@ def parse_basis(proto: solution_pb2.BasisProto, mod: model.Model) -> Basis:
         result.constraint_status[mod.get_linear_constraint(cid)] = BasisStatus(
             status_proto
         )
-    status_proto = proto.basic_dual_feasibility
-    if status_proto == solution_pb2.SOLUTION_STATUS_UNSPECIFIED:
-        raise ValueError("Basic dual feasibility status should not be UNSPECIFIED")
-    result.basic_dual_feasibility = SolutionStatus(status_proto)
+    result.basic_dual_feasibility = parse_optional_solution_status(
+        proto.basic_dual_feasibility
+    )
     return result
 
 

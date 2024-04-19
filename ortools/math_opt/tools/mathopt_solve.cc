@@ -278,7 +278,7 @@ absl::Status PrintSummary(const Model& model, const SolveResult& result,
 absl::StatusOr<SolveResult> LocalOrRemoteSolve(
     const Model& model, const SolverType solver_type,
     const SolveParameters& params, const ModelSolveParameters& model_params,
-    MessageCallback msg_cb, SolveInterrupter* interrupter) {
+    MessageCallback msg_cb, const SolveInterrupter* const interrupter) {
   if (absl::GetFlag(FLAGS_remote)) {
     return absl::UnimplementedError("remote not yet supported.");
   } else {

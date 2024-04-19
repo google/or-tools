@@ -2893,7 +2893,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:
@@ -3020,9 +3020,9 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 
 // TODO(b/277339044): Remove code duplication with GurobiSolver::Solve().
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-GurobiSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                                         MessageCallback message_cb,
-                                         SolveInterrupter* const interrupter) {
+GurobiSolver::ComputeInfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:

@@ -46,12 +46,12 @@ class CpSatSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      SolveInterrupter* interrupter) override;
+      const SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
   ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                              MessageCallback message_cb,
-                             SolveInterrupter* interrupter) override;
+                             const SolveInterrupter* interrupter) override;
 
  private:
   CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids,

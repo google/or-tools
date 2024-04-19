@@ -43,7 +43,7 @@ namespace operations_research {
  * MPSOLVER_INCOMPATIBLE_OPTIONS error.
  */
 MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                SolveInterrupter* interrupter = nullptr);
+                                const SolveInterrupter* interrupter = nullptr);
 
 bool SolverTypeSupportsInterruption(MPModelRequest::SolverType solver);
 

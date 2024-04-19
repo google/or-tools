@@ -59,7 +59,7 @@ struct ComputeInfeasibleSubsystemArguments {
   //                    ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //                          { .interrupter = interrupter.get() });
   //
-  SolveInterrupter* interrupter = nullptr;
+  const SolveInterrupter* interrupter = nullptr;
 };
 
 }  // namespace operations_research::math_opt

@@ -27,7 +27,7 @@ namespace operations_research {
 // TODO(b/311704821): this function should not delegate to MPSolver, also true
 // for the functions below.
 MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                SolveInterrupter* interrupter) {
+                                const SolveInterrupter* interrupter) {
   MPSolutionResponse response;
   if (interrupter != nullptr) {
     std::atomic<bool> atomic_bool = false;

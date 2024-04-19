@@ -60,12 +60,12 @@ class GurobiSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      SolveInterrupter* interrupter) override;
+      const SolveInterrupter* interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
   ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                              MessageCallback message_cb,
-                             SolveInterrupter* interrupter) override;
+                             const SolveInterrupter* interrupter) override;
 
  private:
   struct GurobiCallbackData {
@@ -352,7 +352,7 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<std::unique_ptr<GurobiCallbackData>> RegisterCallback(
       const CallbackRegistrationProto& registration, Callback cb,
       MessageCallback message_cb, absl::Time start,
-      SolveInterrupter* interrupter);
+      SolveInterrupter* local_interrupter);
 
   // Returns the ids of variables and linear constraints with inverted bounds.
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
