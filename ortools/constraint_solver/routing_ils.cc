@@ -241,7 +241,8 @@ class LinearCoolingSchedule : public CoolingSchedule {
 };
 
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
-    const RoutingSearchParameters& parameters) {
+    const RoutingModel& model, const RoutingSearchParameters& parameters,
+    std::mt19937* rnd) {
   const absl::Duration final_duration =
       !parameters.has_time_limit()
           ? absl::InfiniteDuration()
@@ -254,16 +255,19 @@ std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
   NeighborAcceptanceCriterion::SearchState final_search_state{
       final_duration, parameters.solution_limit()};
 
+  const auto [initial_temperature, final_temperature] =
+      GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
+
   switch (sa_params.cooling_schedule_strategy()) {
     case CoolingScheduleStrategy::EXPONENTIAL:
       return std::make_unique<ExponentialCoolingSchedule>(
           NeighborAcceptanceCriterion::SearchState{final_duration,
                                                    parameters.solution_limit()},
-          sa_params.initial_temperature(), sa_params.final_temperature());
+          initial_temperature, final_temperature);
     case CoolingScheduleStrategy::LINEAR:
       return std::make_unique<LinearCoolingSchedule>(
-          std::move(final_search_state), sa_params.initial_temperature(),
-          sa_params.final_temperature());
+          std::move(final_search_state), initial_temperature,
+          final_temperature);
     default:
       LOG(ERROR) << "Unsupported cooling schedule strategy.";
       return nullptr;
@@ -430,18 +434,71 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
 }
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingSearchParameters& parameters, std::mt19937* rnd) {
+    const RoutingModel& model, const RoutingSearchParameters& parameters,
+    std::mt19937* rnd) {
   CHECK(parameters.has_iterated_local_search_parameters());
   switch (parameters.iterated_local_search_parameters().acceptance_strategy()) {
     case AcceptanceStrategy::GREEDY_DESCENT:
       return std::make_unique<GreedyDescentAcceptanceCriterion>();
     case AcceptanceStrategy::SIMULATED_ANNEALING:
       return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
-          MakeCoolingSchedule(parameters), rnd);
+          MakeCoolingSchedule(model, parameters, rnd), rnd);
     default:
       LOG(ERROR) << "Unsupported acceptance strategy.";
       return nullptr;
   }
+}
+
+std::pair<double, double> GetSimulatedAnnealingTemperatures(
+    const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
+    std::mt19937* rnd) {
+  if (!sa_params.automatic_temperatures()) {
+    return {sa_params.initial_temperature(), sa_params.final_temperature()};
+  }
+
+  // In the unlikely case there are no vehicles (i.e., we will end up with an
+  // "all unperformed" solution), we simply return 0.0 as initial and final
+  // temperatures.
+  if (model.vehicles() == 0) {
+    return {0.0, 0.0};
+  }
+
+  std::vector<int> num_vehicles_of_class(model.GetCostClassesCount(), 0);
+  for (int vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
+    const RoutingCostClassIndex cost_class =
+        model.GetCostClassIndexOfVehicle(vehicle);
+    ++num_vehicles_of_class[cost_class.value()];
+  }
+
+  std::uniform_int_distribution<int64_t> node_dist(0, model.nodes() - 1);
+
+  const int sample_size = model.nodes();
+  DCHECK_GT(sample_size, 0);
+
+  std::vector<double> mean_arc_cost_for_class(model.GetCostClassesCount(), 0.0);
+  for (int cost_class = 0; cost_class < model.GetCostClassesCount();
+       ++cost_class) {
+    if (num_vehicles_of_class[cost_class] == 0) {
+      continue;
+    }
+
+    for (int i = 0; i < sample_size; ++i) {
+      mean_arc_cost_for_class[cost_class] += model.GetArcCostForClass(
+          node_dist(*rnd), node_dist(*rnd), cost_class);
+    }
+    mean_arc_cost_for_class[cost_class] /= sample_size;
+  }
+
+  double reference_temperature = 0;
+  DCHECK_GT(model.vehicles(), 0);
+  for (int cost_class = 0; cost_class < model.GetCostClassesCount();
+       ++cost_class) {
+    reference_temperature += mean_arc_cost_for_class[cost_class] *
+                             num_vehicles_of_class[cost_class] /
+                             model.vehicles();
+  }
+
+  return {reference_temperature * 0.1, reference_temperature * 0.001};
 }
 
 }  // namespace operations_research

@@ -19,10 +19,12 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include <utility>
 
 #include "absl/time/time.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/util/bitset.h"
 
@@ -89,7 +91,14 @@ class NeighborAcceptanceCriterion {
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingSearchParameters& parameters, std::mt19937* rnd);
+    const RoutingModel& model, const RoutingSearchParameters& parameters,
+    std::mt19937* rnd);
+
+// Returns initial and final simulated annealing temperatures according to the
+// given simulated annealing input parameters.
+std::pair<double, double> GetSimulatedAnnealingTemperatures(
+    const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
+    std::mt19937* rnd);
 
 }  // namespace operations_research
 

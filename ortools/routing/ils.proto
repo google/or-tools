@@ -131,8 +131,17 @@ message SimulatedAnnealingParameters {
   // The final temperature. See CoolingScheduleStrategy for its usage.
   optional double final_temperature = 3;
 
-  // TODO(user): support automatic definition of initial and final
-  // temperatures.
+  // Automatically define the value for the temperatures as follows.
+  // First, a  reference temperature t is defined as
+  //           w1 * c1 + w2 * c2 + ... + wK * cK
+  // where 0 < wJ <= 1 is the fraction of vehicles of cost class J and cJ is the
+  // average arc cost for the cost class J.
+  // The value of cJ is identified by randomly sampling N arc costs for the cost
+  // class J, where N is equal to the number of instance nodes.
+  // The initial and final temperatures are then defined as
+  // - initial_temperature: 0.1 * t
+  // - final_temperature: 0.001 * t
+  optional bool automatic_temperatures = 4;
 }
 
 // Determines when a neighbor solution, obtained by the application of a

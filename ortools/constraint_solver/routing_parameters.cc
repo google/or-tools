@@ -69,6 +69,7 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
   sa->set_initial_temperature(100.0);
   sa->set_final_temperature(0.01);
+  sa->set_automatic_temperatures(false);
   return ils;
 }
 
@@ -353,6 +354,7 @@ void FindErrorsInIteratedLocalSearchParameters(
                  sa_params.cooling_schedule_strategy()));
     }
 
+    if (!sa_params.automatic_temperatures()) {
     if (sa_params.initial_temperature() < sa_params.final_temperature()) {
       errors.emplace_back(
           "iterated_local_search_parameters.simulated_annealing_parameters."
@@ -371,6 +373,7 @@ void FindErrorsInIteratedLocalSearchParameters(
       errors.emplace_back(
           "iterated_local_search_parameters.simulated_annealing_parameters."
           "final_temperature cannot be lower than 1e-9.");
+      }
     }
   }
 }

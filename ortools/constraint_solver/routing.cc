@@ -3085,6 +3085,12 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
 
 const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     const RoutingSearchParameters& parameters) {
+  DCHECK(parameters.use_iterated_local_search());
+
+  if (nodes() == 0) {
+    return nullptr;
+  }
+
   const int64_t start_time_ms = solver_->wall_time();
   QuietCloseModelWithParameters(parameters);
   UpdateSearchFromParametersIfNeeded(parameters);
@@ -3137,7 +3143,7 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
   };
 
   std::unique_ptr<NeighborAcceptanceCriterion> acceptance_criterion =
-      MakeNeighborAcceptanceCriterion(parameters, &rnd);
+      MakeNeighborAcceptanceCriterion(*this, parameters, &rnd);
 
   const bool improve_perturbed_solution =
       parameters.iterated_local_search_parameters()
