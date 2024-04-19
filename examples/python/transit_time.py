@@ -22,7 +22,6 @@
 """
 
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import routing_enums_pb2
 
 
 ###########################

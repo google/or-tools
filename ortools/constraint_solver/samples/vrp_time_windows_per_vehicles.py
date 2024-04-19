@@ -31,7 +31,7 @@ location: [49-64] vehicle: 3 TW: [900, 1020] (3pm-5pm)
 
 # [START import]
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import routing_enums_pb2
+from ortools.routing import enums_pb2
 
 # [END import]
 
@@ -229,10 +229,10 @@ def main():
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
     search_parameters.time_limit.FromSeconds(1)
     # [END parameters]

@@ -26,7 +26,7 @@ import argparse
 from functools import partial
 import random
 
-from ortools.constraint_solver import routing_enums_pb2
+from ortools.routing import enums_pb2
 from ortools.constraint_solver import pywrapcp
 
 parser = argparse.ArgumentParser()
@@ -96,7 +96,7 @@ def main(args):
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         # Setting first solution heuristic (cheapest addition).
         search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+            enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
         # Setting the cost function.
         # Put a callback to the distance accessor here. The callback takes two
