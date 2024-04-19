@@ -15,7 +15,7 @@
 """Test for constraint_solver pybind11 layer."""
 
 from absl.testing import absltest
-from ortools.constraint_solver import constraint_solver
+from ortools.constraint_solver.python import constraint_solver
 
 
 class ConstraintSolverTest(absltest.TestCase):

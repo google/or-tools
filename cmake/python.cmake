@@ -314,6 +314,7 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/algorithms/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/bop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
@@ -462,6 +463,8 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywrapcp> ${PYTHON_PROJECT}/constraint_solver
   COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:constraint_solver_pybind11> ${PYTHON_PROJECT}/constraint_solver/python
+  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:pywraplp> ${PYTHON_PROJECT}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:model_builder_helper_pybind11> ${PYTHON_PROJECT}/linear_solver/python
@@ -490,6 +493,7 @@ add_custom_command(
     max_flow_pybind11
     min_cost_flow_pybind11
     pywrapcp
+    constraint_solver_pybind11
     routing_pybind11
     pywraplp
     model_builder_helper_pybind11
@@ -526,6 +530,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.max_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.graph.python.min_cost_flow --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.pywrapcp --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.constraint_solver.python.constraint_solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.pywraplp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.linear_solver.python.model_builder_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p pybind11_abseil.status --output .

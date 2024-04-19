@@ -71,6 +71,10 @@ setup(
             '$<TARGET_FILE_NAME:pywrapcp>',
             '*.pyi'
         ],
+        '@PYTHON_PROJECT@.constraint_solver.python':[
+            '$<TARGET_FILE_NAME:constraint_solver_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.linear_solver':[
             '$<TARGET_FILE_NAME:pywraplp>',
             '*.pyi'

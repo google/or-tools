@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pywrapcp
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywrapcp)
 set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
@@ -47,6 +48,33 @@ if(MSVC)
   target_link_libraries(pywrapcp PRIVATE ${Python3_LIBRARIES})
 endif()
 
+# constraint_solver
+pybind11_add_module(constraint_solver_pybind11 MODULE constraint_solver.cc)
+set_target_properties(constraint_solver_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "constraint_solver")
+
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(constraint_solver_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
+    )
+  set_property(TARGET constraint_solver_pybind11 APPEND PROPERTY
+    LINK_FLAGS "-flat_namespace -undefined suppress"
+    )
+elseif(UNIX)
+  set_target_properties(constraint_solver_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
+    )
+endif()
+
+target_link_libraries(constraint_solver_pybind11 PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  pybind11_native_proto_caster
+)
+add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_solver_pybind11)
+
+# Test
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
