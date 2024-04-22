@@ -435,11 +435,33 @@ void LinearPropagator::SetLevel(int level) {
   previous_level_ = level;
 }
 
-void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb) {
+void LinearPropagator::SetPropagatedBy(IntegerVariable var, int id) {
+  int& ref_id = propagated_by_[var];
+  if (ref_id == id) return;
+
+  propagated_by_was_set_.Set(var);
+
+  DCHECK_GE(var, 0);
+  DCHECK_LT(var, propagated_by_.size());
+  if (ref_id != -1) {
+    DCHECK_GE(ref_id, 0);
+    DCHECK_LT(ref_id, id_to_propagation_count_.size());
+    id_to_propagation_count_[ref_id]--;
+  }
+  ref_id = id;
+  if (id != -1) id_to_propagation_count_[id]++;
+}
+
+void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
+                                        int id) {
+  // If no constraint use this var, we just ignore it.
+  const int size = var_to_constraint_ids_[var].size();
+  if (size == 0) return;
+
+  SetPropagatedBy(var, id);
   order_.UpdateBound(var, lb);
   Bitset64<int>::View in_queue = in_queue_.view();
-  time_limit_->AdvanceDeterministicTime(
-      static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
+  time_limit_->AdvanceDeterministicTime(static_cast<double>(size) * 1e-9);
   for (const int id : var_to_constraint_ids_[var]) {
     if (in_queue[id]) continue;
     in_queue.Set(id);
@@ -454,8 +476,7 @@ bool LinearPropagator::Propagate() {
   // is handled by PropagateOneConstraint().
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     if (var >= var_to_constraint_ids_.size()) continue;
-    SetPropagatedBy(var, -1);
-    OnVariableChange(var, integer_trail_->LowerBound(var));
+    OnVariableChange(var, integer_trail_->LowerBound(var), -1);
   }
 
   // Cleanup.
@@ -947,11 +968,9 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     const IntegerVariable next_var = NegationOf(var);
     if (actual_ub < new_ub) {
       // Was pushed further due to hole. We clear it.
-      SetPropagatedBy(next_var, -1);
-      OnVariableChange(next_var, -actual_ub);
+      OnVariableChange(next_var, -actual_ub, -1);
     } else if (actual_ub == new_ub) {
-      SetPropagatedBy(next_var, id);
-      OnVariableChange(next_var, -actual_ub);
+      OnVariableChange(next_var, -actual_ub, id);
 
       // We reorder them first.
       std::swap(vars[i], vars[num_pushed]);
@@ -1256,23 +1275,6 @@ void LinearPropagator::AddToQueueIfNeeded(int id) {
   if (in_queue_[id]) return;
   in_queue_.Set(id);
   propagation_queue_.push_back(id);
-}
-
-void LinearPropagator::SetPropagatedBy(IntegerVariable var, int id) {
-  int& ref_id = propagated_by_[var];
-  if (ref_id == id) return;
-
-  propagated_by_was_set_.Set(var);
-
-  DCHECK_GE(var, 0);
-  DCHECK_LT(var, propagated_by_.size());
-  if (ref_id != -1) {
-    DCHECK_GE(ref_id, 0);
-    DCHECK_LT(ref_id, id_to_propagation_count_.size());
-    id_to_propagation_count_[ref_id]--;
-  }
-  ref_id = id;
-  if (id != -1) id_to_propagation_count_[id]++;
 }
 
 void LinearPropagator::ClearPropagatedBy() {

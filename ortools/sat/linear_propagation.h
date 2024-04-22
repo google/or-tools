@@ -142,7 +142,7 @@ class EnforcementPropagator : public SatPropagator {
 
 // Helper class to decide on the constraint propagation order.
 //
-// Each constraint might push some variables which might in turn render other
+// Each constraint might push some variables which might in turn make other
 // constraint tighter. In general, it seems better to make sure we push first
 // constraints that are not affected by other variables and delay the
 // propagation of constraint that we know will become tigher.
@@ -179,11 +179,9 @@ class ConstraintPropagationOrder {
     var_to_id_[var] = id;
     if (!in_ids_[id]) {
       in_ids_.Set(id);
-      ids_.push_back(id);
 
-      // randomize starting pos?
-      const int random_pos = absl::Uniform<int>(*random_, 0, ids_.size());
-      std::swap(ids_[random_pos], ids_.back());
+      // All new ids are likely not in a cycle, we want to test them first.
+      ids_.push_front(id);
     }
   }
 
@@ -207,33 +205,51 @@ class ConstraintPropagationOrder {
   int NextId() {
     if (ids_.empty()) return -1;
 
-    int best_pos = 0;
+    int best_id = 0;
+    int best_num_vars = 0;
     int best_degree = std::numeric_limits<int>::max();
     const int size = ids_.size();
     const auto var_has_entry = var_has_entry_.const_view();
     for (int i = 0; i < size; ++i) {
-      const int pos = (i + start_) % size;
-      const int id = ids_[pos];
+      const int id = ids_.front();
+      ids_.pop_front();
       DCHECK(in_ids_[id]);
 
       int degree = 0;
-      for (const IntegerVariable var : id_to_vars_func_(id)) {
+      absl::Span<const IntegerVariable> vars = id_to_vars_func_(id);
+      for (const IntegerVariable var : vars) {
         if (var_has_entry[var]) ++degree;
       }
 
-      if (degree < best_degree) {
+      // We select the min-degree and prefer lower constraint size.
+      // We however stop at the first degree zero.
+      if (degree < best_degree ||
+          (degree == best_degree && vars.size() < best_num_vars)) {
         best_degree = degree;
-        best_pos = pos;
-        if (best_degree == 0) break;
+        best_num_vars = vars.size();
+        best_id = id;
+        if (best_degree == 0) {
+          in_ids_.Clear(best_id);
+          return best_id;
+        }
       }
-    }
-    std::swap(ids_[best_pos], ids_.back());
 
-    start_ = best_pos;
-    const int result = ids_.back();
-    ids_.pop_back();
-    in_ids_.Clear(result);
-    return result;
+      ids_.push_back(id);
+    }
+
+    // We didn't find any degree zero, we scanned the whole queue.
+    // Extract best_id while keeping the order stable.
+    //
+    // We tried to randomize the order, it does add more variance but also seem
+    // worse overall.
+    int new_size = 0;
+    for (const int id : ids_) {
+      if (id == best_id) continue;
+      ids_[new_size++] = id;
+    }
+    ids_.resize(new_size);
+    in_ids_.Clear(best_id);
+    return best_id;
   }
 
   void UpdateBound(IntegerVariable var, IntegerValue lb) {
@@ -267,10 +283,10 @@ class ConstraintPropagationOrder {
   absl::StrongVector<IntegerVariable, int> var_to_pos_;
   std::vector<IntegerVariable> to_clear_;
 
-  // Set/vector of constraint to be propagated.
+  // Set/queue of constraints to be propagated.
   int start_ = 0;
   Bitset64<int> in_ids_;
-  std::vector<int> ids_;
+  std::deque<int> ids_;
 };
 
 // This is meant to supersede both IntegerSumLE and the PrecedencePropagator.
@@ -323,8 +339,9 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
 
-  // Called when the lower bound of a variable changed.
-  void OnVariableChange(IntegerVariable var, IntegerValue lb);
+  // Called when the lower bound of a variable changed. The id is the constraint
+  // id that caused this change or -1 if it comes from an external source.
+  void OnVariableChange(IntegerVariable var, IntegerValue lb, int id);
 
   // Returns false on conflict.
   ABSL_MUST_USE_RESULT bool PropagateOneConstraint(int id);
