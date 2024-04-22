@@ -10191,8 +10191,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
       const LinearConstraintProto& lin1 =
           context_->working_model->constraints(c1).linear();
       bool skip = false;
-      for (int i = 0; i < lin1.vars().size(); ++i) {
-        if (skip) break;
+      for (int i = 0; !skip && i < lin1.vars().size(); ++i) {
         for (const auto [c2, coeff2] : var_to_ct_coeffs_[lin1.vars(i)]) {
           if (c2 == c1) continue;
 
