@@ -1,17 +1,4 @@
-// Copyright 2019-2023 RTE
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Hearder to be written
+// ADD HEADER
 
 #include <algorithm>
 #include <clocale>
@@ -38,10 +25,15 @@
 
 namespace operations_research {
 
-// Knitro does not support inf value so it is mandatory to convert it to
-// KN_INFINITY
+/**
+ * Knitro does not support inf values
+ * so it is mandatory to convert them into
+ * KN_INFINITY
+ * @param value the evaluated value
+ * @return KN_INFINITY if the value is inf otherwise value
+ */  
 inline double redefine_infinity_double(double value) {
-  if (isinf(value)) {
+  if (std::isinf(value)) {
     return value > 0 ? KN_INFINITY : -KN_INFINITY;
   }
   return value;
@@ -133,8 +125,7 @@ class KnitroInterface : public MPSolverInterface {
 
   KN_context* kc_;
   bool mip_;
-  bool init_solve_;
-  bool no_var_;
+  bool no_obj_;
   MPCallback* callback_ = nullptr;
 };
 
@@ -152,9 +143,10 @@ class KnitroMPCallbackContext : public MPCallbackContext {
   MPCallbackEvent Event() override { return event_; };
   bool CanQueryVariableValues() override;
   double VariableValue(const MPVariable* variable) override;
+
+  // Knitro supports cuts and lazy constraints only
   void AddCut(const LinearRange& cutting_plane) override;
   void AddLazyConstraint(const LinearRange& lazy_constraint) override;
-
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override {
     LOG(WARNING) << "SuggestSolution is not implemented in Knitro interface";
@@ -189,6 +181,13 @@ int64_t KnitroMPCallbackContext::NumExploredNodes() {
   return num_nodes;
 }
 
+/**
+ * Constraint generator for callback methods. 
+ * Add new linear constraint to Knitro model as Knitro 
+ * generate cuts from lazy constraints using the same method.
+ * @param kn the Knitro model
+ * @param linear_range the constraint
+ */
 void GenerateConstraint(KN_context* kc, const LinearRange& linear_range) {
   std::vector<int> variable_indices;
   std::vector<double> variable_coefficients;
@@ -232,6 +231,9 @@ struct MPCallBackWithEvent {
   MPCallback* callback;
 };
 
+/** 
+ * Call-back called by Knitro that needs this type signature.
+ */
 int KNITRO_API CallBackFn(KN_context_ptr kc, const double* const x,
                           const double* const lambda, void* const userParams) {
   MPCallBackWithEvent* const callback_with_event =
@@ -250,11 +252,13 @@ KnitroInterface::KnitroInterface(MPSolver* solver, bool mip)
     : MPSolverInterface(solver),
       kc_(nullptr),
       mip_(mip),
-      init_solve_(false),
-      no_var_(true) {
+      no_obj_(true) {
   CHECK_STATUS(KN_new(&kc_));
 }
 
+/**
+ * Cleans the Knitro problem using Knitro free method.
+ */
 KnitroInterface::~KnitroInterface() { CHECK_STATUS(KN_free(&kc_)); }
 
 // ------ Model modifications and extraction -----
@@ -263,8 +267,7 @@ void KnitroInterface::Reset() {
   // Instead of explicitly clearing all model objects we
   // just delete the problem object and allocate a new one.
   CHECK_STATUS(KN_free(&kc_));
-  init_solve_ = false;
-  no_var_ = true;
+  no_obj_ = true;
   int status;
   status = KN_new(&kc_);
   CHECK_STATUS(status);
@@ -306,7 +309,8 @@ void KnitroInterface::SetVariableInteger(int var_index, bool integer) {
   if (mip_) {
     if (variable_is_extracted(var_index)) {
       DCHECK_LT(var_index, last_variable_index_);
-      CHECK_STATUS(KN_set_var_type(kc_, var_index, KN_VARTYPE_INTEGER));
+      CHECK_STATUS(KN_set_var_type(kc_, var_index, 
+                   integer ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS));
     } else {
       sync_status_ = MUST_RELOAD;
     }
@@ -352,20 +356,21 @@ void KnitroInterface::ClearConstraint(MPConstraint* constraint) {
 
   int const len = constraint->coefficients_.size();
   std::unique_ptr<int[]> var_ind(new int[len]);
-  std::unique_ptr<double[]> val(new double[len]);
   int j = 0;
   const auto& coeffs = constraint->coefficients_;
   for (auto coeff : coeffs) {
     int const col = coeff.first->index();
+    // if the variable has been extracted, 
+    // then its linear coefficient exists
     if (variable_is_extracted(col)) {
       var_ind[j] = col;
-      val[j] = 0.0;
       ++j;
     }
   }
   if (j > 0) {
+    // delete all coefficients of constraint's linear structure
     CHECK_STATUS(
-        KN_chg_con_linear_struct_one(kc_, j, row, var_ind.get(), val.get()));
+        KN_del_con_linear_struct_one(kc_, j, row, var_ind.get()));
     CHECK_STATUS(KN_update(kc_));
   }
 }
@@ -380,9 +385,8 @@ void KnitroInterface::SetObjectiveOffset(double value) {
 }
 
 void KnitroInterface::ClearObjective() {
-  // return without clearing the objective coef if
-  // no variable have been added to the knitro model
-  if (sync_status_ == MUST_RELOAD) return;
+  // if the model does not have objective, return
+  if (no_obj_) return;
   if (solver_->Objective().offset()) CHECK_STATUS(KN_del_obj_constant(kc_));
   InvalidateSolutionSynchronization();
   int const cols = solver_->objective_->coefficients_.size();
@@ -402,6 +406,7 @@ void KnitroInterface::ClearObjective() {
     CHECK_STATUS(KN_del_obj_linear_struct(kc_, j, ind.get()));
     CHECK_STATUS(KN_update(kc_));
   }
+  no_obj_ = true;
 }
 
 void KnitroInterface::BranchingPriorityChangedForVariable(int var_index) {
@@ -449,6 +454,7 @@ void KnitroInterface::ExtractNewVariables() {
     std::unique_ptr<int[]> prior(new int[len]);
     std::unique_ptr<int[]> prior_idx(new int[len]);
     int prior_nb = 0;
+
     // Define new variables
     for (int j = 0, var_index = last_variable_index_; j < len;
          ++j, ++var_index) {
@@ -475,8 +481,23 @@ void KnitroInterface::ExtractNewVariables() {
     CHECK_STATUS(KN_set_var_names(kc_, len, idx_vars.get(), names.get()));
     CHECK_STATUS(KN_set_mip_branching_priorities(kc_, prior_nb, prior_idx.get(),
                                                  prior.get()));
+    
+    // Add new variables to existing constraints.
+    for (int i = 0; i < last_constraint_index_; i++) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      for (const auto& entry : ct->coefficients_) {
+        const int var_index = entry.first->index();
+        DCHECK(variable_is_extracted(var_index));
+        if (var_index >= last_variable_index_) {
+          // The variable is new, so we know the previous coefficient
+          // value was 0 and we can directly add the coefficient.
+          CHECK_STATUS(
+              KN_add_con_linear_term(kc_, i,
+                                var_index,entry.second));
+        }
+      }
+    }
   }
-  no_var_ = (total_num_vars) ? false : true;
 }
 
 void KnitroInterface::ExtractNewConstraints() {
@@ -553,7 +574,7 @@ void KnitroInterface::ExtractObjective() {
       }
     }
     // if a init solve occured, remove prev coef to add the new ones
-    if (init_solve_) {
+    if (!no_obj_) {
       CHECK_STATUS(KN_chg_obj_linear_struct(kc_, len, ind.get(), val.get()));
       CHECK_STATUS(KN_chg_obj_constant(kc_, solver_->Objective().offset()));
     } else {
@@ -562,6 +583,7 @@ void KnitroInterface::ExtractObjective() {
     }
 
     CHECK_STATUS(KN_update(kc_));
+    no_obj_ = false;
   }
 
   // Extra check on the optimization direction
@@ -718,7 +740,7 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
   // Special case for empty model (no var)
   // Infeasible Constraint should have been checked
   // by MPSolver upstream
-  if (no_var_) {
+  if (!solver_->NumVariables()) {
     objective_value_ = solver_->Objective().offset();
     if (mip_) best_objective_bound_ = 0;
     result_status_ = MPSolver::OPTIMAL;
@@ -765,7 +787,6 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
   }
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  init_solve_ = true;
   return result_status_;
 }
 

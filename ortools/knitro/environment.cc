@@ -1353,8 +1353,6 @@ void LoadKnitroFunctions(DynamicLibrary* knitro_dynamic_library) {
 
 std::vector<std::string> KnitroDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
-  const std::vector<std::string> KnitroVersions = {
-      "14.0.0"};  // TODO : à compléter
 
   // Look for libraries pointed by KNITRODIR first.
   const char* knitrodir_env = getenv("KNITRODIR");
@@ -1362,10 +1360,10 @@ std::vector<std::string> KnitroDynamicLibraryPotentialPaths() {
     LOG(INFO) << "Environment variable KNITRODIR = " << knitrodir_env;
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(absl::StrCat(knitrodir_env, "\\lib\\knitro.dll"));
-#elif defined(__APPLE__)  // OS X (TODO : à vérifier)
+#elif defined(__APPLE__)  // OS X
     potential_paths.push_back(
         absl::StrCat(knitrodir_env, "/lib/libknitro.dylib"));
-#elif defined(__GNUC__)   // Linux (TODO : à vérifier)
+#elif defined(__GNUC__)   // Linux
     potential_paths.push_back(absl::StrCat(knitrodir_env, "/lib/libknitro.so"));
 #else
     LOG(ERROR) << "OS Not recognized by knitro/environment.cc."
@@ -1375,35 +1373,6 @@ std::vector<std::string> KnitroDynamicLibraryPotentialPaths() {
     LOG(WARNING) << "Environment variable KNITRODIR undefined.";
   }
 
-  // Search for canonical places.
-  for (const std::string& version : KnitroVersions) {
-    const std::string lib = version.substr(0, version.size() - 1);
-#if defined(_MSC_VER)  // Windows
-    potential_paths.push_back(absl::StrCat(
-        "C:\\Program Files\\Artelys\\Knitro ", version, "\\lib\\knitro.dll"));
-    potential_paths.push_back(
-        absl::StrCat("C:\\Knitro ", version, "\\lib\\knitro.dll"));
-    potential_paths.push_back(absl::StrCat("knitro.dll"));
-#elif defined(__APPLE__)  // OS X TODO : à dzf
-    potential_paths.push_back(absl::StrCat(
-        "/Library/knitro", version, "/mac64/lib/libknitro", lib, ".dylib"));
-    potential_paths.push_back(absl::StrCat("/Library/knitro", version,
-                                           "/macos_universal2/lib/libknitro",
-                                           lib, ".dylib"));
-#elif defined(__GNUC__)   // Linux TODO : à def
-    potential_paths.push_back(absl::StrCat(
-        "/opt/knitro", version, "/linux64/lib/libknitro", lib, ".so"));
-    potential_paths.push_back(absl::StrCat(
-        "/opt/knitro", version, "/linux64/lib64/libknitro", lib, ".so"));
-    potential_paths.push_back(
-        absl::StrCat("/opt/knitro/linux64/lib/libknitro", lib, ".so"));
-    potential_paths.push_back(
-        absl::StrCat("/opt/knitro/linux64/lib64/libknitro", lib, ".so"));
-#else
-    LOG(ERROR) << "OS Not recognized by knitro/environment.cc."
-               << " You won't be able to use Knitro.";
-#endif
-  }
   return potential_paths;
 }
 

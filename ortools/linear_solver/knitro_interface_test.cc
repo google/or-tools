@@ -1,18 +1,7 @@
-// Copyright 2010-2024 Google LLC
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
+// ADD HEADER
+#define _CRTDBG_MAP_ALLOC
 #include <stdio.h>
-
+#include <crtdbg.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -26,6 +15,8 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
+
+// TODO : mettre var glob marge erreur
 
 #define EXPECT_STATUS(s)                              \
   do {                                                \
@@ -88,7 +79,7 @@ class KnitroGetter {
         KN_get_jacobian_values_one(kc(), ct->index(), idx_vars, coef));
   }
 
-  void Con_tot_nnz(int64_t* nnz) {
+  void Con_tot_nnz(KNLONG* nnz) {
     EXPECT_STATUS(KN_get_jacobian_nnz(kc(), nnz));
   }
 
@@ -213,7 +204,7 @@ TEST(KnitroInterface, ClearConstraint) {
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPConstraint* const ct = solver.MakeRowConstraint(0, 10, "ct");
   ct->SetCoefficient(x, 2);
-  int64_t nnz;
+  KNLONG nnz;
   getter.Con_tot_nnz(&nnz);
   // The Constraint has not been extracted yet
   EXPECT_EQ(nnz, 0);
@@ -460,7 +451,7 @@ TEST(KnitroInterface, underlying_solver){
 // ----- Getting post-solve informations
 
 /** Unit Test of the method nodes()*/
-TEST(KitroInterface, nodes){
+TEST(KnitroInterface, nodes){
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
   solver.Solve();
@@ -468,7 +459,7 @@ TEST(KitroInterface, nodes){
 }
 
 /** Unit Test of the method iterations()*/
-TEST(KitroInterface, iterations){
+TEST(KnitroInterface, iterations){
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
   solver.Solve();
@@ -897,7 +888,7 @@ TEST(KnitroInterface, ClearConstraint2) {
  *    st. .5x + y <= 3
  *          x + y <= 3
  * Then changes the objective and solves the new problem
-*/
+ */
 TEST(KnitroInterface, ClearObjective2) {
 
   UNITTEST_INIT_LP();
@@ -938,6 +929,7 @@ TEST(KnitroInterface, ClearObjective2) {
  *          x - y >= -2.5
  *          x , y \in R
  * Then changes x into integer type and solves the new problem
+ * Finally changes x back into continuous var and solves
  */
 TEST(KnitroInterface, ChangeVarIntoInteger) {
   UNITTEST_INIT_MIP();
@@ -964,9 +956,15 @@ TEST(KnitroInterface, ChangeVarIntoInteger) {
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 2.5, 1e-7);
 
+  // Change x into integer
   x->SetInteger(true);
   solver.Solve();
   EXPECT_NEAR(obj->Value(), 2, 1e-7);
+
+  // Change x back into continuous
+  x->SetInteger(false);
+  solver.Solve();
+  EXPECT_NEAR(obj->Value(), 2.5, 1e-7);
 }
 
 /**
@@ -1002,6 +1000,47 @@ TEST(KnitroInterface, AddVarAndConstraint) {
   EXPECT_NEAR(obj->Value(), 3, 1e-7);
 }
 
+/**
+ * Solves the initial problem 
+ *    max x
+ *    st. x <= 7
+ *        x <= 4
+ *        x >= 0
+ * 
+ * Then add a new variable to the problem
+ *    max x +  y
+ *    st. x + 2y <= 7
+ *        x -  y <= 4
+ *        x >= 0
+ */
+TEST(KnitroInterface, AddVarToExistingConstraint){
+  UNITTEST_INIT_LP();
+  double infinity = solver.infinity();
+  MPVariable* const x = solver.MakeNumVar(0, infinity, "x");
+
+  MPObjective* const obj = solver.MutableObjective();
+  obj->SetCoefficient(x, 1);
+  obj->SetMaximization();
+
+  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 7, "c1");
+  c1->SetCoefficient(x, 1);
+  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 4, "c2");
+  c2->SetCoefficient(x, 1);
+
+  solver.Solve();
+  EXPECT_NEAR(obj->Value(), 4, 1e-7);
+
+  MPVariable* const y = solver.MakeNumVar(0, infinity, "y");
+  c1->SetCoefficient(y, 2);
+  c2->SetCoefficient(y, -1);
+  obj->SetCoefficient(y, 1);
+
+  solver.Solve();
+  EXPECT_NEAR(obj->Value(), 6, 1e-7);
+  EXPECT_NEAR(x->solution_value(), 5, 1e-7);
+  EXPECT_NEAR(y->solution_value(), 1, 1e-7);
+}
+
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
@@ -1013,5 +1052,6 @@ int main(int argc, char** argv) {
     remove("knitro_interface_test_empty");
     return EXIT_SUCCESS;
   }
+  _CrtDumpMemoryLeaks();
   return EXIT_FAILURE;
 }
