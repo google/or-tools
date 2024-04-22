@@ -386,8 +386,13 @@ LinearPropagator::~LinearPropagator() {
   stats.push_back({"linear_propag/num_pushes", num_pushes_});
   stats.push_back(
       {"linear_propag/num_enforcement_pushes", num_enforcement_pushes_});
-  stats.push_back({"linear_propag/num_simple_cycles", num_simple_cycles_});
-  stats.push_back({"linear_propag/num_complex_cycles", num_complex_cycles_});
+
+  stats.push_back({"linear_propag/num_cycles", num_cycles_});
+  stats.push_back({"linear_propag/num_failed_cycles", num_failed_cycles_});
+
+  stats.push_back({"linear_propag/num_short_reasons_", num_short_reasons_});
+  stats.push_back({"linear_propag/num_long_reasons_", num_long_reasons_});
+
   stats.push_back({"linear_propag/num_scanned", num_scanned_});
   stats.push_back({"linear_propag/num_explored_in_disassemble",
                    num_explored_in_disassemble_});
@@ -876,6 +881,14 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
   // But this should have been checked by SkipConstraint().
   CHECK_EQ(info.enf_status, static_cast<int>(EnforcementStatus::IS_ENFORCED));
 
+  // We can look for disasemble before the actual push.
+  // This should lead to slighly better reason.
+  // Explore the subtree and detect cycles greedily.
+  // Also postpone some propagation.
+  if (!DisassembleSubtree(id, num_to_push)) {
+    return false;
+  }
+
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   int num_pushed = 0;
@@ -950,14 +963,6 @@ bool LinearPropagator::PropagateOneConstraint(int id) {
     }
   }
 
-  // Explore the subtree and detect cycles greedily.
-  // Also postpone some propagation.
-  if (num_pushed > 0) {
-    if (!DisassembleSubtree(id, num_pushed)) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -995,7 +1000,7 @@ bool LinearPropagator::ReportConflictingCycle() {
     integer_reason_.clear();
     absl::int128 rhs_sum = 0;
     absl::flat_hash_map<IntegerVariable, absl::int128> map_sum;
-    for (const auto [id, next_var] : disassemble_branch_) {
+    for (const auto [id, next_var, increase] : disassemble_branch_) {
       const ConstraintInfo& info = infos_[id];
       enforcement_propagator_->AddEnforcementReason(info.enf_id,
                                                     &literal_reason_);
@@ -1064,7 +1069,7 @@ bool LinearPropagator::ReportConflictingCycle() {
         }
       }
 
-      ++num_simple_cycles_;
+      ++num_short_reasons_;
       VLOG(2) << "Simplified " << integer_reason_.size() << " slack "
               << implied_lb - rhs_sum;
       return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
@@ -1079,7 +1084,7 @@ bool LinearPropagator::ReportConflictingCycle() {
   literal_reason_.clear();
   integer_reason_.clear();
   IntegerVariable previous_var = kNoIntegerVariable;
-  for (const auto [id, next_var] : disassemble_branch_) {
+  for (const auto [id, next_var, increase] : disassemble_branch_) {
     const ConstraintInfo& info = infos_[id];
     enforcement_propagator_->AddEnforcementReason(info.enf_id,
                                                   &literal_reason_);
@@ -1101,8 +1106,24 @@ bool LinearPropagator::ReportConflictingCycle() {
             << integer_trail_->UpperBound(next_var)
             << "] : " << ConstraintDebugString(id);
   }
-  ++num_complex_cycles_;
+  ++num_long_reasons_;
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
+}
+
+std::pair<IntegerValue, IntegerValue> LinearPropagator::GetCycleCoefficients(
+    int id, IntegerVariable var, IntegerVariable next_var) {
+  const ConstraintInfo& info = infos_[id];
+  const auto coeffs = GetCoeffs(info);
+  const auto vars = GetVariables(info);
+  IntegerValue var_coeff(0);
+  IntegerValue next_coeff(0);
+  for (int i = 0; i < info.initial_size; ++i) {
+    if (vars[i] == var) var_coeff = coeffs[i];
+    if (vars[i] == NegationOf(next_var)) next_coeff = coeffs[i];
+  }
+  DCHECK_NE(var_coeff, 0);
+  DCHECK_NE(next_coeff, 0);
+  return {var_coeff, next_coeff};
 }
 
 // Note that if there is a loop in the propagated_by_ graph, it must be
@@ -1114,7 +1135,7 @@ bool LinearPropagator::ReportConflictingCycle() {
 //
 // TODO(user): Revisit the algo, no point exploring twice the same var, also
 // the queue reordering heuristic might not be the best.
-bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
+bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
   // The variable was just pushed, we explore the set of variable that will
   // be pushed further due to this push. Basically, if a constraint propagated
   // before and its slack will reduce due to the push, then any previously
@@ -1125,8 +1146,8 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
   {
     const ConstraintInfo& info = infos_[root_id];
     const auto vars = GetVariables(info);
-    for (int i = 0; i < num_pushed; ++i) {
-      disassemble_queue_.push_back({root_id, NegationOf(vars[i])});
+    for (int i = 0; i < num_tight; ++i) {
+      disassemble_queue_.push_back({root_id, NegationOf(vars[i]), 1});
     }
   }
 
@@ -1134,16 +1155,16 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
   // for each one. And each time we explore an id, we disassemble the tree.
   absl::Span<int> id_to_count = absl::MakeSpan(id_to_propagation_count_);
   while (!disassemble_queue_.empty()) {
-    const auto [prev_id, var] = disassemble_queue_.back();
+    const auto [prev_id, var, increase] = disassemble_queue_.back();
     if (!disassemble_branch_.empty() &&
-        disassemble_branch_.back().first == prev_id &&
-        disassemble_branch_.back().second == var) {
+        disassemble_branch_.back().id == prev_id &&
+        disassemble_branch_.back().var == var) {
       disassemble_branch_.pop_back();
       disassemble_queue_.pop_back();
       continue;
     }
 
-    disassemble_branch_.push_back({prev_id, var});
+    disassemble_branch_.push_back({prev_id, var, increase});
 
     time_limit_->AdvanceDeterministicTime(
         static_cast<double>(var_to_constraint_ids_[var].size()) * 1e-9);
@@ -1155,34 +1176,25 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
         CHECK(!disassemble_branch_.empty());
 
         // This is a corner case in which there is actually no cycle.
-        const IntegerVariable root_var = disassemble_branch_[0].second;
-        CHECK_EQ(disassemble_branch_[0].first, root_id);
+        const auto [test_id, root_var, var_increase] = disassemble_branch_[0];
+        CHECK_EQ(test_id, root_id);
         CHECK_NE(var, root_var);
         if (var == NegationOf(root_var)) continue;
 
-        // Tricky: We have a cycle here only if coeff of var >= root_coeff.
-        // If there is no cycle, we will just finish the branch here.
-        //
-        // TODO(user): Can we be more precise? if one coeff is big, the
-        // variation in slack might be big enough to push a variable twice and
-        // thus push a lower coeff.
-        const ConstraintInfo& info = infos_[id];
-        const auto coeffs = GetCoeffs(info);
-        const auto vars = GetVariables(info);
-        IntegerValue root_coeff(0);
-        IntegerValue var_coeff(0);
-        for (int i = 0; i < info.initial_size; ++i) {
-          if (vars[i] == var) var_coeff = coeffs[i];
-          if (vars[i] == NegationOf(root_var)) root_coeff = coeffs[i];
-        }
-        DCHECK_NE(root_coeff, 0);
-        DCHECK_NE(var_coeff, 0);
-        if (var_coeff >= root_coeff) {
+        // Simple case, we have a cycle var -> root_var -> ... -> var where
+        // all coefficient are non-increasing.
+        const auto [var_coeff, root_coeff] =
+            GetCycleCoefficients(id, var, root_var);
+        if (CapProdI(var_increase, var_coeff) >= root_coeff) {
+          ++num_cycles_;
           return ReportConflictingCycle();
-        } else {
-          // We don't want to continue the search from root_id.
-          continue;
         }
+
+        // We don't want to continue the search from root_id.
+        // TODO(user): We could still try the simple reason, it might be a
+        // conflict.
+        ++num_failed_cycles_;
+        continue;
       }
 
       if (id_to_count[id] == 0) continue;  // Didn't push or was desassembled.
@@ -1212,11 +1224,17 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_pushed) {
           id_to_count[id]--;
         }
       }
-      for (const auto [next_var, coeff] : disassemble_candidates_) {
-        // We are guaranteed to push next_var only if var_coeff will move
-        // the slack enough.
-        if (coeff <= var_coeff) {
-          disassemble_queue_.push_back({id, next_var});
+
+      for (const auto [next_var, next_var_coeff] : disassemble_candidates_) {
+        // If var was pushed by increase, next_var is pushed by
+        // (var_coeff * increase) / next_var_coeff.
+        //
+        // Note that it is okay to underevalute the increase in case of
+        // overflow.
+        const IntegerValue next_increase =
+            FloorRatio(CapProdI(var_coeff, increase), next_var_coeff);
+        if (next_increase > 0) {
+          disassemble_queue_.push_back({id, next_var, next_increase});
 
           // We know this will push later, so we register hit with a sentinel
           // value so that it do not block any earlier propagation. Hopefully,
