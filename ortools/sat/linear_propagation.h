@@ -154,7 +154,7 @@ class ConstraintPropagationOrder {
   ConstraintPropagationOrder(
       ModelRandomGenerator* random,
       std::function<absl::Span<const IntegerVariable>(int)> id_to_vars)
-      : random_(random), id_to_vars_func_(id_to_vars) {}
+      : random_(random), id_to_vars_func_(std::move(id_to_vars)) {}
 
   void Resize(int num_vars, int num_ids) {
     var_has_entry_.Resize(IntegerVariable(num_vars));
@@ -331,7 +331,15 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   ABSL_MUST_USE_RESULT bool PropagateInfeasibleConstraint(int id,
                                                           IntegerValue slack);
   ABSL_MUST_USE_RESULT bool ReportConflictingCycle();
-  ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_pushed);
+  ABSL_MUST_USE_RESULT bool DisassembleSubtree(int root_id, int num_tight);
+
+  // This loops over the given constraint and returns the coefficient of var and
+  // NegationOf(next_var). Both should be non-zero (Checked).
+  //
+  // If the slack of this constraint was tight for next_var, then pushing var
+  // will push next_var again depending on these coefficients.
+  std::pair<IntegerValue, IntegerValue> GetCycleCoefficients(
+      int id, IntegerVariable var, IntegerVariable next_var);
 
   // Returns (slack, num_to_push) of the given constraint.
   // If slack < 0 we have a conflict or might push the enforcement.
@@ -410,9 +418,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   struct DissasembleQueueEntry {
     int id;
     IntegerVariable var;
+    IntegerValue increase;
   };
   std::vector<DissasembleQueueEntry> disassemble_queue_;
-  std::vector<std::pair<int, IntegerVariable>> disassemble_branch_;
+  std::vector<DissasembleQueueEntry> disassemble_branch_;
   std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
 
   // This is used to update the deterministic time.
@@ -421,8 +430,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // Stats.
   int64_t num_pushes_ = 0;
   int64_t num_enforcement_pushes_ = 0;
-  int64_t num_simple_cycles_ = 0;
-  int64_t num_complex_cycles_ = 0;
+  int64_t num_cycles_ = 0;
+  int64_t num_failed_cycles_ = 0;
+  int64_t num_short_reasons_ = 0;
+  int64_t num_long_reasons_ = 0;
   int64_t num_scanned_ = 0;
   int64_t num_explored_in_disassemble_ = 0;
   int64_t num_delayed_ = 0;
