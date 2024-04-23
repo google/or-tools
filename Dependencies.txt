@@ -1,4 +1,4 @@
-abseil-cpp=20240116.1
+abseil-cpp=20240116.2
 Protobuf=v26.1
 Eigen=3.4.0
 Re2=2024-03-01
