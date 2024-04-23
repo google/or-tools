@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/murmur.h"
@@ -186,17 +186,15 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
   }
 }
 
-std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
-  if (sorting != SORT_LEXICOGRAPHICALLY && sorting != SORT_BY_PART) {
-    return absl::StrFormat("Unsupported sorting: %d", sorting);
-  }
+std::string DynamicPartition::DebugString(
+    bool sort_parts_lexicographically) const {
   std::vector<std::vector<int>> parts;
   for (int i = 0; i < NumParts(); ++i) {
     IterablePart iterable_part = ElementsInPart(i);
     parts.emplace_back(iterable_part.begin(), iterable_part.end());
     std::sort(parts.back().begin(), parts.back().end());
   }
-  if (sorting == SORT_LEXICOGRAPHICALLY) {
+  if (sort_parts_lexicographically) {
     std::sort(parts.begin(), parts.end());
   }
   std::string out;
@@ -283,8 +281,9 @@ std::string MergingPartition::DebugString() {
   for (int i = 0; i < NumNodes(); ++i) {
     sorted_parts[GetRootAndCompressPath(i)].push_back(i);
   }
-  for (std::vector<int>& part : sorted_parts)
+  for (std::vector<int>& part : sorted_parts) {
     std::sort(part.begin(), part.end());
+  }
   std::sort(sorted_parts.begin(), sorted_parts.end());
   // Note: typically, a lot of elements of "sorted_parts" will be empty,
   // but these won't be visible in the string that we construct below.

@@ -16,9 +16,9 @@
 
 #include <sys/types.h>
 
+#include <tuple>
 #include <vector>
 
-#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/algorithms/set_cover_model.h"
 
@@ -41,27 +41,29 @@ using SubsetBoolVector = glop::StrictITIVector<SubsetIndex, bool>;
 // From this, the following can be computed:
 //   coverage_,         the number of times an elememt is covered;
 //   marginal_impacts_, the number of elements of a subset still uncovered;
+//   num_overcovered_elements_, the number of elements of a subset that
+//   are covered two times or more in the current solution;
 //   is_removable_,     whether a subset can be removed from the solution.
-// Note that is_removable_[subset] implies is_selected_[subset], and thus
-// (is_removable_[subset] <= is_selected_[subset]) == true.
+// is_removable_[subset] == (num_over_cover_elements_[subet] == card(subset))
+// where card(subset) is the size() of the column corresponding to subset in
+// the model.
 class SetCoverInvariant {
  public:
   // Constructs an empty weighted set covering solver state.
-  // The model may not change after the ledger was built.
+  // The model may not change after the invariant was built.
   explicit SetCoverInvariant(SetCoverModel* m) : model_(m) { Initialize(); }
 
   // Initializes the solver once the data is set. The model cannot be changed
   // afterwards.
   void Initialize();
 
-  // Recomputes all the invariants for the current solution.
-  void MakeDataConsistent() {
-    cost_ = ComputeCost(is_selected_);
-    coverage_ = ComputeCoverage(is_selected_);
-    is_removable_ = ComputeIsRemovable(coverage_);
-    marginal_impacts_ = ComputeMarginalImpacts(coverage_);
-    num_elements_covered_ = ComputeNumElementsCovered(coverage_);
+  void Clear() {
+    is_selected_.assign(model_->num_subsets(), false);
+    RecomputeInvariant();
   }
+
+  // Recomputes all the invariants for the current solution.
+  void RecomputeInvariant();
 
   // Returns the weighted set covering model to which the state applies.
   SetCoverModel* model() const { return model_; }
@@ -78,6 +80,12 @@ class SetCoverInvariant {
     return marginal_impacts_;
   }
 
+  // Returns vector containing the number of elements in each subset that are
+  // covered two times or more in the current solution.
+  const SubsetToElementVector& num_overcovered_elements() const {
+    return num_overcovered_elements_;
+  }
+
   // Returns vector containing number of subsets covering each element.
   const ElementToSubsetVector& coverage() const { return coverage_; }
 
@@ -88,22 +96,14 @@ class SetCoverInvariant {
   // Returns the number of elements covered.
   ElementIndex num_elements_covered() const { return num_elements_covered_; }
 
-  // Stores the solution and recomputes the data in the ledger.
+  // Stores the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& c);
 
-  // Returns true if the data stored in the ledger is consistent.
+  // Returns true if the data stored in the invariant is consistent.
   bool CheckConsistency() const;
 
-  // Computes is_removable_ from scratch for every subset.
-  // TODO(user): reconsider exposing this.
-  void RecomputeIsRemovable() { is_removable_ = ComputeIsRemovable(coverage_); }
-
-  // Returns the subsets that share at least one element with subset.
-  // TODO(user): is it worth to precompute this?
-  std::vector<SubsetIndex> ComputeImpactedSubsets(SubsetIndex subset) const;
-
   // Toggles is_selected_[subset] to value, and incrementally updates the
-  // ledger.
+  // invariant.
   // Returns a vector of subsets impacted by the change, in case they need
   // to be reconsidered in a solution geneator or a local search algorithm.
   // Calls UnsafeToggle, with the added checks:
@@ -117,22 +117,6 @@ class SetCoverInvariant {
   // Only checks that value is different from is_selected_[subset].
   std::vector<SubsetIndex> UnsafeToggle(SubsetIndex subset, bool value);
 
-  // Update coverage_ for subset when setting is_selected_[subset] to value.
-  void UpdateCoverage(SubsetIndex subset, bool value);
-
-  // Returns true if the elements selected in the current solution cover all
-  // the elements of the set.
-  bool CheckSolution() const;
-
-  // Checks that coverage_  and marginal_impacts_ are consistent with  choices.
-  bool CheckCoverageAndMarginalImpacts(const SubsetBoolVector& choices) const;
-
-  // Returns the subsets that are unused that could be used to cover the still
-  // uncovered subsets.
-  std::vector<SubsetIndex> ComputeSettableSubsets() const;
-
-  std::vector<SubsetIndex> ComputeResettableSubsets() const;
-
   // Returns the current solution as a proto.
   SetCoverSolutionResponse ExportSolutionAsProto() const;
 
@@ -140,45 +124,23 @@ class SetCoverInvariant {
   void ImportSolutionFromProto(const SetCoverSolutionResponse& message);
 
  private:
-  // Recomputes the cost from scratch from c.
-  Cost ComputeCost(const SubsetBoolVector& c) const;
+  // Computes the cost and the coverage vector for the given choices.
+  std::tuple<Cost, ElementToSubsetVector> ComputeCostAndCoverage(
+      const SubsetBoolVector& choices) const;
 
-  // Computes is_removable based on a coverage cvrg.
-  SubsetBoolVector ComputeIsRemovable(const ElementToSubsetVector& cvrg) const;
+  // Computes the implied data for the given coverage cvrg:
+  // The implied consists of:
+  // - the number of elements covered,
+  // - the vector of marginal impacts for each subset,
+  // - the vector of overcovered elements for each subset,
+  // - the vector of removability for each subset.
+  std::tuple<ElementIndex, SubsetToElementVector, SubsetToElementVector,
+             SubsetBoolVector>
+  ComputeImpliedData(const ElementToSubsetVector& cvrg) const;
 
-  // Computes marginal impacts based on a coverage cvrg.
-  SubsetToElementVector ComputeMarginalImpacts(
-      const ElementToSubsetVector& cvrg) const;
-
-  // Updates marginal_impacts_ for each subset in impacted_subsets.
-  void UpdateMarginalImpacts(absl::Span<const SubsetIndex> impacted_subsets);
-
-  // Computes the number of elements covered based on coverage vector 'cvrg'.
-  ElementIndex ComputeNumElementsCovered(
-      const ElementToSubsetVector& cvrg) const;
-
-  // Returns true if subset can be removed from the solution, i.e. it is
-  // redundant to cover all the elements.
-  // This function is used to check that is_removable[subset] is consistent.
-  bool ComputeIsRemovable(SubsetIndex subset) const;
-
-  // Updates is_removable_ for each subset in impacted_subsets.
-  void UpdateIsRemovable(absl::Span<const SubsetIndex> impacted_subsets);
-
-  // Returns the number of elements currently covered by subset.
-  ElementToSubsetVector ComputeSingleSubsetCoverage(SubsetIndex subset) const;
-
-  // Returns a vector containing the number of subsets covering each element.
-  ElementToSubsetVector ComputeCoverage(const SubsetBoolVector& choices) const;
-
-  // Checks that the value of coverage_ is correct by recomputing and comparing.
-  bool CheckSingleSubsetCoverage(SubsetIndex subset) const;
-
-  // Checks that coverage_ is consistent with choices.
-  bool CheckCoverageAgainstSolution(const SubsetBoolVector& choices) const;
-
-  // Returns true if is_removable_ is consistent.
-  bool CheckIsRemovable() const;
+  // Internal UnsafeToggle where value is a constant for the template.
+  template <bool value>
+  std::vector<SubsetIndex> UnsafeToggleInternal(SubsetIndex subset);
 
   // The weighted set covering model on which the solver is run.
   SetCoverModel* model_;
@@ -195,6 +157,10 @@ class SetCoverInvariant {
   // The marginal impact of a subset is the number of elements in that subset
   // that are not covered in the current solution.
   SubsetToElementVector marginal_impacts_;
+
+  // Counts the number of "overcovered" elements for a given subset. Overcovered
+  // elements are the ones whose coverage is 2 and above.
+  SubsetToElementVector num_overcovered_elements_;
 
   // The coverage of an element is the number of used subsets which contains
   // the said element.
