@@ -17,19 +17,19 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
+%module(directors="1") operations_research_util
 
-%include "ortools/base/base.i"
-
-%import "ortools/util/csharp/vector.i"
+%include "ortools/util/csharp/vector.i"
 
 %{
 #include "ortools/util/sorted_interval_list.h"
 %}
 
-%module(directors="1") operations_research_util
-
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
 %template(Int64Vector) std::vector<int64_t>;
 %template(Int64VectorVector) std::vector<std::vector<int64_t> >;
+
 VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 

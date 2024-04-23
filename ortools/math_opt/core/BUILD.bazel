@@ -80,7 +80,6 @@ cc_library(
     hdrs = ["solver_interface.h"],
     deps = [
         ":non_streamable_solver_init_arguments",
-        ":solve_interrupter",
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
@@ -91,6 +90,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/port:proto_utils",
+        "//ortools/util:solve_interrupter",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log:check",
@@ -109,7 +109,6 @@ cc_library(
         ":math_opt_proto_utils",
         ":model_summary",
         ":non_streamable_solver_init_arguments",
-        ":solve_interrupter",
         ":solver_debug",
         ":solver_interface",
         "//ortools/base:status_macros",
@@ -127,25 +126,12 @@ cc_library(
         "//ortools/math_opt/validators:result_validator",
         "//ortools/math_opt/validators:solve_parameters_validator",
         "//ortools/port:proto_utils",
+        "//ortools/util:solve_interrupter",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "solve_interrupter",
-    srcs = ["solve_interrupter.cc"],
-    hdrs = ["solve_interrupter.h"],
-    deps = [
-        "//ortools/base:intops",
-        "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
     ],
 )
 

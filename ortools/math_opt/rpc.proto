@@ -37,7 +37,6 @@ option java_multiple_files = true;
 // When using SolveService.StreamSolve these hints are used to dimension the
 // resources available during the execution of every action; thus it is
 // recommended to set them.
-//
 message SolverResourcesProto {
   // The number of solver threads that are expected to actually execute in
   // parallel. Must be finite and >0.0.
@@ -61,6 +60,10 @@ message SolverResourcesProto {
   // Note that if the SolveParametersProto.threads is not set then this
   // parameter should also be left unset.
   optional double cpu = 1;
+
+  // The limit of RAM for the solve in bytes. Must be finite and >=1.0 (even
+  // though it should in practice be much larger).
+  optional double ram = 2;
 }
 
 // Request for a unary remote solve in MathOpt.
@@ -92,10 +95,26 @@ message SolveRequest {
 
 // Response for a unary remote solve in MathOpt.
 message SolveResponse {
+  // Either `result` or `status` must be set. This is equivalent to C++
+  // StatusOr<SolveResult>.
+  oneof status_or {
   // Description of the output of solving the model in the request.
   SolveResultProto result = 1;
+
+    // The absl::Status returned by the solver. It should never be OK when set.
+    StatusProto status = 3;
+  }
 
   // If SolveParametersProto.enable_output has been used, this will contain log
   // messages for solvers that support message callbacks.
   repeated string messages = 2;
+}
+
+// The streamed version of absl::Status.
+message StatusProto {
+  // The status code, one of the absl::StatusCode.
+  int32 code = 1;
+
+  // The status message.
+  string message = 2;
 }

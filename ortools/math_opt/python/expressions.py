@@ -20,15 +20,13 @@ from ortools.math_opt.python import model
 
 
 @typing.overload
-def fast_sum(summands: Iterable[model.LinearTypes]) -> model.LinearSum:
-    ...
+def fast_sum(summands: Iterable[model.LinearTypes]) -> model.LinearSum: ...
 
 
 @typing.overload
 def fast_sum(
     summands: Iterable[model.QuadraticTypes],
-) -> Union[model.LinearSum, model.QuadraticSum]:
-    ...
+) -> Union[model.LinearSum, model.QuadraticSum]: ...
 
 
 # TODO(b/312200030): There is a pytype bug so that for the code:

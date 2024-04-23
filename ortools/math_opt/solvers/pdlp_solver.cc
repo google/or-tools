@@ -38,7 +38,6 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
 #include "ortools/math_opt/model.pb.h"
@@ -56,6 +55,7 @@
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -333,7 +333,7 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 
@@ -376,7 +376,7 @@ absl::StatusOr<bool> PdlpSolver::Update(const ModelUpdateProto&) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 PdlpSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                        MessageCallback,
-                                       SolveInterrupter* const) {
+                                       const SolveInterrupter*) {
   return absl::UnimplementedError(
       "PDLP does not provide a method to compute an infeasible subsystem");
 }

@@ -31,6 +31,7 @@ _Bounds = compute_infeasible_subsystem_result.ModelSubsetBounds
 
 
 class SolveTest(absltest.TestCase):
+
     def test_callback(self) -> None:
         mod = model.Model(name="test_model")
         # Solve the problem:

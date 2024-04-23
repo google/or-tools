@@ -77,6 +77,7 @@ def _simple_model() -> tuple[mathopt.Model, mathopt.Variable, mathopt.Variable]:
 
 
 class RemoteHttpSolveTest(absltest.TestCase):
+
     def test_session_headers(self):
         deadline = 1.0
         server_deadline = deadline * (1 - remote_http_solve._RELATIVE_TIME_BUFFER)

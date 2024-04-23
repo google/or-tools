@@ -28,11 +28,8 @@
 // - examples/csharp/cslinearprogramming.cs
 // - examples/csharp/csintegerprogramming.cs
 
-%include "enums.swg"
-%include "stdint.i"
-%include "std_vector.i"
-
 %include "ortools/base/base.i"
+%include "enums.swg"
 %import "ortools/util/csharp/vector.i"
 
 %{
@@ -41,6 +38,8 @@
 #include "ortools/linear_solver/model_exporter.h"
 %}
 
+%template(DoubleVector) std::vector<double>;
+VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -58,9 +57,6 @@ class MPSolutionResponse;
 
 %typemap(csclassmodifiers) operations_research::MPVariable "public partial class"
 %typemap(csclassmodifiers) operations_research::MPSolver "public partial class"
-
-%template(DoubleVector) std::vector<double>;
-VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
 
 %define CONVERT_VECTOR(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(CTYPE*);

@@ -58,6 +58,10 @@ struct SolverResources {
   // should also be left unset.
   std::optional<double> cpu;
 
+  // The limit of RAM for the solve in bytes. Must be finite and >=1.0 (even
+  // though it should in practice be much larger).
+  std::optional<double> ram;
+
   SolverResourcesProto Proto() const;
   static absl::StatusOr<SolverResources> FromProto(
       const SolverResourcesProto& proto);

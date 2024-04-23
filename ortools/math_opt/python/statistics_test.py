@@ -22,6 +22,7 @@ from ortools.math_opt.python import statistics
 
 
 class RangeTest(absltest.TestCase):
+
     def test_merge_optional_ranges(self) -> None:
         self.assertIsNone(statistics.merge_optional_ranges(None, None))
         r = statistics.Range(1.0, 3.0)
@@ -52,6 +53,7 @@ class RangeTest(absltest.TestCase):
 
 
 class ModelRangesTest(absltest.TestCase):
+
     def test_printing(self) -> None:
         self.assertMultiLineEqual(
             str(
@@ -130,6 +132,7 @@ class ModelRangesTest(absltest.TestCase):
 
 
 class ComputeModelRangesTest(absltest.TestCase):
+
     def test_empty(self) -> None:
         mdl = model.Model(name="model")
         self.assertEqual(

@@ -36,6 +36,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -188,7 +189,10 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
 #ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "");
+    EXPECT_THAT(
+        std::move(stdout_capture).StopCaptureAndReturnContents(),
+        EmptyOrGurobiLicenseWarningIfGurobi(
+            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
 #endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));
@@ -211,7 +215,10 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
 #ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "");
+    EXPECT_THAT(
+        std::move(stdout_capture).StopCaptureAndReturnContents(),
+        EmptyOrGurobiLicenseWarningIfGurobi(
+            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
 #endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));

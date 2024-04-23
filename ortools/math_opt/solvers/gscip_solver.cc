@@ -51,7 +51,6 @@
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_submatrix.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -67,6 +66,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/solve_interrupter.h"
 #include "scip/type_cons.h"
 #include "scip/type_var.h"
 
@@ -112,7 +112,7 @@ int64_t SafeId(const LinearConstraintsProto& linear_constraints, int index) {
 }
 
 absl::string_view SafeName(const LinearConstraintsProto& linear_constraints,
-                            int index) {
+                           int index) {
   if (linear_constraints.names().empty()) {
     return EmptyString();
   }
@@ -1013,7 +1013,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   GScip::Interrupter gscip_interrupter;
@@ -1352,7 +1352,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GScipSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        SolveInterrupter* const) {
+                                        const SolveInterrupter*) {
   return absl::UnimplementedError(
       "SCIP does not provide a method to compute an infeasible subsystem");
 }

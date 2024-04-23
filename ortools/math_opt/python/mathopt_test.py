@@ -84,6 +84,7 @@ def _get_public_api(module: types.ModuleType) -> List[Tuple[str, Any]]:
 
 
 class MathoptTest(absltest.TestCase):
+
     def test_imports(self) -> None:
         missing_imports: List[str] = []
         for module in _MODULES_TO_CHECK:

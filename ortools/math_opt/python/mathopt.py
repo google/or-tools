@@ -144,9 +144,11 @@ from ortools.math_opt.python.solution import Basis
 from ortools.math_opt.python.solution import BasisStatus
 from ortools.math_opt.python.solution import DualRay
 from ortools.math_opt.python.solution import DualSolution
+from ortools.math_opt.python.solution import optional_solution_status_to_proto
 from ortools.math_opt.python.solution import parse_basis
 from ortools.math_opt.python.solution import parse_dual_ray
 from ortools.math_opt.python.solution import parse_dual_solution
+from ortools.math_opt.python.solution import parse_optional_solution_status
 from ortools.math_opt.python.solution import parse_primal_ray
 from ortools.math_opt.python.solution import parse_primal_solution
 from ortools.math_opt.python.solution import parse_solution

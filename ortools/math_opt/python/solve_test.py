@@ -46,6 +46,7 @@ def _list_is_near(v1: List[float], v2: List[float], tolerance: float = 1e-5) -> 
 
 
 class SolveTest(absltest.TestCase):
+
     def _assert_dict_almost_equal(
         self, expected: VarOrConstraintDict, actual: VarOrConstraintDict, places=5
     ):

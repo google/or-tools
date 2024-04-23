@@ -48,7 +48,6 @@
 #include "ortools/math_opt/core/empty_bounds.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_submatrix.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -67,6 +66,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -490,7 +490,7 @@ absl::Status SetLPParameters(const SolveParametersProto& parameters,
 
 class MipCallbackData {
  public:
-  explicit MipCallbackData(SolveInterrupter* const interrupter)
+  explicit MipCallbackData(const SolveInterrupter* const interrupter)
       : interrupter_(interrupter) {}
 
   void Callback(glp_tree* const tree) {
@@ -540,7 +540,7 @@ class MipCallbackData {
 
  private:
   // Optional interrupter.
-  SolveInterrupter* const interrupter_;
+  const SolveInterrupter* const interrupter_;
 
   // Set to true if glp_ios_terminate() has been called due to the interrupter.
   std::atomic<bool> interrupted_by_interrupter_ = false;
@@ -1059,7 +1059,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration,
-    const Callback /*cb*/, SolveInterrupter* const interrupter) {
+    const Callback /*cb*/, const SolveInterrupter* const interrupter) {
   RETURN_IF_ERROR(CheckCurrentThread());
 
   const absl::Time start = absl::Now();
@@ -1804,9 +1804,9 @@ std::optional<SolveResultProto> GlpkSolver::EmptyIntegerBoundsResult() {
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-GlpkSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                                       MessageCallback message_cb,
-                                       SolveInterrupter* const interrupter) {
+GlpkSolver::ComputeInfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    const SolveInterrupter* const interrupter) {
   return absl::UnimplementedError(
       "GLPK does not provide a method to compute an infeasible subsystem");
 }

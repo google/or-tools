@@ -280,8 +280,7 @@ namespace operations_research {
 //   return absl::StrJoin(error_messages, "\n");
 // }
 
-MPSolutionResponse XPressSolveProto(
-    LazyMutableCopy<MPModelRequest> request) {
+MPSolutionResponse XPressSolveProto(LazyMutableCopy<MPModelRequest> request) {
   MPSolutionResponse response;
   response.set_status(MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
 

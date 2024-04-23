@@ -481,16 +481,13 @@ class LinearBase(metaclass=abc.ABCMeta):
         _raise_ne_not_supported()
 
     @typing.overload
-    def __le__(self, rhs: float) -> "UpperBoundedLinearExpression":
-        ...
+    def __le__(self, rhs: float) -> "UpperBoundedLinearExpression": ...
 
     @typing.overload
-    def __le__(self, rhs: "LinearBase") -> "BoundedLinearExpression":
-        ...
+    def __le__(self, rhs: "LinearBase") -> "BoundedLinearExpression": ...
 
     @typing.overload
-    def __le__(self, rhs: "BoundedLinearExpression") -> NoReturn:
-        ...
+    def __le__(self, rhs: "BoundedLinearExpression") -> NoReturn: ...
 
     def __le__(self, rhs):
         if isinstance(rhs, (int, float)):
@@ -504,16 +501,13 @@ class LinearBase(metaclass=abc.ABCMeta):
         _raise_binary_operator_type_error("<=", type(self), type(rhs))
 
     @typing.overload
-    def __ge__(self, lhs: float) -> "LowerBoundedLinearExpression":
-        ...
+    def __ge__(self, lhs: float) -> "LowerBoundedLinearExpression": ...
 
     @typing.overload
-    def __ge__(self, lhs: "LinearBase") -> "BoundedLinearExpression":
-        ...
+    def __ge__(self, lhs: "LinearBase") -> "BoundedLinearExpression": ...
 
     @typing.overload
-    def __ge__(self, lhs: "BoundedLinearExpression") -> NoReturn:
-        ...
+    def __ge__(self, lhs: "BoundedLinearExpression") -> NoReturn: ...
 
     def __ge__(self, lhs):
         if isinstance(lhs, (int, float)):
@@ -547,12 +541,10 @@ class LinearBase(metaclass=abc.ABCMeta):
         return LinearSum((expr, -self))
 
     @typing.overload
-    def __mul__(self, other: float) -> "LinearProduct":
-        ...
+    def __mul__(self, other: float) -> "LinearProduct": ...
 
     @typing.overload
-    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct":
-        ...
+    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct": ...
 
     def __mul__(self, other):
         if not isinstance(other, (int, float, LinearBase)):
@@ -764,12 +756,10 @@ class Variable(LinearBase):
         return f"<Variable id: {self.id}, name: {self.name!r}>"
 
     @typing.overload
-    def __eq__(self, rhs: "Variable") -> "VarEqVar":
-        ...
+    def __eq__(self, rhs: "Variable") -> "VarEqVar": ...
 
     @typing.overload
-    def __eq__(self, rhs: LinearTypesExceptVariable) -> "BoundedLinearExpression":
-        ...
+    def __eq__(self, rhs: LinearTypesExceptVariable) -> "BoundedLinearExpression": ...
 
     def __eq__(self, rhs):
         if isinstance(rhs, Variable):
@@ -777,12 +767,10 @@ class Variable(LinearBase):
         return super().__eq__(rhs)
 
     @typing.overload
-    def __ne__(self, rhs: "Variable") -> bool:
-        ...
+    def __ne__(self, rhs: "Variable") -> bool: ...
 
     @typing.overload
-    def __ne__(self, rhs: LinearTypesExceptVariable) -> NoReturn:
-        ...
+    def __ne__(self, rhs: LinearTypesExceptVariable) -> NoReturn: ...
 
     def __ne__(self, rhs):
         if isinstance(rhs, Variable):
@@ -793,16 +781,13 @@ class Variable(LinearBase):
         return hash((self.model, self.id))
 
     @typing.overload
-    def __mul__(self, other: float) -> "LinearTerm":
-        ...
+    def __mul__(self, other: float) -> "LinearTerm": ...
 
     @typing.overload
-    def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm":
-        ...
+    def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm": ...
 
     @typing.overload
-    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct":
-        ...
+    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct": ...
 
     def __mul__(self, other):
         if not isinstance(other, (int, float, LinearBase)):
@@ -869,16 +854,13 @@ class LinearTerm(LinearBase):
         processed_elements.terms[self._variable] += self._coefficient * scale
 
     @typing.overload
-    def __mul__(self, other: float) -> "LinearTerm":
-        ...
+    def __mul__(self, other: float) -> "LinearTerm": ...
 
     @typing.overload
-    def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm":
-        ...
+    def __mul__(self, other: Union["Variable", "LinearTerm"]) -> "QuadraticTerm": ...
 
     @typing.overload
-    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct":
-        ...
+    def __mul__(self, other: "LinearBase") -> "LinearLinearProduct": ...
 
     def __mul__(self, other):
         if not isinstance(other, (int, float, LinearBase)):
@@ -1080,9 +1062,9 @@ class QuadraticExpression(QuadraticBase):
         if isinstance(other, (int, float)):
             self._offset = float(other)
             self._linear_terms: Mapping[Variable, float] = immutabledict.immutabledict()
-            self._quadratic_terms: Mapping[
-                QuadraticTermKey, float
-            ] = immutabledict.immutabledict()
+            self._quadratic_terms: Mapping[QuadraticTermKey, float] = (
+                immutabledict.immutabledict()
+            )
             return
 
         to_process: _QuadraticToProcessElements = _QuadraticToProcessElements(
@@ -1103,9 +1085,9 @@ class QuadraticExpression(QuadraticBase):
         self._linear_terms: Mapping[Variable, float] = immutabledict.immutabledict(
             processed_elements.terms
         )
-        self._quadratic_terms: Mapping[
-            QuadraticTermKey, float
-        ] = immutabledict.immutabledict(processed_elements.quadratic_terms)
+        self._quadratic_terms: Mapping[QuadraticTermKey, float] = (
+            immutabledict.immutabledict(processed_elements.quadratic_terms)
+        )
         self._offset = processed_elements.offset
 
     @property
@@ -1563,9 +1545,9 @@ class Model:
         # detection). Do not access a variable or constraint from these maps
         # directly, as they may no longer exist, use _get_or_make_variable() and
         # _get_or_make_linear_constraint() defined below instead.
-        self._variable_ids: weakref.WeakValueDictionary[
-            int, Variable
-        ] = weakref.WeakValueDictionary()
+        self._variable_ids: weakref.WeakValueDictionary[int, Variable] = (
+            weakref.WeakValueDictionary()
+        )
         self._linear_constraint_ids: weakref.WeakValueDictionary[
             int, LinearConstraint
         ] = weakref.WeakValueDictionary()

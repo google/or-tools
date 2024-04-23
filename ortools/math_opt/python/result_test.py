@@ -26,6 +26,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class ParseTerminationReason(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_termination_unspecified(self) -> None:
         termination_proto = result_pb2.TerminationProto(
             reason=result_pb2.TERMINATION_REASON_UNSPECIFIED
@@ -86,6 +87,7 @@ class ParseTerminationReason(compare_proto.MathOptProtoAssertions, absltest.Test
 
 
 class ParseProblemStatus(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_problem_status_round_trip(self) -> None:
         problem_status = result.ProblemStatus(
             primal_status=result.FeasibilityStatus.FEASIBLE,
@@ -124,6 +126,7 @@ class ParseProblemStatus(compare_proto.MathOptProtoAssertions, absltest.TestCase
 
 
 class ParseObjectiveBounds(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_objective_bounds_round_trip(self) -> None:
         objective_bounds = result.ObjectiveBounds(primal_bound=10, dual_bound=20)
         objective_bounds_proto = objective_bounds.to_proto()
@@ -136,6 +139,7 @@ class ParseObjectiveBounds(compare_proto.MathOptProtoAssertions, absltest.TestCa
 
 
 class ParseSolveStats(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_problem_status_round_trip(self) -> None:
         solve_stats = result.SolveStats(
             solve_time=datetime.timedelta(seconds=10),
@@ -157,6 +161,7 @@ class ParseSolveStats(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
 
 class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
+
     def test_solve_time(self) -> None:
         res = result.SolveResult(
             solve_stats=result.SolveStats(solve_time=datetime.timedelta(seconds=10))
@@ -638,6 +643,7 @@ def _make_undetermined_result_proto() -> result_pb2.SolveResultProto:
 
 
 class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_solve_result_gscip_output(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_binary_variable()

@@ -84,6 +84,7 @@ def _solve_model(
 
 
 class PybindSolverTest(parameterized.TestCase):
+
     def tearDown(self):
         super().tearDown()
         self.assertEqual(solver.debug_num_solver(), 0)
@@ -261,6 +262,7 @@ class PybindSolverTest(parameterized.TestCase):
 
 
 class PybindSolveInterrupterTest(parameterized.TestCase):
+
     def test_solve_interrupter_is_interrupted(self) -> None:
         interrupter = solver.SolveInterrupter()
         self.assertFalse(interrupter.is_interrupted())
