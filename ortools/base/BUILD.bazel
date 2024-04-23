@@ -50,8 +50,8 @@ cc_library(
         "version.h",
     ],
     copts = [
-        "-DOR_TOOLS_MAJOR=9",
-        "-DOR_TOOLS_MINOR=9",
+        "-DOR_TOOLS_MAJOR=10",
+        "-DOR_TOOLS_MINOR=0",
         "-DOR_TOOLS_PATCH=9999",
     ],
     linkopts = select({
