@@ -578,7 +578,6 @@ void KShortestPathsOnDagWrapper<GraphType>::RunKShortestPathOnDag(
   };
   std::vector<IncomingArcPath> min_heap;
   auto comp = std::greater<IncomingArcPath>();
-  min_heap.reserve(path_count_ + 1);
   for (const NodeIndex to : topological_order_) {
     min_heap.clear();
     if (is_source_[to]) {
@@ -601,9 +600,6 @@ void KShortestPathsOnDagWrapper<GraphType>::RunKShortestPathOnDag(
                           .arc_length = arc_length,
                           .from = from});
       std::push_heap(min_heap.begin(), min_heap.end(), comp);
-      if (min_heap.size() > path_count_) {
-        min_heap.pop_back();
-      }
     }
     if (min_heap.empty()) {
       continue;

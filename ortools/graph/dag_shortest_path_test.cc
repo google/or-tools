@@ -747,6 +747,26 @@ TEST(KShortestPathOnDagTest, HasTwoPathsWithLongerPath) {
                       /*node_path=*/ElementsAre(source, destination))));
 }
 
+TEST(KShortestPathOnDagTest, HeapSizeMustBeLargerThanPathCount) {
+  const int source = 0;
+  const int destination = 1;
+  const int num_nodes = 2;
+  const std::vector<ArcWithLength> arcs_with_length = {
+      {source, destination, 2.0},
+      {source, destination, 3.0},
+      {source, destination, 1.0}};
+
+  EXPECT_THAT(
+      KShortestPathsOnDag(num_nodes, arcs_with_length, source, destination,
+                          /*path_count=*/2),
+      ElementsAre(FieldsAre(
+                      /*length=*/1.0, /*arc_path=*/ElementsAre(2),
+                      /*node_path=*/ElementsAre(source, destination)),
+                  FieldsAre(
+                      /*length=*/2.0, /*arc_path=*/ElementsAre(0),
+                      /*node_path=*/ElementsAre(source, destination))));
+}
+
 TEST(KShortestPathOnDagTest, LargerGraphWithNegativeCost) {
   const int source = 0;
   const int a = 3;

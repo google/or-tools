@@ -190,7 +190,7 @@ TEST(SimpleMaxFlowTest, ProblematicProblemWithMaxCapacity) {
   ASSERT_OK_AND_ASSIGN(
       FlowModelProto model,
       ReadFileToProto<FlowModelProto>(
-          file::JoinPathRespectAbsolute(absl::GetFlag(FLAGS_test_srcdir),
+          file::JoinPathRespectAbsolute(::testing::SrcDir(),
                                         "ortools/graph/"
                                         "testdata/max_flow_test1.pb.txt")));
   SimpleMaxFlow solver;
