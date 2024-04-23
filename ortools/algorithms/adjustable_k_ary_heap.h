@@ -65,8 +65,8 @@
 template <typename Aggregate, int Arity, bool IsMaxHeap>
 class AdjustableKAryHeap {
  public:
-  using Priority = Aggregate::Priority;
-  using Index = Aggregate::Index;
+  using Priority = typename Aggregate::Priority;
+  using Index = typename Aggregate::Index;
   using HeapIndex = Index;
   static_assert(Arity >= 2, "arity must be at least 2");
   static_assert(std::numeric_limits<Index>::is_integer,

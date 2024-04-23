@@ -279,6 +279,7 @@ cc_library(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
