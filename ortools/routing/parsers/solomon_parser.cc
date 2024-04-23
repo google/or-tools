@@ -18,16 +18,18 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/path.h"
-#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/util/filelineiter.h"
+#include "re2/re2.h"
 
 namespace operations_research {
 
@@ -133,6 +135,48 @@ bool SolomonParser::ParseFile(absl::string_view file_name) {
     }
   }
   return section_ == CUSTOMER;
+}
+
+SolomonSolutionParser::SolomonSolutionParser() { Initialize(); }
+
+bool SolomonSolutionParser::LoadFile(absl::string_view file_name) {
+  Initialize();
+  return ParseFile(file_name);
+}
+
+void SolomonSolutionParser::Initialize() {
+  routes_.clear();
+  key_values_.clear();
+}
+
+bool SolomonSolutionParser::ParseFile(absl::string_view file_name) {
+  bool success = false;
+  for (const std::string& line :
+       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+    success = true;
+    const std::vector<std::string> words =
+        absl::StrSplit(line, ':', absl::SkipEmpty());
+    // Skip blank lines
+    if (words.empty()) continue;
+    std::string key = words[0];
+    std::string value = words.size() > 1
+                            ? absl::StrJoin(words.begin() + 1, words.end(), ":")
+                            : "";
+    if (!RE2::FullMatch(key, "Route\\s*(\\d+)\\s*")) {
+      absl::StripAsciiWhitespace(&key);
+      absl::StripAsciiWhitespace(&value);
+      key_values_[key] = value;
+      // Note: the "Solution" key will be captured here. That key has no actual
+      // usefulness and serves as a separator before reading routes.
+      continue;
+    }
+    routes_.push_back(std::vector<int>());
+    for (const auto item :
+         absl::StrSplit(value, absl::ByAnyChar(" \t"), absl::SkipEmpty())) {
+      routes_.back().push_back(strings::ParseLeadingInt32Value(item, -1));
+    }
+  }
+  return success;
 }
 
 }  // namespace operations_research

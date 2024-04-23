@@ -49,9 +49,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research {
@@ -134,6 +133,45 @@ class SolomonParser {
   std::vector<SimpleTimeWindow<int64_t>> time_windows_;
   std::vector<int64_t> service_times_;
 };
+
+// Solomon solution parser class.
+class SolomonSolutionParser {
+ public:
+  SolomonSolutionParser();
+
+#ifndef SWIG
+  SolomonSolutionParser(const SolomonSolutionParser&) = delete;
+  const SolomonSolutionParser& operator=(const SolomonSolutionParser&) = delete;
+#endif
+
+  // Loads solution from a file. Returns false in case of failure to read
+  // the file. Loading a new solution clears the previously loaded solution.
+  bool LoadFile(absl::string_view file_name);
+
+  // Returns the number of routes used in the solution.
+  int NumberOfRoutes() const { return routes_.size(); }
+  // Returns the sequence of the ith route, excluding depot nodes.
+  const std::vector<int>& route(int i) const { return routes_[i]; }
+  // Returns the value corresponding to a key. Keys can be (but are not limited
+  // to) "Authors", "Date", "Instance Name", or "Reference". These keys might
+  // vary slightly per instance (refer to the input file).
+  const std::string& GetValueFromKey(absl::string_view key) const {
+    static const std::string* default_value = new std::string{};
+    auto it = key_values_.find(key);
+    if (it != key_values_.end()) return it->second;
+    return *default_value;
+  }
+
+ private:
+  // Parsing
+  void Initialize();
+  bool ParseFile(absl::string_view file_name);
+
+  // Parsing data
+  std::vector<std::vector<int>> routes_;
+  absl::flat_hash_map<std::string, std::string> key_values_;
+};
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_SOLOMON_PARSER_H_
