@@ -282,9 +282,9 @@ foreach(SUBPROJECT IN ITEMS
  init
  algorithms
  graph
- constraint_solver
  linear_solver
  ${PDLP_DIR}
+ constraint_solver
  sat
  scheduling
  util)
