@@ -29,7 +29,7 @@ bazel_skylib_workspace()
 ## Bazel rules.
 git_repository(
     name = "platforms",
-    tag = "0.0.8",
+    tag = "0.0.9",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
@@ -47,7 +47,7 @@ git_repository(
 
 git_repository(
     name = "rules_java",
-    tag = "7.3.2",
+    tag = "7.5.0",
     remote = "https://github.com/bazelbuild/rules_java.git",
 )
 
@@ -81,8 +81,8 @@ new_git_repository(
 ## Abseil-cpp
 git_repository(
     name = "com_google_absl",
-    tag = "20240116.1",
-    patches = ["//patches:abseil-cpp-20240116.1.patch"],
+    tag = "20240116.2",
+    patches = ["//patches:abseil-cpp-20240116.2.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
@@ -90,7 +90,7 @@ git_repository(
 ## Re2
 git_repository(
     name = "com_google_re2",
-    tag = "2024-03-01",
+    tag = "2024-04-01",
     remote = "https://github.com/google/re2.git",
     repo_mapping = {"@abseil-cpp": "@com_google_absl"},
 )
@@ -245,7 +245,7 @@ git_repository(
 new_git_repository(
     name = "pybind11",
     build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.11.1",
+    tag = "v2.12.0",
     remote = "https://github.com/pybind/pybind11.git",
 )
 
@@ -308,7 +308,7 @@ contrib_rules_jvm_setup()
 ## Testing
 git_repository(
     name = "com_google_googletest",
-    tag = "v1.13.0",
+    tag = "v1.14.0",
     remote = "https://github.com/google/googletest.git",
 )
 
