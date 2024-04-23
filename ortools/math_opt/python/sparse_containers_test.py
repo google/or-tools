@@ -20,6 +20,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_to_proto_empty(self) -> None:
         actual = sparse_containers.to_sparse_double_vector_proto({})
         self.assert_protos_equiv(
@@ -97,6 +98,7 @@ class SparseDoubleVectorTest(compare_proto.MathOptProtoAssertions, absltest.Test
 
 
 class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_to_proto_empty(self) -> None:
         self.assert_protos_equiv(
             sparse_containers.to_sparse_int32_vector_proto({}),
@@ -124,6 +126,7 @@ class SparseInt32VectorTest(compare_proto.MathOptProtoAssertions, absltest.TestC
 
 
 class SparseVectorFilterTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_is_none(self) -> None:
         f = sparse_containers.SparseVectorFilter(skip_zero_values=True)
         self.assertTrue(f.skip_zero_values)

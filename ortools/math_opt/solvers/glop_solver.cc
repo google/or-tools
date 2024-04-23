@@ -47,7 +47,6 @@
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -61,6 +60,7 @@
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/solve_interrupter.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -765,7 +765,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
 
@@ -883,7 +883,8 @@ absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GlopSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
-                                       MessageCallback, SolveInterrupter*) {
+                                       MessageCallback,
+                                       const SolveInterrupter*) {
   return absl::UnimplementedError(
       "GLOP does not implement a method to compute an infeasible subsystem");
 }

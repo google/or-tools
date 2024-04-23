@@ -230,7 +230,7 @@ absl::Status ValidateSolveStatsTerminationEqualities(
     const SolveResultProto& solve_result) {
   const ObjectiveBoundsProto objective_bounds =
       GetObjectiveBounds(solve_result);
-  const SolveStatsProto solve_stats = solve_result.solve_stats();
+  const SolveStatsProto& solve_stats = solve_result.solve_stats();
   const ProblemStatusProto problem_status = GetProblemStatus(solve_result);
   if (problem_status.primal_status() !=
       solve_stats.problem_status().primal_status()) {

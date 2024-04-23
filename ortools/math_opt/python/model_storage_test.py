@@ -30,6 +30,7 @@ _ObjEntry = model_storage.LinearObjectiveEntry
 
 @parameterized.parameters((hash_model_storage.HashModelStorage,))
 class ModelStorageTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
+
     def test_add_and_read_variables(self, storage_class: _StorageClass) -> None:
         storage = storage_class("test_model")
         self.assertEqual(0, storage.next_variable_id())

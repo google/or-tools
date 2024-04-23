@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -53,6 +54,7 @@
 #include "ortools/math_opt/labs/solution_feasibility_checker.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/tools/file_format_flags.h"
+#include "ortools/util/sigint.h"
 #include "ortools/util/status_macros.h"
 
 namespace {
@@ -105,6 +107,9 @@ ABSL_FLAG(bool, solver_logs, false,
           "use a message callback to print the solver convergence logs");
 ABSL_FLAG(absl::Duration, time_limit, absl::InfiniteDuration(),
           "the time limit to use for the solve");
+ABSL_FLAG(bool, sigint_interrupt, true,
+          "interrupts the solve on the first SIGINT; kill the process on the "
+          "third one");
 
 ABSL_FLAG(bool, names, true,
           "use the names in the input models; ignoring names is useful when "
@@ -273,18 +278,35 @@ absl::Status PrintSummary(const Model& model, const SolveResult& result,
 absl::StatusOr<SolveResult> LocalOrRemoteSolve(
     const Model& model, const SolverType solver_type,
     const SolveParameters& params, const ModelSolveParameters& model_params,
-    MessageCallback msg_cb) {
+    MessageCallback msg_cb, const SolveInterrupter* const interrupter) {
   if (absl::GetFlag(FLAGS_remote)) {
     return absl::UnimplementedError("remote not yet supported.");
   } else {
     return Solve(model, solver_type,
                  {.parameters = params,
                   .model_parameters = model_params,
-                  .message_callback = std::move(msg_cb)});
+                  .message_callback = std::move(msg_cb),
+                  .interrupter = interrupter});
   }
 }
 
 absl::Status RunSolver() {
+  // We use absl::NoDestructor here so that the SIGINT handler is kept until the
+  // very end of the process, making sure a late Ctrl-C on the very end of the
+  // solve don't kill the process.
+  static absl::NoDestructor<SigintHandler> sigint_handler;
+  static const absl::NoDestructor<std::unique_ptr<SolveInterrupter>>
+      interrupter([&]() -> std::unique_ptr<SolveInterrupter> {
+        if (!absl::GetFlag(FLAGS_sigint_interrupt)) {
+          return nullptr;
+        }
+        auto interrupter =
+            std::make_unique<operations_research::SolveInterrupter>();
+        sigint_handler->Register(
+            [interrupter = interrupter.get()]() { interrupter->Interrupt(); });
+        return interrupter;
+      }());
+
   if (absl::GetFlag(FLAGS_remote) &&
       absl::GetFlag(FLAGS_time_limit) == absl::InfiniteDuration()) {
     return absl::InvalidArgumentError(
@@ -318,9 +340,9 @@ absl::Status RunSolver() {
   }
   OR_ASSIGN_OR_RETURN3(
       const SolveResult result,
-      LocalOrRemoteSolve(*model_and_hint.model,
-                         absl::GetFlag(FLAGS_solver_type), solve_params,
-                         model_params, std::move(message_cb)),
+      LocalOrRemoteSolve(
+          *model_and_hint.model, absl::GetFlag(FLAGS_solver_type), solve_params,
+          model_params, std::move(message_cb), interrupter->get()),
       _ << "the solver failed");
 
   const FeasibilityCheckerOptions feasibility_checker_options = {

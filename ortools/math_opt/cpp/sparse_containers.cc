@@ -133,6 +133,13 @@ absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
   return MakeView(vars_proto).as_map<Variable>(model);
 }
 
+absl::StatusOr<VariableMap<int32_t>> VariableValuesFromProto(
+    const ModelStorage* model, const SparseInt32VectorProto& vars_proto) {
+  RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
+  RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
+  return MakeView(vars_proto).as_map<Variable>(model);
+}
+
 SparseDoubleVectorProto VariableValuesToProto(
     const VariableMap<double>& variable_values) {
   return MapToProto(variable_values);

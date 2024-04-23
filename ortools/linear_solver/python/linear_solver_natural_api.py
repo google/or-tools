@@ -208,6 +208,7 @@ class ProductCst(LinearExpr):
 
 
 class Constant(LinearExpr):
+
     def __init__(self, val):
         self.__val = val
 

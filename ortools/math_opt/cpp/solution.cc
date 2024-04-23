@@ -187,13 +187,8 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorage* model,
       basis.variable_status,
       VariableBasisFromProto(model, basis_proto.variable_status()),
       _ << "invalid variable_status");
-  const std::optional<SolutionStatus> basic_dual_feasibility =
+  basis.basic_dual_feasibility =
       EnumFromProto(basis_proto.basic_dual_feasibility());
-  if (!basic_dual_feasibility.has_value()) {
-    return absl::InvalidArgumentError(
-        "basic_dual_feasibility for a basis must be specified");
-  }
-  basis.basic_dual_feasibility = *basic_dual_feasibility;
   return basis;
 }
 

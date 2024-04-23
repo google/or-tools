@@ -28,6 +28,9 @@ SolverResourcesProto SolverResources::Proto() const {
   if (cpu.has_value()) {
     ret.set_cpu(cpu.value());
   }
+  if (ram.has_value()) {
+    ret.set_ram(ram.value());
+  }
   return ret;
 }
 
@@ -36,6 +39,9 @@ absl::StatusOr<SolverResources> SolverResources::FromProto(
   SolverResources ret;
   if (proto.has_cpu()) {
     ret.cpu = proto.cpu();
+  }
+  if (proto.has_ram()) {
+    ret.ram = proto.ram();
   }
   return ret;
 }

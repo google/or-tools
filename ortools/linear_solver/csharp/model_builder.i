@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 %include "enums.swg"
 %import "ortools/util/csharp/vector.i"
@@ -21,13 +19,13 @@
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
 %}
 
-%module(directors="1") operations_research_model_builder
-
 %template(IntVector) std::vector<int>;
 VECTOR_AS_CSHARP_ARRAY(int, int, int, IntVector);
 
 %template(DoubleVector) std::vector<double>;
 VECTOR_AS_CSHARP_ARRAY(double, double, double, DoubleVector);
+
+%module(directors="1") operations_research_model_builder
 
 %extend operations_research::ModelBuilderHelper {
   std::string ExportToMpsString(bool obfuscate) {

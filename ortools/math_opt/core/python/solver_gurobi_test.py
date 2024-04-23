@@ -96,6 +96,7 @@ def _expected_iis_success() -> (
 class PybindComputeInfeasibleSubsystemTest(
     compare_proto.MathOptProtoAssertions, absltest.TestCase
 ):
+
     def test_compute_infeasible_subsystem_infeasible(self) -> None:
         iis_result = solver.compute_infeasible_subsystem(
             _simple_infeasible_model(),

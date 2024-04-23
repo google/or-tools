@@ -36,6 +36,7 @@ _ObjectiveUpdatesProto = model_update_pb2.ObjectiveUpdatesProto
 
 @parameterized.parameters((hash_model_storage.HashModelStorage,))
 class ModelStorageTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
+
     def test_simple_delete_var(self, storage_class: _StorageClass) -> None:
         storage = storage_class("test_model")
         tracker = storage.add_update_tracker()

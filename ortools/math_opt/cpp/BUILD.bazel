@@ -212,13 +212,19 @@ cc_library(
 
 cc_library(
     name = "map_filter",
+    srcs = ["map_filter.cc"],
     hdrs = ["map_filter.h"],
     deps = [
         ":key_types",
+        ":linear_constraint",
+        ":model",
+        ":variable_and_expressions",
         "//ortools/base:status_macros",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/storage:model_storage",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -334,8 +340,8 @@ cc_library(
         ":model_solve_parameters",
         ":parameters",
         "//ortools/base:status_macros",
-        "//ortools/math_opt/core:solve_interrupter",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:solve_interrupter",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/status",
     ],
@@ -381,7 +387,6 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -505,7 +510,7 @@ cc_library(
     deps = [
         ":message_callback",
         ":parameters",
-        "//ortools/math_opt/core:solve_interrupter",
+        "//ortools/util:solve_interrupter",
     ],
 )
 

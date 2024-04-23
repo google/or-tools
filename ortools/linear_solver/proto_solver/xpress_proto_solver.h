@@ -20,8 +20,7 @@
 namespace operations_research {
 
 // Solves the input request.
-MPSolutionResponse XPressSolveProto(
-    LazyMutableCopy<MPModelRequest> request);
+MPSolutionResponse XPressSolveProto(LazyMutableCopy<MPModelRequest> request);
 
 }  // namespace operations_research
 

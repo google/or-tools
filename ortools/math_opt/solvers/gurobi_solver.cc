@@ -51,7 +51,6 @@
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
-#include "ortools/math_opt/core/solve_interrupter.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sorted.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -69,6 +68,7 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/util/solve_interrupter.h"
 #include "ortools/util/testing_utils.h"
 
 namespace operations_research {
@@ -2893,7 +2893,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:
@@ -3020,9 +3020,9 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 
 // TODO(b/277339044): Remove code duplication with GurobiSolver::Solve().
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-GurobiSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                                         MessageCallback message_cb,
-                                         SolveInterrupter* const interrupter) {
+GurobiSolver::ComputeInfeasibleSubsystem(
+    const SolveParametersProto& parameters, MessageCallback message_cb,
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:

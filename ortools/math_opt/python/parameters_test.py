@@ -31,6 +31,7 @@ from ortools.sat import sat_parameters_pb2
 
 
 class GurobiParameters(absltest.TestCase):
+
     def test_to_proto(self) -> None:
         gurobi_proto = parameters.GurobiParameters(
             param_values={"x": "dog", "ab": "7"}
@@ -45,6 +46,7 @@ class GurobiParameters(absltest.TestCase):
 
 
 class GlpkParameters(absltest.TestCase):
+
     def test_to_proto(self) -> None:
         # Test with `optional bool` set to true.
         glpk_proto = parameters.GlpkParameters(
@@ -71,6 +73,7 @@ class GlpkParameters(absltest.TestCase):
 
 
 class ProtoRoundTrip(absltest.TestCase):
+
     def test_solver_type_round_trip(self) -> None:
         for solver_type in parameters.SolverType:
             self.assertEqual(

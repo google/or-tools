@@ -76,6 +76,7 @@ def small_proto_qp():
 
 
 class QuadraticProgramTest(absltest.TestCase):
+
     def test_validate_quadratic_program_dimensions_for_empty_qp(self):
         qp = pdlp.QuadraticProgram()
         qp.resize_and_initialize(3, 2)
@@ -189,6 +190,7 @@ def test_lp():
 
 
 class PrimalDualHybridGradientTest(absltest.TestCase):
+
     def test_iteration_limit(self):
         params = solvers_pb2.PrimalDualHybridGradientParams()
         params.termination_criteria.iteration_limit = 1

@@ -24,6 +24,7 @@ from ortools.math_opt.python.testing import compare_proto
 
 
 class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+
     def test_solution_hint_round_trip(self) -> None:
         mod = model.Model(name="test_model")
         x = mod.add_binary_variable(name="x")
@@ -98,9 +99,6 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
         expected.initial_basis.variable_status.ids.append(0)
         expected.initial_basis.variable_status.values.append(
             solution_pb2.BASIS_STATUS_AT_UPPER_BOUND
-        )
-        expected.initial_basis.basic_dual_feasibility = (
-            solution_pb2.SOLUTION_STATUS_UNDETERMINED
         )
         self.assert_protos_equiv(expected, actual)
 

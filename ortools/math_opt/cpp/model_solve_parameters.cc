@@ -145,6 +145,21 @@ ObjectiveParametersProto ModelSolveParameters::ObjectiveParameters::Proto()
   return params;
 }
 
+ModelSolveParameters::ObjectiveParameters
+ModelSolveParameters::ObjectiveParameters::FromProto(
+    const ObjectiveParametersProto& proto) {
+  ObjectiveParameters result;
+  if (proto.has_objective_degradation_absolute_tolerance()) {
+    result.objective_degradation_absolute_tolerance =
+        proto.objective_degradation_absolute_tolerance();
+  }
+  if (proto.has_objective_degradation_relative_tolerance()) {
+    result.objective_degradation_relative_tolerance =
+        proto.objective_degradation_relative_tolerance();
+  }
+  return result;
+}
+
 // TODO: b/315974557 - Return an error if a RepeatedField is too long.
 ModelSolveParametersProto ModelSolveParameters::Proto() const {
   ModelSolveParametersProto ret;
@@ -152,43 +167,10 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
   *ret.mutable_dual_values_filter() = dual_values_filter.Proto();
   *ret.mutable_reduced_costs_filter() = reduced_costs_filter.Proto();
 
-  // TODO(b/183616124): consolidate code. Probably best to add an
-  // export_to_proto to IdMap
-  if (initial_basis) {
-    RepeatedField<int64_t>& constraint_status_ids =
-        *ret.mutable_initial_basis()
-             ->mutable_constraint_status()
-             ->mutable_ids();
-    RepeatedField<int>& constraint_status_values =
-        *ret.mutable_initial_basis()
-             ->mutable_constraint_status()
-             ->mutable_values();
-    constraint_status_ids.Reserve(
-        static_cast<int>(initial_basis->constraint_status.size()));
-    constraint_status_values.Reserve(
-        static_cast<int>(initial_basis->constraint_status.size()));
-    for (const LinearConstraint& key :
-         SortedKeys(initial_basis->constraint_status)) {
-      constraint_status_ids.Add(key.id());
-      constraint_status_values.Add(
-          EnumToProto(initial_basis->constraint_status.at(key)));
-    }
-    RepeatedField<int64_t>& variable_status_ids =
-        *ret.mutable_initial_basis()->mutable_variable_status()->mutable_ids();
-    RepeatedField<int>& variable_status_values =
-        *ret.mutable_initial_basis()
-             ->mutable_variable_status()
-             ->mutable_values();
-    variable_status_ids.Reserve(
-        static_cast<int>(initial_basis->variable_status.size()));
-    variable_status_values.Reserve(
-        static_cast<int>(initial_basis->variable_status.size()));
-    for (const Variable& key : SortedKeys(initial_basis->variable_status)) {
-      variable_status_ids.Add(key.id());
-      variable_status_values.Add(
-          EnumToProto(initial_basis->variable_status.at(key)));
-    }
+  if (initial_basis.has_value()) {
+    *ret.mutable_initial_basis() = initial_basis->Proto();
   }
+
   for (const SolutionHint& solution_hint : solution_hints) {
     *ret.add_solution_hints() = solution_hint.Proto();
   }
@@ -224,6 +206,65 @@ ModelSolveParametersProto ModelSolveParameters::Proto() const {
     absl::c_sort(lazy_linear_constraint_ids);
   }
   return ret;
+}
+
+absl::StatusOr<ModelSolveParameters> ModelSolveParameters::FromProto(
+    const Model& model, const ModelSolveParametersProto& proto) {
+  ModelSolveParameters result;
+  OR_ASSIGN_OR_RETURN3(
+      result.variable_values_filter,
+      VariableFilterFromProto(model, proto.variable_values_filter()),
+      _ << "invalid variable_values_filter");
+  OR_ASSIGN_OR_RETURN3(
+      result.dual_values_filter,
+      LinearConstraintFilterFromProto(model, proto.dual_values_filter()),
+      _ << "invalid dual_values_filter");
+  OR_ASSIGN_OR_RETURN3(
+      result.reduced_costs_filter,
+      VariableFilterFromProto(model, proto.reduced_costs_filter()),
+      _ << "invalid reduced_costs_filter");
+  if (proto.has_initial_basis()) {
+    OR_ASSIGN_OR_RETURN3(
+        result.initial_basis,
+        Basis::FromProto(model.storage(), proto.initial_basis()),
+        _ << "invalid initial_basis");
+  }
+  for (int i = 0; i < proto.solution_hints_size(); ++i) {
+    OR_ASSIGN_OR_RETURN3(
+        SolutionHint hint,
+        SolutionHint::FromProto(model, proto.solution_hints(i)),
+        _ << "invalid solution_hints[" << i << "]");
+    result.solution_hints.push_back(std::move(hint));
+  }
+  OR_ASSIGN_OR_RETURN3(
+      result.branching_priorities,
+      VariableValuesFromProto(model.storage(), proto.branching_priorities()),
+      _ << "invalid branching_priorities");
+  if (proto.has_primary_objective_parameters()) {
+    result.objective_parameters.try_emplace(
+        Objective::Primary(model.storage()),
+        ObjectiveParameters::FromProto(proto.primary_objective_parameters()));
+  }
+  for (const auto& [id, aux_obj_params_proto] :
+       proto.auxiliary_objective_parameters()) {
+    if (!model.has_auxiliary_objective(id)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "invalid auxiliary_objective_parameters with id: " << id
+             << ", objective not in the model";
+    }
+    result.objective_parameters.try_emplace(
+        Objective::Auxiliary(model.storage(), AuxiliaryObjectiveId{id}),
+        ObjectiveParameters::FromProto(aux_obj_params_proto));
+  }
+  for (int64_t lin_con : proto.lazy_linear_constraint_ids()) {
+    if (!model.has_linear_constraint(lin_con)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "invalid lazy_linear_constraint with id: " << lin_con
+             << ", constraint not in the model";
+    }
+    result.lazy_linear_constraints.insert(model.linear_constraint(lin_con));
+  }
+  return result;
 }
 
 }  // namespace math_opt
