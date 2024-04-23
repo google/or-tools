@@ -250,7 +250,14 @@ endfunction()
 list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS
+ algorithms
+ graph
+ init
+ linear_solver
+ constraint_solver
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()

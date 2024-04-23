@@ -278,7 +278,14 @@ endfunction()
 list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 # Swig wrap all libraries
-foreach(SUBPROJECT IN ITEMS algorithms graph init linear_solver constraint_solver sat util)
+foreach(SUBPROJECT IN ITEMS
+ algorithms
+ graph
+ init
+ linear_solver
+ constraint_solver
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
   target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()
