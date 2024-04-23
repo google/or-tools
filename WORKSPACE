@@ -29,7 +29,7 @@ bazel_skylib_workspace()
 ## Bazel rules.
 git_repository(
     name = "platforms",
-    tag = "0.0.8",
+    tag = "0.0.9",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
@@ -90,7 +90,7 @@ git_repository(
 ## Re2
 git_repository(
     name = "com_google_re2",
-    tag = "2024-03-01",
+    tag = "2024-04-01",
     remote = "https://github.com/google/re2.git",
     repo_mapping = {"@abseil-cpp": "@com_google_absl"},
 )
