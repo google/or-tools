@@ -17,7 +17,6 @@
 #include <stdbool.h>
 
 #include <cmath>
-#include <concepts>
 #include <limits>
 #include <vector>
 
@@ -82,23 +81,6 @@ PathWithLength ConstrainedShortestPathsOnDag(
 // -----------------------------------------------------------------------------
 // Advanced API.
 // -----------------------------------------------------------------------------
-#if __cplusplus >= 202002L
-template <class GraphType>
-concept DagGraphType = requires(GraphType graph) {
-  { typename GraphType::NodeIndex{} };
-  { typename GraphType::ArcIndex{} };
-  { graph.num_nodes() } -> std::same_as<typename GraphType::NodeIndex>;
-  { graph.num_arcs() } -> std::same_as<typename GraphType::ArcIndex>;
-  { graph.OutgoingArcs(typename GraphType::NodeIndex{}) };
-  {
-    graph.Tail(typename GraphType::ArcIndex{})
-  } -> std::same_as<typename GraphType::NodeIndex>;
-  {
-    graph.Head(typename GraphType::ArcIndex{})
-  } -> std::same_as<typename GraphType::NodeIndex>;
-};
-#endif
-
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
 // `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
