@@ -11,18 +11,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_H_
-#define OR_TOOLS_ALGORITHMS_SET_COVER_H_
+#ifndef OR_TOOLS_ALGORITHMS_SET_COVER_HEURISTICS_H_
+#define OR_TOOLS_ALGORITHMS_SET_COVER_HEURISTICS_H_
 
 #include <cstddef>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
-#include "ortools/algorithms/set_cover_utils.h"
 
 namespace operations_research {
+
+// Priority aggregate for the subset priority queue.
+class SubsetIndexWithPriority {
+ public:
+  using Index = int;
+  using Priority = float;
+  SubsetIndexWithPriority() = default;
+  SubsetIndexWithPriority(Priority priority, Index index)
+      : index_(index), priority_(priority) {}
+  Priority priority() const { return priority_; }
+  Index index() const { return index_; }
+  inline bool operator<(const SubsetIndexWithPriority other) const {
+    if (other.priority() != priority()) {
+      return priority() < other.priority();
+    }
+    return index() < other.index();
+  }
+
+ private:
+  Index index_;
+  Priority priority_;
+};
 
 // Solver classes for the weighted set covering problem.
 //
@@ -44,6 +66,38 @@ namespace operations_research {
 // TODO(user): make the different algorithms concurrent, solving independent
 // subproblems in different threads.
 //
+
+// The preprocessor finds the elements that can only be covered by one subset.
+// Obviously, such subsets which are the only ones that can cover a given
+// element are chosen.
+class Preprocessor {
+ public:
+  explicit Preprocessor(absl::Nonnull<SetCoverInvariant*> inv)
+      : inv_(inv), num_columns_fixed_by_singleton_row_(0) {}
+
+  // Returns true if a solution was found.
+  // TODO(user): Add time-outs and exit with a partial solution. This seems
+  // unlikely, though.
+  bool NextSolution();
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(absl::Span<const SubsetIndex> focus);
+
+  // Returns the number of columns that are the only one for a given row.
+  int num_columns_fixed_by_singleton_row() const {
+    return num_columns_fixed_by_singleton_row_;
+  }
+
+ private:
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
+
+  // The number of columns that are the only one for a given row, i.e.
+  // the subsets that are unique in covering a particular element.
+  int num_columns_fixed_by_singleton_row_;
+};
+
 // An obvious idea is to take all the T_j's (or equivalently to set all the
 // x_j's to 1). It's a bit silly but fast, and we can improve on it later using
 // local search.
@@ -108,8 +162,7 @@ class RandomSolutionGenerator {
 
 class GreedySolutionGenerator {
  public:
-  explicit GreedySolutionGenerator(SetCoverInvariant* inv)
-      : inv_(inv), pq_(inv_) {}
+  explicit GreedySolutionGenerator(SetCoverInvariant* inv) : inv_(inv) {}
 
   // Returns true if a solution was found.
   // TODO(user): Add time-outs and exit with a partial solution.
@@ -123,16 +176,33 @@ class GreedySolutionGenerator {
                     const SubsetCostVector& costs);
 
  private:
-  // Updates the priorities on the impacted_subsets.
-  void UpdatePriorities(const std::vector<SubsetIndex>& impacted_subsets,
-                        const SubsetCostVector& costs);
-
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
+};
 
-  // The priority queue used for maintaining the subset with the lower marginal
-  // cost.
-  SubsetPriorityQueue pq_;
+// Solution generator based on the degree of elements.
+// The degree of an element is the number of subsets covering it.
+// The generator consists in iteratively choosing a non-covered element with the
+// smallest degree, and selecting a subset that covers it with the least cost.
+// The newly-covered elements degree are also updated.
+class ElementDegreeSolutionGenerator {
+ public:
+  explicit ElementDegreeSolutionGenerator(SetCoverInvariant* inv) : inv_(inv) {}
+
+  // Returns true if a solution was found.
+  // TODO(user): Add time-outs and exit with a partial solution.
+  bool NextSolution();
+
+  // Computes the next partial solution considering only the subsets whose
+  // indices are in focus.
+  bool NextSolution(const std::vector<SubsetIndex>& focus);
+
+  bool NextSolution(const std::vector<SubsetIndex>& focus,
+                    const SubsetCostVector& costs);
+
+ private:
+  // The data structure that will maintain the invariant for the model.
+  SetCoverInvariant* inv_;
 };
 
 // Once we have a first solution to the problem, there may be (most often,
@@ -143,7 +213,7 @@ class GreedySolutionGenerator {
 // the T_j with the largest total cost.
 class SteepestSearch {
  public:
-  explicit SteepestSearch(SetCoverInvariant* inv) : inv_(inv), pq_(inv_) {}
+  explicit SteepestSearch(SetCoverInvariant* inv) : inv_(inv) {}
 
   // Returns true if a solution was found within num_iterations.
   // TODO(user): Add time-outs and exit with a partial solution.
@@ -160,10 +230,54 @@ class SteepestSearch {
 
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
+};
 
-  // The priority queue used for maintaining the subset with the largest total
-  // cost.
-  SubsetPriorityQueue pq_;
+// A Tabu list is a fixed-sized set with FIFO replacement. It is expected to
+// be of small size, usually a few dozens of elements.
+template <typename T>
+class TabuList {
+ public:
+  explicit TabuList(T size) : array_(0), fill_(0), index_(0) {
+    array_.resize(size.value(), T(-1));
+  }
+
+  // Returns the size of the array.
+  int size() const { return array_.size(); }
+
+  // Initializes the array of the Tabu list.
+  void Init(int size) {
+    array_.resize(size, T(-1));
+    fill_ = 0;
+    index_ = 0;
+  }
+
+  // Adds t to the array. When the end of the array is reached, re-start at 0.
+  void Add(T t) {
+    const int size = array_.size();
+    array_[index_] = t;
+    ++index_;
+    if (index_ >= size) {
+      index_ = 0;
+    }
+    if (fill_ < size) {
+      ++fill_;
+    }
+  }
+
+  // Returns true if t is in the array. This is O(size), but small.
+  bool Contains(T t) const {
+    for (int i = 0; i < fill_; ++i) {
+      if (t == array_[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+ private:
+  std::vector<T> array_;
+  int fill_;
+  int index_;
 };
 
 // As usual and well-known with local search, SteepestSearch reaches a local
@@ -192,7 +306,6 @@ class GuidedTabuSearch {
  public:
   explicit GuidedTabuSearch(SetCoverInvariant* inv)
       : inv_(inv),
-        pq_(inv_),
         lagrangian_factor_(kDefaultLagrangianFactor),
         penalty_factor_(kDefaultPenaltyFactor),
         epsilon_(kDefaultEpsilon),
@@ -236,9 +349,6 @@ class GuidedTabuSearch {
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
 
-  // The priority queue used ***
-  SubsetPriorityQueue pq_;
-
   // Search handling variables and default parameters.
   static constexpr double kDefaultLagrangianFactor = 100.0;
   double lagrangian_factor_;
@@ -279,9 +389,11 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
                                             std::size_t num_subsets,
                                             SetCoverInvariant* inv);
 
-// Clears the variables that cover the most covered elements. This is capped
-// by num_subsets.
-// Return the list of chosen subset indices to be potentially reused as a focus.
+// Clears the variables (subsets) that cover the most covered elements. This is
+// capped by num_subsets. If the cap is reached, the subsets are chosen
+// randomly.
+// Returns the list of the chosen subset indices.
+// This indices can then be used ax a focus.
 std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
                                                   SetCoverInvariant* inv);
 
@@ -292,4 +404,4 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_H_
+#endif  // OR_TOOLS_ALGORITHMS_SET_COVER_HEURISTICS_H_

@@ -72,7 +72,7 @@ std::string FullyRefineGraph(const std::vector<std::pair<int, int>>& arcs) {
   GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
   DynamicPartition partition(graph.num_nodes());
   symmetry_finder.RecursivelyRefinePartitionByAdjacency(0, &partition);
-  return partition.DebugString(DynamicPartition::SORT_LEXICOGRAPHICALLY);
+  return partition.DebugString(/*sort_parts_lexicographically=*/true);
 }
 
 TEST(RecursivelyRefinePartitionByAdjacencyTest, DoublyLinkedChain) {
@@ -342,7 +342,7 @@ class FindSymmetriesTest : public ::testing::Test {
     // Verify the equivalence classes.
     EXPECT_EQ(expected_node_equivalence_classes,
               DynamicPartition(node_equivalence_classes)
-                  .DebugString(DynamicPartition::SORT_LEXICOGRAPHICALLY));
+                  .DebugString(/*sort_parts_lexicographically=*/true));
 
     // Verify the automorphism group size.
     double log_of_permutation_group_size = 0.0;

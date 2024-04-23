@@ -114,16 +114,10 @@ class DynamicPartition {
   // Prerequisite: NumParts() >= original_num_parts.
   void UndoRefineUntilNumPartsEqual(int original_num_parts);
 
-  // Dump the partition to a string. There might be different conventions for
-  // sorting the parts and the elements inside them.
-  enum DebugStringSorting {
-    // Elements are sorted within parts, and parts are then sorted
-    // lexicographically.
-    SORT_LEXICOGRAPHICALLY,
-    // Elements are sorted within parts, and parts are kept in order.
-    SORT_BY_PART,
-  };
-  std::string DebugString(DebugStringSorting sorting) const;
+  // Converts the current partition to a string, like "3 | 1 2 | 0 4 5". Within
+  // each part, elements are sorted. And if sort_parts_lexicographically=true,
+  // the parts are sorted lexicographically instead of by their natural order.
+  std::string DebugString(bool sort_parts_lexicographically) const;
 
   // ADVANCED USAGE:
   // All elements (0..n-1) of the partition, sorted in a way that's compatible

@@ -10,7 +10,7 @@ cheapest combination of sets that cover all the elements.
 
 [More information on Wikipedia](https://en.wikipedia.org/wiki/Set_cover_problem).
 
-*   Solver: [`set_cover.h`](set_cover.h).
+*   Solver: [`set_cover_heuristics.h`](set_cover_heuristics.h).
 *   Instance representation: [`set_cover_model.h`](set_cover_model.h).
 *   Instance parser: [`set_cover_reader.h`](set_cover_reader.h).
 

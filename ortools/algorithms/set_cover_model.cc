@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
+#include <vector>
 
 #include "absl/log/check.h"
 #include "ortools/algorithms/set_cover.pb.h"
@@ -47,6 +49,7 @@ void SetCoverModel::AddElementToLastSubset(const ElementIndex element) {
   columns_.back().push_back(element);
   num_elements_ = std::max(num_elements_, element + 1);
   // No need to update the list all_subsets_.
+  ++num_nonzeros_;
   row_view_is_valid_ = false;
 }
 
@@ -76,6 +79,7 @@ void SetCoverModel::AddElementToSubset(int element, int subset) {
   const ElementIndex new_element(element);
   columns_[subset_index].push_back(new_element);
   num_elements_ = std::max(num_elements_, new_element + 1);
+  ++num_nonzeros_;
   row_view_is_valid_ = false;
 }
 
@@ -179,6 +183,85 @@ void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
   }
   UpdateAllSubsetsList();
   CreateSparseRowView();
+}
+
+namespace {
+double StandardDeviation(const std::vector<ssize_t>& v) {
+  const ssize_t size = v.size();
+  double n = 0.0;  // n is used in a calculation involving doubles.
+  double sum_of_squares = 0.0;
+  double sum = 0.0;
+  for (ssize_t i = 0; i < size; ++i) {
+    double sample = static_cast<double>(v[i]);
+    if (sample == 0.0) continue;
+    sum_of_squares += sample * sample;
+    sum += sample;
+    ++n;
+  }
+  return n == 0.0 ? 0.0 : sqrt((sum_of_squares - sum * sum / n) / n);
+}
+
+template <typename T>
+SetCoverModel::Stats ComputeStats(std::vector<T> sizes) {
+  SetCoverModel::Stats stats;
+  stats.min = *std::min_element(sizes.begin(), sizes.end());
+  stats.max = *std::max_element(sizes.begin(), sizes.end());
+  stats.mean = std::accumulate(sizes.begin(), sizes.end(), 0.0) / sizes.size();
+  std::nth_element(sizes.begin(), sizes.begin() + sizes.size() / 2,
+                   sizes.end());
+  stats.median = sizes[sizes.size() / 2];
+  stats.stddev = StandardDeviation(sizes);
+  return stats;
+}
+
+std::vector<ssize_t> ComputeDeciles(std::vector<ssize_t> values) {
+  const int kNumDeciles = 10;
+  std::vector<ssize_t> deciles;
+  deciles.reserve(kNumDeciles);
+  for (int i = 1; i <= kNumDeciles; ++i) {
+    std::nth_element(values.begin(),
+                     values.begin() + values.size() * i / kNumDeciles - 1,
+                     values.end());
+    deciles.push_back(values[values.size() * i / kNumDeciles - 1]);
+  }
+  return deciles;
+}
+}  // namespace
+
+SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
+  std::vector<ssize_t> row_sizes(num_elements().value(), 0);
+  for (const SparseColumn& column : columns_) {
+    for (const ElementIndex element : column) {
+      ++row_sizes[element.value()];
+    }
+  }
+  return ComputeStats(row_sizes);
+}
+
+SetCoverModel::Stats SetCoverModel::ComputeColumnStats() {
+  std::vector<ssize_t> column_sizes(columns_.size().value());
+  for (SubsetIndex subset(0); subset < num_subsets(); ++subset) {
+    column_sizes[subset.value()] = columns_[subset].size().value();
+  }
+  return ComputeStats(column_sizes);
+}
+
+std::vector<ssize_t> SetCoverModel::ComputeRowDeciles() const {
+  std::vector<ssize_t> row_sizes(num_elements().value(), 0);
+  for (const SparseColumn& column : columns_) {
+    for (const ElementIndex element : column) {
+      ++row_sizes[element.value()];
+    }
+  }
+  return ComputeDeciles(row_sizes);
+}
+
+std::vector<ssize_t> SetCoverModel::ComputeColumnDeciles() const {
+  std::vector<ssize_t> column_sizes(columns_.size().value());
+  for (SubsetIndex subset(0); subset < num_subsets(); ++subset) {
+    column_sizes[subset.value()] = columns_[subset].size().value();
+  }
+  return ComputeDeciles(column_sizes);
 }
 
 }  // namespace operations_research
