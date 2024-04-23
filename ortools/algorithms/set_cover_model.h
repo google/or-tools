@@ -14,9 +14,13 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
+#include <sys/types.h>
+
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/algorithms/set_cover.pb.h"
 #include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
 #include "ortools/util/strong_integers.h"
@@ -75,6 +79,7 @@ class SetCoverModel {
   // Constructs an empty weighted set-covering problem.
   SetCoverModel()
       : num_elements_(0),
+        num_nonzeros_(0),
         row_view_is_valid_(false),
         subset_costs_(),
         columns_(),
@@ -88,6 +93,15 @@ class SetCoverModel {
   // Current number of subsets in the model. In matrix terms, this is the
   // number of columns.
   SubsetIndex num_subsets() const { return columns_.size(); }
+
+  // Current number of nonzeros in the matrix.
+  ssize_t num_nonzeros() const { return num_nonzeros_; }
+
+  double FillRate() const {
+    return static_cast<double>(num_nonzeros_) /
+           (static_cast<double>(num_elements().value()) *
+            static_cast<double>(num_subsets().value()));
+  }
 
   // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
@@ -120,7 +134,8 @@ class SetCoverModel {
   // This will CHECK-fail if cost is infinite or a NaN.
   void SetSubsetCost(int subset, Cost cost);
 
-  // Adds 'element' to and already existing 'subset'.
+  // Adds 'element' to an already existing 'subset'.
+  // No check is done if element is already in the subset.
   void AddElementToSubset(int element, int subset);
 
   // Creates the sparse ("dual") representation of the problem.
@@ -144,6 +159,33 @@ class SetCoverModel {
   // Imports the model from a SetCoverProto.
   void ImportModelFromProto(const SetCoverProto& message);
 
+  // A struct enabling to show basic statistics on rows and columns.
+  // The meaning of the fields is obvious.
+  struct Stats {
+    double min;
+    double max;
+    double median;
+    double mean;
+    double stddev;
+
+    std::string DebugString() const {
+      return absl::StrCat("min = ", min, ", max = ", max, ", mean = ", mean,
+                          ", median = ", median, ", stddev = ", stddev, ", ");
+    }
+  };
+
+  // Computes basic statistics on rows and returns a Stats structure.
+  Stats ComputeRowStats();
+
+  // Computes basic statistics on columns and returns a Stats structure.
+  Stats ComputeColumnStats();
+
+  // Computes deciles on rows and returns a vector of deciles.
+  std::vector<ssize_t> ComputeRowDeciles() const;
+
+  // Computes deciles on columns and returns a vector of deciles.
+  std::vector<ssize_t> ComputeColumnDeciles() const;
+
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
   // columns.size() - 1
@@ -151,6 +193,9 @@ class SetCoverModel {
 
   // Number of elements.
   ElementIndex num_elements_;
+
+  // Number of nonzeros in the matrix.
+  ssize_t num_nonzeros_;
 
   // True when the SparseRowView is up-to-date.
   bool row_view_is_valid_;

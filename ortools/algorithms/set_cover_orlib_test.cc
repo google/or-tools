@@ -17,9 +17,10 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
-#include "ortools/algorithms/set_cover.h"
+#include "ortools/algorithms/set_cover_heuristics.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_mip.h"
 #include "ortools/algorithms/set_cover_model.h"
@@ -30,51 +31,121 @@
 
 namespace operations_research {
 
-double RunSolver(std::string name, SetCoverModel* model) {
+void LogStats(std::string name, SetCoverModel* model) {
+  LOG(INFO) << name << ", num_elements, " << model->num_elements()
+            << ", num_subsets, " << model->num_subsets();
+  LOG(INFO) << name << ", num_nonzeros, " << model->num_nonzeros()
+            << ", fill rate, " << model->FillRate();
+  LOG(INFO) << name << ", num_rows, " << model->num_elements()
+            << ", rows sizes, " << model->ComputeRowStats().DebugString();
+  LOG(INFO) << name << ", row size deciles, "
+            << absl::StrJoin(model->ComputeRowDeciles(), ", ");
+  LOG(INFO) << name << ", num_columns, " << model->num_subsets()
+            << ", columns sizes, " << model->ComputeColumnStats().DebugString();
+  LOG(INFO) << name << ", column size deciles, "
+            << absl::StrJoin(model->ComputeColumnDeciles(), ", ");
   SetCoverInvariant inv(model);
+  Preprocessor preprocessor(&inv);
+  preprocessor.NextSolution();
+  LOG(INFO) << name << ", num_columns_fixed_by_singleton_row, "
+            << preprocessor.num_columns_fixed_by_singleton_row();
+}
 
+SetCoverInvariant RunChvatalAndSteepest(std::string name,
+                                        SetCoverModel* model) {
+  SetCoverInvariant inv(model);
   GreedySolutionGenerator greedy(&inv);
-  WallTimer global_timer;
   WallTimer timer;
-  global_timer.Start();
   timer.Start();
   CHECK(greedy.NextSolution());
-  DCHECK(inv.CheckSolution());
-  LOG(INFO) << name << "_GreedySolutionGenerator_cost, " << inv.cost() << ", "
+  DCHECK(inv.CheckConsistency());
+  LOG(INFO) << name << ", GreedySolutionGenerator_cost, " << inv.cost() << ", "
             << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
-  timer.Stop();
-  timer.Reset();
-  timer.Start();
-  operations_research::SteepestSearch steepest(&inv);
+  SteepestSearch steepest(&inv);
   steepest.NextSolution(100000);
-  LOG(INFO) << name << "_SteepestSearch_cost, " << inv.cost() << ", "
+  LOG(INFO) << name << ", GreedySteepestSearch_cost, " << inv.cost() << ", "
             << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
-  double best_cost = inv.cost();
-  DCHECK(inv.CheckSolution());
-  SubsetBoolVector best_choices = inv.is_selected();
-  std::vector<SubsetIndex> focus = model->all_subsets();
-  timer.Stop();
-  timer.Reset();
+  DCHECK(inv.CheckConsistency());
+  return inv;
+}
+
+SetCoverInvariant RunElementDegreeGreedyAndSteepest(std::string name,
+                                                    SetCoverModel* model) {
+  SetCoverInvariant inv(model);
+  ElementDegreeSolutionGenerator element_degree(&inv);
+  WallTimer timer;
   timer.Start();
+  CHECK(element_degree.NextSolution());
+  DCHECK(inv.CheckConsistency());
+  LOG(INFO) << name << ", ElementDegreeSolutionGenerator_cost, " << inv.cost()
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  SteepestSearch steepest(&inv);
+  steepest.NextSolution(100000);
+  LOG(INFO) << name << ", ElementDegreeSteepestSearch_cost, " << inv.cost()
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  DCHECK(inv.CheckConsistency());
+  return inv;
+}
+
+SetCoverInvariant IterateClearAndMip(std::string name, SetCoverInvariant inv) {
+  WallTimer timer;
+  timer.Start();
+  std::vector<SubsetIndex> focus = inv.model()->all_subsets();
+  double best_cost = inv.cost();
+  SubsetBoolVector best_choices = inv.is_selected();
   for (int i = 0; i < 10; ++i) {
     std::vector<SubsetIndex> range =
         ClearMostCoveredElements(std::min(100UL, focus.size()), &inv);
     SetCoverMip mip(&inv);
     mip.NextSolution(range);
+    DCHECK(inv.CheckConsistency());
     if (inv.cost() < best_cost) {
       best_cost = inv.cost();
       best_choices = inv.is_selected();
     }
   }
   timer.Stop();
-  LOG(INFO) << name << "_MIP_cost, " << best_cost << ", "
+  LOG(INFO) << name << ", IterateClearAndMip_cost, " << best_cost << ", "
             << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
-  global_timer.Stop();
-  LOG(INFO) << name << "_total_running_time, " << best_cost << ", "
-            << absl::ToInt64Microseconds(global_timer.GetDuration())
-            << ", us, total_time";
-  return best_cost;
-  // TODO(user): add guided local search.
+  return inv;
+}
+
+SetCoverInvariant IterateClearElementDegreeAndSteepest(std::string name,
+                                                       SetCoverInvariant inv) {
+  WallTimer timer;
+  timer.Start();
+  std::vector<SubsetIndex> focus = inv.model()->all_subsets();
+  double best_cost = inv.cost();
+  SubsetBoolVector best_choices = inv.is_selected();
+  ElementDegreeSolutionGenerator element_degree(&inv);
+  SteepestSearch steepest(&inv);
+  for (int i = 0; i < 20; ++i) {
+    std::vector<SubsetIndex> range =
+        ClearMostCoveredElements(std::min(50UL, focus.size()), &inv);
+    CHECK(element_degree.NextSolution());
+    steepest.NextSolution(range, 100000);
+    DCHECK(inv.CheckConsistency());
+    if (inv.cost() < best_cost) {
+      best_cost = inv.cost();
+      best_choices = inv.is_selected();
+    }
+  }
+  timer.Stop();
+  LOG(INFO) << name << ", IterateClearElementDegreeAndSteepest_cost, "
+            << best_cost << ", "
+            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  return inv;
+}
+
+double RunSolver(std::string name, SetCoverModel* model) {
+  LogStats(name, model);
+  WallTimer global_timer;
+  global_timer.Start();
+  RunChvatalAndSteepest(name, model);
+  SetCoverInvariant inv = RunElementDegreeGreedyAndSteepest(name, model);
+  // IterateClearAndMip(name, inv);
+  IterateClearElementDegreeAndSteepest(name, inv);
+  return inv.cost();
 }
 
 // We break down the ORLIB set covering problems by their expected runtime with

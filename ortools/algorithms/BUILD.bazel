@@ -170,6 +170,22 @@ cc_test(
 )
 
 cc_library(
+    name = "adjustable_k_ary_heap",
+    hdrs = ["adjustable_k_ary_heap.h"],
+    deps = ["@com_google_absl//absl/log:check"],
+)
+
+cc_test(
+    name = "adjustable_k_ary_heap_test",
+    size = "medium",
+    srcs = ["adjustable_k_ary_heap_test.cc"],
+    deps = [
+        ":adjustable_k_ary_heap",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
     name = "knapsack_solver_lib",
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
@@ -237,6 +253,7 @@ cc_library(
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -250,31 +267,18 @@ cc_library(
         "//ortools/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
     ],
 )
 
 cc_library(
-    name = "set_cover_utils",
-    srcs = ["set_cover_utils.cc"],
-    hdrs = ["set_cover_utils.h"],
+    name = "set_cover_heuristics",
+    srcs = ["set_cover_heuristics.cc"],
+    hdrs = ["set_cover_heuristics.h"],
     deps = [
+        ":adjustable_k_ary_heap",
         ":set_cover_invariant",
         ":set_cover_model",
-        "//ortools/base:adjustable_priority_queue",
-    ],
-)
-
-cc_library(
-    name = "set_cover",
-    srcs = ["set_cover.cc"],
-    hdrs = ["set_cover.h"],
-    deps = [
-        ":set_cover_invariant",
-        ":set_cover_model",
-        ":set_cover_utils",
         "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/random",
@@ -317,8 +321,8 @@ cc_test(
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
     deps = [
-        ":set_cover",
         ":set_cover_cc_proto",
+        ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_mip",
         ":set_cover_model",
@@ -347,7 +351,6 @@ cc_library(
         "//ortools/base:murmur",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -359,7 +362,6 @@ cc_test(
         ":dynamic_partition",
         "//ortools/base:gmock_main",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/random:bit_gen_ref",
     ],

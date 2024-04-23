@@ -471,7 +471,7 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
                         "During the initial refinement.");
   }
   VLOG(4) << "Base partition: "
-          << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+          << base_partition.DebugString(/*sort_parts_lexicographically=*/false);
 
   MergingPartition node_equivalence_classes(NumNodes());
   std::vector<std::vector<int>> permutations_displacing_node(NumNodes());
@@ -521,7 +521,8 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
     DistinguishNodeInPartition(invariant_node, &base_partition, nullptr);
     VLOG(4) << "Invariant dive: invariant node = " << invariant_node
             << "; partition after: "
-            << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+            << base_partition.DebugString(
+                   /*sort_parts_lexicographically=*/false);
     if (time_limit_->LimitReached()) {
       return absl::Status(absl::StatusCode::kDeadlineExceeded,
                           "During the invariant dive.");
@@ -547,7 +548,8 @@ absl::Status GraphSymmetryFinder::FindSymmetries(
     image_partition.UndoRefineUntilNumPartsEqual(base_num_parts);
     VLOG(4) << "Backtracking invariant dive: root node = " << root_node
             << "; partition: "
-            << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
+            << base_partition.DebugString(
+                   /*sort_parts_lexicographically=*/false);
 
     // Now we'll try to map "root_node" to all image nodes that seem compatible
     // and that aren't "root_node" itself.
@@ -697,8 +699,9 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   // DCHECKs() and statistics.
   ScopedTimeDistributionUpdater search_time_updater(&stats_.search_time);
   DCHECK_EQ("", tmp_dynamic_permutation_.DebugString());
-  DCHECK_EQ(base_partition->DebugString(DynamicPartition::SORT_BY_PART),
-            image_partition->DebugString(DynamicPartition::SORT_BY_PART));
+  DCHECK_EQ(
+      base_partition->DebugString(/*sort_parts_lexicographically=*/false),
+      image_partition->DebugString(/*sort_parts_lexicographically=*/false));
   DCHECK(search_states_.empty());
 
   // These will be used during the search. See their usage.
@@ -751,8 +754,10 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
                                  &image_singletons);
     }
     VLOG(4) << ss.DebugString();
-    VLOG(4) << base_partition->DebugString(DynamicPartition::SORT_BY_PART);
-    VLOG(4) << image_partition->DebugString(DynamicPartition::SORT_BY_PART);
+    VLOG(4) << base_partition->DebugString(
+        /*sort_parts_lexicographically=*/false);
+    VLOG(4) << image_partition->DebugString(
+        /*sort_parts_lexicographically=*/false);
 
     // Run some diagnoses on the two partitions. There are many outcomes, so
     // it's a bit complicated:

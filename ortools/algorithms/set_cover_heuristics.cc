@@ -11,27 +11,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/set_cover.h"
+#include "ortools/algorithms/set_cover_heuristics.h"
 
 #include <algorithm>
 #include <cstddef>
-#include <iterator>
 #include <limits>
 #include <numeric>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
-#include "ortools/algorithms/set_cover_utils.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
 
 constexpr SubsetIndex kNotFound(-1);
+
+// Preprocessor.
+
+bool Preprocessor::NextSolution() {
+  return NextSolution(inv_->model()->all_subsets());
+}
+
+bool Preprocessor::NextSolution(absl::Span<const SubsetIndex> focus) {
+  DVLOG(1) << "Entering Preprocessor::NextSolution";
+  const SubsetIndex num_subsets(inv_->model()->num_subsets());
+  SubsetBoolVector choices(num_subsets, false);
+  const ElementIndex num_elements(inv_->model()->num_elements());
+  const SparseRowView& rows = inv_->model()->rows();
+  for (ElementIndex element(0); element < num_elements; ++element) {
+    if (rows[element].size() == 1) {
+      const SubsetIndex subset = rows[element][EntryIndex(0)];
+      choices[subset] = true;
+      ++num_columns_fixed_by_singleton_row_;
+    }
+  }
+  inv_->LoadSolution(choices);
+  return true;
+}
 
 // TrivialSolutionGenerator.
 
@@ -72,21 +93,6 @@ bool RandomSolutionGenerator::NextSolution(
 
 // GreedySolutionGenerator.
 
-void GreedySolutionGenerator::UpdatePriorities(
-    const std::vector<SubsetIndex>& impacted_subsets,
-    const SubsetCostVector& costs) {
-  for (const SubsetIndex subset : impacted_subsets) {
-    const ElementIndex marginal_impact(inv_->marginal_impacts()[subset]);
-    if (marginal_impact != 0) {
-      const Cost marginal_cost_increase =
-          costs[subset] / marginal_impact.value();
-      pq_.ChangePriority(subset, -marginal_cost_increase);
-    } else {
-      pq_.Remove(subset);
-    }
-  }
-}
-
 bool GreedySolutionGenerator::NextSolution() {
   return NextSolution(inv_->model()->all_subsets(),
                       inv_->model()->subset_costs());
@@ -99,48 +105,177 @@ bool GreedySolutionGenerator::NextSolution(
 
 bool GreedySolutionGenerator::NextSolution(
     const std::vector<SubsetIndex>& focus, const SubsetCostVector& costs) {
-  inv_->MakeDataConsistent();
-
-  // The priority is the minimum marginal cost increase. Since the
-  // priority queue returns the smallest value, we use the opposite.
-  // TODO(user): build in O(N) instead of O(n lg(N)).
+  inv_->RecomputeInvariant();
+  SubsetCostVector elements_per_cost(costs.size(), 0.0);
+  for (const SubsetIndex subset : focus) {
+    elements_per_cost[subset] = 1.0 / costs[subset];
+  }
+  std::vector<SubsetIndexWithPriority> subset_priorities;
+  DVLOG(1) << "focus.size(): " << focus.size();
+  subset_priorities.reserve(focus.size());
   for (const SubsetIndex subset : focus) {
     if (!inv_->is_selected()[subset] && inv_->marginal_impacts()[subset] != 0) {
-      const Cost marginal_cost_increase =
-          costs[subset] / inv_->marginal_impacts()[subset].value();
-      pq_.Add(subset, -marginal_cost_increase);
+      // NOMUTANTS -- reason, for C++
+      const float priority =
+          elements_per_cost[subset] * inv_->marginal_impacts()[subset].value();
+      subset_priorities.push_back({priority, subset.value()});
     }
   }
+  // The priority queue maintains the maximum number of elements covered by unit
+  // of cost. We chose 16 as the arity of the heap after some testing.
+  // TODO(user): research more about the best value for Arity.
+  AdjustableKAryHeap<SubsetIndexWithPriority, 16, true> pq(
+      subset_priorities, inv_->model()->num_subsets().value());
   const ElementIndex num_elements(inv_->model()->num_elements());
   ElementIndex num_elements_covered(inv_->num_elements_covered());
-  while (num_elements_covered < num_elements && !pq_.IsEmpty()) {
-    const SubsetIndex best_subset = pq_.TopSubset();
-    DVLOG(1) << "Best subset: " << best_subset.value()
-             << " Priority = " << pq_.Priority(best_subset)
-             << " queue size = " << pq_.Size();
+  while (num_elements_covered < num_elements && !pq.IsEmpty()) {
+    const SubsetIndex best_subset(pq.Pop().index());
     const std::vector<SubsetIndex> impacted_subsets =
         inv_->Toggle(best_subset, true);
-    UpdatePriorities(impacted_subsets, costs);
+    for (const SubsetIndex subset : impacted_subsets) {
+      if (subset == best_subset) continue;
+      const ElementIndex marginal_impact(inv_->marginal_impacts()[subset]);
+      if (marginal_impact > 0) {
+        const float priority =
+            marginal_impact.value() * elements_per_cost[subset];
+        pq.Update({priority, subset.value()});
+      } else {
+        pq.Remove(subset.value());
+      }
+    }
+    for (const SubsetIndex subset : focus) {
+      DCHECK_EQ(inv_->is_removable()[subset],
+                inv_->num_overcovered_elements()[subset].value() ==
+                    inv_->model()->columns()[subset].size().value());
+    }
+
     num_elements_covered = inv_->num_elements_covered();
     DVLOG(1) << "Cost = " << inv_->cost() << " num_uncovered_elements = "
              << num_elements - num_elements_covered;
   }
-  DCHECK(pq_.IsEmpty());
+  DCHECK(pq.IsEmpty());
+  DCHECK(num_elements_covered == num_elements);
   DCHECK(inv_->CheckConsistency());
-  DCHECK(inv_->CheckSolution());
+  for (const SubsetIndex subset : focus) {
+    DVLOG(1) << "subset: " << subset.value()
+             << " is_selected: " << inv_->is_selected()[subset]
+             << " is_removable: " << inv_->is_removable()[subset]
+             << " cardinality:  " << inv_->model()->columns()[subset].size()
+             << " marginal_impact: " << inv_->marginal_impacts()[subset]
+             << " num overcovered elements: "
+             << inv_->num_overcovered_elements()[subset];
+  }
+  for (const SubsetIndex subset : focus) {
+    DCHECK_EQ(inv_->is_removable()[subset],
+              inv_->num_overcovered_elements()[subset].value() ==
+                  inv_->model()->columns()[subset].size().value());
+  }
+
+  return true;
+}
+
+class SubsetIndexWithElementDegree {
+ public:
+  using Index = int;
+  using Priority = int;
+  SubsetIndexWithElementDegree() = default;
+  SubsetIndexWithElementDegree(Priority priority, Index index)
+      : index_(index), priority_(priority) {}
+  Priority priority() const { return priority_; }
+  Index index() const { return index_; }
+  inline bool operator<(const SubsetIndexWithElementDegree other) const {
+    if (other.priority() != priority()) {
+      return priority() < other.priority();
+    }
+    return index() < other.index();
+  }
+
+ private:
+  Index index_;
+  Priority priority_;
+};
+
+bool ElementDegreeSolutionGenerator::NextSolution() {
+  return NextSolution(inv_->model()->all_subsets(),
+                      inv_->model()->subset_costs());
+}
+
+bool ElementDegreeSolutionGenerator::NextSolution(
+    const std::vector<SubsetIndex>& focus) {
+  return NextSolution(focus, inv_->model()->subset_costs());
+}
+
+bool ElementDegreeSolutionGenerator::NextSolution(
+    const std::vector<SubsetIndex>& focus, const SubsetCostVector& costs) {
+  DVLOG(1) << "Entering ElementDegreeSolutionGenerator::NextSolution";
+  inv_->RecomputeInvariant();
+  const ElementIndex num_elements(inv_->model()->num_elements());
+  std::vector<SubsetIndexWithElementDegree> element_degrees;
+  element_degrees.reserve(num_elements.value());
+  const SparseRowView& rows = inv_->model()->rows();
+  for (ElementIndex element(0); element < num_elements; ++element) {
+    if (inv_->coverage()[element] == 0) {
+      element_degrees.push_back(
+          {rows[element].size().value(), element.value()});
+    }
+  }
+
+  // The priority queue maintains the non-covered element with the smallest
+  // degree.
+  AdjustableKAryHeap<SubsetIndexWithElementDegree, 16, false> pq(
+      element_degrees, num_elements.value());
+  ElementIndex num_elements_covered(inv_->num_elements_covered());
+  const SparseColumnView& columns = inv_->model()->columns();
+  while (num_elements_covered < num_elements && !pq.IsEmpty()) {
+    const ElementIndex best_element(pq.Pop().index());
+    DCHECK_EQ(inv_->coverage()[best_element], 0)
+        << "Element " << best_element.value()
+        << " is already covered. num_elements_covered: " << num_elements_covered
+        << " / num_elements: " << num_elements;
+    Cost min_ratio = std::numeric_limits<Cost>::max();
+    SubsetIndex best_subset(-1);
+    for (const SubsetIndex subset : rows[best_element]) {
+      const Cost ratio =
+          costs[subset] / inv_->marginal_impacts()[subset].value();
+      if (ratio < min_ratio) {
+        min_ratio = ratio;
+        best_subset = subset;
+      }
+    }
+    DCHECK_NE(best_subset, -1);
+    inv_->Toggle(best_subset, true);
+    for (const ElementIndex element : columns[best_subset]) {
+      if (element != best_element) {
+        pq.Remove(element.value());
+      }
+    }
+    num_elements_covered = inv_->num_elements_covered();
+    DVLOG(1) << "Cost = " << inv_->cost() << " num_uncovered_elements = "
+             << num_elements - num_elements_covered;
+  }
+  DCHECK(pq.IsEmpty());
+  DCHECK(num_elements_covered == num_elements);
+  DCHECK(inv_->CheckConsistency());
+  for (const SubsetIndex subset : focus) {
+    DVLOG(1) << "subset: " << subset.value()
+             << " is_selected: " << inv_->is_selected()[subset]
+             << " is_removable: " << inv_->is_removable()[subset]
+             << " cardinality:  " << inv_->model()->columns()[subset].size()
+             << " marginal_impact: " << inv_->marginal_impacts()[subset]
+             << " num overcovered elements: "
+             << inv_->num_overcovered_elements()[subset];
+  }
+  for (const SubsetIndex subset : focus) {
+    DCHECK_EQ(inv_->is_removable()[subset],
+              inv_->num_overcovered_elements()[subset].value() ==
+                  inv_->model()->columns()[subset].size().value());
+  }
   return true;
 }
 
 // SteepestSearch.
 
-void SteepestSearch::UpdatePriorities(
-    absl::Span<const SubsetIndex> impacted_subsets) {
-  // Update priority queue. Since best_subset is in impacted_subsets, it will
-  // be removed.
-  for (const SubsetIndex subset : impacted_subsets) {
-    pq_.Remove(subset);
-  }
-}
+void SteepestSearch::UpdatePriorities(absl::Span<const SubsetIndex>) {}
 
 bool SteepestSearch::NextSolution(int num_iterations) {
   return NextSolution(inv_->model()->all_subsets(),
@@ -155,29 +290,42 @@ bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                   const SubsetCostVector& costs,
                                   int num_iterations) {
+  DVLOG(1) << "Entering SteepestSearch::NextSolution, num_iterations = "
+           << num_iterations;
   // Return false if inv_ contains no solution.
-  if (!inv_->CheckSolution()) return false;
+  if (inv_->num_elements_covered() != inv_->model()->num_elements()) {
+    return false;
+  }
+
   // Create priority queue with cost of using a subset, by decreasing order.
-  // Do it only for removable subsets.
+  // Do it only for selected AND removable subsets.
+  std::vector<SubsetIndexWithPriority> subset_priorities;
+  subset_priorities.reserve(focus.size());
   for (const SubsetIndex subset : focus) {
-    // The priority is the gain from removing the subset from the solution.
     if (inv_->is_selected()[subset] && inv_->is_removable()[subset]) {
-      pq_.Add(subset, costs[subset]);
+      const float delta_per_element = costs[subset];
+      subset_priorities.push_back({delta_per_element, subset.value()});
     }
   }
-  for (int iteration = 0; iteration < num_iterations && !pq_.IsEmpty();
+  DVLOG(1) << "subset_priorities.size(): " << subset_priorities.size();
+  AdjustableKAryHeap<SubsetIndexWithPriority, 16, true> pq(
+      subset_priorities, inv_->model()->num_subsets().value());
+  for (int iteration = 0; iteration < num_iterations && !pq.IsEmpty();
        ++iteration) {
-    const SubsetIndex best_subset = pq_.TopSubset();
+    const SubsetIndex best_subset(pq.Pop().index());
+    if (!inv_->is_removable()[best_subset]) continue;
     DCHECK_GT(costs[best_subset], 0.0);
-    DCHECK(inv_->is_removable()[best_subset]);
-    DCHECK(inv_->is_selected()[best_subset]);
     const std::vector<SubsetIndex> impacted_subsets =
         inv_->Toggle(best_subset, false);
-    UpdatePriorities(impacted_subsets);
+    for (const SubsetIndex subset : impacted_subsets) {
+      if (!inv_->is_removable()[subset]) {
+        pq.Remove(subset.value());
+      }
+    }
     DVLOG(1) << "Cost = " << inv_->cost();
   }
+  DCHECK(inv_->num_elements_covered() == inv_->model()->num_elements());
   DCHECK(inv_->CheckConsistency());
-  DCHECK(inv_->CheckSolution());
   return true;
 }
 
@@ -229,6 +377,8 @@ bool GuidedTabuSearch::NextSolution(int num_iterations) {
 
 bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
                                     int num_iterations) {
+  DVLOG(1) << "Entering GuidedTabuSearch::NextSolution, num_iterations = "
+           << num_iterations;
   const SubsetCostVector& subset_costs = inv_->model()->subset_costs();
   constexpr Cost kMaxPossibleCost = std::numeric_limits<Cost>::max();
   Cost best_cost = inv_->cost();
@@ -297,8 +447,7 @@ bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
     }
   }
   inv_->LoadSolution(best_choices);
-  DCHECK(inv_->CheckConsistency());
-  DCHECK(inv_->CheckSolution());
+  DCHECK(inv_->num_elements_covered() == inv_->model()->num_elements());
   return true;
 }
 
@@ -335,63 +484,56 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
   return chosen_indices;
 }
 
-std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t num_subsets,
+std::vector<SubsetIndex> ClearMostCoveredElements(std::size_t max_num_subsets,
                                                   SetCoverInvariant* inv) {
-  return ClearMostCoveredElements(inv->model()->all_subsets(), num_subsets,
+  return ClearMostCoveredElements(inv->model()->all_subsets(), max_num_subsets,
                                   inv);
 }
 
 std::vector<SubsetIndex> ClearMostCoveredElements(
-    absl::Span<const SubsetIndex> focus, std::size_t num_subsets,
+    absl::Span<const SubsetIndex> focus, std::size_t max_num_subsets,
     SetCoverInvariant* inv) {
   // This is the vector we will return.
-  std::vector<SubsetIndex> chosen_indices;
+  std::vector<SubsetIndex> sampled_subsets;
 
   const ElementToSubsetVector& coverage = inv->coverage();
+  const ElementIndex num_elements = inv->model()->num_elements();
+  const SubsetIndex num_subsets = inv->model()->num_subsets();
+  const SparseRowView& rows = inv->model()->rows();
 
-  // Compute a permutation of the element indices by decreasing order of
-  // coverage by element.
-  std::vector<ElementIndex> permutation(coverage.size().value());
-  std::iota(permutation.begin(), permutation.end(), 0);
-  std::sort(permutation.begin(), permutation.end(),
-            [&coverage](ElementIndex i, ElementIndex j) {
-              return coverage[i] > coverage[j];
-            });
-
-  // Now, for the elements that are over-covered (coverage > 1), collect the
-  // sets that are used.
-  absl::flat_hash_set<SubsetIndex> used_subsets_collection;
-  for (ElementIndex element : permutation) {
-    if (coverage[element] <= 1) break;
-    for (SubsetIndex subset : inv->model()->rows()[element]) {
-      if (inv->is_selected()[subset]) {
-        used_subsets_collection.insert(subset);
+  // Collect the sets which have at least one element whose coverage > 1,
+  // even if those sets are not removable.
+  SubsetBoolVector subset_is_collected(num_subsets, false);
+  for (ElementIndex element(0); element < num_elements; ++element) {
+    if (coverage[element] <= 1) continue;
+    for (const SubsetIndex subset : rows[element]) {
+      if (inv->is_selected()[subset] && !subset_is_collected[subset]) {
+        subset_is_collected[subset] = true;
       }
     }
   }
 
-  // Now the impacted subset is a vector representation of the flat_hash_set
-  // collection.
-  std::vector<SubsetIndex> impacted_subsets(used_subsets_collection.begin(),
-                                            used_subsets_collection.end());
-  // Sort the impacted subsets to be able to intersect the vector later.
-  std::sort(impacted_subsets.begin(), impacted_subsets.end());
+  // Now interset with focus: sampled_subsets = focus ⋂ impacted_subsets.
+  // NOTE(user): this might take too long. TODO(user):find another algorithm if
+  // necessary.
+  for (const SubsetIndex subset : focus) {
+    if (subset_is_collected[subset]) {
+      sampled_subsets.push_back(subset);
+    }
+  }
 
-  // chosen_indices = focus ⋂ impacted_subsets
-  std::set_intersection(focus.begin(), focus.end(), impacted_subsets.begin(),
-                        impacted_subsets.end(),
-                        std::back_inserter(chosen_indices));
+  // Actually *sample* sampled_subset.
+  // TODO(user): find another algorithm if necessary.
+  std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), absl::BitGen());
+  sampled_subsets.resize(std::min(sampled_subsets.size(), max_num_subsets));
 
-  std::shuffle(chosen_indices.begin(), chosen_indices.end(), absl::BitGen());
-  chosen_indices.resize(std::min(chosen_indices.size(), num_subsets));
-
-  // Sort before traversing indices (and memory) in order.
-  std::sort(chosen_indices.begin(), chosen_indices.end());
-  for (const SubsetIndex subset : chosen_indices) {
+  // Testing has shown that sorting sampled_subsets is not necessary.
+  // Now, un-select the subset in sampled_subsets.
+  for (const SubsetIndex subset : sampled_subsets) {
     // Use UnsafeToggle because we allow non-solutions.
     inv->UnsafeToggle(subset, false);
   }
-  return chosen_indices;
+  return sampled_subsets;
 }
 
 }  // namespace operations_research
