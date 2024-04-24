@@ -14,7 +14,12 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
-#include <sys/types.h>
+#if defined(_MSC_VER)
+  #include <cstdint>
+  typedef  std::int64_t ssize_t;
+#else
+  #include <sys/types.h>
+#endif
 
 #include <string>
 #include <vector>
