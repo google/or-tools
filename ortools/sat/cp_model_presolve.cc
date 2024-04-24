@@ -2063,6 +2063,9 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
   changed |= DivideLinearByGcd(ct);
 
   // For duplicate detection, we always make the first coeff positive.
+  //
+  // TODO(user): Move that to context_->CanonicalizeLinearConstraint(), and do
+  // the same for LinearExpressionProto.
   if (!ct->linear().coeffs().empty() && ct->linear().coeffs(0) < 0) {
     for (int64_t& ref_coeff : *ct->mutable_linear()->mutable_coeffs()) {
       ref_coeff = -ref_coeff;
@@ -8825,6 +8828,33 @@ void CpModelPresolver::DetectDifferentVariables() {
   if (context_->ModelIsUnsat()) return;
   PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
 
+  // List the variable that are pairwise different, also store in offset[x, y]
+  // the offsets such that x >= y + offset.second OR y >= x + offset.first.
+  std::vector<std::pair<int, int>> different_vars;
+  absl::flat_hash_map<std::pair<int, int>, std::pair<int64_t, int64_t>> offsets;
+
+  // Process the fact "v1 - v2 \in Domain".
+  const auto process_difference = [&different_vars, &offsets](int v1, int v2,
+                                                              Domain d) {
+    Domain exclusion = d.Complement().PartAroundZero();
+    if (exclusion.IsEmpty()) return;
+    if (v1 == v2) return;
+    std::pair<int, int> key = {v1, v2};
+    if (v1 > v2) {
+      std::swap(key.first, key.second);
+      exclusion = exclusion.Negation();
+    }
+
+    // We have x - y not in exclusion,
+    // so x - y > exclusion.Max() --> x > y + exclusion.Max();
+    // OR x - y < exclusion.Min() --> y > x - exclusion.Min();
+    different_vars.push_back(key);
+    offsets[key] = {exclusion.Min() == std::numeric_limits<int64_t>::min()
+                        ? std::numeric_limits<int64_t>::max()
+                        : CapAdd(-exclusion.Min(), 1),
+                    CapAdd(exclusion.Max(), 1)};
+  };
+
   // Try to find identical linear constraint with incompatible domains.
   // This works really well on neos16.mps.gz where we have
   // a <=> x <= y
@@ -8844,13 +8874,17 @@ void CpModelPresolver::DetectDifferentVariables() {
   // different. If we can detect that, then we close the problem quickly instead
   // of not closing it.
   bool has_all_diff = false;
+  bool has_no_overlap = false;
   std::vector<std::pair<uint64_t, int>> hashes;
-  std::vector<std::pair<int, int>> different_vars;
   const int num_constraints = context_->working_model->constraints_size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
     if (ct.constraint_case() == ConstraintProto::kAllDiff) {
       has_all_diff = true;
+      continue;
+    }
+    if (ct.constraint_case() == ConstraintProto::kNoOverlap) {
+      has_no_overlap = true;
       continue;
     }
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
@@ -8859,9 +8893,15 @@ void CpModelPresolver::DetectDifferentVariables() {
     // Detect direct encoding of x != y. Note that we also see that from x > y
     // and related.
     if (ct.linear().vars().size() == 2 && ct.enforcement_literal().empty() &&
-        ct.linear().coeffs(0) == -ct.linear().coeffs(1) &&
-        !ReadDomainFromProto(ct.linear()).Contains(0)) {
-      different_vars.push_back({ct.linear().vars(0), ct.linear().vars(1)});
+        ct.linear().coeffs(0) == -ct.linear().coeffs(1)) {
+      // We assume the constraint was already divided by its gcd.
+      if (ct.linear().coeffs(0) == 1) {
+        process_difference(ct.linear().vars(0), ct.linear().vars(1),
+                           ReadDomainFromProto(ct.linear()));
+      } else if (ct.linear().coeffs(0) == -1) {
+        process_difference(ct.linear().vars(1), ct.linear().vars(0),
+                           ReadDomainFromProto(ct.linear()).Negation());
+      }
     }
 
     // TODO(user): Handle this case?
@@ -8931,12 +8971,21 @@ void CpModelPresolver::DetectDifferentVariables() {
         // Detect x != y via lit => x > y && not(lit) => x < y.
         if (ct1.linear().vars().size() == 2 &&
             ct1.linear().coeffs(0) == -ct1.linear().coeffs(1) &&
-            !ReadDomainFromProto(ct1.linear()).Contains(0) &&
-            !ReadDomainFromProto(ct2.linear()).Contains(0) &&
             ct1.enforcement_literal(0) ==
                 NegatedRef(ct2.enforcement_literal(0))) {
-          different_vars.push_back(
-              {ct1.linear().vars(0), ct1.linear().vars(1)});
+          // We have x - y in domain1 or in domain2, so it must be in the union.
+          Domain union_of_domain =
+              ReadDomainFromProto(ct1.linear())
+                  .UnionWith(ReadDomainFromProto(ct2.linear()));
+
+          // We assume the constraint was already divided by its gcd.
+          if (ct1.linear().coeffs(0) == 1) {
+            process_difference(ct1.linear().vars(0), ct1.linear().vars(1),
+                               std::move(union_of_domain));
+          } else if (ct1.linear().coeffs(0) == -1) {
+            process_difference(ct1.linear().vars(1), ct1.linear().vars(0),
+                               union_of_domain.Negation());
+          }
         }
 
         context_->UpdateRuleStats("incompatible linear: add implication");
@@ -8962,7 +9011,7 @@ void CpModelPresolver::DetectDifferentVariables() {
   // TODO(user): Only add them at the end of the presolve! it hurt our presolve
   // (like probing is slower) and only serve for linear relaxation.
   if (context_->params().infer_all_diffs() && !has_all_diff &&
-      different_vars.size() > 2) {
+      !has_no_overlap && different_vars.size() > 2) {
     WallTimer local_time;
     local_time.Start();
 
@@ -9001,18 +9050,85 @@ void CpModelPresolver::DetectDifferentVariables() {
 
     int num_cliques = 0;
     int64_t cumulative_size = 0;
-    for (const std::vector<Literal>& clique : cliques) {
+    for (std::vector<Literal>& clique : cliques) {
       if (clique.size() <= 2) continue;
 
       ++num_cliques;
       cumulative_size += clique.size();
-      context_->UpdateRuleStats("all_diff: inferred from x != y constraints");
-      auto* new_ct =
-          context_->working_model->add_constraints()->mutable_all_diff();
-      for (const Literal l : clique) {
-        auto* expr = new_ct->add_exprs();
-        expr->add_vars(l.Variable().value());
-        expr->add_coeffs(1);
+      std::sort(clique.begin(), clique.end());
+
+      // We have an all-diff, but inspect the offsets to see if we have a
+      // disjunctive ! Note that this is quadratic, but no more complex than the
+      // scan of the model we just did above, since we had one linear constraint
+      // per entry.
+      const int num_terms = clique.size();
+      std::vector<int64_t> sizes(num_terms,
+                                 std::numeric_limits<int64_t>::max());
+      for (int i = 0; i < num_terms; ++i) {
+        const int v1 = clique[i].Variable().value();
+        for (int j = i + 1; j < num_terms; ++j) {
+          const int v2 = clique[j].Variable().value();
+          const auto [o1, o2] = offsets.at({v1, v2});
+          sizes[i] = std::min(sizes[i], o1);
+          sizes[j] = std::min(sizes[j], o2);
+        }
+      }
+
+      int num_greater_than_one = 0;
+      int64_t issue = 0;
+      for (int i = 0; i < num_terms; ++i) {
+        CHECK_GE(sizes[i], 1);
+        if (sizes[i] > 1) ++num_greater_than_one;
+
+        // When this happens, it means this interval can never be before
+        // any other. We should probably handle this case better, but for now we
+        // abort.
+        issue = CapAdd(issue, sizes[i]);
+        if (issue == std::numeric_limits<int64_t>::max()) {
+          context_->UpdateRuleStats("TODO no_overlap: with task always last");
+          num_greater_than_one = 0;
+          break;
+        }
+      }
+
+      if (num_greater_than_one > 0) {
+        // We have one size greater than 1, lets add a no_overlap!
+        //
+        // TODO(user): try to remove all the quadratic boolean and their
+        // corresponding linear2 ? Any Boolean not used elsewhere could be
+        // removed.
+        context_->UpdateRuleStats(
+            "no_overlap: inferred from x != y constraints");
+
+        std::vector<int> intervals;
+        for (int i = 0; i < num_terms; ++i) {
+          intervals.push_back(context_->working_model->constraints().size());
+          auto* new_interval =
+              context_->working_model->add_constraints()->mutable_interval();
+          new_interval->mutable_start()->set_offset(0);
+          new_interval->mutable_start()->add_coeffs(1);
+          new_interval->mutable_start()->add_vars(clique[i].Variable().value());
+
+          new_interval->mutable_size()->set_offset(sizes[i]);
+
+          new_interval->mutable_end()->set_offset(sizes[i]);
+          new_interval->mutable_end()->add_coeffs(1);
+          new_interval->mutable_end()->add_vars(clique[i].Variable().value());
+        }
+        auto* new_ct =
+            context_->working_model->add_constraints()->mutable_no_overlap();
+        for (const int interval : intervals) {
+          new_ct->add_intervals(interval);
+        }
+      } else {
+        context_->UpdateRuleStats("all_diff: inferred from x != y constraints");
+        auto* new_ct =
+            context_->working_model->add_constraints()->mutable_all_diff();
+        for (const Literal l : clique) {
+          auto* expr = new_ct->add_exprs();
+          expr->add_vars(l.Variable().value());
+          expr->add_coeffs(1);
+        }
       }
     }
 
