@@ -37,16 +37,14 @@ using SubsetBoolVector = glop::StrictITIVector<SubsetIndex, bool>;
 // for an explanation of the terminology.
 //
 // A SetCoverInvariant is (relatively) small:
-//   is_selected_,      a partial solution, vector of Booleans of size #subsets.
+//   is_selected_: a partial solution, vector of Booleans of size #subsets.
 // From this, the following can be computed:
-//   coverage_,         the number of times an elememt is covered;
-//   marginal_impacts_, the number of elements of a subset still uncovered;
-//   num_overcovered_elements_, the number of elements of a subset that
-//   are covered two times or more in the current solution;
+//   coverage_:   the number of times an elememt is covered;
+//   num_free_elements_: the number of elements of a subset still uncovered;
+//   num_coverage_le_1_elements_: the number of elements of a subset that
+//   are covered 1 time or less (not overcovered) in the current solution;
 //   is_removable_,     whether a subset can be removed from the solution.
-// is_removable_[subset] == (num_over_cover_elements_[subet] == card(subset))
-// where card(subset) is the size() of the column corresponding to subset in
-// the model.
+//   is_removable_[subset] == (num_coverage_le_1_elements_[subet] == 0).
 class SetCoverInvariant {
  public:
   // Constructs an empty weighted set covering solver state.
@@ -71,19 +69,24 @@ class SetCoverInvariant {
   // Returns the cost of current solution.
   Cost cost() const { return cost_; }
 
+  // Returns the number of uncovered elements.
+  ElementIndex num_uncovered_elements() const {
+    return num_uncovered_elements_;
+  }
+
   // Returns the subset assignment vector.
   const SubsetBoolVector& is_selected() const { return is_selected_; }
 
   // Returns vector containing the number of elements in each subset that are
   // not covered in the current solution.
-  const SubsetToElementVector& marginal_impacts() const {
-    return marginal_impacts_;
+  const SubsetToElementVector& num_free_elements() const {
+    return num_free_elements_;
   }
 
-  // Returns vector containing the number of elements in each subset that are
-  // covered two times or more in the current solution.
-  const SubsetToElementVector& num_overcovered_elements() const {
-    return num_overcovered_elements_;
+  // Returns the vector of numbers of free or exactly covered elements for
+  // each subset.
+  const SubsetToElementVector& num_coverage_le_1_elements() const {
+    return num_coverage_le_1_elements_;
   }
 
   // Returns vector containing number of subsets covering each element.
@@ -92,9 +95,6 @@ class SetCoverInvariant {
   // Returns vector of Booleans telling whether each subset can be removed from
   // the solution.
   const SubsetBoolVector& is_removable() const { return is_removable_; }
-
-  // Returns the number of elements covered.
-  ElementIndex num_elements_covered() const { return num_elements_covered_; }
 
   // Stores the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& c);
@@ -117,6 +117,10 @@ class SetCoverInvariant {
   // Only checks that value is different from is_selected_[subset].
   std::vector<SubsetIndex> UnsafeToggle(SubsetIndex subset, bool value);
 
+  std::vector<SubsetIndex> UnsafeUse(SubsetIndex subset);
+
+  std::vector<SubsetIndex> UnsafeRemove(SubsetIndex subset);
+
   // Returns the current solution as a proto.
   SetCoverSolutionResponse ExportSolutionAsProto() const;
 
@@ -129,13 +133,12 @@ class SetCoverInvariant {
       const SubsetBoolVector& choices) const;
 
   // Computes the implied data for the given coverage cvrg:
-  // The implied consists of:
-  // - the number of elements covered,
-  // - the vector of marginal impacts for each subset,
-  // - the vector of overcovered elements for each subset,
-  // - the vector of removability for each subset.
-  std::tuple<ElementIndex, SubsetToElementVector, SubsetToElementVector,
-             SubsetBoolVector>
+  // The implied data consists of:
+  std::tuple<ElementIndex,           // Number of uncovered elements.
+             SubsetToElementVector,  // Number of free elements / subset.
+             SubsetToElementVector,  // Number of elem covered 0 or 1 times /
+                                     // subset.
+             SubsetBoolVector>       // Removability for each subset.
   ComputeImpliedData(const ElementToSubsetVector& cvrg) const;
 
   // Internal UnsafeToggle where value is a constant for the template.
@@ -148,26 +151,27 @@ class SetCoverInvariant {
   // Current cost.
   Cost cost_;
 
-  // The number of elements covered in the current solution.
-  ElementIndex num_elements_covered_;
+  // The number of uncovered (or free) elements in the current solution.
+  ElementIndex num_uncovered_elements_;
 
   // Current assignment.
   SubsetBoolVector is_selected_;
 
-  // The marginal impact of a subset is the number of elements in that subset
-  // that are not covered in the current solution.
-  SubsetToElementVector marginal_impacts_;
+  // A vector that for each subset gives the number of free elements, i.e.
+  // elements whose coverage is 0.
+  // problem.
+  SubsetToElementVector num_free_elements_;
 
-  // Counts the number of "overcovered" elements for a given subset. Overcovered
-  // elements are the ones whose coverage is 2 and above.
-  SubsetToElementVector num_overcovered_elements_;
+  // Counts the number of free or exactly covered elements, i.e. whose coverage
+  // is 0 or 1.
+  SubsetToElementVector num_coverage_le_1_elements_;
 
   // The coverage of an element is the number of used subsets which contains
   // the said element.
   ElementToSubsetVector coverage_;
 
-  // True if the subset can be removed from the solution without making it
-  // infeasible.
+  // True if the subset is redundant, i.e. can be removed from the solution
+  // without making it infeasible.
   SubsetBoolVector is_removable_;
 };
 

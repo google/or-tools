@@ -83,13 +83,36 @@ bool RandomSolutionGenerator::NextSolution(
   std::shuffle(shuffled.begin(), shuffled.end(), absl::BitGen());
   for (const SubsetIndex subset : shuffled) {
     if (inv_->is_selected()[subset]) continue;
-    if (inv_->marginal_impacts()[subset] != 0) {
-      inv_->Toggle(subset, true);
+    if (inv_->num_free_elements()[subset] != 0) {
+      inv_->UnsafeUse(subset);
     }
   }
   DCHECK(inv_->CheckConsistency());
   return true;
 }
+
+namespace {
+bool LogAndCheck(const SetCoverInvariant* inv,
+                 const std::vector<SubsetIndex>& focus) {
+  for (const SubsetIndex subset : focus) {
+    DVLOG(1) << "subset: " << subset.value()
+             << " is_selected: " << inv->is_selected()[subset]
+             << " is_removable: " << inv->is_removable()[subset]
+             << " cardinality:  " << inv->model()->columns()[subset].size()
+             << " marginal_impact: " << inv->num_free_elements()[subset]
+             << " num overcovered elements: "
+             << inv->model()->columns()[subset].size().value() -
+                    inv->num_coverage_le_1_elements()[subset].value();
+  }
+  DCHECK(inv->CheckConsistency());
+  for (const SubsetIndex subset : focus) {
+    DCHECK_EQ(inv->is_removable()[subset],
+              inv->num_coverage_le_1_elements()[subset] == 0);
+  }
+  DCHECK_EQ(inv->num_uncovered_elements(), 0);
+  return true;
+}
+}  // anonymous namespace
 
 // GreedySolutionGenerator.
 
@@ -114,10 +137,11 @@ bool GreedySolutionGenerator::NextSolution(
   DVLOG(1) << "focus.size(): " << focus.size();
   subset_priorities.reserve(focus.size());
   for (const SubsetIndex subset : focus) {
-    if (!inv_->is_selected()[subset] && inv_->marginal_impacts()[subset] != 0) {
+    if (!inv_->is_selected()[subset] &&
+        inv_->num_free_elements()[subset] != 0) {
       // NOMUTANTS -- reason, for C++
       const float priority =
-          elements_per_cost[subset] * inv_->marginal_impacts()[subset].value();
+          elements_per_cost[subset] * inv_->num_free_elements()[subset].value();
       subset_priorities.push_back({priority, subset.value()});
     }
   }
@@ -126,15 +150,14 @@ bool GreedySolutionGenerator::NextSolution(
   // TODO(user): research more about the best value for Arity.
   AdjustableKAryHeap<SubsetIndexWithPriority, 16, true> pq(
       subset_priorities, inv_->model()->num_subsets().value());
-  const ElementIndex num_elements(inv_->model()->num_elements());
-  ElementIndex num_elements_covered(inv_->num_elements_covered());
-  while (num_elements_covered < num_elements && !pq.IsEmpty()) {
+  while (!pq.IsEmpty()) {
     const SubsetIndex best_subset(pq.Pop().index());
     const std::vector<SubsetIndex> impacted_subsets =
-        inv_->Toggle(best_subset, true);
+        inv_->UnsafeUse(best_subset);
+    // NOMUTANTS -- reason, for C++
+    if (inv_->num_uncovered_elements() == 0) break;
     for (const SubsetIndex subset : impacted_subsets) {
-      if (subset == best_subset) continue;
-      const ElementIndex marginal_impact(inv_->marginal_impacts()[subset]);
+      const ElementIndex marginal_impact(inv_->num_free_elements()[subset]);
       if (marginal_impact > 0) {
         const float priority =
             marginal_impact.value() * elements_per_cost[subset];
@@ -145,45 +168,26 @@ bool GreedySolutionGenerator::NextSolution(
     }
     for (const SubsetIndex subset : focus) {
       DCHECK_EQ(inv_->is_removable()[subset],
-                inv_->num_overcovered_elements()[subset].value() ==
-                    inv_->model()->columns()[subset].size().value());
+                inv_->num_coverage_le_1_elements()[subset] == 0);
     }
-
-    num_elements_covered = inv_->num_elements_covered();
-    DVLOG(1) << "Cost = " << inv_->cost() << " num_uncovered_elements = "
-             << num_elements - num_elements_covered;
+    DVLOG(1) << "Cost = " << inv_->cost()
+             << " num_uncovered_elements = " << inv_->num_uncovered_elements();
   }
-  DCHECK(pq.IsEmpty());
-  DCHECK(num_elements_covered == num_elements);
-  DCHECK(inv_->CheckConsistency());
-  for (const SubsetIndex subset : focus) {
-    DVLOG(1) << "subset: " << subset.value()
-             << " is_selected: " << inv_->is_selected()[subset]
-             << " is_removable: " << inv_->is_removable()[subset]
-             << " cardinality:  " << inv_->model()->columns()[subset].size()
-             << " marginal_impact: " << inv_->marginal_impacts()[subset]
-             << " num overcovered elements: "
-             << inv_->num_overcovered_elements()[subset];
-  }
-  for (const SubsetIndex subset : focus) {
-    DCHECK_EQ(inv_->is_removable()[subset],
-              inv_->num_overcovered_elements()[subset].value() ==
-                  inv_->model()->columns()[subset].size().value());
-  }
-
+  // Don't expect the queue to be empty, because of the break in the while loop.
+  DCHECK(LogAndCheck(inv_, focus));
   return true;
 }
 
-class SubsetIndexWithElementDegree {
+class ElementIndexWithDegree {
  public:
   using Index = int;
   using Priority = int;
-  SubsetIndexWithElementDegree() = default;
-  SubsetIndexWithElementDegree(Priority priority, Index index)
+  ElementIndexWithDegree() = default;
+  ElementIndexWithDegree(Priority priority, Index index)
       : index_(index), priority_(priority) {}
   Priority priority() const { return priority_; }
   Index index() const { return index_; }
-  inline bool operator<(const SubsetIndexWithElementDegree other) const {
+  inline bool operator<(const ElementIndexWithDegree other) const {
     if (other.priority() != priority()) {
       return priority() < other.priority();
     }
@@ -210,7 +214,7 @@ bool ElementDegreeSolutionGenerator::NextSolution(
   DVLOG(1) << "Entering ElementDegreeSolutionGenerator::NextSolution";
   inv_->RecomputeInvariant();
   const ElementIndex num_elements(inv_->model()->num_elements());
-  std::vector<SubsetIndexWithElementDegree> element_degrees;
+  std::vector<ElementIndexWithDegree> element_degrees;
   element_degrees.reserve(num_elements.value());
   const SparseRowView& rows = inv_->model()->rows();
   for (ElementIndex element(0); element < num_elements; ++element) {
@@ -222,54 +226,39 @@ bool ElementDegreeSolutionGenerator::NextSolution(
 
   // The priority queue maintains the non-covered element with the smallest
   // degree.
-  AdjustableKAryHeap<SubsetIndexWithElementDegree, 16, false> pq(
+  AdjustableKAryHeap<ElementIndexWithDegree, 16, false> pq(
       element_degrees, num_elements.value());
-  ElementIndex num_elements_covered(inv_->num_elements_covered());
   const SparseColumnView& columns = inv_->model()->columns();
-  while (num_elements_covered < num_elements && !pq.IsEmpty()) {
+  while (!pq.IsEmpty()) {
     const ElementIndex best_element(pq.Pop().index());
     DCHECK_EQ(inv_->coverage()[best_element], 0)
         << "Element " << best_element.value()
-        << " is already covered. num_elements_covered: " << num_elements_covered
+        << " is already covered. num_uncovered_elements: "
+        << inv_->num_uncovered_elements()
         << " / num_elements: " << num_elements;
     Cost min_ratio = std::numeric_limits<Cost>::max();
     SubsetIndex best_subset(-1);
     for (const SubsetIndex subset : rows[best_element]) {
       const Cost ratio =
-          costs[subset] / inv_->marginal_impacts()[subset].value();
+          costs[subset] / inv_->num_free_elements()[subset].value();
       if (ratio < min_ratio) {
         min_ratio = ratio;
         best_subset = subset;
       }
     }
     DCHECK_NE(best_subset, -1);
-    inv_->Toggle(best_subset, true);
+    inv_->UnsafeUse(best_subset);
+    if (inv_->num_uncovered_elements() == 0) break;
     for (const ElementIndex element : columns[best_subset]) {
       if (element != best_element) {
         pq.Remove(element.value());
       }
     }
-    num_elements_covered = inv_->num_elements_covered();
-    DVLOG(1) << "Cost = " << inv_->cost() << " num_uncovered_elements = "
-             << num_elements - num_elements_covered;
+    DVLOG(1) << "Cost = " << inv_->cost()
+             << " num_uncovered_elements = " << inv_->num_uncovered_elements();
   }
-  DCHECK(pq.IsEmpty());
-  DCHECK(num_elements_covered == num_elements);
-  DCHECK(inv_->CheckConsistency());
-  for (const SubsetIndex subset : focus) {
-    DVLOG(1) << "subset: " << subset.value()
-             << " is_selected: " << inv_->is_selected()[subset]
-             << " is_removable: " << inv_->is_removable()[subset]
-             << " cardinality:  " << inv_->model()->columns()[subset].size()
-             << " marginal_impact: " << inv_->marginal_impacts()[subset]
-             << " num overcovered elements: "
-             << inv_->num_overcovered_elements()[subset];
-  }
-  for (const SubsetIndex subset : focus) {
-    DCHECK_EQ(inv_->is_removable()[subset],
-              inv_->num_overcovered_elements()[subset].value() ==
-                  inv_->model()->columns()[subset].size().value());
-  }
+  // Don't expect the queue to be empty, because of the break in the while loop.
+  DCHECK(LogAndCheck(inv_, focus));
   return true;
 }
 
@@ -293,7 +282,7 @@ bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   DVLOG(1) << "Entering SteepestSearch::NextSolution, num_iterations = "
            << num_iterations;
   // Return false if inv_ contains no solution.
-  if (inv_->num_elements_covered() != inv_->model()->num_elements()) {
+  if (inv_->num_uncovered_elements() != 0) {
     return false;
   }
 
@@ -316,7 +305,7 @@ bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
     if (!inv_->is_removable()[best_subset]) continue;
     DCHECK_GT(costs[best_subset], 0.0);
     const std::vector<SubsetIndex> impacted_subsets =
-        inv_->Toggle(best_subset, false);
+        inv_->UnsafeRemove(best_subset);
     for (const SubsetIndex subset : impacted_subsets) {
       if (!inv_->is_removable()[subset]) {
         pq.Remove(subset.value());
@@ -324,7 +313,7 @@ bool SteepestSearch::NextSolution(absl::Span<const SubsetIndex> focus,
     }
     DVLOG(1) << "Cost = " << inv_->cost();
   }
-  DCHECK(inv_->num_elements_covered() == inv_->model()->num_elements());
+  DCHECK_EQ(inv_->num_uncovered_elements(), 0);
   DCHECK(inv_->CheckConsistency());
   return true;
 }
@@ -447,7 +436,8 @@ bool GuidedTabuSearch::NextSolution(const std::vector<SubsetIndex>& focus,
     }
   }
   inv_->LoadSolution(best_choices);
-  DCHECK(inv_->num_elements_covered() == inv_->model()->num_elements());
+  DCHECK_EQ(inv_->num_uncovered_elements(), 0);
+  DCHECK(inv_->CheckConsistency());
   return true;
 }
 
@@ -478,8 +468,8 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
   }
   SampleSubsets(&chosen_indices, num_subsets);
   for (const SubsetIndex subset : chosen_indices) {
-    // Use UnsafeToggle because we allow non-solutions.
-    inv->UnsafeToggle(subset, false);
+    // We can use UnsafeRemove because we allow non-solutions.
+    inv->UnsafeRemove(subset);
   }
   return chosen_indices;
 }
@@ -530,8 +520,8 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   // Testing has shown that sorting sampled_subsets is not necessary.
   // Now, un-select the subset in sampled_subsets.
   for (const SubsetIndex subset : sampled_subsets) {
-    // Use UnsafeToggle because we allow non-solutions.
-    inv->UnsafeToggle(subset, false);
+    // Use UnsafeRemove because we allow non-solutions.
+    inv->UnsafeRemove(subset);
   }
   return sampled_subsets;
 }
