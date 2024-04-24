@@ -547,21 +547,21 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
   {
     ThreadPool search_threads(2);
     search_threads.StartWorkers();
-  for (const Direction dir : {FORWARD, BACKWARD}) {
+    for (const Direction dir : {FORWARD, BACKWARD}) {
       search_threads.Schedule([this, dir, &sub_arc_lengths]() {
-    RunHalfConstrainedShortestPathOnDag(
-        /*reverse_graph=*/sub_reverse_graph_[dir],
-        /*arc_lengths=*/sub_arc_lengths[dir],
-        /*arc_resources=*/sub_arc_resources_[dir],
-        /*min_arc_resources=*/sub_min_arc_resources_[dir],
-        /*max_resources=*/*max_resources_,
-        /*max_num_created_labels=*/max_num_created_labels_[dir],
-        /*lengths_from_sources=*/lengths_from_sources_[dir],
-        /*resources_from_sources=*/resources_from_sources_[dir],
-        /*incoming_arc_indices_from_sources=*/
-        incoming_arc_indices_from_sources_[dir],
-        /*first_label=*/node_first_label_[dir],
-        /*num_labels=*/node_num_labels_[dir]);
+        RunHalfConstrainedShortestPathOnDag(
+            /*reverse_graph=*/sub_reverse_graph_[dir],
+            /*arc_lengths=*/sub_arc_lengths[dir],
+            /*arc_resources=*/sub_arc_resources_[dir],
+            /*min_arc_resources=*/sub_min_arc_resources_[dir],
+            /*max_resources=*/*max_resources_,
+            /*max_num_created_labels=*/max_num_created_labels_[dir],
+            /*lengths_from_sources=*/lengths_from_sources_[dir],
+            /*resources_from_sources=*/resources_from_sources_[dir],
+            /*incoming_arc_indices_from_sources=*/
+            incoming_arc_indices_from_sources_[dir],
+            /*first_label=*/node_first_label_[dir],
+            /*num_labels=*/node_num_labels_[dir]);
       });
     }
   }
