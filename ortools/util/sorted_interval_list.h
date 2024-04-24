@@ -278,6 +278,12 @@ class Domain {
   int64_t ValueAtOrAfter(int64_t input) const;
 
   /**
+   * If the domain contains zero, this return the simple interval around it.
+   * Otherwise, this returns an empty domain.
+   */
+  Domain PartAroundZero() const;
+
+  /**
    * Returns true iff the domain is reduced to a single value.
    * The domain must not be empty.
    */

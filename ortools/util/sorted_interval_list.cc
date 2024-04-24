@@ -239,6 +239,15 @@ int64_t Domain::SmallestValue() const {
   return result;
 }
 
+Domain Domain::PartAroundZero() const {
+  for (const ClosedInterval interval : intervals_) {
+    if (interval.start <= 0 && interval.end >= 0) {
+      return Domain(interval.start, interval.end);
+    }
+  }
+  return Domain();
+}
+
 // TODO(user): Use std::upper_bound() like in ValueAtOrBefore() ?
 int64_t Domain::ClosestValue(int64_t wanted) const {
   DCHECK(!IsEmpty());
