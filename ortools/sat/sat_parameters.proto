@@ -519,6 +519,9 @@ message SatParameters {
   // for instance. Note that we only run this code if there is no all_diff
   // already in the model so that if a user want to add some all_diff, we assume
   // it is well done and do not try to add more.
+  //
+  // This will also detect and add no_overlap constraints, if all the relations
+  // x != y have "offsets" between them. I.e. x > y + offset.
   optional bool infer_all_diffs = 233 [default = true];
 
   // Try to find large "rectangle" in the linear constraint matrix with
