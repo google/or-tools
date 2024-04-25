@@ -294,7 +294,7 @@ class WeightedWaveletTree {
           .range_last_index =
               pivot_index +
               (range_last_index - els[range_last_index].left_index) -
-              els[range_last_index].is_left,
+              static_cast<int>(els[range_last_index].is_left),
           .range_first_is_node_first = false};
       right.range_first_is_node_first = right.range_first_index == pivot_index;
       return right;
