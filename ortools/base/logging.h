@@ -26,9 +26,6 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/macros.h"
 
-// Compatibility layer for glog/previous logging code.
-ABSL_DECLARE_FLAG(bool, logtostderr);
-
 // Forward the new flag.
 ABSL_DECLARE_FLAG(int, stderrthreshold);
 
