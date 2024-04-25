@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -132,15 +133,14 @@ namespace {
 // norm of the given column, otherwise do the same with a sparse version. In
 // both cases column is cleared.
 Fractional ComputeSquaredNormAndResetToZero(
-    const std::vector<RowIndex>& non_zeros, DenseColumn* column) {
+    const std::vector<RowIndex>& non_zeros, absl::Span<Fractional> column) {
   Fractional sum = 0.0;
   if (non_zeros.empty()) {
-    sum = SquaredNorm(*column);
-    column->clear();
+    sum = SquaredNormAndResetToZero(column);
   } else {
     for (const RowIndex row : non_zeros) {
-      sum += Square((*column)[row]);
-      (*column)[row] = 0.0;
+      sum += Square(column[row.value()]);
+      (column)[row.value()] = 0.0;
     }
   }
   return sum;
@@ -152,7 +152,8 @@ Fractional LuFactorization::RightSolveSquaredNorm(const ColumnView& a) const {
   if (is_identity_factorization_) return SquaredNorm(a);
 
   non_zero_rows_.clear();
-  dense_zero_scratchpad_.resize(lower_.num_rows(), 0.0);
+  const RowIndex num_rows = lower_.num_rows();
+  dense_zero_scratchpad_.resize(num_rows, 0.0);
   DCHECK(IsAllZero(dense_zero_scratchpad_));
 
   for (const SparseColumn::Entry e : a) {
@@ -174,8 +175,9 @@ Fractional LuFactorization::RightSolveSquaredNorm(const ColumnView& a) const {
     upper_.HyperSparseSolveWithReversedNonZeros(&dense_zero_scratchpad_,
                                                 &non_zero_rows_);
   }
-  return ComputeSquaredNormAndResetToZero(non_zero_rows_,
-                                          &dense_zero_scratchpad_);
+  return ComputeSquaredNormAndResetToZero(
+      non_zero_rows_,
+      absl::MakeSpan(dense_zero_scratchpad_.data(), num_rows.value()));
 }
 
 Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
@@ -185,7 +187,8 @@ Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
       col_perm_.empty() ? row : ColToRowIndex(col_perm_[RowToColIndex(row)]);
 
   non_zero_rows_.clear();
-  dense_zero_scratchpad_.resize(lower_.num_rows(), 0.0);
+  const RowIndex num_rows = lower_.num_rows();
+  dense_zero_scratchpad_.resize(num_rows, 0.0);
   DCHECK(IsAllZero(dense_zero_scratchpad_));
   dense_zero_scratchpad_[permuted_row] = 1.0;
   non_zero_rows_.push_back(permuted_row);
@@ -204,8 +207,9 @@ Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
     transpose_lower_.HyperSparseSolveWithReversedNonZeros(
         &dense_zero_scratchpad_, &non_zero_rows_);
   }
-  return ComputeSquaredNormAndResetToZero(non_zero_rows_,
-                                          &dense_zero_scratchpad_);
+  return ComputeSquaredNormAndResetToZero(
+      non_zero_rows_,
+      absl::MakeSpan(dense_zero_scratchpad_.data(), num_rows.value()));
 }
 
 namespace {

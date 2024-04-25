@@ -147,6 +147,8 @@ Fractional PartialScalarProduct(const DenseRowOrColumn& u,
 // Returns the norm^2 (sum of the square of the entries) of the given column.
 // The precise version uses KahanSum and are about two times slower.
 Fractional SquaredNorm(const SparseColumn& v);
+Fractional SquaredNorm(absl::Span<const Fractional> data);
+Fractional SquaredNormAndResetToZero(absl::Span<Fractional> data);
 Fractional SquaredNorm(const DenseColumn& column);
 Fractional SquaredNorm(const ColumnView& v);
 Fractional SquaredNorm(const ScatteredColumn& v);
