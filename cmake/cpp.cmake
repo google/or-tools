@@ -219,7 +219,6 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
-  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
   "ortools/util/*.proto"
@@ -233,10 +232,21 @@ if(USE_SCIP OR BUILD_MATH_OPT)
   list(APPEND OR_TOOLS_PROTO_FILES ${GSCIP_PROTO_FILES})
 endif()
 
+# ORTools proto
 generate_proto_library(
-  NAME ${PROJECT_NAME}
+  NAME ortools
   FILES ${OR_TOOLS_PROTO_FILES})
 
+# Routing proto
+file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/routing/*.proto"
+)
+generate_proto_library(
+  NAME routing
+  FILES ${ROUTING_PROTO_FILES}
+  LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+
+# MathOpt proto
 if(BUILD_MATH_OPT)
   file(GLOB_RECURSE MATH_OPT_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
     "ortools/math_opt/*.proto"
@@ -245,7 +255,7 @@ if(BUILD_MATH_OPT)
   generate_proto_library(
     NAME math_opt
     FILES ${MATH_OPT_PROTO_FILES}
-    LINK_LIBRARIES ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+    LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
 endif()
 
 ###############
@@ -299,11 +309,22 @@ if(XCODE)
   target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
 endif()
 
-# Add ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto to libortools
-#target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::proto)
+# Add ${PROJECT_NAMESPACE}::ortools_proto to libortools
 target_sources(${PROJECT_NAME} PRIVATE
-  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::ortools_proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::ortools_proto)
+
+# Add ${PROJECT_NAMESPACE}::routing_proto to libortools
+target_sources(${PROJECT_NAME} PRIVATE
+  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::routing_proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::routing_proto)
+
+if(BUILD_MATH_OPT)
+  # Add ${PROJECT_NAMESPACE}::math_opt_proto to libortools
+  target_sources(${PROJECT_NAME} PRIVATE
+    $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::math_opt_proto>)
+  add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::math_opt_proto)
+endif()
 
 foreach(SUBPROJECT IN ITEMS
  base
@@ -332,11 +353,6 @@ foreach(SUBPROJECT IN ITEMS
 endforeach()
 
 if(BUILD_MATH_OPT)
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAMESPACE}::math_opt_proto)
-  target_sources(${PROJECT_NAME} PRIVATE
-    $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::math_opt_proto>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::math_opt_proto)
-
   add_subdirectory(ortools/${MATH_OPT_DIR})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_math_opt)
 endif()
