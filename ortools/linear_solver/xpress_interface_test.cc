@@ -1354,8 +1354,8 @@ TEST_F(XpressFixtureMIP, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, 1);
   testing::InitGoogleTest(&argc, argv);
+  absl::SetFlag(&FLAGS_stderrthreshold, 0);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
   if (solver == nullptr) {
     LOG(ERROR) << "Xpress solver is not available";

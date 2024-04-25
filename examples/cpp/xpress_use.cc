@@ -91,7 +91,6 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
 #define ABSL_MIN_LOG_LEVEL INFO;
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
-  absl::SetFlag(&FLAGS_logtostderr, true);
   InitGoogle(argv[0], &argc, &argv, true);
   std::cout << "start\n";
   LOG(WARNING) << "start";
