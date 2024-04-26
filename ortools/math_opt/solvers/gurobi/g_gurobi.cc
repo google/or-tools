@@ -45,8 +45,8 @@ struct UserCallbackData {
   Gurobi* gurobi = nullptr;
 };
 
-int GurobiCallback(GRBmodel* const model, void* const cbdata, const int where,
-                   void* const usrdata) {
+int GUROBI_STDCALL GurobiCallback(GRBmodel* const model, void* const cbdata,
+                                  const int where, void* const usrdata) {
   CHECK(usrdata != nullptr);
   CHECK(model != nullptr);
   auto user_cb_data = static_cast<UserCallbackData*>(usrdata);
