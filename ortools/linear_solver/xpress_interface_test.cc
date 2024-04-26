@@ -285,9 +285,9 @@ class MyMPCallback : public MPCallback {
   MyMPCallback(MPSolver* mpSolver, bool should_throw)
       : MPCallback(false, false),
         mpSolver_(mpSolver),
-        should_throw_(should_throw){};
+        should_throw_(should_throw) {};
 
-  ~MyMPCallback() override{};
+  ~MyMPCallback() override {};
 
   void RunCallback(MPCallbackContext* callback_context) override {
     if (should_throw_) {
@@ -1354,8 +1354,8 @@ TEST_F(XpressFixtureMIP, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
   absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  testing::InitGoogleTest(&argc, argv);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
   if (solver == nullptr) {
     LOG(ERROR) << "Xpress solver is not available";

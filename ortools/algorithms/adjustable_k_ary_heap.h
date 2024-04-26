@@ -186,7 +186,11 @@ class AdjustableKAryHeap {
     if (heap_index >= heap_size()) return false;
     PerformSwap(heap_index, heap_size() - 1);
     --heap_size_;
-    SiftDown(heap_index);
+    if (HasPriority(heap_index, Parent(heap_index))) {
+      SiftUp(heap_index);
+    } else {
+      SiftDown(heap_index);
+    }
     return true;
   }
 

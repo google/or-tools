@@ -110,6 +110,27 @@ TEST(AdjustableKAryHeapTest, UpdateStrongCheck) {
   }
 }
 
+TEST(AdjustableKAryHeapTest, RemoveStrongCheck) {
+  const int kSize = 10'000;
+  const int kNumRemovals = kSize;
+  const double priority_range = kSize / 10;
+  std::random_device rd;
+  std::mt19937 generator(rd());  // Mersenne Twister generator
+  std::uniform_real_distribution<float> priority_dist(0, priority_range);
+  std::uniform_int_distribution<int> index_dist(0, kSize);
+  std::vector<PriorityAggregate> subsets_and_values(kSize);
+  for (int i = 0; i < kSize; ++i) {
+    subsets_and_values[i] = {priority_dist(generator), i};
+  }
+  AdjustableKAryHeap<PriorityAggregate, 4, true> heap(subsets_and_values,
+                                                      kSize);
+  EXPECT_TRUE(heap.CheckHeapProperty());
+  for (int iter = 0; iter < kNumRemovals; ++iter) {
+    heap.Remove(iter);
+    EXPECT_TRUE(heap.CheckHeapProperty());
+  }
+}
+
 TEST(AdjustableKAryHeapTest, OneByOneStrongCheck) {
   const int kSize = 10'000;
   const int kNumInsertions = kSize;
