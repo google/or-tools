@@ -14,7 +14,7 @@
 
 namespace operations_research {
 
-// TODO : mettre var glob marge erreur
+#define ERROR_RATE 1e-6
 
 #define EXPECT_STATUS(s)                              \
   do {                                                \
@@ -112,10 +112,6 @@ class KnitroGetter {
 #define UNITTEST_INIT_LP()                                           \
   MPSolver solver("KNITRO_LP", MPSolver::KNITRO_LINEAR_PROGRAMMING); \
   KnitroGetter getter(&solver)
-
-/*-------------------- Check Env --------------------*/
-
-TEST(Env, CheckEnv) { EXPECT_EQ(KnitroIsCorrectlyInstalled(), true); }
 
 /*-------------------- TU --------------------*/
 
@@ -335,10 +331,10 @@ TEST(KnitroInterface, SetRelativeMipGap) {
   double value;
   getter.Double_Param(KN_PARAM_MIP_OPTGAPREL, &value);
   EXPECT_EQ(value, .5);
-  params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, 1e-6);
+  params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, 1e-8);
   solver.Solve(params);
   getter.Double_Param(KN_PARAM_MIP_OPTGAPREL, &value);
-  EXPECT_EQ(value, 1e-6);
+  EXPECT_EQ(value, 1e-8);
 }
 
 /** Unit Test of the method SetPresolveMode()*/
@@ -408,10 +404,10 @@ TEST(KnitroInterface, SetPrimalTolerance) {
   double value;
   getter.Double_Param(KN_PARAM_FEASTOL, &value);
   EXPECT_EQ(value, .5);
-  params.SetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE, 1e-6);
+  params.SetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE, 1e-8);
   solver.Solve(params);
   getter.Double_Param(KN_PARAM_FEASTOL, &value);
-  EXPECT_EQ(value, 1e-6);
+  EXPECT_EQ(value, 1e-8);
 }
 
 /** Unit Test of the method SetDualTolerance()*/
@@ -423,10 +419,10 @@ TEST(KnitroInterface, SetDualTolerance) {
   double value;
   getter.Double_Param(KN_PARAM_OPTTOL, &value);
   EXPECT_EQ(value, .5);
-  params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, 1e-6);
+  params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, 1e-8);
   solver.Solve(params);
   getter.Double_Param(KN_PARAM_OPTTOL, &value);
-  EXPECT_EQ(value, 1e-6);
+  EXPECT_EQ(value, 1e-8);
 }
 
 /** Unit Test of the method SetNumThreads()*/
@@ -475,6 +471,10 @@ TEST(KnitroInterface, iterations){
  *         x,   y \in R+
  * 
  * Then loads it in a Knitro model and solves it
+ * 
+ * TODO : For next version of Knitro : Add Ranges, 
+ * Constants and different bounds for variables to 
+ * be written in mps file
  */
 TEST(KnitroInterface, WriteLoadModel) {
   // Write model using OR-Tools
@@ -554,9 +554,9 @@ TEST(KnitroInterface, WriteLoadModel) {
   int nStatus = KN_solve(kc);
   double kc_x[2];
   KN_get_solution(kc, &nStatus, &objSol, kc_x, NULL);
-  EXPECT_NEAR(kc_x[0], 6, 1e-6);
-  EXPECT_NEAR(kc_x[1], 2, 1e-6);
-  EXPECT_NEAR(objSol, 10, 1e-6);
+  EXPECT_NEAR(kc_x[0], 6, ERROR_RATE);
+  EXPECT_NEAR(kc_x[1], 2, ERROR_RATE);
+  EXPECT_NEAR(objSol, 10, ERROR_RATE);
 
   delete[] names[0];
   delete[] names[1];
@@ -593,14 +593,14 @@ TEST(KnitroInterface, SolveLP) {
   c3->SetCoefficient(y, 3);
   solver.Solve();
 
-  EXPECT_NEAR(obj->Value(), 9.4, 1e-6);
-  EXPECT_NEAR(x->solution_value(), 1.8, 1e-6);
-  EXPECT_NEAR(y->solution_value(), 2.8, 1e-6);
-  EXPECT_NEAR(x->reduced_cost(), 0, 1e-6);
-  EXPECT_NEAR(y->reduced_cost(), 0, 1e-6);
-  EXPECT_NEAR(c1->dual_value(), 0.2, 1e-6);
-  EXPECT_NEAR(c2->dual_value(), 0, 1e-6);
-  EXPECT_NEAR(c3->dual_value(), 0.6, 1e-6);
+  EXPECT_NEAR(obj->Value(), 9.4, ERROR_RATE);
+  EXPECT_NEAR(x->solution_value(), 1.8, ERROR_RATE);
+  EXPECT_NEAR(y->solution_value(), 2.8, ERROR_RATE);
+  EXPECT_NEAR(x->reduced_cost(), 0, ERROR_RATE);
+  EXPECT_NEAR(y->reduced_cost(), 0, ERROR_RATE);
+  EXPECT_NEAR(c1->dual_value(), 0.2, ERROR_RATE);
+  EXPECT_NEAR(c2->dual_value(), 0, ERROR_RATE);
+  EXPECT_NEAR(c3->dual_value(), 0.6, ERROR_RATE);
 }
 
 /** 
@@ -656,10 +656,10 @@ TEST(KnitroInterface, SolveMIP) {
   EXPECT_EQ(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
 
   const MPSolver::ResultStatus result_status = solver.Solve();
-  EXPECT_NEAR(objective->Value(), 40, 1e-7);
-  EXPECT_NEAR(x->solution_value(), 10, 1e-7);
-  EXPECT_NEAR(y->solution_value(), 0, 1e-7);
-  EXPECT_NEAR(z->solution_value(), 6, 1e-7);
+  EXPECT_NEAR(objective->Value(), 40, ERROR_RATE);
+  EXPECT_NEAR(x->solution_value(), 10, ERROR_RATE);
+  EXPECT_NEAR(y->solution_value(), 0, ERROR_RATE);
+  EXPECT_NEAR(z->solution_value(), 6, ERROR_RATE);
 
   // Just Check that the methods return something
 
@@ -695,17 +695,17 @@ TEST(KnitroInterface, SupportInfinity) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(11, obj->Value(), 1e-6);
-  EXPECT_NEAR(5, x->solution_value(), 1e-6);
-  EXPECT_NEAR(3, y->solution_value(), 1e-6);
+  EXPECT_NEAR(11, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(5, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(3, y->solution_value(), ERROR_RATE);
 
   // change boundaries to infinity
   x->SetBounds(-infinity, infinity);
   c2->SetBounds(-2, infinity);
   solver.Solve();
-  EXPECT_NEAR(11, obj->Value(), 1e-6);
-  EXPECT_NEAR(5, x->solution_value(), 1e-6);
-  EXPECT_NEAR(3, y->solution_value(), 1e-6);
+  EXPECT_NEAR(11, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(5, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(3, y->solution_value(), ERROR_RATE);
 }
 
 /**
@@ -725,7 +725,7 @@ TEST(KnitroInterface, JustVar) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 3, 1e-6);
+  EXPECT_NEAR(obj->Value(), 3, ERROR_RATE);
 }
 
 /**
@@ -820,19 +820,19 @@ TEST(KnitroInterface, ChangePostsolve) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 9, 1e-7);
+  EXPECT_NEAR(obj->Value(), 9, ERROR_RATE);
 
   // change the objective
   obj->SetCoefficient(x, 0);
   obj->SetCoefficient(y, 1);
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 8, 1e-7);
+  EXPECT_NEAR(obj->Value(), 8, ERROR_RATE);
 
   // change the boundaries of y
   y->SetBounds(2, 4);
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 4, 1e-7);
+  EXPECT_NEAR(obj->Value(), 4, ERROR_RATE);
 
   // change the boundaries of y
   //        the objective
@@ -842,7 +842,7 @@ TEST(KnitroInterface, ChangePostsolve) {
   obj->SetCoefficient(y, 0);
   c4->SetBounds(2, 6);
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 8, 1e-7);
+  EXPECT_NEAR(obj->Value(), 8, ERROR_RATE);
 }
 
 /**
@@ -869,15 +869,15 @@ TEST(KnitroInterface, ClearConstraint2) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(3, obj->Value(), 1e-6);
-  EXPECT_NEAR(3, x->solution_value(), 1e-6);
-  EXPECT_NEAR(0, y->solution_value(), 1e-6);
+  EXPECT_NEAR(3, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(3, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(0, y->solution_value(), ERROR_RATE);
 
   c2->Clear();
   solver.Solve();
-  EXPECT_NEAR(6, obj->Value(), 1e-6);
-  EXPECT_NEAR(6, x->solution_value(), 1e-6);
-  EXPECT_NEAR(0, y->solution_value(), 1e-6);
+  EXPECT_NEAR(6, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(6, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(0, y->solution_value(), ERROR_RATE);
 }
 
 /**
@@ -905,17 +905,17 @@ TEST(KnitroInterface, ClearObjective2) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(3, obj->Value(), 1e-6);
-  EXPECT_NEAR(3, x->solution_value(), 1e-6);
-  EXPECT_NEAR(0, y->solution_value(), 1e-6);
+  EXPECT_NEAR(3, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(3, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(0, y->solution_value(), ERROR_RATE);
 
   obj->Clear();
   obj->SetCoefficient(x, 1);
   obj->SetCoefficient(y, 1);
   solver.Solve();
-  EXPECT_NEAR(0, obj->Value(), 1e-6);
-  EXPECT_NEAR(0, x->solution_value(), 1e-6);
-  EXPECT_NEAR(0, y->solution_value(), 1e-6);
+  EXPECT_NEAR(0, obj->Value(), ERROR_RATE);
+  EXPECT_NEAR(0, x->solution_value(), ERROR_RATE);
+  EXPECT_NEAR(0, y->solution_value(), ERROR_RATE);
 }
 
 /**
@@ -952,17 +952,17 @@ TEST(KnitroInterface, ChangeVarIntoInteger) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 2.5, 1e-7);
+  EXPECT_NEAR(obj->Value(), 2.5, ERROR_RATE);
 
   // Change x into integer
   x->SetInteger(true);
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 2, 1e-7);
+  EXPECT_NEAR(obj->Value(), 2, ERROR_RATE);
 
   // Change x back into continuous
   x->SetInteger(false);
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 2.5, 1e-7);
+  EXPECT_NEAR(obj->Value(), 2.5, ERROR_RATE);
 }
 
 /**
@@ -987,7 +987,7 @@ TEST(KnitroInterface, AddVarAndConstraint) {
   obj->SetMaximization();
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 2, 1e-7);
+  EXPECT_NEAR(obj->Value(), 2, ERROR_RATE);
 
   MPVariable* const z = solver.MakeNumVar(0, infinity, "z");
   MPConstraint* const c = solver.MakeRowConstraint(0, 1, "c");
@@ -995,7 +995,7 @@ TEST(KnitroInterface, AddVarAndConstraint) {
   obj->SetCoefficient(z, 1);
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 3, 1e-7);
+  EXPECT_NEAR(obj->Value(), 3, ERROR_RATE);
 }
 
 /**
@@ -1026,7 +1026,7 @@ TEST(KnitroInterface, AddVarToExistingConstraint){
   c2->SetCoefficient(x, 1);
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 4, 1e-7);
+  EXPECT_NEAR(obj->Value(), 4, ERROR_RATE);
 
   MPVariable* const y = solver.MakeNumVar(0, infinity, "y");
   c1->SetCoefficient(y, 2);
@@ -1034,9 +1034,9 @@ TEST(KnitroInterface, AddVarToExistingConstraint){
   obj->SetCoefficient(y, 1);
 
   solver.Solve();
-  EXPECT_NEAR(obj->Value(), 6, 1e-7);
-  EXPECT_NEAR(x->solution_value(), 5, 1e-7);
-  EXPECT_NEAR(y->solution_value(), 1, 1e-7);
+  EXPECT_NEAR(obj->Value(), 6, ERROR_RATE);
+  EXPECT_NEAR(x->solution_value(), 5, ERROR_RATE);
+  EXPECT_NEAR(y->solution_value(), 1, ERROR_RATE);
 }
 
 }  // namespace operations_research
@@ -1044,11 +1044,17 @@ TEST(KnitroInterface, AddVarToExistingConstraint){
 int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, 1);
   testing::InitGoogleTest(&argc, argv);
-  if (!RUN_ALL_TESTS()) {
-    remove("knitro_interface_test_LP_model");
-    remove("knitro_interface__test_param.opt");
-    remove("knitro_interface_test_empty");
+  if (!operations_research::KnitroIsCorrectlyInstalled()) {
+    LOG(ERROR) << "Knitro solver is not available";
     return EXIT_SUCCESS;
+  } else {
+    if (!RUN_ALL_TESTS()) {
+      remove("knitro_interface_test_LP_model");
+      remove("knitro_interface__test_param.opt");
+      remove("knitro_interface_test_empty");
+      return EXIT_SUCCESS;
+    }
+    return EXIT_FAILURE;
   }
-  return EXIT_FAILURE;
+
 }

@@ -95,5 +95,11 @@ if(BUILD_TESTING)
     target_link_libraries(test_knitro_interface PRIVATE ortools::ortools GTest::gtest_main)
 
     add_test(NAME cxx_unittests_knitro_interface COMMAND test_knitro_interface)
+
+    add_executable(test_knitro_interface_parallel knitro_interface_parallel_test.cc)
+    target_compile_features(test_knitro_interface_parallel PRIVATE cxx_std_17)
+    target_link_libraries(test_knitro_interface_parallel PRIVATE ortools::ortools GTest::gtest_main)
+
+    # add_test(NAME cxx_unittests_knitro_interface COMMAND test_knitro_interface_parallel)
   endif()
 endif ()
