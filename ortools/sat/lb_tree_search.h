@@ -30,6 +30,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -147,6 +148,7 @@ class LbTreeSearch {
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   SharedResponseManager* shared_response_;
+  PseudoCosts* pseudo_costs_;
   SatDecisionPolicy* sat_decision_;
   IntegerSearchHelper* search_helper_;
   IntegerVariable objective_var_;

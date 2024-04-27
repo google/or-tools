@@ -200,6 +200,95 @@ std::function<BooleanOrIntegerLiteral()> MostFractionalHeuristic(Model* model) {
   };
 }
 
+std::function<BooleanOrIntegerLiteral()> BoolPseudoCostHeuristic(Model* model) {
+  auto* lp_values = model->GetOrCreate<ModelLpValues>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* pseudo_costs = model->GetOrCreate<PseudoCosts>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [lp_values, encoder, pseudo_costs, integer_trail]() {
+    double best_score = 0.0;
+    BooleanOrIntegerLiteral decision;
+    for (IntegerVariable var(0); var < lp_values->size(); var += 2) {
+      // Only look at non-fixed booleans.
+      const IntegerValue lb = integer_trail->LowerBound(var);
+      const IntegerValue ub = integer_trail->UpperBound(var);
+      if (lb != 0 || ub != 1) continue;
+
+      // Get associated literal.
+      const LiteralIndex index =
+          encoder->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(var, 1));
+      if (index == kNoLiteralIndex) continue;
+
+      const double lp_value = (*lp_values)[var];
+      const double score =
+          pseudo_costs->BoolPseudoCost(Literal(index), lp_value);
+      if (score > best_score) {
+        best_score = score;
+        decision = BooleanOrIntegerLiteral(Literal(index));
+      }
+    }
+    return decision;
+  };
+}
+
+std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
+  auto* lp_values = model->GetOrCreate<ModelLpValues>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* pseudo_costs = model->GetOrCreate<PseudoCosts>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  return [lp_values, pseudo_costs, integer_trail, encoder, model]() {
+    double best_score = 0.0;
+    BooleanOrIntegerLiteral decision;
+    for (IntegerVariable var(0); var < lp_values->size(); var += 2) {
+      const IntegerValue lb = integer_trail->LowerBound(var);
+      const IntegerValue ub = integer_trail->UpperBound(var);
+      if (lb == ub) continue;
+
+      const double lp_value = (*lp_values)[var];
+      const bool is_reliable = pseudo_costs->LpReliability(var) >= 4;
+      const bool is_integer = std::abs(lp_value - std::round(lp_value)) < 1e-6;
+
+      // When not reliable, we skip integer.
+      //
+      // TODO(user): Use strong branching when not reliable.
+      // TODO(user): do not branch on integer lp? however it seems better to
+      // do that !? Maybe this is because if it has a high pseudo cost
+      // average, it is good anyway?
+      if (!is_reliable && is_integer) continue;
+
+      // For Booleans, for some reason it seems the up-branch first work better?
+      if (lb == 0 && ub == 1) {
+        const double score = pseudo_costs->LpPseudoCost(var, lp_value);
+        if (score > best_score) {
+          const LiteralIndex index = encoder->GetAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(var, 1));
+          if (index != kNoLiteralIndex) {
+            best_score = score;
+            decision = BooleanOrIntegerLiteral(Literal(index));
+          }
+        }
+      }
+
+      // There are some corner cases if we are at the bound. Note that it is
+      // important to be in sync with the SplitAroundLpValue() below.
+      double down_fractionality = lp_value - std::floor(lp_value);
+      if (lp_value >= ToDouble(ub)) down_fractionality = 1.0;
+      if (lp_value <= ToDouble(lb)) down_fractionality = 0.0;
+      const double score = pseudo_costs->LpPseudoCost(var, down_fractionality);
+
+      // We delay to subsequent heuristic if the score is 0.0.
+      if (score > best_score) {
+        best_score = score;
+
+        // This choose <= value if possible.
+        decision = BooleanOrIntegerLiteral(SplitAroundGivenValue(
+            var, IntegerValue(std::floor(lp_value)), model));
+      }
+    }
+    return decision;
+  };
+}
+
 std::function<BooleanOrIntegerLiteral()>
 UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
@@ -349,8 +438,6 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
   };
 }
 
-// TODO(user): Do we need a mechanism to reduce the range of possible gaps
-// when nothing gets proven? This could be a parameter or some adaptative code.
 std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
   const IntegerVariable obj_var = objective_definition->objective_var;
@@ -1261,11 +1348,7 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       product_detector_(model->GetOrCreate<ProductDetector>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       pseudo_costs_(model->GetOrCreate<PseudoCosts>()),
-      inprocessing_(model->GetOrCreate<Inprocessing>()) {
-  // This is needed for recording the pseudo-costs.
-  const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
-  if (objective != nullptr) objective_var_ = objective->objective_var;
-}
+      inprocessing_(model->GetOrCreate<Inprocessing>()) {}
 
 bool IntegerSearchHelper::BeforeTakingDecision() {
   // If we pushed root level deductions, we restart to incorporate them.
@@ -1354,21 +1437,13 @@ bool IntegerSearchHelper::GetDecision(
 }
 
 bool IntegerSearchHelper::TakeDecision(Literal decision) {
-  // Record the changelist and objective bounds for updating pseudo costs.
-  const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
-      pseudo_costs_->GetBoundChanges(decision);
-  IntegerValue old_obj_lb = kMinIntegerValue;
-  IntegerValue old_obj_ub = kMaxIntegerValue;
-  if (objective_var_ != kNoIntegerVariable) {
-    old_obj_lb = integer_trail_->LowerBound(objective_var_);
-    old_obj_ub = integer_trail_->UpperBound(objective_var_);
-  }
-  const int old_level = sat_solver_->CurrentDecisionLevel();
+  pseudo_costs_->BeforeTakingDecision(decision);
 
   // Note that kUnsatTrailIndex might also mean ASSUMPTIONS_UNSAT.
   //
   // TODO(user): on some problems, this function can be quite long. Expand
   // so that we can check the time limit at each step?
+  const int old_level = sat_solver_->CurrentDecisionLevel();
   const int index = sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
   if (index == kUnsatTrailIndex) return false;
 
@@ -1380,14 +1455,8 @@ bool IntegerSearchHelper::TakeDecision(Literal decision) {
   }
 
   // Update the pseudo costs.
-  if (sat_solver_->CurrentDecisionLevel() > old_level &&
-      objective_var_ != kNoIntegerVariable) {
-    const IntegerValue new_obj_lb = integer_trail_->LowerBound(objective_var_);
-    const IntegerValue new_obj_ub = integer_trail_->UpperBound(objective_var_);
-    const IntegerValue objective_bound_change =
-        (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
-    pseudo_costs_->UpdateCost(bound_changes, objective_bound_change);
-  }
+  pseudo_costs_->AfterTakingDecision(
+      /*conflict=*/sat_solver_->CurrentDecisionLevel() <= old_level);
 
   sat_solver_->AdvanceDeterministicTime(time_limit_);
   return sat_solver_->ReapplyAssumptionsIfNeeded();

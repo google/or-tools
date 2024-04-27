@@ -486,7 +486,6 @@ cc_library(
     hdrs = ["presolve_context.h"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_checker",
         ":cp_model_loader",
         ":cp_model_mapping",
         ":cp_model_utils",
@@ -511,6 +510,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/numeric:int128",
@@ -1010,6 +1010,7 @@ cc_library(
         ":integer_search",
         ":linear_programming_constraint",
         ":model",
+        ":pseudo_costs",
         ":sat_base",
         ":sat_decision",
         ":sat_parameters_cc_proto",
@@ -1032,7 +1033,10 @@ cc_library(
     srcs = ["pseudo_costs.cc"],
     hdrs = ["pseudo_costs.h"],
     deps = [
+        ":cp_model_mapping",
         ":integer",
+        ":linear_constraint_manager",
+        ":linear_programming_constraint",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -1041,6 +1045,8 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
