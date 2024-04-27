@@ -1492,6 +1492,18 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
   }
   literal = GetLiteralRepresentative(literal);
   InsertVarValueEncodingInternal(literal, ref, value, /*add_constraints=*/true);
+
+  if (hint_is_loaded_) {
+    const int bool_var = PositiveRef(literal);
+    const int int_var = PositiveRef(ref);
+    if (!hint_has_value_[bool_var] && hint_has_value_[int_var]) {
+      const int64_t int_value = RefIsPositive(ref) ? value : -value;
+      const int64_t hint_value = hint_[int_var] == int_value ? 1 : 0;
+      hint_has_value_[bool_var] = true;
+      hint_[bool_var] = RefIsPositive(literal) ? hint_value : 1 - hint_value;
+    }
+  }
+  
   return true;
 }
 
