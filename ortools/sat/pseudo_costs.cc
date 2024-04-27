@@ -16,12 +16,18 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <tuple>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint_manager.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -31,24 +37,154 @@
 namespace operations_research {
 namespace sat {
 
+// We prefer the product to combine the cost of two branches.
+double PseudoCosts::CombineCosts(double down_branch, double up_branch) const {
+  if (true) {
+    return std::max(1e-6, down_branch) * std::max(1e-6, up_branch);
+  } else {
+    const double min_value = std::min(up_branch, down_branch);
+    const double max_value = std::max(up_branch, down_branch);
+    const double mu = 1.0 / 6.0;
+    return (1.0 - mu) * min_value + mu * max_value;
+  }
+}
+
+std::string PseudoCosts::ObjectiveInfo::DebugString() const {
+  return absl::StrCat("lb: ", lb, " ub:", ub, " lp_bound:", lp_bound);
+}
+
 PseudoCosts::PseudoCosts(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      encoder_(model->GetOrCreate<IntegerEncoder>()) {
+      encoder_(model->GetOrCreate<IntegerEncoder>()),
+      lp_values_(model->GetOrCreate<ModelLpValues>()),
+      lps_(model->GetOrCreate<LinearProgrammingConstraintCollection>()) {
   const int num_vars = integer_trail_->NumIntegerVariables().value();
   pseudo_costs_.resize(num_vars);
   is_relevant_.resize(num_vars, false);
   scores_.resize(num_vars, 0.0);
+
+  // If objective_var == kNoIntegerVariable, there is not really any point using
+  // this class.
+  auto* objective = model->Get<ObjectiveDefinition>();
+  if (objective != nullptr) {
+    objective_var_ = objective->objective_var;
+  }
 }
 
-void PseudoCosts::UpdateCost(
-    const std::vector<VariableBoundChange>& bound_changes,
-    const IntegerValue obj_bound_improvement) {
+PseudoCosts::ObjectiveInfo PseudoCosts::GetCurrentObjectiveInfo() {
+  ObjectiveInfo result;
+  if (objective_var_ == kNoIntegerVariable) return result;
+
+  result.lb = integer_trail_->LowerBound(objective_var_);
+  result.ub = integer_trail_->UpperBound(objective_var_);
+
+  // We sum the objectives over the LP components.
+  // Note that in practice, when we use the pseudo-costs, there is just one.
+  result.lp_bound = 0.0;
+  result.lp_at_optimal = true;
+  for (const auto* lp : *lps_) {
+    if (!lp->HasSolution()) result.lp_at_optimal = false;
+    result.lp_bound += lp->SolutionObjectiveValue();
+  }
+  return result;
+}
+
+void PseudoCosts::BeforeTakingDecision(Literal decision) {
+  if (objective_var_ == kNoIntegerVariable) return;
+  saved_info_ = GetCurrentObjectiveInfo();
+  bound_changes_ = GetBoundChanges(decision);
+}
+
+double PseudoCosts::LpPseudoCost(IntegerVariable var,
+                                 double down_fractionality) const {
+  const int max_index = std::max(var.value(), NegationOf(var).value());
+  if (max_index >= average_unit_objective_increase_.size()) return 0.0;
+
+  const double up_fractionality = 1.0 - down_fractionality;
+  const double up_branch =
+      up_fractionality * average_unit_objective_increase_[var].CurrentAverage();
+  const double down_branch =
+      down_fractionality *
+      average_unit_objective_increase_[NegationOf(var)].CurrentAverage();
+  return CombineCosts(down_branch, up_branch);
+}
+
+void PseudoCosts::UpdateBoolPseudoCosts(absl::Span<const Literal> reason,
+                                        IntegerValue objective_increase) {
+  const double relative_increase =
+      ToDouble(objective_increase) / static_cast<double>(reason.size());
+  for (const Literal lit : reason) {
+    if (lit.Index() >= lit_pseudo_costs_.size()) {
+      lit_pseudo_costs_.resize(lit.Index() + 1);
+    }
+    lit_pseudo_costs_[lit].AddData(relative_increase);
+  }
+}
+
+double PseudoCosts::BoolPseudoCost(Literal lit, double lp_value) const {
+  if (lit.Index() >= lit_pseudo_costs_.size()) return 0.0;
+
+  const double down_fractionality = lp_value;
+  const double up_fractionality = 1.0 - lp_value;
+  const double up_branch =
+      up_fractionality * lit_pseudo_costs_[lit].CurrentAverage();
+  const double down_branch =
+      down_fractionality *
+      lit_pseudo_costs_[lit.NegatedIndex()].CurrentAverage();
+  return CombineCosts(down_branch, up_branch);
+}
+
+int PseudoCosts::LpReliability(IntegerVariable var) const {
+  const int max_index = std::max(var.value(), NegationOf(var).value());
+  if (max_index >= average_unit_objective_increase_.size()) return 0;
+
+  return std::min(
+      average_unit_objective_increase_[var].NumRecords(),
+      average_unit_objective_increase_[NegationOf(var)].NumRecords());
+}
+
+void PseudoCosts::AfterTakingDecision(bool conflict) {
+  if (objective_var_ == kNoIntegerVariable) return;
+  const ObjectiveInfo new_info = GetCurrentObjectiveInfo();
+
+  // We store a pseudo cost for this literal. We prefer the pure LP version, but
+  // revert to integer version if there is no lp. TODO(user): tune that.
+  //
+  // We only collect lp increase when the lp is at optimal, otherwise it might
+  // just be the "artificial" continuing of the current lp solve that create the
+  // increase.
+  if (saved_info_.lp_at_optimal) {
+    // Compute the increase in objective.
+    const double obj_lp_diff =
+        std::max(0.0, new_info.lp_bound - saved_info_.lp_bound);
+    const IntegerValue obj_int_diff = new_info.lb - saved_info_.lb;
+    double obj_diff = obj_lp_diff > 0.0 ? obj_lp_diff : ToDouble(obj_int_diff);
+    if (conflict) {
+      // We count a conflict as a max increase + 1.0
+      obj_diff = ToDouble(saved_info_.ub) - ToDouble(saved_info_.lb) + 1.0;
+    }
+
+    // Update the average unit increases.
+    for (const auto [var, lb_change, lp_increase] : bound_changes_) {
+      if (lp_increase < 1e-6) continue;
+      if (var >= average_unit_objective_increase_.size()) {
+        average_unit_objective_increase_.resize(var + 1);
+      }
+      average_unit_objective_increase_[var].AddData(obj_diff / lp_increase);
+    }
+  }
+
+  // TODO(user): Handle this case.
+  if (conflict) return;
+
+  // We also store one for any associated IntegerVariable.
+  const IntegerValue obj_bound_improvement =
+      (new_info.lb - saved_info_.lb) + (saved_info_.ub - new_info.ub);
   DCHECK_GE(obj_bound_improvement, 0);
   if (obj_bound_improvement == IntegerValue(0)) return;
 
-  const double epsilon = 1e-6;
-  for (const auto [var, lb_change] : bound_changes) {
+  for (const auto [var, lb_change, lp_increase] : bound_changes_) {
     if (lb_change == IntegerValue(0)) continue;
 
     if (var >= pseudo_costs_.size()) {
@@ -67,9 +203,8 @@ void PseudoCosts::UpdateCost(
     const int64_t count = pseudo_costs_[positive_var].NumRecords() +
                           pseudo_costs_[negative_var].NumRecords();
     if (count >= parameters_.pseudo_cost_reliability_threshold()) {
-      scores_[positive_var] = std::max(GetCost(positive_var), epsilon) *
-                              std::max(GetCost(negative_var), epsilon);
-
+      scores_[positive_var] =
+          CombineCosts(GetCost(positive_var), GetCost(negative_var));
       if (!is_relevant_[positive_var]) {
         is_relevant_[positive_var] = true;
         relevant_variables_.push_back(positive_var);
@@ -111,30 +246,32 @@ std::vector<PseudoCosts::VariableBoundChange> PseudoCosts::GetBoundChanges(
   std::vector<PseudoCosts::VariableBoundChange> bound_changes;
 
   for (const IntegerLiteral l : encoder_->GetIntegerLiterals(decision)) {
-    PseudoCosts::VariableBoundChange var_bound_change;
-    var_bound_change.var = l.var;
-    var_bound_change.lower_bound_change =
-        l.bound - integer_trail_->LowerBound(l.var);
-    bound_changes.push_back(var_bound_change);
+    PseudoCosts::VariableBoundChange entry;
+    entry.var = l.var;
+    entry.lower_bound_change = l.bound - integer_trail_->LowerBound(l.var);
+    if (l.var < lp_values_->size()) {
+      entry.lp_increase =
+          std::max(0.0, ToDouble(l.bound) - (*lp_values_)[l.var]);
+    }
+    bound_changes.push_back(entry);
   }
 
   // NOTE: We ignore literal associated to var != value.
   for (const auto [var, value] : encoder_->GetEqualityLiterals(decision)) {
     {
-      PseudoCosts::VariableBoundChange var_bound_change;
-      var_bound_change.var = var;
-      var_bound_change.lower_bound_change =
-          value - integer_trail_->LowerBound(var);
-      bound_changes.push_back(var_bound_change);
+      PseudoCosts::VariableBoundChange entry;
+      entry.var = var;
+      entry.lower_bound_change = value - integer_trail_->LowerBound(var);
+      bound_changes.push_back(entry);
     }
 
     // Also do the negation.
     {
-      PseudoCosts::VariableBoundChange var_bound_change;
-      var_bound_change.var = NegationOf(var);
-      var_bound_change.lower_bound_change =
+      PseudoCosts::VariableBoundChange entry;
+      entry.var = NegationOf(var);
+      entry.lower_bound_change =
           (-value) - integer_trail_->LowerBound(NegationOf(var));
-      bound_changes.push_back(var_bound_change);
+      bound_changes.push_back(entry);
     }
   }
 

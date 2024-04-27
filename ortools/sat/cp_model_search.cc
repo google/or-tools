@@ -238,10 +238,12 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
             value = -(coeff * ub + offset);
             break;
           case DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE:
-            value = coeff * (ub - lb + 1);
+            // The size of the domain is not multiplied by the coeff.
+            value = ub - lb + 1;
             break;
           case DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE:
-            value = -coeff * (ub - lb + 1);
+            // The size of the domain is not multiplied by the coeff.
+            value = -(ub - lb + 1);
             break;
           default:
             LOG(FATAL) << "Unknown VariableSelectionStrategy "
