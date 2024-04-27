@@ -34,6 +34,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -56,6 +57,7 @@ LbTreeSearch::LbTreeSearch(Model* model)
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       shared_response_(model->GetOrCreate<SharedResponseManager>()),
+      pseudo_costs_(model->GetOrCreate<PseudoCosts>()),
       sat_decision_(model->GetOrCreate<SatDecisionPolicy>()),
       search_helper_(model->GetOrCreate<IntegerSearchHelper>()),
       parameters_(*model->GetOrCreate<SatParameters>()) {
@@ -316,11 +318,16 @@ SatSolver::Status LbTreeSearch::Search(
     // TODO(user): This is slightly different than bumping each time we
     // push a decision that result in an LB increase. This is also called on
     // backjump for instance.
-    if (integer_trail_->LowerBound(objective_var_) >
-        integer_trail_->LevelZeroLowerBound(objective_var_)) {
+    const IntegerValue obj_diff =
+        integer_trail_->LowerBound(objective_var_) -
+        integer_trail_->LevelZeroLowerBound(objective_var_);
+    if (obj_diff > 0) {
       std::vector<Literal> reason =
           integer_trail_->ReasonFor(IntegerLiteral::GreaterOrEqual(
               objective_var_, integer_trail_->LowerBound(objective_var_)));
+
+      // TODO(user): We also need to update pseudo cost on conflict.
+      pseudo_costs_->UpdateBoolPseudoCosts(reason, obj_diff);
       sat_decision_->BumpVariableActivities(reason);
       sat_decision_->UpdateVariableActivityIncrement();
     }
@@ -516,7 +523,7 @@ SatSolver::Status LbTreeSearch::Search(
     // basically changes if we take the decision later when we explore the
     // branch or right now.
     //
-    // I feel taking it later is better. It also avoid creating uneeded nodes.
+    // I feel taking it later is better. It also avoid creating unneeded nodes.
     // It does change the behavior on a few problem though. For instance on
     // irp.mps.gz, the search works better without this, whatever the random
     // seed. Not sure why, maybe it creates more diversity?

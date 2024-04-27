@@ -37,7 +37,6 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -1503,7 +1502,6 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
       hint_[bool_var] = RefIsPositive(literal) ? hint_value : 1 - hint_value;
     }
   }
-  
   return true;
 }
 
