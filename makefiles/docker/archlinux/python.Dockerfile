@@ -1,6 +1,6 @@
 FROM ortools/make:archlinux_swig AS env
 RUN pacman -Syu --noconfirm python python-pip \
- python-wheel python-virtualenv \
+ python-wheel python-virtualenv python-setuptools \
  python-numpy python-pandas
 RUN python -m pip install --break-system-package \
  absl-py mypy mypy-protobuf
