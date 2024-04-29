@@ -269,6 +269,17 @@ class SharedResponseManager {
       std::function<std::string(const CpSolverResponse&)> callback);
   void UnregisterLogCallback(int callback_id);
 
+  // Adds a callback that will be called on each new best objective bound
+  // found. Returns its id so it can be unregistered if needed.
+  //
+  // Note that adding a callback is not free since some computation will be done
+  // before this is called.
+  //
+  // Note that currently the class is waiting for the callback to finish before
+  // accepting any new updates. That could be changed if needed.
+  int AddBestBoundCallback(std::function<void(double)> callback);
+  void UnregisterBestBoundCallback(int callback_id);
+
   // The "inner" objective is the CpModelProto objective without scaling/offset.
   // Note that these bound correspond to valid bound for the problem of finding
   // a strictly better objective than the current one. Thus the lower bound is
@@ -442,6 +453,10 @@ class SharedResponseManager {
   std::vector<
       std::pair<int, std::function<std::string(const CpSolverResponse&)>>>
       search_log_callbacks_ ABSL_GUARDED_BY(mutex_);
+
+  int next_best_bound_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
+  std::vector<std::pair<int, std::function<void(double)>>> best_bound_callbacks_
+      ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::function<void(std::vector<int64_t>*)>>
       solution_postprocessors_ ABSL_GUARDED_BY(mutex_);

@@ -140,6 +140,18 @@ void SolveWrapper::AddLogCallbackFromClass(LogCallback* log_callback) {
       });
 }
 
+void SolveWrapper::AddBestBoundCallback(
+    std::function<void(double)> best_bound_callback) {
+  if (best_bound_callback != nullptr) {
+    model_.Add(NewBestBoundCallback(best_bound_callback));
+  }
+}
+
+void SolveWrapper::AddBestBoundCallbackFromClass(BestBoundCallback* callback) {
+  model_.Add(NewBestBoundCallback(
+      [callback](double bound) { callback->NewBestBound(bound); }));
+}
+
 operations_research::sat::CpSolverResponse SolveWrapper::Solve(
     const operations_research::sat::CpModelProto& model_proto) {
   FixFlagsAndEnvironmentForSwig();

@@ -256,33 +256,34 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
       // average, it is good anyway?
       if (!is_reliable && is_integer) continue;
 
-      // For Booleans, for some reason it seems the up-branch first work better?
-      if (lb == 0 && ub == 1) {
-        const double score = pseudo_costs->LpPseudoCost(var, lp_value);
-        if (score > best_score) {
-          const LiteralIndex index = encoder->GetAssociatedLiteral(
-              IntegerLiteral::GreaterOrEqual(var, 1));
-          if (index != kNoLiteralIndex) {
-            best_score = score;
-            decision = BooleanOrIntegerLiteral(Literal(index));
-          }
-        }
-      }
-
       // There are some corner cases if we are at the bound. Note that it is
       // important to be in sync with the SplitAroundLpValue() below.
       double down_fractionality = lp_value - std::floor(lp_value);
-      if (lp_value >= ToDouble(ub)) down_fractionality = 1.0;
-      if (lp_value <= ToDouble(lb)) down_fractionality = 0.0;
-      const double score = pseudo_costs->LpPseudoCost(var, down_fractionality);
+      IntegerValue down_target = IntegerValue(std::floor(lp_value));
+      if (lp_value >= ToDouble(ub)) {
+        down_fractionality = 1.0;
+        down_target = ub - 1;
+      } else if (lp_value <= ToDouble(lb)) {
+        down_fractionality = 0.0;
+        down_target = lb;
+      }
+      const auto [down_score, up_score] =
+          pseudo_costs->LpPseudoCost(var, down_fractionality);
+      const double score = pseudo_costs->CombineScores(down_score, up_score);
 
       // We delay to subsequent heuristic if the score is 0.0.
       if (score > best_score) {
         best_score = score;
 
-        // This choose <= value if possible.
-        decision = BooleanOrIntegerLiteral(SplitAroundGivenValue(
-            var, IntegerValue(std::floor(lp_value)), model));
+        // This direction works better than the inverse in the benchs. But
+        // always branching up seems even better. TODO(user): investigate.
+        if (down_score > up_score) {
+          decision = BooleanOrIntegerLiteral(
+              IntegerLiteral::LowerOrEqual(var, down_target));
+        } else {
+          decision = BooleanOrIntegerLiteral(
+              IntegerLiteral::GreaterOrEqual(var, down_target + 1));
+        }
       }
     }
     return decision;

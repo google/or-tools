@@ -93,6 +93,8 @@ PYBIND11_MODULE(swig_helper, m) {
       .def("add_solution_callback", &SolveWrapper::AddSolutionCallback,
            arg("callback"))
       .def("clear_solution_callback", &SolveWrapper::ClearSolutionCallback)
+      .def("add_best_bound_callback", &SolveWrapper::AddBestBoundCallback,
+           arg("best_bound_callback"))
       .def("set_parameters", &SolveWrapper::SetParameters, arg("parameters"))
       .def("solve",
            [](SolveWrapper* solve_wrapper,

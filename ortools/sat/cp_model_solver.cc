@@ -1088,6 +1088,7 @@ struct SolutionObservers {
   std::vector<std::function<void(const CpSolverResponse& response)>> observers;
   std::vector<std::function<std::string(const CpSolverResponse& response)>>
       log_callbacks;
+  std::vector<std::function<void(double)>> best_bound_callbacks;
 };
 
 std::function<void(Model*)> NewFeasibleSolutionObserver(
@@ -1102,6 +1103,14 @@ std::function<void(Model*)> NewFeasibleSolutionLogCallback(
         callback) {
   return [=](Model* model) {
     model->GetOrCreate<SolutionObservers>()->log_callbacks.push_back(callback);
+  };
+}
+
+std::function<void(Model*)> NewBestBoundCallback(
+    const std::function<void(double)>& callback) {
+  return [=](Model* model) {
+    model->GetOrCreate<SolutionObservers>()->best_bound_callbacks.push_back(
+        callback);
   };
 }
 
@@ -4183,6 +4192,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       model->GetOrCreate<SolutionObservers>()->log_callbacks;
   for (const auto& callback : log_callbacks) {
     shared_response_manager->AddLogCallback(callback);
+  }
+
+  const auto& best_bound_callbacks =
+      model->GetOrCreate<SolutionObservers>()->best_bound_callbacks;
+  for (const auto& callback : best_bound_callbacks) {
+    shared_response_manager->AddBestBoundCallback(callback);
   }
 
   // Make sure everything stops when we have a first solution if requested.

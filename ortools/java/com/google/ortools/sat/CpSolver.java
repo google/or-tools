@@ -30,6 +30,7 @@ public final class CpSolver {
   public CpSolver() {
     this.solveParameters = SatParameters.newBuilder();
     this.logCallback = null;
+    this.bestBoundCallback = null;
     this.solveWrapper = null;
   }
 
@@ -51,6 +52,9 @@ public final class CpSolver {
     }
     if (logCallback != null) {
       solveWrapper.addLogCallback(logCallback);
+    }
+    if (bestBoundCallback != null) {
+      solveWrapper.addBestBoundCallback(bestBoundCallback);
     }
 
     solveResponse = solveWrapper.solve(model.model());
@@ -201,5 +205,6 @@ public final class CpSolver {
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
   private Consumer<String> logCallback;
+  private Consumer<Double> bestBoundCallback;
   private SolveWrapper solveWrapper;
 }
