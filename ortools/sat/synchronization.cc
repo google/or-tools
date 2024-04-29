@@ -304,6 +304,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 
   const bool change =
       (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
+  if (!change) return;
+
   if (lb > inner_objective_lower_bound_) {
     // When the improving problem is infeasible, it is possible to report
     // arbitrary high inner_objective_lower_bound_. We make sure it never cross
@@ -328,21 +330,26 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
                SatProgressMessage("Done", wall_timer_.Get(), update_info));
     return;
   }
-  if (logger_->LoggingIsEnabled() && change) {
+  if (logger_->LoggingIsEnabled() || !best_bound_callbacks_.empty()) {
     const CpObjectiveProto& obj = *objective_or_null_;
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-    double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
-    if (obj.scaling_factor() < 0) {
-      std::swap(new_lb, new_ub);
+    for (const auto& callback_entry : best_bound_callbacks_) {
+      callback_entry.second(new_lb);
     }
-    RegisterObjectiveBoundImprovement(update_info);
-    logger_->ThrottledLog(bounds_logging_id_,
-                          ProgressMessage("Bound", wall_timer_.Get(), best,
-                                          new_lb, new_ub, update_info));
+    if (logger_->LoggingIsEnabled()) {
+      double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
+      if (obj.scaling_factor() < 0) {
+        std::swap(new_lb, new_ub);
+      }
+      RegisterObjectiveBoundImprovement(update_info);
+      logger_->ThrottledLog(bounds_logging_id_,
+                            ProgressMessage("Bound", wall_timer_.Get(), best,
+                                            new_lb, new_ub, update_info));
+    }
   }
-  if (change) TestGapLimitsIfNeeded();
+  TestGapLimitsIfNeeded();
 }
 
 // Invariant: the status always start at UNKNOWN and can only evolve as follow:
@@ -467,6 +474,25 @@ void SharedResponseManager::UnregisterLogCallback(int callback_id) {
   for (int i = 0; i < search_log_callbacks_.size(); ++i) {
     if (search_log_callbacks_[i].first == callback_id) {
       search_log_callbacks_.erase(search_log_callbacks_.begin() + i);
+      return;
+    }
+  }
+  LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
+}
+
+int SharedResponseManager::AddBestBoundCallback(
+    std::function<void(double)> callback) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = next_best_bound_callback_id_++;
+  best_bound_callbacks_.emplace_back(id, std::move(callback));
+  return id;
+}
+
+void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < best_bound_callbacks_.size(); ++i) {
+    if (best_bound_callbacks_[i].first == callback_id) {
+      best_bound_callbacks_.erase(best_bound_callbacks_.begin() + i);
       return;
     }
   }

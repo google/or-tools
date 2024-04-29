@@ -61,8 +61,11 @@ class PseudoCosts {
   }
 
   // Alternative pseudo-costs. This relies on the LP more heavily and is more
-  // in line with what a MIP solver would do.
-  double LpPseudoCost(IntegerVariable var, double down_fractionality) const;
+  // in line with what a MIP solver would do. Return the (down, up) costs which
+  // can be combined with CombineScores();
+  double CombineScores(double down_branch, double up_branch) const;
+  std::pair<double, double> LpPseudoCost(IntegerVariable var,
+                                         double down_fractionality) const;
 
   // Returns the pseudo cost "reliability".
   int LpReliability(IntegerVariable var) const;
@@ -83,8 +86,6 @@ class PseudoCosts {
   std::vector<VariableBoundChange> GetBoundChanges(Literal decision);
 
  private:
-  double CombineCosts(double down_branch, double up_branch) const;
-
   // Returns the current objective info.
   struct ObjectiveInfo {
     std::string DebugString() const;

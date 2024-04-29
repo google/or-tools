@@ -18,6 +18,7 @@
 #include <limits>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -38,7 +39,7 @@ namespace operations_research {
 namespace sat {
 
 // We prefer the product to combine the cost of two branches.
-double PseudoCosts::CombineCosts(double down_branch, double up_branch) const {
+double PseudoCosts::CombineScores(double down_branch, double up_branch) const {
   if (true) {
     return std::max(1e-6, down_branch) * std::max(1e-6, up_branch);
   } else {
@@ -96,10 +97,10 @@ void PseudoCosts::BeforeTakingDecision(Literal decision) {
   bound_changes_ = GetBoundChanges(decision);
 }
 
-double PseudoCosts::LpPseudoCost(IntegerVariable var,
-                                 double down_fractionality) const {
+std::pair<double, double> PseudoCosts::LpPseudoCost(
+    IntegerVariable var, double down_fractionality) const {
   const int max_index = std::max(var.value(), NegationOf(var).value());
-  if (max_index >= average_unit_objective_increase_.size()) return 0.0;
+  if (max_index >= average_unit_objective_increase_.size()) return {0.0, 0.0};
 
   const double up_fractionality = 1.0 - down_fractionality;
   const double up_branch =
@@ -107,7 +108,7 @@ double PseudoCosts::LpPseudoCost(IntegerVariable var,
   const double down_branch =
       down_fractionality *
       average_unit_objective_increase_[NegationOf(var)].CurrentAverage();
-  return CombineCosts(down_branch, up_branch);
+  return {down_branch, up_branch};
 }
 
 void PseudoCosts::UpdateBoolPseudoCosts(absl::Span<const Literal> reason,
@@ -132,7 +133,7 @@ double PseudoCosts::BoolPseudoCost(Literal lit, double lp_value) const {
   const double down_branch =
       down_fractionality *
       lit_pseudo_costs_[lit.NegatedIndex()].CurrentAverage();
-  return CombineCosts(down_branch, up_branch);
+  return CombineScores(down_branch, up_branch);
 }
 
 int PseudoCosts::LpReliability(IntegerVariable var) const {
@@ -204,7 +205,7 @@ void PseudoCosts::AfterTakingDecision(bool conflict) {
                           pseudo_costs_[negative_var].NumRecords();
     if (count >= parameters_.pseudo_cost_reliability_threshold()) {
       scores_[positive_var] =
-          CombineCosts(GetCost(positive_var), GetCost(negative_var));
+          CombineScores(GetCost(positive_var), GetCost(negative_var));
       if (!is_relevant_[positive_var]) {
         is_relevant_[positive_var] = true;
         relevant_variables_.push_back(positive_var);

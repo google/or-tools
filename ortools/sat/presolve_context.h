@@ -365,7 +365,7 @@ class PresolveContext {
   // Clears the "rules" statistics.
   void ClearStats();
 
-  // Inserts the given literal to encode ref == value.
+  // Inserts the given literal to encode var == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
   //
@@ -376,9 +376,9 @@ class PresolveContext {
   // Returns false if the model become UNSAT.
   //
   // TODO(user): This function is not always correct if
-  // !context->DomainOf(ref).contains(value), we could make it correct but it
+  // !context->DomainOf(var).contains(value), we could make it correct but it
   // might be a bit expansive to do so. For now we just have a DCHECK().
-  bool InsertVarValueEncoding(int literal, int ref, int64_t value);
+  bool InsertVarValueEncoding(int literal, int var, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.

@@ -39,6 +39,8 @@ using Google.OrTools.Util;
 %typemap(csimports) operations_research::sat::SolveWrapper %{
 // Used to wrap log callbacks (std::function<void(const std::string&>)
 public delegate void StringToVoidDelegate(string message);
+// Used to wrap best bound callbacks (std::function<void(double>)
+public delegate void DoubleToVoidDelegate(double bound);
 %}
 
 PROTO_INPUT(operations_research::sat::CpModelProto,
@@ -82,8 +84,16 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 %unignore operations_research::sat::LogCallback::~LogCallback;
 %unignore operations_research::sat::LogCallback::NewMessage;
 
+// Temporary wrapper class for the DoubleToVoidDelegate.
+%feature("director") operations_research::sat::BestBoundCallback;
+%unignore operations_research::sat::BestBoundCallback;
+%unignore operations_research::sat::BestBoundCallback::~BestBoundCallback;
+%unignore operations_research::sat::BestBoundCallback::NewBestBound;
+
+
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
+%unignore operations_research::sat::SolveWrapper::AddBestBoundCallbackFromClass;
 %unignore operations_research::sat::SolveWrapper::AddLogCallbackFromClass;
 %unignore operations_research::sat::SolveWrapper::AddSolutionCallback;
 %unignore operations_research::sat::SolveWrapper::ClearSolutionCallback;
