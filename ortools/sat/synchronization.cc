@@ -335,8 +335,10 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-    for (const auto& callback_entry : best_bound_callbacks_) {
-      callback_entry.second(new_lb);
+    if (lb > inner_objective_lower_bound_) {
+      for (const auto& callback_entry : best_bound_callbacks_) {
+        callback_entry.second(new_lb);
+      }
     }
     if (logger_->LoggingIsEnabled()) {
       double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
