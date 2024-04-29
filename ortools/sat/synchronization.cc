@@ -302,11 +302,11 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     return;
   }
 
-  const bool change =
-      (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
-  if (!change) return;
+  const bool ub_change = ub < inner_objective_upper_bound_;
+  const bool lb_change = lb > inner_objective_lower_bound_;
+  if (!lb_change && !ub_change) return;
 
-  if (lb > inner_objective_lower_bound_) {
+  if (lb_change) {
     // When the improving problem is infeasible, it is possible to report
     // arbitrary high inner_objective_lower_bound_. We make sure it never cross
     // the current best solution, so that we always report globally valid lower
@@ -315,7 +315,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     inner_objective_lower_bound_ =
         std::min(best_solution_objective_value_, lb.value());
   }
-  if (ub < inner_objective_upper_bound_) {
+  if (ub_change) {
     inner_objective_upper_bound_ = ub.value();
   }
   if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
@@ -335,7 +335,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-    if (lb > inner_objective_lower_bound_) {
+    if (lb_change) {
       for (const auto& callback_entry : best_bound_callbacks_) {
         callback_entry.second(new_lb);
       }
