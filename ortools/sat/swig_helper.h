@@ -88,6 +88,11 @@ class LogCallback {
   virtual ~LogCallback() = default;
   virtual void NewMessage(const std::string& message) = 0;
 };
+class BestBoundCallback {
+ public:
+  virtual ~BestBoundCallback() = default;
+  virtual void NewBestBound(double bound) = 0;
+};
 
 // This class is not meant to be reused after one solve.
 class SolveWrapper {
@@ -108,9 +113,11 @@ class SolveWrapper {
   void AddSolutionCallback(const SolutionCallback& callback);
   void ClearSolutionCallback(const SolutionCallback& callback);
   void AddLogCallback(std::function<void(const std::string&)> log_callback);
+  void AddBestBoundCallback(std::function<void(double)> best_bound_callback);
 
   // Workaround for C#.
   void AddLogCallbackFromClass(LogCallback* log_callback);
+  void AddBestBoundCallbackFromClass(BestBoundCallback* best_bound_callback);
 
   operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto);

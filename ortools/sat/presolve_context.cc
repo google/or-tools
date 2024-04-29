@@ -1484,22 +1484,21 @@ bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
   return true;
 }
 
-bool PresolveContext::InsertVarValueEncoding(int literal, int ref,
+bool PresolveContext::InsertVarValueEncoding(int literal, int var,
                                              int64_t value) {
-  if (!CanonicalizeEncoding(&ref, &value) || !DomainOf(ref).Contains(value)) {
+  if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
     return SetLiteralToFalse(literal);
   }
   literal = GetLiteralRepresentative(literal);
-  InsertVarValueEncodingInternal(literal, ref, value, /*add_constraints=*/true);
+  InsertVarValueEncodingInternal(literal, var, value, /*add_constraints=*/true);
 
   if (hint_is_loaded_) {
     const int bool_var = PositiveRef(literal);
-    const int int_var = PositiveRef(ref);
-    if (!hint_has_value_[bool_var] && hint_has_value_[int_var]) {
-      const int64_t int_value = RefIsPositive(ref) ? value : -value;
-      const int64_t hint_value = hint_[int_var] == int_value ? 1 : 0;
+    DCHECK(RefIsPositive(var));
+    if (!hint_has_value_[bool_var] && hint_has_value_[var]) {
+      const int64_t bool_value = hint_[var] == value ? 1 : 0;
       hint_has_value_[bool_var] = true;
-      hint_[bool_var] = RefIsPositive(literal) ? hint_value : 1 - hint_value;
+      hint_[bool_var] = RefIsPositive(literal) ? bool_value : 1 - bool_value;
     }
   }
   return true;
