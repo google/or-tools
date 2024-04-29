@@ -1244,8 +1244,7 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
-    int xpress_basis_status) {
+MPSolver::BasisStatus XpressToMPSolverBasisStatus(int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
       return MPSolver::AT_LOWER_BOUND;
@@ -1466,13 +1465,7 @@ void XpressInterface::ExtractNewVariables() {
         CHECK_STATUS(XPRSaddcols(mLp, new_col_count, 0, obj.get(),
                                  cmatbeg.data(), cmatind.get(), cmatval.get(),
                                  lb.get(), ub.get()));
-        // TODO fixme
-        //  Writing all names worsen the performance significantly
-        // if (have_names) {
-        //    CHECK_STATUS(XPRSaddnames(mLp, XPRS_NAMES_COLUMN,
-        //    col_names.data(), 0,
-        //                             new_col_count - 1));
-        // }
+
         int const cols = getnumcols(mLp);
         unique_ptr<int[]> ind(new int[new_col_count]);
         for (int j = 0; j < cols; ++j) ind[j] = j;
@@ -2045,11 +2038,60 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   return result_status_;
 }
 
+namespace {
+template <class T>
+struct getNameFlag;
+
+template <>
+struct getNameFlag<MPVariable> {
+  enum { value = XPRS_NAMES_COLUMN };
+};
+
+template <>
+struct getNameFlag<MPConstraint> {
+  enum { value = XPRS_NAMES_ROW };
+};
+
+template <class T>
+// T = MPVariable | MPConstraint
+// or any class that has a public method name() const
+void ExtractNames(XPRSprob mLp, const std::vector<T*>& objects) {
+  const bool have_names =
+      std::any_of(objects.begin(), objects.end(),
+                  [](const T* x) { return !x->name().empty(); });
+
+  // FICO XPRESS requires a single large const char* such as
+  // "name1\0name2\0name3"
+  // See
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddnames.html
+  if (have_names) {
+    std::vector<char> all_names;
+    for (const auto& x : objects) {
+      const std::string& current_name = x->name();
+      std::copy(current_name.begin(), current_name.end(),
+                std::back_inserter(all_names));
+      all_names.push_back('\0');
+    }
+
+    // Remove trailing '\0', if any
+    // Note : Calling pop_back on an empty container is undefined behavior.
+    if (!all_names.empty() && all_names.back() == '\0') all_names.pop_back();
+
+    CHECK_STATUS(XPRSaddnames(mLp, getNameFlag<T>::value, all_names.data(), 0,
+                              objects.size() - 1));
+  }
+}
+}  // namespace
+
 void XpressInterface::Write(const std::string& filename) {
   if (sync_status_ == MUST_RELOAD) {
     Reset();
   }
   ExtractModel();
+
+  ExtractNames(mLp, solver_->variables_);
+  ExtractNames(mLp, solver_->constraints_);
+
   VLOG(1) << "Writing Xpress MPS \"" << filename << "\".";
   const int status = XPRSwriteprob(mLp, filename.c_str(), "");
   if (status) {
