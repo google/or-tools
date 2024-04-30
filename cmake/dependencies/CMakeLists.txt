@@ -60,10 +60,11 @@ set(CMAKE_Fortran_COMPILER OFF)
 if(BUILD_ZLIB)
   message(CHECK_START "Fetching ZLIB")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(ZLIB_BUILD_EXAMPLES OFF)
   FetchContent_Declare(
     zlib
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
-    GIT_TAG "v1.2.13"
+    GIT_TAG "v1.3.1"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
   FetchContent_MakeAvailable(zlib)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
