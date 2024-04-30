@@ -31,7 +31,7 @@ namespace operations_research {
  * KN_INFINITY
  * @param value the evaluated value
  * @return KN_INFINITY if the value is inf otherwise value
- */  
+ */
 inline double redefine_infinity_double(double value) {
   if (std::isinf(value)) {
     return value > 0 ? KN_INFINITY : -KN_INFINITY;
@@ -182,8 +182,8 @@ int64_t KnitroMPCallbackContext::NumExploredNodes() {
 }
 
 /**
- * Constraint generator for callback methods. 
- * Add new linear constraint to Knitro model as Knitro 
+ * Constraint generator for callback methods.
+ * Add new linear constraint to Knitro model as Knitro
  * generate cuts from lazy constraints using the same method.
  * @param kn the Knitro model
  * @param linear_range the constraint
@@ -231,7 +231,7 @@ struct MPCallBackWithEvent {
   MPCallback* callback;
 };
 
-/** 
+/**
  * Call-back called by Knitro that needs this type signature.
  */
 int KNITRO_API CallBackFn(KN_context_ptr kc, const double* const x,
@@ -249,10 +249,7 @@ int KNITRO_API CallBackFn(KN_context_ptr kc, const double* const x,
 /*------------Knitro Interface Implem ------------*/
 
 KnitroInterface::KnitroInterface(MPSolver* solver, bool mip)
-    : MPSolverInterface(solver),
-      kc_(nullptr),
-      mip_(mip),
-      no_obj_(true) {
+    : MPSolverInterface(solver), kc_(nullptr), mip_(mip), no_obj_(true) {
   CHECK_STATUS(KN_new(&kc_));
 }
 
@@ -292,6 +289,8 @@ void KnitroInterface::SetOptimizationDirection(bool maximize) {
 
 void KnitroInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
+  // the "extracted" check is done upstream for now
+  // but it should be done here
   if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
     DCHECK_LT(var_index, last_variable_index_);
@@ -307,10 +306,13 @@ void KnitroInterface::SetVariableBounds(int var_index, double lb, double ub) {
 void KnitroInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (mip_) {
+    // the "extracted" check is done upstream for now
+    // but it should be done here
     if (variable_is_extracted(var_index)) {
       DCHECK_LT(var_index, last_variable_index_);
-      CHECK_STATUS(KN_set_var_type(kc_, var_index, 
-                   integer ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS));
+      CHECK_STATUS(KN_set_var_type(
+          kc_, var_index,
+          integer ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS));
     } else {
       sync_status_ = MUST_RELOAD;
     }
@@ -321,6 +323,8 @@ void KnitroInterface::SetVariableInteger(int var_index, bool integer) {
 
 void KnitroInterface::SetConstraintBounds(int row_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
+  // the "extracted" check is done upstream for now
+  // but it should be done here
   if (constraint_is_extracted(row_index)) {
     DCHECK_LT(row_index, last_constraint_index_);
     CHECK_STATUS(
@@ -360,7 +364,7 @@ void KnitroInterface::ClearConstraint(MPConstraint* constraint) {
   const auto& coeffs = constraint->coefficients_;
   for (auto coeff : coeffs) {
     int const col = coeff.first->index();
-    // if the variable has been extracted, 
+    // if the variable has been extracted,
     // then its linear coefficient exists
     if (variable_is_extracted(col)) {
       var_ind[j] = col;
@@ -369,8 +373,7 @@ void KnitroInterface::ClearConstraint(MPConstraint* constraint) {
   }
   if (j > 0) {
     // delete all coefficients of constraint's linear structure
-    CHECK_STATUS(
-        KN_del_con_linear_struct_one(kc_, j, row, var_ind.get()));
+    CHECK_STATUS(KN_del_con_linear_struct_one(kc_, j, row, var_ind.get()));
     CHECK_STATUS(KN_update(kc_));
   }
 }
@@ -467,7 +470,8 @@ void KnitroInterface::ExtractNewVariables() {
       // Def buffer size at 256 for variables' name
       names[j] = new char[256];
       strcpy(names[j], var->name().c_str());
-      types[j] = var->integer() ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS;
+      types[j] =
+          (mip_ && var->integer()) ? KN_VARTYPE_INTEGER : KN_VARTYPE_CONTINUOUS;
       if (var->integer() && (var->branching_priority() != 0)) {
         prior_idx[prior_nb] = var_index;
         prior[prior_nb] = var->branching_priority();
@@ -481,7 +485,7 @@ void KnitroInterface::ExtractNewVariables() {
     CHECK_STATUS(KN_set_var_names(kc_, len, idx_vars.get(), names.get()));
     CHECK_STATUS(KN_set_mip_branching_priorities(kc_, prior_nb, prior_idx.get(),
                                                  prior.get()));
-    
+
     // Add new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
@@ -491,9 +495,7 @@ void KnitroInterface::ExtractNewVariables() {
         if (var_index >= last_variable_index_) {
           // The variable is new, so we know the previous coefficient
           // value was 0 and we can directly add the coefficient.
-          CHECK_STATUS(
-              KN_add_con_linear_term(kc_, i,
-                                var_index,entry.second));
+          CHECK_STATUS(KN_add_con_linear_term(kc_, i, var_index, entry.second));
         }
       }
     }
@@ -610,12 +612,11 @@ bool KnitroInterface::SetSolverSpecificParametersAsString(
 }
 
 void KnitroInterface::SetRelativeMipGap(double value) {
-  if (mip_) {
-    CHECK_STATUS(KN_set_double_param(kc_, KN_PARAM_MIP_OPTGAPREL, value));
-  } else {
-    LOG(WARNING) << "The relative MIP gap is only available "
-                 << "for discrete problems.";
-  }
+  /**
+   * This method should be called by SetMIPParameters() only
+   * so there is no mip_ check here
+   */
+  CHECK_STATUS(KN_set_double_param(kc_, KN_PARAM_MIP_OPTGAPREL, value));
 }
 
 void KnitroInterface::SetPrimalTolerance(double value) {
@@ -636,8 +637,10 @@ void KnitroInterface::SetPresolveMode(int value) {
     case MPSolverParameters::PRESOLVE_ON:
       CHECK_STATUS(KN_set_int_param(kc_, KN_PARAM_PRESOLVE, KN_PRESOLVE_YES));
       return;
+    default:
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+      return;
   }
-  SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
 }
 
 void KnitroInterface::SetScalingMode(int value) {
@@ -713,8 +716,8 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
       solver_->solver_specific_parameter_string_);
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    CHECK_STATUS(KN_set_int_param(kc_, KN_PARAM_MAXTIMECPU,
-                                  solver_->time_limit_in_secs()));
+    CHECK_STATUS(KN_set_double_param(kc_, KN_PARAM_MAXTIMECPU,
+                                     solver_->time_limit_in_secs()));
   }
 
   // Set the hint (if any)
@@ -751,28 +754,30 @@ MPSolver::ResultStatus KnitroInterface::Solve(MPSolverParameters const& param) {
   // Solve.
   timer.Restart();
   int status;
-
-  // check for multi-thread solve
-  status = KN_solve(kc_);
+  status = -KN_solve(kc_);
 
   if (status == 0) {
     // the final solution is optimal to specified tolerances;
     result_status_ = MPSolver::OPTIMAL;
-  } else if (status < 110 && 100 <= status) {
-    // a feasible solution was found (but not verified optimal);
+
+  } else if ((status < 110 && 100 <= status) ||
+             (status < 410 && 400 <= status)) {
+    // a feasible solution was found (but not verified optimal)
+    // OR
+    // a feasible point was found before reaching the limit
     result_status_ = MPSolver::FEASIBLE;
-  } else if (status < 210 && 200 <= status) {
+
+  } else if ((status < 210 && 200 <= status) ||
+             (status < 420 && 410 <= status)) {
     // Knitro terminated at an infeasible point;
+    // OR
+    // no feasible point was found before reaching the limit
     result_status_ = MPSolver::INFEASIBLE;
+
   } else if (status < 302 && 300 <= status) {
     // the problem was determined to be unbounded;
     result_status_ = MPSolver::UNBOUNDED;
-  } else if (status < 410 && 400 <= status) {
-    // a feasible point was found before reaching the limit
-    result_status_ = MPSolver::FEASIBLE;
-  } else if (status < 420 && 410 <= status) {
-    // no feasible point was found before reaching the limit
-    result_status_ = MPSolver::INFEASIBLE;
+
   } else {
     // Knitro terminated with an input error or some non-standard error or else.
     result_status_ = MPSolver::ABNORMAL;
@@ -845,7 +850,7 @@ void KnitroInterface::AddSolutionHintToOptimizer() {
 int64_t KnitroInterface::iterations() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   int numIters;
-  CHECK_STATUS(KN_get_mip_number_solves(kc_, &numIters));
+  CHECK_STATUS(KN_get_number_iters(kc_, &numIters));
   return static_cast<int64_t>(numIters);
 }
 
