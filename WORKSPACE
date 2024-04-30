@@ -74,7 +74,7 @@ git_repository(
 new_git_repository(
     name = "zlib",
     build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
-    tag = "v1.2.13",
+    tag = "v1.3.1",
     remote = "https://github.com/madler/zlib.git",
 )
 
