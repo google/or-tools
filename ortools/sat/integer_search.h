@@ -281,6 +281,10 @@ class IntegerSearchHelper {
   bool GetDecision(const std::function<BooleanOrIntegerLiteral()>& f,
                    LiteralIndex* decision);
 
+  // Inner function used by GetDecision().
+  // It will create a new associated literal if needed.
+  LiteralIndex GetDecisionLiteral(const BooleanOrIntegerLiteral& decision);
+
   // Functions passed to GetDecision() might call this to notify a conflict
   // was detected.
   void NotifyThatConflictWasFoundDuringGetDecision() {

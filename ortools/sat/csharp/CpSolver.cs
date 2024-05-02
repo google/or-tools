@@ -145,9 +145,19 @@ public class CpSolver
         log_callback_ = new LogCallbackDelegate(del);
     }
 
+    public void ClearLogCallback()
+    {
+        log_callback_ = null;
+    }
+
     public void SetBestBoundCallback(DoubleToVoidDelegate del)
     {
         best_bound_callback_ = new BestBoundCallbackDelegate(del);
+    }
+
+    public void ClearBestBoundCallback()
+    {
+        best_bound_callback_ = null;
     }
 
     public CpSolverResponse Response

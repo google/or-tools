@@ -233,20 +233,14 @@ std::function<BooleanOrIntegerLiteral()> BoolPseudoCostHeuristic(Model* model) {
 
 std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
   auto* lp_values = model->GetOrCreate<ModelLpValues>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* pseudo_costs = model->GetOrCreate<PseudoCosts>();
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  return [lp_values, pseudo_costs, integer_trail, encoder, model]() {
+  return [lp_values, pseudo_costs]() {
     double best_score = 0.0;
     BooleanOrIntegerLiteral decision;
     for (IntegerVariable var(0); var < lp_values->size(); var += 2) {
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      const IntegerValue ub = integer_trail->UpperBound(var);
-      if (lb == ub) continue;
-
-      const double lp_value = (*lp_values)[var];
-      const bool is_reliable = pseudo_costs->LpReliability(var) >= 4;
-      const bool is_integer = std::abs(lp_value - std::round(lp_value)) < 1e-6;
+      const PseudoCosts::BranchingInfo info =
+          pseudo_costs->EvaluateVar(var, *lp_values);
+      if (info.is_fixed) continue;
 
       // When not reliable, we skip integer.
       //
@@ -254,35 +248,18 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
       // TODO(user): do not branch on integer lp? however it seems better to
       // do that !? Maybe this is because if it has a high pseudo cost
       // average, it is good anyway?
-      if (!is_reliable && is_integer) continue;
-
-      // There are some corner cases if we are at the bound. Note that it is
-      // important to be in sync with the SplitAroundLpValue() below.
-      double down_fractionality = lp_value - std::floor(lp_value);
-      IntegerValue down_target = IntegerValue(std::floor(lp_value));
-      if (lp_value >= ToDouble(ub)) {
-        down_fractionality = 1.0;
-        down_target = ub - 1;
-      } else if (lp_value <= ToDouble(lb)) {
-        down_fractionality = 0.0;
-        down_target = lb;
-      }
-      const auto [down_score, up_score] =
-          pseudo_costs->LpPseudoCost(var, down_fractionality);
-      const double score = pseudo_costs->CombineScores(down_score, up_score);
+      if (!info.is_reliable && info.is_integer) continue;
 
       // We delay to subsequent heuristic if the score is 0.0.
-      if (score > best_score) {
-        best_score = score;
+      if (info.score > best_score) {
+        best_score = info.score;
 
         // This direction works better than the inverse in the benchs. But
         // always branching up seems even better. TODO(user): investigate.
-        if (down_score > up_score) {
-          decision = BooleanOrIntegerLiteral(
-              IntegerLiteral::LowerOrEqual(var, down_target));
+        if (info.down_score > info.up_score) {
+          decision = BooleanOrIntegerLiteral(info.down_branch);
         } else {
-          decision = BooleanOrIntegerLiteral(
-              IntegerLiteral::GreaterOrEqual(var, down_target + 1));
+          decision = BooleanOrIntegerLiteral(info.down_branch.Negated());
         }
       }
     }
@@ -1380,6 +1357,31 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   return true;
 }
 
+LiteralIndex IntegerSearchHelper::GetDecisionLiteral(
+    const BooleanOrIntegerLiteral& decision) {
+  DCHECK(decision.HasValue());
+
+  // Convert integer decision to literal one if needed.
+  //
+  // TODO(user): Ideally it would be cool to delay the creation even more
+  // until we have a conflict with these decisions, but it is currently
+  // hard to do so.
+  const Literal literal =
+      decision.boolean_literal_index != kNoLiteralIndex
+          ? Literal(decision.boolean_literal_index)
+          : encoder_->GetOrCreateAssociatedLiteral(decision.integer_literal);
+  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+    // TODO(user): It would be nicer if this can never happen. For now, it
+    // does because of the Propagate() not reaching the fixed point as
+    // mentioned in a TODO above. As a work-around, we display a message
+    // but do not crash and recall the decision heuristic.
+    VLOG(1) << "Trying to take a decision that is already assigned!"
+            << " Fix this. Continuing for now...";
+    return kNoLiteralIndex;
+  }
+  return literal.Index();
+}
+
 bool IntegerSearchHelper::GetDecision(
     const std::function<BooleanOrIntegerLiteral()>& f, LiteralIndex* decision) {
   *decision = kNoLiteralIndex;
@@ -1411,28 +1413,8 @@ bool IntegerSearchHelper::GetDecision(
     }
     if (!new_decision.HasValue()) break;
 
-    // Convert integer decision to literal one if needed.
-    //
-    // TODO(user): Ideally it would be cool to delay the creation even more
-    // until we have a conflict with these decisions, but it is currently
-    // hard to do so.
-    if (new_decision.boolean_literal_index != kNoLiteralIndex) {
-      *decision = new_decision.boolean_literal_index;
-    } else {
-      *decision =
-          encoder_->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
-              .Index();
-    }
-    if (sat_solver_->Assignment().LiteralIsAssigned(Literal(*decision))) {
-      // TODO(user): It would be nicer if this can never happen. For now, it
-      // does because of the Propagate() not reaching the fixed point as
-      // mentioned in a TODO above. As a work-around, we display a message
-      // but do not crash and recall the decision heuristic.
-      VLOG(1) << "Trying to take a decision that is already assigned!"
-              << " Fix this. Continuing for now...";
-      continue;
-    }
-    break;
+    *decision = GetDecisionLiteral(new_decision);
+    if (*decision != kNoLiteralIndex) break;
   }
   return true;
 }
