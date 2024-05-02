@@ -971,6 +971,8 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
 }
 
 // Setup the right-hand side of a constraint.
+// The function is expected to _always_ set rhs, sense, range. So for
+// non-ranged rows it must set range to zero.
 void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                               double& range) {
   if (lb == ub) {
@@ -1541,7 +1543,6 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
       unique_ptr<int[]> rngind(new int[chunk]);
-      bool haveRanges = false;
 
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
@@ -1563,7 +1564,6 @@ void XpressInterface::ExtractNewConstraints() {
           // Setup right-hand side of constraint.
           MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow],
                   rngval[nextRow]);
-          haveRanges = haveRanges || (rngval[nextRow] != 0.0);
           rngind[nextRow] = offset + c;
 
           // Setup left-hand side of constraint.
