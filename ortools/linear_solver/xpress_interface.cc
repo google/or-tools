@@ -1542,7 +1542,6 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-      unique_ptr<int[]> rngind(new int[chunk]);
 
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
@@ -1564,7 +1563,6 @@ void XpressInterface::ExtractNewConstraints() {
           // Setup right-hand side of constraint.
           MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow],
                   rngval[nextRow]);
-          rngind[nextRow] = offset + c;
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
