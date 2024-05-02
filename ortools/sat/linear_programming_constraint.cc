@@ -557,6 +557,11 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
   }
+  if (level < previous_level_) {
+    lp_at_optimal_ = false;
+    lp_objective_lower_bound_ = -std::numeric_limits<double>::infinity();
+  }
+  previous_level_ = level;
 
   // Special case for level zero, we "reload" any previously known optimal
   // solution from that level.
@@ -697,6 +702,12 @@ bool LinearProgrammingConstraint::SolveLp() {
           << objective_definition_->ScaleObjective(
                  simplex_.GetObjectiveValue());
 
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+      simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
+    lp_objective_lower_bound_ = simplex_.GetObjectiveValue();
+  }
+  lp_at_optimal_ = simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL;
+
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     lp_solution_is_set_ = true;
     lp_solution_level_ = trail_->CurrentDecisionLevel();
@@ -799,7 +810,6 @@ bool LinearProgrammingConstraint::AnalyzeLp() {
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     CHECK(lp_solution_is_set_);
 
-    lp_objective_ = simplex_.GetObjectiveValue();
     lp_solution_is_integer_ = true;
     const int num_vars = integer_variables_.size();
     for (int i = 0; i < num_vars; i++) {

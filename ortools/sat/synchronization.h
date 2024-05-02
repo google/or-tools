@@ -272,9 +272,6 @@ class SharedResponseManager {
   // Adds a callback that will be called on each new best objective bound
   // found. Returns its id so it can be unregistered if needed.
   //
-  // Note that adding a callback is not free since some computation will be done
-  // before this is called.
-  //
   // Note that currently the class is waiting for the callback to finish before
   // accepting any new updates. That could be changed if needed.
   int AddBestBoundCallback(std::function<void(double)> callback);
