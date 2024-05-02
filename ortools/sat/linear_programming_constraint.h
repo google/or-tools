@@ -164,10 +164,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that this solution is always an OPTIMAL solution of an LP above or
   // at the current decision level. We "erase" it when we backtrack over it.
   bool HasSolution() const { return lp_solution_is_set_; }
-  double SolutionObjectiveValue() const { return lp_objective_; }
   double GetSolutionValue(IntegerVariable variable) const;
   double GetSolutionReducedCost(IntegerVariable variable) const;
   bool SolutionIsInteger() const { return lp_solution_is_integer_; }
+
+  // Returns a valid lp lower bound for the current branch, and indicates if
+  // the latest LP solve in that branch was solved to optimality or not.
+  // During normal operation, we will always propagate the LP, so this should
+  // not refer to an optimality status lower in that branch.
+  bool AtOptimal() const { return lp_at_optimal_; }
+  double ObjectiveLpLowerBound() const { return lp_objective_lower_bound_; }
 
   // PropagatorInterface API.
   bool Propagate() override;
@@ -526,9 +532,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int lp_solution_level_ = 0;
   bool lp_solution_is_set_ = false;
   bool lp_solution_is_integer_ = false;
-  double lp_objective_;
   std::vector<double> lp_solution_;
   std::vector<double> lp_reduced_cost_;
+
+  // Last objective lower bound found by the LP Solver.
+  // We erase this on backtrack.
+  int previous_level_ = 0;
+  bool lp_at_optimal_ = false;
+  double lp_objective_lower_bound_;
 
   // If non-empty, this is the last known optimal lp solution at root-node. If
   // the variable bounds changed, or cuts where added, it is possible that this

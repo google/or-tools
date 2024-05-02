@@ -18,6 +18,7 @@
 
 #include <deque>
 #include <functional>
+#include <limits>
 #include <ostream>
 #include <string>
 #include <utility>

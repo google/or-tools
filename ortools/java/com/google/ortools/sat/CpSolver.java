@@ -36,7 +36,7 @@ public final class CpSolver {
 
   /** Solves the given model, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
-    return solveWithSolutionCallback(model, null);
+    return solve(model, null);
   }
 
   /**
@@ -97,9 +97,9 @@ public final class CpSolver {
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     boolean oldValue = solveParameters.getEnumerateAllSolutions();
     solveParameters.setEnumerateAllSolutions(true);
-    solve(model, cb);
+    CpSolverStatus status = solve(model, cb);
     solveParameters.setEnumerateAllSolutions(oldValue);
-    return solveResponse.getStatus();
+    return status;
   }
 
   private synchronized void createSolveWrapper() {
@@ -187,6 +187,21 @@ public final class CpSolver {
   /** Sets the log callback for the solver. */
   public void setLogCallback(Consumer<String> cb) {
     this.logCallback = cb;
+  }
+
+  /** Clears the log callback. */
+  public void clearLogCallback() {
+    this.logCallback = null;
+  }
+
+  /** Sets the best bound callback for the solver. */
+  public void setBestBoundCallback(Consumer<Double> cb) {
+    this.bestBoundCallback = cb;
+  }
+
+  /** Clears the best bound callback. */
+  public void clearBestBoundCallback() {
+    this.bestBoundCallback = null;
   }
 
   /** Returns some statistics on the solution found as a string. */

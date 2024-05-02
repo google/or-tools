@@ -106,8 +106,7 @@ std::function<void(Model*)> NewFeasibleSolutionLogCallback(
 /** Creates a callbacks that will be called on each new best objective bound
  *  found.
  *
- * Note that adding a callback is not free since some computation will be done
- * before this is called, and it will only be called on optimization models.
+ * Note that this function is called before the update takes place.
  */
 std::function<void(Model*)> NewBestBoundCallback(
     const std::function<void(double)>& callback);

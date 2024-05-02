@@ -44,6 +44,12 @@ class PseudoCosts {
   // BeforeTakingDecision().
   void AfterTakingDecision(bool conflict = false);
 
+  // Advanced usage. Internal functions used by Before/AfterTakingDecision(),
+  // that are exposed for strong branching.
+  double ObjectiveIncrease(bool conflict);
+  bool SaveLpInfo();
+  void SaveBoundChanges(Literal decision, absl::Span<const double> lp_values);
+
   // Returns the variable with best reliable pseudo cost that is not fixed.
   IntegerVariable GetBestDecisionVar();
 
@@ -60,15 +66,24 @@ class PseudoCosts {
     return pseudo_costs_[var].NumRecords();
   }
 
-  // Alternative pseudo-costs. This relies on the LP more heavily and is more
-  // in line with what a MIP solver would do. Return the (down, up) costs which
-  // can be combined with CombineScores();
+  // Combines the score of the two branch into one score.
   double CombineScores(double down_branch, double up_branch) const;
-  std::pair<double, double> LpPseudoCost(IntegerVariable var,
-                                         double down_fractionality) const;
 
-  // Returns the pseudo cost "reliability".
-  int LpReliability(IntegerVariable var) const;
+  // Alternative pseudo-cost. This relies on the LP more heavily and is more in
+  // line with what a MIP solver would do. Returns all the info about taking a
+  // branch around the current lp_value of var.
+  struct BranchingInfo {
+    bool is_fixed = false;
+    bool is_reliable = false;
+    bool is_integer = false;
+    double down_fractionality = 0.0;
+    double score = 0.0;
+    double down_score = 0.0;
+    double up_score = 0.0;
+    IntegerLiteral down_branch;
+  };
+  BranchingInfo EvaluateVar(IntegerVariable var,
+                            absl::Span<const double> lp_values);
 
   // Experimental alternative pseudo cost based on the explanation for bound
   // increases.
@@ -83,7 +98,8 @@ class PseudoCosts {
     IntegerValue lower_bound_change = IntegerValue(0);
     double lp_increase = 0.0;
   };
-  std::vector<VariableBoundChange> GetBoundChanges(Literal decision);
+  std::vector<VariableBoundChange> GetBoundChanges(
+      Literal decision, absl::Span<const double> lp_values);
 
  private:
   // Returns the current objective info.
