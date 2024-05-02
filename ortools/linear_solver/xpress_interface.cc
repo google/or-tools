@@ -1584,11 +1584,6 @@ void XpressInterface::ExtractNewConstraints() {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
                                    rngval.get(), rmatbeg.get(), rmatind.get(),
                                    rmatval.get()));
-
-          if (haveRanges) {
-            CHECK_STATUS(
-                XPRSchgrhsrange(mLp, nextRow, rngind.get(), rngval.get()));
-          }
         }
       }
     } catch (...) {
