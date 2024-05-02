@@ -3132,7 +3132,7 @@ class CpSolver:
             sat_parameters_pb2.SatParameters()
         )
         self.log_callback: Optional[Callable[[str], None]] = None
-        self.best_bound_callback: Optional[Callable[[double], None]] = None
+        self.best_bound_callback: Optional[Callable[[float], None]] = None
         self.__solve_wrapper: Optional[swig_helper.SolveWrapper] = None
         self.__lock: threading.Lock = threading.Lock()
 
