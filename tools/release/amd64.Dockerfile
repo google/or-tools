@@ -1,16 +1,20 @@
-FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
+# Use yum
+#FROM --platform=linux/amd64 centos:7 AS env
+#FROM quay.io/pypa/manylinux2014_x86_64:latest AS env
+# Use dnf
+FROM quay.io/pypa/manylinux_2_28_x86_64:latest AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install wget curl \
+RUN dnf -y update \
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install wget curl \
  pcre2-devel openssl \
  which redhat-lsb-core \
  pkgconfig autoconf libtool zlib-devel \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
@@ -37,25 +41,19 @@ RUN curl --location-trusted \
 # Install .Net
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
 RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
-&& yum -y update \
-&& yum -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+&& dnf -y update \
+&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
 # Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 ENV JAVA_HOME=/usr/lib/jvm/java
-
-# Openssl 1.1
-RUN yum -y update \
-&& yum -y install epel-release \
-&& yum repolist \
-&& yum -y install openssl11
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -80,8 +78,6 @@ RUN git clone -b "${ORTOOLS_GIT_BRANCH}" --single-branch https://github.com/goog
 # Build delivery
 FROM devel AS delivery
 WORKDIR /root/or-tools
-
-ENV GPG_ARGS ""
 
 ARG ORTOOLS_TOKEN
 ENV ORTOOLS_TOKEN ${ORTOOLS_TOKEN}
