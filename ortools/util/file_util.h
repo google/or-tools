@@ -21,7 +21,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/dump_vars.h"
 #include "ortools/base/file.h"
 #include "ortools/base/options.h"
 #include "ortools/base/recordio.h"
@@ -53,7 +52,7 @@ absl::StatusOr<Proto> ReadFileToProto(absl::string_view filename,
                                       bool allow_partial = false) {
   Proto proto;
   RETURN_IF_ERROR(ReadFileToProto(filename, &proto, allow_partial))
-      << DUMP_VARS(filename);
+      << "filename=" << filename;
   return proto;
 }
 
