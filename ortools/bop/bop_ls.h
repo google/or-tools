@@ -250,7 +250,7 @@ class NonOrderedSetHasher {
 
  private:
   absl::BitGenRef random_;
-  absl::StrongVector<IntType, uint64_t> hashes_;
+  util_intops::StrongVector<IntType, uint64_t> hashes_;
 };
 
 // This class is used to incrementally maintain an assignment and the
@@ -413,16 +413,16 @@ class AssignmentAndConstraintFeasibilityMaintainer {
     int64_t weight;
   };
 
-  absl::StrongVector<VariableIndex,
-                     absl::StrongVector<EntryIndex, ConstraintEntry>>
+  util_intops::StrongVector<
+      VariableIndex, util_intops::StrongVector<EntryIndex, ConstraintEntry>>
       by_variable_matrix_;
-  absl::StrongVector<ConstraintIndex, int64_t> constraint_lower_bounds_;
-  absl::StrongVector<ConstraintIndex, int64_t> constraint_upper_bounds_;
+  util_intops::StrongVector<ConstraintIndex, int64_t> constraint_lower_bounds_;
+  util_intops::StrongVector<ConstraintIndex, int64_t> constraint_upper_bounds_;
 
   BopSolution assignment_;
   BopSolution reference_;
 
-  absl::StrongVector<ConstraintIndex, int64_t> constraint_values_;
+  util_intops::StrongVector<ConstraintIndex, int64_t> constraint_values_;
   BacktrackableIntegerSet<ConstraintIndex> infeasible_constraint_set_;
 
   // This contains the list of variable flipped in assignment_.
@@ -514,8 +514,8 @@ class OneFlipConstraintRepairer {
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
 
-  absl::StrongVector<ConstraintIndex,
-                     absl::StrongVector<TermIndex, ConstraintTerm>>
+  util_intops::StrongVector<
+      ConstraintIndex, util_intops::StrongVector<TermIndex, ConstraintTerm>>
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;
@@ -632,7 +632,7 @@ class LocalSearchAssignmentIterator {
   SatWrapper* const sat_wrapper_;
   OneFlipConstraintRepairer repairer_;
   std::vector<SearchNode> search_nodes_;
-  absl::StrongVector<ConstraintIndex, TermIndex> initial_term_index_;
+  util_intops::StrongVector<ConstraintIndex, TermIndex> initial_term_index_;
 
   // Temporary vector used by ApplyDecision().
   std::vector<sat::Literal> tmp_propagated_literals_;

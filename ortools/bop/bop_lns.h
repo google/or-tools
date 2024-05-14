@@ -168,7 +168,8 @@ class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
 
   // TODO(user): reuse by_variable_matrix_ from the LS? Note however than we
   // don't need the coefficients here.
-  absl::StrongVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
+  util_intops::StrongVector<VariableIndex, std::vector<ConstraintIndex>>
+      columns_;
   absl::BitGenRef random_;
 };
 
