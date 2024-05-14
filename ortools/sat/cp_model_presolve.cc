@@ -7299,7 +7299,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // detection as completely, so we still apply the other "probing" code
   // afterwards even if it will not fix more literals, but it will do one pass
   // of proper equivalence detection.
-  absl::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
+  util_intops::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
   if (!context_->params().debug_postsolve_with_full_solver() &&
       num_ignored_variables == 0 && num_ignored_constraints == 0 &&
       num_in_extra_constraints == 0) {
@@ -8597,7 +8597,10 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
   for (const int64_t v : context_->DomainOf(target_ref).Values()) {
     value_set.insert(v);
   }
-  for (const auto& [value, literals] : value_to_refs) {
+  for (auto& [value, literals] : value_to_refs) {
+    // For determinism.
+    absl::c_sort(literals);
+
     // If the value is not in the domain, just set all literal to false.
     if (!value_set.contains(value)) {
       for (const int lit : literals) {

@@ -1134,9 +1134,9 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
 class SccGraph {
  public:
   using Implications =
-      absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
+      util_intops::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
   using AtMostOnes =
-      absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
+      util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>;
   using SccFinder =
       StronglyConnectedComponentsFinder<int32_t, SccGraph,
                                         CompactVectorVector<int32_t, int32_t>>;
@@ -1668,8 +1668,8 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   detector.SetWorkLimit(1e9);
 
   std::vector<int> dense_index_to_index;
-  absl::StrongVector<LiteralIndex, std::vector<int>> max_cliques_containing(
-      implications_.size());
+  util_intops::StrongVector<LiteralIndex, std::vector<int>>
+      max_cliques_containing(implications_.size());
 
   // We starts by processing larger constraints first.
   // But we want the output order to be stable.
@@ -1796,8 +1796,8 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
 template <bool use_weight>
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
     const absl::Span<const Literal> at_most_one,
-    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values) {
+    const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+    const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values) {
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
@@ -1874,14 +1874,16 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
 }
 
 // Make sure both version are compiled.
-template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
-    true>(const absl::Span<const Literal> at_most_one,
-          const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-          const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
-template std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight<
-    false>(const absl::Span<const Literal> at_most_one,
-           const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-           const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+template std::vector<Literal>
+BinaryImplicationGraph::ExpandAtMostOneWithWeight<true>(
+    const absl::Span<const Literal> at_most_one,
+    const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+    const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values);
+template std::vector<Literal>
+BinaryImplicationGraph::ExpandAtMostOneWithWeight<false>(
+    const absl::Span<const Literal> at_most_one,
+    const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+    const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
 const std::vector<std::vector<Literal>>&
 BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
@@ -1889,9 +1891,10 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     const std::vector<double>& lp_values) {
   // We only want to generate a cut with literals from the LP, not extra ones.
   const int num_literals = implications_.size();
-  absl::StrongVector<LiteralIndex, bool> can_be_included(num_literals, false);
-  absl::StrongVector<LiteralIndex, double> expanded_lp_values(num_literals,
-                                                              0.0);
+  util_intops::StrongVector<LiteralIndex, bool> can_be_included(num_literals,
+                                                                false);
+  util_intops::StrongVector<LiteralIndex, double> expanded_lp_values(
+      num_literals, 0.0);
   const int size = literals.size();
   for (int i = 0; i < size; ++i) {
     const Literal l = literals[i];
@@ -1975,8 +1978,8 @@ std::vector<absl::Span<const Literal>>
 BinaryImplicationGraph::HeuristicAmoPartition(std::vector<Literal>* literals) {
   std::vector<absl::Span<const Literal>> result;
 
-  absl::StrongVector<LiteralIndex, bool> to_consider(implications_.size(),
-                                                     false);
+  util_intops::StrongVector<LiteralIndex, bool> to_consider(
+      implications_.size(), false);
   for (const Literal l : *literals) to_consider[l] = true;
 
   // Priority queue of (intersection_size, start_of_amo).
@@ -2389,7 +2392,7 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   }
 
   // Check that reverse topo order is correct.
-  absl::StrongVector<LiteralIndex, int> lit_to_order;
+  util_intops::StrongVector<LiteralIndex, int> lit_to_order;
   if (is_dag_) {
     lit_to_order.assign(implications_.size(), -1);
     for (int i = 0; i < reverse_topological_order_.size(); ++i) {

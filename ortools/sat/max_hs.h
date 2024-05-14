@@ -163,7 +163,7 @@ class HittingSetOptimizer {
   // variables.
   // By convention, we always associate the MPVariableProto with both the
   // positive and the negative SAT variable.
-  absl::StrongVector<IntegerVariable, int> sat_var_to_mp_var_;
+  util_intops::StrongVector<IntegerVariable, int> sat_var_to_mp_var_;
 
   // The list of <positive sat var, mp var proto> created during the
   // ExtractVariable() method.

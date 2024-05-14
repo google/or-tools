@@ -765,7 +765,7 @@ std::pair<IntegerVariable, IntegerVariable> Canonicalize(IntegerVariable a,
 
 double GetLiteralLpValue(
     IntegerVariable var,
-    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
   return VariableIsPositive(var) ? lp_values[var]
                                  : 1.0 - lp_values[PositiveVariable(var)];
 }
@@ -773,7 +773,7 @@ double GetLiteralLpValue(
 }  // namespace
 
 void ProductDetector::UpdateRLTMaps(
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     IntegerVariable var1, double lp1, IntegerVariable var2, double lp2,
     IntegerVariable bound_var, double bound_lp) {
   // we have var1 * var2 <= bound_var, and this is only useful if it is better
@@ -798,7 +798,7 @@ void ProductDetector::UpdateRLTMaps(
 // TODO(user): limit work if too many ternary.
 void ProductDetector::InitializeBooleanRLTCuts(
     const absl::flat_hash_map<IntegerVariable, glop::ColIndex>& lp_vars,
-    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
   // TODO(user): Maybe we shouldn't reconstruct this every time, but it is hard
   // in case of multiple lps to make sure we don't use variables not in the lp
   // otherwise.

@@ -304,7 +304,7 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
 
   ConstraintIndex new_size(0);
   equiv_constraints_.clear();
-  absl::StrongVector<ConstraintIndex, ConstraintIndex> index_mapping(
+  util_intops::StrongVector<ConstraintIndex, ConstraintIndex> index_mapping(
       constraint_infos_.size());
   int num_deleted_constraints = 0;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
@@ -792,7 +792,7 @@ bool LinearConstraintManager::DebugCheckConstraint(
 
 void TopNCuts::AddCut(
     LinearConstraint ct, absl::string_view name,
-    const absl::StrongVector<IntegerVariable, double>& lp_solution) {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.num_terms == 0) return;
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =

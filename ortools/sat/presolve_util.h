@@ -137,7 +137,7 @@ class DomainDeductions {
   std::vector<int> tmp_num_occurrences_;
 
   SparseBitset<Index> something_changed_;
-  absl::StrongVector<Index, std::vector<int>> enforcement_to_vars_;
+  util_intops::StrongVector<Index, std::vector<int>> enforcement_to_vars_;
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 
@@ -261,7 +261,7 @@ class ActivityBoundHelper {
   // We use an unique index by at most one, and just stores for each literal
   // the at most one to which it belong.
   int num_at_most_ones_ = 0;
-  absl::StrongVector<Index, std::vector<int>> amo_indices_;
+  util_intops::StrongVector<Index, std::vector<int>> amo_indices_;
 
   std::vector<std::pair<int, int64_t>> tmp_terms_;
   std::vector<std::pair<int64_t, int>> to_sort_;
@@ -305,7 +305,7 @@ class ClauseWithOneMissingHasher {
   }
 
   absl::BitGenRef random_;
-  absl::StrongVector<Index, uint64_t> literal_to_hash_;
+  util_intops::StrongVector<Index, uint64_t> literal_to_hash_;
   std::vector<uint64_t> clause_to_hash_;
 };
 

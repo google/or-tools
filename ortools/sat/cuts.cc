@@ -166,7 +166,7 @@ bool CutData::AppendOneTerm(IntegerVariable var, IntegerValue coeff,
 
 bool CutData::FillFromLinearConstraint(
     const LinearConstraint& base_ct,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     IntegerTrail* integer_trail) {
   rhs = absl::int128(base_ct.ub.value());
   terms.clear();
@@ -1965,7 +1965,7 @@ ImpliedBoundsProcessor::GetCachedImpliedBoundInfo(IntegerVariable var) const {
 ImpliedBoundsProcessor::BestImpliedBoundInfo
 ImpliedBoundsProcessor::ComputeBestImpliedBound(
     IntegerVariable var,
-    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
   auto it = cache_.find(var);
   if (it != cache_.end()) return it->second;
   BestImpliedBoundInfo result;
@@ -2032,7 +2032,7 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
 }
 
 void ImpliedBoundsProcessor::RecomputeCacheAndSeparateSomeImpliedBoundCuts(
-    const absl::StrongVector<IntegerVariable, double>& lp_values) {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) {
   cache_.clear();
   for (const IntegerVariable var :
        implied_bounds_->VariablesWithImpliedBounds()) {
@@ -2621,7 +2621,7 @@ namespace {
 void TryToGenerateAllDiffCut(
     const std::vector<std::pair<double, AffineExpression>>& sorted_exprs_lp,
     const IntegerTrail& integer_trail,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     TopNCuts& top_n_cuts, Model* model) {
   const int num_exprs = sorted_exprs_lp.size();
 
@@ -2734,7 +2734,7 @@ IntegerValue MaxCornerDifference(const IntegerVariable var,
 IntegerValue MPlusCoefficient(
     const std::vector<IntegerVariable>& x_vars,
     const std::vector<LinearExpression>& exprs,
-    const absl::StrongVector<IntegerVariable, int>& variable_partition,
+    const util_intops::StrongVector<IntegerVariable, int>& variable_partition,
     const int max_index, const IntegerTrail& integer_trail) {
   IntegerValue coeff = exprs[max_index].offset;
   // TODO(user): This algo is quadratic since GetCoefficientOfPositiveVar()
@@ -2756,7 +2756,7 @@ IntegerValue MPlusCoefficient(
 double ComputeContribution(
     const IntegerVariable xi_var, const std::vector<IntegerVariable>& z_vars,
     const std::vector<LinearExpression>& exprs,
-    const absl::StrongVector<IntegerVariable, double>& lp_values,
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     const IntegerTrail& integer_trail, const int target_index) {
   CHECK_GE(target_index, 0);
   CHECK_LT(target_index, exprs.size());
@@ -2800,10 +2800,11 @@ CutGenerator CreateLinMaxCutGenerator(
                           integer_trail,
                           model](LinearConstraintManager* manager) {
     const auto& lp_values = manager->LpValues();
-    absl::StrongVector<IntegerVariable, int> variable_partition(
+    util_intops::StrongVector<IntegerVariable, int> variable_partition(
         lp_values.size(), -1);
-    absl::StrongVector<IntegerVariable, double> variable_partition_contrib(
-        lp_values.size(), std::numeric_limits<double>::infinity());
+    util_intops::StrongVector<IntegerVariable, double>
+        variable_partition_contrib(lp_values.size(),
+                                   std::numeric_limits<double>::infinity());
     for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
       for (const IntegerVariable var : x_vars) {
         const double contribution = ComputeContribution(

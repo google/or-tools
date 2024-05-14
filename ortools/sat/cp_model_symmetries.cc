@@ -664,7 +664,7 @@ namespace {
 // TODO(user): The same reasonning can be done if fixing the variable to
 // zero leads to many propagations at one. For general variables, we might be
 // able to do something too.
-void OrbitAndPropagation(const std::vector<int>& orbits, int var,
+void OrbitAndPropagation(absl::Span<const int> orbits, int var,
                          std::vector<int>* can_be_fixed_to_false,
                          PresolveContext* context) {
   // Note that if a variable is fixed in the orbit, then everything should be

@@ -19,6 +19,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -148,6 +149,7 @@ void SolveWrapper::AddBestBoundCallback(
 }
 
 void SolveWrapper::AddBestBoundCallbackFromClass(BestBoundCallback* callback) {
+  DCHECK(callback != nullptr);
   model_.Add(NewBestBoundCallback(
       [callback](double bound) { callback->NewBestBound(bound); }));
 }

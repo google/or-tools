@@ -68,8 +68,7 @@ class LbTreeSearch {
   // Code a binary tree.
   DEFINE_STRONG_INDEX_TYPE(NodeIndex);
   struct Node {
-    Node(Literal l, IntegerValue lb)
-        : literal(l), true_objective(lb), false_objective(lb) {}
+    explicit Node(IntegerValue lb) : true_objective(lb), false_objective(lb) {}
 
     // The objective lower bound at this node.
     IntegerValue MinObjective() const {
@@ -88,8 +87,24 @@ class LbTreeSearch {
       false_objective = std::max(false_objective, v);
     }
 
+    // Should be called only once.
+    void SetDecision(Literal l) {
+      DCHECK(!is_deleted);
+      DCHECK_EQ(literal_index, kNoLiteralIndex);
+      literal_index = l.Index();
+    }
+
+    Literal Decision() const {
+      DCHECK(!is_deleted);
+      DCHECK_NE(literal_index, kNoLiteralIndex);
+      return sat::Literal(literal_index);
+    }
+
+    bool IsLeaf() const { return literal_index == kNoLiteralIndex; }
+
     // The decision for the true and false branch under this node.
-    /*const*/ Literal literal;
+    // Initially this is kNoLiteralIndex until SetDecision() is called.
+    LiteralIndex literal_index = kNoLiteralIndex;
 
     // The objective lower bound in both branches.
     IntegerValue true_objective;
@@ -101,10 +116,26 @@ class LbTreeSearch {
 
     // Indicates if this nodes was removed from the tree.
     bool is_deleted = false;
+
+    // Experimental. Store the optimal basis at each node.
+    int64_t basis_timestamp;
+    glop::BasisState basis;
   };
+
+  // Regroup some logic done when we are back at level zero in Search().
+  // Returns false if UNSAT.
+  bool LevelZeroLogic();
+
+  // Returns true if we save/load LP basis.
+  // Note that when this is true we also do not solve the LP as often.
+  bool SaveLpBasisOption() const {
+    return lp_constraint_ != nullptr &&
+           parameters_.save_lp_basis_in_lb_tree_search();
+  }
 
   // Display the current tree, this is mainly here to investigate ideas to
   // improve the code.
+  std::string NodeDebugString(NodeIndex node) const;
   void DebugDisplayTree(NodeIndex root) const;
 
   // Updates the objective of the node in the current branch at level n from
@@ -118,13 +149,21 @@ class LbTreeSearch {
   // Returns false on conflict.
   bool FullRestart();
 
+  // Loads any known basis that is the closest to the current branch.
+  void EnableLpAndLoadBestBasis();
+  void SaveLpBasisInto(Node& node);
+  bool NodeHasUpToDateBasis(const Node& node) const;
+  bool NodeHasBasis(const Node& node) const;
+
   // Mark the given node as deleted. Its literal is assumed to be set. We also
   // delete the subtree that is not longer relevant.
   void MarkAsDeletedNodeAndUnreachableSubtree(Node& node);
+  void MarkBranchAsInfeasible(Node& node, bool true_branch);
   void MarkSubtreeAsDeleted(NodeIndex root);
 
   // Create a new node at the end of the current branch.
   // This assume the last decision in the branch is assigned.
+  NodeIndex CreateNewEmptyNodeIfNeeded();
   void AppendNewNodeToCurrentBranch(Literal decision);
 
   // Update the bounds on the given nodes by using reduced costs if possible.
@@ -138,6 +177,12 @@ class LbTreeSearch {
   // Used in the solve logs.
   std::string SmallProgressString() const;
 
+  // Save the current number of iterations on creation and add the difference
+  // to the counter when the returned function is called. This is meant to
+  // be used with:
+  // const auto cleanup = absl::MakeCleanup(UpdateLpIters(&counter));
+  std::function<void()> UpdateLpIters(int64_t* counter);
+
   // Model singleton class used here.
   const std::string name_;
   TimeLimit* time_limit_;
@@ -145,6 +190,7 @@ class LbTreeSearch {
   SatSolver* sat_solver_;
   IntegerEncoder* integer_encoder_;
   Trail* trail_;
+  const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   SharedResponseManager* shared_response_;
@@ -163,7 +209,7 @@ class LbTreeSearch {
 
   // Memory for all the nodes.
   int num_nodes_in_tree_ = 0;
-  absl::StrongVector<NodeIndex, Node> nodes_;
+  util_intops::StrongVector<NodeIndex, Node> nodes_;
 
   // The list of nodes in the current branch, in order from the root.
   std::vector<NodeIndex> current_branch_;
@@ -176,6 +222,12 @@ class LbTreeSearch {
   // Counts the number of decisions we are taking while exploring the search
   // tree.
   int64_t num_decisions_taken_ = 0;
+
+  // Counts number of lp iterations at various places.
+  int64_t num_lp_iters_at_level_zero_ = 0;
+  int64_t num_lp_iters_save_basis_ = 0;
+  int64_t num_lp_iters_first_branch_ = 0;
+  int64_t num_lp_iters_dive_ = 0;
 
   // Used to trigger the initial restarts and imports.
   int num_full_restarts_ = 0;

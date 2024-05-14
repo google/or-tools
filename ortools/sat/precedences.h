@@ -233,14 +233,15 @@ class PrecedenceRelations : public ReversibleInterface {
   // Store for each variable x, the variables y that appears in GetOffset(x, y)
   // or GetConditionalOffset(x, y). That is the variable that are after x with
   // an offset. Note that conditional_after_ is updated on dive/backtrack.
-  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>> after_;
-  absl::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
+  util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
+      after_;
+  util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
       conditional_after_;
 
   // Temp data for CollectPrecedences.
   std::vector<IntegerVariable> var_with_positive_degree_;
-  absl::StrongVector<IntegerVariable, int> var_to_degree_;
-  absl::StrongVector<IntegerVariable, int> var_to_last_index_;
+  util_intops::StrongVector<IntegerVariable, int> var_to_degree_;
+  util_intops::StrongVector<IntegerVariable, int> var_to_last_index_;
   std::vector<PrecedenceData> tmp_precedences_;
 };
 
@@ -413,17 +414,18 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // consecutive like in StaticGraph should have a big performance impact.
   //
   // TODO(user): We do not need to store ArcInfo.tail_var here.
-  absl::StrongVector<IntegerVariable, absl::InlinedVector<ArcIndex, 6>>
+  util_intops::StrongVector<IntegerVariable, absl::InlinedVector<ArcIndex, 6>>
       impacted_arcs_;
-  absl::StrongVector<ArcIndex, ArcInfo> arcs_;
+  util_intops::StrongVector<ArcIndex, ArcInfo> arcs_;
 
   // This is similar to impacted_arcs_/arcs_ but it is only used to propagate
   // one of the presence literals when the arc cannot be present. An arc needs
   // to appear only once in potential_arcs_, but it will be referenced by
   // all its variable in impacted_potential_arcs_.
-  absl::StrongVector<IntegerVariable, absl::InlinedVector<OptionalArcIndex, 6>>
+  util_intops::StrongVector<IntegerVariable,
+                            absl::InlinedVector<OptionalArcIndex, 6>>
       impacted_potential_arcs_;
-  absl::StrongVector<OptionalArcIndex, ArcInfo> potential_arcs_;
+  util_intops::StrongVector<OptionalArcIndex, ArcInfo> potential_arcs_;
 
   // Each time a literal becomes true, this list the set of arcs for which we
   // need to decrement their count. When an arc count reach zero, it must be
@@ -432,9 +434,9 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   //
   // TODO(user): Try a one-watcher approach instead. Note that in most cases
   // arc should be controlled by 1 or 2 literals, so not sure it is worth it.
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<ArcIndex, 6>>
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<ArcIndex, 6>>
       literal_to_new_impacted_arcs_;
-  absl::StrongVector<ArcIndex, int> arc_counts_;
+  util_intops::StrongVector<ArcIndex, int> arc_counts_;
 
   // Temp vectors to hold the reason of an assignment.
   std::vector<Literal> literal_reason_;
@@ -514,7 +516,7 @@ class GreaterThanAtLeastOneOfDetector {
   };
 
   std::vector<Relation> relations_;
-  absl::StrongVector<LiteralIndex, std::vector<int>> lit_to_relations_;
+  util_intops::StrongVector<LiteralIndex, std::vector<int>> lit_to_relations_;
 };
 
 // =============================================================================

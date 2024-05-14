@@ -903,8 +903,8 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   // This contains non-negative value. If a literal has negative weight, then
   // we just put a positive weight on its negation and update the offset.
   const int num_literals = implications_->literal_size();
-  absl::StrongVector<LiteralIndex, Coefficient> weights(num_literals);
-  absl::StrongVector<LiteralIndex, bool> is_candidate(num_literals);
+  util_intops::StrongVector<LiteralIndex, Coefficient> weights(num_literals);
+  util_intops::StrongVector<LiteralIndex, bool> is_candidate(num_literals);
 
   // For now, we do not use weight. Note that finding the at most on in the
   // creation order of the variable make a HUGE difference on the max-sat frb
@@ -913,7 +913,7 @@ void CoreBasedOptimizer::PresolveObjectiveWithAtMostOne(
   // TODO(user): We can assign preferences to literals to favor certain at most
   // one instead of other. For now we don't, so ExpandAtMostOneWithWeight() will
   // kind of randomize the expansion amongst possible choices.
-  absl::StrongVector<LiteralIndex, double> preferences;
+  util_intops::StrongVector<LiteralIndex, double> preferences;
 
   // Collect all literals with "negative weights", we will try to find at most
   // one between them.

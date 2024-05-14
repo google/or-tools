@@ -343,7 +343,8 @@ class ClauseManager : public SatPropagator {
   // Common code between LazyDetach() and Detach().
   void InternalDetach(SatClause* clause);
 
-  absl::StrongVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
+  util_intops::StrongVector<LiteralIndex, std::vector<Watcher>>
+      watchers_on_false_;
 
   // SatClause reasons by trail_index.
   std::vector<SatClause*> reasons_;
@@ -774,8 +775,9 @@ class BinaryImplicationGraph : public SatPropagator {
   template <bool use_weight = true>
   std::vector<Literal> ExpandAtMostOneWithWeight(
       absl::Span<const Literal> at_most_one,
-      const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-      const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+      const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+      const util_intops::StrongVector<LiteralIndex, double>&
+          expanded_lp_values);
 
   // Restarts the at_most_one iterator.
   void ResetAtMostOneIterator() { at_most_one_iterator_ = 0; }
@@ -850,12 +852,12 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be even more efficient since a size of int32_t is
   // enough for us and we could store in common the inlined/not-inlined size.
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;
   int64_t num_implications_ = 0;
 
   // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
-  absl::StrongVector<LiteralIndex, bool> might_have_dups_;
+  util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;
   std::vector<Literal> to_clean_;
 
   // Internal representation of at_most_one constraints. Each entry point to the
@@ -869,7 +871,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be more cache efficient by combining this with
   // implications_ in some way. Do some propagation speed benchmark.
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>
       at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
   const int at_most_one_max_expansion_size_;
@@ -918,14 +920,14 @@ class BinaryImplicationGraph : public SatPropagator {
   bool is_dag_ = false;
   std::vector<LiteralIndex> reverse_topological_order_;
   Bitset64<LiteralIndex> is_redundant_;
-  absl::StrongVector<LiteralIndex, LiteralIndex> representative_of_;
+  util_intops::StrongVector<LiteralIndex, LiteralIndex> representative_of_;
 
   // For in-processing and removing variables.
   std::vector<Literal> direct_implications_;
   std::vector<Literal> direct_implications_of_negated_literal_;
-  absl::StrongVector<LiteralIndex, bool> in_direct_implications_;
-  absl::StrongVector<LiteralIndex, bool> is_removed_;
-  absl::StrongVector<LiteralIndex, int> estimated_sizes_;
+  util_intops::StrongVector<LiteralIndex, bool> in_direct_implications_;
+  util_intops::StrongVector<LiteralIndex, bool> is_removed_;
+  util_intops::StrongVector<LiteralIndex, int> estimated_sizes_;
 
   // For RemoveFixedVariables().
   int num_processed_fixed_variables_ = 0;
@@ -937,14 +939,14 @@ class BinaryImplicationGraph : public SatPropagator {
 extern template std::vector<Literal>
 BinaryImplicationGraph::ExpandAtMostOneWithWeight<true>(
     const absl::Span<const Literal> at_most_one,
-    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+    const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+    const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
 extern template std::vector<Literal>
 BinaryImplicationGraph::ExpandAtMostOneWithWeight<false>(
     const absl::Span<const Literal> at_most_one,
-    const absl::StrongVector<LiteralIndex, bool>& can_be_included,
-    const absl::StrongVector<LiteralIndex, double>& expanded_lp_values);
+    const util_intops::StrongVector<LiteralIndex, bool>& can_be_included,
+    const util_intops::StrongVector<LiteralIndex, double>& expanded_lp_values);
 
 }  // namespace sat
 }  // namespace operations_research

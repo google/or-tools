@@ -226,8 +226,8 @@ bool VarDomination::EndFirstPhase() {
   // constraints. Still we should in most situation be a lot lower than that.
   const int kMaxInitialSize = 50;
   std::vector<IntegerVariable> cropped_vars;
-  absl::StrongVector<IntegerVariable, bool> is_cropped(num_vars_with_negation_,
-                                                       false);
+  util_intops::StrongVector<IntegerVariable, bool> is_cropped(
+      num_vars_with_negation_, false);
 
   // Fill the initial domination candidates.
   int non_cropped_size = 0;
@@ -289,8 +289,8 @@ bool VarDomination::EndFirstPhase() {
   // Compute how many extra space we need for transposed values.
   // Note that it cannot be more than twice.
   int total_extra_space = 0;
-  absl::StrongVector<IntegerVariable, int> extra_space(num_vars_with_negation_,
-                                                       0);
+  util_intops::StrongVector<IntegerVariable, int> extra_space(
+      num_vars_with_negation_, 0);
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     for (const IntegerVariable dom : DominatingVariables(var)) {
       if (!is_cropped[NegationOf(dom)]) continue;
@@ -1383,11 +1383,11 @@ void ScanModelForDualBoundStrengthening(
 
 namespace {
 
-bool ProcessAtMostOne(absl::Span<const int> literals,
-                      const std::string& message,
-                      const VarDomination& var_domination,
-                      absl::StrongVector<IntegerVariable, bool>* in_constraints,
-                      PresolveContext* context) {
+bool ProcessAtMostOne(
+    absl::Span<const int> literals, const std::string& message,
+    const VarDomination& var_domination,
+    util_intops::StrongVector<IntegerVariable, bool>* in_constraints,
+    PresolveContext* context) {
   for (const int ref : literals) {
     (*in_constraints)[VarDomination::RefToIntegerVariable(ref)] = true;
   }
@@ -1432,9 +1432,24 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   }
   if (!work_to_do) return true;
 
-  absl::StrongVector<IntegerVariable, int64_t> var_lb_to_ub_diff(num_vars * 2,
-                                                                 0);
-  absl::StrongVector<IntegerVariable, bool> in_constraints(num_vars * 2, false);
+  const int64_t saved_num_operations = context->num_presolve_operations;
+
+  // Strenghtening via domination. When a variable is dominated by a bunch of
+  // other, either we can do (var--, dom++) or if we can't (i.e all dominated
+  // variable at their upper bound) then maybe all constraint are satisfied if
+  // var is high enough and we can also decrease it.
+  util_intops::StrongVector<IntegerVariable, int> can_freely_decrease_count(
+      num_vars * 2, 0);
+  util_intops::StrongVector<IntegerVariable, int64_t> can_freely_decrease_until(
+      num_vars * 2, std::numeric_limits<int64_t>::min());
+
+  // Temporary data that we fill/clear for each linear constraint.
+  util_intops::StrongVector<IntegerVariable, int64_t> var_lb_to_ub_diff(
+      num_vars * 2, 0);
+
+  // Temporary data used for boolean constraints.
+  util_intops::StrongVector<IntegerVariable, bool> in_constraints(num_vars * 2,
+                                                                  false);
 
   absl::flat_hash_set<std::pair<int, int>> implications;
   const int num_constraints = cp_model.constraints_size();
@@ -1543,12 +1558,70 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       return context->NotifyThatModelIsUnsat("linear equation unsat.");
     }
 
+    // Returns the change magnitude in min-activity (resp. max-activity) if all
+    // the given variables are fixed to their upper bound.
+    const auto get_delta = [context, &var_lb_to_ub_diff](
+                               bool use_min_side,
+                               absl::Span<const IntegerVariable> vars) {
+      int64_t delta = 0;
+      for (const IntegerVariable var : vars) {
+        // Tricky: For now we skip complex domain as we are not sure they
+        // can be moved correctly.
+        if (context->DomainOf(VarDomination::IntegerVariableToRef(var))
+                .NumIntervals() != 1) {
+          continue;
+        }
+        if (use_min_side) {
+          delta += std::max(int64_t{0}, var_lb_to_ub_diff[var]);
+        } else {
+          delta += std::max(int64_t{0}, -var_lb_to_ub_diff[var]);
+        }
+      }
+      return delta;
+    };
+
     // Look for dominated var.
     for (int i = 0; i < num_terms; ++i) {
       const int ref = ct.linear().vars(i);
       const int64_t coeff = ct.linear().coeffs(i);
       const int64_t coeff_magnitude = std::abs(coeff);
       if (context->IsFixed(ref)) continue;
+
+      // For strenghtening using domination, just consider >= constraint.
+      const bool only_lb = max_activity <= rhs_ub;
+      const bool only_ub = min_activity >= rhs_lb;
+      if (only_lb || only_ub) {
+        // Always transform to coeff_magnitude * current_ref + ... >=
+        const int current_ref = (coeff > 0) == only_lb ? ref : NegatedRef(ref);
+        const int64_t shifted_rhs =
+            only_lb ? rhs_lb - min_activity : max_activity - rhs_ub;
+        const IntegerVariable current_ivar =
+            VarDomination::RefToIntegerVariable(current_ref);
+        can_freely_decrease_count[NegationOf(current_ivar)]++;
+
+        const int64_t delta = get_delta(
+            only_lb, var_domination.DominatingVariables(current_ivar));
+        if (delta > 0) {
+          // When all dominated var are at their upper bound, we miss 'slack'
+          // to make the constraint trivially satisfiable.
+          const int64_t slack = shifted_rhs - delta;
+          const int64_t current_lb = context->MinOf(current_ref);
+
+          // Any increase such that coeff * delta >= slack make the constraint
+          // trivial.
+          //
+          // Note(user): It look like even if any of the upper bound of the
+          // dominating var decrease, this should still be valid. Here we only
+          // decrease such a bound due to a dominance relation, so the slack
+          // when all dominating variable are at their bound should not really
+          // decrease.
+          const int64_t min_delta =
+              slack <= 0 ? 0 : CeilOfRatio(slack, coeff_magnitude);
+          can_freely_decrease_until[current_ivar] = std::max(
+              can_freely_decrease_until[current_ivar], current_lb + min_delta);
+          can_freely_decrease_count[current_ivar]++;
+        }
+      }
 
       for (const int current_ref : {ref, NegatedRef(ref)}) {
         const absl::Span<const IntegerVariable> dominated_by =
@@ -1564,23 +1637,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int64_t slack =
             ub_side ? rhs_ub - min_activity : max_activity - rhs_lb;
 
-        // Compute the delta in activity if all dominating var moves to their
-        // other bound.
-        int64_t delta = 0;
-        for (const IntegerVariable ivar : dominated_by) {
-          // Tricky: For now we skip complex domain as we are not sure they
-          // can be moved correctly.
-          if (context->DomainOf(VarDomination::IntegerVariableToRef(ivar))
-                  .NumIntervals() != 1) {
-            continue;
-          }
-          if (ub_side) {
-            delta += std::max(int64_t{0}, var_lb_to_ub_diff[ivar]);
-          } else {
-            delta += std::max(int64_t{0}, -var_lb_to_ub_diff[ivar]);
-          }
-        }
-
+        // Compute the delta in min-activity if all dominating var moves to
+        // their other bound.
+        const int64_t delta = get_delta(ub_side, dominated_by);
         const int64_t lb = context->MinOf(current_ref);
         if (delta + coeff_magnitude > slack) {
           context->UpdateRuleStats("domination: fixed to lb.");
@@ -1611,10 +1670,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // Tricky: If there are holes, we can't just reduce the domain to
           // new_ub if it is not a valid value, so we need to compute the
           // Min() of the intersection.
-          new_ub = context->DomainOf(current_ref)
-                       .IntersectionWith(
-                           Domain(new_ub, std::numeric_limits<int64_t>::max()))
-                       .Min();
+          new_ub = context->DomainOf(current_ref).ValueAtOrAfter(new_ub);
         }
         if (new_ub < context->MaxOf(current_ref)) {
           context->UpdateRuleStats("domination: reduced ub.");
@@ -1669,16 +1725,78 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   //
   // TODO(user): generalize to non Booleans?
   int num_added = 0;
-  absl::StrongVector<IntegerVariable, bool> increase_is_forbidden(2 * num_vars,
-                                                                  false);
+  util_intops::StrongVector<IntegerVariable, bool> increase_is_forbidden(
+      2 * num_vars, false);
   for (int positive_ref = 0; positive_ref < num_vars; ++positive_ref) {
     if (context->IsFixed(positive_ref)) continue;
     if (context->VariableIsNotUsedAnymore(positive_ref)) continue;
     if (context->VariableWasRemoved(positive_ref)) continue;
-    if (!context->CanBeUsedAsLiteral(positive_ref)) continue;
+
+    // Increase the count for variable in the objective to account for the
+    // kObjectiveConstraint in their VarToConstraints() list.
+    if (!context->ObjectiveDomainIsConstraining()) {
+      const int64_t obj_coeff = context->ObjectiveCoeff(positive_ref);
+      if (obj_coeff > 0) {
+        can_freely_decrease_count[VarDomination::RefToIntegerVariable(
+            positive_ref)]++;
+      } else if (obj_coeff < 0) {
+        can_freely_decrease_count[NegationOf(
+            VarDomination::RefToIntegerVariable(positive_ref))]++;
+      }
+    }
+
     for (const int ref : {positive_ref, NegatedRef(positive_ref)}) {
       const IntegerVariable var = VarDomination::RefToIntegerVariable(ref);
       if (increase_is_forbidden[NegationOf(var)]) continue;
+      if (can_freely_decrease_count[var] ==
+          context->VarToConstraints(positive_ref).size()) {
+        // We need to account for domain with hole, hence the ValueAtOrAfter().
+        int64_t lb = can_freely_decrease_until[var];
+        lb = context->DomainOf(ref).ValueAtOrAfter(lb);
+        if (lb < context->MaxOf(ref)) {
+          // We have a candidate, however, we need to make sure the dominating
+          // variable upper bound didn't change.
+          //
+          // TODO(user): It look like testing this is not really necessary.
+          // The reduction done by this class seem to be order independent.
+          bool ok = true;
+          for (const IntegerVariable dom :
+               var_domination.DominatingVariables(var)) {
+            // Note that we assumed that a fixed point was reached before this
+            // is called, so modified_domains should have been empty as we
+            // entered this function. If not, the code is still correct, but we
+            // might miss some reduction, they will still likely be done later
+            // though.
+            if (increase_is_forbidden[dom] ||
+                context->modified_domains[PositiveRef(
+                    VarDomination::IntegerVariableToRef(dom))]) {
+              ok = false;
+              break;
+            }
+          }
+          if (increase_is_forbidden[NegationOf(var)]) {
+            ok = false;
+          }
+          if (ok) {
+            // TODO(user): Is this needed?
+            increase_is_forbidden[var] = true;
+            context->UpdateRuleStats(
+                "domination: dual strenghtening using dominance");
+            if (!context->IntersectDomainWith(
+                    ref, Domain(context->MinOf(ref), lb))) {
+              return false;
+            }
+
+            // The rest of the loop only care about Booleans.
+            // And if this was boolean, we would have fixed it.
+            // If it became Boolean, we wait for the next call.
+            // TODO(user): maybe the last point can be improved.
+            continue;
+          }
+        }
+      }
+
+      if (!context->CanBeUsedAsLiteral(positive_ref)) continue;
       for (const IntegerVariable dom :
            var_domination.DominatingVariables(ref)) {
         if (increase_is_forbidden[dom]) continue;
@@ -1691,6 +1809,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
 
         ++num_added;
         context->AddImplication(ref, dom_ref);
+        context->UpdateNewConstraintsVariableUsage();
         implications.insert({ref, dom_ref});
         implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
 
@@ -1700,10 +1819,15 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       }
     }
   }
+
   if (num_added > 0) {
     VLOG(1) << "Added " << num_added << " domination implications.";
-    context->UpdateNewConstraintsVariableUsage();
     context->UpdateRuleStats("domination: added implications", num_added);
+  }
+
+  // TODO(user): We should probably be able to do something with this.
+  if (saved_num_operations == context->num_presolve_operations) {
+    context->UpdateRuleStats("TODO domination: unexploited dominations");
   }
 
   return true;

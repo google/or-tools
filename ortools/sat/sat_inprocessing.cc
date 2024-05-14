@@ -366,7 +366,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
   // Used to mark clause literals.
   const int num_literals(sat_solver_->NumVariables() * 2);
-  absl::StrongVector<LiteralIndex, bool> marked(num_literals, false);
+  util_intops::StrongVector<LiteralIndex, bool> marked(num_literals, false);
 
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
@@ -472,8 +472,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Clause index in clauses.
   // TODO(user): Storing signatures here might be faster?
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<int, 6>> one_watcher(
-      num_literals.value());
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int, 6>>
+      one_watcher(num_literals.value());
 
   // Clause signatures in the same order as clauses.
   std::vector<uint64_t> signatures(clauses.size());

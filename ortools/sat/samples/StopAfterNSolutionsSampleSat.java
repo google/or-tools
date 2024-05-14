@@ -18,6 +18,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
@@ -68,7 +69,7 @@ public final class StopAfterNSolutionsSampleSat {
     // Tell the solver to enumerate all solutions.
     solver.getParameters().setEnumerateAllSolutions(true);
     // And solve.
-    solver.solve(model, cb);
+    CpSolverStatus unusedStatus = solver.solve(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
     if (cb.getSolutionCount() != 5) {

@@ -1011,6 +1011,23 @@ bool PresolveContext::StoreAffineRelation(int ref_x, int ref_y, int64_t coeff,
   CHECK_NE(coeff, 0);
   if (is_unsat_) return false;
 
+  if (hint_is_loaded_) {
+    const int var_x = PositiveRef(ref_x);
+    const int var_y = PositiveRef(ref_y);
+    if (!hint_has_value_[var_y] && hint_has_value_[var_x]) {
+      hint_has_value_[var_y] = true;
+      const int64_t x_mult = RefIsPositive(ref_x) ? 1 : -1;
+      const int64_t y_mult = RefIsPositive(ref_y) ? 1 : -1;
+      hint_[var_y] = (hint_[var_x] * x_mult - offset) / coeff * y_mult;
+      if (hint_[var_y] * coeff * y_mult + offset != hint_[var_x] * x_mult) {
+        // TODO(user): Do we implement a rounding to closest instead of
+        // routing towards 0.
+        UpdateRuleStats(
+            "Warning: hint didn't satisfy affine relation and was corrected");
+      }
+    }
+  }
+
 #ifdef CHECK_HINT
   const int64_t vx =
       RefIsPositive(ref_x) ? hint_[ref_x] : -hint_[NegatedRef(ref_x)];

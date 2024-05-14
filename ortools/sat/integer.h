@@ -332,8 +332,8 @@ struct AffineExpression {
   }
 
   // Returns the affine expression value under a given LP solution.
-  double LpValue(
-      const absl::StrongVector<IntegerVariable, double>& lp_values) const {
+  double LpValue(const util_intops::StrongVector<IntegerVariable, double>&
+                     lp_values) const {
     if (var == kNoIntegerVariable) return ToDouble(constant);
     return ToDouble(coeff) * lp_values[var] + ToDouble(constant);
   }
@@ -372,7 +372,8 @@ H AbslHashValue(H h, const AffineExpression& e) {
 
 // A model singleton that holds the root level integer variable domains.
 // we just store a single domain for both var and its negation.
-struct IntegerDomains : public absl::StrongVector<PositiveOnlyIndex, Domain> {};
+struct IntegerDomains
+    : public util_intops::StrongVector<PositiveOnlyIndex, Domain> {};
 
 // A model singleton used for debugging. If this is set in the model, then we
 // can check that various derived constraint do not exclude this solution (if it
@@ -390,8 +391,8 @@ struct DebugSolution {
   // TODO(user): When this happen we should be able to infer the value of these
   // derived variable in the solution. For now, we only do that for the
   // objective variable.
-  absl::StrongVector<IntegerVariable, bool> ivar_has_value;
-  absl::StrongVector<IntegerVariable, IntegerValue> ivar_values;
+  util_intops::StrongVector<IntegerVariable, bool> ivar_has_value;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> ivar_values;
 };
 
 // A value and a literal.
@@ -698,15 +699,16 @@ class IntegerEncoder {
   //
   // TODO(user): Remove the entry no longer needed because of level zero
   // propagations.
-  absl::StrongVector<PositiveOnlyIndex, absl::btree_map<IntegerValue, Literal>>
+  util_intops::StrongVector<PositiveOnlyIndex,
+                            absl::btree_map<IntegerValue, Literal>>
       encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
-  absl::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
+  util_intops::StrongVector<LiteralIndex, InlinedIntegerLiteralVector>
       reverse_encoding_;
   const InlinedIntegerValueVector empty_integer_value_vector_;
-  absl::StrongVector<LiteralIndex, InlinedIntegerValueVector>
+  util_intops::StrongVector<LiteralIndex, InlinedIntegerValueVector>
       reverse_equality_encoding_;
 
   // Used by GetAllAssociatedVariables().
@@ -714,7 +716,7 @@ class IntegerEncoder {
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
-  absl::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
+  util_intops::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
@@ -726,12 +728,12 @@ class IntegerEncoder {
       equality_to_associated_literal_;
 
   // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
-  mutable absl::StrongVector<PositiveOnlyIndex,
-                             absl::InlinedVector<ValueLiteralPair, 2>>
+  mutable util_intops::StrongVector<PositiveOnlyIndex,
+                                    absl::InlinedVector<ValueLiteralPair, 2>>
       equality_by_var_;
 
   // Variables that are fully encoded.
-  mutable absl::StrongVector<PositiveOnlyIndex, bool> is_fully_encoded_;
+  mutable util_intops::StrongVector<PositiveOnlyIndex, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
@@ -1197,8 +1199,8 @@ class IntegerTrail : public SatPropagator {
 
   // Information for each integer variable about its current lower bound and
   // position of the last TrailEntry in the trail referring to this var.
-  absl::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
-  absl::StrongVector<IntegerVariable, int> var_trail_index_;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
+  util_intops::StrongVector<IntegerVariable, int> var_trail_index_;
 
   // This is used by FindLowestTrailIndexThatExplainBound() and
   // FindTrailIndexOfVarBefore() to speed up the lookup. It keeps a trail index
@@ -1207,7 +1209,8 @@ class IntegerTrail : public SatPropagator {
   //
   // The cache will only be updated with trail_index >= threshold.
   mutable int var_trail_index_cache_threshold_ = 0;
-  mutable absl::StrongVector<IntegerVariable, int> var_trail_index_cache_;
+  mutable util_intops::StrongVector<IntegerVariable, int>
+      var_trail_index_cache_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
@@ -1256,7 +1259,7 @@ class IntegerTrail : public SatPropagator {
   mutable bool has_dependency_ = false;
   mutable std::vector<int> tmp_queue_;
   mutable std::vector<IntegerVariable> tmp_to_clear_;
-  mutable absl::StrongVector<IntegerVariable, int>
+  mutable util_intops::StrongVector<IntegerVariable, int>
       tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
 
@@ -1520,8 +1523,10 @@ class GenericLiteralWatcher : public SatPropagator {
       return id == o.id && watch_index == o.watch_index;
     }
   };
-  absl::StrongVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
-  absl::StrongVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
+  util_intops::StrongVector<LiteralIndex, std::vector<WatchData>>
+      literal_to_watcher_;
+  util_intops::StrongVector<IntegerVariable, std::vector<WatchData>>
+      var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 

@@ -120,12 +120,12 @@ class EnforcementPropagator : public SatPropagator {
   // All enforcement will be copied there, and we will create Span out of this.
   // Note that we don't store the span so that we are not invalidated on buffer_
   // resizing.
-  absl::StrongVector<EnforcementId, int> starts_;
+  util_intops::StrongVector<EnforcementId, int> starts_;
   std::vector<Literal> buffer_;
 
-  absl::StrongVector<EnforcementId, EnforcementStatus> statuses_;
-  absl::StrongVector<EnforcementId,
-                     std::function<void(EnforcementId, EnforcementStatus)>>
+  util_intops::StrongVector<EnforcementId, EnforcementStatus> statuses_;
+  util_intops::StrongVector<
+      EnforcementId, std::function<void(EnforcementId, EnforcementStatus)>>
       callbacks_;
 
   // Used to restore status and call callback on untrail.
@@ -134,7 +134,7 @@ class EnforcementPropagator : public SatPropagator {
   int64_t rev_stamp_ = 0;
 
   // We use a two watcher scheme.
-  absl::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
+  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
       watcher_;
 
   std::vector<Literal> temp_literals_;
@@ -279,9 +279,9 @@ class ConstraintPropagationOrder {
   // For each variable we only keep the constraint id that pushes it further.
   // In case of tie, we only keep the first to be registered.
   Bitset64<IntegerVariable> var_has_entry_;
-  absl::StrongVector<IntegerVariable, int> var_to_id_;
-  absl::StrongVector<IntegerVariable, IntegerValue> var_to_lb_;
-  absl::StrongVector<IntegerVariable, int> var_to_pos_;
+  util_intops::StrongVector<IntegerVariable, int> var_to_id_;
+  util_intops::StrongVector<IntegerVariable, IntegerValue> var_to_lb_;
+  util_intops::StrongVector<IntegerVariable, int> var_to_pos_;
   std::vector<IntegerVariable> to_clear_;
 
   // Set/queue of constraints to be propagated.
@@ -421,15 +421,15 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   std::vector<int> unenforced_constraints_;
 
   // Watchers.
-  absl::StrongVector<IntegerVariable, bool> is_watched_;
-  absl::StrongVector<IntegerVariable, absl::InlinedVector<int, 6>>
+  util_intops::StrongVector<IntegerVariable, bool> is_watched_;
+  util_intops::StrongVector<IntegerVariable, absl::InlinedVector<int, 6>>
       var_to_constraint_ids_;
 
   // For an heuristic similar to Tarjan contribution to Bellman-Ford algorithm.
   // We mark for each variable the last constraint that pushed it, and also keep
   // the count of propagated variable for each constraint.
   SparseBitset<IntegerVariable> propagated_by_was_set_;
-  absl::StrongVector<IntegerVariable, int> propagated_by_;
+  util_intops::StrongVector<IntegerVariable, int> propagated_by_;
   std::vector<int> id_to_propagation_count_;
 
   // Used by DissasembleSubtreeAndAddToQueue().

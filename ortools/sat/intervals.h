@@ -201,12 +201,12 @@ class IntervalsRepository {
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
-  absl::StrongVector<IntervalVariable, LiteralIndex> is_present_;
+  util_intops::StrongVector<IntervalVariable, LiteralIndex> is_present_;
 
   // The integer variables for each tasks.
-  absl::StrongVector<IntervalVariable, AffineExpression> starts_;
-  absl::StrongVector<IntervalVariable, AffineExpression> ends_;
-  absl::StrongVector<IntervalVariable, AffineExpression> sizes_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> starts_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> ends_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
 
   // We can share the helper for all the propagators that work on the same set
   // of intervals.

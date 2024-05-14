@@ -127,16 +127,16 @@ class PseudoCosts {
 
   // Current IntegerVariable pseudo costs.
   std::vector<IntegerVariable> relevant_variables_;
-  absl::StrongVector<IntegerVariable, bool> is_relevant_;
-  absl::StrongVector<IntegerVariable, double> scores_;
-  absl::StrongVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
+  util_intops::StrongVector<IntegerVariable, bool> is_relevant_;
+  util_intops::StrongVector<IntegerVariable, double> scores_;
+  util_intops::StrongVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
 
   // This version is mainly based on the lp relaxation.
-  absl::StrongVector<IntegerVariable, IncrementalAverage>
+  util_intops::StrongVector<IntegerVariable, IncrementalAverage>
       average_unit_objective_increase_;
 
   // This version is based on objective increase explanation.
-  absl::StrongVector<LiteralIndex, IncrementalAverage> lit_pseudo_costs_;
+  util_intops::StrongVector<LiteralIndex, IncrementalAverage> lit_pseudo_costs_;
 };
 
 }  // namespace sat

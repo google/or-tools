@@ -465,11 +465,11 @@ class Trail {
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
   std::vector<Literal> conflict_;
-  absl::StrongVector<BooleanVariable, AssignmentInfo> info_;
+  util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
   SatClause* failing_sat_clause_;
 
   // Data used by EnqueueWithSameReasonAs().
-  absl::StrongVector<BooleanVariable, BooleanVariable>
+  util_intops::StrongVector<BooleanVariable, BooleanVariable>
       reference_var_with_same_reason_as_;
 
   // Reason cache. Mutable since we want the API to be the same whether the
@@ -496,9 +496,9 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable absl::StrongVector<BooleanVariable, absl::Span<const Literal>>
+  mutable util_intops::StrongVector<BooleanVariable, absl::Span<const Literal>>
       reasons_;
-  mutable absl::StrongVector<BooleanVariable, int> old_type_;
+  mutable util_intops::StrongVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
   std::vector<SatPropagator*> propagators_;

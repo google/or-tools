@@ -104,7 +104,7 @@ struct CutData {
   // Returns false if we encounter any integer overflow.
   bool FillFromLinearConstraint(
       const LinearConstraint& base_ct,
-      const absl::StrongVector<IntegerVariable, double>& lp_values,
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values,
       IntegerTrail* integer_trail);
 
   bool FillFromParallelVectors(IntegerValue ub,
@@ -186,7 +186,7 @@ class ImpliedBoundsProcessor {
   // Important: This must be called before we process any constraints with a
   // different lp_values or level zero bounds.
   void RecomputeCacheAndSeparateSomeImpliedBoundCuts(
-      const absl::StrongVector<IntegerVariable, double>& lp_values);
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
   // This assumes the term is simple: expr[0] = var - LB / UB - var. We use an
   // implied lower bound on this expr, independently of the term.coeff sign.
@@ -255,7 +255,7 @@ class ImpliedBoundsProcessor {
  private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
-      const absl::StrongVector<IntegerVariable, double>& lp_values);
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values);
 
   absl::flat_hash_set<IntegerVariable> lp_vars_;
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
