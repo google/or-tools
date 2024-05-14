@@ -64,6 +64,15 @@ TEST(ValidateQuadraticProgramDimensions, ValidProblem) {
   EXPECT_TRUE(status.ok()) << status;
 }
 
+TEST(ValidateQuadraticProgramDimensions, ValidProblemWithNames) {
+  QuadraticProgram qp = TestDiagonalQp1();
+  qp.variable_names = {"x0", "x1"};
+  qp.constraint_names = {"c0"};
+  const absl::Status status =
+      ValidateQuadraticProgramDimensions(TestDiagonalQp1());
+  EXPECT_TRUE(status.ok()) << status;
+}
+
 TEST(ValidateQuadraticProgramDimensions, ConstraintLowerBoundsInconsistent) {
   QuadraticProgram qp;
   qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
@@ -125,6 +134,22 @@ TEST(ValidateQuadraticProgramDimensions, ObjectiveMatrixRowsInconsistent) {
   qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
   qp.objective_matrix.emplace();
   qp.objective_matrix->resize(10);
+  EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
+            absl::StatusCode::kInvalidArgument);
+}
+
+TEST(ValidateQuadraticProgramDimensions, VariableNamesInconsistent) {
+  QuadraticProgram qp;
+  qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
+  qp.variable_names = {"x0"};
+  EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
+            absl::StatusCode::kInvalidArgument);
+}
+
+TEST(ValidateQuadraticProgramDimensions, ConstraintNamesInconsistent) {
+  QuadraticProgram qp;
+  qp.ResizeAndInitialize(/*num_variables=*/2, /*num_constraints=*/3);
+  qp.constraint_names = {"c0"};
   EXPECT_EQ(ValidateQuadraticProgramDimensions(qp).code(),
             absl::StatusCode::kInvalidArgument);
 }

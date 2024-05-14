@@ -76,6 +76,22 @@ absl::Status ValidateQuadraticProgramDimensions(const QuadraticProgram& qp) {
         qp.constraint_matrix.rows(), " rows "));
   }
 
+  if (qp.variable_names.has_value() &&
+      var_lb_size != qp.variable_names->size()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Inconsistent dimensions: variable lower bound vector has size ",
+        var_lb_size, " while variable names has size ",
+        qp.variable_names->size()));
+  }
+
+  if (qp.constraint_names.has_value() &&
+      con_lb_size != qp.constraint_names->size()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Inconsistent dimensions: constraint lower bound vector has size ",
+        con_lb_size, " while constraint names has size ",
+        qp.constraint_names->size()));
+  }
+
   return absl::OkStatus();
 }
 
