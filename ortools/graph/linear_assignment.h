@@ -205,6 +205,7 @@
 #include <vector>
 
 #include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"

@@ -504,10 +504,10 @@ class SingletonPreprocessor : public Preprocessor {
 
   // This is used as a "cache" by MakeConstraintAnEqualityIfPossible() to avoid
   // scanning more than once each row. See the code to see how this is used.
-  absl::StrongVector<RowIndex, bool> row_sum_is_cached_;
-  absl::StrongVector<RowIndex, SumWithNegativeInfiniteAndOneMissing>
+  util_intops::StrongVector<RowIndex, bool> row_sum_is_cached_;
+  util_intops::StrongVector<RowIndex, SumWithNegativeInfiniteAndOneMissing>
       row_lb_sum_;
-  absl::StrongVector<RowIndex, SumWithPositiveInfiniteAndOneMissing>
+  util_intops::StrongVector<RowIndex, SumWithPositiveInfiniteAndOneMissing>
       row_ub_sum_;
 
   // TODO(user): It is annoying that we need to store a part of the matrix that

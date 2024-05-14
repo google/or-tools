@@ -179,7 +179,7 @@ class ResourceAssignmentConstraint : public Constraint {
     };
 
     using RCIndex = RoutingModel::ResourceClassIndex;
-    const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+    const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
         ignored_resources_per_class(resource_group_.GetResourceClassesCount());
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
     for (int v : resource_group_.GetVehiclesRequiringAResource()) {

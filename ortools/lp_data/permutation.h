@@ -90,7 +90,7 @@ class Permutation {
   int ComputeSignature() const;
 
  private:
-  absl::StrongVector<IndexType, IndexType> perm_;
+  util_intops::StrongVector<IndexType, IndexType> perm_;
 };
 
 typedef Permutation<RowIndex> RowPermutation;
@@ -160,7 +160,7 @@ void Permutation<IndexType>::PopulateRandomly() {
 template <typename IndexType>
 bool Permutation<IndexType>::Check() const {
   const size_t size = perm_.size();
-  absl::StrongVector<IndexType, bool> visited(size, false);
+  util_intops::StrongVector<IndexType, bool> visited(size, false);
   for (IndexType i(0); i < size; ++i) {
     if (perm_[i] < 0 || perm_[i] >= size) {
       return false;
@@ -178,7 +178,7 @@ bool Permutation<IndexType>::Check() const {
 template <typename IndexType>
 int Permutation<IndexType>::ComputeSignature() const {
   const size_t size = perm_.size();
-  absl::StrongVector<IndexType, bool> visited(size);
+  util_intops::StrongVector<IndexType, bool> visited(size);
   DCHECK(Check());
   int signature = 1;
   for (IndexType i(0); i < size; ++i) {

@@ -258,9 +258,9 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
 
   const RoutingModel& routing_model_;
 
-  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
       active_per_disjunction_;
-  absl::StrongVector<RoutingModel::DisjunctionIndex, int>
+  util_intops::StrongVector<RoutingModel::DisjunctionIndex, int>
       inactive_per_disjunction_;
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
@@ -2775,7 +2775,7 @@ class ResourceGroupAssignmentFilter : public BasePathFilter {
   std::vector<bool> delta_vehicle_requires_resource_assignment_;
 
   std::vector<int> bound_resource_index_of_vehicle_;
-  absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+  util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
       ignored_resources_per_class_;
 };
 

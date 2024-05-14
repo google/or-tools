@@ -239,7 +239,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 
     std::vector<int> vehicles_without_resource_assignment;
     std::vector<int> vehicles_with_resource_assignment;
-    absl::StrongVector<RCIndex, absl::flat_hash_set<int>>
+    util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
         used_resources_per_class;
     DetermineVehiclesRequiringResourceAssignment(
         &vehicles_without_resource_assignment,
@@ -309,7 +309,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   void DetermineVehiclesRequiringResourceAssignment(
       std::vector<int>* vehicles_without_resource_assignment,
       std::vector<int>* vehicles_with_resource_assignment,
-      absl::StrongVector<RCIndex, absl::flat_hash_set<int>>*
+      util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*
           used_resources_per_class) const {
     vehicles_without_resource_assignment->clear();
     vehicles_with_resource_assignment->clear();
@@ -408,7 +408,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 
   bool ComputeVehicleResourceClassValuesAndIndices(
       const std::vector<int>& vehicles_to_assign,
-      const absl::StrongVector<RCIndex, absl::flat_hash_set<int>>&
+      const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>&
           used_resources_per_class,
       const std::function<int64_t(int64_t)>& next_accessor,
       std::vector<int>* resource_indices) {

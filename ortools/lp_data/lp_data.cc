@@ -65,7 +65,7 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 }
 
 template <class I, class T>
-double Average(const absl::StrongVector<I, T>& v) {
+double Average(const util_intops::StrongVector<I, T>& v) {
   const size_t size = v.size();
   double sum = 0.0;
   double n = 0.0;  // n is used in a calculation involving doubles.
@@ -78,7 +78,7 @@ double Average(const absl::StrongVector<I, T>& v) {
 }
 
 template <class I, class T>
-double StandardDeviation(const absl::StrongVector<I, T>& v) {
+double StandardDeviation(const util_intops::StrongVector<I, T>& v) {
   const size_t size = v.size();
   double n = 0.0;  // n is used in a calculation involving doubles.
   double sigma_square = 0.0;
@@ -95,7 +95,7 @@ double StandardDeviation(const absl::StrongVector<I, T>& v) {
 
 // Returns 0 when the vector is empty.
 template <class I, class T>
-T GetMaxElement(const absl::StrongVector<I, T>& v) {
+T GetMaxElement(const util_intops::StrongVector<I, T>& v) {
   const size_t size = v.size();
   if (size == 0) {
     return T(0);

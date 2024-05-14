@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "ortools/base/timer.h"

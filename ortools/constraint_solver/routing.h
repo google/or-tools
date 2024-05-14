@@ -520,7 +520,7 @@ class RoutingModel {
       return resource_indices_per_class_[resource_class];
     }
     // clang-format off
-    const absl::StrongVector<ResourceClassIndex, std::vector<int> >&
+    const util_intops::StrongVector<ResourceClassIndex, std::vector<int> >&
         GetResourceIndicesPerClass() const {
       return resource_indices_per_class_;
     }
@@ -557,7 +557,7 @@ class RoutingModel {
     // ComputeResourceClasses()).
     std::vector<ResourceClassIndex> resource_class_indices_;
     // clang-format off
-    absl::StrongVector<ResourceClassIndex, std::vector<int> >
+    util_intops::StrongVector<ResourceClassIndex, std::vector<int> >
         resource_indices_per_class_;
     // clang-format on
 
@@ -2363,7 +2363,7 @@ class RoutingModel {
   mutable RevSwitch is_bound_to_end_ct_added_;
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
-  absl::StrongVector<DimensionIndex, RoutingDimension*> dimensions_;
+  util_intops::StrongVector<DimensionIndex, RoutingDimension*> dimensions_;
   /// Resource Groups.
   /// If resource_groups_ is not empty, then for each group of resources, each
   /// (used) vehicle must be assigned to exactly 1 resource, and each resource
@@ -2371,7 +2371,7 @@ class RoutingModel {
   // clang-format off
   std::vector<std::unique_ptr<ResourceGroup> > resource_groups_;
   /// Stores the set of resource groups related to each dimension.
-  absl::StrongVector<DimensionIndex, std::vector<int> >
+  util_intops::StrongVector<DimensionIndex, std::vector<int> >
       dimension_resource_group_indices_;
 
   /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
@@ -2379,10 +2379,10 @@ class RoutingModel {
   /// mappings below.
   std::vector<DimensionCumulOptimizers<GlobalDimensionCumulOptimizer> >
       global_dimension_optimizers_;
-  absl::StrongVector<DimensionIndex, int> global_optimizer_index_;
+  util_intops::StrongVector<DimensionIndex, int> global_optimizer_index_;
   std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
-  absl::StrongVector<DimensionIndex, int> local_optimizer_index_;
+  util_intops::StrongVector<DimensionIndex, int> local_optimizer_index_;
   // clang-format on
   std::string primary_constrained_dimension_;
   /// Costs
@@ -2412,7 +2412,7 @@ class RoutingModel {
       std::vector<Solver::PathEnergyCostConstraintSpecification::EnergyCost>,
                       absl::Hash<std::pair<std::string, std::string>>>
       force_distance_to_energy_costs_;
-  absl::StrongVector<CostClassIndex, CostClass> cost_classes_;
+  util_intops::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
@@ -2423,7 +2423,7 @@ class RoutingModel {
   VehicleTypeContainer vehicle_type_container_;
   std::function<int(int64_t)> vehicle_start_class_callback_;
   /// Disjunctions
-  absl::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
+  util_intops::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
   // clang-format off
   std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
   /// Same vehicle costs
