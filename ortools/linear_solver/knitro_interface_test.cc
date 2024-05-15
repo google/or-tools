@@ -1472,7 +1472,8 @@ class KNMPCallback : public MPCallback {
     if (knitro_return_code) return;
 
     // printf(
-    //         "  Lazy constraints called on an integral solution of value %e.\n", objective);
+    //         "  Lazy constraints called on an integral solution of value
+    //         %e.\n", objective);
 
     // For each vertex, retrieve its two neighbors.
     int(*neighbors)[2];
@@ -1546,23 +1547,23 @@ class KNMPCallback : public MPCallback {
         current_sub_tour_size++;
       }
 
-
       // Add the sub-tour elimination constraint.
       if (current_sub_tour_size < userparams_->number_of_vertices) {
         number_of_sub_tours++;
 
         LinearExpr ct;
         for (pos = 0; pos < current_sub_tour_size; ++pos) {
-            int vertex_id_1 = current_sub_tour[pos];
-            int vertex_id_2 = current_sub_tour[(pos + 1) % current_sub_tour_size];
-            int variable_id = (vertex_id_1 > vertex_id_2)?
-                (*userparams_->variable_indices)[vertex_id_1][vertex_id_2]:
-                (*userparams_->variable_indices)[vertex_id_2][vertex_id_1];
-            ct += LinearExpr(mpSolver_->variable(variable_id));
+          int vertex_id_1 = current_sub_tour[pos];
+          int vertex_id_2 = current_sub_tour[(pos + 1) % current_sub_tour_size];
+          int variable_id =
+              (vertex_id_1 > vertex_id_2)
+                  ? (*userparams_->variable_indices)[vertex_id_1][vertex_id_2]
+                  : (*userparams_->variable_indices)[vertex_id_2][vertex_id_1];
+          ct += LinearExpr(mpSolver_->variable(variable_id));
         }
-        
-        callback_context->AddLazyConstraint(LinearRange(-infinity, ct, current_sub_tour_size - 1));
 
+        callback_context->AddLazyConstraint(
+            LinearRange(-infinity, ct, current_sub_tour_size - 1));
       }
     }
 
@@ -1585,7 +1586,6 @@ class KNMPCallback : public MPCallback {
 };
 
 TEST(KnitroInterface, LazyConstraint) {
-
   // Avoid
   // 'error: 'for' loop initial declarations are only allowed in C99 mode'
   int vertex_id_1 = -1;
@@ -1607,13 +1607,13 @@ TEST(KnitroInterface, LazyConstraint) {
       printf("bayg29.tsp found in submodule OR-Tools Knitro resources rep\n");
     } else {
       printf("bayg29.tsp not found !\n");
-      ASSERT_TRUE(false);
+      EXPECT_TRUE(false);
     }
   }
 
   int number_of_vertices = -1;
   fscanf_return_value = fscanf(file, "%d", &number_of_vertices);
-  ASSERT_EQ(fscanf_return_value, 1);
+  EXPECT_EQ(fscanf_return_value, 1);
 
   int** distances;
   distances = (int**)malloc(number_of_vertices * sizeof(int*));
@@ -1624,7 +1624,7 @@ TEST(KnitroInterface, LazyConstraint) {
     for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
       int distance = 0;
       fscanf_return_value = fscanf(file, "%i", &distance);
-      ASSERT_EQ(fscanf_return_value, 1);
+      EXPECT_EQ(fscanf_return_value, 1);
       distances[vertex_id_1][vertex_id_2] = distance;
     }
   }
@@ -1670,7 +1670,9 @@ TEST(KnitroInterface, LazyConstraint) {
   // Set the objective.
   for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
     for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
-      obj->SetCoefficient(solver.variable(variable_indices[vertex_id_1][vertex_id_2]), distances[vertex_id_1][vertex_id_2]);
+      obj->SetCoefficient(
+          solver.variable(variable_indices[vertex_id_1][vertex_id_2]),
+          distances[vertex_id_1][vertex_id_2]);
     }
   }
 
@@ -1681,7 +1683,7 @@ TEST(KnitroInterface, LazyConstraint) {
   // For each vertex, select exactly two incident edges.
   for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
     // Add the constraint.
-    MPConstraint* ct = solver.MakeRowConstraint(2,2);
+    MPConstraint* ct = solver.MakeRowConstraint(2, 2);
 
     // Add the constraint terms.
     for (vertex_id_2 = 0; vertex_id_2 < number_of_vertices; ++vertex_id_2) {
@@ -1689,8 +1691,7 @@ TEST(KnitroInterface, LazyConstraint) {
       int variable_id = (vertex_id_1 > vertex_id_2)
                             ? variable_indices[vertex_id_1][vertex_id_2]
                             : variable_indices[vertex_id_2][vertex_id_1];
-      ct->SetCoefficient(solver.variable(variable_id),1);
-
+      ct->SetCoefficient(solver.variable(variable_id), 1);
     }
   }
 
@@ -1699,9 +1700,10 @@ TEST(KnitroInterface, LazyConstraint) {
   lazyconstraints_callback_user_params.number_of_vertices = number_of_vertices;
   lazyconstraints_callback_user_params.distances = &distances;
   lazyconstraints_callback_user_params.variable_indices = &variable_indices;
-  KNMPCallback *callback = new KNMPCallback(&lazyconstraints_callback_user_params, reinterpret_cast<KN_context*>(solver.underlying_solver()), &solver);
+  KNMPCallback* callback = new KNMPCallback(
+      &lazyconstraints_callback_user_params,
+      reinterpret_cast<KN_context*>(solver.underlying_solver()), &solver);
   solver.SetCallback(callback);
-
 
   ///////////
   // Solve //
@@ -1736,7 +1738,6 @@ TEST(KnitroInterface, LazyConstraint) {
   getter.Double_Param(KN_PARAM_MIP_INTEGERTOL, &integer_tol);
 
   EXPECT_NEAR(obj->Value(), 1610, integer_tol);
-  
 }
 
 }  // namespace operations_research

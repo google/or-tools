@@ -133,10 +133,10 @@ class KnitroInterface : public MPSolverInterface {
 
 /**
  * Knitro's MPCallbackContext derived class
- * 
+ *
  * Stores the values x and lambda provided by Knitro MIP Callback functions
  * eventhough lambda can't be used with the current MPCallbackContext definition
- * 
+ *
  * Return code from Knitro solver's cuts can't be retrieved neither
  */
 class KnitroMPCallbackContext : public MPCallbackContext {
@@ -230,11 +230,6 @@ void KnitroMPCallbackContext::AddLazyConstraint(
         event_ == MPCallbackEvent::kMipSolution);
   GenerateConstraint(*kc_ptr_, lazy_constraint);
 }
-
-struct MPCallBackWithKnitroContext {
-  KnitroMPCallbackContext* context;
-  MPCallback* callback;
-};
 
 struct MPCallBackWithEvent {
   MPCallbackEvent event;
