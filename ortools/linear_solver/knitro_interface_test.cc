@@ -1,6 +1,7 @@
 // ADD HEADER
 #include <stdio.h>
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -124,21 +125,21 @@ class KnitroGetter {
 // ----- Empty model
 
 /** Unit Test to solve an empty LP */
-TEST(KnitroInterface, EmptyLP) {
+TEST(KnitroInterface, SolveEmptyLP) {
   UNITTEST_INIT_LP();
   solver.Solve();
   EXPECT_EQ(solver.MutableObjective()->Value(), 0);
 }
 
 /** Unit Test to solve an empty MIP */
-TEST(KnitroInterface, EmptyMIP) {
+TEST(KnitroInterface, SolveEmptyMIP) {
   UNITTEST_INIT_MIP();
   solver.Solve();
   EXPECT_EQ(solver.MutableObjective()->Value(), 0);
 }
 
 /** Unit Test to write an empty MIP */
-TEST(KnitroInterface, WriteEmpty) {
+TEST(KnitroInterface, WriteEmptyProblem) {
   UNITTEST_INIT_MIP();
   solver.Write("knitro_interface_test_empty");
   // check the file exists
@@ -148,13 +149,13 @@ TEST(KnitroInterface, WriteEmpty) {
 // ----- Modeling functions
 
 /** Unit Test of the method infinity()*/
-TEST(KnitroInterface, infinity) {
+TEST(KnitroInterface, GetKnitroInfinityValue) {
   UNITTEST_INIT_LP();
   EXPECT_EQ(solver.solver_infinity(), KN_INFINITY);
 }
 
 /** Unit Test of the method AddVariable()*/
-TEST(KnitroInterface, AddVariable) {
+TEST(KnitroInterface, AddVariableIntoProblem) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   solver.Solve();
@@ -169,7 +170,7 @@ TEST(KnitroInterface, AddVariable) {
 }
 
 /** Unit Test of the method AddRowConstraint()*/
-TEST(KnitroInterface, AddRowConstraint) {
+TEST(KnitroInterface, AddRowConstraintIntoProblem) {
   UNITTEST_INIT_LP();
   MPConstraint* const ct = solver.MakeRowConstraint(0, 10, "ct");
   solver.Solve();
@@ -184,7 +185,7 @@ TEST(KnitroInterface, AddRowConstraint) {
 }
 
 /** Unit Test of the method SetCoefficient()*/
-TEST(KnitroInterface, SetCoefficient) {
+TEST(KnitroInterface, SetCoefficientInConstraint) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPConstraint* const ct = solver.MakeRowConstraint(0, 10, "ct");
@@ -204,7 +205,7 @@ TEST(KnitroInterface, SetCoefficient) {
 }
 
 /** Unit Test to check variable type in Knitro model*/
-TEST(KnitroInterface, VarType) {
+TEST(KnitroInterface, CheckVarType) {
   UNITTEST_INIT_MIP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPVariable* const y = solver.MakeIntVar(0, 10, "y");
@@ -220,7 +221,7 @@ TEST(KnitroInterface, VarType) {
 }
 
 /** Unit Test to change variable type from continuous to integer*/
-TEST(KnitroInterface, SetInteger) {
+TEST(KnitroInterface, ChangeVarTypeIntoInteger) {
   UNITTEST_INIT_MIP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPVariable* const y = solver.MakeIntVar(0, 10, "y");
@@ -240,7 +241,7 @@ TEST(KnitroInterface, SetInteger) {
 }
 
 /** Unit Test to change variable type from continuous to integer in LP*/
-TEST(KnitroInterface, SetInteger2) {
+TEST(KnitroInterface, ChangeVarTypeIntoIntegerInLP) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPVariable* const y = solver.MakeNumVar(0, 10, "y");
@@ -265,7 +266,7 @@ TEST(KnitroInterface, SetInteger2) {
 }
 
 /** Unit Test of the method SetVariableBounds()*/
-TEST(KnitroInterface, SetVariableBounds) {
+TEST(KnitroInterface, ChangeVariableBounds) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
   x->SetBounds(-10, 10);
@@ -283,7 +284,7 @@ TEST(KnitroInterface, SetVariableBounds) {
 }
 
 /** Unit Test of the method ClearConstraint()*/
-TEST(KnitroInterface, ClearConstraint) {
+TEST(KnitroInterface, ClearAConstraint) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPConstraint* const ct = solver.MakeRowConstraint(0, 10, "ct");
@@ -301,7 +302,7 @@ TEST(KnitroInterface, ClearConstraint) {
 }
 
 /** Unit Test of the method SetObjectiveCoefficient()*/
-TEST(KnitroInterface, SetObjectiveCoefficient) {
+TEST(KnitroInterface, AddObjectiveCoefficient) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPObjective* const obj = solver.MutableObjective();
@@ -315,7 +316,7 @@ TEST(KnitroInterface, SetObjectiveCoefficient) {
 }
 
 /** Unit Test of the method SetOptimizationDirection()*/
-TEST(KnitroInterface, SetOptimizationDirection) {
+TEST(KnitroInterface, ChangeOptimizationDirection) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
   MPObjective* const obj = solver.MutableObjective();
@@ -329,7 +330,7 @@ TEST(KnitroInterface, SetOptimizationDirection) {
 }
 
 /** Unit Test of the method SetObjectiveOffset()*/
-TEST(KnitroInterface, SetObjectiveOffset) {
+TEST(KnitroInterface, AddOffsetToObjective) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 10, "x");
   MPObjective* const obj = solver.MutableObjective();
@@ -360,7 +361,7 @@ TEST(KnitroInterface, ClearObjective) {
 }
 
 /** Unit Test of the method Reset()*/
-TEST(KnitroInterface, Reset) {
+TEST(KnitroInterface, ResetAProblem) {
   UNITTEST_INIT_LP();
   MPVariable* const x = solver.MakeNumVar(0, 1, "x");
   MPVariable* const y = solver.MakeNumVar(0, 1, "y");
@@ -395,7 +396,7 @@ TEST(KnitroInterface, Reset) {
 // ----- Test Param
 
 /** Unit Test of the method SetScaling()*/
-TEST(KnitroInterface, SetScaling) {
+TEST(KnitroInterface, SetScalingParam) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
   params.SetIntegerParam(MPSolverParameters::SCALING,
@@ -412,7 +413,7 @@ TEST(KnitroInterface, SetScaling) {
 }
 
 /** Unit Test of the method SetRelativeMipGap()*/
-TEST(KnitroInterface, SetRelativeMipGap) {
+TEST(KnitroInterface, ChangeRelativeMipGapinMIP) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
   params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, 0.5);
@@ -427,7 +428,7 @@ TEST(KnitroInterface, SetRelativeMipGap) {
 }
 
 /** Unit Test of the method SetRelativeMipGap()*/
-TEST(KnitroInterface, SetRelativeMipGap2) {
+TEST(KnitroInterface, ChangeRelativeMipGapinLP) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
   params.SetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP, 0.5);
@@ -438,7 +439,7 @@ TEST(KnitroInterface, SetRelativeMipGap2) {
 }
 
 /** Unit Test of the method SetPresolveMode()*/
-TEST(KnitroInterface, SetPresolveMode) {
+TEST(KnitroInterface, SetPresolveModeParam) {
   UNITTEST_INIT_MIP();
   MPSolverParameters params;
   // Try with invalid value
@@ -533,7 +534,7 @@ TEST(KnitroInterface, SetLpAlgorithm) {
 }
 
 /** Unit Test of the method SetPrimalTolerance()*/
-TEST(KnitroInterface, SetPrimalTolerance) {
+TEST(KnitroInterface, SetPrimalToleranceParam) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
   params.SetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE, 0.5);
@@ -548,7 +549,7 @@ TEST(KnitroInterface, SetPrimalTolerance) {
 }
 
 /** Unit Test of the method SetDualTolerance()*/
-TEST(KnitroInterface, SetDualTolerance) {
+TEST(KnitroInterface, SetDualToleranceParam) {
   UNITTEST_INIT_LP();
   MPSolverParameters params;
   params.SetDoubleParam(MPSolverParameters::DUAL_TOLERANCE, 0.5);
@@ -573,7 +574,7 @@ TEST(KnitroInterface, SetNumThreads) {
 }
 
 /** Unit Test with time limit*/
-TEST(KnitroInterface, TimeLimit) {
+TEST(KnitroInterface, SetProblemTimeLimit) {
   UNITTEST_INIT_LP();
   solver.set_time_limit(2024000);
   solver.Solve();
@@ -596,7 +597,7 @@ TEST(KnitroInterface, BranchingPriorityChangedForVariableLP) {
 }
 
 /** Unit Test of the method underlying_solver()*/
-TEST(KnitroInterface, underlying_solver) {
+TEST(KnitroInterface, GetUnderlyingSolverPtr) {
   UNITTEST_INIT_LP();
   auto ptr = solver.underlying_solver();
   EXPECT_NE(ptr, nullptr);
@@ -604,16 +605,16 @@ TEST(KnitroInterface, underlying_solver) {
 
 // ----- Getting post-solve informations
 
-/** Unit Test of the method nodes()*/
-TEST(KnitroInterface, nodes) {
+/** Unit Test of the method nodes() in MIP*/
+TEST(KnitroInterface, GetNbNodesInMIP) {
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
   solver.Solve();
   EXPECT_NE(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
 }
 
-/** Unit Test of the method nodes()*/
-TEST(KnitroInterface, nodes2) {
+/** Unit Test of the method nodes() in LP*/
+TEST(KnitroInterface, GetNbNodesInLP) {
   UNITTEST_INIT_LP();
   EXPECT_EQ(solver.nodes(), MPSolverInterface::kUnknownNumberOfNodes);
   solver.Solve();
@@ -621,7 +622,7 @@ TEST(KnitroInterface, nodes2) {
 }
 
 /** Unit Test of the method iterations()*/
-TEST(KnitroInterface, iterations) {
+TEST(KnitroInterface, GetNbIter) {
   UNITTEST_INIT_MIP();
   EXPECT_EQ(solver.iterations(), MPSolverInterface::kUnknownNumberOfIterations);
   solver.Solve();
@@ -644,7 +645,7 @@ TEST(KnitroInterface, iterations) {
  * Constants and different bounds for variables to
  * be written in mps file
  */
-TEST(KnitroInterface, WriteLoadModel) {
+TEST(KnitroInterface, WriteAndLoadModel) {
   // Write model using OR-Tools
   UNITTEST_INIT_LP();
   std::string version = solver.SolverVersion();
@@ -967,7 +968,7 @@ TEST(KnitroInterface, SupportInfinity) {
  *    st. x,  y,  z >= 0
  *        x,  y,  z <= 1
  */
-TEST(KnitroInterface, JustVar) {
+TEST(KnitroInterface, JustVarProb) {
   UNITTEST_INIT_LP();
   std::vector<MPVariable*> x;
   solver.MakeNumVarArray(3, 0, 1, "x", &x);
@@ -1391,6 +1392,353 @@ TEST(KnitroInterface, AddVarToExistingConstraint) {
   EXPECT_NEAR(y->solution_value(), 1, ERROR_RATE);
 }
 
+/*-------------------- Callback --------------------*/
+
+/**
+ * Test for lazy constraint extracted from Knitro's distribution
+ * C code examples
+ */
+
+/**
+ * User structure for the lazy constraints callback.
+ */
+typedef struct LazyConstraintsCallbackUserParams {
+  /** Number of vertices. */
+  int number_of_vertices;
+
+  /** Pointer to the distance matrix. */
+  int*** distances;
+
+  /** Pointer to the variable indices. */
+  int*** variable_indices;
+
+} LazyConstraintsCallbackUserParams;
+
+class KNMPCallback : public MPCallback {
+ private:
+  LazyConstraintsCallbackUserParams* userparams_;
+  KN_context* kc_ptr_;
+  MPSolver* mpSolver_;
+
+ public:
+  KNMPCallback(LazyConstraintsCallbackUserParams* userParams, KN_context* kc,
+               MPSolver* solver)
+      : MPCallback(false, true),
+        userparams_(userParams),
+        kc_ptr_(kc),
+        mpSolver_(solver){};
+
+  ~KNMPCallback() override{};
+
+  void RunCallback(MPCallbackContext* callback_context) override {
+    // Return code of Knitro API.
+    int knitro_return_code = 0;
+
+    double infinity = mpSolver_->infinity();
+
+    // Avoid
+    // 'error: 'for' loop initial declarations are only allowed in C99 mode'
+    int vertex_id_1 = -1;
+    int vertex_id_2 = -1;
+    int pos = -1;
+
+    // We only add cuts for integral solutions.
+    // Retrieve the integer tolerance value.
+    double integer_tol = 0.0;
+    knitro_return_code =
+        KN_get_double_param(kc_ptr_, KN_PARAM_MIP_INTEGERTOL, &integer_tol);
+    if (knitro_return_code) return;
+
+    // Stop if the solution is not integral.
+    // printf("  Check if solution is integral.\n");
+    for (vertex_id_1 = 0; vertex_id_1 < userparams_->number_of_vertices;
+         ++vertex_id_1) {
+      for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
+        int variable_id =
+            (*userparams_->variable_indices)[vertex_id_1][vertex_id_2];
+        double value =
+            callback_context->VariableValue(mpSolver_->variable(variable_id));
+        if (fabs(value - round(value)) > integer_tol) {
+          // printf("  The solution is not integral.\n\n");
+          return;
+        }
+      }
+    }
+    // printf("  The solution is integral.\n");
+
+    // Get objective value.
+    double objective = -1;
+    knitro_return_code = KN_get_obj_value(kc_ptr_, &objective);
+    if (knitro_return_code) return;
+
+    // printf(
+    //         "  Lazy constraints called on an integral solution of value %e.\n", objective);
+
+    // For each vertex, retrieve its two neighbors.
+    int(*neighbors)[2];
+    neighbors =
+        (int(*)[2])malloc(userparams_->number_of_vertices * sizeof(int[2]));
+    for (vertex_id_1 = 0; vertex_id_1 < userparams_->number_of_vertices;
+         ++vertex_id_1) {
+      neighbors[vertex_id_1][0] = -1;
+      neighbors[vertex_id_1][1] = -1;
+    }
+    for (vertex_id_1 = 0; vertex_id_1 < userparams_->number_of_vertices;
+         ++vertex_id_1) {
+      for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
+        int variable_id =
+            (*userparams_->variable_indices)[vertex_id_1][vertex_id_2];
+        double value =
+            callback_context->VariableValue(mpSolver_->variable(variable_id));
+        if (value > 0.5) {
+          if (neighbors[vertex_id_1][0] == -1) {
+            neighbors[vertex_id_1][0] = vertex_id_2;
+          } else {
+            neighbors[vertex_id_1][1] = vertex_id_2;
+          }
+          if (neighbors[vertex_id_2][0] == -1) {
+            neighbors[vertex_id_2][0] = vertex_id_1;
+          } else {
+            neighbors[vertex_id_2][1] = vertex_id_1;
+          }
+        }
+      }
+    }
+
+    // For each vertex, the sub-tour it belongs to.
+    int* vertex_sub_tour;
+    vertex_sub_tour =
+        (int*)malloc(userparams_->number_of_vertices * sizeof(int));
+    for (vertex_id_1 = 0; vertex_id_1 < userparams_->number_of_vertices;
+         ++vertex_id_1) {
+      vertex_sub_tour[vertex_id_1] = -1;
+    }
+
+    // The current sub-tour.
+    int* current_sub_tour;
+    current_sub_tour =
+        (int*)malloc(userparams_->number_of_vertices * sizeof(int));
+    int current_sub_tour_size = 0;
+
+    // Find the sub-tours.
+    int number_of_sub_tours = 0;
+    for (;;) {
+      // Find the first vertex which sub-tour has not been found.
+      int vertex_id = 0;
+      while (vertex_id < userparams_->number_of_vertices &&
+             vertex_sub_tour[vertex_id] != -1) {
+        vertex_id++;
+      }
+      if (vertex_id == userparams_->number_of_vertices) break;
+
+      // Loop through the tour starting at vertex 'vertex_id'.
+      current_sub_tour_size = 0;
+      while (vertex_sub_tour[vertex_id] == -1) {
+        vertex_sub_tour[vertex_id] = number_of_sub_tours;
+        current_sub_tour[current_sub_tour_size] = vertex_id;
+        if (current_sub_tour_size == 0 ||
+            neighbors[vertex_id][0] !=
+                current_sub_tour[current_sub_tour_size - 1]) {
+          vertex_id = neighbors[vertex_id][0];
+        } else {
+          vertex_id = neighbors[vertex_id][1];
+        }
+        current_sub_tour_size++;
+      }
+
+
+      // Add the sub-tour elimination constraint.
+      if (current_sub_tour_size < userparams_->number_of_vertices) {
+        number_of_sub_tours++;
+
+        LinearExpr ct;
+        for (pos = 0; pos < current_sub_tour_size; ++pos) {
+            int vertex_id_1 = current_sub_tour[pos];
+            int vertex_id_2 = current_sub_tour[(pos + 1) % current_sub_tour_size];
+            int variable_id = (vertex_id_1 > vertex_id_2)?
+                (*userparams_->variable_indices)[vertex_id_1][vertex_id_2]:
+                (*userparams_->variable_indices)[vertex_id_2][vertex_id_1];
+            ct += LinearExpr(mpSolver_->variable(variable_id));
+        }
+        
+        callback_context->AddLazyConstraint(LinearRange(-infinity, ct, current_sub_tour_size - 1));
+
+      }
+    }
+
+    // if (number_of_sub_tours == 0) {
+    //     printf("  No sub-tour found, the solution is feasible.\n");
+    // } else {
+    //     printf("  %i sub-tour(s) found.\n", number_of_sub_tours);
+    // }
+    // printf("\n");
+
+    // Free allocated structures.
+    free(neighbors);
+    free(vertex_sub_tour);
+    free(current_sub_tour);
+
+    return;
+  };
+
+  LazyConstraintsCallbackUserParams* GetUserParams() { return userparams_; }
+};
+
+TEST(KnitroInterface, LazyConstraint) {
+
+  // Avoid
+  // 'error: 'for' loop initial declarations are only allowed in C99 mode'
+  int vertex_id_1 = -1;
+  int vertex_id_2 = -1;
+
+  int fscanf_return_value = -1;
+
+  //////////
+  // Data //
+  //////////
+
+  // Data of the traveling salesman problem.
+  FILE* file = fopen("ortools/knitro/resources/bayg29.tsp", "r");
+  if (file != nullptr) {
+    printf("bayg29.tsp found in Knitro resources rep\n");
+  } else {
+    file = fopen("or-tools/ortools/knitro/resources/bayg29.tsp", "r");
+    if (file != nullptr) {
+      printf("bayg29.tsp found in submodule OR-Tools Knitro resources rep\n");
+    } else {
+      printf("bayg29.tsp not found !\n");
+      ASSERT_TRUE(false);
+    }
+  }
+
+  int number_of_vertices = -1;
+  fscanf_return_value = fscanf(file, "%d", &number_of_vertices);
+  ASSERT_EQ(fscanf_return_value, 1);
+
+  int** distances;
+  distances = (int**)malloc(number_of_vertices * sizeof(int*));
+  for (vertex_id_1 = 1; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    distances[vertex_id_1] = (int*)malloc(vertex_id_1 * sizeof(int));
+  }
+  for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
+      int distance = 0;
+      fscanf_return_value = fscanf(file, "%i", &distance);
+      ASSERT_EQ(fscanf_return_value, 1);
+      distances[vertex_id_1][vertex_id_2] = distance;
+    }
+  }
+  fclose(file);
+
+  ///////////////////////////////
+  // Initialize Knitro context //
+  ///////////////////////////////
+
+  // Return code of Knitro API.
+  int knitro_return_code = 0;
+
+  // Create a new Knitro context.
+  UNITTEST_INIT_MIP();
+  MPObjective* obj = solver.MutableObjective();
+
+  ///////////////
+  // Variables //
+  ///////////////
+
+  // Structure to retrieve variable indices from vertex indices.
+  int** variable_indices;
+  variable_indices = (int**)malloc(number_of_vertices * sizeof(int*));
+  for (vertex_id_1 = 1; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    variable_indices[vertex_id_1] = (int*)malloc(vertex_id_1 * sizeof(int));
+  }
+
+  // Add variables.
+  for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
+      // Add the variable corresponding to edge (vertex_id_1, vertex_id_2).
+      int variable_id = -1;
+      MPVariable* var_tmp = solver.MakeBoolVar("");
+      variable_id = var_tmp->index();
+      variable_indices[vertex_id_1][vertex_id_2] = variable_id;
+    }
+  }
+
+  ///////////////
+  // Objective //
+  ///////////////
+
+  // Set the objective.
+  for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    for (vertex_id_2 = 0; vertex_id_2 < vertex_id_1; ++vertex_id_2) {
+      obj->SetCoefficient(solver.variable(variable_indices[vertex_id_1][vertex_id_2]), distances[vertex_id_1][vertex_id_2]);
+    }
+  }
+
+  /////////////////
+  // Constraints //
+  /////////////////
+
+  // For each vertex, select exactly two incident edges.
+  for (vertex_id_1 = 0; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    // Add the constraint.
+    MPConstraint* ct = solver.MakeRowConstraint(2,2);
+
+    // Add the constraint terms.
+    for (vertex_id_2 = 0; vertex_id_2 < number_of_vertices; ++vertex_id_2) {
+      if (vertex_id_2 == vertex_id_1) continue;
+      int variable_id = (vertex_id_1 > vertex_id_2)
+                            ? variable_indices[vertex_id_1][vertex_id_2]
+                            : variable_indices[vertex_id_2][vertex_id_1];
+      ct->SetCoefficient(solver.variable(variable_id),1);
+
+    }
+  }
+
+  // Sub-tour elimination constraints added through lazy constraints.
+  LazyConstraintsCallbackUserParams lazyconstraints_callback_user_params;
+  lazyconstraints_callback_user_params.number_of_vertices = number_of_vertices;
+  lazyconstraints_callback_user_params.distances = &distances;
+  lazyconstraints_callback_user_params.variable_indices = &variable_indices;
+  KNMPCallback *callback = new KNMPCallback(&lazyconstraints_callback_user_params, reinterpret_cast<KN_context*>(solver.underlying_solver()), &solver);
+  solver.SetCallback(callback);
+
+
+  ///////////
+  // Solve //
+  ///////////
+
+  // std::ofstream param_file;
+  // param_file.open("knitro_interface_lazy_constraint_callback_settings.opt");
+  // // add the following line to allow debug printf display in KNMPCallback
+  // // param_file << "mip_numthreads  1\n";
+  // // add the following line to allow summary display of Knitro solver
+  // param_file << "outlev  1\n";
+  // param_file.close();
+  // solver.SetSolverSpecificParametersAsString("knitro_interface_lazy_constraint_callback_settings.opt");
+
+  // Solve.
+  solver.Solve();
+
+  ///////////////////////////////
+  // Free allocated structures //
+  ///////////////////////////////
+
+  // Delete distances and variable_indices.
+  for (vertex_id_1 = 1; vertex_id_1 < number_of_vertices; ++vertex_id_1) {
+    free(distances[vertex_id_1]);
+    free(variable_indices[vertex_id_1]);
+  }
+  free(distances);
+  free(variable_indices);
+  free(callback);
+
+  double integer_tol;
+  getter.Double_Param(KN_PARAM_MIP_INTEGERTOL, &integer_tol);
+
+  EXPECT_NEAR(obj->Value(), 1610, integer_tol);
+  
+}
+
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
@@ -1406,6 +1754,7 @@ int main(int argc, char** argv) {
       remove("knitro_interface_bpcfv.opt");
       remove("knitro_interface_feasible_test.opt");
       remove("knitro_interface_test_empty");
+      remove("knitro_interface_lazy_constraint_callback_settings.opt");
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

@@ -131,13 +131,21 @@ class KnitroInterface : public MPSolverInterface {
 
 /*------------Knitro CallBack Context------------*/
 
+/**
+ * Knitro's MPCallbackContext derived class
+ * 
+ * Stores the values x and lambda provided by Knitro MIP Callback functions
+ * eventhough lambda can't be used with the current MPCallbackContext definition
+ * 
+ * Return code from Knitro solver's cuts can't be retrieved neither
+ */
 class KnitroMPCallbackContext : public MPCallbackContext {
   friend class KnitroInterface;
 
  public:
   KnitroMPCallbackContext(KN_context_ptr* kc, MPCallbackEvent event,
-                          const double* const x)
-      : kc_ptr_(kc), event_(event), var_val(x){};
+                          const double* const x, const double* const lambda)
+      : kc_ptr_(kc), event_(event), var_val(x), lambda(lambda){};
 
   // Implementation of the interface.
   MPCallbackEvent Event() override { return event_; };
@@ -159,6 +167,8 @@ class KnitroMPCallbackContext : public MPCallbackContext {
   KN_context_ptr* kc_ptr_;
   MPCallbackEvent event_;
   const double* const var_val;
+  // lambda is not used
+  const double* const lambda;
 };
 
 bool KnitroMPCallbackContext::CanQueryVariableValues() {
@@ -241,7 +251,7 @@ int KNITRO_API CallBackFn(KN_context_ptr kc, const double* const x,
   CHECK(callback_with_event != nullptr);
   std::unique_ptr<KnitroMPCallbackContext> cb_context;
   cb_context = std::make_unique<KnitroMPCallbackContext>(
-      &kc, callback_with_event->event, x);
+      &kc, callback_with_event->event, x, lambda);
   callback_with_event->callback->RunCallback(cb_context.get());
   return 0;
 }
@@ -682,7 +692,6 @@ void KnitroInterface::SetLpAlgorithm(int value) {
 }
 
 void KnitroInterface::SetCallback(MPCallback* mp_callback) {
-  // TODO : check if cb are used to be stacked
   callback_ = mp_callback;
 }
 
