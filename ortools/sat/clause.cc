@@ -217,20 +217,22 @@ SatClause* ClauseManager::ReasonClause(int trail_index) const {
 }
 
 bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
-  return AddClause(literals, trail_);
+  return AddClause(literals, trail_, -1);
 }
 
-bool ClauseManager::AddClause(absl::Span<const Literal> literals,
-                              Trail* trail) {
+bool ClauseManager::AddClause(absl::Span<const Literal> literals, Trail* trail,
+                              int lbd) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
+  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
   return AttachAndPropagate(clause, trail);
 }
 
 SatClause* ClauseManager::AddRemovableClause(
-    const std::vector<Literal>& literals, Trail* trail) {
+    const std::vector<Literal>& literals, Trail* trail, int lbd) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
+  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
   CHECK(AttachAndPropagate(clause, trail));
   return clause;
 }
@@ -558,7 +560,9 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   is_dag_ = false;
   num_implications_ += 2;
 
-  if (enable_sharing_ && add_callback_ != nullptr) add_callback_(a, b);
+  if (enable_sharing_ && add_binary_callback_ != nullptr) {
+    add_binary_callback_(a, b);
+  }
 
   const auto& assignment = trail_->Assignment();
   if (trail_->CurrentDecisionLevel() == 0) {

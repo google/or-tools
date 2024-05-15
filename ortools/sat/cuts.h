@@ -237,8 +237,9 @@ class ImpliedBoundsProcessor {
     IntegerVariable bool_var = kNoIntegerVariable;
 
     double SlackLpValue(IntegerValue lb) const {
-      const double bool_term = ToDouble(implied_bound - lb) * bool_lp_value;
-      return var_lp_value - ToDouble(lb) - bool_term;
+      const double bool_term =
+          static_cast<double>((implied_bound - lb).value()) * bool_lp_value;
+      return var_lp_value - static_cast<double>(lb.value()) - bool_term;
     }
 
     std::string DebugString() const {

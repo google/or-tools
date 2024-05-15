@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
@@ -1414,8 +1415,7 @@ void RegisterObjectiveBoundsImport(
       import_objective_bounds);
 }
 
-// Registers a callback that will export binary clauses discovered during
-// search.
+// Registers a callback that will export good clauses discovered during search.
 void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
                            Model* model) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -1433,6 +1433,30 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
   };
   model->GetOrCreate<BinaryImplicationGraph>()->SetAdditionCallback(
       share_binary_clause);
+  if (!model->GetOrCreate<SatParameters>()->share_glue_clauses()) {
+    return;
+  }
+  auto* clause_stream = shared_clauses_manager->GetClauseStream(id);
+  // Note that this callback takes no locks, everything operates on  this
+  // worker's own clause_stream, clauses are exported from there by SyncClauses
+  // at level zero.
+  auto share_clause = [mapping, clause_stream](
+                          int lbd, absl::Span<const Literal> literals) {
+    if (lbd <= 0 || lbd > 2 || literals.size() <= 2 ||
+        literals.size() > UniqueClauseStream::kMaxClauseSize) {
+      return;
+    }
+    std::vector<int> clause;
+    for (const Literal& lit : literals) {
+      const int var =
+          mapping->GetProtoVariableFromBooleanVariable(lit.Variable());
+      if (var == -1) return;
+      clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
+    }
+    clause_stream->Add(std::move(clause));
+  };
+  model->GetOrCreate<ClauseManager>()->SetAddClauseCallback(
+      std::move(share_clause));
 }
 
 // Registers a callback to import new clauses stored in the
@@ -1448,8 +1472,14 @@ int RegisterClausesLevelZeroImport(int id,
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
+  bool share_glue_clauses =
+      model->GetOrCreate<SatParameters>()->share_glue_clauses();
+  auto* clause_stream = share_glue_clauses
+                            ? shared_clauses_manager->GetClauseStream(id)
+                            : nullptr;
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
-                                           sat_solver, implications]() {
+                                           sat_solver, implications,
+                                           clause_stream]() {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
     implications->EnableSharing(false);
@@ -1461,6 +1491,20 @@ int RegisterClausesLevelZeroImport(int id,
       }
     }
     implications->EnableSharing(true);
+    if (clause_stream == nullptr) return true;
+    std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
+    for (const absl::Span<const int> shared_clause :
+         shared_clauses_manager->SyncClauses(id)) {
+      // Check this clause was not already learned by this worker.
+      if (!clause_stream->BlockClause(shared_clause)) continue;
+      for (int i = 0; i < shared_clause.size(); ++i) {
+        local_clause[i] = mapping->Literal(shared_clause[i]);
+      }
+      if (!sat_solver->AddProblemClause(
+              absl::MakeSpan(local_clause).subspan(0, shared_clause.size()))) {
+        return false;
+      }
+    }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(

@@ -1849,20 +1849,21 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
     const std::vector<std::pair<glop::RowIndex, double>>& multipliers,
     int64_t overflow_cap) const {
   int64_t bound = 0;
+  const int64_t factor = int64_t{1} << power;
+  const double factor_as_double = static_cast<double>(factor);
+  if (take_objective_into_account) {
+    bound = CapAdd(bound, CapProd(factor, objective_infinity_norm_.value()));
+    if (bound >= overflow_cap) return true;
+  }
   for (const auto [row, double_coeff] : multipliers) {
     const double magnitude =
-        std::abs(std::round(std::ldexp(double_coeff, power)));
+        std::abs(std::round(double_coeff * factor_as_double));
     if (std::isnan(magnitude)) return true;
     if (magnitude >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
       return true;
     }
     bound = CapAdd(bound, CapProd(static_cast<int64_t>(magnitude),
                                   infinity_norms_[row].value()));
-    if (bound >= overflow_cap) return true;
-  }
-  if (take_objective_into_account) {
-    bound = CapAdd(
-        bound, CapProd(int64_t{1} << power, objective_infinity_norm_.value()));
     if (bound >= overflow_cap) return true;
   }
   return bound >= overflow_cap;
@@ -1936,8 +1937,9 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   // Scale the multipliers by *scaling.
   // Note that we use the exact same formula as in ScalingCanOverflow().
   int64_t gcd = scaling->value();
+  const double scaling_as_double = static_cast<double>(scaling->value());
   for (const auto [row, double_coeff] : tmp_cp_multipliers_) {
-    const IntegerValue coeff(std::round(std::ldexp(double_coeff, power)));
+    const IntegerValue coeff(std::round(double_coeff * scaling_as_double));
     if (coeff != 0) {
       gcd = std::gcd(gcd, std::abs(coeff.value()));
       integer_multipliers.push_back({row, coeff});

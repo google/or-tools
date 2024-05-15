@@ -273,7 +273,7 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
       AddBinaryClauseInternal(literals[0], literals[1]);
     }
   } else {
-    if (!clauses_propagator_->AddClause(literals, trail_)) {
+    if (!clauses_propagator_->AddClause(literals, trail_, /*lbd=*/-1)) {
       return SetModelUnsat();
     }
   }
@@ -432,14 +432,14 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     --num_learned_clause_before_cleanup_;
 
     SatClause* clause =
-        clauses_propagator_->AddRemovableClause(literals, trail_);
+        clauses_propagator_->AddRemovableClause(literals, trail_, lbd);
 
     // BumpClauseActivity() must be called after clauses_info_[clause] has
     // been created or it will have no effect.
     (*clauses_propagator_->mutable_clauses_info())[clause].lbd = lbd;
     BumpClauseActivity(clause);
   } else {
-    CHECK(clauses_propagator_->AddClause(literals, trail_));
+    CHECK(clauses_propagator_->AddClause(literals, trail_, lbd));
   }
   return lbd;
 }

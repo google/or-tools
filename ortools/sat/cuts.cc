@@ -89,7 +89,7 @@ void CutTerm::Complement(absl::int128* rhs) {
   expr_offset = bound_diff - expr_offset;
 
   // Note that this is not involutive because of floating point error. Fix?
-  lp_value = ToDouble(bound_diff) - lp_value;
+  lp_value = static_cast<double>(bound_diff.value()) - lp_value;
   coeff = -coeff;
 }
 
@@ -152,13 +152,13 @@ bool CutData::AppendOneTerm(IntegerVariable var, IntegerValue coeff,
     entry.expr_coeffs[0] = -IntegerValue(1);
     entry.expr_offset = ub;
     entry.coeff = -coeff;
-    entry.lp_value = ToDouble(ub) - lp_value;
+    entry.lp_value = static_cast<double>(ub.value()) - lp_value;
   } else {
     // C = (X - LB) + LB
     entry.expr_coeffs[0] = IntegerValue(1);
     entry.expr_offset = -lb;
     entry.coeff = coeff;
-    entry.lp_value = lp_value - ToDouble(lb);
+    entry.lp_value = lp_value - static_cast<double>(lb.value());
   }
   terms.push_back(entry);
   return true;
@@ -660,7 +660,7 @@ double IntegerRoundingCutHelper::GetScaledViolation(
     // Even before we finish the adjust, we can have a lower bound on the
     // activily loss using this divisor, and so we can abort early. This is
     // similar to what is done below.
-    double max_violation = ToDouble(initial_rhs_remainder);
+    double max_violation = static_cast<double>(initial_rhs_remainder.value());
     for (int i = 0; i < cut.num_relevant_entries; ++i) {
       const CutTerm& entry = cut.terms[i];
       const IntegerValue remainder = PositiveRemainder(entry.coeff, divisor);
@@ -668,7 +668,8 @@ double IntegerRoundingCutHelper::GetScaledViolation(
       if (remainder <= initial_rhs_remainder) {
         // We do not know exactly f() yet, but it will always round to the
         // floor of the division by divisor in this case.
-        max_violation -= ToDouble(remainder) * entry.lp_value;
+        max_violation -=
+            static_cast<double>(remainder.value()) * entry.lp_value;
         if (max_violation <= 1e-3) return 0.0;
         continue;
       }
@@ -1049,16 +1050,16 @@ struct LargeCoeffFirst {
 
 struct SmallContribFirst {
   bool operator()(const CutTerm& a, const CutTerm& b) const {
-    const double contrib_a = a.lp_value * AsDouble(a.coeff);
-    const double contrib_b = b.lp_value * AsDouble(b.coeff);
+    const double contrib_a = a.lp_value * static_cast<double>(a.coeff.value());
+    const double contrib_b = b.lp_value * static_cast<double>(b.coeff.value());
     return contrib_a < contrib_b;
   }
 };
 
 struct LargeContribFirst {
   bool operator()(const CutTerm& a, const CutTerm& b) const {
-    const double contrib_a = a.lp_value * AsDouble(a.coeff);
-    const double contrib_b = b.lp_value * AsDouble(b.coeff);
+    const double contrib_a = a.lp_value * static_cast<double>(a.coeff.value());
+    const double contrib_b = b.lp_value * static_cast<double>(b.coeff.value());
     return contrib_a > contrib_b;
   }
 };
@@ -1069,15 +1070,19 @@ struct LargeContribFirst {
 // lead to the same formula as for Booleans.
 struct KnapsackAdd {
   bool operator()(const CutTerm& a, const CutTerm& b) const {
-    const double contrib_a = a.LpDistToMaxValue() / AsDouble(a.coeff);
-    const double contrib_b = b.LpDistToMaxValue() / AsDouble(b.coeff);
+    const double contrib_a =
+        a.LpDistToMaxValue() / static_cast<double>(a.coeff.value());
+    const double contrib_b =
+        b.LpDistToMaxValue() / static_cast<double>(b.coeff.value());
     return contrib_a < contrib_b;
   }
 };
 struct KnapsackRemove {
   bool operator()(const CutTerm& a, const CutTerm& b) const {
-    const double contrib_a = a.LpDistToMaxValue() / AsDouble(a.coeff);
-    const double contrib_b = b.LpDistToMaxValue() / AsDouble(b.coeff);
+    const double contrib_a =
+        a.LpDistToMaxValue() / static_cast<double>(a.coeff.value());
+    const double contrib_b =
+        b.LpDistToMaxValue() / static_cast<double>(b.coeff.value());
     return contrib_a > contrib_b;
   }
 };
@@ -1352,14 +1357,6 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
                                        ImpliedBoundsProcessor* ib_processor) {
   InitializeCut(input_ct);
 
-  bool has_large_coeff = false;
-  for (const CutTerm& term : cut_.terms) {
-    if (IntTypeAbs(term.coeff) > 1'000'000) {
-      has_large_coeff = true;
-      break;
-    }
-  }
-
   // TODO(user): Change the heuristic to depends on the lp_value of the implied
   // bounds. This way we can exactly match what happen in FlowCoverCutHelper and
   // remove the code there.
@@ -1391,6 +1388,14 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   CHECK_LT(cut_.rhs, 0);
   if (cut_.rhs <= absl::int128(std::numeric_limits<int64_t>::min())) {
     return false;
+  }
+
+  bool has_large_coeff = false;
+  for (const CutTerm& term : cut_.terms) {
+    if (IntTypeAbs(term.coeff) > 1'000'000) {
+      has_large_coeff = true;
+      break;
+    }
   }
 
   // TODO(user): Shouldn't we just use rounding f() with maximum coeff to allows

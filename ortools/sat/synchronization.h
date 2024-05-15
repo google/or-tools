@@ -14,7 +14,10 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <array>
 #include <atomic>
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -31,7 +34,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -570,8 +572,60 @@ class SharedBoundsManager {
   int export_counter_ = 0;
 };
 
-// This class holds all the binary clauses that were found and shared by the
-// workers.
+// Emit a stream of clauses in batches without duplicates.
+//
+// This class is thread-compatible, the idea is to have one per worker plus a
+// global one to deduplicate between workers.
+//
+// Note that this uses literal as encoded in a cp_model.proto. Thus, the
+// literals can be negative numbers.
+class UniqueClauseStream {
+ public:
+  static constexpr int kMaxClauseSize = 8;
+  // The bloom filter is 1MiB.
+  static constexpr int kBloomFilterBits = 1024 * 1024 * 8;
+  static constexpr int kBitsPerPage = 4096 * 8;
+  static constexpr int kBloomFilterPages = kBloomFilterBits / kBitsPerPage;
+
+  UniqueClauseStream() = default;
+  // Move only - this is an expensive class to copy.
+  UniqueClauseStream(const UniqueClauseStream&) = delete;
+  UniqueClauseStream(UniqueClauseStream&&) = default;
+
+  // Adds the clause to a future batch and returns true if the clause was new.
+  // Otherwise returns false if the clause was previously added or blocked.
+  bool Add(absl::Span<const int> clause);
+
+  // Inserts the clause into the bloom filter without adding it to the buffer,
+  // Returns true if the clause is new.
+  bool BlockClause(absl::Span<const int> clause);
+
+  // Returns the sum of sizes of all buffered clauses.
+  int num_buffered_literals() const { return num_buffered_literals_; }
+
+  // Returns a set of clauses totalling up to num_literals and removes them from
+  // the internal buffer.
+  CompactVectorVector<int> NextBatch(int num_literals);
+
+  // Adds all clauses from this stream to upstream and removes them from the
+  // internal buffer.
+  int MoveClausesTo(UniqueClauseStream& upstream, int max_literals);
+
+  // Computes a hash that is independent of the order of literals in the clause.
+  static size_t HashClause(absl::Span<const int> clause, size_t hash_seed = 0);
+
+ private:
+  absl::Span<const int> NextClause(int size) const;
+  void PopClause(int size);
+  int NumClauses(int size) const;
+
+  std::bitset<kBloomFilterBits> filter_;
+  int num_buffered_literals_ = 0;
+  std::array<std::vector<int>, kMaxClauseSize - 2> clauses_by_size_;
+};
+
+// This class holds clauses found and shared by workers.
+// It is exact for binary clauses, but approximate for longer ones.
 //
 // It is thread-safe.
 //
@@ -581,6 +635,10 @@ class SharedClausesManager {
  public:
   explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
+
+  // Imports all clauses from the given id into the shared pool.
+  // Returns new clauses.
+  std::vector<absl::Span<const int>> SyncClauses(int id);
 
   // Fills new_clauses with
   //   {{lit1 of clause1, lit2 of clause1},
@@ -593,26 +651,46 @@ class SharedClausesManager {
   int RegisterNewId();
   void SetWorkerNameForId(int id, const std::string& worker_name);
 
+  // A worker can add or remove clauses from its own clause set.
+  // It must not do so concurrently with any call to SyncClauses.
+  // Retains ownership of the returned ClauseFilter.
+  UniqueClauseStream* GetClauseStream(int id) {
+    absl::ReaderMutexLock mutex_lock(&mutex_);
+    return &id_to_clause_stream_[id];
+  }
+
   // Search statistics.
   void LogStatistics(SolverLogger* logger);
 
   // Unlocks waiting binary clauses for workers if always_synchronize is false.
+  // Periodically starts a new sharing round, making glue clauses visible.
   void Synchronize();
 
  private:
+  // 1024 literals is 4KiB, i.e. 1 page.
+  static constexpr int kLiteralsPerBatch = 1024;
+
   absl::Mutex mutex_;
 
-  // Cache to avoid adding the same clause twice.
+  // Binary clauses:
+  // Cache to avoid adding the same binary clause twice.
   absl::flat_hash_set<std::pair<int, int>> added_binary_clauses_set_
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::pair<int, int>> added_binary_clauses_
       ABSL_GUARDED_BY(mutex_);
   std::vector<int> id_to_last_processed_binary_clause_ ABSL_GUARDED_BY(mutex_);
-  std::vector<int64_t> id_to_clauses_exported_;
-  int last_visible_clause_ ABSL_GUARDED_BY(mutex_) = 0;
+  int last_visible_binary_clause_ ABSL_GUARDED_BY(mutex_) = 0;
+
+  // Longer clauses:
+  UniqueClauseStream all_clauses_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> id_to_last_processed_batch_ ABSL_GUARDED_BY(mutex_);
+  std::deque<CompactVectorVector<int>> batches_ ABSL_GUARDED_BY(mutex_);
+  std::deque<UniqueClauseStream> id_to_clause_stream_ ABSL_GUARDED_BY(mutex_);
+
   const bool always_synchronize_ = true;
 
-  // Used for reporting statistics.
+  // Stats:
+  std::vector<int64_t> id_to_clauses_exported_;
   absl::flat_hash_map<int, std::string> id_to_worker_name_;
 };
 
