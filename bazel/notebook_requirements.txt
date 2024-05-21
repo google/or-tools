@@ -278,7 +278,7 @@ referencing==0.30.2
     #   jsonschema
     #   jsonschema-specifications
     #   jupyter-events
-requests==2.31.0
+requests==2.32.0
     # via
     #   -r notebook_requirements.in
     #   jupyterlab-server
