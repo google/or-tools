@@ -53,7 +53,7 @@ python-dateutil==2.8.2
     # via pandas
 pytz==2022.7.1
     # via pandas
-requests==2.31.0
+requests==2.32.0
     # via -r ortools_requirements.in
 scipy==1.11.3
     # via -r ortools_requirements.in
