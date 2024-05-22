@@ -185,6 +185,12 @@ absl::Status CanFitInMpModelProto(const QuadraticProgram& qp);
 // `CanFitInMpModelProto()` fails.
 absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp);
 
+// Returns a "pretty" version of `qp`, truncating to at most `max_size`
+// characters. This is for debugging purposes only - the format may change
+// without notice. Although this output is vaguely similar to "LP format", it is
+// not actually compatible with "LP format".
+std::string ToString(const QuadraticProgram& qp, int64_t max_size = 1'000'000);
+
 // Like `matrix.setFromTriplets(triplets)`, except that `setFromTriplets`
 // results in having three copies of the nonzeros in memory at the same time,
 // because it first fills one matrix from triplets, and then transposes it into

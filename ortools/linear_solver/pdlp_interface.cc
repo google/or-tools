@@ -156,7 +156,7 @@ MPSolver::ResultStatus PdlpInterface::Solve(const MPSolverParameters& param) {
                 << ProtobufDebugString(parameters_);
   }
   absl::StatusOr<MPSolutionResponse> response = PdlpSolveProto(
-      request, /*relax_integer_variables=*/true, &interrupt_solver_);
+      std::move(request), /*relax_integer_variables=*/true, &interrupt_solver_);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with PDLP: " << response.status();
