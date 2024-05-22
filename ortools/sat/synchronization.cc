@@ -1039,10 +1039,21 @@ int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
   return it->second;
 }
 
+UniqueClauseStream::UniqueClauseStream() {
+  for (auto& buffer : clauses_by_size_) {
+    buffer.reserve(kMaxBufferedLiteralsPerSize);
+  }
+}
+
 bool UniqueClauseStream::Add(absl::Span<const int> clause) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (clause.size() > kMaxClauseSize || clause.size() <= 2) return false;
   const int index = clause.size() - 3;
+  if (clauses_by_size_[index].size() + clause.size() >
+      kMaxBufferedLiteralsPerSize) {
+    return false;
+  }
   if (BlockClause(clause)) {
-    num_buffered_literals_ += clause.size();
     clauses_by_size_[index].insert(clauses_by_size_[index].end(),
                                    clause.begin(), clause.end());
     return true;
@@ -1053,50 +1064,68 @@ bool UniqueClauseStream::Add(absl::Span<const int> clause) {
 bool UniqueClauseStream::BlockClause(absl::Span<const int> clause) {
   if (clause.size() > kMaxClauseSize) return false;
   if (clause.size() <= 2) return false;
-  bool is_new = false;
-  // We set 4 bits all in the same page to guarantee at most 1 page fault per
-  // insertion.
-  const size_t page_offset =
-      (HashClause(clause, -1) % kBloomFilterPages) * kBitsPerPage;
-  // We could use more bits per hash if this is ever too slow.
-  for (int i = 0; i < 4; ++i) {
-    const size_t bit = page_offset + HashClause(clause, i) % kBitsPerPage;
-    is_new = is_new || !filter_.test(bit);
-    filter_.set(bit, true);
-  }
-  return is_new;
+  return fingerprints_.emplace(HashClause(clause)).second;
 }
 
-CompactVectorVector<int> UniqueClauseStream::NextBatch(int num_literals) {
+bool UniqueClauseStream::Delete(absl::Span<const int> clause) {
+  const size_t fingerprint = HashClause(clause);
+  absl::MutexLock mutex_lock(&mutex_);
+  // Note a clause with this hash may be buffered, but not yet exported.
+  return fingerprints_.erase(fingerprint) == 1;
+}
+
+CompactVectorVector<int> UniqueClauseStream::NextBatch() {
   CompactVectorVector<int> buffer;
-  buffer.reserve(num_literals / 3, num_literals);
-  int total_literals = 0;
+  buffer.reserve(kMaxLiteralsPerBatch / 3, kMaxLiteralsPerBatch);
+  int to_fill = kMaxLiteralsPerBatch;
+  absl::MutexLock mutex_lock(&mutex_);
   for (int size = 3; size < kMaxClauseSize; ++size) {
     const int size_index = size - 3;
-    while (total_literals + size <= num_literals &&
-           !clauses_by_size_[size_index].empty()) {
-      buffer.Add(NextClause(size));
+    CHECK_EQ(clauses_by_size_[size_index].size() % size, 0);
+    while (to_fill >= size && !clauses_by_size_[size_index].empty()) {
+      absl::Span<const int> clause = NextClause(size);
+      if (fingerprints_.contains(HashClause(clause))) {
+        buffer.Add(NextClause(size));
+        to_fill -= size;
+      }
       PopClause(size);
-      total_literals += size;
     }
   }
   return buffer;
 }
 
-int UniqueClauseStream::MoveClausesTo(UniqueClauseStream& upstream,
-                                      int max_literals) {
+int UniqueClauseStream::FillUpstreamBuffer(UniqueClauseStream& upstream,
+                                           int size,
+                                           int max_clauses_to_export) {
   int num_exported_clauses = 0;
-  for (int size = 3; size < kMaxClauseSize; ++size) {
-    const int size_index = size - 3;
-    while (!clauses_by_size_[size_index].empty() && max_literals >= size) {
-      max_literals -= size;
-      if (upstream.Add(NextClause(size))) {
-        ++num_exported_clauses;
-      }
-      PopClause(size);
+  absl::MutexLock mutex_lock(&mutex_);
+  const int size_index = size - 3;
+  while (!clauses_by_size_[size_index].empty() &&
+         num_exported_clauses < max_clauses_to_export) {
+    absl::Span<const int> clause = NextClause(size);
+    // Don't emit deleted clauses.
+    if (fingerprints_.contains(HashClause(clause)) && upstream.Add(clause)) {
+      ++num_exported_clauses;
     }
+    PopClause(size);
   }
   return num_exported_clauses;
+}
+
+int UniqueClauseStream::NumBufferedLiteralsUpToSize(int max_size) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  int result = 0;
+  for (int index = 0; index < max_size - 2; ++index) {
+    result += clauses_by_size_[index].size();
+  }
+  return result;
+}
+
+bool UniqueClauseStream::CanAccept(int size) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return size > 2 && size <= kMaxClauseSize &&
+         clauses_by_size_[size - 3].size() + size <=
+             kMaxBufferedLiteralsPerSize;
 }
 
 size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
@@ -1116,10 +1145,13 @@ absl::Span<const int> UniqueClauseStream::NextClause(int size) const {
 
 void UniqueClauseStream::PopClause(int size) {
   const int index = size - 3;
-  num_buffered_literals_ -= size;
   clauses_by_size_[index].erase(clauses_by_size_[index].end() - size,
                                 clauses_by_size_[index].end());
 }
+
+int UniqueClauseStream::NumClauses(int size) const {
+  return clauses_by_size_[size - 3].size() / size;
+};
 
 SharedClausesManager::SharedClausesManager(bool always_synchronize)
     : always_synchronize_(always_synchronize) {}
@@ -1128,7 +1160,8 @@ int SharedClausesManager::RegisterNewId() {
   absl::MutexLock mutex_lock(&mutex_);
   const int id = id_to_last_processed_binary_clause_.size();
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
-  id_to_last_processed_batch_.resize(id + 1, 0);
+  id_to_last_returned_batch_.resize(id + 1, 0);
+  id_to_last_finished_batch_.resize(id + 1, 0);
   id_to_clauses_exported_.resize(id + 1, 0);
   id_to_clause_stream_.emplace_back();
   return id;
@@ -1160,21 +1193,17 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   }
 }
 
-std::vector<absl::Span<const int>> SharedClausesManager::SyncClauses(int id) {
-  absl::MutexLock mutex_lock(&mutex_);
-  UniqueClauseStream& worker_clauses = id_to_clause_stream_[id];
-  id_to_clauses_exported_[id] +=
-      worker_clauses.MoveClausesTo(all_clauses_, kLiteralsPerBatch);
+std::vector<absl::Span<const int>> SharedClausesManager::GetUnseenClauses(
+    int id) {
   std::vector<absl::Span<const int>> result;
-  for (int i = id_to_last_processed_batch_[id]; i < batches_.size(); ++i) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = id_to_last_returned_batch_[id]; i < batches_.size(); ++i) {
     for (int j = 0; j < batches_[i].size(); ++j) {
       result.push_back(batches_[i][j]);
     }
   }
-  // TODO: tobyodavies - We should delete old clauses that have been consumed by
-  // all workers. This will be subtle as the returned spans must remain valid
-  // until the *next* call to SyncClauses() after they are returned.
-  id_to_last_processed_batch_[id] = batches_.size();
+  id_to_last_finished_batch_[id] = id_to_last_returned_batch_[id];
+  id_to_last_returned_batch_[id] = batches_.size();
   return result;
 }
 
@@ -1211,10 +1240,71 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
 void SharedClausesManager::Synchronize() {
   absl::MutexLock mutex_lock(&mutex_);
   last_visible_binary_clause_ = added_binary_clauses_.size();
-  if (all_clauses_.num_buffered_literals() >= kLiteralsPerBatch) {
-    batches_.push_back(all_clauses_.NextBatch(kLiteralsPerBatch));
+  const int num_workers = id_to_clause_stream_.size();
+  if (num_workers <= 1) return;
+  std::vector<int> ids(num_workers);
+  for (int size = 3; size < UniqueClauseStream::kMaxClauseSize; ++size) {
+    ids.clear();
+    for (int id = 0; id < num_workers; ++id) {
+      if (id_to_clause_stream_[id].NumBufferedLiteralsUpToSize(size) > 0) {
+        ids.push_back(id);
+      }
+    }
+    // Use progressive filling to attempt to fill the batch with clauses of
+    // minimum size, this is max-min fair.
+    while (!ids.empty()) {
+      const int clauses_to_fill =
+          (UniqueClauseStream::kMaxLiteralsPerBatch -
+           all_clauses_.NumBufferedLiteralsUpToSize(size)) /
+          size;
+      if (clauses_to_fill == 0) break;
+      // Some workers need to export more clauses to fill the batch due to
+      // rounding, but we don't want all workers to round up.
+      const int num_to_round_up = clauses_to_fill % ids.size();
+      for (int i = 0; i < ids.size(); ++i) {
+        const bool round_up = i < num_to_round_up;
+        const int id = ids[i];
+        const int shared = id_to_clause_stream_[id].FillUpstreamBuffer(
+            all_clauses_, size, clauses_to_fill / ids.size() + round_up);
+        id_to_clauses_exported_[id] += shared;
+        if (shared == 0 ||
+            id_to_clause_stream_[id].NumBufferedLiteralsUpToSize(size) == 0) {
+          ids[i] = ids.back();
+          ids.pop_back();
+          --i;
+        }
+      }
+    }
   }
-  // TODO(user): We could cleanup clauses that have been consumed.
+  if (all_clauses_.NumBufferedLiterals() >
+      UniqueClauseStream::kMaxLiteralsPerBatch / 2) {
+    batches_.push_back(all_clauses_.NextBatch());
+    VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
+            << " clauses max size = "
+            << batches_.back()[batches_.back().size() - 1].size();
+  }
+  // Delete batches that have been consumed by all workers.
+  // Keep a few batches around for startup (min finished batch doesn't count
+  // workers that haven't registered yet).
+  // This also ensures that our fingerprint table always contains the last few
+  // batches, so we reduce the chance of an old buffered duplicate clause on
+  // a worker being emitted from the global stream multiple times.
+  if (batches_.size() < kMinBatches) return;
+  const int min_finished_batch =
+      std::min<int>(batches_.size() - kMinBatches,
+                    *absl::c_min_element(id_to_last_finished_batch_));
+  for (int i = 0; i < min_finished_batch; ++i) {
+    VLOG(2) << "Erasing batch";
+    for (int i = 0; i < batches_.front().size(); ++i) {
+      all_clauses_.Delete(batches_.front()[i]);
+    }
+    batches_.pop_front();
+  }
+  for (int id = 0; id < id_to_last_finished_batch_.size(); ++id) {
+    id_to_last_returned_batch_[id] -= min_finished_batch;
+    id_to_last_finished_batch_[id] -= min_finished_batch;
+  }
+  // TODO(user): We could cleanup binary clauses that have been consumed.
 }
 
 void SharedStatistics::AddStats(

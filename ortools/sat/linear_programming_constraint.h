@@ -465,7 +465,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Temporary data for cuts.
   ZeroHalfCutHelper zero_half_cut_helper_;
   CoverCutHelper cover_cut_helper_;
-  FlowCoverCutHelper flow_cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
 
   bool problem_proven_infeasible_by_cuts_ = false;

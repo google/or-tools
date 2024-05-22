@@ -19,6 +19,8 @@
 
 #include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -45,6 +47,16 @@ void PostsolveResponse(int64_t num_variables_in_original_model,
                        const CpModelProto& mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        std::vector<int64_t>* solution);
+
+// Try to postsolve with a "best-effort" the reduced domain from the presolved
+// model to the user given model. See the documentation of the CpSolverResponse
+// tightened_variables field for more information on the caveats.
+void FillTightenedDomainInResponse(const CpModelProto& original_model,
+                                   const CpModelProto& mapping_proto,
+                                   const std::vector<int>& postsolve_mapping,
+                                   const std::vector<Domain>& search_domains,
+                                   CpSolverResponse* response,
+                                   SolverLogger* logger);
 
 }  // namespace sat
 }  // namespace operations_research

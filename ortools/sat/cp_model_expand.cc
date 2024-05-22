@@ -466,7 +466,7 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   const int num_exprs = ct->lin_max().exprs().size();
   if (num_exprs < 2) return;
 
-  // We have a special treatment for Abs, Earlyness, Tardiness, and all
+  // We have a special treatment for Abs, Earliness, Tardiness, and all
   // affine_max where there is only one variable present in all the expressions.
   if (ExpressionsContainsOnlyOneVar(ct->lin_max().exprs())) return;
 
@@ -476,7 +476,7 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
   // - target >= ai
   for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
     ConstraintProto* new_ct = context->working_model->add_constraints();
-    LinearConstraintProto* lin = ct->mutable_linear();
+    LinearConstraintProto* lin = new_ct->mutable_linear();
     lin->add_domain(0);
     lin->add_domain(std::numeric_limits<int64_t>::max());
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);

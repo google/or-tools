@@ -402,7 +402,7 @@ void PrecedenceRelations::ComputeFullPrecedences(
 }
 
 void PrecedenceRelations::CollectPrecedences(
-    const std::vector<IntegerVariable>& vars,
+    absl::Span<const IntegerVariable> vars,
     std::vector<PrecedenceData>* output) {
   // +1 for the negation.
   const int needed_size =

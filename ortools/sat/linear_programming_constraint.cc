@@ -291,7 +291,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   // Register SharedStatistics with the cut helpers.
   auto* stats = model->GetOrCreate<SharedStatistics>();
   integer_rounding_cut_helper_.SetSharedStatistics(stats);
-  flow_cover_cut_helper_.SetSharedStatistics(stats);
   cover_cut_helper_.SetSharedStatistics(stats);
 
   // Initialize the IntegerVariable -> ColIndex mapping.
@@ -1096,9 +1095,18 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     }
   }
 
+  // Note that the indexing will survive ComplementForSmallerLpValues() below.
+  if (ib_processor != nullptr) {
+    if (!ib_processor->CacheDataForCut(first_slack, &base_ct_)) {
+      ib_processor = nullptr;
+    }
+  }
+
   // Try cover approach to find cut.
   // TODO(user): Share common computation between kinds.
   {
+    cover_cut_helper_.ClearCache();
+
     if (cover_cut_helper_.TrySingleNodeFlow(base_ct_, ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
           absl::StrCat(name, "_FF"), cover_cut_helper_.Info(), first_slack,
@@ -1109,6 +1117,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
           absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_slack,
           cover_cut_helper_.cut());
     }
+
+    // This one need to be called after TrySimpleKnapsack() in order to reuse
+    // some cached data if possible.
     if (cover_cut_helper_.TryWithLetchfordSouliLifting(base_ct_,
                                                        ib_processor)) {
       at_least_one_added |= PostprocessAndAddCut(
@@ -1361,11 +1372,35 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
     return;
   }
 
-  // Try knapsack.
+  // If there are no integer (all Booleans), no need to try implied bounds
+  // heurititics. By setting this to nullptr, we are a bit faster.
+  ImpliedBoundsProcessor* ib_processor = nullptr;
+  {
+    bool some_ints = false;
+    bool some_relevant_positions = false;
+    for (const CutTerm& term : base_ct_.terms) {
+      if (term.bound_diff > 1) some_ints = true;
+      if (term.HasRelevantLpValue()) some_relevant_positions = true;
+    }
+
+    // If all value are integer, we will not be able to cut anything.
+    if (!some_relevant_positions) return;
+    if (some_ints) ib_processor = &implied_bounds_processor_;
+  }
+
+  // Note that the indexing will survive the complement of terms below.
   const IntegerVariable first_slack(
       std::numeric_limits<IntegerVariable::ValueType>::max());
+  if (ib_processor != nullptr) {
+    if (!ib_processor->CacheDataForCut(first_slack, &base_ct_)) {
+      ib_processor = nullptr;
+    }
+  }
+
+  // Try knapsack.
   base_ct_.ComplementForPositiveCoefficients();
-  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_)) {
+  cover_cut_helper_.ClearCache();
+  if (cover_cut_helper_.TrySimpleKnapsack(base_ct_, ib_processor)) {
     PostprocessAndAddCut("Objective_K", cover_cut_helper_.Info(), first_slack,
                          cover_cut_helper_.cut());
   }
@@ -1375,7 +1410,7 @@ void LinearProgrammingConstraint::AddObjectiveCut() {
   options.max_scaling = parameters_.max_integer_rounding_scaling();
   base_ct_.ComplementForSmallerLpValues();
   if (integer_rounding_cut_helper_.ComputeCut(options, base_ct_,
-                                              &implied_bounds_processor_)) {
+                                              ib_processor)) {
     PostprocessAndAddCut("Objective_R", integer_rounding_cut_helper_.Info(),
                          first_slack, integer_rounding_cut_helper_.cut());
   }

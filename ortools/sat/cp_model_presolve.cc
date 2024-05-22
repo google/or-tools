@@ -7284,8 +7284,13 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // for blocked clause. It should be possible to allow for this by adding extra
   // variable to the mapping model at presolve and some linking constraints, but
   // this is messy.
+  //
+  // We also disable this if the user asked for tightened domain as this might
+  // fix variable to a potentially infeasible value, and just correct them later
+  // during postsolve of a particular solution.
   SatParameters params = context_->params();
-  if (params.debug_postsolve_with_full_solver()) {
+  if (params.debug_postsolve_with_full_solver() ||
+      params.fill_tightened_domains_in_response()) {
     params.set_presolve_blocked_clause(false);
   }
 
@@ -12352,6 +12357,19 @@ CpSolverStatus CpModelPresolver::InfeasibleStatus() {
   return CpSolverStatus::INFEASIBLE;
 }
 
+void CpModelPresolver::InitializeMappingModelVariables() {
+  // Sync the domains.
+  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+    FillDomainInProto(context_->DomainOf(i),
+                      context_->working_model->mutable_variables(i));
+    DCHECK_GT(context_->working_model->variables(i).domain_size(), 0);
+  }
+
+  // Set the variables of the mapping_model.
+  context_->mapping_model->mutable_variables()->CopyFrom(
+      context_->working_model->variables());
+}
+
 // The presolve works as follow:
 //
 // First stage:
@@ -12431,6 +12449,13 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
     // We need to append all the variable equivalence that are still used!
     EncodeAllAffineRelations();
+
+    // Make sure we also have an initialized mapping model as we use this for
+    // filling the tightened variables. Even without presolve, we do some
+    // trivial presolving during the initial copy of the model, and expansion
+    // might do more.
+    InitializeMappingModelVariables();
+
     if (logger_->LoggingIsEnabled()) context_->LogInfo();
     return CpSolverStatus::UNKNOWN;
   }
@@ -12660,16 +12685,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
     google::protobuf::util::Truncate(strategy.mutable_exprs(), new_size);
   }
 
-  // Sync the domains.
-  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
-    FillDomainInProto(context_->DomainOf(i),
-                      context_->working_model->mutable_variables(i));
-    DCHECK_GT(context_->working_model->variables(i).domain_size(), 0);
-  }
-
-  // Set the variables of the mapping_model.
-  context_->mapping_model->mutable_variables()->CopyFrom(
-      context_->working_model->variables());
+  // Sync the domains and initialize the mapping model variables.
+  InitializeMappingModelVariables();
 
   // Remove all the unused variables from the presolved model.
   postsolve_mapping_->clear();

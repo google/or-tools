@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_PSEUDO_COSTS_H_
 #define OR_TOOLS_SAT_PSEUDO_COSTS_H_
 
+#include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"

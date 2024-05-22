@@ -27,6 +27,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -44,7 +45,7 @@ namespace {
 //
 // For now we use a really basic logic: call the least frequently called.
 int NextSubsolverToSchedule(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                            const std::vector<int64_t>& num_generated_tasks) {
+                            absl::Span<const int64_t> num_generated_tasks) {
   int best = -1;
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i] == nullptr) continue;

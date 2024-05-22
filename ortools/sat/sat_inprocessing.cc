@@ -188,6 +188,9 @@ bool Inprocessing::InprocessingRound() {
   }
 
   // Try to spend a given ratio of time in the inprocessing.
+  //
+  // TODO(user): Tune the heuristic, in particular, with the current code we
+  // start some inprocessing before the first search.
   const double diff = start_dtime - reference_dtime_;
   if (total_dtime_ > params_.inprocessing_dtime_ratio() * diff) {
     return true;

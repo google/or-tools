@@ -91,6 +91,11 @@ class CpModelPresolver {
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
   CpSolverStatus InfeasibleStatus();
 
+  // At the end of presolve, the mapping model is initialized to contains all
+  // the variable from the original model + the one created during presolve
+  // expand. It also contains the tightened domains.
+  void InitializeMappingModelVariables();
+
   // Runs the inner loop of the presolver.
   bool ProcessChangedVariables(std::vector<bool>* in_queue,
                                std::deque<int>* queue);

@@ -93,9 +93,17 @@ struct CutTerm {
   // X = the given LinearExpression.
   // We only support size 1 or 2 here which allow to inline the memory.
   // When a coefficient is zero, we don't care about the variable.
+  //
+  // TODO(user): We might want to store that elsewhere, as sorting CutTerm is a
+  // bit slow and we don't need to look at that in most places. Same for the
+  // cached_implied_lb/ub below.
   IntegerValue expr_offset = IntegerValue(0);
   std::array<IntegerVariable, 2> expr_vars;
   std::array<IntegerValue, 2> expr_coeffs;
+
+  // Refer to cached_data_ in ImpliedBoundsProcessor.
+  int cached_implied_lb = -1;
+  int cached_implied_ub = -1;
 };
 
 // Our cut are always of the form linear_expression <= rhs.
@@ -148,18 +156,20 @@ class CutDataBuilder {
   // is the only case we need.
   void ClearIndices();
   void AddOrMergeTerm(const CutTerm& term, IntegerValue t, CutData* cut);
+
+  void ClearNumMerges() { num_merges_ = 0; }
   int NumMergesSinceLastClear() const { return num_merges_; }
 
   // Returns false if we encounter an integer overflow.
   bool ConvertToLinearConstraint(const CutData& cut, LinearConstraint* output);
 
  private:
-  void RegisterAllBooleansTerms(const CutData& cut);
+  void RegisterAllBooleanTerms(const CutData& cut);
 
   int num_merges_ = 0;
   bool constraint_is_indexed_ = false;
-  absl::flat_hash_map<IntegerVariable, int> direct_index_;
-  absl::flat_hash_map<IntegerVariable, int> complemented_index_;
+  absl::flat_hash_map<IntegerVariable, int> bool_index_;
+  absl::flat_hash_map<IntegerVariable, int> secondary_bool_index_;
   absl::btree_map<IntegerVariable, IntegerValue> tmp_map_;
 };
 
@@ -216,6 +226,17 @@ class ImpliedBoundsProcessor {
       const std::function<IntegerValue(IntegerValue)>& f, IntegerValue factor_t,
       CutData* cut, CutDataBuilder* builder);
 
+  // Precomputes quantities used by all cut generation.
+  // This allows to do that once rather than 6 times.
+  // Return false if there are no exploitable implied bounds.
+  bool CacheDataForCut(IntegerVariable first_slack, CutData* cut);
+
+  // All our cut code use the same base cut (modulo complement), so we reuse the
+  // hash-map of where boolean are in the cut. Note that even if we add new
+  // entry that are no longer there for another cut algo, we can still reuse the
+  // same hash-map.
+  CutDataBuilder* BaseCutBuilder() { return &base_cut_builder_; }
+
   bool TryToExpandWithLowerImpliedbound(IntegerValue factor_t, int i,
                                         bool complement, CutData* cut,
                                         CutDataBuilder* builder);
@@ -261,131 +282,15 @@ class ImpliedBoundsProcessor {
   absl::flat_hash_set<IntegerVariable> lp_vars_;
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
 
+  // Temporary data used by CacheDataForCut().
+  CutDataBuilder base_cut_builder_;
+  std::vector<BestImpliedBoundInfo> cached_data_;
+
   TopNCuts ib_cut_pool_ = TopNCuts(50);
 
   // Data from the constructor.
   IntegerTrail* integer_trail_;
   ImpliedBounds* implied_bounds_;
-};
-
-// A single node flow relaxation is a constraint of the form
-//     Sum in_flow - Sum out_flow <= demand
-// where each flow variable F_i is in [0, capacity_i] and satisfy
-//     F_i <= capacity_i B_i
-// with B_i a Boolean representing the arc usage.
-//
-// From a generic constraint sum coeff_i X_i <= b, we try to put it in this
-// format. We can first transform all variables to be in [0, max_value].
-//
-// Then we cover different cases:
-// 1/ A coeff * Boolean, can be easily transformed.
-// 2/ A coeff * Integer in [0, capacity] with Bool => integer == 0 too.
-// 3/ For a general integer, we can always use a Bool == 1 for the arc usage.
-//
-// TODO(user): cover case 3/. We loose a lot of relaxation here, except if
-// the variable is at is upper/lower bound.
-//
-// TODO(user): Altough the cut should still be correct, we might use the same
-// Boolean more than once in the implied bound. Or this Boolean might already
-// appear in the constraint. Not sure if we can do something smarter here.
-struct FlowInfo {
-  // Flow is always in [0, capacity] with the given current value in the
-  // lp relaxation. Now that we usually only consider tight constraint were
-  // flow_lp_value = capacity * bool_lp_value.
-  IntegerValue capacity;
-  double bool_lp_value;
-
-  // TODO(user): We don't use this in the heuristic currently.
-  double flow_lp_value;
-
-  // The definition of the flow variable and the arc usage variable in term
-  // of original problem variables. After we compute a cut on the flow and
-  // usage variable, we can just directly substitute these variable by the
-  // expression here to have a cut in term of the original problem variables.
-  AffineExpression flow_expr;
-  AffineExpression bool_expr;
-};
-
-struct SingleNodeFlow {
-  bool empty() const { return in_flow.empty() && out_flow.empty(); }
-  void clear() {
-    demand = 0;
-    in_flow.clear();
-    out_flow.clear();
-    num_bool = 0;
-    num_to_lb = 0;
-    num_to_ub = 0;
-  }
-  std::string DebugString() const;
-
-  absl::int128 demand;
-  std::vector<FlowInfo> in_flow;
-  std::vector<FlowInfo> out_flow;
-
-  // Stats filled during extraction.
-  int num_bool = 0;
-  int num_to_lb = 0;
-  int num_to_ub = 0;
-};
-
-class FlowCoverCutHelper {
- public:
-  ~FlowCoverCutHelper();
-
-  // Extract a SingleNodeFlow relaxation from the base_ct and try to generate
-  // a cut from it.
-  bool ComputeFlowCoverRelaxationAndGenerateCut(
-      const CutData& base_ct, ImpliedBoundsProcessor* ib_helper);
-
-  // Try to generate a cut for the given single node flow problem. Returns true
-  // if a cut was generated. It can be accessed by cut().
-  bool GenerateCut(const SingleNodeFlow& data);
-
-  // If successful, info about the last generated cut.
-  const LinearConstraint& cut() const { return cut_; }
-
-  // Single line of text that we append to the cut log line.
-  std::string Info() const {
-    return absl::StrCat(" slack=", slack_.value(), " #in=", num_in_ignored_,
-                        "|", num_in_flow_, "|", num_in_bin_,
-                        " #out:", num_out_capa_, "|", num_out_flow_, "|",
-                        num_out_bin_);
-  }
-
-  void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
-
- private:
-  // Try to extract a nice SingleNodeFlow relaxation for the given upper bounded
-  // linear constraint.
-  bool ComputeFlowCoverRelaxation(const CutData& base_ct, SingleNodeFlow* snf,
-                                  ImpliedBoundsProcessor* ib_helper);
-
-  // Helpers used by ComputeFlowCoverRelaxation() to convert one linear term.
-  bool TryXminusLB(const CutTerm& term, ImpliedBoundsProcessor* ib_helper,
-                   SingleNodeFlow* result) const;
-  bool TryUBminusX(const CutTerm& term, ImpliedBoundsProcessor* ib_helper,
-                   SingleNodeFlow* result) const;
-  void FinishAndAddFlowInfo(const CutTerm& term, FlowInfo* info,
-                            SingleNodeFlow* result) const;
-
-  // Temporary memory to avoid reallocating the vector.
-  SingleNodeFlow snf_;
-
-  // Stats, mainly to debug/investigate the code.
-  IntegerValue slack_;
-  int num_in_ignored_;
-  int num_in_flow_;
-  int num_in_bin_;
-  int num_out_capa_;
-  int num_out_flow_;
-  int num_out_bin_;
-
-  LinearConstraintBuilder cut_builder_;
-  LinearConstraint cut_;
-
-  // Stats.
-  SharedStatistics* shared_stats_ = nullptr;
-  int64_t num_aborts_ = 0;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -606,15 +511,19 @@ class CoverCutHelper {
 
   void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
 
+  void ClearCache() { has_bool_base_ct_ = false; }
+
  private:
   void InitializeCut(const CutData& input_ct);
 
   // This looks at base_ct_ and reoder the terms so that the first ones are in
   // the cover. return zero if no interesting cover was found.
-  int GetCoverSizeForBooleans(int relevant_size);
-
   template <class CompareAdd, class CompareRemove>
   int GetCoverSize(int relevant_size);
+
+  // Same as GetCoverSize() but only look at Booleans, and use a different
+  // heuristic.
+  int GetCoverSizeForBooleans();
 
   template <class Compare>
   int MinimizeCover(int cover_size, absl::int128 slack);
@@ -623,6 +532,11 @@ class CoverCutHelper {
   CutData cut_;
   CutData temp_cut_;
   CutDataBuilder cut_builder_;
+
+  // Hack to not sort twice.
+  bool has_bool_base_ct_ = false;
+  CutData bool_base_ct_;
+  int bool_cover_size_ = 0;
 
   // Stats.
   SharedStatistics* shared_stats_ = nullptr;

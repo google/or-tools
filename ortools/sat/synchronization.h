@@ -572,56 +572,90 @@ class SharedBoundsManager {
   int export_counter_ = 0;
 };
 
-// Emit a stream of clauses in batches without duplicates.
+// Emit a stream of clauses in batches without duplicates. Each batch has a
+// fixed number of literals, containing the smallest clauses added.
+// It has a finite size internal buffer that is a small multiple of the batch
+// size.
 //
-// This class is thread-compatible, the idea is to have one per worker plus a
-// global one to deduplicate between workers.
+// This class is thread-safe, the idea is to have one per worker plus a
+// global one to deduplicate between workers to minimize contention.
 //
-// Note that this uses literal as encoded in a cp_model.proto. Thus, the
+// This uses a finite buffer, so some clauses may be dropped if we generate too
+// many more than we export, but that is rarely a problem because we never
+// overfill the "global" stream, and if we drop a clause on a worker, one of the
+// following will most likely happen:
+//   1. Some other worker learns the clause and shares it later.
+//   2. All other workers also learn and drop the clause.
+//   3. No other worker learns the clause, so it was not that helpful anyway.
+//
+// Note that this uses literals as encoded in a cp_model.proto. Thus, the
 // literals can be negative numbers.
 class UniqueClauseStream {
  public:
   static constexpr int kMaxClauseSize = 8;
-  // The bloom filter is 1MiB.
-  static constexpr int kBloomFilterBits = 1024 * 1024 * 8;
-  static constexpr int kBitsPerPage = 4096 * 8;
-  static constexpr int kBloomFilterPages = kBloomFilterBits / kBitsPerPage;
+  // Export 4KiB of clauses per batch.
+  static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
+  // Bound the total literals we buffer per size.
+  static constexpr int kMaxBufferedLiteralsPerSize = 64 * 1024 / sizeof(int);
 
-  UniqueClauseStream() = default;
+  UniqueClauseStream();
   // Move only - this is an expensive class to copy.
   UniqueClauseStream(const UniqueClauseStream&) = delete;
   UniqueClauseStream(UniqueClauseStream&&) = default;
 
-  // Adds the clause to a future batch and returns true if the clause was new.
-  // Otherwise returns false if the clause was previously added or blocked.
-  bool Add(absl::Span<const int> clause);
+  // Adds the clause to a future batch and returns true if the clause was added.
+  // Otherwise returns false. This may return false if the buffer is full.
+  // It will not block the clause if it is dropped to avoid unbounded growth of
+  // the hash table.
+  bool Add(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Inserts the clause into the bloom filter without adding it to the buffer,
-  // Returns true if the clause is new.
-  bool BlockClause(absl::Span<const int> clause);
+  // Lazily deletes a clause with the same hash, returns true if it was present.
+  // The deleted clause will not be exported (either via NextBatch or
+  // FillUpstreamBuffer). A clause with the same hash may be re-added after
+  // calling Delete. If another clause with the same hash is added before the
+  // deleted clause is emitted then both clauses may be emitted.
+  bool Delete(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Returns the sum of sizes of all buffered clauses.
-  int num_buffered_literals() const { return num_buffered_literals_; }
+  // Returns a set of clauses totalling up to kMaxLiteralsPerBatch and removes
+  // exported clauses from the internal buffer.
+  CompactVectorVector<int> NextBatch() ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Returns a set of clauses totalling up to num_literals and removes them from
-  // the internal buffer.
-  CompactVectorVector<int> NextBatch(int num_literals);
+  // Adds up to max_clauses_to_export clauses of a given size to upstream and
+  // removes them from the internal buffer.
+  int FillUpstreamBuffer(UniqueClauseStream& upstream, int clause_size,
+                         int max_clauses_to_export) ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Adds all clauses from this stream to upstream and removes them from the
-  // internal buffer.
-  int MoveClausesTo(UniqueClauseStream& upstream, int max_literals);
+  // Returns the number of literals in the buffer in clauses with size <=
+  // max_size.
+  int NumBufferedLiteralsUpToSize(int max_size) const
+      ABSL_LOCKS_EXCLUDED(mutex_);
+  int NumBufferedLiterals() const ABSL_LOCKS_EXCLUDED(mutex_) {
+    return NumBufferedLiteralsUpToSize(kMaxClauseSize);
+  }
+
+  // Returns true if the stream can accept a clause of the specified size
+  // without dropping it.
+  bool CanAccept(int size) const;
 
   // Computes a hash that is independent of the order of literals in the clause.
   static size_t HashClause(absl::Span<const int> clause, size_t hash_seed = 0);
 
  private:
-  absl::Span<const int> NextClause(int size) const;
-  void PopClause(int size);
-  int NumClauses(int size) const;
+  bool BlockClause(absl::Span<const int> clause)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int NumBufferedLiteralsUpToSizeLockHeld(int max_size) const
+      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  std::bitset<kBloomFilterBits> filter_;
-  int num_buffered_literals_ = 0;
-  std::array<std::vector<int>, kMaxClauseSize - 2> clauses_by_size_;
+  absl::Span<const int> NextClause(int size) const
+      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  void PopClause(int size) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  // Computes the number of clauses of a given size.
+  int NumClauses(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+
+  mutable absl::Mutex mutex_;
+  absl::flat_hash_set<size_t> fingerprints_ ABSL_GUARDED_BY(mutex_);
+  std::array<std::vector<int>, kMaxClauseSize - 2> clauses_by_size_
+      ABSL_GUARDED_BY(mutex_);
 };
 
 // This class holds clauses found and shared by workers.
@@ -636,9 +670,10 @@ class SharedClausesManager {
   explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
 
-  // Imports all clauses from the given id into the shared pool.
-  // Returns new clauses.
-  std::vector<absl::Span<const int>> SyncClauses(int id);
+  // Returns new glue clauses.
+  // The spans are guaranteed to remain valid until the next call to
+  // SyncClauses().
+  std::vector<absl::Span<const int>> GetUnseenClauses(int id);
 
   // Fills new_clauses with
   //   {{lit1 of clause1, lit2 of clause1},
@@ -652,7 +687,6 @@ class SharedClausesManager {
   void SetWorkerNameForId(int id, const std::string& worker_name);
 
   // A worker can add or remove clauses from its own clause set.
-  // It must not do so concurrently with any call to SyncClauses.
   // Retains ownership of the returned ClauseFilter.
   UniqueClauseStream* GetClauseStream(int id) {
     absl::ReaderMutexLock mutex_lock(&mutex_);
@@ -667,9 +701,7 @@ class SharedClausesManager {
   void Synchronize();
 
  private:
-  // 1024 literals is 4KiB, i.e. 1 page.
-  static constexpr int kLiteralsPerBatch = 1024;
-
+  static constexpr int kMinBatches = 10;
   absl::Mutex mutex_;
 
   // Binary clauses:
@@ -683,7 +715,10 @@ class SharedClausesManager {
 
   // Longer clauses:
   UniqueClauseStream all_clauses_ ABSL_GUARDED_BY(mutex_);
-  std::vector<int> id_to_last_processed_batch_ ABSL_GUARDED_BY(mutex_);
+  // This is slightly subtle - we need to track the batches that might be
+  // currently being processed by each worker.
+  std::vector<int> id_to_last_returned_batch_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> id_to_last_finished_batch_ ABSL_GUARDED_BY(mutex_);
   std::deque<CompactVectorVector<int>> batches_ ABSL_GUARDED_BY(mutex_);
   std::deque<UniqueClauseStream> id_to_clause_stream_ ABSL_GUARDED_BY(mutex_);
 

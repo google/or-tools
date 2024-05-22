@@ -687,9 +687,13 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_stop_after_first_solution(false);
     new_params.set_cp_model_presolve(true);
+
+    // We disable costly presolve/inprocessing.
+    new_params.set_use_sat_inprocessing(false);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
     new_params.set_find_big_linear_overlap(false);
+
     new_params.set_log_search_progress(false);
     new_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
     new_params.set_solution_pool_size(1);  // Keep the best solution found.

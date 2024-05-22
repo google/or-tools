@@ -109,7 +109,7 @@ class PrecedenceRelations : public ReversibleInterface {
     IntegerVariable var;
     int index;
   };
-  void CollectPrecedences(const std::vector<IntegerVariable>& vars,
+  void CollectPrecedences(absl::Span<const IntegerVariable> vars,
                           std::vector<PrecedenceData>* output);
 
   // If we don't have too many variable, we compute the full transitive closure
