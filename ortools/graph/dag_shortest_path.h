@@ -15,7 +15,9 @@
 #define OR_TOOLS_GRAPH_DAG_SHORTEST_PATH_H_
 
 #include <cmath>
+#if __cplusplus >= 202002L
 #include <concepts>
+#endif
 #include <functional>
 #include <limits>
 #include <vector>
