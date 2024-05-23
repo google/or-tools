@@ -39,12 +39,11 @@ RUN curl --location-trusted \
 && rm -rf swig-4.1.1
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
-RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm \
-&& dnf -y update \
-&& dnf -y install dotnet-sdk-3.1 dotnet-sdk-6.0 \
-&& dnf clean all \
-&& rm -rf /var/cache/dnf
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
+&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

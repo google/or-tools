@@ -42,7 +42,7 @@ RUN curl --location-trusted \
 && rm -rf swig-4.1.1
 
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-centos#centos-7-
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
 && ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
