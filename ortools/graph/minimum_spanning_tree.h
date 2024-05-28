@@ -14,15 +14,13 @@
 #ifndef OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
 #define OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
 
-#include <queue>
+#include <limits>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/connected_components.h"
-#include "ortools/util/vector_or_function.h"
 
 namespace operations_research {
 

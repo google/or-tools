@@ -302,7 +302,9 @@ KShortestPaths YenKShortestPaths(const GraphType& graph,
       std::priority_queue<internal::PathWithPriority>>
       variant_path_queue;
 
-  for (; k > 0; --k) {
+  // One path has already been generated (the shortest one). Only k-1 more
+  // paths need to be generated.
+  for (; k > 1; --k) {
     // Generate variant paths from the last shortest path.
     const absl::Span<NodeIndex> last_shortest_path =
         absl::MakeSpan(paths.paths.back());

@@ -208,7 +208,6 @@
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"

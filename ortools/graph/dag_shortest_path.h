@@ -49,11 +49,11 @@ namespace operations_research {
 // Basic API.
 // -----------------------------------------------------------------------------
 
-// `tail` and `head` should both be in [0, num_nodes)
+// `from` and `to` should both be in [0, num_nodes).
 // If the length is +inf, then the arc should not be used.
 struct ArcWithLength {
-  int tail = 0;
-  int head = 0;
+  int from = 0;
+  int to = 0;
   double length = 0.0;
 };
 

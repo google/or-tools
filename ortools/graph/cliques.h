@@ -24,6 +24,7 @@
 #ifndef OR_TOOLS_GRAPH_CLIQUES_H_
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>

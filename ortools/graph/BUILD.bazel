@@ -93,6 +93,7 @@ cc_library(
         "//ortools/base:iterator_adaptors",
         "//ortools/base:threadpool",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ],
@@ -121,6 +122,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_or_function",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -167,8 +169,9 @@ cc_library(
     hdrs = ["one_tree_lower_bound.h"],
     deps = [
         ":christofides",
+        ":graph",
         ":minimum_spanning_tree",
-        "//ortools/base:types",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -265,7 +268,6 @@ cc_test(
         "//ortools/base:path",
         "//ortools/linear_solver",
         "//ortools/util:file_util",
-        "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_benchmark//:benchmark",
@@ -363,10 +365,8 @@ cc_library(
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -390,7 +390,6 @@ cc_library(
 
 cc_library(
     name = "dag_constrained_shortest_path",
-    testonly = True,
     srcs = ["dag_constrained_shortest_path.cc"],
     hdrs = ["dag_constrained_shortest_path.h"],
     deps = [
@@ -403,6 +402,21 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "rooted_tree",
+    hdrs = ["rooted_tree.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
 )

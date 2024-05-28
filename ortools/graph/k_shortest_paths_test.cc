@@ -164,6 +164,24 @@ TEST(KShortestPathsYenTest, HasTwoPathsWithLongerPath) {
   EXPECT_THAT(paths.distances, ElementsAre(4, 30));
 }
 
+TEST(KShortestPathsYenTest, HasThreePathsbutKIsTwo) {
+  StaticGraph<> graph;
+  graph.AddArc(0, 1);
+  graph.AddArc(0, 2);
+  graph.AddArc(0, 3);
+  graph.AddArc(1, 2);
+  graph.AddArc(3, 2);
+
+  (void)graph.Build();
+  std::vector<PathDistance> lengths{1, 1, 1, 1, 1};
+
+  const KShortestPaths paths = YenKShortestPaths(graph, lengths, /*source=*/0,
+                                                 /*destination=*/2, /*k=*/2);
+  EXPECT_THAT(paths.paths,
+              ElementsAre(std::vector<int>{0, 2}, std::vector<int>{0, 1, 2}));
+  EXPECT_THAT(paths.distances, ElementsAre(1, 2));
+}
+
 // TODO(user): randomized tests? Check validity with exhaustive
 // exploration/IP formulation?
 
