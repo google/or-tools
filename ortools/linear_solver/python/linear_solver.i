@@ -305,6 +305,8 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::KNITRO_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::KNITRO_MIXED_INTEGER_PROGRAMMING;
 
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;
