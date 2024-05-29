@@ -14,9 +14,8 @@
 #ifndef OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
 #define OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
 
+#include <cstdint>
 #include <utility>
-
-#include "ortools/base/types.h"
 
 namespace operations_research {
 

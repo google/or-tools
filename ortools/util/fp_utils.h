@@ -27,7 +27,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <numeric>  // must be call before fenv_access see: https://github.com/microsoft/STL/issues/2613
+// Needed before fenv_access. See https://github.com/microsoft/STL/issues/2613.
+#include <numeric>  // IWYU pragma:keep.
 #include <vector>
 
 #include "absl/log/check.h"

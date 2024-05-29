@@ -73,7 +73,7 @@ class ZVector {
     return base_[index];
   }
 
-  const T operator[](int64_t index) const {
+  T operator[](int64_t index) const {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
     DCHECK(base_ != nullptr);

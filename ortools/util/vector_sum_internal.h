@@ -16,10 +16,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <numeric>
 
 #include "absl/base/attributes.h"
+#include "absl/base/optimization.h"
 #include "absl/types/span.h"
 #include "ortools/util/aligned_memory.h"
 

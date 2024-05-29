@@ -15,6 +15,8 @@
 #ifndef OR_TOOLS_UTIL_REV_H_
 #define OR_TOOLS_UTIL_REV_H_
 
+#include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
