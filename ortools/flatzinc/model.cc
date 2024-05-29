@@ -759,6 +759,9 @@ int Argument::Size() const {
     case VOID_ARGUMENT: {
       return 0;
     }
+    case FLOAT_LIST: {
+      return floats.size();
+    }
     default: {
       LOG(FATAL) << "Should not be here";
       return 0;
@@ -1091,6 +1094,14 @@ std::string Model::DebugString() const {
     absl::StrAppendFormat(&output, "%s %s\n  %s\n",
                           maximize_ ? "Maximize" : "Minimize", objective_->name,
                           JoinDebugString(search_annotations_, ", "));
+  } else if (!float_objective_variables_.empty()) {
+    absl::StrAppendFormat(&output, "%s [%s] * [%s] + %f\n  %s\n",
+                          maximize_ ? "Maximize" : "Minimize",
+                          JoinDebugStringPtr(float_objective_variables_, ", "),
+                          absl::StrJoin(float_objective_coefficients_, ", "),
+                          float_objective_offset_,
+                          JoinDebugString(search_annotations_, ", "));
+
   } else {
     absl::StrAppendFormat(&output, "Satisfy\n  %s\n",
                           JoinDebugString(search_annotations_, ", "));
