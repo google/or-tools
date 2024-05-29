@@ -164,6 +164,7 @@ void AddDualSchedulingHeuristics(SatParameters& new_params) {
   new_params.set_use_timetabling_in_no_overlap_2d(true);
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_conservative_scale_overload_checker(true);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -489,8 +490,13 @@ int ValidSumSeed(int base_seed, int delta) {
 }
 
 absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
-    const SatParameters& base_params) {
+    SatParameters base_params) {
   absl::flat_hash_map<std::string, SatParameters> strategies;
+
+  // By default we disable the logging when we generate a set of parameter. It
+  // is possible to force it by setting it in the corresponding named parameter
+  // via the subsolver_params field.
+  base_params.set_log_search_progress(false);
 
   // The "default" name can be used for the base_params unchanged.
   strategies["default"] = base_params;
@@ -916,6 +922,7 @@ std::vector<SatParameters> GetFirstSolutionParams(
   int num_random_qr = 0;
   while (result.size() < num_params_to_generate) {
     SatParameters new_params = base_params;
+    new_params.set_log_search_progress(false);
     const int base_seed = base_params.random_seed();
     if (num_random <= num_random_qr) {  // Random search.
       new_params.set_search_branching(SatParameters::RANDOMIZED_SEARCH);

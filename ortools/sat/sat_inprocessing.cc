@@ -124,7 +124,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // TODO(user): Combine the two? this way we don't create a full literal <->
     // clause graph twice. It might make sense to reach the BCE fix point which
     // is unique before each variable elimination.
-    blocked_clause_simplifier_->DoOneRound(log_round_info);
+    if (!params_.fill_tightened_domains_in_response()) {
+      blocked_clause_simplifier_->DoOneRound(log_round_info);
+    }
 
     // TODO(user): this break some binary graph invariant. Fix!
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));

@@ -95,7 +95,7 @@ class HittingSetOptimizer {
   bool ComputeInitialMpModel();
 
   // Project the at_most_one constraint on the set of extracted variables.
-  void ProjectAndAddAtMostOne(const std::vector<Literal>& literals);
+  void ProjectAndAddAtMostOne(absl::Span<const Literal> literals);
 
   // Project the linear constraint on the set of extracted variables. Non
   // extracted variables are used to 'extend' the lower and upper bound of the

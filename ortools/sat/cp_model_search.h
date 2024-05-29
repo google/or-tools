@@ -106,7 +106,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //
 // Usually, named strategies just override a few field from the base_params.
 absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
-    const SatParameters& base_params);
+    SatParameters base_params);
 
 // Returns up to base_params.num_workers() different parameters.
 // We do not always return num_worker parameters to leave room for strategies

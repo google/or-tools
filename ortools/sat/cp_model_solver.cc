@@ -1083,19 +1083,10 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
 
 }  // namespace
 
-// Used by NewFeasibleSolutionObserver or NewFeasibleSolutionLogCallback
-// to register observers.
-struct SolutionObservers {
-  std::vector<std::function<void(const CpSolverResponse& response)>> observers;
-  std::vector<std::function<std::string(const CpSolverResponse& response)>>
-      log_callbacks;
-  std::vector<std::function<void(double)>> best_bound_callbacks;
-};
-
 std::function<void(Model*)> NewFeasibleSolutionObserver(
-    const std::function<void(const CpSolverResponse& response)>& observer) {
+    const std::function<void(const CpSolverResponse& response)>& callback) {
   return [=](Model* model) {
-    model->GetOrCreate<SolutionObservers>()->observers.push_back(observer);
+    model->GetOrCreate<SharedResponseManager>()->AddSolutionCallback(callback);
   };
 }
 
@@ -1103,15 +1094,14 @@ std::function<void(Model*)> NewFeasibleSolutionLogCallback(
     const std::function<std::string(const CpSolverResponse& response)>&
         callback) {
   return [=](Model* model) {
-    model->GetOrCreate<SolutionObservers>()->log_callbacks.push_back(callback);
+    model->GetOrCreate<SharedResponseManager>()->AddLogCallback(callback);
   };
 }
 
 std::function<void(Model*)> NewBestBoundCallback(
     const std::function<void(double)>& callback) {
   return [=](Model* model) {
-    model->GetOrCreate<SolutionObservers>()->best_bound_callbacks.push_back(
-        callback);
+    model->GetOrCreate<SharedResponseManager>()->AddBestBoundCallback(callback);
   };
 }
 
@@ -2309,6 +2299,55 @@ void PostsolveResponseWrapper(const SatParameters& params,
   }
 }
 
+void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
+  auto* params = model->GetOrCreate<SatParameters>();
+  auto* logger = model->GetOrCreate<SolverLogger>();
+
+  // Update params.num_workers() if the old field was used.
+  if (params->num_workers() == 0) {
+    params->set_num_workers(params->num_search_workers());
+  }
+
+  // Initialize the number of workers if set to 0.
+  if (params->num_workers() == 0) {
+#if !defined(__PORTABLE_PLATFORM__)
+    // Sometimes, hardware_concurrency will return 0. So always default to 1.
+    const int num_cores =
+        params->enumerate_all_solutions() || !model_proto.assumptions().empty()
+            ? 1
+            : std::max<int>(std::thread::hardware_concurrency(), 1);
+#else
+    const int num_cores = 1;
+#endif
+    SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
+    params->set_num_workers(num_cores);
+  }
+
+  // We currently only use the feasibility pump or rins/rens if it is enabled
+  // and some other parameters are not on.
+  //
+  // TODO(user): for now this is not deterministic so we disable it on
+  // interleave search. Fix.
+  if (params->use_lns_only() || params->test_feasibility_jump() ||
+      params->interleave_search() || params->num_workers() == 1 ||
+      !params->use_lns()) {
+    params->set_use_rins_lns(false);
+    params->set_use_feasibility_pump(false);
+  }
+
+  // We disable this if the global param asked for no LP.
+  if (params->linearization_level() == 0) {
+    params->set_use_feasibility_pump(false);
+  }
+
+  // Disable shared bounds if we are in single thread and we are not
+  // tightening the domains.
+  if (!params->fill_tightened_domains_in_response() &&
+      params->num_workers() == 1) {
+    params->set_share_level_zero_bounds(false);
+  }
+}
+
 // Small wrapper containing all the shared classes between our subsolver
 // threads. Note that all these classes can also be retrieved with something
 // like global_model->GetOrCreate<Class>() but it is not thread-safe to do so.
@@ -2318,16 +2357,49 @@ void PostsolveResponseWrapper(const SatParameters& params,
 // whole duration of the solve.
 struct SharedClasses {
   SharedClasses(const CpModelProto* proto, Model* global_model)
-      : model_proto(proto),
+      : model_proto(*proto),
         wall_timer(global_model->GetOrCreate<WallTimer>()),
         time_limit(global_model->GetOrCreate<ModelSharedTimeLimit>()),
         logger(global_model->GetOrCreate<SolverLogger>()),
         stats(global_model->GetOrCreate<SharedStatistics>()),
         response(global_model->GetOrCreate<SharedResponseManager>()),
-        shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {}
+        shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()) {
+    const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
+
+    if (params.share_level_zero_bounds()) {
+      bounds = std::make_unique<SharedBoundsManager>(*proto);
+      bounds->set_dump_prefix(absl::GetFlag(FLAGS_cp_model_dump_prefix));
+      bounds->LoadDebugSolution(response->DebugSolution());
+    }
+
+    // Create extra shared classes if needed. Note that while these parameters
+    // are true by default, we disable them if we don't have enough workers for
+    // them in AdaptGlobalParameters().
+    //
+    // Registering them to the global model should not really be necessary,
+    // except if one wants to expect them from outside SolveCpModel().
+    if (params.use_rins_lns() || params.use_feasibility_pump()) {
+      lp_solutions = std::make_unique<SharedLPSolutionRepository>(
+          /*num_solutions_to_keep=*/10);
+      global_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
+
+      incomplete_solutions =
+          std::make_unique<SharedIncompleteSolutionManager>();
+      global_model->Register<SharedIncompleteSolutionManager>(
+          incomplete_solutions.get());
+    }
+
+    // Set up synchronization mode in parallel.
+    const bool always_synchronize =
+        !params.interleave_search() || params.num_workers() <= 1;
+    response->SetSynchronizationMode(always_synchronize);
+    if (params.share_binary_clauses() && params.num_workers() > 1) {
+      clauses = std::make_unique<SharedClausesManager>(always_synchronize);
+    }
+  }
 
   // These are never nullptr.
-  const CpModelProto* const model_proto;
+  const CpModelProto& model_proto;
   WallTimer* const wall_timer;
   ModelSharedTimeLimit* const time_limit;
   SolverLogger* const logger;
@@ -2355,7 +2427,140 @@ struct SharedClasses {
   }
 };
 
-#if !defined(__PORTABLE_PLATFORM__)
+void LogSubsolverNames(
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+    SolverLogger* logger) {
+  if (!logger->LoggingIsEnabled()) return;
+
+  std::vector<std::string> full_problem_solver_names;
+  std::vector<std::string> incomplete_solver_names;
+  std::vector<std::string> first_solution_solver_names;
+  std::vector<std::string> helper_solver_names;
+  for (int i = 0; i < subsolvers.size(); ++i) {
+    const auto& subsolver = subsolvers[i];
+    switch (subsolver->type()) {
+      case SubSolver::FULL_PROBLEM:
+        full_problem_solver_names.push_back(subsolver->name());
+        break;
+      case SubSolver::INCOMPLETE:
+        incomplete_solver_names.push_back(subsolver->name());
+        break;
+      case SubSolver::FIRST_SOLUTION:
+        first_solution_solver_names.push_back(subsolver->name());
+        break;
+      case SubSolver::HELPER:
+        helper_solver_names.push_back(subsolver->name());
+        break;
+    }
+  }
+
+  // TODO(user): We might not want to sort the subsolver by name to keep our
+  // ordered list by importance? not sure.
+  auto display_subsolver_list = [logger](const std::vector<std::string>& names,
+                                         const absl::string_view type_name) {
+    if (!names.empty()) {
+      absl::btree_map<std::string, int> solvers_and_count;
+      for (const auto& name : names) {
+        solvers_and_count[name]++;
+      }
+      std::vector<std::string> counted_names;
+      for (const auto& [name, count] : solvers_and_count) {
+        if (count == 1) {
+          counted_names.push_back(name);
+        } else {
+          counted_names.push_back(absl::StrCat(name, "(", count, ")"));
+        }
+      }
+      SOLVER_LOG(
+          logger, names.size(), " ",
+          absl::StrCat(type_name, names.size() == 1 ? "" : "s"), ": [",
+          absl::StrJoin(counted_names.begin(), counted_names.end(), ", "), "]");
+    }
+  };
+
+  display_subsolver_list(full_problem_solver_names, "full problem subsolver");
+  display_subsolver_list(first_solution_solver_names,
+                         "first solution subsolver");
+  display_subsolver_list(incomplete_solver_names, "incomplete subsolver");
+  display_subsolver_list(helper_solver_names, "helper subsolver");
+  SOLVER_LOG(logger, "");
+}
+
+void LogFinalStatistics(SharedClasses* shared) {
+  if (!shared->logger->LoggingIsEnabled()) return;
+
+  shared->logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
+  SOLVER_LOG(shared->logger, "");
+
+  shared->stat_tables.Display(shared->logger);
+  shared->response->DisplayImprovementStatistics();
+
+  std::vector<std::vector<std::string>> table;
+  table.push_back(
+      {"Solution repositories", "Added", "Queried", "Ignored", "Synchro"});
+  table.push_back(shared->response->SolutionsRepository().TableLineStats());
+  if (shared->lp_solutions != nullptr) {
+    table.push_back(shared->lp_solutions->TableLineStats());
+  }
+  if (shared->incomplete_solutions != nullptr) {
+    table.push_back(shared->incomplete_solutions->TableLineStats());
+  }
+  SOLVER_LOG(shared->logger, FormatTable(table));
+
+  if (shared->bounds) {
+    shared->bounds->LogStatistics(shared->logger);
+  }
+
+  if (shared->clauses) {
+    shared->clauses->LogStatistics(shared->logger);
+  }
+
+  // Extra logging if needed. Note that these are mainly activated on
+  // --vmodule *some_file*=1 and are here for development.
+  shared->stats->Log(shared->logger);
+}
+
+void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
+                      std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
+  // Initial logging.
+  SOLVER_LOG(shared->logger, "");
+  if (params.interleave_search()) {
+    SOLVER_LOG(shared->logger,
+               absl::StrFormat("Starting deterministic search at %.2fs with "
+                               "%i workers and batch size of %d.",
+                               shared->wall_timer->Get(), params.num_workers(),
+                               params.interleave_batch_size()));
+  } else {
+    SOLVER_LOG(
+        shared->logger,
+        absl::StrFormat("Starting search at %.2fs with %i workers.",
+                        shared->wall_timer->Get(), params.num_workers()));
+  }
+  LogSubsolverNames(subsolvers, shared->logger);
+
+  // Launch the main search loop.
+  if (params.interleave_search()) {
+    int batch_size = params.interleave_batch_size();
+    if (batch_size == 0) {
+      batch_size = params.num_workers() == 1 ? 1 : params.num_workers() * 3;
+      SOLVER_LOG(
+          shared->logger,
+          "Setting number of tasks in each batch of interleaved search to ",
+          batch_size);
+    }
+    DeterministicLoop(subsolvers, params.num_workers(), batch_size);
+  } else {
+    NonDeterministicLoop(subsolvers, params.num_workers());
+  }
+
+  // We need to delete the subsolvers in order to fill the stat tables. Note
+  // that first solution should already be deleted. We delete manually as
+  // windows release vectors in the opposite order.
+  for (int i = 0; i < subsolvers.size(); ++i) {
+    subsolvers[i].reset();
+  }
+  LogFinalStatistics(shared);
+}
 
 // Encapsulate a full CP-SAT solve without presolve in the SubSolver API.
 class FullProblemSolver : public SubSolver {
@@ -2409,6 +2614,13 @@ class FullProblemSolver : public SubSolver {
     // TODO(user): For now we do not count LNS statistics. We could easily
     // by registering the SharedStatistics class with LNS local model.
     local_model_.Register<SharedStatistics>(shared_->stats);
+
+    // Setup the local logger, in multithread log_search_progress should be
+    // false by default, but we might turn it on for debugging. It is on by
+    // default in single-thread mode.
+    auto* logger = local_model_.GetOrCreate<SolverLogger>();
+    logger->EnableLogging(local_parameters.log_search_progress());
+    logger->SetLogToStdOut(local_parameters.log_to_stdout());
   }
 
   ~FullProblemSolver() override {
@@ -2450,7 +2662,7 @@ class FullProblemSolver : public SubSolver {
     }
     return [this]() {
       if (solving_first_chunk_) {
-        LoadCpModel(*shared_->model_proto, &local_model_);
+        LoadCpModel(shared_->model_proto, &local_model_);
 
         // Level zero variable bounds sharing. It is important to register
         // that after the probing that takes place in LoadCpModel() otherwise
@@ -2458,9 +2670,9 @@ class FullProblemSolver : public SubSolver {
         // at the same time.
         if (shared_->bounds != nullptr) {
           RegisterVariableBoundsLevelZeroExport(
-              *shared_->model_proto, shared_->bounds.get(), &local_model_);
+              shared_->model_proto, shared_->bounds.get(), &local_model_);
           RegisterVariableBoundsLevelZeroImport(
-              *shared_->model_proto, shared_->bounds.get(), &local_model_);
+              shared_->model_proto, shared_->bounds.get(), &local_model_);
         }
 
         // Note that this is done after the loading, so we will never export
@@ -2474,11 +2686,21 @@ class FullProblemSolver : public SubSolver {
           RegisterClausesExport(id, shared_->clauses.get(), &local_model_);
         }
 
+        auto* logger = local_model_.GetOrCreate<SolverLogger>();
+        SOLVER_LOG(logger, "");
+        SOLVER_LOG(logger, absl::StrFormat(
+                               "Starting subsolver \'%s\' hint search at %.2fs",
+                               name(), shared_->wall_timer->Get()));
+
         if (local_model_.GetOrCreate<SatParameters>()->repair_hint()) {
-          MinimizeL1DistanceWithHint(*shared_->model_proto, &local_model_);
+          MinimizeL1DistanceWithHint(shared_->model_proto, &local_model_);
         } else {
-          QuickSolveWithHint(*shared_->model_proto, &local_model_);
+          QuickSolveWithHint(shared_->model_proto, &local_model_);
         }
+
+        SOLVER_LOG(logger,
+                   absl::StrFormat("Starting subsolver \'%s\' search at %.2fs",
+                                   name(), shared_->wall_timer->Get()));
 
         // No need for mutex since we only run one task at the time.
         solving_first_chunk_ = false;
@@ -2502,7 +2724,7 @@ class FullProblemSolver : public SubSolver {
       }
 
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
-      SolveLoadedCpModel(*shared_->model_proto, &local_model_);
+      SolveLoadedCpModel(shared_->model_proto, &local_model_);
 
       absl::MutexLock mutex_lock(&mutex_);
       previous_task_is_completed_ = true;
@@ -2536,6 +2758,8 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
+#if !defined(__PORTABLE_PLATFORM__)
+
 class ObjectiveShavingSolver : public SubSolver {
  public:
   ObjectiveShavingSolver(const SatParameters& local_parameters,
@@ -2545,7 +2769,7 @@ class ObjectiveShavingSolver : public SubSolver {
         local_params_(local_parameters),
         helper_(helper),
         shared_(shared),
-        local_proto_(*shared->model_proto) {}
+        local_proto_(shared->model_proto) {}
 
   ~ObjectiveShavingSolver() override {
     shared_->stat_tables.AddTimingStat(*this);
@@ -2578,8 +2802,7 @@ class ObjectiveShavingSolver : public SubSolver {
               local_response.solution().begin(),
               local_response.solution().end());
           if (local_params_.cp_model_presolve()) {
-            const int num_original_vars =
-                shared_->model_proto->variables_size();
+            const int num_original_vars = shared_->model_proto.variables_size();
             PostsolveResponseWrapper(local_params_, num_original_vars,
                                      mapping_proto_, postsolve_mapping_,
                                      &solution_values);
@@ -2636,7 +2859,7 @@ class ObjectiveShavingSolver : public SubSolver {
     time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
 
     // We copy the model.
-    local_proto_ = *shared_->model_proto;
+    local_proto_ = shared_->model_proto;
     *local_proto_.mutable_variables() =
         helper_->FullNeighborhood().delta.variables();
 
@@ -2760,7 +2983,7 @@ class FeasibilityPumpSolver : public SubSolver {
     // Level zero variable bounds sharing.
     if (shared_->bounds != nullptr) {
       RegisterVariableBoundsLevelZeroImport(
-          *shared_->model_proto, shared_->bounds.get(), local_model_.get());
+          shared_->model_proto, shared_->bounds.get(), local_model_.get());
     }
   }
 
@@ -2783,7 +3006,7 @@ class FeasibilityPumpSolver : public SubSolver {
       {
         absl::MutexLock mutex_lock(&mutex_);
         if (solving_first_chunk_) {
-          LoadFeasibilityPump(*shared_->model_proto, local_model_.get());
+          LoadFeasibilityPump(shared_->model_proto, local_model_.get());
           // No new task will be scheduled for this worker if there is no
           // linear relaxation.
           if (local_model_->Get<FeasibilityPump>() == nullptr) return;
@@ -3099,7 +3322,7 @@ class LnsSolver : public SubSolver {
         // TODO(user): In a production environment, we should probably just
         // ignore this fragment and continue.
         const bool feasible =
-            SolutionIsFeasible(*shared_->model_proto, solution_values);
+            SolutionIsFeasible(shared_->model_proto, solution_values);
         if (!feasible) {
           if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
             const std::string name =
@@ -3133,7 +3356,7 @@ class LnsSolver : public SubSolver {
         //
         // TODO(user): We could however fix it in the LNS Helper!
         if (data.status == CpSolverStatus::OPTIMAL &&
-            !shared_->model_proto->has_symmetry() && !solution_values.empty() &&
+            !shared_->model_proto.has_symmetry() && !solution_values.empty() &&
             neighborhood.is_simple &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
                  .empty()) {
@@ -3148,7 +3371,7 @@ class LnsSolver : public SubSolver {
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
           data.new_objective = IntegerValue(ComputeInnerObjective(
-              shared_->model_proto->objective(), solution_values));
+              shared_->model_proto.objective(), solution_values));
         }
 
         // Report any feasible solution we have. Optimization: We don't do that
@@ -3178,12 +3401,12 @@ class LnsSolver : public SubSolver {
         std::string s = absl::StrCat("              LNS ", name(), ":");
         if (new_solution) {
           const double base_obj = ScaleObjectiveValue(
-              shared_->model_proto->objective(),
-              ComputeInnerObjective(shared_->model_proto->objective(),
+              shared_->model_proto.objective(),
+              ComputeInnerObjective(shared_->model_proto.objective(),
                                     base_response.solution()));
           const double new_obj = ScaleObjectiveValue(
-              shared_->model_proto->objective(),
-              ComputeInnerObjective(shared_->model_proto->objective(),
+              shared_->model_proto.objective(),
+              ComputeInnerObjective(shared_->model_proto.objective(),
                                     solution_values));
           absl::StrAppend(&s, " [new_sol:", base_obj, " -> ", new_obj, "]");
         }
@@ -3218,47 +3441,11 @@ class LnsSolver : public SubSolver {
   SharedClasses* shared_;
 };
 
-void SolveCpModelParallel(const CpModelProto& model_proto,
-                          SharedClasses* shared, Model* global_model) {
+void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
   CHECK(!params.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
-
-  shared->lp_solutions = std::make_unique<SharedLPSolutionRepository>(
-      /*num_solutions_to_keep=*/10);
-  global_model->Register<SharedLPSolutionRepository>(
-      shared->lp_solutions.get());
-
-  const bool testing = params.use_lns_only() || params.test_feasibility_jump();
-
-  // We currently only use the feasibility pump or rins/rens if it is enabled
-  // and some other parameters are not on.
-  //
-  // TODO(user): for now this is not deterministic so we disable it on
-  // interleave search. Fix.
-  const bool use_rins_rens = params.use_lns() && params.use_rins_lns() &&
-                             !testing && !params.interleave_search();
-  const bool use_feasibility_pump = params.use_lns() &&
-                                    params.use_feasibility_pump() &&
-                                    params.linearization_level() > 0 &&
-                                    !testing && !params.interleave_search();
-  if (use_feasibility_pump || use_rins_rens) {
-    shared->incomplete_solutions =
-        std::make_unique<SharedIncompleteSolutionManager>();
-    global_model->Register<SharedIncompleteSolutionManager>(
-        shared->incomplete_solutions.get());
-  }
-
-  // Set up synchronization mode in parallel.
-  const bool always_synchronize =
-      !params.interleave_search() || params.num_workers() <= 1;
-  shared->response->SetSynchronizationMode(always_synchronize);
-
-  if (params.share_binary_clauses()) {
-    shared->clauses =
-        std::make_unique<SharedClausesManager>(always_synchronize);
-  }
 
   // The list of all the SubSolver that will be used in this parallel search.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
@@ -3283,12 +3470,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
-      &model_proto, &params, shared->response, shared->bounds.get());
+      &shared->model_proto, &params, shared->response, shared->bounds.get());
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
   int num_full_problem_solvers = 0;
-  if (testing) {
+  if (params.use_lns_only() || params.test_feasibility_jump()) {
     // Register something to find a first solution. Note that this is mainly
     // used for experimentation, and using no_lp usually result in a faster
     // first solution.
@@ -3305,14 +3492,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
   } else {
     for (const SatParameters& local_params : GetWorkSharingParams(
-             params, model_proto, params.shared_tree_num_workers())) {
+             params, shared->model_proto, params.shared_tree_num_workers())) {
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared));
       num_full_problem_solvers++;
     }
     for (const SatParameters& local_params :
-         GetDiverseSetOfParameters(params, model_proto)) {
+         GetDiverseSetOfParameters(params, shared->model_proto)) {
       // TODO(user): This is currently not supported here.
       if (params.optimize_with_max_hs()) continue;
       ++num_full_problem_solvers;
@@ -3330,14 +3517,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   // Add FeasibilityPumpSolver if enabled.
-  if (use_feasibility_pump) {
+  if (params.use_feasibility_pump()) {
     incomplete_subsolvers.push_back(
         std::make_unique<FeasibilityPumpSolver>(params, shared));
   }
 
   const SatParameters lns_params = GetNamedParameters(params).at("lns");
 
-  if (use_rins_rens) {
+  if (params.use_rins_lns()) {
     // Note that we always create the SharedLPSolutionRepository. This meets
     // the requirement of having a SharedLPSolutionRepository to
     // create RINS/RENS lns generators.
@@ -3353,7 +3540,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       params.num_workers() - num_full_problem_solvers;
   const LinearModel* linear_model = global_model->Get<LinearModel>();
   if (linear_model != nullptr && !params.interleave_search() &&
-      model_proto.has_objective()) {
+      shared->model_proto.has_objective()) {
     int num_violation_ls = params.has_num_violation_ls()
                                ? params.num_violation_ls()
                                : num_incomplete_solvers / 8 + 1;
@@ -3386,7 +3573,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // incomplete solvers.
   //
   // TODO(user): Check with interleave_search.
-  if (!model_proto.has_objective() || model_proto.objective().vars().empty() ||
+  if (!shared->model_proto.has_objective() ||
+      shared->model_proto.objective().vars().empty() ||
       !params.interleave_search() || params.test_feasibility_jump()) {
     const int max_num_incomplete_solvers_running_before_the_first_solution =
         params.num_workers() <= 16 ? 1 : 2;
@@ -3457,7 +3645,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           shared->stats, &shared->stat_tables));
     }
     for (const SatParameters& local_params : GetFirstSolutionParams(
-             params, model_proto, num_first_solution_subsolvers)) {
+             params, shared->model_proto, num_first_solution_subsolvers)) {
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared,
@@ -3473,8 +3661,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   incomplete_subsolvers.clear();
 
   //  Add incomplete subsolvers that require an objective.
-  if (params.use_lns() && model_proto.has_objective() &&
-      !model_proto.objective().vars().empty() &&
+  if (params.use_lns() && shared->model_proto.has_objective() &&
+      !shared->model_proto.objective().vars().empty() &&
       !params.test_feasibility_jump()) {
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
@@ -3593,135 +3781,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // Add a synchronization point for the gap integral that is executed last.
   // This way, after each batch, the proper deterministic time is updated and
   // then the function to integrate take the value of the new gap.
-  if (model_proto.has_objective() && !model_proto.objective().vars().empty()) {
+  if (shared->model_proto.has_objective() &&
+      !shared->model_proto.objective().vars().empty()) {
     subsolvers.push_back(std::make_unique<SynchronizationPoint>(
         "update_gap_integral",
         [shared]() { shared->response->UpdateGapIntegral(); }));
   }
 
-  // Log the name of all our SubSolvers.
-  auto* logger = global_model->GetOrCreate<SolverLogger>();
-  if (logger->LoggingIsEnabled()) {
-    // Collect subsolver names per type (full, lns, 1st solution).
-    std::vector<std::string> full_problem_solver_names;
-    std::vector<std::string> incomplete_solver_names;
-    std::vector<std::string> first_solution_solver_names;
-    std::vector<std::string> helper_solver_names;
-    for (int i = 0; i < subsolvers.size(); ++i) {
-      const auto& subsolver = subsolvers[i];
-      switch (subsolver->type()) {
-        case SubSolver::FULL_PROBLEM:
-          full_problem_solver_names.push_back(subsolver->name());
-          break;
-        case SubSolver::INCOMPLETE:
-          incomplete_solver_names.push_back(subsolver->name());
-          break;
-        case SubSolver::FIRST_SOLUTION:
-          first_solution_solver_names.push_back(subsolver->name());
-          break;
-        case SubSolver::HELPER:
-          helper_solver_names.push_back(subsolver->name());
-          break;
-      }
-    }
-    SOLVER_LOG(logger, "");
-
-    if (params.interleave_search()) {
-      SOLVER_LOG(logger, absl::StrFormat(
-                             "Starting deterministic search at %.2fs with "
-                             "%i workers and batch size of %d.",
-                             shared->wall_timer->Get(), params.num_workers(),
-                             params.interleave_batch_size()));
-    } else {
-      SOLVER_LOG(logger, absl::StrFormat(
-                             "Starting search at %.2fs with %i workers.",
-                             shared->wall_timer->Get(), params.num_workers()));
-    }
-
-    // TODO(user): We might not want to sort the subsolver by name to keep our
-    // ordered list by importance? not sure.
-    auto display_subsolver_list = [logger](
-                                      const std::vector<std::string>& names,
-                                      const absl::string_view type_name) {
-      if (!names.empty()) {
-        absl::btree_map<std::string, int> solvers_and_count;
-        for (const auto& name : names) {
-          solvers_and_count[name]++;
-        }
-        std::vector<std::string> counted_names;
-        for (const auto& [name, count] : solvers_and_count) {
-          if (count == 1) {
-            counted_names.push_back(name);
-          } else {
-            counted_names.push_back(absl::StrCat(name, "(", count, ")"));
-          }
-        }
-        SOLVER_LOG(
-            logger, names.size(), " ",
-            absl::StrCat(type_name, names.size() == 1 ? "" : "s"), ": [",
-            absl::StrJoin(counted_names.begin(), counted_names.end(), ", "),
-            "]");
-      }
-    };
-
-    display_subsolver_list(full_problem_solver_names, "full problem subsolver");
-    display_subsolver_list(first_solution_solver_names,
-                           "first solution subsolver");
-    display_subsolver_list(incomplete_solver_names, "incomplete subsolver");
-    display_subsolver_list(helper_solver_names, "helper subsolver");
-  }
-
-  // Launch the main search loop.
-  if (params.interleave_search()) {
-    int batch_size = params.interleave_batch_size();
-    if (batch_size == 0) {
-      batch_size = params.num_workers() == 1 ? 1 : params.num_workers() * 3;
-      SOLVER_LOG(
-          logger,
-          "Setting number of tasks in each batch of interleaved search to ",
-          batch_size);
-    }
-    DeterministicLoop(subsolvers, params.num_workers(), batch_size);
-  } else {
-    NonDeterministicLoop(subsolvers, params.num_workers());
-  }
-
-  // We need to delete the other subsolver in order to fill the stat tables.
-  // Note that first solution should already be deleted.
-  // We delete manually as windows release vectors in the opposite order.
-  for (int i = 0; i < subsolvers.size(); ++i) {
-    subsolvers[i].reset();
-  }
-
-  // Log statistics.
-  if (logger->LoggingIsEnabled()) {
-    logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
-    SOLVER_LOG(logger, "");
-
-    shared->stat_tables.Display(logger);
-
-    shared->response->DisplayImprovementStatistics();
-
-    std::vector<std::vector<std::string>> table;
-    table.push_back(
-        {"Solution repositories", "Added", "Queried", "Ignored", "Synchro"});
-    table.push_back(shared->response->SolutionsRepository().TableLineStats());
-    if (shared->lp_solutions != nullptr) {
-      table.push_back(shared->lp_solutions->TableLineStats());
-    }
-    if (shared->incomplete_solutions != nullptr) {
-      table.push_back(shared->incomplete_solutions->TableLineStats());
-    }
-    SOLVER_LOG(logger, FormatTable(table));
-
-    if (shared->bounds) {
-      shared->bounds->LogStatistics(logger);
-    }
-
-    if (shared->clauses) {
-      shared->clauses->LogStatistics(logger);
-    }
-  }
+  LaunchSubsolvers(params, shared, subsolvers);
 }
 
 #endif  // __PORTABLE_PLATFORM__
@@ -3942,26 +4009,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
   SOLVER_LOG(logger, "Parameters: ", ProtobufShortDebugString(params));
 
-  // Update params.num_workers() if the old field was used.
-  if (params.num_workers() == 0) {
-    model->GetOrCreate<SatParameters>()->set_num_workers(
-        params.num_search_workers());
-  }
-
-  // Initialize the number of workers if set to 0.
-  if (params.num_workers() == 0) {
-#if !defined(__PORTABLE_PLATFORM__)
-    // Sometimes, hardware_concurrency will return 0. So always default to 1.
-    const int num_cores =
-        params.enumerate_all_solutions() || !model_proto.assumptions().empty()
-            ? 1
-            : std::max<int>(std::thread::hardware_concurrency(), 1);
-#else
-    const int num_cores = 1;
-#endif
-    SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
-    model->GetOrCreate<SatParameters>()->set_num_workers(num_cores);
-  }
+  // Internally we adapt the parameters so that things are disabled if
+  // they do not make sense.
+  AdaptGlobalParameters(model_proto, model);
 
   if (logger->LoggingIsEnabled() && params.use_absl_random()) {
     model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
@@ -4172,6 +4222,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const CpSolverStatus presolve_status =
       PresolveCpModel(context.get(), &postsolve_mapping);
 
+  // Delete the context as soon a the presolve is done. Note that only
+  // postsolve_mapping and mapping_proto are needed for postsolve.
+  context.reset(nullptr);
+
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     SOLVER_LOG(logger, "Problem closed by presolve.");
     CpSolverResponse status_response;
@@ -4186,11 +4240,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // TODO(user): reduce this function size and find a better place for this?
   SharedClasses shared(new_cp_model_proto, model);
-  if (params.share_level_zero_bounds()) {
-    shared.bounds = std::make_unique<SharedBoundsManager>(*new_cp_model_proto);
-    shared.bounds->set_dump_prefix(absl::GetFlag(FLAGS_cp_model_dump_prefix));
-    shared.bounds->LoadDebugSolution(shared_response_manager->DebugSolution());
-  }
 
   if (params.fill_tightened_domains_in_response()) {
     shared_response_manager->AddResponsePostprocessor(
@@ -4217,6 +4266,31 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
   }
 
+  // Solution checking.
+  // We either check all solutions, or only the last one.
+  // Checking all solution might be expensive if we creates many.
+  auto check_solution = [&model_proto, &params, mapping_proto,
+                         &postsolve_mapping](CpSolverResponse* response) {
+    if (response->solution().empty()) return;
+    if (params.cp_model_presolve()) {
+      // We pass presolve data for more informative message in case the solution
+      // is not feasible.
+      CHECK(SolutionIsFeasible(model_proto, response->solution(), mapping_proto,
+                               &postsolve_mapping));
+    } else {
+      CHECK(SolutionIsFeasible(model_proto, response->solution()));
+    }
+  };
+  if (DEBUG_MODE ||
+      absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
+    shared_response_manager->AddResponsePostprocessor(
+        std::move(check_solution));
+  } else {
+    shared_response_manager->AddFinalResponsePostprocessor(
+        std::move(check_solution));
+  }
+
+  // Solution postsolving.
   if (params.cp_model_presolve()) {
     shared_response_manager->AddSolutionPostprocessor(
         [&model_proto, &params, mapping_proto, &model,
@@ -4226,8 +4300,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                    *mapping_proto, postsolve_mapping, solution);
         });
     shared_response_manager->AddResponsePostprocessor(
-        [&model_proto, &params, mapping_proto,
-         &postsolve_mapping](CpSolverResponse* response) {
+        [&postsolve_mapping](CpSolverResponse* response) {
           // Map back the sufficient assumptions for infeasibility.
           for (int& ref :
                *(response
@@ -4236,64 +4309,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                       ? postsolve_mapping[ref]
                       : NegatedRef(postsolve_mapping[PositiveRef(ref)]);
           }
-          if (!response->solution().empty()) {
-            CHECK(SolutionIsFeasible(
-                model_proto,
-                std::vector<int64_t>(response->solution().begin(),
-                                     response->solution().end()),
-                mapping_proto, &postsolve_mapping))
-                << "postsolved solution";
-          }
         });
   } else {
-    shared_response_manager->AddFinalResponsePostprocessor(
-        [&model_proto](CpSolverResponse* response) {
-          if (!response->solution().empty()) {
-            CHECK(SolutionIsFeasible(
-                model_proto, std::vector<int64_t>(response->solution().begin(),
-                                                  response->solution().end())));
-          }
-        });
     shared_response_manager->AddResponsePostprocessor(
         [&model_proto, &params](CpSolverResponse* response) {
           // Truncate the solution in case model expansion added more variables.
           const int initial_size = model_proto.variables_size();
-          if (response->solution_size() > 0) {
+          if (!response->solution().empty()) {
             response->mutable_solution()->Truncate(initial_size);
-            if (DEBUG_MODE ||
-                absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-              CHECK(SolutionIsFeasible(
-                  model_proto,
-                  std::vector<int64_t>(response->solution().begin(),
-                                       response->solution().end())));
-            }
           }
         });
-  }
-
-  // Delete the context.
-  context.reset(nullptr);
-
-  const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
-  if (!observers.empty()) {
-    shared_response_manager->AddSolutionCallback(
-        [&observers](const CpSolverResponse& response) {
-          for (const auto& observer : observers) {
-            observer(response);
-          }
-        });
-  }
-
-  const auto& log_callbacks =
-      model->GetOrCreate<SolutionObservers>()->log_callbacks;
-  for (const auto& callback : log_callbacks) {
-    shared_response_manager->AddLogCallback(callback);
-  }
-
-  const auto& best_bound_callbacks =
-      model->GetOrCreate<SolutionObservers>()->best_bound_callbacks;
-  for (const auto& callback : best_bound_callbacks) {
-    shared_response_manager->AddBestBoundCallback(callback);
   }
 
   // Make sure everything stops when we have a first solution if requested.
@@ -4395,75 +4420,25 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     model->Register(linear_model);
   }
 
+  if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
 #if defined(__PORTABLE_PLATFORM__)
-  if (/* DISABLES CODE */ (false)) {
-    // We ignore the multithreading parameter in this case.
+    if (/* DISABLES CODE */ (false)) {
+      // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
-  if (params.num_workers() > 1 || params.interleave_search() ||
-      !params.subsolvers().empty() || params.test_feasibility_jump()) {
-    SolveCpModelParallel(*new_cp_model_proto, &shared, model);
+    if (params.num_workers() > 1 || params.interleave_search() ||
+        !params.subsolvers().empty() || params.test_feasibility_jump()) {
+      SolveCpModelParallel(&shared, model);
 #endif  // __PORTABLE_PLATFORM__
-  } else if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, absl::StrFormat("Starting to load the model at %.2fs",
-                                       wall_timer->Get()));
-    shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
-
-    // We use a local_model to share statistic report mechanism with the
-    // parallel case. When this model will be destroyed, we will collect some
-    // stats that are used to debug/improve internal algorithm.
-    //
-    // TODO(user): Reuse a Subsolver to get the same display as for the
-    // parallel case. Right now we don't have as much stats for single thread!
-    Model local_model;
-    local_model.Register<SolverLogger>(logger);
-    local_model.Register<TimeLimit>(model->GetOrCreate<TimeLimit>());
-    local_model.Register<SatParameters>(model->GetOrCreate<SatParameters>());
-    local_model.Register<SharedStatistics>(
-        model->GetOrCreate<SharedStatistics>());
-    local_model.Register<SharedResponseManager>(shared_response_manager);
-
-    LoadCpModel(*new_cp_model_proto, &local_model);
-
-    // Export shared bounds if parameters ask for it.
-    // We reuse the same mechanism as in multi-thread.
-    if (params.fill_tightened_domains_in_response() &&
-        shared.bounds != nullptr) {
-      RegisterVariableBoundsLevelZeroExport(*shared.model_proto,
-                                            shared.bounds.get(), &local_model);
-    }
-
-    SOLVER_LOG(logger, "");
-    SOLVER_LOG(logger, absl::StrFormat("Starting sequential search at %.2fs",
-                                       wall_timer->Get()));
-    if (params.repair_hint()) {
-      MinimizeL1DistanceWithHint(*new_cp_model_proto, &local_model);
     } else {
-      QuickSolveWithHint(*new_cp_model_proto, &local_model);
+      shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
+
+      // To avoid duplicating code, the single-thread version reuse most of
+      // the multi-thread architecture.
+      std::vector<std::unique_ptr<SubSolver>> subsolvers;
+      subsolvers.push_back(std::make_unique<FullProblemSolver>(
+          "main", params, /*split_in_chunks=*/false, &shared));
+      LaunchSubsolvers(params, &shared, subsolvers);
     }
-    SolveLoadedCpModel(*new_cp_model_proto, &local_model);
-
-    // Display table data.
-    if (logger->LoggingIsEnabled()) {
-      logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
-      SOLVER_LOG(logger, "");
-      SharedStatTables tables;
-      tables.AddLpStat("default", &local_model);
-      tables.AddSearchStat("default", &local_model);
-      tables.AddClausesStat("default", &local_model);
-      tables.Display(logger);
-    }
-
-    // Export statistics.
-    CpSolverResponse status_response;
-    FillSolveStatsInResponse(&local_model, &status_response);
-    shared_response_manager->AppendResponseToBeMerged(status_response);
-  }
-
-  // Extra logging if needed. Note that these are mainly activated on
-  // --vmodule *some_file*=1 and are here for development.
-  if (logger->LoggingIsEnabled()) {
-    model->GetOrCreate<SharedStatistics>()->Log(logger);
   }
 
   return shared_response_manager->GetResponse();

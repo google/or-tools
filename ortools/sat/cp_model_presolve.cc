@@ -5659,7 +5659,12 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
 
   std::vector<absl::Span<int>> components = GetOverlappingRectangleComponents(
       bounding_boxes, absl::MakeSpan(active_boxes));
-  if (components.size() > 1) {
+  // The result of GetOverlappingRectangleComponents() omit singleton components
+  // thus to check whether a graph is fully connected we must check also the
+  // size of the unique component.
+  const bool is_fully_connected =
+      components.size() == 1 && components[0].size() == active_boxes.size();
+  if (!is_fully_connected) {
     for (const absl::Span<int> boxes : components) {
       if (boxes.size() <= 1) continue;
 
@@ -12390,7 +12395,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
   context_->keep_all_feasible_solutions =
       context_->params().keep_all_feasible_solutions_in_presolve() ||
       context_->params().enumerate_all_solutions() ||
-      context_->params().fill_tightened_domains_in_response() ||
       !context_->working_model->assumptions().empty() ||
       !context_->params().cp_model_presolve();
 

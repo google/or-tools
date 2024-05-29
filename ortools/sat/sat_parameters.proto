@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 286
+// NEXT TAG: 287
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -777,6 +777,15 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_overload_checker_in_cumulative = 78 [default = false];
+
+  // Enable a heuristic to solve cumulative constraints using a modified energy
+  // constraint. We modify the usual energy definition by applying a
+  // super-additive function (also called "conservative scale" or "dual-feasible
+  // function") to the demand and the durations of the tasks.
+  //
+  // This heuristic is fast but for most problems it does not help much to find
+  // a solution.
+  optional bool use_conservative_scale_overload_checker = 286 [default = false];
 
   // When this is true, the cumulative constraint is reinforced with timetable
   // edge finding, i.e., an additional level of reasoning based on the

@@ -317,6 +317,9 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   IntegerValue LevelZeroStartMax(int t) const {
     return integer_trail_->LevelZeroUpperBound(starts_[t]);
   }
+  IntegerValue LevelZeroEndMax(int t) const {
+    return integer_trail_->LevelZeroUpperBound(ends_[t]);
+  }
 
   // In the presence of tasks with a variable size, we do not necessarily
   // have start_min + size_min = end_min, we can instead have a situation
@@ -612,8 +615,12 @@ class SchedulingDemandHelper {
   // this.
   IntegerValue DemandMin(int t) const;
   IntegerValue DemandMax(int t) const;
+  IntegerValue LevelZeroDemandMin(int t) const {
+    return integer_trail_->LevelZeroLowerBound(demands_[t]);
+  }
   bool DemandIsFixed(int t) const;
   void AddDemandMinReason(int t);
+  void AddDemandMinReason(int t, IntegerValue min_demand);
   const std::vector<AffineExpression>& Demands() const { return demands_; }
 
   // Adds the linearized demand (either the affine demand expression, or the

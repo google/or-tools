@@ -1319,7 +1319,6 @@ void SharedStatistics::Log(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (stats_.empty()) return;
 
-  SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Stats across workers (summed):");
   std::vector<std::pair<std::string, int64_t>> to_sort_;
   for (const auto& [key, count] : stats_) {
@@ -1329,6 +1328,7 @@ void SharedStatistics::Log(SolverLogger* logger) {
   for (const auto& [key, count] : to_sort_) {
     SOLVER_LOG(logger, "  ", key, ": ", FormatCounter(count));
   }
+  SOLVER_LOG(logger, "");
 }
 
 }  // namespace sat

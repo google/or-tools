@@ -14,14 +14,23 @@
 #include "ortools/sat/cumulative_energy.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/logging.h"
+#include "ortools/sat/2d_orthogonal_packing.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -38,6 +47,19 @@ void AddCumulativeOverloadChecker(AffineExpression capacity,
       new CumulativeEnergyConstraint(capacity, helper, demands, model);
   constraint->RegisterWith(watcher);
   model->TakeOwnership(constraint);
+}
+
+void AddCumulativeOverloadCheckerDff(AffineExpression capacity,
+                                     SchedulingConstraintHelper* helper,
+                                     SchedulingDemandHelper* demands,
+                                     Model* model) {
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+
+  CumulativeDualFeasibleEnergyConstraint* constraint_dff =
+      new CumulativeDualFeasibleEnergyConstraint(capacity, helper, demands,
+                                                 model);
+  constraint_dff->RegisterWith(watcher);
+  model->TakeOwnership(constraint_dff);
 }
 
 CumulativeEnergyConstraint::CumulativeEnergyConstraint(
@@ -365,6 +387,242 @@ void CumulativeIsAfterSubsetConstraint::RegisterWith(
       watcher->WatchLiteral(helper_->PresenceLiteral(t), id);
     }
   }
+}
+
+CumulativeDualFeasibleEnergyConstraint::CumulativeDualFeasibleEnergyConstraint(
+    AffineExpression capacity, SchedulingConstraintHelper* helper,
+    SchedulingDemandHelper* demands, Model* model)
+    : random_(model->GetOrCreate<ModelRandomGenerator>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()),
+      opp_infeasibility_detector_(*random_, shared_stats_),
+      capacity_(capacity),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      helper_(helper),
+      demands_(demands) {
+  const int num_tasks = helper_->NumTasks();
+  task_to_start_event_.resize(num_tasks);
+}
+
+CumulativeDualFeasibleEnergyConstraint::
+    ~CumulativeDualFeasibleEnergyConstraint() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back(
+      {"CumulativeDualFeasibleEnergyConstraint/called", num_calls_});
+  stats.push_back(
+      {"CumulativeDualFeasibleEnergyConstraint/conflicts", num_conflicts_});
+  stats.push_back({"CumulativeDualFeasibleEnergyConstraint/no_potential_window",
+                   num_no_potential_window_});
+
+  shared_stats_->AddStats(stats);
+}
+
+void CumulativeDualFeasibleEnergyConstraint::RegisterWith(
+    GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  helper_->WatchAllTasks(id, watcher);
+  watcher->SetPropagatorPriority(id, 3);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
+}
+
+bool CumulativeDualFeasibleEnergyConstraint::FindAndPropagateConflict(
+    IntegerValue window_start, IntegerValue window_end) {
+  const int num_tasks = helper_->NumTasks();
+  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
+  std::vector<IntegerValue> sizes;
+  std::vector<IntegerValue> demands;
+  std::vector<int> index_to_task;
+  sizes.reserve(num_tasks);
+  demands.reserve(num_tasks);
+  index_to_task.reserve(num_tasks);
+  for (int task = 0; task < num_tasks; ++task) {
+    if (!helper_->IsPresent(task) || demands_->DemandMin(task) == 0) {
+      continue;
+    }
+    const IntegerValue size = Smallest1DIntersection(
+        helper_->StartMin(task), helper_->EndMax(task), helper_->SizeMin(task),
+        window_start, window_end);
+    if (size == 0) continue;
+
+    sizes.push_back(size);
+    demands.push_back(demands_->DemandMin(task));
+    index_to_task.push_back(task);
+  }
+  auto result = opp_infeasibility_detector_.TestFeasibility(
+      sizes, demands, {window_end - window_start, capacity_max},
+      OrthogonalPackingOptions{
+          .use_pairwise = true,
+          .use_dff_f0 = true,
+          .use_dff_f2 = true,
+          // Disable brute force which is correct only for bin packing.
+          .brute_force_threshold = 0,
+          .dff2_max_number_of_parameters_to_check = 100});
+
+  if (result.GetResult() != OrthogonalPackingResult::Status::INFEASIBLE) {
+    return true;
+  }
+  VLOG_EVERY_N_SEC(2, 3) << "Found a conflict on the sub-problem of window ["
+                         << window_start << ", " << window_end << "] (with "
+                         << sizes.size() << "/" << num_tasks << " tasks)"
+                         << " with "
+                         << result.GetItemsParticipatingOnConflict().size()
+                         << " tasks participating on the conflict.";
+
+  const auto& items = result.GetItemsParticipatingOnConflict();
+  for (int i = 0; i < items.size(); ++i) {
+    const int task = index_to_task[items[i].index];
+    const IntegerValue size_zero_level = Smallest1DIntersection(
+        helper_->LevelZeroStartMin(task), helper_->LevelZeroEndMax(task),
+        helper_->SizeMin(task), window_start, window_end);
+
+    result.TryUseSlackToReduceItemSize(
+        i, OrthogonalPackingResult::Coord::kCoordX, size_zero_level);
+    result.TryUseSlackToReduceItemSize(i,
+                                       OrthogonalPackingResult::Coord::kCoordY,
+                                       demands_->LevelZeroDemandMin(task));
+  }
+  helper_->ClearReason();
+  for (const auto& item : result.GetItemsParticipatingOnConflict()) {
+    const int task = index_to_task[item.index];
+
+    const IntegerValue full_x_size = helper_->SizeMin(task);
+    const IntegerValue size_slack = full_x_size - item.size_x;
+
+    helper_->AddStartMinReason(task, window_start - size_slack);
+    helper_->AddEndMaxReason(task, window_end + size_slack);
+
+    helper_->AddSizeMinReason(task);
+    helper_->AddPresenceReason(task);
+
+    demands_->AddDemandMinReason(task, item.size_y);
+  }
+  if (capacity_.var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        integer_trail_->UpperBoundAsLiteral(capacity_.var));
+  }
+  return helper_->ReportConflict();
+}
+
+bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
+  if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
+  demands_->CacheAllEnergyValues();
+
+  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
+  if (capacity_max <= 0) return true;
+
+  // Set up theta tree.
+  start_event_task_time_.clear();
+  int num_events = 0;
+  for (const auto task_time : helper_->TaskByIncreasingStartMin()) {
+    const int task = task_time.task_index;
+    if (!helper_->IsPresent(task) || demands_->DemandMin(task) == 0) {
+      task_to_start_event_[task] = -1;
+      continue;
+    }
+    start_event_task_time_.emplace_back(task_time);
+    task_to_start_event_[task] = num_events;
+    num_events++;
+  }
+
+  if (num_events == 0) return true;
+  ++num_calls_;
+
+  const IntegerValue largest_window =
+      helper_->EndMax(helper_->TaskByDecreasingEndMax().front().task_index) -
+      helper_->TaskByIncreasingStartMin().front().time;
+  const IntegerValue max_for_fixpoint_inverse =
+      std::numeric_limits<IntegerValue>::max() /
+      (num_events * capacity_max * largest_window);
+
+  theta_tree_.Reset(num_events);
+
+  // Since checking all possible dual-feasible functions is expensive, we only
+  // look for energy conflicts on time windows where a conflict with a DFF is
+  // possible. To rule out time windows where DFF conflicts are impossible, we
+  // use the following nice property stated in [1]:
+  //
+  // If f is a DFF, then for all possible sizes h_i of a problem of height H:
+  //    f(h_i)/f(H) <= 1 / floor(H / h_i).
+  //
+  // This follows from the fact that floor(H / h_i) copies of h_i can fit
+  // sideways on the original problem and that those copies must still fit after
+  // any arbitrary DFF is applied.
+  //
+  // So, in practice, for a cumulative constraint with maximum capacity C and
+  // demands d_i, we look for time windows with energy conflicts for the
+  // modified problem:
+  //   Capacity: L
+  //   Demand for item i: L / (C / d_i)
+  // where L is any sufficiently large integer used to compute inverses without
+  // losing too much precision.
+  //
+  // [1] Carlier, Jacques, François Clautiaux, and Aziz Moukrim. "New reduction
+  // procedures and lower bounds for the two-dimensional bin packing problem
+  // with fixed orientation." Computers & Operations Research 34.8 (2007):
+  // 2223-2250.
+  std::vector<std::pair<IntegerValue, IntegerValue>> candidates_for_conflict;
+  const auto by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
+  for (const auto [current_task, current_end] :
+       ::gtl::reversed_view(by_decreasing_end_max)) {
+    if (task_to_start_event_[current_task] == -1) continue;
+    if (!helper_->IsPresent(current_task)) continue;
+
+    // Add the current task to the tree.
+    {
+      const IntegerValue current_pseudo_energy =
+          helper_->SizeMin(current_task) *
+          (max_for_fixpoint_inverse /
+           (capacity_max / demands_->DemandMin(current_task)));
+      const int current_event = task_to_start_event_[current_task];
+      const IntegerValue start_min = start_event_task_time_[current_event].time;
+      theta_tree_.AddOrUpdateEvent(
+          current_event, start_min * max_for_fixpoint_inverse,
+          current_pseudo_energy, current_pseudo_energy);
+    }
+
+    {
+      // Find the critical interval.
+      const IntegerValue envelope = theta_tree_.GetEnvelope();
+      const int critical_event =
+          theta_tree_.GetMaxEventWithEnvelopeGreaterThan(envelope - 1);
+      const IntegerValue window_start =
+          start_event_task_time_[critical_event].time;
+      const IntegerValue window_end = current_end;
+      const IntegerValue window_size = window_end - window_start;
+      if (window_size == 0) continue;
+
+      if (envelope > window_end * max_for_fixpoint_inverse) {
+        candidates_for_conflict.push_back({window_start, window_end});
+      }
+    }
+  }
+  VLOG_EVERY_N_SEC(2, 3) << "Found " << candidates_for_conflict.size()
+                         << " intervals with potential energy conflict using a "
+                            "DFF on a problem of size "
+                         << num_events << ".";
+
+  if (candidates_for_conflict.empty()) {
+    ++num_no_potential_window_;
+    return true;
+  }
+  // The code above is efficient for pruning the initial problem to a set of
+  // windows with potential conflict, but it might produce some "overly large"
+  // windows: ie., a window that has no conflict but would show one if narrowed.
+  //
+  // TODO(user): explore with using Theta-trees with a multi-valued energy
+  // value.
+  absl::InlinedVector<std::pair<IntegerValue, IntegerValue>, 3>
+      sampled_candidates;
+  std::sample(candidates_for_conflict.begin(), candidates_for_conflict.end(),
+              std::back_inserter(sampled_candidates), 3, *random_);
+  for (const auto& [window_start, window_end] : sampled_candidates) {
+    if (!FindAndPropagateConflict(window_start, window_end)) {
+      ++num_conflicts_;
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace sat

@@ -290,7 +290,7 @@ HittingSetOptimizer::ComputeAdditionalVariablesToExtract() {
 }
 
 void HittingSetOptimizer::ProjectAndAddAtMostOne(
-    const std::vector<Literal>& literals) {
+    absl::Span<const Literal> literals) {
   LinearConstraintBuilder builder(model_, 0, 1);
   for (const Literal& literal : literals) {
     if (!builder.AddLiteralTerm(literal, 1)) {
