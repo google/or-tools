@@ -23,6 +23,7 @@
 #include "absl/base/casts.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/mathlimits.h"
 
 namespace operations_research {
 class MathUtil {
@@ -133,6 +134,21 @@ class MathUtil {
     }
     return static_cast<IntOut>(x < 0 ? (x - 0.5) : (x + 0.5));
   }
+
+  // Returns the minimum integer value which is a multiple of rounding_value,
+  // and greater than or equal to input_value.
+  // The input_value must be greater than or equal to zero, and the
+  // rounding_value must be greater than zero.
+  template <typename IntType>
+    static IntType RoundUpTo(IntType input_value, IntType rounding_value) {
+      static_assert(MathLimits<IntType>::kIsInteger,
+          "RoundUpTo() operation type is not integer");
+      DCHECK_GE(input_value, 0);
+      DCHECK_GT(rounding_value, 0);
+      const IntType remainder = input_value % rounding_value;
+      return (remainder == 0) ? input_value
+        : (input_value - remainder + rounding_value);
+    }
 
   static int64_t FastInt64Round(double x) { return Round<int64_t>(x); }
 };
