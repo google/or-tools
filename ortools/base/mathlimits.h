@@ -24,7 +24,8 @@ namespace operations_research {
 // Useful integer and floating point limits and type traits.
 // This is just for the documentation;
 // real members are defined in our specializations below.
-template<typename T> struct MathLimits {
+template <typename T>
+struct MathLimits {
   // Type name.
   typedef T Type;
   // Unsigned version of the Type with the same byte size.

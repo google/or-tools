@@ -11,8 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -21,11 +22,8 @@ namespace operations_research {
 double MathUtil::Stirling(double n) {
   static const double kLog2Pi = log(2 * M_PI);
   const double logN = log(n);
-  return (n * logN
-          - n
-          + 0.5 * (kLog2Pi + logN)      // 0.5 * log(2 * M_PI * n)
-          + 1 / (12 * n)
-          - 1 / (360 * n * n * n));
+  return (n * logN - n + 0.5 * (kLog2Pi + logN)  // 0.5 * log(2 * M_PI * n)
+          + 1 / (12 * n) - 1 / (360 * n * n * n));
 }
 
 double MathUtil::LogCombinations(int n, int k) {

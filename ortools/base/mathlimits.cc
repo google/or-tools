@@ -35,8 +35,7 @@ DEF_UNSIGNED_INT_LIMITS(Type) \
 const Type MathLimits<Type>::kNegMin; \
 const Type MathLimits<Type>::kNegMax;
 
-#define DEF_PRECISION_LIMITS(Type) \
-const int MathLimits<Type>::kPrecisionDigits;
+#define DEF_PRECISION_LIMITS(Type) const int MathLimits<Type>::kPrecisionDigits;
 
 // http://en.wikipedia.org/wiki/Quadruple_precision_floating-point_format#Double-double_arithmetic
 // With some compilers (gcc 4.6.x) on some platforms (powerpc64),
