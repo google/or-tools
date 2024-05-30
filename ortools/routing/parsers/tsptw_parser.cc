@@ -66,7 +66,7 @@ TspTWParser::TspTWParser()
       distance_function_(nullptr),
       time_function_(nullptr) {}
 
-bool TspTWParser::LoadFile(const std::string& file_name) {
+bool TspTWParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   coords_.clear();

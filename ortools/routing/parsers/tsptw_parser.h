@@ -35,7 +35,7 @@ class TspTWParser final {
  public:
   TspTWParser();
   // Loads and parses a routing problem from a given file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Returns a function returning the distance between nodes. On some instances
   // service times are already included in values returned by this function.
   // The actual distance of a route can be obtained by removing
