@@ -95,17 +95,17 @@ SetCoverModel ReadBeasleySetCoverProblem(absl::string_view filename) {
   File* file(file::OpenOrDie(filename, "r", file::Defaults()));
   SetCoverReader reader(file);
   const ElementIndex num_rows(reader.ParseNextInteger());
-  const int num_cols(reader.ParseNextInteger());
-  model.ReserveNumSubsets(num_cols);
-  for (int i = 0; i < num_cols; ++i) {
+  const SubsetIndex num_cols(reader.ParseNextInteger());
+  model.ReserveNumSubsets(num_cols.value());
+  for (SubsetIndex subset : SubsetRange(num_cols)) {
     const double cost(reader.ParseNextDouble());
-    model.SetSubsetCost(i, cost);
+    model.SetSubsetCost(subset.value(), cost);
   }
-  for (int element(0); element < num_rows; ++element) {
-    const EntryIndex row_size(reader.ParseNextInteger());
-    for (EntryIndex entry(0); entry < row_size; ++entry) {
+  for (ElementIndex element : ElementRange(num_rows)) {
+    const RowEntryIndex row_size(reader.ParseNextInteger());
+    for (RowEntryIndex entry(0); entry < row_size; ++entry) {
       const int subset(reader.ParseNextInteger() - 1);
-      model.AddElementToSubset(element, subset);
+      model.AddElementToSubset(element.value(), subset);
     }
   }
   file->Close(file::Defaults()).IgnoreError();
@@ -122,11 +122,11 @@ SetCoverModel ReadRailSetCoverProblem(absl::string_view filename) {
   for (int i(0); i < num_cols; ++i) {
     const double cost(reader.ParseNextDouble());
     model.SetSubsetCost(i, cost);
-    const int column_size(reader.ParseNextInteger());
-    model.ReserveNumElementsInSubset(i, column_size);
-    for (EntryIndex entry(0); entry < column_size; ++entry) {
-      const int element(reader.ParseNextInteger() - 1);
-      model.AddElementToSubset(element, i);
+    const ColumnEntryIndex column_size(reader.ParseNextInteger());
+    model.ReserveNumElementsInSubset(i, column_size.value());
+    for (const ColumnEntryIndex _ : ColumnEntryRange(column_size)) {
+      const ElementIndex element(reader.ParseNextInteger() - 1);
+      model.AddElementToSubset(element.value(), i);
     }
   }
   file->Close(file::Defaults()).IgnoreError();

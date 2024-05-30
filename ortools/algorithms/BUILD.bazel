@@ -66,10 +66,10 @@ cc_library(
     hdrs = ["binary_search.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:dump_vars",
         "@com_google_absl//absl/functional:function_ref",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -249,8 +249,9 @@ cc_library(
     hdrs = ["set_cover_model.h"],
     deps = [
         ":set_cover_cc_proto",
-        "//ortools/lp_data:base",
-        "//ortools/util:strong_integers",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "//ortools/util:aligned_memory",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
@@ -308,6 +309,7 @@ cc_library(
     deps = [
         ":set_cover_model",
         "//ortools/base:file",
+        "//ortools/base:strong_vector",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -479,5 +481,38 @@ cc_test(
     deps = [
         ":binary_indexed_tree",
         "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "n_choose_k",
+    srcs = ["n_choose_k.cc"],
+    hdrs = ["n_choose_k.h"],
+    deps = [
+        ":binary_search",
+        "//ortools/base:mathutil",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+    ],
+)
+
+cc_test(
+    name = "n_choose_k_test",
+    srcs = ["n_choose_k_test.cc"],
+    deps = [
+        ":n_choose_k",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/util:flat_matrix",
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )

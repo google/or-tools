@@ -32,22 +32,22 @@
 namespace operations_research {
 
 void LogStats(std::string name, SetCoverModel* model) {
-  LOG(INFO) << name << ", num_elements, " << model->num_elements()
+  LOG(INFO) << ", " << name << ", num_elements, " << model->num_elements()
             << ", num_subsets, " << model->num_subsets();
-  LOG(INFO) << name << ", num_nonzeros, " << model->num_nonzeros()
+  LOG(INFO) << ", " << name << ", num_nonzeros, " << model->num_nonzeros()
             << ", fill rate, " << model->FillRate();
-  LOG(INFO) << name << ", num_rows, " << model->num_elements()
+  LOG(INFO) << ", " << name << ", num_rows, " << model->num_elements()
             << ", rows sizes, " << model->ComputeRowStats().DebugString();
-  LOG(INFO) << name << ", row size deciles, "
+  LOG(INFO) << ", " << name << ", row size deciles, "
             << absl::StrJoin(model->ComputeRowDeciles(), ", ");
-  LOG(INFO) << name << ", num_columns, " << model->num_subsets()
+  LOG(INFO) << ", " << name << ", num_columns, " << model->num_subsets()
             << ", columns sizes, " << model->ComputeColumnStats().DebugString();
-  LOG(INFO) << name << ", column size deciles, "
+  LOG(INFO) << ", " << name << ", column size deciles, "
             << absl::StrJoin(model->ComputeColumnDeciles(), ", ");
   SetCoverInvariant inv(model);
   Preprocessor preprocessor(&inv);
   preprocessor.NextSolution();
-  LOG(INFO) << name << ", num_columns_fixed_by_singleton_row, "
+  LOG(INFO) << ", " << name << ", num_columns_fixed_by_singleton_row, "
             << preprocessor.num_columns_fixed_by_singleton_row();
 }
 
@@ -59,12 +59,12 @@ SetCoverInvariant RunChvatalAndSteepest(std::string name,
   timer.Start();
   CHECK(greedy.NextSolution());
   DCHECK(inv.CheckConsistency());
-  LOG(INFO) << name << ", GreedySolutionGenerator_cost, " << inv.cost() << ", "
-            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  LOG(INFO) << ", " << name << ", GreedySolutionGenerator_cost, " << inv.cost()
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   SteepestSearch steepest(&inv);
   steepest.NextSolution(100000);
-  LOG(INFO) << name << ", GreedySteepestSearch_cost, " << inv.cost() << ", "
-            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  LOG(INFO) << ", " << name << ", GreedySteepestSearch_cost, " << inv.cost()
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   DCHECK(inv.CheckConsistency());
   return inv;
 }
@@ -77,12 +77,14 @@ SetCoverInvariant RunElementDegreeGreedyAndSteepest(std::string name,
   timer.Start();
   CHECK(element_degree.NextSolution());
   DCHECK(inv.CheckConsistency());
-  LOG(INFO) << name << ", ElementDegreeSolutionGenerator_cost, " << inv.cost()
-            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  LOG(INFO) << ", " << name << ", ElementDegreeSolutionGenerator_cost, "
+            << inv.cost() << ", "
+            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   SteepestSearch steepest(&inv);
   steepest.NextSolution(100000);
-  LOG(INFO) << name << ", ElementDegreeSteepestSearch_cost, " << inv.cost()
-            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  LOG(INFO) << ", " << name << ", ElementDegreeSteepestSearch_cost, "
+            << inv.cost() << ", "
+            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   DCHECK(inv.CheckConsistency());
   return inv;
 }
@@ -105,8 +107,8 @@ SetCoverInvariant IterateClearAndMip(std::string name, SetCoverInvariant inv) {
     }
   }
   timer.Stop();
-  LOG(INFO) << name << ", IterateClearAndMip_cost, " << best_cost << ", "
-            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  LOG(INFO) << ", " << name << ", IterateClearAndMip_cost, " << best_cost
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   return inv;
 }
 
@@ -119,9 +121,9 @@ SetCoverInvariant IterateClearElementDegreeAndSteepest(std::string name,
   SubsetBoolVector best_choices = inv.is_selected();
   ElementDegreeSolutionGenerator element_degree(&inv);
   SteepestSearch steepest(&inv);
-  for (int i = 0; i < 20; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     std::vector<SubsetIndex> range =
-        ClearMostCoveredElements(std::min(50UL, focus.size()), &inv);
+        ClearRandomSubsets(0.1 * inv.trace().size(), &inv);
     CHECK(element_degree.NextSolution());
     steepest.NextSolution(range, 100000);
     DCHECK(inv.CheckConsistency());
@@ -131,7 +133,7 @@ SetCoverInvariant IterateClearElementDegreeAndSteepest(std::string name,
     }
   }
   timer.Stop();
-  LOG(INFO) << name << ", IterateClearElementDegreeAndSteepest_cost, "
+  LOG(INFO) << ", " << name << ", IterateClearElementDegreeAndSteepest_cost, "
             << best_cost << ", "
             << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
   return inv;
@@ -207,7 +209,7 @@ const char data_dir[] =
         file::JoinPathRespectAbsolute(::testing::SrcDir(), data_dir, name); \
     LOG(INFO) << "Reading " << name;                                        \
     operations_research::SetCoverModel model = function(filespec);          \
-    for (int i = 0; i < model.num_subsets(); ++i) {                         \
+    for (SubsetIndex i : model.SubsetRange()) {                             \
       model.SetSubsetCost(i, 1.0);                                          \
     }                                                                       \
     double cost = RunSolver(absl::StrCat(name, "_unicost"), &model);        \
