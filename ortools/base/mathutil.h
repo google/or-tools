@@ -151,6 +151,17 @@ class MathUtil {
     }
 
   static int64_t FastInt64Round(double x) { return Round<int64_t>(x); }
+
+  // Returns Stirling's Approximation for log(n!) which has an error
+  // of at worst 1/(1260*n^5).
+  static double Stirling(double n);
+
+  // Returns the log of the binomial coefficient C(n, k), known in the
+  // vernacular as "N choose K".  Why log?  Because the integer number
+  // for non-trivial N and K would overflow.
+  // Note that if k > 15, this uses Stirling's approximation of log(n!).
+  // The relative error is about 1/(1260*k^5) (which is 7.6e-10 when k=16).
+  static double LogCombinations(int n, int k);
 };
 }  // namespace operations_research
 

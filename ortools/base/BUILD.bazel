@@ -361,6 +361,7 @@ cc_library(
 
 cc_library(
     name = "mathutil",
+    srcs = ["mathutil.cc"],
     hdrs = ["mathutil.h"],
     deps = [
         ":base",
