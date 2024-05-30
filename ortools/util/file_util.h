@@ -42,7 +42,7 @@ absl::Status ReadFileToProto(
     // boolean doesn't work for JSON inputs.
     bool allow_partial = false);
 
-// Exaclty like ReadFileToProto(), but directly from the contents.
+// Exactly like ReadFileToProto(), but directly from the contents.
 absl::Status StringToProto(absl::string_view data,
                            google::protobuf::Message* proto,
                            bool allow_partial = false);
