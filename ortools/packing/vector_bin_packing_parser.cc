@@ -27,7 +27,7 @@ namespace operations_research {
 namespace packing {
 namespace vbp {
 
-bool VbpParser::ParseFile(const std::string& data_filename) {
+bool VbpParser::ParseFile(absl::string_view data_filename) {
   vbp_.Clear();
 
   load_status_ = DIMENSION_SECTION;
