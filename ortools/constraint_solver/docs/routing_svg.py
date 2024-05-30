@@ -21,7 +21,7 @@ from ortools.routing import enums_pb2
 
 
 # [START data_model]
-class DataModel(object):  # pylint: disable=too-many-instance-attributes
+class DataModel:  # pylint: disable=too-many-instance-attributes
     """Stores the data for the problem."""
 
     def __init__(self, args):
@@ -516,7 +516,7 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
 ###########
 # Printer #
 ###########
-class GoogleColorPalette(object):
+class GoogleColorPalette:
     """Google color codes palette."""
 
     def __init__(self):
@@ -556,7 +556,7 @@ class GoogleColorPalette(object):
         return dict(self._colors)[name]
 
 
-class SVG(object):
+class SVG:
     """SVG draw primitives."""
 
     @staticmethod
@@ -659,7 +659,7 @@ class SVG(object):
         )
 
 
-class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
+class SVGPrinter:  # pylint: disable=too-many-instance-attributes
     """Generate Problem as svg file to stdout."""
 
     # pylint: disable=too-many-arguments

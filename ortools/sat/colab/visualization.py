@@ -40,7 +40,7 @@ def ToDate(v):
     return "2016-01-01 6:%02i:%02i" % (v / 60, v % 60)
 
 
-class ColorManager(object):
+class ColorManager:
     """Utility to create colors to use in visualization."""
 
     def ScaledColor(self, sr, sg, sb, er, eg, eb, num_steps, step):
@@ -105,7 +105,7 @@ def DisplayJobshop(starts, durations, machines, name):
     fig.show()
 
 
-class SvgWrapper(object):
+class SvgWrapper:
     """Simple SVG wrapper to use in colab."""
 
     def __init__(self, sizex, sizey, scaling=20.0):
