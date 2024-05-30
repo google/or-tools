@@ -401,15 +401,14 @@ export/archives: | export
 PLATFORMS := amd64 arm64 # riscv64
 
 # Currently supported distro
-# opensuse-leap # repo broken
-# fedora-39 # Still waiting microsoft dotnet pkg
 DISTROS := \
  alpine-edge \
  archlinux \
  centos-7 \
- debian-11 debian-12 debian-13 debian-sid \
+ debian-11 debian-12 debian-sid \
  fedora-37 fedora-38 fedora-39 \
- ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04
+ ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04 \
+ opensuse-leap
 
 # List of stages
 STAGES := env devel
