@@ -353,6 +353,13 @@ cc_library(
 )
 
 cc_library(
+    name = "mathlimits",
+    srcs = ["mathlimits.cc"],
+    hdrs = ["mathlimits.h"],
+    deps = [],
+)
+
+cc_library(
     name = "mathutil",
     hdrs = ["mathutil.h"],
     deps = [
