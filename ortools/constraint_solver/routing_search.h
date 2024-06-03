@@ -14,9 +14,8 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_SEARCH_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_SEARCH_H_
 
-#include <sys/types.h>
-
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -33,7 +32,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"

@@ -627,7 +627,8 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
     const int64_t size = nexts.size();
     sink_handler = [size](int64_t index) { return index >= size; };
   }
-  return RevAlloc(new NoCycle(this, nexts, active, sink_handler, assume_paths));
+  return RevAlloc(
+      new NoCycle(this, nexts, active, std::move(sink_handler), assume_paths));
 }
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,

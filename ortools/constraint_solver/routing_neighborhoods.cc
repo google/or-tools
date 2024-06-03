@@ -460,8 +460,9 @@ LightPairRelocateOperator::LightPairRelocateOperator(
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs,
     std::function<bool(int64_t)> force_lifo)
-    : LightPairRelocateOperator(vars, secondary_vars, start_empty_path_class,
-                                nullptr, pairs, std::move(force_lifo)) {}
+    : LightPairRelocateOperator(vars, secondary_vars,
+                                std::move(start_empty_path_class), nullptr,
+                                pairs, std::move(force_lifo)) {}
 
 bool LightPairRelocateOperator::MakeNeighbor() {
   const auto do_move = [this](int64_t node, int64_t destination,

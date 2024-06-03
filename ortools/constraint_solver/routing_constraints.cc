@@ -235,9 +235,9 @@ class ResourceAssignmentConstraint : public Constraint {
             s, this, &ResourceAssignmentConstraint::ResourceBound,
             "ResourceBound", v);
         resource_var->WhenBound(demon);
-        }
       }
     }
+  }
   void ResourceBound(int vehicle) {
     const int64_t resource = vehicle_resource_vars_[vehicle]->Value();
     if (resource < 0) return;
@@ -254,7 +254,7 @@ class ResourceAssignmentConstraint : public Constraint {
       dim->CumulVar(model_.End(vehicle))
           ->SetRange(attributes.end_domain().Min(),
                      attributes.end_domain().Max());
-  }
+    }
   }
 
   const RoutingModel& model_;
@@ -632,8 +632,8 @@ Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
   RoutingModel* const model = dimension->model();
   CHECK_EQ(model->vehicles(), spans.size());
   CHECK_EQ(model->vehicles(), total_slacks.size());
-  return model->solver()->RevAlloc(
-      new PathSpansAndTotalSlacks(model, dimension, spans, total_slacks));
+  return model->solver()->RevAlloc(new PathSpansAndTotalSlacks(
+      model, dimension, std::move(spans), std::move(total_slacks)));
 }
 
 namespace {

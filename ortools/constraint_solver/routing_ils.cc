@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <random>
 #include <utility>
 #include <vector>
@@ -38,6 +39,9 @@
 namespace operations_research {
 namespace {
 
+// Returns global cheapest insertion parameters based on the given search
+// parameters.
+// TODO(user): consider having an ILS specific set of parameters.
 GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
 MakeGlobalCheapestInsertionParameters(
     const RoutingSearchParameters& search_parameters, bool is_sequential) {
@@ -58,6 +62,8 @@ MakeGlobalCheapestInsertionParameters(
   return gci_parameters;
 }
 
+// Returns savings parameters based on the given search parameters.
+// TODO(user): consider having an ILS specific set of parameters.
 SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
     const RoutingSearchParameters& search_parameters) {
   SavingsFilteredHeuristic::SavingsParameters savings_parameters;
@@ -240,6 +246,7 @@ class LinearCoolingSchedule : public CoolingSchedule {
   }
 };
 
+// Returns a cooling schedule based on the given input parameters.
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
     const RoutingModel& model, const RoutingSearchParameters& parameters,
     std::mt19937* rnd) {
@@ -300,6 +307,17 @@ class SimulatedAnnealingAcceptanceCriterion
   std::uniform_real_distribution<double> probability_distribution_;
 };
 
+// Returns whether the given assignment has at least one performed node.
+bool HasPerformedNodes(const RoutingModel& model,
+                       const Assignment& assignment) {
+  for (int v = 0; v < model.vehicles(); ++v) {
+    if (model.Next(assignment, model.Start(v)) != model.End(v)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
@@ -307,8 +325,9 @@ CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
     int num_neighbors_for_route_selection)
     : model_(*model),
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
-          num_neighbors_for_route_selection,
-          /*add_vehicle_starts_to_neighbors=*/false)),
+          {num_neighbors_for_route_selection,
+           /*add_vehicle_starts_to_neighbors=*/false,
+           /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
       num_routes_(num_routes),
       rnd_(*rnd),
       customer_dist_(0, model->Size() - 1),
@@ -318,7 +337,7 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
     const Assignment* assignment) {
   removed_routes_.SparseClearAll();
 
-  if (num_routes_ > 0 && HasPerformedNodes(assignment)) {
+  if (num_routes_ > 0 && HasPerformedNodes(model_, *assignment)) {
     int64_t seed_node;
     int seed_route = -1;
     do {
@@ -361,14 +380,238 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
   };
 }
 
-bool CloseRoutesRemovalRuinProcedure::HasPerformedNodes(
+RandomWalkRemovalRuinProcedure::RandomWalkRemovalRuinProcedure(
+    RoutingModel* model, std::mt19937* rnd, int walk_length,
+    int num_neighbors_for_route_selection)
+    : model_(*model),
+      routing_solution_(*model),
+      neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
+          {num_neighbors_for_route_selection,
+           /*add_vehicle_starts_to_neighbors=*/false,
+           /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
+      rnd_(*rnd),
+      walk_length_(walk_length),
+      customer_dist_(0, model->Size() - 1) {}
+
+std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
     const Assignment* assignment) {
-  for (int v = 0; v < model_.vehicles(); ++v) {
-    if (model_.Next(*assignment, model_.Start(v)) != model_.End(v)) {
-      return true;
-    }
+  if (!HasPerformedNodes(model_, *assignment)) {
+    return [&model = model_, assignment](int64_t node) {
+      return assignment->Value(model.NextVar(node));
+    };
   }
-  return false;
+
+  routing_solution_.Reset(assignment);
+
+  int64_t seed_node;
+  do {
+    seed_node = customer_dist_(rnd_);
+  } while (model_.IsStart(seed_node) ||
+           assignment->Value(model_.VehicleVar(seed_node)) == -1);
+  DCHECK(!model_.IsEnd(seed_node));
+
+  int64_t curr_node = seed_node;
+
+  // TODO(user): consider whether this should remain fixed or can vary at
+  // every ruin.
+  int walk_length = walk_length_;
+
+  while (walk_length-- > 0) {
+    // Remove the active siblings node of curr before selecting next, so that
+    // we do not accidentally end up with next being one of these sibling
+    // nodes.
+    RemovePickupDeliverySiblings(assignment, curr_node);
+
+    const int64_t next_node = GetNextNodeToRemove(assignment, curr_node);
+
+    routing_solution_.RemoveNode(curr_node);
+
+    if (next_node == -1) {
+      // We were not able to find a vertex where to move next.
+      // We thus prematurely abort the ruin.
+      break;
+    }
+
+    curr_node = next_node;
+  }
+
+  return
+      [this](int64_t node) { return routing_solution_.GetNextNodeIndex(node); };
+}
+
+void RandomWalkRemovalRuinProcedure::RemovePickupDeliverySiblings(
+    const Assignment* assignment, int node) {
+  if (const std::optional<int64_t> sibling_node =
+          model_.GetFirstMatchingPickupDeliverySibling(
+              node,
+              [&routing_solution = routing_solution_](int64_t node) {
+                return routing_solution.CanBeRemoved(node);
+              });
+      sibling_node.has_value()) {
+    const int sibling_vehicle =
+        assignment->Value(model_.VehicleVar(sibling_node.value()));
+    DCHECK_NE(sibling_vehicle, -1);
+
+    routing_solution_.InitializeRouteInfoIfNeeded(sibling_vehicle);
+    routing_solution_.RemoveNode(sibling_node.value());
+  }
+}
+
+int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
+    const Assignment* assignment, int node) {
+  const int curr_vehicle = assignment->Value(model_.VehicleVar(node));
+  routing_solution_.InitializeRouteInfoIfNeeded(curr_vehicle);
+
+  if (!routing_solution_.IsSingleCustomerRoute(curr_vehicle) &&
+      boolean_dist_(rnd_)) {
+    const bool move_forward = boolean_dist_(rnd_);
+    int64_t next_node =
+        move_forward ? routing_solution_.GetNextNodeIndex(node)
+                     : routing_solution_.GetInitializedPrevNodeIndex(node);
+    if (model_.IsStart(next_node) || model_.IsEnd(next_node)) {
+      // The Next or Prev of the node is a vehicle start/end, so we go in the
+      // opposite direction from before (and since the route isn't a
+      // single-customer route we shouldn't have a start/end again).
+      next_node = move_forward
+                      ? routing_solution_.GetInitializedPrevNodeIndex(node)
+                      : routing_solution_.GetNextNodeIndex(node);
+    }
+    DCHECK(!model_.IsStart(next_node));
+    DCHECK(!model_.IsEnd(next_node));
+    return next_node;
+  }
+
+  // Pick the next node by jumping to a neighboring (non empty) route,
+  // otherwise.
+  const RoutingCostClassIndex cost_class_index =
+      model_.GetCostClassIndexOfVehicle(curr_vehicle);
+
+  const std::vector<int>& neighbors =
+      neighbors_manager_->GetNeighborsOfNodeForCostClass(
+          cost_class_index.value(), node);
+
+  int64_t same_route_closest_neighbor = -1;
+
+  for (int neighbor : neighbors) {
+    const int neighbor_vehicle = assignment->Value(model_.VehicleVar(neighbor));
+
+    if (!routing_solution_.CanBeRemoved(neighbor)) {
+      continue;
+    }
+
+    if (neighbor_vehicle == curr_vehicle) {
+      if (same_route_closest_neighbor == -1) {
+        same_route_closest_neighbor = neighbor;
+      }
+      continue;
+    }
+
+    return neighbor;
+  }
+
+  // If we are not able to find a customer in another route, we are ok
+  // with taking a customer from the current one.
+  // Note that it can be -1 if no removable neighbor was found for the input
+  // node.
+  return same_route_closest_neighbor;
+}
+
+RandomWalkRemovalRuinProcedure::RoutingSolution::RoutingSolution(
+    const RoutingModel& model)
+    : model_(model) {
+  const int all_nodes = model.Size() + model.vehicles();
+
+  nexts_.resize(all_nodes, -1);
+  prevs_.resize(all_nodes, -1);
+}
+
+void RandomWalkRemovalRuinProcedure::RoutingSolution::Reset(
+    const Assignment* assignment) {
+  assignment_ = assignment;
+
+  // TODO(user): consider resetting only previously set values.
+  nexts_.assign(nexts_.size(), -1);
+  prevs_.assign(prevs_.size(), -1);
+}
+
+void RandomWalkRemovalRuinProcedure::RoutingSolution::
+    InitializeRouteInfoIfNeeded(int vehicle) {
+  const int64_t start = model_.Start(vehicle);
+
+  if (BelongsToInitializedRoute(start)) {
+    return;
+  }
+
+  const int64_t end = model_.End(vehicle);
+
+  int64_t prev = end;
+  int64_t curr = start;
+
+  // Setup the start and inner nodes.
+  while (curr != end) {
+    const int64_t next = assignment_->Value(model_.NextVar(curr));
+
+    nexts_[curr] = next;
+    prevs_[curr] = prev;
+
+    prev = curr;
+    curr = next;
+  }
+
+  // Setup the end node.
+  nexts_[end] = start;
+  prevs_[end] = prev;
+}
+
+bool RandomWalkRemovalRuinProcedure::RoutingSolution::BelongsToInitializedRoute(
+    int64_t node_index) const {
+  DCHECK_EQ(nexts_[node_index] != -1, prevs_[node_index] != -1);
+  return nexts_[node_index] != -1;
+}
+
+int64_t RandomWalkRemovalRuinProcedure::RoutingSolution::GetNextNodeIndex(
+    int64_t node_index) const {
+  return BelongsToInitializedRoute(node_index)
+             ? nexts_[node_index]
+             : assignment_->Value(model_.NextVar(node_index));
+}
+
+int64_t
+RandomWalkRemovalRuinProcedure::RoutingSolution::GetInitializedPrevNodeIndex(
+    int64_t node_index) const {
+  DCHECK(BelongsToInitializedRoute(node_index));
+  return prevs_[node_index];
+}
+
+bool RandomWalkRemovalRuinProcedure::RoutingSolution::IsSingleCustomerRoute(
+    int vehicle) const {
+  const int64_t start = model_.Start(vehicle);
+  DCHECK(BelongsToInitializedRoute(start));
+
+  return nexts_[nexts_[start]] == model_.End(vehicle);
+}
+
+bool RandomWalkRemovalRuinProcedure::RoutingSolution::CanBeRemoved(
+    int64_t node_index) const {
+  return !model_.IsStart(node_index) && !model_.IsEnd(node_index) &&
+         GetNextNodeIndex(node_index) != node_index;
+}
+
+void RandomWalkRemovalRuinProcedure::RoutingSolution::RemoveNode(
+    int64_t node_index) {
+  DCHECK(BelongsToInitializedRoute(node_index));
+
+  DCHECK_NE(nexts_[node_index], node_index);
+  DCHECK_NE(prevs_[node_index], node_index);
+
+  const int64_t next = nexts_[node_index];
+  const int64_t prev = prevs_[node_index];
+
+  nexts_[prev] = next;
+  prevs_[next] = prev;
+
+  nexts_[node_index] = node_index;
+  prevs_[node_index] = node_index;
 }
 
 class RuinAndRecreateDecisionBuilder : public DecisionBuilder {

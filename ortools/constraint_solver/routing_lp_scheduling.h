@@ -976,11 +976,12 @@ class GlobalDimensionCumulOptimizer {
 // COMPLEXITY: in practice, should be roughly
 // O(num_resource_classes * vehicles.size() + resource_indices->size()).
 int64_t ComputeBestVehicleToResourceAssignment(
-    const std::vector<int>& vehicles,
+    absl::Span<const int> vehicles,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             std::vector<int>>& resource_indices_per_class,
+                                    std::vector<int>>&
+        resource_indices_per_class,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             absl::flat_hash_set<int>>&
+                                    absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     std::function<const std::vector<int64_t>*(int)>
         vehicle_to_resource_class_assignment_costs,
@@ -998,7 +999,7 @@ int64_t ComputeBestVehicleToResourceAssignment(
 bool ComputeVehicleToResourceClassAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             absl::flat_hash_set<int>>&
+                                    absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,

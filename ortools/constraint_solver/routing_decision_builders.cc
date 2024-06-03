@@ -370,8 +370,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       }
     }
     const bool use_mp_optimizer =
-        dimension_.HasBreakConstraints() &&
-        !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty();
+        dimension_.HasQuadraticCostSoftSpanUpperBounds() ||
+        (dimension_.HasBreakConstraints() &&
+         !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty());
     LocalDimensionCumulOptimizer* const optimizer =
         use_mp_optimizer ? mp_optimizer_ : lp_optimizer_;
     DCHECK_NE(optimizer, nullptr);
@@ -407,7 +408,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
   bool ComputeVehicleResourceClassValuesAndIndices(
-      const std::vector<int>& vehicles_to_assign,
+      absl::Span<const int> vehicles_to_assign,
       const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>&
           used_resources_per_class,
       const std::function<int64_t(int64_t)>& next_accessor,

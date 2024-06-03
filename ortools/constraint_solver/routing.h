@@ -158,12 +158,12 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <tuple>
@@ -191,7 +191,6 @@
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/theta_tree.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -936,8 +935,7 @@ class RoutingModel {
   /// Adds a soft constraint to force a set of variable indices to be on the
   /// same vehicle. If all nodes are not on the same vehicle, each extra vehicle
   /// used adds 'cost' to the cost function.
-  void AddSoftSameVehicleConstraint(const std::vector<int64_t>& indices,
-                                    int64_t cost);
+  void AddSoftSameVehicleConstraint(std::vector<int64_t> indices, int64_t cost);
 
   /// Sets the vehicles which can visit a given node. If the node is in a
   /// disjunction, this will not prevent it from being unperformed.
@@ -1028,6 +1026,12 @@ class RoutingModel {
     return implicit_pickup_delivery_pairs_without_alternatives_;
   }
 #endif  // SWIG
+
+  // Returns the first pickup or delivery sibling of the given node matching
+  // the given predicate.
+  std::optional<int64_t> GetFirstMatchingPickupDeliverySibling(
+      int64_t node, const std::function<bool(int64_t)>& is_match) const;
+
   /// Set the node visit types and incompatibilities/requirements between the
   /// types (see below).
   ///
@@ -1549,26 +1553,49 @@ class RoutingModel {
   /// Returns the sweep arranger to be used by routing heuristics.
   SweepArranger* sweep_arranger() const;
 #endif
+  struct NodeNeighborsParameters {
+    int num_neighbors;
+    bool add_vehicle_starts_to_neighbors = true;
+    // In NodeNeighborsByCostClass, neighbors for each node are sorted by
+    // increasing "cost" for each node. The following parameter determines if
+    // neighbors are sorted based on distance only when the neighborhood is
+    // partial, i.e. when num_neighbors entails that not all nodes are
+    // neighbors.
+    bool only_sort_neighbors_for_partial_neighborhoods = true;
+
+    bool operator==(const NodeNeighborsParameters& other) const {
+      return num_neighbors == other.num_neighbors &&
+             add_vehicle_starts_to_neighbors ==
+                 other.add_vehicle_starts_to_neighbors &&
+             only_sort_neighbors_for_partial_neighborhoods ==
+                 other.only_sort_neighbors_for_partial_neighborhoods;
+    }
+    template <typename H>
+    friend H AbslHashValue(H h, const NodeNeighborsParameters& params) {
+      return H::combine(std::move(h), params.num_neighbors,
+                        params.add_vehicle_starts_to_neighbors,
+                        params.only_sort_neighbors_for_partial_neighborhoods);
+    }
+  };
   class NodeNeighborsByCostClass {
    public:
     NodeNeighborsByCostClass() = default;
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
     /// routing_model.
-    void ComputeNeighbors(const RoutingModel& routing_model, int num_neighbors,
-                          bool add_vehicle_starts_to_neighbors);
+    void ComputeNeighbors(const RoutingModel& routing_model,
+                          const NodeNeighborsParameters& params);
     /// Returns the neighbors of the given node for the given cost_class.
     const std::vector<int>& GetNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
       return node_index_to_neighbors_by_cost_class_.empty()
                  ? all_nodes_
-                 : node_index_to_neighbors_by_cost_class_
-                                      [node_index][cost_class]
-                           ->PositionsSetAtLeastOnce();
+                 : node_index_to_neighbors_by_cost_class_[cost_class]
+                                                         [node_index];
     }
 
    private:
-    std::vector<std::vector<std::unique_ptr<SparseBitset<int>>>>
+    std::vector<std::vector<std::vector<int>>>
         node_index_to_neighbors_by_cost_class_;
     std::vector<int> all_nodes_;
   };
@@ -1579,12 +1606,12 @@ class RoutingModel {
   /// of min-neighbors node considered.
   const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
       double neighbors_ratio, int64_t min_neighbors,
-      double& neighbors_ratio_used,
-      bool add_vehicle_starts_to_neighbors = true);
+      double& neighbors_ratio_used, bool add_vehicle_starts_to_neighbors = true,
+      bool only_sort_neighbors_for_partial_neighborhoods = true);
   /// Returns parameters.num_neighbors neighbors of all nodes for every cost
   /// class. The result is cached and is computed once.
   const NodeNeighborsByCostClass* GetOrCreateNodeNeighborsByCostClass(
-      int num_neighbors, bool add_vehicle_starts_to_neighbors = true);
+      const NodeNeighborsParameters& params);
   /// Adds a custom local search filter to the list of filters used to speed up
   /// local search by pruning unfeasible variable assignments.
   /// Calling this method after the routing model has been closed (CloseModel()
@@ -1737,6 +1764,26 @@ class RoutingModel {
   const std::vector<int>& GetSameVehicleIndicesOfIndex(int node) const {
     DCHECK(closed_);
     return same_vehicle_groups_[same_vehicle_group_[node]];
+  }
+  /// Returns variable indices of nodes constrained to have the same activity.
+  const std::vector<int>& GetSameActivityIndicesOfIndex(int node) const {
+    DCHECK(closed_);
+    return same_active_var_groups_[same_active_var_group_[node]];
+  }
+  /// Returns the same activity group of the node.
+  int GetSameActivityGroupOfIndex(int node) const {
+    DCHECK(closed_);
+    return same_active_var_group_[node];
+  }
+  /// Returns the number of same activity groups.
+  int GetSameActivityGroupsCount() const {
+    DCHECK(closed_);
+    return same_active_var_groups_.size();
+  }
+  /// Returns variable indices of nodes in the same activity group.
+  const std::vector<int>& GetSameActivityIndicesOfGroup(int group) const {
+    DCHECK(closed_);
+    return same_active_var_groups_[group];
   }
 
   const VehicleTypeContainer& GetVehicleTypeContainer() const {
@@ -2329,6 +2376,15 @@ class RoutingModel {
     same_vehicle_groups_[group].push_back(index);
   }
 
+  void InitSameActiveVarGroups(int number_of_groups) {
+    same_active_var_group_.assign(Size(), 0);
+    same_active_var_groups_.assign(number_of_groups, {});
+  }
+  void SetSameActiveVarGroup(int index, int group) {
+    same_active_var_group_[index] = group;
+    same_active_var_groups_[group].push_back(index);
+  }
+
   /// Returns the internal global/local optimizer index for the given dimension
   /// if any, and -1 otherwise.
   int GetGlobalCumulOptimizerIndex(const RoutingDimension& dimension) const;
@@ -2451,6 +2507,10 @@ class RoutingModel {
   std::vector<int> same_vehicle_group_;
   // Same vehicle node groups.
   std::vector<std::vector<int>> same_vehicle_groups_;
+  // Same active var group to which a node belongs.
+  std::vector<int> same_active_var_group_;
+  // Same active var groups.
+  std::vector<std::vector<int>> same_active_var_groups_;
   // Node visit types
   // Variable index to visit type index.
   std::vector<int> index_to_visit_type_;
@@ -2553,21 +2613,6 @@ class RoutingModel {
   absl::flat_hash_map<FilterOptions, LocalSearchFilterManager*>
       local_search_filter_managers_;
   std::vector<LocalSearchFilterManager::FilterEvent> extra_filters_;
-  struct NodeNeighborsParameters {
-    int num_neighbors;
-    bool add_vehicle_starts_to_neighbors;
-
-    bool operator==(const NodeNeighborsParameters& other) const {
-      return num_neighbors == other.num_neighbors &&
-             add_vehicle_starts_to_neighbors ==
-                 other.add_vehicle_starts_to_neighbors;
-    }
-    template <typename H>
-    friend H AbslHashValue(H h, const NodeNeighborsParameters& params) {
-      return H::combine(std::move(h), params.num_neighbors,
-                        params.add_vehicle_starts_to_neighbors);
-    }
-  };
   absl::flat_hash_map<NodeNeighborsParameters,
                       std::unique_ptr<NodeNeighborsByCostClass>>
       node_neighbors_by_cost_class_per_size_;

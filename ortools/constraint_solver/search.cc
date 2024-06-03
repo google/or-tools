@@ -72,7 +72,6 @@ SearchLog::SearchLog(Solver* solver, std::vector<IntVar*> vars,
       display_callback_(std::move(display_callback)),
       display_on_new_solutions_only_(display_on_new_solutions_only),
       nsol_(0),
-      tick_(0),
       objective_min_(vars_.size(), std::numeric_limits<int64_t>::max()),
       objective_max_(vars_.size(), std::numeric_limits<int64_t>::min()),
       min_right_depth_(std::numeric_limits<int32_t>::max()),
@@ -92,11 +91,13 @@ void SearchLog::EnterSearch() {
   min_right_depth_ = std::numeric_limits<int32_t>::max();
   neighbors_offset_ = solver()->accepted_neighbors();
   nsol_ = 0;
+  last_objective_value_.clear();
+  last_objective_timestamp_ = timer_->GetDuration();
 }
 
 void SearchLog::ExitSearch() {
   const int64_t branches = solver()->branches();
-  int64_t ms = timer_->GetInMs();
+  int64_t ms = absl::ToInt64Milliseconds(timer_->GetDuration());
   if (ms == 0) {
     ms = 1;
   }
@@ -143,7 +144,23 @@ bool SearchLog::AtSolution() {
     absl::StrAppend(&obj_str, "objective = ", scaled_str(current), ", ");
     objective_updated = true;
   }
+  const absl::Duration now = timer_->GetDuration();
   if (objective_updated) {
+    if (!last_objective_value_.empty()) {
+      const int64_t elapsed_ms =
+          absl::ToInt64Milliseconds(now - last_objective_timestamp_);
+      for (int i = 0; i < current.size(); ++i) {
+        const double improvement_rate =
+            100.0 * 1000.0 * (current[i] - last_objective_value_[i]) /
+            std::max<int64_t>(1, last_objective_value_[i] * elapsed_ms);
+        absl::StrAppend(&obj_str, "improvement rate = ", improvement_rate,
+                        "%/s, ");
+        last_objective_value_[i] = current[i];
+      }
+    } else {
+      last_objective_value_ = current;
+    }
+    last_objective_timestamp_ = now;
     if (!objective_min_.empty() &&
         std::lexicographical_compare(objective_min_.begin(),
                                      objective_min_.end(), current.begin(),
@@ -170,7 +187,7 @@ bool SearchLog::AtSolution() {
   absl::StrAppendFormat(&log,
                         "Solution #%d (%stime = %d ms, branches = %d,"
                         " failures = %d, depth = %d",
-                        nsol_++, obj_str, timer_->GetInMs(),
+                        nsol_++, obj_str, absl::ToInt64Milliseconds(now),
                         solver()->branches(), solver()->failures(), depth);
   if (!solver()->SearchContext().empty()) {
     absl::StrAppendFormat(&log, ", %s", solver()->SearchContext());
@@ -203,7 +220,8 @@ void SearchLog::NoMoreSolutions() {
   std::string buffer = absl::StrFormat(
       "Finished search tree (time = %d ms, branches = %d,"
       " failures = %d",
-      timer_->GetInMs(), solver()->branches(), solver()->failures());
+      absl::ToInt64Milliseconds(timer_->GetDuration()), solver()->branches(),
+      solver()->failures());
   if (solver()->neighbors() != 0) {
     absl::StrAppendFormat(&buffer,
                           ", neighbors = %d, filtered neighbors = %d,"
@@ -233,9 +251,9 @@ void SearchLog::RefuteDecision(Decision* const decision) {
 }
 
 void SearchLog::OutputDecision() {
-  std::string buffer =
-      absl::StrFormat("%d branches, %d ms, %d failures", solver()->branches(),
-                      timer_->GetInMs(), solver()->failures());
+  std::string buffer = absl::StrFormat(
+      "%d branches, %d ms, %d failures", solver()->branches(),
+      absl::ToInt64Milliseconds(timer_->GetDuration()), solver()->failures());
   if (min_right_depth_ != std::numeric_limits<int32_t>::max() &&
       max_depth_ != 0) {
     const int depth = solver()->SearchDepth();
@@ -269,10 +287,11 @@ void SearchLog::Maintain() {
   max_depth_ = std::max(current_depth, max_depth_);
 }
 
-void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetInMs(); }
+void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetDuration(); }
 
 void SearchLog::EndInitialPropagation() {
-  const int64_t delta = std::max<int64_t>(timer_->GetInMs() - tick_, 0);
+  const int64_t delta = std::max<int64_t>(
+      absl::ToInt64Milliseconds(timer_->GetDuration() - tick_), 0);
   const std::string buffer = absl::StrFormat(
       "Root node processed (time = %d ms, constraints = %d, %s)", delta,
       solver()->constraints(), MemoryUsage());
@@ -356,10 +375,10 @@ SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
       << "Either variables are empty or objective is nullptr.";
   std::vector<IntVar*> vars = parameters.objective != nullptr
                                   ? parameters.objective->objective_vars()
-                                  : parameters.variables;
-  std::vector<double> scaling_factors = parameters.scaling_factors;
+                                  : std::move(parameters.variables);
+  std::vector<double> scaling_factors = std::move(parameters.scaling_factors);
   scaling_factors.resize(vars.size(), 1.0);
-  std::vector<double> offsets = parameters.offsets;
+  std::vector<double> offsets = std::move(parameters.offsets);
   offsets.resize(vars.size(), 0.0);
   return RevAlloc(new SearchLog(
       this, std::move(vars), "", std::move(scaling_factors), std::move(offsets),
@@ -1024,7 +1043,7 @@ class HighestRegretSelectorOnMin : public BaseObject {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
-  ~HighestRegretSelectorOnMin() override{};
+  ~HighestRegretSelectorOnMin() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "MaxRegretSelector"; }
@@ -1082,7 +1101,7 @@ class CheapestVarSelector : public BaseObject {
  public:
   explicit CheapestVarSelector(std::function<int64_t(int64_t)> var_evaluator)
       : var_evaluator_(std::move(var_evaluator)) {}
-  ~CheapestVarSelector() override{};
+  ~CheapestVarSelector() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars,
                  int64_t first_unbound, int64_t last_unbound);
   std::string DebugString() const override { return "CheapestVarSelector"; }
@@ -1115,7 +1134,7 @@ int64_t CheapestVarSelector::Choose(Solver* const,
 class PathSelector : public BaseObject {
  public:
   PathSelector() : first_(std::numeric_limits<int64_t>::max()) {}
-  ~PathSelector() override{};
+  ~PathSelector() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
 
@@ -2117,13 +2136,12 @@ BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  Solver::VariableIndexSelector var_selector =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  Solver::VariableValueSelector value_selector =
-      BaseAssignVariables::MakeValueSelector(this, val_str);
-  const std::string name = BuildHeuristicsName(var_str, val_str);
   return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, name, ChooseMode(val_str));
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/BaseAssignVariables::MakeValueSelector(this, val_str),
+      /*value_selector_name=*/BuildHeuristicsName(var_str, val_str),
+      ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2132,49 +2150,50 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   CHECK(var_evaluator != nullptr);
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  return BaseAssignVariables::MakePhase(
+      this, vars,
+      /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  Solver::VariableValueSelector select_value =
-      BaseAssignVariables::MakeValueSelector(this, val_str);
-  const std::string name = "ChooseCheapestVariable_" + SelectValueName(val_str);
-  return BaseAssignVariables::MakePhase(
-      this, vars, choose_variable, select_value, name, ChooseMode(val_str));
+      },
+      /*value_selector=*/BaseAssignVariables::MakeValueSelector(this, val_str),
+      /*value_selector_name=*/"ChooseCheapestVariable_" +
+          SelectValueName(val_str),
+      ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IndexEvaluator2 value_evaluator) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* const value_selector =
       RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars,
+      /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  const std::string name = ChooseVariableName(var_str) + "_SelectCheapestValue";
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, name,
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/ChooseVariableName(var_str) +
+          "_SelectCheapestValue",
+      BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars, IntVarStrategy var_str,
     VariableValueComparator var_val1_val2_comparator) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   BestValueByComparisonSelector* const value_selector = RevAlloc(
       new BestValueByComparisonSelector(std::move(var_val1_val2_comparator)));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2182,37 +2201,35 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator2 value_evaluator) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  CheapestValueSelector* value_selector =
+      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  CheapestValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value =
+      },
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IndexEvaluator2 value_evaluator,
                                    Solver::IndexEvaluator1 tie_breaker) {
-  Solver::VariableIndexSelector choose_variable =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
       std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value =
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str),
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2221,20 +2238,19 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator1 tie_breaker) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable =
+  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
+      std::move(value_evaluator), std::move(tie_breaker)));
+  return BaseAssignVariables::MakePhase(
+      this, vars, /*var_selector=*/
       [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
                      int first_unbound, int last_unbound) {
         return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-      };
-  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
-      std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value =
+      },
+      /*value_selector=*/
       [value_selector](const IntVar* var, int64_t id) {
         return value_selector->Select(var, id);
-      };
-  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
-                                        select_value, "CheapestValue",
-                                        BaseAssignVariables::ASSIGN);
+      },
+      /*value_selector_name=*/"CheapestValue", BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2251,12 +2267,13 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   switch (str) {
     case Solver::CHOOSE_STATIC_GLOBAL_BEST: {
       // TODO(user): support tie breaker
-      selector = RevAlloc(new StaticEvaluatorSelector(this, vars, eval));
+      selector =
+          RevAlloc(new StaticEvaluatorSelector(this, vars, std::move(eval)));
       break;
     }
     case Solver::CHOOSE_DYNAMIC_GLOBAL_BEST: {
-      selector = RevAlloc(new DynamicEvaluatorSelector(this, vars, eval,
-                                                       std::move(tie_breaker)));
+      selector = RevAlloc(new DynamicEvaluatorSelector(
+          this, vars, std::move(eval), std::move(tie_breaker)));
       break;
     }
   }

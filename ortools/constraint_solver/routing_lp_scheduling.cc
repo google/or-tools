@@ -1059,7 +1059,7 @@ DimensionSchedulingStatus DimensionCumulOptimizerCore::OptimizeAndPack(
     std::iota(vehicles.begin(), vehicles.end(), 0);
     // Subtle: Even if the status was RELAXED_OPTIMAL_ONLY we try to pack just
     // in case packing manages to make the solution completely feasible.
-    status = PackRoutes(vehicles, solver, packing_parameters);
+    status = PackRoutes(std::move(vehicles), solver, packing_parameters);
   }
   if (!solver->IsCPSATSolver()) {
     solver->SetParameters(original_params.SerializeAsString());
@@ -1953,6 +1953,30 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       solver->SetObjectiveCoefficient(span_violation, bound_cost.cost);
     }
   }
+  if (optimize_costs && solver->IsCPSATSolver() &&
+      dimension_->HasQuadraticCostSoftSpanUpperBounds()) {
+    // NOTE: the quadratic soft bound might be different from the one above.
+    const BoundCost bound_cost =
+        dimension_->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
+    if (bound_cost.bound < std::numeric_limits<int64_t>::max() &&
+        bound_cost.cost > 0) {
+      const int span_violation = solver->CreateNewPositiveVariable();
+      SET_DEBUG_VARIABLE_NAME(solver, span_violation,
+                              "quadratic_span_violation");
+      // end - start <= bound + span_violation
+      const int violation = solver->CreateNewConstraint(
+          std::numeric_limits<int64_t>::min(), bound_cost.bound);
+      solver->SetCoefficient(violation, lp_cumuls.back(), 1.0);
+      solver->SetCoefficient(violation, lp_cumuls.front(), -1.0);
+      solver->SetCoefficient(violation, span_violation, -1.0);
+      // Add variable squared_span_violation, equal to span_violation².
+      const int squared_span_violation = solver->CreateNewPositiveVariable();
+      solver->AddProductConstraint(squared_span_violation,
+                                   {span_violation, span_violation});
+      // Add squared_span_violation * cost to objective.
+      solver->SetObjectiveCoefficient(squared_span_violation, bound_cost.cost);
+    }
+  }
   // Add global span constraint.
   if (optimize_costs && dimension_->global_span_cost_coefficient() > 0) {
     // min_start_cumul_ <= cumuls[start]
@@ -2731,7 +2755,7 @@ void MoveValuesToIndicesFrom(std::vector<T>* out_values,
 bool ComputeVehicleToResourceClassAssignmentCosts(
     int v, const RoutingModel::ResourceGroup& resource_group,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             absl::flat_hash_set<int>>&
+                                    absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
@@ -2875,11 +2899,12 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
 }
 
 int64_t ComputeBestVehicleToResourceAssignment(
-    const std::vector<int>& vehicles,
+    absl::Span<const int> vehicles,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             std::vector<int>>& resource_indices_per_class,
+                                    std::vector<int>>&
+        resource_indices_per_class,
     const util_intops::StrongVector<RoutingModel::ResourceClassIndex,
-                             absl::flat_hash_set<int>>&
+                                    absl::flat_hash_set<int>>&
         ignored_resources_per_class,
     std::function<const std::vector<int64_t>*(int)>
         vehicle_to_resource_class_assignment_costs,

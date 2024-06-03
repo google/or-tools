@@ -26,7 +26,7 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <numeric>
+#include <optional>
 #include <random>
 #include <set>
 #include <string>
@@ -237,16 +237,20 @@ SweepArranger* RoutingModel::sweep_arranger() const {
 }
 
 void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
-    const RoutingModel& routing_model, int num_neighbors,
-    bool add_vehicle_starts_to_neighbors) {
+    const RoutingModel& routing_model, const NodeNeighborsParameters& params) {
+  auto [num_neighbors, add_vehicle_starts_to_neighbors,
+        only_sort_neighbors_for_partial_neighborhoods] = params;
   DCHECK_GE(num_neighbors, 0);
   // TODO(user): consider checking search limits.
   const int size = routing_model.Size();
   const int num_non_start_end_nodes = size - routing_model.vehicles();
   const int size_with_vehicle_nodes = size + routing_model.vehicles();
 
+  const int max_num_neighbors = std::max(num_non_start_end_nodes - 1, 0);
+  num_neighbors = std::min<int>(max_num_neighbors, num_neighbors);
   node_index_to_neighbors_by_cost_class_.clear();
-  if (num_neighbors >= num_non_start_end_nodes) {
+  if (num_neighbors == max_num_neighbors &&
+      only_sort_neighbors_for_partial_neighborhoods) {
     all_nodes_.reserve(size);
     for (int node = 0; node < size; node++) {
       if (add_vehicle_starts_to_neighbors || !routing_model.IsStart(node)) {
@@ -255,70 +259,143 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
     }
     return;
   }
-  node_index_to_neighbors_by_cost_class_.resize(size_with_vehicle_nodes);
 
   const int num_cost_classes = routing_model.GetCostClassesCount();
-  for (int node_index = 0; node_index < size_with_vehicle_nodes; node_index++) {
-    node_index_to_neighbors_by_cost_class_[node_index].resize(num_cost_classes);
+  node_index_to_neighbors_by_cost_class_.resize(num_cost_classes);
+  std::vector<std::vector<std::vector<bool>>>
+      node_index_to_neighbor_indicator_by_cost_class(num_cost_classes);
+  std::vector<std::vector<std::vector<int64_t>>>
+      node_index_to_costs_by_cost_class(num_cost_classes);
     for (int cc = 0; cc < num_cost_classes; cc++) {
-      node_index_to_neighbors_by_cost_class_[node_index][cc] =
-          std::make_unique<SparseBitset<int>>(size);
-    }
-  }
-
-  std::vector<std::pair</*cost*/ int64_t, /*node*/ int>> cost_nodes;
-  cost_nodes.reserve(size);
-  for (int node_index = 0; node_index < size_with_vehicle_nodes; ++node_index) {
-    if (routing_model.IsStart(node_index) || routing_model.IsEnd(node_index)) {
-      // For vehicle starts/ends, we consider all nodes (see below)
+    node_index_to_neighbors_by_cost_class_[cc].resize(size_with_vehicle_nodes);
+    if (!routing_model.HasVehicleWithCostClassIndex(
+            RoutingCostClassIndex(cc))) {
       continue;
     }
+    node_index_to_neighbor_indicator_by_cost_class[cc].resize(
+        size_with_vehicle_nodes);
+    node_index_to_costs_by_cost_class[cc].resize(size_with_vehicle_nodes);
+    for (int node = 0; node < size_with_vehicle_nodes; node++) {
+      node_index_to_neighbors_by_cost_class_[cc][node].reserve(
+          num_neighbors + routing_model.vehicles());
+      node_index_to_neighbor_indicator_by_cost_class[cc][node].resize(size,
+                                                                      false);
+      node_index_to_costs_by_cost_class[cc][node].resize(size, -1);
+  }
+    }
 
-    // TODO(user): Use the model's IndexNeighborFinder when available.
+  std::vector<int> neighbors;
     for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
       if (!routing_model.HasVehicleWithCostClassIndex(
               RoutingCostClassIndex(cost_class))) {
         // No vehicle with this cost class, avoid unnecessary computations.
         continue;
       }
-      cost_nodes.clear();
+    std::vector<std::vector<int>>& node_index_to_neighbors =
+        node_index_to_neighbors_by_cost_class_[cost_class];
+    std::vector<std::vector<bool>>& node_index_to_neighbor_indicator =
+        node_index_to_neighbor_indicator_by_cost_class[cost_class];
+    std::vector<std::vector<int64_t>>& node_index_to_costs =
+        node_index_to_costs_by_cost_class[cost_class];
+    for (int node_index = 0; node_index < size; ++node_index) {
+      if (routing_model.IsStart(node_index)) {
+        // For vehicle start/ends, we consider all nodes (see below).
+        continue;
+      }
+
+      // TODO(user): Use the model's IndexNeighborFinder when available.
+      neighbors.clear();
+      neighbors.reserve(num_non_start_end_nodes);
+      if (num_neighbors > 0) {
+        std::vector<int64_t>& costs = node_index_to_costs[node_index];
       for (int after_node = 0; after_node < size; ++after_node) {
         if (after_node != node_index && !routing_model.IsStart(after_node)) {
-          cost_nodes.push_back(
-              std::make_pair(routing_model.GetArcCostForClass(
-                                 node_index, after_node, cost_class),
-                             after_node));
+            costs[after_node] = routing_model.GetArcCostForClass(
+                node_index, after_node, cost_class);
+            neighbors.push_back(after_node);
         }
       }
-      DCHECK_GE(cost_nodes.size(), num_neighbors);
-      // Make sure the order of the n first element is always the same.
-      absl::c_partial_sort(cost_nodes, cost_nodes.begin() + num_neighbors);
-      cost_nodes.resize(num_neighbors);
+        // Get the 'num_neighbors' closest neighbors.
+        DCHECK_GE(neighbors.size(), num_neighbors);
+        std::nth_element(
+            neighbors.begin(), neighbors.begin() + num_neighbors - 1,
+            neighbors.end(), [&costs](int n1, int n2) {
+              return std::tie(costs[n1], n1) < std::tie(costs[n2], n2);
+            });
+        neighbors.resize(num_neighbors);
+      }
 
-      auto& node_neighbors =
-          node_index_to_neighbors_by_cost_class_[node_index][cost_class];
-      for (const auto& costed_node : cost_nodes) {
-        const int neighbor = costed_node.second;
-        node_neighbors->Set(neighbor);
-
-        // Add reverse neighborhood.
+      // Add neighborhoods.
+      for (int neighbor : neighbors) {
         DCHECK(!routing_model.IsEnd(neighbor) &&
                !routing_model.IsStart(neighbor));
-        node_index_to_neighbors_by_cost_class_[neighbor][cost_class]->Set(
-            node_index);
+        if (node_index_to_neighbor_indicator[node_index][neighbor]) {
+          DCHECK(node_index_to_neighbor_indicator[neighbor][node_index]);
+          continue;
       }
+        DCHECK(!node_index_to_neighbor_indicator[node_index][neighbor]);
+        node_index_to_neighbor_indicator[node_index][neighbor] = true;
+        node_index_to_neighbors[node_index].push_back(neighbor);
+        DCHECK(!node_index_to_neighbor_indicator[neighbor][node_index]);
+        node_index_to_neighbor_indicator[neighbor][node_index] = true;
+        node_index_to_neighbors[neighbor].push_back(node_index);
+      }
+
       // Add all vehicle starts as neighbors to this node and vice-versa.
       // TODO(user): Consider keeping vehicle start/ends out of neighbors, to
       // prune arcs going from node to start for instance.
+      // TODO(user): Investigate whether we actually need to keep track of
+      // neighbors for vehicle ends.
+      // TODO(user): Investigate if vehicle ends should be considered as
+      // neighbors for every node too.
+      // TODO(user): In the current state of the function, vehicle starts
+      // aren't set as neighbors for vehicle ends. Investigate if that's WAI.
       for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
         const int vehicle_start = routing_model.Start(vehicle);
-        if (add_vehicle_starts_to_neighbors) node_neighbors->Set(vehicle_start);
-        node_index_to_neighbors_by_cost_class_[vehicle_start][cost_class]->Set(
-            node_index);
-        node_index_to_neighbors_by_cost_class_[routing_model.End(vehicle)]
-                                              [cost_class]
-                                                  ->Set(node_index);
+        const int64_t cost_from_start = routing_model.GetArcCostForClass(
+            vehicle_start, node_index, cost_class);
+        if (add_vehicle_starts_to_neighbors) {
+          DCHECK(!node_index_to_neighbor_indicator[node_index][vehicle_start]);
+          node_index_to_neighbor_indicator[node_index][vehicle_start] = true;
+          node_index_to_neighbors[node_index].push_back(vehicle_start);
+          node_index_to_costs[node_index][vehicle_start] = cost_from_start;
       }
+        DCHECK(!node_index_to_neighbor_indicator[vehicle_start][node_index]);
+        node_index_to_neighbor_indicator[vehicle_start][node_index] = true;
+        node_index_to_neighbors[vehicle_start].push_back(node_index);
+        node_index_to_costs[vehicle_start][node_index] = cost_from_start;
+
+        const int vehicle_end = routing_model.End(vehicle);
+        DCHECK(!node_index_to_neighbor_indicator[vehicle_end][node_index]);
+        node_index_to_neighbor_indicator[vehicle_end][node_index] = true;
+        node_index_to_neighbors[vehicle_end].push_back(node_index);
+        node_index_to_costs[vehicle_end][node_index] =
+            routing_model.GetArcCostForClass(node_index, vehicle_end,
+                                             cost_class);
+      }
+    }
+  }
+
+  // Sort the neighbors into node_index_to_neighbors_by_cost_class_ by cost.
+  for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
+    if (!routing_model.HasVehicleWithCostClassIndex(
+            RoutingCostClassIndex(cost_class))) {
+      // No vehicle with this cost class.
+      continue;
+    }
+    for (int node_index = 0; node_index < size_with_vehicle_nodes;
+         ++node_index) {
+      auto& node_neighbors =
+          node_index_to_neighbors_by_cost_class_[cost_class][node_index];
+      const std::vector<int64_t>& costs =
+          node_index_to_costs_by_cost_class[cost_class][node_index];
+      absl::c_sort(node_neighbors, [&costs](int n1, int n2) {
+        DCHECK_GE(costs[n1], 0);
+        DCHECK_GE(costs[n2], 0);
+        return std::tie(costs[n1], n1) < std::tie(costs[n2], n2);
+      });
+      // Check that there are no duplicate elements.
+      DCHECK(absl::c_adjacent_find(node_neighbors) == node_neighbors.end());
     }
   }
 }
@@ -326,7 +403,8 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
 const RoutingModel::NodeNeighborsByCostClass*
 RoutingModel::GetOrCreateNodeNeighborsByCostClass(
     double neighbors_ratio, int64_t min_neighbors, double& neighbors_ratio_used,
-    bool add_vehicle_starts_to_neighbors) {
+    bool add_vehicle_starts_to_neighbors,
+    bool only_sort_neighbors_for_partial_neighborhoods) {
   const int64_t num_non_start_end_nodes = Size() - vehicles();
   neighbors_ratio_used = neighbors_ratio;
   int num_neighbors = std::max(
@@ -336,27 +414,21 @@ RoutingModel::GetOrCreateNodeNeighborsByCostClass(
     neighbors_ratio_used = 1;
     num_neighbors = Size();
   }
-  return GetOrCreateNodeNeighborsByCostClass(num_neighbors,
-                                             add_vehicle_starts_to_neighbors);
+  return GetOrCreateNodeNeighborsByCostClass(
+      {num_neighbors, add_vehicle_starts_to_neighbors,
+       only_sort_neighbors_for_partial_neighborhoods});
 }
 
 const RoutingModel::NodeNeighborsByCostClass*
 RoutingModel::GetOrCreateNodeNeighborsByCostClass(
-    int num_neighbors, bool add_vehicle_starts_to_neighbors) {
-  const NodeNeighborsParameters params = {num_neighbors,
-                                          add_vehicle_starts_to_neighbors};
-  std::unique_ptr<NodeNeighborsByCostClass>* node_neighbors_by_cost_class_ptr =
-      gtl::FindOrNull(node_neighbors_by_cost_class_per_size_, params);
-  if (node_neighbors_by_cost_class_ptr != nullptr) {
-    return node_neighbors_by_cost_class_ptr->get();
-  }
+    const NodeNeighborsParameters& params) {
   std::unique_ptr<NodeNeighborsByCostClass>& node_neighbors_by_cost_class =
-      node_neighbors_by_cost_class_per_size_
-          .insert(std::make_pair(params,
-                                 std::make_unique<NodeNeighborsByCostClass>()))
-          .first->second;
-  node_neighbors_by_cost_class->ComputeNeighbors(
-      *this, num_neighbors, add_vehicle_starts_to_neighbors);
+      node_neighbors_by_cost_class_per_size_[params];
+  if (node_neighbors_by_cost_class != nullptr) {
+    return node_neighbors_by_cost_class.get();
+  }
+  node_neighbors_by_cost_class = std::make_unique<NodeNeighborsByCostClass>();
+  node_neighbors_by_cost_class->ComputeNeighbors(*this, params);
   return node_neighbors_by_cost_class.get();
 }
 
@@ -589,7 +661,7 @@ int RoutingModel::RegisterStateDependentTransitCallback(
   StateDependentTransitCallbackCache* const cache =
       state_dependent_transit_evaluators_cache_.back().get();
   state_dependent_transit_evaluators_.push_back(
-      [cache, callback](int64_t i, int64_t j) {
+      [cache, callback = std::move(callback)](int64_t i, int64_t j) {
         StateDependentTransit value;
         if (gtl::FindCopy(*cache, CacheKey(i, j), &value)) return value;
         value = callback(i, j);
@@ -1340,7 +1412,7 @@ void RoutingModel::ComputeCostClasses(
     if (cost_class_index == kCostClassIndexOfZeroCost) {
       has_vehicle_with_zero_cost_class_ = true;
     } else if (cost_class_index == num_cost_classes) {  // New cost class.
-      cost_classes_.push_back(cost_class);
+      cost_classes_.push_back(std::move(cost_class));
     }
     cost_class_index_of_vehicle_[vehicle] = cost_class_index;
   }
@@ -1388,7 +1460,8 @@ struct VehicleClass {
   util_intops::StrongVector<DimensionIndex, int64_t> dimension_capacities;
   /// dimension_evaluators[d]->Run(from, to) is the transit value of arc
   /// from->to for a dimension d.
-  util_intops::StrongVector<DimensionIndex, int64_t> dimension_evaluator_classes;
+  util_intops::StrongVector<DimensionIndex, int64_t>
+      dimension_evaluator_classes;
   /// Hash of the visitability of (non-start/end) nodes.
   uint64_t visitable_nodes_hash;
   /// Hash of allowed resources for each resource group, or -1 if a given
@@ -1771,15 +1844,11 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   }
 }
 
-void RoutingModel::AddSoftSameVehicleConstraint(
-    const std::vector<int64_t>& indices, int64_t cost) {
+void RoutingModel::AddSoftSameVehicleConstraint(std::vector<int64_t> indices,
+                                                int64_t cost) {
   if (!indices.empty()) {
-    ValuedNodes<int64_t> same_vehicle_cost;
-    for (const int64_t index : indices) {
-      same_vehicle_cost.indices.push_back(index);
-    }
-    same_vehicle_cost.value = cost;
-    same_vehicle_costs_.push_back(same_vehicle_cost);
+    same_vehicle_costs_.push_back(
+        {.indices = std::move(indices), .value = cost});
   }
 }
 
@@ -1861,6 +1930,39 @@ RoutingModel::PickupAndDeliveryPolicy
 RoutingModel::GetPickupAndDeliveryPolicyOfVehicle(int vehicle) const {
   CHECK_LT(vehicle, vehicles_);
   return vehicle_pickup_delivery_policy_[vehicle];
+}
+
+std::optional<int64_t> RoutingModel::GetFirstMatchingPickupDeliverySibling(
+    int64_t node, const std::function<bool(int64_t)>& is_match) const {
+  // NOTE: In most use-cases, where each node is a pickup or delivery in a
+  // single index pair, this function is in O(k) where k is the number of
+  // alternative deliveries or pickups for this index pair.
+
+  // A node can't be a pickup and a delivery at the same time.
+  DCHECK(GetPickupPositions(node).empty() ||
+         GetDeliveryPositions(node).empty());
+
+  const auto& pickup_and_delivery_pairs = GetPickupAndDeliveryPairs();
+
+  for (const auto& [pair_index, unused] : GetPickupPositions(node)) {
+    for (int64_t delivery_sibling :
+         pickup_and_delivery_pairs[pair_index].delivery_alternatives) {
+      if (is_match(delivery_sibling)) {
+        return delivery_sibling;
+      }
+    }
+  }
+
+  for (const auto& [pair_index, unused] : GetDeliveryPositions(node)) {
+    for (int64_t pickup_sibling :
+         pickup_and_delivery_pairs[pair_index].pickup_alternatives) {
+      if (is_match(pickup_sibling)) {
+        return pickup_sibling;
+      }
+    }
+  }
+
+  return std::nullopt;
 }
 
 int RoutingModel::GetNumOfSingletonNodes() const {
@@ -2018,6 +2120,7 @@ class RoutingModelInspector : public ModelVisitor {
  public:
   explicit RoutingModelInspector(RoutingModel* model) : model_(model) {
     same_vehicle_components_.SetNumberOfNodes(model->Size());
+    same_active_var_components_.SetNumberOfNodes(model->Size());
     for (const std::string& name : model->GetAllDimensionNames()) {
       RoutingDimension* const dimension = model->GetMutableDimension(name);
       const std::vector<IntVar*>& cumuls = dimension->cumuls();
@@ -2028,6 +2131,9 @@ class RoutingModelInspector : public ModelVisitor {
     const std::vector<IntVar*>& vehicle_vars = model->VehicleVars();
     for (int i = 0; i < vehicle_vars.size(); ++i) {
       vehicle_var_to_indices_[vehicle_vars[i]] = i;
+    }
+    for (int i = 0; i < model->Size(); ++i) {
+      active_var_to_indices_[model->ActiveVar(i)] = i;
     }
     RegisterInspectors();
   }
@@ -2040,6 +2146,14 @@ class RoutingModelInspector : public ModelVisitor {
     for (int node = 0; node < model_->Size(); ++node) {
       model_->SetSameVehicleGroup(node,
                                   node_to_same_vehicle_component_id[node]);
+    }
+    const std::vector<int> node_to_same_active_var_component_id =
+        same_active_var_components_.GetComponentIds();
+    model_->InitSameActiveVarGroups(
+        same_active_var_components_.GetNumberOfComponents());
+    for (int node = 0; node < model_->Size(); ++node) {
+      model_->SetSameActiveVarGroup(node,
+                                    node_to_same_active_var_component_id[node]);
     }
     // TODO(user): Perform transitive closure of dimension precedence graphs.
     // TODO(user): Have a single annotated precedence graph.
@@ -2105,6 +2219,13 @@ class RoutingModelInspector : public ModelVisitor {
                 << right_index << " are equal.";
         same_vehicle_components_.AddEdge(left_index, right_index);
       }
+      if (gtl::FindCopy(active_var_to_indices_, left_, &left_index) &&
+          gtl::FindCopy(active_var_to_indices_, right_, &right_index)) {
+        VLOG(2) << "Active variables for " << left_index << " and "
+                << right_index << " are equal.";
+        same_active_var_components_.AddEdge(left_index, right_index);
+      }
+
       left_ = nullptr;
       right_ = nullptr;
     };
@@ -2129,9 +2250,11 @@ class RoutingModelInspector : public ModelVisitor {
 
   RoutingModel* const model_;
   DenseConnectedComponentsFinder same_vehicle_components_;
+  DenseConnectedComponentsFinder same_active_var_components_;
   absl::flat_hash_map<const IntExpr*, std::pair<RoutingDimension*, int>>
       cumul_to_dim_indices_;
   absl::flat_hash_map<const IntExpr*, int> vehicle_var_to_indices_;
+  absl::flat_hash_map<const IntExpr*, int> active_var_to_indices_;
   absl::flat_hash_map<std::string, ExprInspector> expr_inspectors_;
   absl::flat_hash_map<std::string, ArrayInspector> array_inspectors_;
   absl::flat_hash_map<std::string, ConstraintInspector> constraint_inspectors_;
@@ -2566,11 +2689,11 @@ void RoutingModel::CloseModelWithParameters(
           .path_used_when_empty = vehicle_used_when_empty_,
           .path_starts = paths_metadata_.Starts(),
           .path_ends = paths_metadata_.Ends(),
-        .costs = energy_costs,
+        .costs = std::move(energy_costs),
       };
 
       solver_->AddConstraint(
-          solver_->MakePathEnergyCostConstraint(specification));
+        solver_->MakePathEnergyCostConstraint(std::move(specification)));
   }
   // cost_ is the sum of cost_elements.
   cost_ = solver_->MakeSum(cost_elements)->Var();
@@ -4751,6 +4874,18 @@ RoutingModel::CreateLocalSearchFilters(
           {MakeMaxActiveVehiclesFilter(*this), kAccept, priority});
     }
 
+    bool has_same_activity_constraints = false;
+    for (int node = 0; node < Size(); ++node) {
+      if (GetSameVehicleIndicesOfIndex(node).size() > 1) {
+        has_same_activity_constraints = true;
+        break;
+      }
+    }
+    if (has_same_activity_constraints) {
+      filter_events.push_back(
+          {MakeActiveNodeGroupFilter(*this), kAccept, priority});
+    }
+
     if (!disjunctions_.empty()) {
       if (options.filter_objective || HasMandatoryDisjunctions() ||
           HasMaxCardinalityConstrainedDisjunctions()) {
@@ -5064,6 +5199,9 @@ void RoutingModel::StoreDimensionCumulOptimizers(
     if (has_span_cost) ++num_linear_constraints;
     if (has_span_limit) ++num_linear_constraints;
     if (dimension->HasSoftSpanUpperBounds()) ++num_linear_constraints;
+    if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
+      ++num_linear_constraints;
+    }
     if (has_soft_lower_bound) ++num_linear_constraints;
     if (has_soft_upper_bound) ++num_linear_constraints;
     if (dimension->HasBreakConstraints()) ++num_linear_constraints;
@@ -5251,9 +5389,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
         [FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
             CreateIntVarFilteredDecisionBuilder<
                 EvaluatorCheapestAdditionFilteredHeuristic>(
-                [this](int64_t i, int64_t j) {
-                  return GetArcCostForFirstSolution(i, j);
-                },
+                eval,
                 GetOrCreateLocalSearchFilterManager(
                     search_parameters, {/*filter_objective=*/false,
                                         /*filter_with_cp_solver=*/false}));
@@ -5817,7 +5953,7 @@ void RoutingModel::SetupTrace(
     search_log_ = solver_->MakeSearchLog(search_log_parameters);
     monitors_.push_back(search_log_);
     secondary_ls_monitors_.push_back(
-        solver_->MakeSearchLog(search_log_parameters));
+        solver_->MakeSearchLog(std::move(search_log_parameters)));
   }
 }
 
@@ -6848,9 +6984,8 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<int64_t> node_visit_transits) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
-      [node_visit_transits](int64_t from, int64_t /*to*/) {
-        return node_visit_transits[from];
-      },
+      [node_visit_transits = std::move(node_visit_transits)](
+          int64_t from, int64_t /*to*/) { return node_visit_transits[from]; },
       RoutingModel::kTransitEvaluatorSignPositiveOrZero);
   SetBreakIntervalsOfVehicle(std::move(breaks), vehicle, visit_evaluator, -1);
 }
@@ -6861,9 +6996,8 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::function<int64_t(int64_t, int64_t)> delays) {
   if (breaks.empty()) return;
   const int visit_evaluator = model()->RegisterTransitCallback(
-      [node_visit_transits](int64_t from, int64_t /*to*/) {
-        return node_visit_transits[from];
-      },
+      [node_visit_transits = std::move(node_visit_transits)](
+          int64_t from, int64_t /*to*/) { return node_visit_transits[from]; },
       RoutingModel::kTransitEvaluatorSignPositiveOrZero);
   const int delay_evaluator = model()->RegisterTransitCallback(
       std::move(delays), RoutingModel::kTransitEvaluatorSignPositiveOrZero);

@@ -4209,8 +4209,7 @@ void SweepArranger::ArrangeIndices(std::vector<int64_t>* indices) {
     double square_distance = x_delta * x_delta + y_delta * y_delta;
     double angle = square_distance == 0 ? 0 : std::atan2(y_delta, x_delta);
     angle = angle >= 0 ? angle : 2 * pi_rad + angle;
-    SweepIndex sweep_index(index, angle, square_distance);
-    sweep_indices.push_back(sweep_index);
+    sweep_indices.push_back(SweepIndex(index, angle, square_distance));
   }
   absl::c_sort(sweep_indices, SweepIndexDistanceComparator);
 
@@ -4291,8 +4290,7 @@ class RouteConstructor {
     // Initial State: Each order is served by its own vehicle.
     for (int index = 0; index < num_indices_; ++index) {
       if (!model_->IsStart(index) && !model_->IsEnd(index)) {
-        std::vector<int> route(1, index);
-        routes_.push_back(route);
+        routes_.push_back({index});
         in_route_[index] = routes_.size() - 1;
       }
     }
@@ -4755,8 +4753,8 @@ class SweepBuilder : public DecisionBuilder {
       if ((model_->IsStart(first) || !model_->IsEnd(first)) &&
           (model_->IsStart(second) || !model_->IsEnd(second))) {
         if (first != depot && second != depot) {
-          Link link(std::make_pair(first, second), 0, 0, depot, depot);
-          links_.push_back(link);
+          links_.push_back(
+              Link(std::make_pair(first, second), 0, 0, depot, depot));
         }
       }
     }
@@ -5056,11 +5054,10 @@ DecisionBuilder* RoutingModel::MakeSelfDependentDimensionFinalizer(
     const RoutingDimension* dimension) {
   CHECK(dimension != nullptr);
   CHECK(dimension->base_dimension() == dimension);
-  std::function<int64_t(int64_t)> slack_guide = [dimension](int64_t index) {
-    return dimension->ShortestTransitionSlack(index);
-  };
   DecisionBuilder* const guided_finalizer =
-      MakeGuidedSlackFinalizer(dimension, slack_guide);
+      MakeGuidedSlackFinalizer(dimension, [dimension](int64_t index) {
+        return dimension->ShortestTransitionSlack(index);
+      });
   DecisionBuilder* const slacks_finalizer =
       solver_->MakeSolveOnce(guided_finalizer);
   std::vector<IntVar*> start_cumuls(vehicles_, nullptr);
