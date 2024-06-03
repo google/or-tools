@@ -1757,14 +1757,15 @@ void RoutingModel::TopologicallySortVisitTypes() {
 
 RoutingModel::DisjunctionIndex RoutingModel::AddDisjunction(
     const std::vector<int64_t>& indices, int64_t penalty,
-    int64_t max_cardinality) {
+    int64_t max_cardinality, PenaltyCostBehavior penalty_cost_behavior) {
   CHECK_GE(max_cardinality, 1);
   for (int i = 0; i < indices.size(); ++i) {
     CHECK_NE(kUnassigned, indices[i]);
   }
 
   const DisjunctionIndex disjunction_index(disjunctions_.size());
-  disjunctions_.push_back({indices, {penalty, max_cardinality}});
+  disjunctions_.push_back(
+      {indices, {penalty, max_cardinality, penalty_cost_behavior}});
   for (const int64_t index : indices) {
     index_to_disjunctions_[index].push_back(disjunction_index);
   }
@@ -1830,18 +1831,34 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   }
   const int64_t max_cardinality =
       disjunctions_[disjunction].value.max_cardinality;
-  IntVar* no_active_var = solver_->MakeBoolVar();
+
   IntVar* number_active_vars = solver_->MakeIntVar(0, max_cardinality);
   solver_->AddConstraint(
       solver_->MakeSumEquality(disjunction_vars, number_active_vars));
-  solver_->AddConstraint(solver_->MakeIsDifferentCstCt(
-      number_active_vars, max_cardinality, no_active_var));
+
   const int64_t penalty = disjunctions_[disjunction].value.penalty;
+  // If penalty is negative, then disjunction is mandatory
+  // i.e. number of active vars must be equal to max cardinality.
   if (penalty < 0) {
-    no_active_var->SetMax(0);
+    solver_->AddConstraint(
+        solver_->MakeEquality(number_active_vars, max_cardinality));
     return nullptr;
+  }
+
+  const PenaltyCostBehavior penalty_cost_behavior =
+      disjunctions_[disjunction].value.penalty_cost_behavior;
+  if (max_cardinality == 1 ||
+      penalty_cost_behavior == PenaltyCostBehavior::PENALIZE_ONCE) {
+    IntVar* penalize_var = solver_->MakeBoolVar();
+    solver_->AddConstraint(solver_->MakeIsDifferentCstCt(
+        number_active_vars, max_cardinality, penalize_var));
+    return solver_->MakeProd(penalize_var, penalty)->Var();
   } else {
-    return solver_->MakeProd(no_active_var, penalty)->Var();
+    IntVar* number_no_active_vars = solver_->MakeIntVar(0, max_cardinality);
+    solver_->AddConstraint(solver_->MakeEquality(
+        number_no_active_vars,
+        solver_->MakeDifference(max_cardinality, number_active_vars)));
+    return solver_->MakeProd(number_no_active_vars, penalty)->Var();
   }
 }
 

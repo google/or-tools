@@ -857,17 +857,25 @@ class RoutingModel {
     return GetDimensionResourceGroupIndices(dimension)[0];
   }
 
+  /// The following enum is used to describe how the penalty cost is computed
+  /// when using @ref AddDisjunction.
+  enum PenaltyCostBehavior { PENALIZE_ONCE, PENALIZE_PER_INACTIVE };
   /// Adds a disjunction constraint on the indices: exactly 'max_cardinality' of
   /// the indices are active. Start and end indices of any vehicle cannot be
   /// part of a disjunction.
   ///
   /// If a penalty is given, at most 'max_cardinality' of the indices can be
-  /// active, and if less are active, 'penalty' is payed per inactive index.
+  /// active, and if less are active, 'penalty' is payed per inactive index if
+  /// the penalty cost is set to `PENALIZE_PER_INACTIVE`.
   /// This is equivalent to adding the constraint:
   ///     p + Sum(i)active[i] == max_cardinality
-  /// where p is an integer variable, and the following cost to the cost
-  /// function:
-  ///     p * penalty.
+  /// where p is an integer variable.
+  /// If the penalty cost is set to `PENALIZE_ONCE`, then 'penalty' is payed
+  /// once if there are less than `max_cardinality` of the indices active.
+  /// This is equivalent to adding the constraint:
+  ///     p == (Sum(i)active[i] != max_cardinality)
+  /// where p is a boolean variable.
+  /// The following cost is added to the cost function: p * penalty.
   /// 'penalty' must be positive to make the disjunction optional; a negative
   /// penalty will force 'max_cardinality' indices of the disjunction to be
   /// performed, and therefore p == 0.
@@ -875,7 +883,9 @@ class RoutingModel {
   /// with a penalty cost if it is not visited.
   DisjunctionIndex AddDisjunction(const std::vector<int64_t>& indices,
                                   int64_t penalty = kNoPenalty,
-                                  int64_t max_cardinality = 1);
+                                  int64_t max_cardinality = 1,
+                                  PenaltyCostBehavior penalty_cost_behavior =
+                                      PenaltyCostBehavior::PENALIZE_ONCE);
   /// Returns the indices of the disjunctions to which an index belongs.
   const std::vector<DisjunctionIndex>& GetDisjunctionIndices(
       int64_t index) const {
@@ -911,6 +921,12 @@ class RoutingModel {
   /// disjunction of index 'index'.
   int64_t GetDisjunctionMaxCardinality(DisjunctionIndex index) const {
     return disjunctions_[index].value.max_cardinality;
+  }
+  /// Returns the @ref PenaltyCostBehavior used by the disjunction of index
+  /// 'index'.
+  PenaltyCostBehavior GetDisjunctionPenaltyCostBehavior(
+      DisjunctionIndex index) const {
+    return disjunctions_[index].value.penalty_cost_behavior;
   }
   /// Returns the number of node disjunctions in the model.
   int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
@@ -2015,6 +2031,7 @@ class RoutingModel {
   struct DisjunctionValues {
     int64_t penalty;
     int64_t max_cardinality;
+    PenaltyCostBehavior penalty_cost_behavior;
   };
   typedef ValuedNodes<DisjunctionValues> Disjunction;
 
