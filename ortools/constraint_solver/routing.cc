@@ -1831,11 +1831,9 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   }
   const int64_t max_cardinality =
       disjunctions_[disjunction].value.max_cardinality;
-
   IntVar* number_active_vars = solver_->MakeIntVar(0, max_cardinality);
   solver_->AddConstraint(
       solver_->MakeSumEquality(disjunction_vars, number_active_vars));
-
   const int64_t penalty = disjunctions_[disjunction].value.penalty;
   // If penalty is negative, then disjunction is mandatory
   // i.e. number of active vars must be equal to max cardinality.

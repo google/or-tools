@@ -283,26 +283,26 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
           (current_inactive_nodes + inactive_nodes_delta) -
           max_inactive_cardinality;
       if (inactive_nodes_above_limit > 0 && penalty < 0) {
-          // Nodes are mandatory, i.e. exactly max_cardinality nodes must be
-          // performed, so the move is not acceptable.
-          return false;
-        }
+        // Nodes are mandatory, i.e. exactly max_cardinality nodes must be
+        // performed, so the move is not acceptable.
+        return false;
+      }
       const RoutingModel::PenaltyCostBehavior penalty_cost_behavior =
           routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction_index);
       switch (penalty_cost_behavior) {
         case RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE:
           if (inactive_nodes_above_limit > 0) {  // penalty cost to update
-        if (current_inactive_nodes <= max_inactive_cardinality) {
+            if (current_inactive_nodes <= max_inactive_cardinality) {
               // Add penalty if there were not too many inactive nodes before
               // the move.
-            CapAddTo(penalty, &accepted_objective_value_);
-          }
+              CapAddTo(penalty, &accepted_objective_value_);
+            }
           } else {  // no more penalty cost
             if (current_inactive_nodes > max_inactive_cardinality) {
-        // Remove penalty if there were too many inactive nodes before the
+              // Remove penalty if there were too many inactive nodes before the
               // move.
-          accepted_objective_value_ =
-              CapSub(accepted_objective_value_, penalty);
+              accepted_objective_value_ =
+                  CapSub(accepted_objective_value_, penalty);
             }
           }
           break;
@@ -322,12 +322,12 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
             if (current_inactive_nodes > max_inactive_cardinality) {
               // Remove penalty if there were too many inactive nodes before the
               // move.
-          const int current_inactive_nodes_above_limit =
-              current_inactive_nodes - max_inactive_cardinality;
-          accepted_objective_value_ =
-              CapSub(accepted_objective_value_,
-                     penalty * current_inactive_nodes_above_limit);
-        }
+              const int current_inactive_nodes_above_limit =
+                  current_inactive_nodes - max_inactive_cardinality;
+              accepted_objective_value_ =
+                  CapSub(accepted_objective_value_,
+                         penalty * current_inactive_nodes_above_limit);
+            }
           }
           break;
       }
@@ -374,11 +374,11 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
       if (inactive_nodes_above_limit > 0 && penalty > 0) {
         switch (penalty_cost_behavior) {
           case RoutingModel::PenaltyCostBehavior::PENALIZE_ONCE:
-          CapAddTo(penalty, &synchronized_objective_value_);
+            CapAddTo(penalty, &synchronized_objective_value_);
             break;
           case RoutingModel::PenaltyCostBehavior::PENALIZE_PER_INACTIVE:
-          CapAddTo(penalty * inactive_nodes_above_limit,
-                   &synchronized_objective_value_);
+            CapAddTo(penalty * inactive_nodes_above_limit,
+                     &synchronized_objective_value_);
             break;
         }
       }
