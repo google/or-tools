@@ -38,8 +38,8 @@ namespace operations_research {
 template <typename T, bool auto_resize = true>
 class DenseSet {
  public:
-  using iterator = std::vector<T>::const_iterator;
-  using const_iterator = std::vector<T>::const_iterator;
+  using iterator = typename std::vector<T>::const_iterator;
+  using const_iterator = typename std::vector<T>::const_iterator;
   using value_type = T;
   static constexpr bool kAutoResize = auto_resize;
 

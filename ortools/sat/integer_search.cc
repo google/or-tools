@@ -1652,7 +1652,6 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
 // Continuous probing procedure.
 // TODO(user):
 //   - sort variables before the iteration (statically or dynamically)
-//   - compress clause databases regularly (especially the implication graph)
 //   - better interleaving of the probing and shaving phases
 //   - move the shaving code directly in the probing class
 //   - probe all variables and not just the model ones

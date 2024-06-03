@@ -177,7 +177,7 @@ RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array,
   // elements.
   cache_[0] = std::move(array);
   MakeTableFromNewElements();
-    }
+}
 
 template <typename T, typename Compare>
 inline T RangeMinimumQuery<T, Compare>::RangeMinimum(int begin, int end) const {

@@ -13,6 +13,8 @@
 
 load(":code_samples.bzl", "code_sample_cc_py", "code_sample_java", "code_sample_py")
 
+code_sample_py(name = "all_different_except_zero_sample_sat")
+
 code_sample_cc_py(name = "assignment_sat")
 
 code_sample_cc_py(name = "assignment_groups_sat")

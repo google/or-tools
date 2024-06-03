@@ -487,7 +487,7 @@ cc_library(
     srcs = ["aligned_memory_internal.h"],
     hdrs = ["aligned_memory.h"],
     deps = [
-      "//ortools/base:mathutil",
+        "//ortools/base:mathutil",
     ],
 )
 

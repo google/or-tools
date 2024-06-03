@@ -23,6 +23,7 @@
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/dense_set.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -364,8 +365,8 @@ class LsEvaluator {
   //
   // The order depends on the algorithm used and shouldn't be relied on.
   void RecomputeViolatedList(bool linear_only);
-  const std::vector<int>& ViolatedConstraints() const {
-    return violated_constraints_;
+  absl::Span<const int> ViolatedConstraints() const {
+    return violated_constraints_.values();
   }
   // Returns the number of constraints in ViolatedConstraints containing `var`.
   int NumViolatedConstraintsForVar(int var) const {
@@ -430,12 +431,7 @@ class LsEvaluator {
   // We need the mutable to evaluate a move by temporarily modifying solution.
   mutable std::vector<int64_t> current_solution_;
 
-  // List of violated constraints.
-  // Invariants:
-  // - pos_in_violated_constraints_[c] == -1 iff c not int violated_constraints_
-  // - violated_constraints_[pos_in_violated_constraints_[c]] = c
-  std::vector<int> pos_in_violated_constraints_;
-  std::vector<int> violated_constraints_;
+  UnsafeDenseSet<int> violated_constraints_;
   std::vector<int> num_violated_constraint_per_var_;
 
   // Constraint index and violation delta for the last update.
@@ -561,8 +557,6 @@ class CompiledNoOverlap2dConstraint : public CompiledConstraint {
   int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 
  private:
-  int64_t ComputeOverlapArea(absl::Span<const int64_t> solution, int i,
-                             int j) const;
   const CpModelProto& cp_model_;
 };
 

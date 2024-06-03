@@ -2308,14 +2308,29 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
     params->set_num_workers(params->num_search_workers());
   }
 
-  // Initialize the number of workers if set to 0.
+  if (params->enumerate_all_solutions()) {
+    if (params->num_workers() >= 1) {
+      SOLVER_LOG(logger,
+                 "Forcing sequential search as enumerating all solutions is "
+                 "not supported in multi-thread.");
+    }
+    params->set_num_workers(1);
+  }
+
+  if (!model_proto.assumptions().empty()) {
+    if (params->num_workers() >= 1) {
+      SOLVER_LOG(logger,
+                 "Forcing sequential search as assumptions are not supported "
+                 "in multi-thread.");
+    }
+    params->set_num_workers(1);
+  }
+
   if (params->num_workers() == 0) {
+    // Initialize the number of workers if set to 0.
 #if !defined(__PORTABLE_PLATFORM__)
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
-    const int num_cores =
-        params->enumerate_all_solutions() || !model_proto.assumptions().empty()
-            ? 1
-            : std::max<int>(std::thread::hardware_concurrency(), 1);
+    const int num_cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
     const int num_cores = 1;
 #endif
