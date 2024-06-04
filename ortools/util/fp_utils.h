@@ -89,7 +89,7 @@ class ScopedFloatingPointEnv {
     excepts &= FE_ALL_EXCEPT;
 #if defined(__APPLE__)
     fenv_.__control &= ~excepts;
-#elif defined(__FreeBSD__)
+#elif (defined(__FreeBSD__) || defined(__OpenBSD__)
     fenv_.__x87.__control &= ~excepts;
 #else  // Linux
     fenv_.__control_word &= ~excepts;
