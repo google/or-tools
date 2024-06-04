@@ -386,3 +386,18 @@ if(BUILD_googletest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
+
+if(BUILD_benchmark)
+  message(CHECK_START "Fetching benchmark")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  FetchContent_Declare(
+    benchmark
+    GIT_REPOSITORY https://github.com/google/benchmark.git
+    GIT_TAG v1.8.4)
+  set(BENCHMARK_ENABLE_TESTING OFF)
+  set(BENCHMARK_ENABLE_WERROR OFF)
+  set(BENCHMARK_ENABLE_INSTALL OFF)
+  FetchContent_MakeAvailable(benchmark)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()

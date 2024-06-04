@@ -31,6 +31,7 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/multi_dijkstra_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/one_tree_lower_bound_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/perfect_matching_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/rooted_tree_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
