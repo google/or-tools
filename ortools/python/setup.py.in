@@ -145,6 +145,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX :: Linux',
         'Operating System :: POSIX :: BSD :: FreeBSD',
+        'Operating System :: POSIX :: BSD :: OpenBSD',
         'Operating System :: MacOS',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
