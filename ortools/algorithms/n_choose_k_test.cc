@@ -92,7 +92,7 @@ TEST(NChooseKTest, Invariant) {
 }
 
 TEST(NChooseKTest, ComparisonAgainstClosedFormsForK0) {
-  for (int64_t n : {0l, 1l, kint64max}) {
+  for (int64_t n : {int64_t{0}, int64_t{1}, kint64max}) {
     EXPECT_THAT(NChooseK(n, 0), IsOkAndHolds(1)) << n;
   }
   absl::BitGen random;
@@ -104,7 +104,7 @@ TEST(NChooseKTest, ComparisonAgainstClosedFormsForK0) {
 }
 
 TEST(NChooseKTest, ComparisonAgainstClosedFormsForK1) {
-  for (int64_t n : {1l, kint64max}) {
+  for (int64_t n : {int64_t{1}, kint64max}) {
     EXPECT_THAT(NChooseK(n, 1), IsOkAndHolds(n));
   }
   absl::BitGen random;
@@ -118,8 +118,8 @@ TEST(NChooseKTest, ComparisonAgainstClosedFormsForK1) {
 TEST(NChooseKTest, ComparisonAgainstClosedFormsForK2) {
   // 2^32 Choose 2 = 2^32 × (2^32-1) / 2 = 2^63 - 2^31 < kint64max,
   // but (2^32+1) Choose 2 = 2^63 + 2^31 overflows.
-  constexpr int64_t max_n = 1l << 32;
-  for (int64_t n : {2l, max_n}) {
+  constexpr int64_t max_n = int64_t{1} << 32;
+  for (int64_t n : {int64_t{2}, max_n}) {
     const int64_t n_choose_2 =
         static_cast<int64_t>(absl::uint128(n) * (n - 1) / 2);
     EXPECT_THAT(NChooseK(n, 2), IsOkAndHolds(n_choose_2)) << DUMP_VARS(n);
@@ -150,7 +150,7 @@ TEST(NChooseKTest, ComparisonAgainstClosedFormsForK3) {
   // This is 1 + ∛6×2^21. Checked manually on Google's scientific calculator.
   const int64_t max_n =
       static_cast<int64_t>(1 + std::pow(6, 1.0 / 3) * std::pow(2, 21));
-  for (int64_t n : {3l, max_n}) {
+  for (int64_t n : {int64_t{3}, max_n}) {
     const int64_t n_choose_3 =
         static_cast<int64_t>(absl::uint128(n) * (n - 1) * (n - 2) / 6);
     EXPECT_THAT(NChooseK(n, 3), IsOkAndHolds(n_choose_3)) << DUMP_VARS(n);
@@ -182,7 +182,7 @@ TEST(NChooseKTest, ComparisonAgainstClosedFormsForK4) {
   // Checked manually on Google's scientific calculator.
   const int64_t max_n =
       static_cast<int64_t>(1.5 + std::pow(24, 1.0 / 4) * std::pow(2, 63.0 / 4));
-  for (int64_t n : {4l, max_n}) {
+  for (int64_t n : {int64_t{4}, max_n}) {
     const int64_t n_choose_4 = static_cast<int64_t>(absl::uint128(n) * (n - 1) *
                                                     (n - 2) * (n - 3) / 24);
     EXPECT_THAT(NChooseK(n, 4), IsOkAndHolds(n_choose_4)) << DUMP_VARS(n);
