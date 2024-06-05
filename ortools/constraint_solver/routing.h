@@ -976,23 +976,23 @@ class RoutingModel {
   /// The position of a node in the set of pickup and delivery pairs.
   struct PickupDeliveryPosition {
     /// The index of the pickup and delivery pair within which the node appears.
-    int pd_pair_index;
+    int pd_pair_index = -1;
     /// The index of the node in the vector of pickup (resp. delivery)
     /// alternatives of the pair.
-    int alternative_index;
+    int alternative_index = -1;
   };
   /// Returns the pickup and delivery positions where the node is a pickup.
-  const std::vector<PickupDeliveryPosition>& GetPickupPositions(
+  std::optional<PickupDeliveryPosition> GetPickupPosition(
       int64_t node_index) const;
   /// Returns the pickup and delivery positions where the node is a delivery.
-  const std::vector<PickupDeliveryPosition>& GetDeliveryPositions(
+  std::optional<PickupDeliveryPosition> GetDeliveryPosition(
       int64_t node_index) const;
   /// Returns whether the node is a pickup (resp. delivery).
   bool IsPickup(int64_t node_index) const {
-    return !GetPickupPositions(node_index).empty();
+    return index_to_pickup_position_[node_index].pd_pair_index != -1;
   }
   bool IsDelivery(int64_t node_index) const {
-    return !GetDeliveryPositions(node_index).empty();
+    return index_to_delivery_position_[node_index].pd_pair_index != -1;
   }
 
   /// Sets the Pickup and delivery policy of all vehicles. It is equivalent to
@@ -2494,13 +2494,13 @@ class RoutingModel {
       implicit_pickup_delivery_pairs_without_alternatives_;
   std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
-  // If node_index is a pickup, index_to_pickup_positions_[node_index] contains
-  // all the PickupDeliveryPosition {pickup_delivery_index, alternative_index}
+  // If node_index is a pickup, index_to_pickup_position_[node_index] contains
+  // the PickupDeliveryPosition {pickup_delivery_index, alternative_index}
   // such that (pickup_delivery_pairs_[pickup_delivery_index]
   //               .pickup_alternatives)[alternative_index] == node_index
-  std::vector<std::vector<PickupDeliveryPosition>> index_to_pickup_positions_;
+  std::vector<PickupDeliveryPosition> index_to_pickup_position_;
   // Same as above for deliveries.
-  std::vector<std::vector<PickupDeliveryPosition>> index_to_delivery_positions_;
+  std::vector<PickupDeliveryPosition> index_to_delivery_position_;
   // clang-format on
   std::vector<PickupAndDeliveryPolicy> vehicle_pickup_delivery_policy_;
   // Same vehicle group to which a node belongs.

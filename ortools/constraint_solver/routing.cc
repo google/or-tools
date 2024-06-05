@@ -409,7 +409,7 @@ RoutingModel::GetOrCreateNodeNeighborsByCostClass(
   neighbors_ratio_used = neighbors_ratio;
   int num_neighbors = std::max(
       min_neighbors,
-      MathUtil::FastInt64Round(neighbors_ratio * num_non_start_end_nodes));
+      MathUtil::SafeRound<int64_t>(neighbors_ratio * num_non_start_end_nodes));
   if (neighbors_ratio == 1 || num_neighbors >= num_non_start_end_nodes - 1) {
     neighbors_ratio_used = 1;
     num_neighbors = Size();
@@ -508,8 +508,8 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   Initialize();
 
   const int64_t size = Size();
-  index_to_pickup_positions_.resize(size);
-  index_to_delivery_positions_.resize(size);
+  index_to_pickup_position_.resize(size);
+  index_to_delivery_position_.resize(size);
   index_to_visit_type_.resize(index_manager.num_indices(), kUnassigned);
   index_to_type_policy_.resize(index_manager.num_indices());
 
@@ -1632,25 +1632,26 @@ void RoutingModel::FinalizeVisitTypes() {
   std::vector<absl::flat_hash_set<int>> pair_indices_added_for_type(
       num_visit_types_);
 
+  const auto& store_pair_index_type = [this, &pair_indices_added_for_type](
+                                          int pair_index, int visit_type) {
+    if (pair_index != kUnassigned &&
+        pair_indices_added_for_type[visit_type].insert(pair_index).second) {
+      pair_indices_of_type_[visit_type].push_back(pair_index);
+    }
+  };
+
   for (int index = 0; index < index_to_visit_type_.size(); index++) {
     const int visit_type = GetVisitType(index);
     if (visit_type < 0) {
       continue;
     }
-    const std::vector<PickupDeliveryPosition>& pickup_positions =
-        index_to_pickup_positions_[index];
-    const std::vector<PickupDeliveryPosition>& delivery_positions =
-        index_to_delivery_positions_[index];
-    if (pickup_positions.empty() && delivery_positions.empty()) {
+    if (!IsPickup(index) && !IsDelivery(index)) {
       single_nodes_of_type_[visit_type].push_back(index);
-    }
-    for (const std::vector<RoutingModel::PickupDeliveryPosition>* positions :
-         {&pickup_positions, &delivery_positions}) {
-      for (const auto& [pair_index, unused] : *positions) {
-        if (pair_indices_added_for_type[visit_type].insert(pair_index).second) {
-          pair_indices_of_type_[visit_type].push_back(pair_index);
-        }
-      }
+    } else {
+      store_pair_index_type(index_to_pickup_position_[index].pd_pair_index,
+                            visit_type);
+      store_pair_index_type(index_to_delivery_position_[index].pd_pair_index,
+                            visit_type);
     }
   }
 
@@ -1877,6 +1878,8 @@ void RoutingModel::AddPickupAndDeliverySets(
       {pickup_disjunction, delivery_disjunction});
 }
 
+// TODO(user): Return an error (boolean?) when any node in the pickup or
+// deliveries is already registered as pickup or delivery instead of DCHECK-ing.
 void RoutingModel::AddPickupAndDeliverySetsInternal(
     const std::vector<int64_t>& pickups,
     const std::vector<int64_t>& deliveries) {
@@ -1888,28 +1891,33 @@ void RoutingModel::AddPickupAndDeliverySetsInternal(
   for (int pickup_index = 0; pickup_index < pickups.size(); pickup_index++) {
     const int64_t pickup = pickups[pickup_index];
     CHECK_LT(pickup, size);
-    index_to_pickup_positions_[pickup].push_back({pair_index, pickup_index});
+    DCHECK(!IsPickup(pickup));
+    DCHECK(!IsDelivery(pickup));
+    index_to_pickup_position_[pickup] = {pair_index, pickup_index};
   }
   for (int delivery_index = 0; delivery_index < deliveries.size();
        delivery_index++) {
     const int64_t delivery = deliveries[delivery_index];
     CHECK_LT(delivery, size);
-    index_to_delivery_positions_[delivery].push_back(
-        {pair_index, delivery_index});
+    DCHECK(!IsPickup(delivery));
+    DCHECK(!IsDelivery(delivery));
+    index_to_delivery_position_[delivery] = {pair_index, delivery_index};
   }
   pickup_delivery_pairs_.push_back({pickups, deliveries});
 }
 
-const std::vector<RoutingModel::PickupDeliveryPosition>&
-RoutingModel::GetPickupPositions(int64_t node_index) const {
-  CHECK_LT(node_index, index_to_pickup_positions_.size());
-  return index_to_pickup_positions_[node_index];
+std::optional<RoutingModel::PickupDeliveryPosition>
+RoutingModel::GetPickupPosition(int64_t node_index) const {
+  CHECK_LT(node_index, index_to_pickup_position_.size());
+  if (IsPickup(node_index)) return index_to_pickup_position_[node_index];
+  return std::nullopt;
 }
 
-const std::vector<RoutingModel::PickupDeliveryPosition>&
-RoutingModel::GetDeliveryPositions(int64_t node_index) const {
-  CHECK_LT(node_index, index_to_delivery_positions_.size());
-  return index_to_delivery_positions_[node_index];
+std::optional<RoutingModel::PickupDeliveryPosition>
+RoutingModel::GetDeliveryPosition(int64_t node_index) const {
+  CHECK_LT(node_index, index_to_delivery_position_.size());
+  if (IsDelivery(node_index)) return index_to_delivery_position_[node_index];
+  return std::nullopt;
 }
 
 void RoutingModel::SetPickupAndDeliveryPolicyOfVehicle(
@@ -1939,12 +1947,13 @@ std::optional<int64_t> RoutingModel::GetFirstMatchingPickupDeliverySibling(
   // alternative deliveries or pickups for this index pair.
 
   // A node can't be a pickup and a delivery at the same time.
-  DCHECK(GetPickupPositions(node).empty() ||
-         GetDeliveryPositions(node).empty());
+  DCHECK(!IsPickup(node) || !IsDelivery(node));
 
   const auto& pickup_and_delivery_pairs = GetPickupAndDeliveryPairs();
 
-  for (const auto& [pair_index, unused] : GetPickupPositions(node)) {
+  if (const auto pickup_position = GetPickupPosition(node);
+      pickup_position.has_value()) {
+    const int pair_index = pickup_position->pd_pair_index;
     for (int64_t delivery_sibling :
          pickup_and_delivery_pairs[pair_index].delivery_alternatives) {
       if (is_match(delivery_sibling)) {
@@ -1953,7 +1962,9 @@ std::optional<int64_t> RoutingModel::GetFirstMatchingPickupDeliverySibling(
     }
   }
 
-  for (const auto& [pair_index, unused] : GetDeliveryPositions(node)) {
+  if (const auto delivery_position = GetDeliveryPosition(node);
+      delivery_position.has_value()) {
+    const int pair_index = delivery_position->pd_pair_index;
     for (int64_t pickup_sibling :
          pickup_and_delivery_pairs[pair_index].pickup_alternatives) {
       if (is_match(pickup_sibling)) {
@@ -5456,7 +5467,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                          vehicle_vars_.end());
   }
   const int64_t optimization_step = std::max(
-      MathUtil::FastInt64Round(search_parameters.optimization_step()), One());
+      MathUtil::SafeRound<int64_t>(search_parameters.optimization_step()),
+      One());
   first_solution_decision_builders_[FirstSolutionStrategy::BEST_INSERTION] =
       solver_->MakeNestedOptimize(
           solver_->MakeLocalSearchPhase(decision_vars, MakeAllUnperformed(this),
@@ -5845,7 +5857,8 @@ void RoutingModel::SetupMetaheuristics(
       !search_parameters.has_time_limit() &&
       search_parameters.solution_limit() == std::numeric_limits<int64_t>::max();
   const int64_t optimization_step = std::max(
-      MathUtil::FastInt64Round(search_parameters.optimization_step()), One());
+      MathUtil::SafeRound<int64_t>(search_parameters.optimization_step()),
+      One());
   switch (metaheuristic) {
     case LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH:
       if (CostsAreHomogeneousAcrossVehicles()) {

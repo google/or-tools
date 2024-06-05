@@ -23,6 +23,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -119,6 +120,7 @@ int64_t GetLastPossibleValueForCumulWithOffset(
       cumul_offset);
 }
 
+using PDPosition = RoutingModel::PickupDeliveryPosition;
 // Finds the pickup/delivery pairs of nodes on a given vehicle's route.
 // Returns the vector of visited pair indices, and stores the corresponding
 // pickup/delivery indices in visited_pickup_delivery_indices_for_pair_.
@@ -146,25 +148,22 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
 
   int64_t node_index = model.Start(vehicle);
   while (!model.IsEnd(node_index)) {
-    const std::vector<RoutingModel::PickupDeliveryPosition>& pickup_positions =
-        model.GetPickupPositions(node_index);
-    const std::vector<RoutingModel::PickupDeliveryPosition>&
-        delivery_positions = model.GetDeliveryPositions(node_index);
-    if (!pickup_positions.empty()) {
-      // The current node is a pickup. We verify that it belongs to a single
-      // pickup index pair and that it's not a delivery, and store the index.
-      DCHECK(delivery_positions.empty());
-      DCHECK_EQ(pickup_positions.size(), 1);
-      const int pair_index = pickup_positions[0].pd_pair_index;
+    if (model.IsPickup(node_index)) {
+      // We store the node_index as visited pickup for this pair.
+      const std::optional<PDPosition> pickup_position =
+          model.GetPickupPosition(node_index);
+      DCHECK(pickup_position.has_value());
+      const int pair_index = pickup_position->pd_pair_index;
       (*visited_pickup_delivery_indices_for_pair)[pair_index].first =
           node_index;
       visited_pairs->push_back(pair_index);
-    } else if (!delivery_positions.empty()) {
-      // The node is a delivery. We verify that it belongs to a single
-      // delivery pair, and set the limit with its pickup if one has been
-      // visited for this pair.
-      DCHECK_EQ(delivery_positions.size(), 1);
-      const int pair_index = delivery_positions[0].pd_pair_index;
+    } else if (model.IsDelivery(node_index)) {
+      // We set the limit with this delivery's pickup if one has been visited
+      // for this pair.
+      const std::optional<PDPosition> delivery_position =
+          model.GetDeliveryPosition(node_index);
+      DCHECK(delivery_position.has_value());
+      const int pair_index = delivery_position->pd_pair_index;
       std::pair<int64_t, int64_t>& pickup_delivery_index =
           (*visited_pickup_delivery_indices_for_pair)[pair_index];
       if (pickup_delivery_index.first < 0) {
@@ -420,9 +419,8 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
       }
 
       const int64_t limit = dimension_.GetPickupToDeliveryLimitForPair(
-          pair_index,
-          model->GetPickupPositions(pickup_index)[0].alternative_index,
-          model->GetDeliveryPositions(delivery_index)[0].alternative_index);
+          pair_index, model->GetPickupPosition(pickup_index)->alternative_index,
+          model->GetDeliveryPosition(delivery_index)->alternative_index);
       if (limit < std::numeric_limits<int64_t>::max()) {
         // delivery_cumul - limit  <= pickup_cumul.
         AddArcs(delivery_index, pickup_index, -limit);
@@ -1893,9 +1891,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
 
     const int64_t limit = dimension_->GetPickupToDeliveryLimitForPair(
-        pair_index,
-        model->GetPickupPositions(pickup_index)[0].alternative_index,
-        model->GetDeliveryPositions(delivery_index)[0].alternative_index);
+        pair_index, model->GetPickupPosition(pickup_index)->alternative_index,
+        model->GetDeliveryPosition(delivery_index)->alternative_index);
     if (limit < std::numeric_limits<int64_t>::max()) {
       // delivery_cumul - pickup_cumul <= limit.
       const int ct = solver->CreateNewConstraint(

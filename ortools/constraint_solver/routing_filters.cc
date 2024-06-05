@@ -24,6 +24,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -1997,17 +1998,12 @@ bool PathCumulFilter::PickupToDeliveryLimitsRespected(
     max_cumul = CapSub(max_cumul, path_transits.Transit(path, i));
     max_cumul = std::min(cumuls_[node_index]->Max(), max_cumul);
 
-    const std::vector<RoutingModel::PickupDeliveryPosition>& pickup_positions =
-        routing_model_.GetPickupPositions(node_index);
-    const std::vector<RoutingModel::PickupDeliveryPosition>&
-        delivery_positions = routing_model_.GetDeliveryPositions(node_index);
-    if (!pickup_positions.empty()) {
-      // The node is a pickup. Check that it is not a delivery and that it
-      // appears in a single pickup/delivery pair (as required when limits are
-      // set on dimension cumuls for pickup and deliveries).
-      DCHECK(delivery_positions.empty());
-      DCHECK_EQ(pickup_positions.size(), 1);
-      const auto [pair_index, pickup_alternative_index] = pickup_positions[0];
+    using PDPosition = RoutingModel::PickupDeliveryPosition;
+    if (routing_model_.IsPickup(node_index)) {
+      const std::optional<PDPosition> pickup_position =
+          routing_model_.GetPickupPosition(node_index);
+      DCHECK(pickup_position.has_value());
+      const auto [pair_index, pickup_alternative_index] = *pickup_position;
       // Get the delivery visited for this pair.
       const int delivery_alternative_index =
           visited_delivery_and_min_cumul_per_pair[pair_index].first;
@@ -2022,14 +2018,11 @@ bool PathCumulFilter::PickupToDeliveryLimitsRespected(
                  max_cumul) > cumul_diff_limit) {
         return false;
       }
-    }
-    if (!delivery_positions.empty()) {
-      // The node is a delivery. Check that it's not a pickup and it belongs to
-      // a single pair.
-      DCHECK(pickup_positions.empty());
-      DCHECK_EQ(delivery_positions.size(), 1);
-      const auto [pair_index, delivery_alternative_index] =
-          delivery_positions[0];
+    } else if (routing_model_.IsDelivery(node_index)) {
+      const std::optional<PDPosition> delivery_position =
+          routing_model_.GetDeliveryPosition(node_index);
+      DCHECK(delivery_position.has_value());
+      const auto [pair_index, delivery_alternative_index] = *delivery_position;
       std::pair<int, int64_t>& delivery_index_and_cumul =
           visited_delivery_and_min_cumul_per_pair[pair_index];
       int& delivery_index = delivery_index_and_cumul.first;

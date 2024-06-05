@@ -1791,8 +1791,10 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddPairEntriesWithPickupAfter(
     if (Contains(pickup) || !model()->VehicleVar(pickup)->Contains(vehicle)) {
       continue;
     }
-    for (const auto& [pair_index, unused] :
-         model()->GetPickupPositions(pickup)) {
+    if (const std::optional<RoutingModel::PickupDeliveryPosition> pickup_pos =
+            model()->GetPickupPosition(pickup);
+        pickup_pos.has_value()) {
+      const int pair_index = pickup_pos->pd_pair_index;
       if (!pair_indices.contains(pair_index)) continue;
       for (const int64_t delivery :
            pickup_delivery_pairs[pair_index].delivery_alternatives) {
@@ -1839,8 +1841,10 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddPairEntriesWithDeliveryAfter(
         !model()->VehicleVar(delivery)->Contains(vehicle)) {
       continue;
     }
-    for (const auto& [pair_index, unused] :
-         model()->GetDeliveryPositions(delivery)) {
+    if (const std::optional<RoutingModel::PickupDeliveryPosition> delivery_pos =
+            model()->GetDeliveryPosition(delivery);
+        delivery_pos.has_value()) {
+      const int pair_index = delivery_pos->pd_pair_index;
       if (!pair_indices.contains(pair_index)) continue;
       for (const int64_t pickup :
            pickup_delivery_pairs[pair_index].pickup_alternatives) {
