@@ -480,13 +480,13 @@ void BasePathFilter::SynchronizeFullAssignment() {
     node_path_starts_[start] = start;
     if (IsVarSynced(start)) {
       int64_t next = Value(start);
-    while (next < nexts_size) {
+      while (next < nexts_size) {
         int64_t node = next;
-      node_path_starts_[node] = start;
-      DCHECK(IsVarSynced(node));
-      next = Value(node);
-    }
-    node_path_starts_[next] = start;
+        node_path_starts_[node] = start;
+        DCHECK(IsVarSynced(node));
+        next = Value(node);
+      }
+      node_path_starts_[next] = start;
     }
     node_path_starts_[End(path)] = start;
   }
@@ -829,19 +829,19 @@ bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
   // Update new_type_counts by decrementing the occurrence of the types of the
   // nodes no longer on the route.
   if (IsVarSynced(chain_start)) {
-  node = Value(chain_start);
-  while (node != chain_end) {
-    const int type = routing_model_.GetVisitType(node);
-    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
-                         RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
-      DCHECK_LT(type, previous_type_counts.size());
-      int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
-                                            previous_type_counts[type]);
-      CHECK_GE(type_count, 1);
-      type_count--;
+    node = Value(chain_start);
+    while (node != chain_end) {
+      const int type = routing_model_.GetVisitType(node);
+      if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
+                           RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
+        DCHECK_LT(type, previous_type_counts.size());
+        int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
+                                              previous_type_counts[type]);
+        CHECK_GE(type_count, 1);
+        type_count--;
+      }
+      node = Value(node);
     }
-    node = Value(node);
-  }
   }
 
   // Check the incompatibilities for types in types_to_check.
@@ -2785,9 +2785,9 @@ void LPCumulFilter::OnSynchronize(const Assignment* /*delta*/) {
                  : mp_optimizer_.ComputeCumuls(next_accessor, {}, nullptr,
                                                nullptr, nullptr);
     if (status != DimensionSchedulingStatus::OPTIMAL) {
-    // TODO(user): This should only happen if the MP solver times out.
-    // DCHECK the fail wasn't due to an infeasible model.
-    synchronized_cost_without_transit_ = 0;
+      // TODO(user): This should only happen if the MP solver times out.
+      // DCHECK the fail wasn't due to an infeasible model.
+      synchronized_cost_without_transit_ = 0;
     }
   }
 }
@@ -3060,10 +3060,10 @@ void ResourceGroupAssignmentFilter::OnAfterSynchronizePaths() {
   }
   const int64_t assignment_cost = ComputeBestVehicleToResourceAssignment(
       vehicles_requiring_resource_assignment_,
-                resource_group_.GetResourceIndicesPerClass(),
+      resource_group_.GetResourceIndicesPerClass(),
       ignored_resources_per_class_,
       [this](int v) { return &vehicle_to_resource_class_assignment_costs_[v]; },
-                nullptr);
+      nullptr);
   if (assignment_cost < 0) {
     synchronized_cost_without_transit_ = 0;
     current_synch_failed_ = true;
@@ -4448,7 +4448,7 @@ int64_t PathEnergyCostChecker::ComputePathCost(int64_t path) const {
                                               : force_evaluator(prev_node);
         CapAddTo(force, &total_force);
         min_force = std::min(min_force, total_force);
-      prev_node = node;
+        prev_node = node;
       }
     }
   }
@@ -4552,10 +4552,10 @@ int64_t PathEnergyCostChecker::ComputePathCost(int64_t path) const {
                  &energy_below);
         const int64_t force_above =
             std::max<int64_t>(0, CapSub(total_force, cost.threshold));
-      CapAddTo(CapProd(force_above, distance), &energy_above);
-      prev_node = node;
+        CapAddTo(CapProd(force_above, distance), &energy_above);
+        prev_node = node;
       }
-  }
+    }
   }
 
   return CapAdd(CapProd(energy_below, cost.cost_per_unit_below_threshold),

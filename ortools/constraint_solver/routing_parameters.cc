@@ -355,24 +355,24 @@ void FindErrorsInIteratedLocalSearchParameters(
     }
 
     if (!sa_params.automatic_temperatures()) {
-    if (sa_params.initial_temperature() < sa_params.final_temperature()) {
-      errors.emplace_back(
-          "iterated_local_search_parameters.simulated_annealing_parameters."
-          "initial_temperature cannot be lower than "
-          "iterated_local_search_parameters.simulated_annealing_parameters."
-          "final_temperature.");
-    }
+      if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "initial_temperature cannot be lower than "
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "final_temperature.");
+      }
 
-    if (sa_params.initial_temperature() < 1e-9) {
-      errors.emplace_back(
-          "iterated_local_search_parameters.simulated_annealing_parameters."
-          "initial_temperature cannot be lower than 1e-9.");
-    }
+      if (sa_params.initial_temperature() < 1e-9) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "initial_temperature cannot be lower than 1e-9.");
+      }
 
-    if (sa_params.final_temperature() < 1e-9) {
-      errors.emplace_back(
-          "iterated_local_search_parameters.simulated_annealing_parameters."
-          "final_temperature cannot be lower than 1e-9.");
+      if (sa_params.final_temperature() < 1e-9) {
+        errors.emplace_back(
+            "iterated_local_search_parameters.simulated_annealing_parameters."
+            "final_temperature cannot be lower than 1e-9.");
       }
     }
   }

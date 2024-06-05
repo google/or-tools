@@ -2466,7 +2466,7 @@ class RoutingModel {
   absl::flat_hash_map<
       std::pair<std::string, std::string>,
       std::vector<Solver::PathEnergyCostConstraintSpecification::EnergyCost>,
-                      absl::Hash<std::pair<std::string, std::string>>>
+      absl::Hash<std::pair<std::string, std::string>>>
       force_distance_to_energy_costs_;
   util_intops::StrongVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
