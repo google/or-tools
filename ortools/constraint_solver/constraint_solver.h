@@ -3347,7 +3347,7 @@ class PropagationBaseObject : public BaseObject {
   PropagationBaseObject(const PropagationBaseObject&) = delete;
   PropagationBaseObject& operator=(const PropagationBaseObject&) = delete;
 #endif
-  ~PropagationBaseObject() override{};
+  ~PropagationBaseObject() override {};
 
   std::string DebugString() const override {
     if (name().empty()) {
@@ -4240,7 +4240,7 @@ class IntVar : public IntExpr {
   IntVar& operator=(const IntVar&) = delete;
 #endif
 
-  ~IntVar() override{};
+  ~IntVar() override {};
 
   bool IsVar() const override { return true; }
   IntVar* Var() override { return this; }

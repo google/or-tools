@@ -266,7 +266,7 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
       node_index_to_neighbor_indicator_by_cost_class(num_cost_classes);
   std::vector<std::vector<std::vector<int64_t>>>
       node_index_to_costs_by_cost_class(num_cost_classes);
-    for (int cc = 0; cc < num_cost_classes; cc++) {
+  for (int cc = 0; cc < num_cost_classes; cc++) {
     node_index_to_neighbors_by_cost_class_[cc].resize(size_with_vehicle_nodes);
     if (!routing_model.HasVehicleWithCostClassIndex(
             RoutingCostClassIndex(cc))) {
@@ -281,16 +281,16 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
       node_index_to_neighbor_indicator_by_cost_class[cc][node].resize(size,
                                                                       false);
       node_index_to_costs_by_cost_class[cc][node].resize(size, -1);
-  }
     }
+  }
 
   std::vector<int> neighbors;
-    for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
-      if (!routing_model.HasVehicleWithCostClassIndex(
-              RoutingCostClassIndex(cost_class))) {
-        // No vehicle with this cost class, avoid unnecessary computations.
-        continue;
-      }
+  for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
+    if (!routing_model.HasVehicleWithCostClassIndex(
+            RoutingCostClassIndex(cost_class))) {
+      // No vehicle with this cost class, avoid unnecessary computations.
+      continue;
+    }
     std::vector<std::vector<int>>& node_index_to_neighbors =
         node_index_to_neighbors_by_cost_class_[cost_class];
     std::vector<std::vector<bool>>& node_index_to_neighbor_indicator =
@@ -308,13 +308,13 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
       neighbors.reserve(num_non_start_end_nodes);
       if (num_neighbors > 0) {
         std::vector<int64_t>& costs = node_index_to_costs[node_index];
-      for (int after_node = 0; after_node < size; ++after_node) {
-        if (after_node != node_index && !routing_model.IsStart(after_node)) {
+        for (int after_node = 0; after_node < size; ++after_node) {
+          if (after_node != node_index && !routing_model.IsStart(after_node)) {
             costs[after_node] = routing_model.GetArcCostForClass(
                 node_index, after_node, cost_class);
             neighbors.push_back(after_node);
+          }
         }
-      }
         // Get the 'num_neighbors' closest neighbors.
         DCHECK_GE(neighbors.size(), num_neighbors);
         std::nth_element(
@@ -332,7 +332,7 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
         if (node_index_to_neighbor_indicator[node_index][neighbor]) {
           DCHECK(node_index_to_neighbor_indicator[neighbor][node_index]);
           continue;
-      }
+        }
         DCHECK(!node_index_to_neighbor_indicator[node_index][neighbor]);
         node_index_to_neighbor_indicator[node_index][neighbor] = true;
         node_index_to_neighbors[node_index].push_back(neighbor);
@@ -359,7 +359,7 @@ void RoutingModel::NodeNeighborsByCostClass::ComputeNeighbors(
           node_index_to_neighbor_indicator[node_index][vehicle_start] = true;
           node_index_to_neighbors[node_index].push_back(vehicle_start);
           node_index_to_costs[node_index][vehicle_start] = cost_from_start;
-      }
+        }
         DCHECK(!node_index_to_neighbor_indicator[vehicle_start][node_index]);
         node_index_to_neighbor_indicator[vehicle_start][node_index] = true;
         node_index_to_neighbors[vehicle_start].push_back(node_index);
@@ -1482,7 +1482,7 @@ struct VehicleClass {
            c1.dimension_evaluator_classes == c2.dimension_evaluator_classes &&
            c1.visitable_nodes_hash == c2.visitable_nodes_hash &&
            c1.group_allowed_resources_hash == c2.group_allowed_resources_hash;
-}
+  }
   template <typename H>
   friend H AbslHashValue(H h, const VehicleClass& c) {
     return H::combine(std::move(h), c.cost_class_index, c.fixed_cost,
@@ -1552,7 +1552,7 @@ void RoutingModel::ComputeVehicleClasses() {
         if (!resource_vars[vehicle]->Contains(resource) ||
             !resource_group.IsResourceAllowedForVehicle(resource, vehicle)) {
           resource_allowed_for_vehicle[resource] = false;
-    }
+        }
       }
       allowed_resources_hash.push_back(
           bool_vec_hash(resource_allowed_for_vehicle));
@@ -1562,7 +1562,7 @@ void RoutingModel::ComputeVehicleClasses() {
     const VehicleClassIndex num_vehicle_classes(vehicle_class_map.size());
     vehicle_class_index_of_vehicle_[vehicle] = gtl::LookupOrInsert(
         &vehicle_class_map, vehicle_class, num_vehicle_classes);
-    }
+  }
   num_vehicle_classes_ = vehicle_class_map.size();
 }
 
@@ -2670,29 +2670,29 @@ void RoutingModel::CloseModelWithParameters(
       AddWeightedVariableMinimizedByFinalizer(
           energy_costs[v], std::max(costs[v].cost_per_unit_below_threshold,
                                     costs[v].cost_per_unit_above_threshold));
-      }
+    }
 
-      const RoutingDimension* force_dimension =
-          GetMutableDimension(force_distance.first);
-      DCHECK_NE(force_dimension, nullptr);
-      const RoutingDimension* distance_dimension =
-          GetMutableDimension(force_distance.second);
-      DCHECK_NE(distance_dimension, nullptr);
-      if (force_dimension == nullptr || distance_dimension == nullptr) continue;
+    const RoutingDimension* force_dimension =
+        GetMutableDimension(force_distance.first);
+    DCHECK_NE(force_dimension, nullptr);
+    const RoutingDimension* distance_dimension =
+        GetMutableDimension(force_distance.second);
+    DCHECK_NE(distance_dimension, nullptr);
+    if (force_dimension == nullptr || distance_dimension == nullptr) continue;
 
-      Solver::PathEnergyCostConstraintSpecification specification{
-          .nexts = Nexts(),
-          .paths = VehicleVars(),
-          .forces = force_dimension->cumuls(),
-          .distances = distance_dimension->transits(),
+    Solver::PathEnergyCostConstraintSpecification specification{
+        .nexts = Nexts(),
+        .paths = VehicleVars(),
+        .forces = force_dimension->cumuls(),
+        .distances = distance_dimension->transits(),
         .path_energy_costs = costs,
-          .path_used_when_empty = vehicle_used_when_empty_,
-          .path_starts = paths_metadata_.Starts(),
-          .path_ends = paths_metadata_.Ends(),
+        .path_used_when_empty = vehicle_used_when_empty_,
+        .path_starts = paths_metadata_.Starts(),
+        .path_ends = paths_metadata_.Ends(),
         .costs = std::move(energy_costs),
-      };
+    };
 
-      solver_->AddConstraint(
+    solver_->AddConstraint(
         solver_->MakePathEnergyCostConstraint(std::move(specification)));
   }
   // cost_ is the sum of cost_elements.
@@ -3286,13 +3286,13 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     if (improve_perturbed_solution && update_time_limits()) {
       assignment_->CopyIntersection(neighbor_solution);
 
-    solver_->Solve(improve_db_, monitors_);
+      solver_->Solve(improve_db_, monitors_);
       explored_solutions += solver_->solutions();
 
       neighbor_solution = collect_assignments_->last_solution_or_null();
       if (!neighbor_solution) {
-      continue;
-    }
+        continue;
+      }
     }
 
     if (neighbor_solution->ObjectiveValue() < best_solution->ObjectiveValue()) {
@@ -5608,39 +5608,39 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   }
 
   IntVarFilteredDecisionBuilder* parallel_savings_db =
-        CreateIntVarFilteredDecisionBuilder<ParallelSavingsFilteredHeuristic>(
-            savings_parameters, filter_manager);
-    if (!search_parameters.use_unfiltered_first_solution_strategy()) {
-      first_solution_filtered_decision_builders_
+      CreateIntVarFilteredDecisionBuilder<ParallelSavingsFilteredHeuristic>(
+          savings_parameters, filter_manager);
+  if (!search_parameters.use_unfiltered_first_solution_strategy()) {
+    first_solution_filtered_decision_builders_
         [FirstSolutionStrategy::PARALLEL_SAVINGS] = parallel_savings_db;
-    }
+  }
 
   first_solution_decision_builders_[FirstSolutionStrategy::PARALLEL_SAVINGS] =
       solver_->Try(
           parallel_savings_db,
           CreateIntVarFilteredDecisionBuilder<ParallelSavingsFilteredHeuristic>(
-                                     savings_parameters,
-                                     GetOrCreateLocalSearchFilterManager(
+              savings_parameters,
+              GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/false,
-                                          /*filter_with_cp_solver=*/true})));
+                                      /*filter_with_cp_solver=*/true})));
 
   IntVarFilteredDecisionBuilder* sequential_savings_db =
-        CreateIntVarFilteredDecisionBuilder<SequentialSavingsFilteredHeuristic>(
-            savings_parameters, filter_manager);
-    if (!search_parameters.use_unfiltered_first_solution_strategy()) {
+      CreateIntVarFilteredDecisionBuilder<SequentialSavingsFilteredHeuristic>(
+          savings_parameters, filter_manager);
+  if (!search_parameters.use_unfiltered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_[FirstSolutionStrategy::SAVINGS] =
         sequential_savings_db;
-    }
+  }
 
-    first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
+  first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
       solver_->Try(
           sequential_savings_db,
           CreateIntVarFilteredDecisionBuilder<
-                                     SequentialSavingsFilteredHeuristic>(
-                                     savings_parameters,
-                                     GetOrCreateLocalSearchFilterManager(
+              SequentialSavingsFilteredHeuristic>(
+              savings_parameters,
+              GetOrCreateLocalSearchFilterManager(
                   search_parameters, {/*filter_objective=*/false,
-                                          /*filter_with_cp_solver=*/true})));
+                                      /*filter_with_cp_solver=*/true})));
 
   // Sweep
   first_solution_decision_builders_[FirstSolutionStrategy::SWEEP] =
@@ -5731,22 +5731,22 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
   LocalSearchOperator* ls_operator = nullptr;
   if (secondary_ls) {
     if (secondary_ls_operator_ == nullptr) {
-    operators_to_consider = {TWO_OPT,
-                             OR_OPT,
-                             LIN_KERNIGHAN,
-                             MAKE_INACTIVE,
-                             MAKE_CHAIN_INACTIVE,
-                             SHORTEST_PATH_SWAP_ACTIVE};
+      operators_to_consider = {TWO_OPT,
+                               OR_OPT,
+                               LIN_KERNIGHAN,
+                               MAKE_INACTIVE,
+                               MAKE_CHAIN_INACTIVE,
+                               SHORTEST_PATH_SWAP_ACTIVE};
       secondary_ls_operator_ =
           GetNeighborhoodOperators(search_parameters, operators_to_consider);
     }
     ls_operator = secondary_ls_operator_;
   } else {
     if (primary_ls_operator_ == nullptr) {
-    // Consider all operators for the primary LS phase.
-    for (int op = 0; op < LOCAL_SEARCH_OPERATOR_COUNTER; ++op) {
-      operators_to_consider.insert(RoutingLocalSearchOperator(op));
-    }
+      // Consider all operators for the primary LS phase.
+      for (int op = 0; op < LOCAL_SEARCH_OPERATOR_COUNTER; ++op) {
+        operators_to_consider.insert(RoutingLocalSearchOperator(op));
+      }
       primary_ls_operator_ =
           GetNeighborhoodOperators(search_parameters, operators_to_consider);
     }
