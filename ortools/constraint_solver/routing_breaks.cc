@@ -945,7 +945,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
           interval->SetEndMax(arc_start_max);
           if (interval_is_performed) {
             dimension_->CumulVar(path_[pos])
-                ->SetMin(CapSub(interval_end_min, arc_start_offset));
+                ->SetMin(CapAdd(interval_end_min, arc_start_offset));
           }
         }
         continue;
