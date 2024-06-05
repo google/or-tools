@@ -8240,26 +8240,30 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
       }
     }
     if (best != 0) {
+      LinearConstraintProto new_ct = superset_ct->linear();
       int new_size = 0;
-      for (int i = 0; i < superset_ct->linear().vars().size(); ++i) {
-        const int var = superset_ct->linear().vars(i);
-        int64_t coeff = superset_ct->linear().coeffs(i);
+      for (int i = 0; i < new_ct.vars().size(); ++i) {
+        const int var = new_ct.vars(i);
+        int64_t coeff = new_ct.coeffs(i);
         if (tmp_set->contains(var)) {
           if (coeff == best) continue;  // delete term.
           coeff -= best;
         }
-        superset_ct->mutable_linear()->set_vars(new_size, var);
-        superset_ct->mutable_linear()->set_coeffs(new_size, coeff);
+        new_ct.set_vars(new_size, var);
+        new_ct.set_coeffs(new_size, coeff);
         ++new_size;
       }
 
-      superset_ct->mutable_linear()->mutable_vars()->Truncate(new_size);
-      superset_ct->mutable_linear()->mutable_coeffs()->Truncate(new_size);
-      FillDomainInProto(ReadDomainFromProto(superset_ct->linear())
-                            .AdditionWith(Domain(-best)),
-                        superset_ct->mutable_linear());
-      context_->UpdateConstraintVariableUsage(superset_c);
-      context_->UpdateRuleStats("setppc: reduced linear coefficients");
+      new_ct.mutable_vars()->Truncate(new_size);
+      new_ct.mutable_coeffs()->Truncate(new_size);
+      FillDomainInProto(ReadDomainFromProto(new_ct).AdditionWith(Domain(-best)),
+                        &new_ct);
+      if (!PossibleIntegerOverflow(*context_->working_model, new_ct.vars(),
+                                   new_ct.coeffs())) {
+        *superset_ct->mutable_linear() = std::move(new_ct);
+        context_->UpdateConstraintVariableUsage(superset_c);
+        context_->UpdateRuleStats("setppc: reduced linear coefficients");
+      }
     }
 
     return true;

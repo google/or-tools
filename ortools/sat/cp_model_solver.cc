@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
@@ -50,6 +51,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
@@ -1427,12 +1429,16 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
     return;
   }
   auto* clause_stream = shared_clauses_manager->GetClauseStream(id);
+  const int max_lbd =
+      model->GetOrCreate<SatParameters>()->clause_cleanup_lbd_bound();
   // Note that this callback takes no global locks, everything operates on this
   // worker's own clause stream, whose lock is only used by this worker, and
   // briefly when generating a batch in SharedClausesManager::Synchronize().
-  auto share_clause = [mapping, clause_stream, clause = std::vector<int>()](
+  auto share_clause = [mapping, clause_stream, max_lbd,
+                       clause = std::vector<int>()](
                           int lbd, absl::Span<const Literal> literals) mutable {
-    if (lbd <= 0 || lbd > 2 || !clause_stream->CanAccept(literals.size())) {
+    if (lbd <= 0 || lbd > max_lbd ||
+        !clause_stream->CanAccept(literals.size(), lbd)) {
       return;
     }
     clause.clear();
@@ -2409,7 +2415,8 @@ struct SharedClasses {
         !params.interleave_search() || params.num_workers() <= 1;
     response->SetSynchronizationMode(always_synchronize);
     if (params.share_binary_clauses() && params.num_workers() > 1) {
-      clauses = std::make_unique<SharedClausesManager>(always_synchronize);
+      clauses = std::make_unique<SharedClausesManager>(always_synchronize,
+                                                       absl::Seconds(1));
     }
   }
 
@@ -3103,9 +3110,9 @@ class LnsSolver : public SubSolver {
     return [task_id, this]() {
       if (shared_->SearchIsDone()) return;
 
-      // Create a random number generator whose seed depends both on the task_id
-      // and on the parameters_.random_seed() so that changing the later will
-      // change the LNS behavior.
+      // Create a random number generator whose seed depends both on the
+      // task_id and on the parameters_.random_seed() so that changing the
+      // later will change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
       const int32_t high = static_cast<int32_t>(task_id >> 32);
       std::seed_seq seed{low, high, lns_parameters_.random_seed()};
@@ -3234,9 +3241,9 @@ class LnsSolver : public SubSolver {
       }
       if (neighborhood.is_simple &&
           neighborhood.num_relaxed_variables_in_objective == 0) {
-        // If we didn't relax the objective, there can be no improving solution.
-        // However, we might have some diversity if they are multiple feasible
-        // solution.
+        // If we didn't relax the objective, there can be no improving
+        // solution. However, we might have some diversity if they are
+        // multiple feasible solution.
         //
         // TODO(user): How can we teak the search to favor diversity.
         if (generator_->num_consecutive_non_improving_calls() > 10) {
@@ -3353,8 +3360,8 @@ class LnsSolver : public SubSolver {
 
         // Special case if we solved a part of the full problem!
         //
-        // TODO(user): This do not work if they are symmetries loaded into SAT.
-        // For now we just disable this if there is any symmetry. See for
+        // TODO(user): This do not work if they are symmetries loaded into
+        // SAT. For now we just disable this if there is any symmetry. See for
         // instance spot5_1401.fzn. Be smarter about that.
         //
         // The issue is that as we fix level zero variables from a partial
@@ -3389,8 +3396,8 @@ class LnsSolver : public SubSolver {
               shared_->model_proto.objective(), solution_values));
         }
 
-        // Report any feasible solution we have. Optimization: We don't do that
-        // if we just recovered the base solution.
+        // Report any feasible solution we have. Optimization: We don't do
+        // that if we just recovered the base solution.
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
           const std::vector<int64_t> base_solution(
@@ -3574,8 +3581,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
   // Adds first solution subsolvers.
   //
-  // The logic is the following. Before the first solution is found, we have (in
-  // order):
+  // The logic is the following. Before the first solution is found, we have
+  // (in order):
   //   - num_full_problem_solvers full problem solvers
   //   - num_workers - num_full_problem_solvers -
   //         num_dedicated_incomplete_solvers first solution solvers.

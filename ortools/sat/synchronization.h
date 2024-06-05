@@ -16,7 +16,6 @@
 
 #include <array>
 #include <atomic>
-#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -34,6 +33,7 @@
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -635,7 +635,13 @@ class UniqueClauseStream {
 
   // Returns true if the stream can accept a clause of the specified size
   // without dropping it.
-  bool CanAccept(int size) const;
+  bool CanAccept(int size, int lbd) const;
+
+  int lbd_threshold() const ABSL_LOCKS_EXCLUDED(mutex_) {
+    absl::MutexLock lock(&mutex_);
+    return lbd_threshold_;
+  }
+  void set_lbd_threshold(int lbd) ABSL_LOCKS_EXCLUDED(mutex_);
 
   // Computes a hash that is independent of the order of literals in the clause.
   static size_t HashClause(absl::Span<const int> clause, size_t hash_seed = 0);
@@ -653,6 +659,7 @@ class UniqueClauseStream {
   int NumClauses(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   mutable absl::Mutex mutex_;
+  int lbd_threshold_ ABSL_GUARDED_BY(mutex_) = 2;
   absl::flat_hash_set<size_t> fingerprints_ ABSL_GUARDED_BY(mutex_);
   std::array<std::vector<int>, kMaxClauseSize - 2> clauses_by_size_
       ABSL_GUARDED_BY(mutex_);
@@ -667,7 +674,8 @@ class UniqueClauseStream {
 // literals can be negative numbers.
 class SharedClausesManager {
  public:
-  explicit SharedClausesManager(bool always_synchronize);
+  explicit SharedClausesManager(bool always_synchronize,
+                                absl::Duration share_frequency);
   void AddBinaryClause(int id, int lit1, int lit2);
 
   // Returns new glue clauses.
@@ -721,8 +729,10 @@ class SharedClausesManager {
   std::vector<int> id_to_last_finished_batch_ ABSL_GUARDED_BY(mutex_);
   std::deque<CompactVectorVector<int>> batches_ ABSL_GUARDED_BY(mutex_);
   std::deque<UniqueClauseStream> id_to_clause_stream_ ABSL_GUARDED_BY(mutex_);
+  WallTimer share_timer_ ABSL_GUARDED_BY(mutex_);
 
   const bool always_synchronize_ = true;
+  const absl::Duration share_frequency_;
 
   // Stats:
   std::vector<int64_t> id_to_clauses_exported_;

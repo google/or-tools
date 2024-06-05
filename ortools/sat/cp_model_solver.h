@@ -16,9 +16,7 @@
 
 #include <functional>
 #include <string>
-#include <vector>
 
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"

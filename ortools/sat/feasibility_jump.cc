@@ -301,29 +301,25 @@ void FeasibilityJumpSolver::PerturbateCurrentSolution() {
 std::string FeasibilityJumpSolver::OneLineStats() const {
   // Restarts, perturbations, and solutions imported.
   std::string restart_str;
-  if (num_restarts_ > 1) {
+  if (type() == SubSolver::INCOMPLETE) {
+    absl::StrAppend(&restart_str, " rst{imports:", num_solutions_imported_);
+    absl::StrAppend(&restart_str, " perturbs:", num_perturbations_, "}");
+  } else {
     absl::StrAppend(&restart_str, " #restarts:", num_restarts_ - 1);
-  }
-  if (num_solutions_imported_ > 0) {
-    absl::StrAppend(&restart_str,
-                    " #solutions_imported:", num_solutions_imported_);
-  }
-  if (num_perturbations_ > 0) {
-    absl::StrAppend(&restart_str, " #perturbations:", num_perturbations_);
   }
 
   // Moves and evaluations in the general iterations.
   const std::string general_str =
       num_general_evals_ == 0 && num_general_moves_ == 0
           ? ""
-          : absl::StrCat(" #gen_moves:", FormatCounter(num_general_moves_),
-                         " #gen_evals:", FormatCounter(num_general_evals_));
+          : absl::StrCat(" gen{mvs:", FormatCounter(num_general_moves_),
+                         " evals:", FormatCounter(num_general_evals_), "}");
   const std::string compound_str =
       num_compound_moves_ == 0 && move_->NumBacktracks() == 0
           ? ""
-          : absl::StrCat(
-                " #comp_moves:", FormatCounter(num_compound_moves_),
-                " #backtracks:", FormatCounter(move_->NumBacktracks()));
+          : absl::StrCat(" comp{mvs:", FormatCounter(num_compound_moves_),
+                         " btracks:", FormatCounter(move_->NumBacktracks()),
+                         "}");
 
   // Improving jumps and infeasible constraints.
   const int num_infeasible_cts = evaluator_->NumInfeasibleConstraints();
@@ -335,10 +331,10 @@ std::string FeasibilityJumpSolver::OneLineStats() const {
                          FormatCounter(evaluator_->NumInfeasibleConstraints()));
 
   return absl::StrCat("batch:", num_batches_, restart_str,
-                      " #lin_moves:", FormatCounter(num_linear_moves_),
-                      " #lin_evals:", FormatCounter(num_linear_evals_),
+                      " lin{mvs:", FormatCounter(num_linear_moves_),
+                      " evals:", FormatCounter(num_linear_evals_), "}",
                       general_str, compound_str, non_solution_str,
-                      " #weight_updates:", FormatCounter(num_weight_updates_));
+                      " #w_updates:", FormatCounter(num_weight_updates_));
 }
 
 std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {

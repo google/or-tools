@@ -1313,8 +1313,8 @@ different, but we do not care when they are inactive (represented by being
 assigned a zero value).
 
 To implement this constraint, we will collect all values in the initial domain
-of all variables and attach Boolean variables for each of them.
-This requires reading back the values from the model.
+of all variables and attach Boolean variables for each of them. This requires
+reading back the values from the model.
 
 ### Python code
 

@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/hash/hash.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -1121,11 +1122,16 @@ int UniqueClauseStream::NumBufferedLiteralsUpToSize(int max_size) const {
   return result;
 }
 
-bool UniqueClauseStream::CanAccept(int size) const {
+bool UniqueClauseStream::CanAccept(int size, int lbd) const {
   absl::MutexLock mutex_lock(&mutex_);
-  return size > 2 && size <= kMaxClauseSize &&
+  return size > 2 && size <= kMaxClauseSize && lbd <= lbd_threshold_ &&
          clauses_by_size_[size - 3].size() + size <=
              kMaxBufferedLiteralsPerSize;
+}
+
+void UniqueClauseStream::set_lbd_threshold(int lbd) {
+  absl::MutexLock mutex_lock(&mutex_);
+  lbd_threshold_ = lbd;
 }
 
 size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
@@ -1153,8 +1159,10 @@ int UniqueClauseStream::NumClauses(int size) const {
   return clauses_by_size_[size - 3].size() / size;
 };
 
-SharedClausesManager::SharedClausesManager(bool always_synchronize)
-    : always_synchronize_(always_synchronize) {}
+SharedClausesManager::SharedClausesManager(bool always_synchronize,
+                                           absl::Duration share_frequency)
+    : always_synchronize_(always_synchronize),
+      share_frequency_(share_frequency) {}
 
 int SharedClausesManager::RegisterNewId() {
   absl::MutexLock mutex_lock(&mutex_);
@@ -1242,6 +1250,9 @@ void SharedClausesManager::Synchronize() {
   last_visible_binary_clause_ = added_binary_clauses_.size();
   const int num_workers = id_to_clause_stream_.size();
   if (num_workers <= 1) return;
+  if (!share_timer_.IsRunning()) share_timer_.Start();
+  if (share_timer_.GetDuration() < share_frequency_) return;
+  share_timer_.Restart();
   std::vector<int> ids(num_workers);
   for (int size = 3; size < UniqueClauseStream::kMaxClauseSize; ++size) {
     ids.clear();
@@ -1276,8 +1287,27 @@ void SharedClausesManager::Synchronize() {
       }
     }
   }
-  if (all_clauses_.NumBufferedLiterals() >
-      UniqueClauseStream::kMaxLiteralsPerBatch / 2) {
+  // Tune LBD threshold for individual workers based on how full the batch and
+  // worker's buffer is.
+  const bool underfull = all_clauses_.NumBufferedLiterals() <=
+                         UniqueClauseStream::kMaxLiteralsPerBatch -
+                             UniqueClauseStream::kMaxClauseSize;
+  for (int id = 0; id < num_workers; ++id) {
+    UniqueClauseStream& stream = id_to_clause_stream_[id];
+    const int lbd_threshold = stream.lbd_threshold();
+    // Half a batch left after sharing! Focus on lower LBD clauses.
+    const bool overfull = stream.NumBufferedLiterals() >
+                          UniqueClauseStream::kMaxLiteralsPerBatch / 2;
+    const int new_lbd = std::clamp(lbd_threshold + (overfull ? -1 : underfull),
+                                   2, UniqueClauseStream::kMaxClauseSize);
+    if (new_lbd != lbd_threshold) {
+      VLOG(2) << id_to_worker_name_[id]
+              << " sharing clauses with lbd <= " << new_lbd;
+      stream.set_lbd_threshold(new_lbd);
+    }
+  }
+
+  if (all_clauses_.NumBufferedLiterals() > 0) {
     batches_.push_back(all_clauses_.NextBatch());
     VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
             << " clauses max size = "

@@ -280,7 +280,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
         << "/" << nodes.size();
     return;
   }
-  if (nodes_.size() >= max_nodes_) {
+  if (nodes_.size() + 2 > max_nodes_) {
     VLOG(2) << "Too many nodes to accept split";
     return;
   }

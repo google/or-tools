@@ -414,21 +414,25 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // Note(user): This require that intervals appear before they are used.
         // We currently enforce this at validation, otherwise we need two passes
         // here and in a bunch of other places.
-        //
-        // TODO(user): With this graph encoding, we loose the symmetry that the
-        // dimension x can be swapped with the dimension y. I think it is
-        // possible to encode this by creating two extra nodes X and
-        // Y, each connected to all the x and all the y, but I have to think
-        // more about it.
         CHECK_EQ(constraint_node, new_node(color));
+        std::vector<int64_t> local_color = color;
+        local_color.push_back(0);
         const int size = constraint.no_overlap_2d().x_intervals().size();
+        const int node_x = new_node(local_color);
+        const int node_y = new_node(local_color);
+        local_color.pop_back();
+        graph->AddArc(constraint_node, node_x);
+        graph->AddArc(constraint_node, node_y);
+        local_color.push_back(1);
         for (int i = 0; i < size; ++i) {
+          const int box_node = new_node(local_color);
+          graph->AddArc(box_node, constraint_node);
           const int x = constraint.no_overlap_2d().x_intervals(i);
           const int y = constraint.no_overlap_2d().y_intervals(i);
-          graph->AddArc(interval_constraint_index_to_node.at(x),
-                        constraint_node);
-          graph->AddArc(interval_constraint_index_to_node.at(x),
-                        interval_constraint_index_to_node.at(y));
+          graph->AddArc(interval_constraint_index_to_node.at(x), node_x);
+          graph->AddArc(interval_constraint_index_to_node.at(x), box_node);
+          graph->AddArc(interval_constraint_index_to_node.at(y), node_y);
+          graph->AddArc(interval_constraint_index_to_node.at(y), box_node);
         }
         break;
       }

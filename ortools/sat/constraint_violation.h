@@ -243,8 +243,9 @@ class LinearIncrementalEvaluator {
 
 // View of a generic (non linear) constraint for the LsEvaluator.
 //
-// TODO(user): Do we add a Update(solution, var, new_value) method ?
-// TODO(user): Do we want to support Update(solutions, vars, new_values) ?
+// TODO(user): Remove the ct_proto() from here and instead expose a
+// UsedVariables(). It is inefficient to use a proto for compiled constraint not
+// based on one.
 class CompiledConstraint {
  public:
   explicit CompiledConstraint(const ConstraintProto& ct_proto);
@@ -531,6 +532,36 @@ class CompiledNoOverlapConstraint : public CompiledConstraint {
  private:
   const CpModelProto& cp_model_;
   std::vector<std::pair<int64_t, int64_t>> events_;
+};
+
+// Special constraint for no overlap between two intervals.
+// We usually expand small no-overlap in n^2 such constraint, so we want to
+// be compact and efficient here.
+class NoOverlapBetweenTwoIntervals : public CompiledConstraint {
+ public:
+  NoOverlapBetweenTwoIntervals(const ConstraintProto& ct_proto,
+                               const CpModelProto& cp_model);
+  ~NoOverlapBetweenTwoIntervals() override = default;
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
+    return ComputeViolationInternal(solution);
+  }
+
+  // Note(user): this is the same implementation as the base one, but it
+  // avoid one virtual call !
+  int64_t ViolationDelta(
+      int /*var*/, int64_t /*old_value*/,
+      absl::Span<const int64_t> solution_with_new_value) final {
+    return ComputeViolationInternal(solution_with_new_value) - violation();
+  }
+
+ private:
+  int64_t ComputeViolationInternal(absl::Span<const int64_t> solution);
+
+  int num_enforcements_;
+  std::unique_ptr<int[]> enforcements_;
+  LinearExpressionProto end_minus_start_1_;
+  LinearExpressionProto end_minus_start_2_;
 };
 
 // The violation of a cumulative is the sum of overloads over time.

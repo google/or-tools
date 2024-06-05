@@ -46,6 +46,23 @@ int64_t ExprValue(const LinearExpressionProto& expr,
   return result;
 }
 
+LinearExpressionProto ExprDiff(const LinearExpressionProto& a,
+                               const LinearExpressionProto& b) {
+  LinearExpressionProto result;
+  result.set_offset(a.offset() - b.offset());
+  result.mutable_vars()->Reserve(a.vars().size() + b.vars().size());
+  result.mutable_coeffs()->Reserve(a.vars().size() + b.vars().size());
+  for (int i = 0; i < a.vars().size(); ++i) {
+    result.add_vars(a.vars(i));
+    result.add_coeffs(a.coeffs(i));
+  }
+  for (int i = 0; i < b.vars().size(); ++i) {
+    result.add_vars(b.vars(i));
+    result.add_coeffs(-b.coeffs(i));
+  }
+  return result;
+}
+
 int64_t ExprMin(const LinearExpressionProto& expr, const CpModelProto& model) {
   int64_t result = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
@@ -1174,13 +1191,42 @@ CompiledNoOverlapConstraint::CompiledNoOverlapConstraint(
 int64_t CompiledNoOverlapConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   DCHECK_GE(ct_proto().no_overlap().intervals_size(), 2);
-  if (ct_proto().no_overlap().intervals_size() == 2) {
-    return NoOverlapMinRepairDistance(
-        cp_model_.constraints(ct_proto().no_overlap().intervals(0)),
-        cp_model_.constraints(ct_proto().no_overlap().intervals(1)), solution);
-  }
   return ComputeOverloadArea(ct_proto().no_overlap().intervals(), {}, cp_model_,
                              solution, 1, events_);
+}
+
+NoOverlapBetweenTwoIntervals::NoOverlapBetweenTwoIntervals(
+    const ConstraintProto& ct_proto, const CpModelProto& cp_model)
+    : CompiledConstraint(ct_proto) {
+  CHECK_EQ(ct_proto.no_overlap().intervals().size(), 2);
+  const ConstraintProto& ct0 =
+      cp_model.constraints(ct_proto.no_overlap().intervals(0));
+  const ConstraintProto& ct1 =
+      cp_model.constraints(ct_proto.no_overlap().intervals(1));
+
+  // The more compact the better, hence the size + int[].
+  num_enforcements_ =
+      ct0.enforcement_literal().size() + ct1.enforcement_literal().size();
+  if (num_enforcements_ > 0) {
+    enforcements_.reset(new int[num_enforcements_]);
+    int i = 0;
+    for (const int lit : ct0.enforcement_literal()) enforcements_[i++] = lit;
+    for (const int lit : ct1.enforcement_literal()) enforcements_[i++] = lit;
+  }
+
+  end_minus_start_1_ = ExprDiff(ct0.interval().end(), ct1.interval().start());
+  end_minus_start_2_ = ExprDiff(ct1.interval().end(), ct0.interval().start());
+}
+
+// Same as NoOverlapMinRepairDistance().
+int64_t NoOverlapBetweenTwoIntervals::ComputeViolationInternal(
+    absl::Span<const int64_t> solution) {
+  for (int i = 0; i < num_enforcements_; ++i) {
+    if (!LiteralValue(enforcements_[i], solution)) return 0;
+  }
+  const int64_t diff1 = ExprValue(end_minus_start_1_, solution);
+  const int64_t diff2 = ExprValue(end_minus_start_2_, solution);
+  return std::max(std::min(diff1, diff2), int64_t{0});
 }
 
 // ----- CompiledCumulativeConstraint -----
@@ -1571,11 +1617,9 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     case ConstraintProto::ConstraintCase::kNoOverlap: {
       const int size = ct.no_overlap().intervals_size();
       if (size <= 1) break;
-      if (size == 2 ||
-          size > params_.feasibility_jump_max_expanded_constraint_size()) {
-        CompiledNoOverlapConstraint* no_overlap =
-            new CompiledNoOverlapConstraint(ct, cp_model_);
-        constraints_.emplace_back(no_overlap);
+      if (size > params_.feasibility_jump_max_expanded_constraint_size()) {
+        constraints_.emplace_back(
+            new CompiledNoOverlapConstraint(ct, cp_model_));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
@@ -1595,8 +1639,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
                 ct.no_overlap().intervals(i));
             disj->mutable_no_overlap()->add_intervals(
                 ct.no_overlap().intervals(j));
-            CompiledNoOverlapConstraint* disjunction =
-                new CompiledNoOverlapConstraint(*disj, cp_model_);
+            NoOverlapBetweenTwoIntervals* disjunction =
+                new NoOverlapBetweenTwoIntervals(*disj, cp_model_);
             constraints_.emplace_back(disjunction);
           }
         }
