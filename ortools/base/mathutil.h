@@ -150,6 +150,117 @@ class MathUtil {
         : (input_value - remainder + rounding_value);
     }
 
+  // Convert a floating-point number to an integer. For all inputs x where
+  // static_cast<IntOut>(x) is legal according to the C++ standard, the result
+  // is identical to that cast (i.e. the result is x with its fractional part
+  // truncated whenever that is representable as IntOut).
+  //
+  // static_cast would cause undefined behavior for the following cases, which
+  // have well-defined behavior for this function:
+  //
+  //  1. If x is NaN, the result is zero.
+  //
+  //  2. If the truncated form of x is above the representable range of IntOut,
+  //     the result is MathLimits<IntOut>::kMax.
+  //
+  //  3. If the truncated form of x is below the representable range of IntOut,
+  //     the result is MathLimits<IntOut>::kMin.
+  //
+  // Note that cases #2 and #3 cover infinities as well as finite numbers.
+  //
+  // The range of FloatIn must include the range of IntOut, otherwise
+  // the results are undefined.
+  template <class IntOut, class FloatIn>
+  static IntOut SafeCast(FloatIn x) {
+    COMPILE_ASSERT(!MathLimits<FloatIn>::kIsInteger, FloatIn_is_integer);
+    COMPILE_ASSERT(MathLimits<IntOut>::kIsInteger, IntOut_is_not_integer);
+    COMPILE_ASSERT(std::numeric_limits<IntOut>::radix == 2, IntOut_is_base_2);
+
+    // Special case NaN, for which the logic below doesn't work.
+    if (MathLimits<FloatIn>::IsNaN(x)) {
+      return 0;
+    }
+
+    // Negative values all clip to zero for unsigned results.
+    if (!MathLimits<IntOut>::kIsSigned && x < 0) {
+      return 0;
+    }
+
+    // Handle infinities.
+    if (MathLimits<FloatIn>::IsInf(x)) {
+      return x < 0 ?
+          MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+    }
+
+    // Set exp such that x == f * 2^exp for some f with |f| in [0.5, 1.0),
+    // unless x is zero in which case exp == 0. Note that this implies that the
+    // magnitude of x is strictly less than 2^exp.
+    int exp = 0;
+    std::frexp(x, &exp);
+
+    // Let N be the number of non-sign bits in the representation of IntOut. If
+    // the magnitude of x is strictly less than 2^N, the truncated version of x
+    // is representable as IntOut. The only representable integer for which this
+    // is not the case is kMin for signed types (i.e. -2^N), but that is covered
+    // by the fall-through below.
+    if (exp <= std::numeric_limits<IntOut>::digits) {
+      return x;
+    }
+
+    // Handle numbers with magnitude >= 2^N.
+    return x < 0 ?
+        MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+  }
+
+  // --------------------------------------------------------------------
+  // SafeRound
+  //   These functions round a floating-point number to an integer.
+  //   Results are identical to Round, except in cases where
+  //   the argument is NaN, or when the rounded value would overflow the
+  //   return type. In those cases, Round has undefined
+  //   behavior. SafeRound returns 0 when the argument is
+  //   NaN, and returns the closest possible integer value otherwise (i.e.
+  //   MathLimits<IntOut>::kMax for large positive values, and
+  //   MathLimits<IntOut>::kMin for large negative values).
+  //   The range of FloatIn must include the range of IntOut, otherwise
+  //   the results are undefined.
+  // --------------------------------------------------------------------
+  template <class IntOut, class FloatIn>
+  static IntOut SafeRound(FloatIn x) {
+    COMPILE_ASSERT(!MathLimits<FloatIn>::kIsInteger, FloatIn_is_integer);
+    COMPILE_ASSERT(MathLimits<IntOut>::kIsInteger, IntOut_is_not_integer);
+
+    if (MathLimits<FloatIn>::IsNaN(x)) {
+      return 0;
+    } else {
+      return SafeCast<IntOut>((x < 0.) ? (x - 0.5) : (x + 0.5));
+    }
+  }
+
+  // --------------------------------------------------------------------
+  // FastInt64Round
+  //   Fast routines for converting floating-point numbers to integers.
+  //
+  //   These routines are approximately 6 times faster than the default
+  //   implementation of Round<int> on Intel processors (12 times faster on
+  //   the Pentium 3).  They are also more than 5 times faster than simply
+  //   casting a "double" to an "int" using static_cast<int>.  This is
+  //   because casts are defined to truncate towards zero, which on Intel
+  //   processors requires changing the rounding mode and flushing the
+  //   floating-point pipeline (unless programs are compiled specifically
+  //   for the Pentium 4, which has a new instruction to avoid this).
+  //
+  //   Numbers that are halfway between two integers may be rounded up or
+  //   down.  This is because the conversion is done using the default
+  //   rounding mode, which rounds towards the closest even number in case
+  //   of ties.  So for example, FastIntRound(0.5) == 0, but
+  //   FastIntRound(1.5) == 2.  These functions should only be used with
+  //   applications that don't care about which way such half-integers are
+  //   rounded.
+  //
+  //   There are template specializations of Round() which call these
+  //   functions (for "int" and "int64" only), but it's safer to call them
+  //   directly.
   static int64_t FastInt64Round(double x) { return Round<int64_t>(x); }
 
   // Returns Stirling's Approximation for log(n!) which has an error
