@@ -1,10 +1,11 @@
-FROM ortools/cmake:centos_swig AS env
+FROM ortools/cmake:rockylinux_swig AS env
 ENV PATH=/root/.local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install python3.11-devel python3.11-numpy python3.11-pip \
+&& dnf -y install python3-devel python3-pip python3-numpy \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-RUN python3.11 -m pip install absl-py mypy mypy-protobuf pandas
+RUN python3 -m pip install \
+ absl-py mypy mypy-protobuf pandas
 
 FROM env AS devel
 WORKDIR /home/project

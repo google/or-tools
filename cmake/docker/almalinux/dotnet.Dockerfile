@@ -1,4 +1,4 @@
-FROM ortools/cmake:centos_swig AS env
+FROM ortools/cmake:almalinux_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
 RUN dnf -y update \
 && dnf -y install dotnet-sdk-6.0 \
