@@ -185,6 +185,21 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "adjustable_k_ary_heap_stress_test",
+    size = "large",
+    timeout = "eternal",
+    srcs = ["adjustable_k_ary_heap_stress_test.cc"],
+    deps = [
+        ":adjustable_k_ary_heap",
+        "//ortools/base:gmock_main",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/random",
+    ],
+)
+
 cc_library(
     name = "knapsack_solver_lib",
     srcs = ["knapsack_solver.cc"],

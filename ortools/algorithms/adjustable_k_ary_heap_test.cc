@@ -182,4 +182,17 @@ TEST(StandardHeapTest, RandomDataSpeed) {
   }
 }
 
+TEST(AdjustableKAryHeapTest, DoubleInsertionOneRemoval) {
+  const int kSize = 10'000;
+  AdjustableKAryHeap<PriorityAggregate, 4, true> heap;
+
+  for (int i = 0; i < kSize; ++i) {
+    heap.Insert({static_cast<float>(i), i});
+    heap.Insert({static_cast<float>(i + 1), i});
+    heap.Remove(i);
+
+    EXPECT_FALSE(heap.Contains(i));
+  }
+  EXPECT_TRUE(heap.CheckHeapProperty());
+}
 }  // namespace operations_research

@@ -128,8 +128,12 @@ class AdjustableKAryHeap {
       heap_positions_.resize(index(element) + 1, kNonExistent);
     }
     if (GetHeapPosition(index(element)) == kNonExistent) {
-      heap_positions_[index(element)] = data_.size();
+      heap_positions_[index(element)] = heap_size_;
+      if (heap_size_ < data_.size()) {
+        data_[heap_size_] = element;
+      } else {
       data_.push_back(element);
+      }
       ++heap_size_;
     }
     Update(element);
@@ -157,6 +161,10 @@ class AdjustableKAryHeap {
     }
   }
 
+  // Checks if the element with index is in the heap.
+  bool Contains(Index index) const {
+    return GetHeapPosition(index) != kNonExistent;
+  }
   // Checks that the heap is well-formed.
   bool CheckHeapProperty() const {
     for (HeapIndex i = heap_size() - 1; i >= Arity; --i) {
@@ -191,6 +199,7 @@ class AdjustableKAryHeap {
     } else {
       SiftDown(heap_index);
     }
+    heap_positions_[index(heap_size_)] = kNonExistent;
     return true;
   }
 

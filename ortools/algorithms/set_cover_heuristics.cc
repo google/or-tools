@@ -30,6 +30,8 @@
 namespace operations_research {
 
 constexpr SubsetIndex kNotFound(-1);
+static constexpr Cost kMaxPossibleCost = std::numeric_limits<Cost>::max();
+static constexpr double kInfinity = std::numeric_limits<float>::infinity();
 
 namespace {
 SubsetBoolVector MakeBoolVector(absl::Span<const SubsetIndex> focus,
@@ -363,7 +365,6 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   DVLOG(1) << "Entering GuidedTabuSearch::NextSolution, num_iterations = "
            << num_iterations;
   const SubsetCostVector& subset_costs = inv_->model()->subset_costs();
-  constexpr Cost kMaxPossibleCost = std::numeric_limits<Cost>::max();
   Cost best_cost = inv_->cost();
   SubsetBoolVector best_choices = inv_->is_selected();
   Cost augmented_cost =
@@ -441,23 +442,14 @@ bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus,
 void GuidedLocalSearch::Initialize() {
   const SparseColumnView& columns = inv_->model()->columns();
   penalties_.assign(columns.size(), 0);
-  utilities_ = inv_->model()->subset_costs();
   penalization_factor_ = alpha_ * inv_->cost() * 1.0 / (columns.size());
-}
-
-void GuidedLocalSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
-  for (const SubsetIndex subset : focus) {
-    utilities_[subset] = (inv_->is_selected()[subset]) * 1.0 *
-                         inv_->model()->subset_costs()[subset] /
-                         (1 + penalties_[subset]);
-  }
-  Cost max_utility = -1.0;
-  for (SubsetIndex subset : focus) {
-    max_utility = std::max(max_utility, utilities_[subset]);
-  }
-  for (SubsetIndex subset : focus) {
-    if (max_utility - utilities_[subset] <= epsilon_) {
-      ++penalties_[subset];
+  for (const SetCoverDecision& decision : inv_->trace()) {
+    const SubsetIndex subset = decision.subset();
+    if (inv_->is_selected()[subset]) {
+      utility_heap_.Insert(
+          {static_cast<float>(inv_->model()->subset_costs()[subset] /
+                              (1 + penalties_[subset])),
+           subset.value()});
     }
   }
 }
@@ -466,46 +458,79 @@ bool GuidedLocalSearch::NextSolution(int num_iterations) {
   return NextSolution(inv_->model()->all_subsets(), num_iterations);
 }
 
+Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
+  float delta = (penalization_factor_ * penalties_[subset] +
+                 inv_->model()->subset_costs()[subset]);
+  if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset)) {
+    return delta;
+  } else if (!inv_->is_selected()[subset]) {
+    return -delta;
+  }
+  return kInfinity;
+}
+
 bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
                                      int num_iterations) {
+  inv_->MakeFullyUpdated();
   Cost best_cost = inv_->cost();
   SubsetBoolVector best_choices = inv_->is_selected();
+  for (const SubsetIndex& subset : focus) {
+    const float delta = ComputeDelta(subset);
+    if (delta < kInfinity) {
+      priority_heap_.Insert({delta, subset.value()});
+    }
+  }
   for (int iteration = 0; iteration < num_iterations; ++iteration) {
     // Improve current solution respective to the current penalties.
-    Cost best_delta = -std::numeric_limits<Cost>::max();
-    SubsetIndex best_subset = kNotFound;
-    for (const SubsetIndex subset : focus) {
-      if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset)) {
-        Cost delta_selected = (penalization_factor_ * penalties_[subset] +
-                               inv_->model()->subset_costs()[subset]);
-        if (delta_selected > best_delta) {
-          best_delta = delta_selected;
-          best_subset = subset;
+    SubsetIndex best_subset = SubsetIndex(priority_heap_.Top().index());
+
+    if (inv_->is_selected()[best_subset]) {
+      utility_heap_.Insert({0, best_subset.value()});
+    } else {
+      utility_heap_.Insert(
+          {static_cast<float>(inv_->model()->subset_costs()[best_subset] /
+                              (1 + penalties_[best_subset])),
+           best_subset.value()});
         }
-      } else if (!inv_->is_selected()[subset]) {
-        Cost delta_not_selected = -(penalization_factor_ * penalties_[subset] +
+    inv_->FlipAndFullyUpdate(best_subset);  // Flip the best subset.
+
+    // Getting the subset with highest utility.
+    SubsetIndex penalized_subset = SubsetIndex(utility_heap_.Pop().index());
+    ++penalties_[penalized_subset];
+    utility_heap_.Insert(
+        {static_cast<float>(inv_->model()->subset_costs()[penalized_subset] /
+                            (1 + penalties_[penalized_subset])),
+         penalized_subset.value()});
+
+    // Get removable subsets (Add them to the heap).
+    for (const SubsetIndex subset : inv_->new_removable_subsets()) {
+      const float delta_selected = (penalization_factor_ * penalties_[subset] +
                                     inv_->model()->subset_costs()[subset]);
-        if (delta_not_selected > best_delta) {
-          best_delta = delta_not_selected;
-          best_subset = subset;
+      priority_heap_.Insert({delta_selected, subset.value()});
         }
+    for (const SubsetIndex subset : {penalized_subset, best_subset}) {
+      const float delta = ComputeDelta(subset);
+      if (delta < kInfinity) {
+        priority_heap_.Insert({delta, subset.value()});
       }
     }
-    if (best_subset != kNotFound) {
-      inv_->Flip(best_subset);  // Flip the best subset.
+    // Get new non removable subsets.
+    // (Delete them from the heap)
+    for (const SubsetIndex subset : inv_->new_non_removable_subsets()) {
+      priority_heap_.Remove(subset.value());
     }
-    UpdatePenalties(focus);
     if (inv_->cost() < best_cost) {
       best_cost = inv_->cost();
       best_choices = inv_->is_selected();
     }
   }
   inv_->LoadSolution(best_choices);
-  // Improve the solution by removing selected and redundant subsets.
-  for (const SubsetIndex subset : focus) {
+  // Improve the solution by removing redundant subsets.
+  for (const SubsetIndex& subset : focus) {
     if (inv_->is_selected()[subset] && inv_->ComputeIsRedundant(subset))
-      inv_->Deselect(subset);
+      inv_->DeselectAndFullyUpdate(subset);
   }
+  DCHECK_EQ(inv_->num_uncovered_elements(), 0);
   return true;
 }
 

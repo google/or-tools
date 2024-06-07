@@ -19,6 +19,7 @@
 
 #include "absl/base/nullability.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/algorithms/set_cover_invariant.h"
 #include "ortools/algorithms/set_cover_model.h"
 
@@ -173,7 +174,7 @@ class GreedySolutionGenerator {
   bool NextSolution(const std::vector<SubsetIndex>& focus);
 
   // Same with a different set of costs.
-  bool NextSolution(const std::vector<SubsetIndex>& focus,
+  bool NextSolution(const std ::vector<SubsetIndex>& focus,
                     const SubsetCostVector& costs);
 
  private:
@@ -430,24 +431,25 @@ class GuidedLocalSearch {
   bool NextSolution(const SubsetBoolVector& in_focus, int num_iterations);
 
  private:
-  // Setters and getters for the Guided Local Search algorithm parameters.
-  void SetEpsilon(double r) { epsilon_ = r; }
-  double GetEpsilon() const { return epsilon_; }
-
-  void SetAlpha(double r) { alpha_ = r; }
-  double GetAlpha() const { return alpha_; }
-
-  // Updates the penalties on the subsets in focus.
-  void UpdatePenalties(absl::Span<const SubsetIndex> focus);
-
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
 
+  // Setters and getters for the Guided Local Search algorithm parameters.
+  void SetEpsilon(double r) { epsilon_ = r; }
+
+  double GetEpsilon() const { return epsilon_; }
+
+  void SetAlpha(double r) { alpha_ = r; }
+
+  double GetAlpha() const { return alpha_; }
+
   // The epsilon value for the Guided Local Search algorithm.
+  // Used to penalize the subsets within epsilon of the maximum utility.
   static constexpr double kDefaultEpsilon = 1e-8;
   double epsilon_;
 
   // The alpha value for the Guided Local Search algorithm.
+  // Tunable factor used to penalize the subsets.
   static constexpr double kDefaultAlpha = 0.5;
   double alpha_;
 
@@ -457,8 +459,16 @@ class GuidedLocalSearch {
   // The penalties of each feature during Guided Local Search.
   SubsetToIntVector penalties_;
 
-  // Utilities for the different subsets. They are updated ("penalized") costs.
-  SubsetCostVector utilities_;
+  // Computes the delta of the cost of the solution if subset state changed.
+  Cost ComputeDelta(SubsetIndex subset) const;
+
+  // The priority heap used to select the subset with the maximum priority to be
+  // updated.
+  AdjustableKAryHeap<SubsetIndexWithPriority, 2, true> priority_heap_;
+
+  // The utility heap used to select the subset with the maximum utility to be
+  // penalized.
+  AdjustableKAryHeap<SubsetIndexWithPriority, 2, true> utility_heap_;
 };
 
 // Randomly clears a proportion num_subsets variables in the solution.

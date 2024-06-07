@@ -120,6 +120,22 @@ class SetCoverInvariant {
   // Clears the trace.
   void ClearTrace() { trace_.clear(); }
 
+  // Clear the removability information.
+  void ClearRemovabilityInformation() {
+    new_removable_subsets_.clear();
+    new_non_removable_subsets_.clear();
+  }
+
+  // Returns the subsets that become removable after the last update.
+  const std::vector<SubsetIndex>& new_removable_subsets() const {
+    return new_removable_subsets_;
+  }
+
+  // Returns the subsets that become non removable after the last update.
+  const std::vector<SubsetIndex>& new_non_removable_subsets() const {
+    return new_non_removable_subsets_;
+  }
+
   // Compresses the trace so that:
   // - each subset appears only once,
   // - there are only "positive" decisions.
@@ -142,18 +158,33 @@ class SetCoverInvariant {
   // TODO(user): Implement this using AVX-512?
   bool ComputeIsRedundant(SubsetIndex subset) const;
 
-  // Flips is_selected_[subset] to its negation, and incrementally updates the
-  // invariant. Calls Select or Deselect depending on value.
-  template <bool FullUpdate = false>
-  void Flip(SubsetIndex subset);
+  // Updates the invariant fully, so that is_redundant_ can be updated
+  // incrementally later with SelectAndFullyUpdate and
+  // DeselectSelectAndFullyUpdate.
+  void MakeFullyUpdated();
 
-  // Sets is_selected_[subset] to true and incrementally updates the invariant.
-  template <bool FullUpdate = false>
-  void Select(SubsetIndex subset);
+  // Flips is_selected_[subset] to its negation, by calling Select or Deselect
+  // depending on value. Updates the invariant incrementally.
+  // FlipAndFullyUpdate performs a full incremental update of the invariant,
+  // including num_non_overcovered_elements_, is_redundant_,
+  // new_removable_subsets_, new_non_removable_subsets_. This is useful for some
+  // meta-heuristics.
+  void Flip(SubsetIndex subset) { Flip(subset, false); }
+  void FlipAndFullyUpdate(SubsetIndex subset) { Flip(subset, true); }
 
-  // Sets is_selected_[subset] to false and incrementally updates the invariant.
-  template <bool FullUpdate = false>
-  void Deselect(SubsetIndex subset);
+  // Includes subset in the solution by setting is_selected_[subset] to true
+  // and incrementally updating the invariant.
+  // SelectAndFullyUpdate also updates the invariant in a more thorough way as
+  // explained with FlipAndFullyUpdate.
+  void Select(SubsetIndex subset) { Select(subset, false); }
+  void SelectAndFullyUpdate(SubsetIndex subset) { Select(subset, true); }
+
+  // Excludes subset from the solution by setting is_selected_[subset] to false
+  // and incrementally updating the invariant.
+  // DeselectAndFullyUpdate also updates the invariant in a more thorough way as
+  // explained with FlipAndFullyUpdate.
+  void Deselect(SubsetIndex subset) { Deselect(subset, false); }
+  void DeselectAndFullyUpdate(SubsetIndex subset) { Deselect(subset, true); }
 
   // Returns the current solution as a proto.
   SetCoverSolutionResponse ExportSolutionAsProto() const;
@@ -163,21 +194,42 @@ class SetCoverInvariant {
 
  private:
   // Computes the cost and the coverage vector for the given choices.
-  // Temporarily uses |U| BaseInts.
+  // Temporarily uses |E| BaseInts.
   std::tuple<Cost, ElementToIntVector> ComputeCostAndCoverage(
       const SubsetBoolVector& choices) const;
 
   // Computes the global number of uncovered elements and the
   // vector containing the number of free elements for each subset from
   // a coverage vector.
-  // Temporarily uses |J| BaseInts.
-  // TODO(user): there is no need to separate this from ComputeCostAndCoverage.
-  // Merge.
+  // Temporarily uses |S| BaseInts.
   std::tuple<BaseInt,            // Number of uncovered elements,
-             SubsetToIntVector,  // Number of free elements,
-             SubsetToIntVector,  // Number of non-overcovered elements,
+             SubsetToIntVector>  // Vector of number of free elements.
+  ComputeNumUncoveredAndFreeElements(const ElementToIntVector& cvrg) const;
+
+  // Computes the vector containing the number of non-overcovered elements per
+  // subset and the Boolean vector telling whether a subset is redundant w.r.t.
+  // the current solution.
+  // Temporarily uses |S| BaseInts.
+  std::tuple<SubsetToIntVector,  // Number of non-overcovered elements,
              SubsetBoolVector>   // Redundancy for each of the subsets.
-  ComputeImpliedData(const ElementToIntVector& cvrg) const;
+  ComputeNumNonOvercoveredElementsAndIsRedundant(
+      const ElementToIntVector& cvrg) const;
+
+  // Flips is_selected_[subset] to its negation,  by calling Select or Deselect
+  // depending on value. Updates the invariant incrementally.
+  // When incremental_full_update is true, the following fields are also
+  // updated: num_non_overcovered_elements_, is_redundant_,
+  // new_removable_subsets_, new_non_removable_subsets_. This is useful for some
+  // meta-heuristics.
+  void Flip(SubsetIndex, bool incremental_full_update);
+
+  // Sets is_selected_[subset] to true and incrementally updates the invariant.
+  // Parameter incremental_full_update has the same meaning as with Flip.
+  void Select(SubsetIndex subset, bool incremental_full_update);
+
+  // Sets is_selected_[subset] to false and incrementally updates the invariant.
+  // Parameter incremental_full_update has the same meaning as with Flip.
+  void Deselect(SubsetIndex subset, bool incremental_full_update);
 
   // Helper function for Select when AVX-512 is supported by the processor.
   void SelectAvx512(SubsetIndex subset);
@@ -195,139 +247,53 @@ class SetCoverInvariant {
   BaseInt num_uncovered_elements_;
 
   // Current assignment.
-  // Takes |J| bits.
+  // Takes |S| bits.
   SubsetBoolVector is_selected_;
+
+  // A trace of the decisions, i.e. a list of decisions (subset, Boolean) that
+  // lead to the current solution.
+  // Takes at most |S| BaseInts.
+  std::vector<SetCoverDecision> trace_;
+
+  // The coverage of an element is the number of used subsets which contains
+  // the said element.
+  // Takes |E| BaseInts
+  ElementToIntVector coverage_;
 
   // A vector that for each subset gives the number of free elements, i.e.
   // elements whose coverage is 0.
   // problem.
-  // Takes |J| BaseInts.
+  // Takes |S| BaseInts.
   SubsetToIntVector num_free_elements_;
-
-  // The coverage of an element is the number of used subsets which contains
-  // the said element.
-  // Takes |U| BaseInts
-  ElementToIntVector coverage_;
-
-  // A trace of the decisions leading to the current solution.
-  // Takes at most |J| BaseInts.
-  std::vector<SetCoverDecision> trace_;
 
   // Counts the number of free or exactly covered elements, i.e. whose coverage
   // is 0 or 1.
+  // Takes at most |S| BaseInts. (More likely a few percent of that).
   SubsetToIntVector num_non_overcovered_elements_;
 
   // True if the subset is redundant, i.e. can be removed from the solution
   // without making it infeasible.
+  // Takes |S| bits.
   SubsetBoolVector is_redundant_;
 
+  // Subsets that become removable after the last update.
+  // Takes at most |S| BaseInts. (More likely a few percent of that).
+  std::vector<SubsetIndex> new_removable_subsets_;
+
+  // Subsets that become non removable after the last update.
+  // Takes at most |S| BaseInts. (More likely a few percent of that).
+  std::vector<SubsetIndex> new_non_removable_subsets_;
+
   // Denotes whether is_redundant_ and num_non_overcovered_elements_ have been
-  // updated. Initially true, it becomes false as soon as Flip<FullUpdate>,
-  // Select<FullUpdate> and Deselect<FullUpdate> have been called with
-  // FullUpdate == false. The full update can be achieved again with
-  // RecomputeInvariant, at a high cost.
-  // TODO(user): implement faster, lazy update.
+  // updated. Initially true, it becomes false as soon as Flip,
+  // Select and Deselect are called with incremental_full_update = false. The
+  // fully updated status can be achieved again with a call to FullUpdate(),
+  // which can be expensive,
   bool is_fully_updated_;
 
   // True if the CPU supports the AVX-512 instruction set.
   bool supports_avx512_;
 };
-
-template <bool FullUpdate>
-void SetCoverInvariant::Flip(SubsetIndex subset) {
-  if (!is_selected_[subset]) {
-    Select<FullUpdate>(subset);
-  } else {
-    Deselect<FullUpdate>(subset);
-  }
-}
-
-template <bool FullUpdate>
-void SetCoverInvariant::Select(SubsetIndex subset) {
-  if (!FullUpdate) {
-    is_fully_updated_ = false;
-  }
-  DVLOG(1) << "Selecting subset " << subset;
-  DCHECK(!is_selected_[subset]);
-  DCHECK(CheckConsistency());
-  trace_.push_back(SetCoverDecision(subset, true));
-  is_selected_[subset] = true;
-  const SubsetCostVector& subset_costs = model_->subset_costs();
-  cost_ += subset_costs[subset];
-  if (supports_avx512_) {
-    SelectAvx512(subset);
-    return;
-  }
-  const SparseColumnView& columns = model_->columns();
-  const SparseRowView& rows = model_->rows();
-  for (const ElementIndex element : columns[subset]) {
-    if (coverage_[element] == 0) {
-      // `element` will be newly covered.
-      --num_uncovered_elements_;
-      for (const SubsetIndex impacted_subset : rows[element]) {
-        --num_free_elements_[impacted_subset];
-      }
-    } else if (FullUpdate && coverage_[element] == 1) {
-      // `element` will be newly overcovered.
-      for (const SubsetIndex impacted_subset : rows[element]) {
-        --num_non_overcovered_elements_[impacted_subset];
-        if (num_non_overcovered_elements_[impacted_subset] == 0) {
-          // All the elements in impacted_subset are now overcovered, so it
-          // is removable. Note that this happens only when the last element
-          // of impacted_subset becomes overcovered.
-          is_redundant_[impacted_subset] = true;
-        }
-      }
-    }
-    // Update coverage.
-    ++coverage_[element];
-  }
-  DCHECK(CheckConsistency());
-}
-
-template <bool FullUpdate>
-void SetCoverInvariant::Deselect(SubsetIndex subset) {
-  if (!FullUpdate) {
-    is_fully_updated_ = false;
-  }
-  DVLOG(1) << "Deselecting subset " << subset;
-  // If already selected, then num_free_elements == 0.
-  DCHECK(is_selected_[subset]);
-  DCHECK_EQ(num_free_elements_[subset], 0);
-  DCHECK(CheckConsistency());
-  trace_.push_back(SetCoverDecision(subset, false));
-  is_selected_[subset] = false;
-  const SubsetCostVector& subset_costs = model_->subset_costs();
-  cost_ -= subset_costs[subset];
-  if (supports_avx512_) {
-    DeselectAvx512(subset);
-    return;
-  }
-  const SparseColumnView& columns = model_->columns();
-  const SparseRowView& rows = model_->rows();
-  for (const ElementIndex element : columns[subset]) {
-    // Update coverage.
-    --coverage_[element];
-    if (coverage_[element] == 0) {
-      // `element` is no longer covered.
-      ++num_uncovered_elements_;
-      for (const SubsetIndex impacted_subset : rows[element]) {
-        ++num_free_elements_[impacted_subset];
-      }
-    } else if (FullUpdate && coverage_[element] == 1) {
-      // `element` will be no longer overcovered.
-      for (const SubsetIndex impacted_subset : rows[element]) {
-        if (num_non_overcovered_elements_[impacted_subset] == 0) {
-          // There is one element of impacted_subset which is not overcovered.
-          // impacted_subset has just become non-removable.
-          is_redundant_[impacted_subset] = false;
-        }
-        ++num_non_overcovered_elements_[impacted_subset];
-      }
-    }
-  }
-  DCHECK(CheckConsistency());
-}
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_ALGORITHMS_SET_COVER_INVARIANT_H_

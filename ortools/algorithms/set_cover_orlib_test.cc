@@ -69,6 +69,23 @@ SetCoverInvariant RunChvatalAndSteepest(std::string name,
   return inv;
 }
 
+SetCoverInvariant RunChvatalAndGLS(std::string name, SetCoverModel* model) {
+  SetCoverInvariant inv(model);
+  GreedySolutionGenerator greedy(&inv);
+  WallTimer timer;
+  timer.Start();
+  CHECK(greedy.NextSolution());
+  DCHECK(inv.CheckConsistency());
+  LOG(INFO) << ", " << name << ", GreedySolutionGenerator_cost, " << inv.cost()
+            << ", " << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  GuidedLocalSearch gls(&inv);
+  gls.NextSolution(100'000);
+  LOG(INFO) << ", " << name << ", GLS_cost, " << inv.cost() << ", "
+            << absl::ToInt64Microseconds(timer.GetDuration()) << ", us";
+  DCHECK(inv.CheckConsistency());
+  return inv;
+}
+
 SetCoverInvariant RunElementDegreeGreedyAndSteepest(std::string name,
                                                     SetCoverModel* model) {
   SetCoverInvariant inv(model);
@@ -144,6 +161,7 @@ double RunSolver(std::string name, SetCoverModel* model) {
   WallTimer global_timer;
   global_timer.Start();
   RunChvatalAndSteepest(name, model);
+  RunChvatalAndGLS(name, model);
   SetCoverInvariant inv = RunElementDegreeGreedyAndSteepest(name, model);
   // IterateClearAndMip(name, inv);
   IterateClearElementDegreeAndSteepest(name, inv);
