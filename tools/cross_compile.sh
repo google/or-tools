@@ -46,7 +46,7 @@ function install_qemu() {
     >&2 echo 'QEMU is disabled !'
     return 0
   fi
-  local -r QEMU_VERSION=${QEMU_VERSION:=8.0.0}
+  local -r QEMU_VERSION=${QEMU_VERSION:=8.2.4}
   local -r QEMU_TARGET=${QEMU_ARCH}-linux-user
 
   if echo "${QEMU_VERSION} ${QEMU_TARGET}" | cmp --silent "${QEMU_INSTALL}/.build" -; then
