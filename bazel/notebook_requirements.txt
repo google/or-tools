@@ -320,7 +320,7 @@ terminado==0.17.1
     #   jupyter-server-terminals
 tinycss2==1.2.1
     # via nbconvert
-tornado==6.3.3
+tornado==6.4.1
     # via
     #   -r notebook_requirements.in
     #   ipykernel
