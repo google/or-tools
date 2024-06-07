@@ -188,8 +188,7 @@ class MathUtil {
 
     // Handle infinities.
     if (MathLimits<FloatIn>::IsInf(x)) {
-      return x < 0 ?
-          MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+      return x < 0 ? MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
     }
 
     // Set exp such that x == f * 2^exp for some f with |f| in [0.5, 1.0),
@@ -208,8 +207,7 @@ class MathUtil {
     }
 
     // Handle numbers with magnitude >= 2^N.
-    return x < 0 ?
-        MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
+    return x < 0 ? MathLimits<IntOut>::kMin : MathLimits<IntOut>::kMax;
   }
 
   // --------------------------------------------------------------------
