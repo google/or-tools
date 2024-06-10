@@ -100,7 +100,7 @@ help:
 	@echo -e "\t\t${BOLD}fedora-39${RESET}"
 	@echo -e "\t\t${BOLD}fedora-38${RESET}"
 	@echo -e "\t\t${BOLD}fedora-37${RESET}"
-#	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
+	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-24.04${RESET} (Ubuntu 24.04 LTS, latest)"
 	@echo -e "\t\t${BOLD}ubuntu-23.10${RESET} (Ubuntu 23.10, rolling)"
 	@echo -e "\t\t${BOLD}ubuntu-23.04${RESET} (Ubuntu 23.04)"
@@ -407,8 +407,8 @@ DISTROS := \
  centos-7 \
  debian-11 debian-12 debian-13 debian-sid \
  fedora-37 fedora-38 fedora-39 \
- ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04 \
- opensuse-leap
+ opensuse-leap \
+ ubuntu-20.04 ubuntu-22.04 ubuntu-23.04 ubuntu-23.10 ubuntu-24.04
 
 # List of stages
 STAGES := env devel
