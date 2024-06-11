@@ -1,0 +1,16 @@
+cc_binary(
+    name = "issue4269",
+    srcs = [
+        "issue4269.cc",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:path",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_solver",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
