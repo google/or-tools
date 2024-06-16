@@ -19,12 +19,34 @@ must be processed on each machine in sequence and all jobs have to be processed
 in the same order on every machine. The objective is to minimize the makespan.
 """
 
-import argparse
+from typing import Sequence
 from dataclasses import dataclass
 from itertools import product
 
 import numpy as np
+
+from absl import app
+from absl import flags
+from google.protobuf import text_format
 from ortools.sat.python import cp_model
+
+_PARAMS = flags.DEFINE_string(
+    "params",
+    "num_search_workers:16",
+    "Sat solver parameters.",
+)
+
+_TIME_LIMIT = flags.DEFINE_float(
+    "time_limit",
+    60.0,
+    "Time limit in seconds. Default is 60s.",
+)
+
+_LOG = flags.DEFINE_boolean(
+    "log",
+    False,
+    "Whether to log the solver output.",
+)
 
 
 @dataclass
@@ -40,8 +62,9 @@ class TaskType:
 
 def permutation_flow_shop(
     processing_times: np.ndarray,
-    time_limit: float = float("inf"),
-    log: bool = False,
+    time_limit: float,
+    log: bool,
+    params: str
 ):
     """
     Solves the given permutation flow shop problem instance with OR-Tools.
@@ -125,6 +148,8 @@ def permutation_flow_shop(
     m.minimize(obj_var)
 
     solver = cp_model.CpSolver()
+    if params:
+        text_format.Parse(params, solver.parameters)
     solver.parameters.log_search_progress = log
     solver.parameters.max_time_in_seconds = time_limit
 
@@ -140,24 +165,11 @@ def permutation_flow_shop(
         print(f"Solution: {solution}")
 
 
-def parse_args():
-    parser = argparse.ArgumentParser("Solve a permutation flow shop problem.")
-
-    msg = "Time limit in seconds. Default is no time limit."
-    parser.add_argument(
-        "--time-limit", type=float, default=float("inf"), help=msg
-    )
-
-    msg = "Whether to log the solver output."
-    parser.add_argument("--log", action="store_true", help=msg)
-
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
+def main(argv: Sequence[str]) -> None:
+    """Creates the data and calls the solving procedure."""
     # VRF_10_5_2 instance from http://soa.iti.es/problem-instances.
     # Optimal makespan is 698.
-    PROCESSING_TIMES = [
+    processing_times = [
         [79, 67, 10, 48, 52],
         [40, 40, 57, 21, 54],
         [48, 93, 49, 11, 79],
@@ -170,8 +182,10 @@ if __name__ == "__main__":
         [32, 11, 11, 34, 27],
     ]
 
-    args = parse_args()
-
     permutation_flow_shop(
-        np.array(PROCESSING_TIMES), args.time_limit, args.log
+        np.array(processing_times), _TIME_LIMIT.value, _LOG.value, _PARAMS.value
     )
+
+
+if __name__ == "__main__":
+    app.run(main)    
