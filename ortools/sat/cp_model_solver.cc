@@ -142,6 +142,10 @@ ABSL_FLAG(
     "for which we got an issue while validating the postsolved solution. This "
     "allows to debug presolve issues without dumping all the models.");
 
+ABSL_FLAG(bool, cp_model_dump_shaving_models, false,
+          "DEBUG ONLY. Similar to --cp_model_dump_submodels, but only dump "
+          "shaving models.");
+
 ABSL_FLAG(bool, cp_model_dump_response, false,
           "DEBUG ONLY. If true, the final response of each solve will be "
           "dumped to 'FLAGS_cp_model_dump_prefix'response.pb.txt");
@@ -2637,7 +2641,7 @@ class FullProblemSolver : public SubSolver {
     // by registering the SharedStatistics class with LNS local model.
     local_model_.Register<SharedStatistics>(shared_->stats);
 
-    // Setup the local logger, in multithread log_search_progress should be
+    // Setup the local logger, in multi-thread log_search_progress should be
     // false by default, but we might turn it on for debugging. It is on by
     // default in single-thread mode.
     auto* logger = local_model_.GetOrCreate<SolverLogger>();
@@ -2811,12 +2815,14 @@ class ObjectiveShavingSolver : public SubSolver {
       stop_current_chunk_.store(false);
       task_in_flight_ = true;
       objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
+      objective_ub_ = shared_->response->GetInnerObjectiveUpperBound();
     }
     return [this]() {
       if (ResetModel()) {
-        SolveLoadedCpModel(local_proto_, local_repo_.get());
+        SolveLoadedCpModel(local_proto_, local_sat_model_.get());
         const CpSolverResponse local_response =
-            local_repo_->GetOrCreate<SharedResponseManager>()->GetResponse();
+            local_sat_model_->GetOrCreate<SharedResponseManager>()
+                ->GetResponse();
 
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
             local_response.status() == CpSolverStatus::FEASIBLE) {
@@ -2833,14 +2839,14 @@ class ObjectiveShavingSolver : public SubSolver {
         } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
           absl::MutexLock mutex_lock(&mutex_);
           shared_->response->UpdateInnerObjectiveBounds(
-              Info(), objective_lb_ + 1, kMaxIntegerValue);
+              Info(), current_objective_target_ub_ + 1, objective_ub_);
         }
       }
 
       absl::MutexLock mutex_lock(&mutex_);
       task_in_flight_ = false;
-      if (local_repo_ != nullptr) {
-        const double dtime = local_repo_->GetOrCreate<TimeLimit>()
+      if (local_sat_model_ != nullptr) {
+        const double dtime = local_sat_model_->GetOrCreate<TimeLimit>()
                                  ->GetElapsedDeterministicTime();
         AddTaskDeterministicDuration(dtime);
         shared_->time_limit->AdvanceDeterministicTime(dtime);
@@ -2861,7 +2867,22 @@ class ObjectiveShavingSolver : public SubSolver {
     if (shared_->SearchIsDone()) {
       stop_current_chunk_.store(true);
     }
+
+    // TODO(user): Experiment with the following stop conditions.
     if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
+      stop_current_chunk_.store(true);
+    }
+    if (shared_->response->GetInnerObjectiveUpperBound() <=
+            current_objective_target_ub_ &&
+        current_objective_target_ub_ != objective_lb_) {
+      stop_current_chunk_.store(true);
+    }
+
+    // If the range has been reduced enough, and the range is not 1, restart.
+    if (current_objective_target_ub_ != objective_lb_ &&
+        shared_->response->GetInnerObjectiveUpperBound() -
+                shared_->response->GetInnerObjectiveLowerBound() <=
+            local_params_.shaving_search_threshold()) {
       stop_current_chunk_.store(true);
     }
   }
@@ -2873,12 +2894,14 @@ class ObjectiveShavingSolver : public SubSolver {
   }
 
   bool ResetModel() {
-    local_repo_ = std::make_unique<Model>(name());
-    *local_repo_->GetOrCreate<SatParameters>() = local_params_;
+    local_sat_model_ = std::make_unique<Model>(name());
+    *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
 
-    auto* time_limit = local_repo_->GetOrCreate<TimeLimit>();
+    auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
     shared_->time_limit->UpdateLocalLimit(time_limit);
     time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
+
+    auto* random = local_sat_model_->GetOrCreate<ModelRandomGenerator>();
 
     // We copy the model.
     local_proto_ = shared_->model_proto;
@@ -2887,15 +2910,25 @@ class ObjectiveShavingSolver : public SubSolver {
 
     // Store the current lb in local variable.
     IntegerValue objective_lb;
+    IntegerValue chosen_objective_ub;
     {
       absl::MutexLock mutex_lock(&mutex_);
       objective_lb = objective_lb_;
+      if (objective_ub_ - objective_lb <=
+          local_params_.shaving_search_threshold()) {
+        current_objective_target_ub_ = objective_lb;
+      } else {
+        const IntegerValue mid = (objective_ub_ - objective_lb) / 2;
+        current_objective_target_ub_ =
+            objective_lb + absl::LogUniform<int64_t>(*random, 0, mid.value());
+      }
+      chosen_objective_ub = current_objective_target_ub_;
+      VLOG(1) << name() << ": from [" << objective_lb.value() << ".."
+              << objective_ub_.value()
+              << "] <= " << chosen_objective_ub.value();
     }
 
     // We replace the objective by a constraint, objective == lb.
-    // TODO(user): We could use objective <= lb, it might be better or worse
-    // depending on the model. It is also a bit tricker to make sure a feasible
-    // solution is feasible.
     // We modify local_proto_ to a pure feasibility problem.
     // Not having the objective open up more presolve reduction.
     if (local_proto_.objective().vars().size() == 1 &&
@@ -2904,13 +2937,13 @@ class ObjectiveShavingSolver : public SubSolver {
           local_proto_.mutable_variables(local_proto_.objective().vars(0));
       obj_var->clear_domain();
       obj_var->add_domain(objective_lb.value());
-      obj_var->add_domain(objective_lb.value());
+      obj_var->add_domain(chosen_objective_ub.value());
     } else {
       auto* obj = local_proto_.add_constraints()->mutable_linear();
       *obj->mutable_vars() = local_proto_.objective().vars();
       *obj->mutable_coeffs() = local_proto_.objective().coeffs();
       obj->add_domain(objective_lb.value());
-      obj->add_domain(objective_lb.value());
+      obj->add_domain(chosen_objective_ub.value());
     }
 
     // Clear the objective.
@@ -2930,7 +2963,7 @@ class ObjectiveShavingSolver : public SubSolver {
       mapping_proto_.Clear();
       postsolve_mapping_.clear();
       auto context = std::make_unique<PresolveContext>(
-          local_repo_.get(), &local_proto_, &mapping_proto_);
+          local_sat_model_.get(), &local_proto_, &mapping_proto_);
       const CpSolverStatus presolve_status =
           PresolveCpModel(context.get(), &postsolve_mapping_);
       if (presolve_status == CpSolverStatus::INFEASIBLE) {
@@ -2948,9 +2981,10 @@ class ObjectiveShavingSolver : public SubSolver {
     //
     // We had a bug when the LoadCpModel() below was returning infeasible on
     // such non fully-presolved model.
-    if (local_repo_->GetOrCreate<TimeLimit>()->LimitReached()) return false;
+    if (local_sat_model_->GetOrCreate<TimeLimit>()->LimitReached())
+      return false;
 
-    LoadCpModel(local_proto_, local_repo_.get());
+    LoadCpModel(local_proto_, local_sat_model_.get());
     return true;
   }
 
@@ -2964,7 +2998,7 @@ class ObjectiveShavingSolver : public SubSolver {
   std::atomic<bool> stop_current_chunk_;
 
   // Local singleton repository and presolved local model.
-  std::unique_ptr<Model> local_repo_;
+  std::unique_ptr<Model> local_sat_model_;
   CpModelProto local_proto_;
 
   // For postsolving a feasible solution or improving objective lb.
@@ -2973,7 +3007,374 @@ class ObjectiveShavingSolver : public SubSolver {
 
   absl::Mutex mutex_;
   IntegerValue objective_lb_ ABSL_GUARDED_BY(mutex_);
+  IntegerValue objective_ub_ ABSL_GUARDED_BY(mutex_);
+  IntegerValue current_objective_target_ub_ ABSL_GUARDED_BY(mutex_);
   bool task_in_flight_ ABSL_GUARDED_BY(mutex_) = false;
+};
+
+class VariablesShavingSolver : public SubSolver {
+ public:
+  VariablesShavingSolver(const SatParameters& local_parameters,
+                         SharedClasses* shared)
+      : SubSolver(local_parameters.name(), FULL_PROBLEM),
+        local_params_(local_parameters),
+        shared_(shared),
+        model_proto_(shared->model_proto) {
+    if (shared_->bounds != nullptr) {
+      shared_bounds_id_ = shared_->bounds->RegisterNewId();
+    }
+
+    absl::MutexLock mutex_lock(&mutex_);
+    for (const IntegerVariableProto& var_proto : model_proto_.variables()) {
+      var_domains_.push_back(ReadDomainFromProto(var_proto));
+    }
+  }
+
+  ~VariablesShavingSolver() override {
+    if (!VLOG_IS_ON(1)) return;
+    if (shared_ == nullptr || shared_->stats == nullptr) return;
+    std::vector<std::pair<std::string, int64_t>> stats;
+    stats.push_back({"variable_shaving/num_vars_tried", num_vars_tried_});
+    stats.push_back({"variable_shaving/num_vars_shaved", num_vars_shaved_});
+    stats.push_back(
+        {"variable_shaving/num_infeasible_found", num_infeasible_found_});
+    shared_->stats->AddStats(stats);
+  }
+
+  bool TaskIsAvailable() override {
+    if (shared_->SearchIsDone()) return false;
+
+    // We only support one task at the time.
+    absl::MutexLock mutex_lock(&mutex_);
+    return !task_in_flight_;
+  }
+
+  void ProcessLocalResponse(const CpSolverResponse& local_response) {
+    if (local_response.status() != CpSolverStatus::INFEASIBLE) return;
+
+    const int var = VarIndex();
+    absl::MutexLock lock(&mutex_);
+    const Domain domain = var_domains_[var];
+    Domain new_domain = domain;
+    ++num_infeasible_found_;
+    new_domain = domain.IntersectionWith(reduced_domain_.Complement());
+    VLOG(1) << name() << ": var(" << var << ") " << domain << " ==> "
+            << new_domain;
+
+    if (domain != new_domain) {
+      ++num_vars_shaved_;
+      if (shared_->bounds != nullptr && !new_domain.IsEmpty()) {
+        shared_->bounds->ReportPotentialNewBounds(local_sat_model_->Name(),
+                                                  {var}, {new_domain.Min()},
+                                                  {new_domain.Max()});
+      }
+      var_domains_[var] = new_domain;
+      if (var_domains_[var].IsEmpty()) {
+        shared_->response->NotifyThatImprovingProblemIsInfeasible(
+            "Unsat during variables shaving B");
+        return;
+      }
+    }
+  }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) override {
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      stop_current_chunk_.store(false);
+      task_in_flight_ = true;
+    }
+    return [this]() {
+      if (ResetModel()) {
+        SolveLoadedCpModel(shaving_proto_, local_sat_model_.get());
+        ++num_vars_tried_;
+        const CpSolverResponse local_response =
+            local_sat_model_->GetOrCreate<SharedResponseManager>()
+                ->GetResponse();
+        ProcessLocalResponse(local_response);
+      }
+
+      absl::MutexLock mutex_lock(&mutex_);
+      task_in_flight_ = false;
+      if (local_sat_model_ != nullptr) {
+        const double dtime = local_sat_model_->GetOrCreate<TimeLimit>()
+                                 ->GetElapsedDeterministicTime();
+        AddTaskDeterministicDuration(dtime);
+        shared_->time_limit->AdvanceDeterministicTime(dtime);
+      }
+    };
+  }
+
+  void Synchronize() override {
+    absl::MutexLock mutex_lock(&mutex_);
+    if (!task_in_flight_) return;
+
+    // We are just waiting for the inner code to check the time limit or
+    // to return nicely.
+    if (stop_current_chunk_) return;
+
+    if (shared_->SearchIsDone()) {
+      stop_current_chunk_.store(true);
+    }
+
+    if (shared_->bounds != nullptr) {
+      std::vector<int> model_variables;
+      std::vector<int64_t> new_lower_bounds;
+      std::vector<int64_t> new_upper_bounds;
+      shared_->bounds->GetChangedBounds(shared_bounds_id_, &model_variables,
+                                        &new_lower_bounds, &new_upper_bounds);
+
+      for (int i = 0; i < model_variables.size(); ++i) {
+        const int var = model_variables[i];
+        const int64_t new_lb = new_lower_bounds[i];
+        const int64_t new_ub = new_upper_bounds[i];
+        const Domain& old_domain = var_domains_[var];
+        const Domain new_domain =
+            old_domain.IntersectionWith(Domain(new_lb, new_ub));
+        if (new_domain.IsEmpty()) {
+          local_sat_model_->GetOrCreate<SharedResponseManager>()
+              ->NotifyThatImprovingProblemIsInfeasible(
+                  "Unsat during variables shaving");
+          continue;  // Model has changed.
+        }
+        var_domains_[var] = new_domain;
+      }
+    }
+  }
+
+ private:
+  std::string Info() {
+    return absl::StrCat(name(), " (vars=", model_proto_.variables().size(),
+                        " csts=", model_proto_.constraints().size(), ")");
+  }
+
+  int64_t DomainSize(int var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    return var_domains_[var].Size();
+  }
+
+  int VarIndex() const { return current_index_ / 2; }
+
+  bool MinimizeVar() const { return current_index_ % 2 == 0; }
+
+  bool VarIsFixed(int int_var) const ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    return var_domains_[int_var].IsFixed();
+  }
+
+  bool ConstraintIsInactive(int c) const ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    for (const int ref : model_proto_.constraints(c).enforcement_literal()) {
+      const int var = PositiveRef(ref);
+      if (VarIsFixed(var) && var_domains_[var].Min() == (var == ref ? 0 : 1)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool FindNextVar() ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    const int num_vars = var_domains_.size();
+    const int max_index = 2 * num_vars;
+    for (int i = 0; i < 2 * num_vars; ++i) {
+      if (++current_index_ == max_index) current_index_ = 0;
+      const int var = VarIndex();
+      if (VarIsFixed(var)) continue;
+      // Let's not shave the single var objective. There are enough workers
+      // looking at it.
+      if (model_proto_.has_objective() &&
+          model_proto_.objective().vars_size() == 1 &&
+          var == model_proto_.objective().vars(0)) {
+        continue;
+      }
+
+      VLOG(2) << (MinimizeVar() ? "Minimize" : "Maximize") << " variable("
+              << var << ") " << var_domains_[var];
+      return true;
+    }
+    return false;
+  }
+
+  void CopyAndFixVariable(int var) ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    const int64_t lb = var_domains_[var].Min();
+    IntegerVariableProto* var_proto = shaving_proto_.add_variables();
+    var_proto->add_domain(lb);
+    var_proto->add_domain(lb);
+  }
+
+  void CopyModelConnectedToVar(int var) ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    auto var_to_node = [](int var) { return var; };
+    auto ct_to_node = [this](int ct) {
+      return ct + model_proto_.variables_size();
+    };
+
+    // Build the connected component graph.
+    DenseConnectedComponentsFinder cc_finder;
+    cc_finder.SetNumberOfNodes(model_proto_.constraints_size() +
+                               model_proto_.variables_size());
+    for (int i = 0; i < model_proto_.constraints_size(); ++i) {
+      if (ConstraintIsInactive(i)) continue;
+      const ConstraintProto& ct = model_proto_.constraints(i);
+      const int ct_node = ct_to_node(i);
+      for (const int var : UsedVariables(ct)) {
+        if (VarIsFixed(var)) continue;
+        cc_finder.AddEdge(ct_node, var_to_node(var));
+      }
+      for (const int interval : UsedIntervals(ct)) {
+        cc_finder.AddEdge(ct_node, ct_to_node(interval));
+      }
+    }
+
+    // Copy the model selectively.
+    int num_variables_kept = 0;
+    int num_active_variables = 0;
+    int num_constraints_kept = 0;
+    int num_active_constraints = 0;
+
+    shaving_proto_.clear_variables();
+    const int root_index = var_to_node(var);
+    for (int i = 0; i < var_domains_.size(); ++i) {
+      if (VarIsFixed(i)) {
+        FillDomainInProto(var_domains_[i], shaving_proto_.add_variables());
+      } else if (cc_finder.Connected(root_index, var_to_node(i))) {
+        ++num_variables_kept;
+        ++num_active_variables;
+        FillDomainInProto(var_domains_[i], shaving_proto_.add_variables());
+      } else {
+        ++num_active_variables;
+        // FillDomainInProto(var_domains_[i], shaving_proto_.add_variables());
+        CopyAndFixVariable(i);
+      }
+    }
+
+    shaving_proto_.clear_constraints();
+    for (int i = 0; i < model_proto_.constraints_size(); ++i) {
+      if (ConstraintIsInactive(i)) {
+        shaving_proto_.add_constraints();
+      } else if (cc_finder.Connected(ct_to_node(i), root_index)) {
+        ++num_constraints_kept;
+        ++num_active_constraints;
+        *shaving_proto_.add_constraints() = model_proto_.constraints(i);
+      } else {
+        ++num_active_constraints;
+        shaving_proto_.add_constraints();
+      }
+    }
+
+    // let's print only if both counters are better.
+    if (VLOG_IS_ON(2) && num_variables_kept < num_active_variables &&
+        num_constraints_kept < num_active_constraints) {
+      LOG(INFO) << "num_variables_kept: " << num_variables_kept << "/"
+                << num_active_variables
+                << " num_constraints_kept: " << num_constraints_kept << "/"
+                << num_active_constraints;
+    }
+
+    const Domain domain = ReadDomainFromProto(shaving_proto_.variables(var));
+    const bool minimize = MinimizeVar();
+    shaving_proto_.clear_objective();
+
+    int64_t delta = 0;
+    if (domain.Size() > local_params_.shaving_search_threshold()) {
+      const int64_t mid_range = (domain.Max() - domain.Min()) / 2;
+      auto* random = local_sat_model_->GetOrCreate<ModelRandomGenerator>();
+      delta = absl::LogUniform<int64_t>(*random, 0, mid_range);
+    }
+
+    if (minimize) {
+      reduced_domain_ =
+          domain.IntersectionWith({domain.Min(), domain.Min() + delta});
+    } else {
+      reduced_domain_ =
+          domain.IntersectionWith({domain.Max() - delta, domain.Max()});
+    }
+
+    FillDomainInProto(reduced_domain_, shaving_proto_.mutable_variables(var));
+
+    if (absl::GetFlag(FLAGS_cp_model_dump_shaving_models)) {
+      const std::string shaving_name = absl::StrCat(
+          absl::GetFlag(FLAGS_cp_model_dump_prefix), "shaving_var_", var,
+          (minimize ? "_min" : "_max"), ".pb.txt");
+      LOG(INFO) << "Dumping shaving model to '" << shaving_name << "'.";
+      CHECK(WriteModelProtoToFile(shaving_proto_, shaving_name));
+    }
+  }
+
+  bool ResetModel() {
+    local_sat_model_ = std::make_unique<Model>(name());
+    *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
+
+    {
+      absl::MutexLock lock(&mutex_);
+      if (!FindNextVar()) return false;
+      CopyModelConnectedToVar(VarIndex());
+    }
+
+    auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
+    shared_->time_limit->UpdateLocalLimit(time_limit);
+    time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
+    time_limit->ChangeDeterministicLimit(
+        time_limit->GetElapsedDeterministicTime() +
+        local_params_.shaving_search_deterministic_time());
+
+    // Presolve if asked.
+    if (local_params_.cp_model_presolve()) {
+      mapping_proto_.Clear();
+      postsolve_mapping_.clear();
+      auto context = std::make_unique<PresolveContext>(
+          local_sat_model_.get(), &shaving_proto_, &mapping_proto_);
+      const CpSolverStatus presolve_status =
+          PresolveCpModel(context.get(), &postsolve_mapping_);
+      if (presolve_status == CpSolverStatus::INFEASIBLE) {
+        CpSolverResponse tmp_response;
+        tmp_response.set_status(CpSolverStatus::INFEASIBLE);
+        ProcessLocalResponse(tmp_response);
+        return false;
+      }
+    }
+
+    auto* local_response_manager =
+        local_sat_model_->GetOrCreate<SharedResponseManager>();
+    local_response_manager->InitializeObjective(shaving_proto_);
+    local_response_manager->SetSynchronizationMode(true);
+
+    // Tricky: If we aborted during the presolve above, some constraints might
+    // be in a non-canonical form (like having duplicates, etc...) and it seem
+    // not all our propagator code deal with that properly. So it is important
+    // to abort right away here.
+    //
+    // We had a bug when the LoadCpModel() below was returning infeasible on
+    // such non fully-presolved model.
+    if (time_limit->LimitReached()) return false;
+
+    LoadCpModel(shaving_proto_, local_sat_model_.get());
+    return true;
+  }
+
+  // This is fixed at construction.
+  SatParameters local_params_;
+  SharedClasses* shared_;
+  int shared_bounds_id_ = -1;
+
+  // Allow to control the local time limit in addition to a potential user
+  // defined external Boolean.
+  std::atomic<bool> stop_current_chunk_;
+
+  // Local singleton repository and presolved local model.
+  std::unique_ptr<Model> local_sat_model_;
+  const CpModelProto& model_proto_;
+  std::vector<Domain> var_domains_ ABSL_GUARDED_BY(mutex_);
+  CpModelProto shaving_proto_;
+
+  // For post-solving a feasible solution.
+  std::vector<int> postsolve_mapping_;
+  CpModelProto mapping_proto_;
+
+  absl::Mutex mutex_;
+  int current_index_ = -1;
+  Domain reduced_domain_;
+  bool task_in_flight_ ABSL_GUARDED_BY(mutex_) = false;
+
+  // Stats.
+  int num_vars_tried_ = 0;
+  int num_vars_shaved_ = 0;
+  int num_infeasible_found_ = 0;
 };
 
 class FeasibilityPumpSolver : public SubSolver {
@@ -3110,9 +3511,9 @@ class LnsSolver : public SubSolver {
     return [task_id, this]() {
       if (shared_->SearchIsDone()) return;
 
-      // Create a random number generator whose seed depends both on the
-      // task_id and on the parameters_.random_seed() so that changing the
-      // later will change the LNS behavior.
+      // Create a random number generator whose seed depends both on the task_id
+      // and on the parameters_.random_seed() so that changing the later will
+      // change the LNS behavior.
       const int32_t low = static_cast<int32_t>(task_id);
       const int32_t high = static_cast<int32_t>(task_id >> 32);
       std::seed_seq seed{low, high, lns_parameters_.random_seed()};
@@ -3241,9 +3642,9 @@ class LnsSolver : public SubSolver {
       }
       if (neighborhood.is_simple &&
           neighborhood.num_relaxed_variables_in_objective == 0) {
-        // If we didn't relax the objective, there can be no improving
-        // solution. However, we might have some diversity if they are
-        // multiple feasible solution.
+        // If we didn't relax the objective, there can be no improving solution.
+        // However, we might have some diversity if they are multiple feasible
+        // solution.
         //
         // TODO(user): How can we teak the search to favor diversity.
         if (generator_->num_consecutive_non_improving_calls() > 10) {
@@ -3360,8 +3761,8 @@ class LnsSolver : public SubSolver {
 
         // Special case if we solved a part of the full problem!
         //
-        // TODO(user): This do not work if they are symmetries loaded into
-        // SAT. For now we just disable this if there is any symmetry. See for
+        // TODO(user): This do not work if they are symmetries loaded into SAT.
+        // For now we just disable this if there is any symmetry. See for
         // instance spot5_1401.fzn. Be smarter about that.
         //
         // The issue is that as we fix level zero variables from a partial
@@ -3396,8 +3797,8 @@ class LnsSolver : public SubSolver {
               shared_->model_proto.objective(), solution_values));
         }
 
-        // Report any feasible solution we have. Optimization: We don't do
-        // that if we just recovered the base solution.
+        // Report any feasible solution we have. Optimization: We don't do that
+        // if we just recovered the base solution.
         if (data.status == CpSolverStatus::OPTIMAL ||
             data.status == CpSolverStatus::FEASIBLE) {
           const std::vector<int64_t> base_solution(
@@ -3419,7 +3820,7 @@ class LnsSolver : public SubSolver {
 
       generator_->AddSolveData(data);
 
-      if (VLOG_IS_ON(1) && display_lns_info) {
+      if (VLOG_IS_ON(2) && display_lns_info) {
         std::string s = absl::StrCat("              LNS ", name(), ":");
         if (new_solution) {
           const double base_obj = ScaleObjectiveValue(
@@ -3532,6 +3933,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         continue;
       }
 
+      if (local_params.use_variables_shaving_search()) {
+        subsolvers.push_back(
+            std::make_unique<VariablesShavingSolver>(local_params, shared));
+        continue;
+      }
+
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared));
@@ -3581,8 +3988,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
   // Adds first solution subsolvers.
   //
-  // The logic is the following. Before the first solution is found, we have
-  // (in order):
+  // The logic is the following. Before the first solution is found, we have (in
+  // order):
   //   - num_full_problem_solvers full problem solvers
   //   - num_workers - num_full_problem_solvers -
   //         num_dedicated_incomplete_solvers first solution solvers.
@@ -3941,7 +4348,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Enable the logging component.
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   SolverLogger* logger = model->GetOrCreate<SolverLogger>();
-  logger->EnableLogging(params.log_search_progress() || VLOG_IS_ON(1));
+  logger->EnableLogging(params.log_search_progress());
   logger->SetLogToStdOut(params.log_to_stdout());
   std::string log_string;
   if (params.log_to_response()) {

@@ -592,11 +592,13 @@ class SharedBoundsManager {
 // literals can be negative numbers.
 class UniqueClauseStream {
  public:
+  static constexpr int kMinClauseSize = 3;
   static constexpr int kMaxClauseSize = 8;
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
-  // Bound the total literals we buffer per size.
-  static constexpr int kMaxBufferedLiteralsPerSize = 64 * 1024 / sizeof(int);
+  // Bound the total literals we buffer, approximately enforced so shorter
+  // clauses can replace longer ones.
+  static constexpr int kMaxBufferedLiterals = 4 * kMaxLiteralsPerBatch;
 
   UniqueClauseStream();
   // Move only - this is an expensive class to copy.
@@ -627,15 +629,21 @@ class UniqueClauseStream {
 
   // Returns the number of literals in the buffer in clauses with size <=
   // max_size.
-  int NumBufferedLiteralsUpToSize(int max_size) const
-      ABSL_LOCKS_EXCLUDED(mutex_);
-  int NumBufferedLiterals() const ABSL_LOCKS_EXCLUDED(mutex_) {
-    return NumBufferedLiteralsUpToSize(kMaxClauseSize);
+  int NumBufferedLiteralsOfSize(int size) const ABSL_LOCKS_EXCLUDED(mutex_) {
+    absl::MutexLock lock(&mutex_);
+    return NumLiteralsOfSize(size);
   }
+  int NumBufferedLiterals() const ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Returns true if the stream can accept a clause of the specified size
-  // without dropping it.
+  // Returns true if the stream can accept a clause of the specified size and
+  // LBD without dropping it.
   bool CanAccept(int size, int lbd) const;
+
+  // Delete longest clauses while keeping at least kMaxBufferedLiterals.
+  // This guarantees that CanAccept will return the same result as before, and
+  // at least the next 4 batches will contain the same clauses, but we will emit
+  // fewer old, long clauses many batches in the future.
+  void RemoveWorstClauses();
 
   int lbd_threshold() const ABSL_LOCKS_EXCLUDED(mutex_) {
     absl::MutexLock lock(&mutex_);
@@ -649,20 +657,26 @@ class UniqueClauseStream {
  private:
   bool BlockClause(absl::Span<const int> clause)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  int NumBufferedLiteralsUpToSizeLockHeld(int max_size) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
-
+  std::vector<int>* MutableBufferForSize(int size)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    return &clauses_by_size_[size - kMinClauseSize];
+  }
+  absl::Span<const int> BufferForSize(int size) const
+      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+    return clauses_by_size_[size - kMinClauseSize];
+  }
   absl::Span<const int> NextClause(int size) const
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
   void PopClause(int size) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   // Computes the number of clauses of a given size.
-  int NumClauses(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  int NumClausesOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  int NumLiteralsOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
   mutable absl::Mutex mutex_;
   int lbd_threshold_ ABSL_GUARDED_BY(mutex_) = 2;
   absl::flat_hash_set<size_t> fingerprints_ ABSL_GUARDED_BY(mutex_);
-  std::array<std::vector<int>, kMaxClauseSize - 2> clauses_by_size_
-      ABSL_GUARDED_BY(mutex_);
+  std::array<std::vector<int>, kMaxClauseSize - kMinClauseSize + 1>
+      clauses_by_size_ ABSL_GUARDED_BY(mutex_);
 };
 
 // This class holds clauses found and shared by workers.

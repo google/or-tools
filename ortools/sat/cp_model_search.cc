@@ -599,13 +599,34 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
       AddDualSchedulingHeuristics(new_params);
     }
 
-    strategies["objective_shaving_search"] = new_params;
+    strategies["objective_shaving"] = new_params;
 
     new_params.set_linearization_level(0);
-    strategies["objective_shaving_search_no_lp"] = new_params;
+    strategies["objective_shaving_no_lp"] = new_params;
 
     new_params.set_linearization_level(2);
-    strategies["objective_shaving_search_max_lp"] = new_params;
+    strategies["objective_shaving_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_use_variables_shaving_search(true);
+    new_params.set_cp_model_presolve(true);
+    new_params.set_cp_model_probing_level(0);
+    new_params.set_symmetry_level(0);
+    new_params.set_share_objective_bounds(false);
+    new_params.set_share_level_zero_bounds(false);
+
+    strategies["variables_shaving"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["variables_shaving_no_lp"] = new_params;
+
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddDualSchedulingHeuristics(new_params);
+    }
+    new_params.set_linearization_level(2);
+    strategies["variables_shaving_max_lp"] = new_params;
   }
 
   {
@@ -772,9 +793,10 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("lb_tree_search");
     names.push_back("probing");
     names.push_back("objective_lb_search");
-    names.push_back("objective_shaving_search_no_lp");
-    names.push_back("objective_shaving_search_max_lp");
+    names.push_back("objective_shaving_no_lp");
+    names.push_back("objective_shaving_max_lp");
     names.push_back("probing_max_lp");
+    names.push_back("probing_no_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
 
@@ -828,7 +850,9 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
 
     // TODO(user): Enable shaving search in interleave mode.
     // Currently it do not respect ^C, and has no per chunk time limit.
-    if (params.use_objective_shaving_search() && params.interleave_search()) {
+    if ((params.use_objective_shaving_search() ||
+         params.use_variables_shaving_search()) &&
+        params.interleave_search()) {
       continue;
     }
 

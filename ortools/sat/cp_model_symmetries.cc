@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -238,6 +239,23 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
                   get_implication_node(NegatedRef(ref_a)));
   };
 
+  auto make_linear_expr_node = [&new_node, &graph, &get_coefficient_node](
+                                   const LinearExpressionProto& expr,
+                                   const std::vector<int64_t>& color) {
+    std::vector<int64_t> local_color = color;
+    local_color.push_back(expr.offset());
+    const int local_node = new_node(local_color);
+
+    for (int i = 0; i < expr.vars().size(); ++i) {
+      const int ref = expr.vars(i);
+      const int var_node = PositiveRef(ref);
+      const int64_t coeff =
+          RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
+      graph->AddArc(get_coefficient_node(var_node, coeff), local_node);
+    }
+    return local_node;
+  };
+
   // We need to keep track of this for scheduling constraints.
   absl::flat_hash_map<int, int> interval_constraint_index_to_node;
 
@@ -270,6 +288,14 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
                                     : -constraint.linear().coeffs(i);
           graph->AddArc(get_coefficient_node(variable_node, coeff),
                         constraint_node);
+        }
+        break;
+      }
+      case ConstraintProto::kAllDiff: {
+        CHECK_EQ(constraint_node, new_node(color));
+        for (const LinearExpressionProto& expr :
+             constraint.all_diff().exprs()) {
+          graph->AddArc(make_linear_expr_node(expr, color), constraint_node);
         }
         break;
       }
@@ -328,17 +354,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const LinearExpressionProto& target_expr =
             constraint.lin_max().target();
 
-        std::vector<int64_t> local_color = color;
-        local_color.push_back(target_expr.offset());
-        const int target_node = new_node(local_color);
-        local_color.pop_back();
-
-        for (int j = 0; j < target_expr.vars_size(); ++j) {
-          const int var = target_expr.vars(j);
-          DCHECK(RefIsPositive(var));
-          const int64_t coeff = target_expr.coeffs(j);
-          graph->AddArc(get_coefficient_node(var, coeff), target_node);
-        }
+        const int target_node = make_linear_expr_node(target_expr, color);
 
         for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
           // TODO(user): We can create a node per LinearExpressionProto instead.
@@ -346,17 +362,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           // common expression.
           const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
 
-          local_color.push_back(expr.offset());
-          const int local_node = new_node(local_color);
-          local_color.pop_back();
-
-          for (int j = 0; j < expr.vars().size(); ++j) {
-            const int var = expr.vars(j);
-            DCHECK(RefIsPositive(var));
-            const int64_t coeff = expr.coeffs(j);
-            graph->AddArc(get_coefficient_node(var, coeff), local_node);
-          }
-
+          const int local_node = make_linear_expr_node(expr, color);
           graph->AddArc(local_node, target_node);
         }
 
@@ -374,17 +380,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
           std::vector<int64_t> local_color = color;
           local_color.push_back(indicator);
-          local_color.push_back(expr.offset());
-          const int local_node = new_node(local_color);
+          const int local_node = make_linear_expr_node(expr, local_color);
           nodes.push_back(local_node);
-
-          for (int i = 0; i < expr.vars().size(); ++i) {
-            const int ref = expr.vars(i);
-            const int var_node = PositiveRef(ref);
-            const int64_t coeff =
-                RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
-            graph->AddArc(get_coefficient_node(var_node, coeff), local_node);
-          }
         }
 
         // We will only map enforcement literal to the start_node below because
@@ -433,6 +430,28 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           graph->AddArc(interval_constraint_index_to_node.at(x), box_node);
           graph->AddArc(interval_constraint_index_to_node.at(y), node_y);
           graph->AddArc(interval_constraint_index_to_node.at(y), box_node);
+        }
+        break;
+      }
+      case ConstraintProto::kCumulative: {
+        // Note(user): This require that intervals appear before they are used.
+        // We currently enforce this at validation, otherwise we need two passes
+        // here and in a bunch of other places.
+        const CumulativeConstraintProto& ct = constraint.cumulative();
+        std::vector<int64_t> capacity_color = color;
+        capacity_color.push_back(0);
+        CHECK_EQ(constraint_node, new_node(capacity_color));
+        graph->AddArc(constraint_node,
+                      make_linear_expr_node(ct.capacity(), capacity_color));
+
+        std::vector<int64_t> demands_color = color;
+        demands_color.push_back(1);
+        for (int i = 0; i < ct.intervals().size(); ++i) {
+          const int demand_node =
+              make_linear_expr_node(ct.demands(i), demands_color);
+          graph->AddArc(demand_node, constraint_node);
+          graph->AddArc(demand_node,
+                        interval_constraint_index_to_node.at(ct.intervals(i)));
         }
         break;
       }
@@ -833,7 +852,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // literal, and maximize the number of fixing.
   //
   // TODO(user): Doing that is not always good, on cod105.mps, fixing variables
-  // instead of letting the innner solver handle Boolean symmetries make the
+  // instead of letting the inner solver handle Boolean symmetries make the
   // problem unsolvable instead of easily solved. This is probably because this
   // fixing do not exploit the full structure of these symmeteries. Note
   // however that the fixing via propagation above close cod105 even more
@@ -968,8 +987,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // iterate!
   int max_num_fixed_in_orbitope = 0;
   if (!orbitope.empty()) {
-    const int num_rows = orbitope[0].size();
-    int size_left = num_rows;
+    int size_left = orbitope[0].size();
     for (int col = 0; size_left > 1 && col < orbitope.size(); ++col) {
       max_num_fixed_in_orbitope += size_left - 1;
       --size_left;
@@ -1025,72 +1043,77 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  while (!orbitope.empty() && orbitope[0].size() > 1) {
+  if (!orbitope.empty() && orbitope[0].size() > 1) {
     const int num_cols = orbitope[0].size();
-    const std::vector<int> orbits = GetOrbitopeOrbits(num_vars, orbitope);
+    const std::vector<int> orbitope_orbits =
+        GetOrbitopeOrbits(num_vars, orbitope);
+
+    // Using the orbitope orbits and intersecting at most ones, we will be able
+    // in some case to derive a property of the literals of one row of the
+    // orbitope. Namely that:
+    // - All literals of that row take the same value.
+    // - At most one literal can be true.
+    // - At most one literal can be false.
+    //
+    // See the comment below for how we can infer this.
+    const int num_rows = orbitope.size();
+    std::vector<bool> row_is_all_equivalent(num_rows, false);
+    std::vector<bool> row_has_at_most_one_true(num_rows, false);
+    std::vector<bool> row_has_at_most_one_false(num_rows, false);
 
     // Because in the orbitope case, we have a full symmetry group of the
     // columns, we can infer more than just using the orbits under a general
     // permutation group. If an at most one contains two variables from the
-    // orbit, we can infer:
+    // row, we can infer:
     // 1/ If the two variables appear positively, then there is an at most one
-    //    on the full orbit, and we can set n - 1 variables to zero to break the
+    //    on the full row, and we can set n - 1 variables to zero to break the
     //    symmetry.
     // 2/ If the two variables appear negatively, then the opposite situation
-    //    arise and there is at most one zero on the orbit, we can set n - 1
+    //    arise and there is at most one zero on the row, we can set n - 1
     //    variables to one.
     // 3/ If two literals of opposite sign appear, then the only possibility
-    //    for the orbit are all at one or all at zero, thus we can mark all
+    //    for the row are all at one or all at zero, thus we can mark all
     //    variables as equivalent.
     //
     // These property comes from the fact that when we permute a line of the
     // orbitope in any way, then the position than ends up in the at most one
     // must never be both at one.
     //
-    // Note that 1/ can be done without breaking any symmetry, but for 2/ and 3/
-    // by choosing which variable is not fixed, we will break some symmetry, and
-    // we will need to update the orbitope to stabilize this choice before
-    // continuing.
+    // Note that 3/ can be done without breaking any symmetry, but for 1/ and 2/
+    // by choosing which variable is not fixed, we will break some symmetry.
     //
-    // TODO(user): for 2/ and 3/ we could add an at most one constraint on the
-    // full orbit if it is not already there!
+    // TODO(user): for 1/ and 2/ we could add an at most one constraint on the
+    // full row if it is not already there!
     //
-    // Note(user): On the miplib, only 1/ happens currently. Not sure with LNS
-    // though.
-    std::vector<bool> all_equivalent_rows(orbitope.size(), false);
-
-    // The result described above can be generalized if an at most one intersect
-    // many of the orbitope rows, each in at leat two positions. We will track
-    // the set of best rows on which we have an at most one (or at most one
-    // zero) on all their entries.
-    bool at_most_one_in_best_rows;  // The alternative is at most one zero.
-    int64_t best_score = 0;
-    std::vector<int> best_rows;
-
-    std::vector<int> rows_in_at_most_one;
+    // Note(user): On the miplib, only 1/ and 2/ happens currently. Not sure
+    // with LNS though.
     for (const google::protobuf::RepeatedField<int32_t>* literals :
          at_most_ones) {
       tmp_to_clear.clear();
       for (const int literal : *literals) {
         if (context->IsFixed(literal)) continue;
         const int var = PositiveRef(literal);
-        const int rep = orbits[var];
-        if (rep == -1) continue;
+        const int row = orbitope_orbits[var];
+        if (row == -1) continue;
 
-        if (tmp_sizes[rep] == 0) tmp_to_clear.push_back(rep);
-        tmp_sizes[rep]++;
-        if (RefIsPositive(literal)) tmp_num_positive[rep]++;
+        if (tmp_sizes[row] == 0) tmp_to_clear.push_back(row);
+        tmp_sizes[row]++;
+        if (RefIsPositive(literal)) tmp_num_positive[row]++;
       }
 
-      int num_positive_direction = 0;
-      int num_negative_direction = 0;
-
-      // An at most one touching two positions in an orbitope row can possibly
-      // be extended, depending if it has singleton intersection swith other
-      // rows and where.
+      // An at most one touching two positions in an orbitope row can be
+      // extended to include the full row.
+      //
+      // Note(user): I am not sure we care about that here. By symmetry, if we
+      // have an at most one touching two positions, then we should have others
+      // touching all pair of positions. And the at most one expansion would
+      // already have extended it. So this is more FYI.
       bool possible_extension = false;
 
-      rows_in_at_most_one.clear();
+      // TODO(user): if the same at most one touch more than one row, we can
+      // deduce more. It is a bit tricky and maybe not frequent enough to make a
+      // big difference. Also, as we start to fix things, at most one might
+      // propagate by themselves.
       for (const int row : tmp_to_clear) {
         const int size = tmp_sizes[row];
         const int num_positive = tmp_num_positive[row];
@@ -1098,16 +1121,15 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         tmp_sizes[row] = 0;
         tmp_num_positive[row] = 0;
 
+        if (num_positive > 0 && num_negative > 0) {
+          row_is_all_equivalent[row] = true;
+        }
         if (num_positive > 1 && num_negative == 0) {
           if (size < num_cols) possible_extension = true;
-          rows_in_at_most_one.push_back(row);
-          ++num_positive_direction;
+          row_has_at_most_one_true[row] = true;
         } else if (num_positive == 0 && num_negative > 1) {
           if (size < num_cols) possible_extension = true;
-          rows_in_at_most_one.push_back(row);
-          ++num_negative_direction;
-        } else if (num_positive > 0 && num_negative > 0) {
-          all_equivalent_rows[row] = true;
+          row_has_at_most_one_false[row] = true;
         }
       }
 
@@ -1115,107 +1137,134 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         context->UpdateRuleStats(
             "TODO symmetry: possible at most one extension.");
       }
-
-      if (num_positive_direction > 0 && num_negative_direction > 0) {
-        return context->NotifyThatModelIsUnsat("Symmetry and at most ones");
-      }
-      const bool direction = num_positive_direction > 0;
-
-      // Because of symmetry, the choice of the column shouldn't matter (they
-      // will all appear in the same number of constraints of the same types),
-      // however we prefer to fix the variables that seems to touch more
-      // constraints.
-      //
-      // TODO(user): maybe we should simplify the constraint using the variable
-      // we fix before choosing the next row to break symmetry on. If there are
-      // multiple row involved, we could also take the intersection instead of
-      // probably counting the same constraints more than once.
-      int64_t score = 0;
-      for (const int row : rows_in_at_most_one) {
-        score +=
-            context->VarToConstraints(PositiveRef(orbitope[row][0])).size();
-      }
-      if (score > best_score) {
-        at_most_one_in_best_rows = direction;
-        best_score = score;
-        best_rows = rows_in_at_most_one;
-      }
     }
 
-    // Mark all the equivalence.
+    // List the row in "at most one" by score. We will be able to fix a
+    // "triangle" of literals in order to break some of the symmetry.
+    std::vector<std::pair<int, int64_t>> rows_by_score;
+
+    // Mark all the equivalence or fixed rows.
     // Note that this operation do not change the symmetry group.
     //
     // TODO(user): We could remove these rows from the orbitope. Note that
     // currently this never happen on the miplib (maybe in LNS though).
-    for (int i = 0; i < all_equivalent_rows.size(); ++i) {
-      if (all_equivalent_rows[i]) {
-        for (int j = 1; j < num_cols; ++j) {
-          context->StoreBooleanEqualityRelation(orbitope[i][0], orbitope[i][j]);
-          context->UpdateRuleStats("symmetry: all equivalent in orbit");
+    for (int i = 0; i < num_rows; ++i) {
+      if (row_has_at_most_one_true[i] && row_has_at_most_one_false[i]) {
+        // If we have both property, it means we have
+        // - sum_j orbitope[row][j] <= 1
+        // - sum_j not(orbitope[row][j]) <= 1 which is the same as
+        //   sum_j orbitope[row][j] >= num_cols - 1.
+        // This is only possible if we have two elements and we don't have
+        // row_is_all_equivalent.
+        if (num_cols == 2 && !row_is_all_equivalent[i]) {
+          // We have [1, 0] or [0, 1].
+          context->UpdateRuleStats("symmetry: equivalence in orbitope row");
+          context->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                NegatedRef(orbitope[i][1]));
           if (context->ModelIsUnsat()) return false;
+        } else {
+          // No solution.
+          return context->NotifyThatModelIsUnsat("orbitope and at most one");
         }
+        continue;
+      }
+
+      if (row_is_all_equivalent[i]) {
+        // Here we proved that the row is either all ones or all zeros.
+        // This was because we had:
+        //   at_most_one = [x, ~y, ...]
+        //   orbitope = [x, y, ...]
+        // and by symmetry we have
+        //   at_most_one = [~x, y, ...]
+        // This for all pairs of positions in that row.
+        if (row_has_at_most_one_false[i]) {
+          context->UpdateRuleStats("symmetry: all true in orbitope row");
+          for (int j = 0; j < num_cols; ++j) {
+            if (!context->SetLiteralToTrue(orbitope[i][j])) return false;
+          }
+        } else if (row_has_at_most_one_true[i]) {
+          context->UpdateRuleStats("symmetry: all false in orbitope row");
+          for (int j = 0; j < num_cols; ++j) {
+            if (!context->SetLiteralToFalse(orbitope[i][j])) return false;
+          }
+        } else {
+          context->UpdateRuleStats("symmetry: all equivalent in orbitope row");
+          for (int j = 1; j < num_cols; ++j) {
+            context->StoreBooleanEqualityRelation(orbitope[i][0],
+                                                  orbitope[i][j]);
+            if (context->ModelIsUnsat()) return false;
+          }
+        }
+        continue;
+      }
+
+      // We use as the score the number of constraint in which variables from
+      // this row participate.
+      const int64_t score =
+          context->VarToConstraints(PositiveRef(orbitope[i][0])).size();
+      if (row_has_at_most_one_true[i]) {
+        rows_by_score.push_back({i, score});
+      } else if (row_has_at_most_one_false[i]) {
+        rows_by_score.push_back({i, score});
       }
     }
 
-    // Break the symmetry on our set of best rows by picking one columns
-    // and setting all the other entries to zero or one. Note that the at most
-    // one applies to all entries in all rows.
+    // Break the symmetry by fixing at each step all but one literal to true or
+    // false. Note that each time we do that for a row, we need to exclude the
+    // non-fixed column from the rest of the row processing. We thus fix a
+    // "triangle" of literals.
     //
-    // TODO(user): We don't have any at most one relation on this orbitope,
-    // but we could still add symmetry breaking inequality by picking any matrix
-    // entry and making it the largest/lowest value on its row. This also work
-    // for non-Booleans.
-    if (best_score == 0) {
+    // This is the same as ordering the columns in some lexicographic order and
+    // using the at_most_ones to fix known position. Note that we can still add
+    // lexicographic symmetry breaking inequality on the columns as long as we
+    // do that in the same order as these fixing.
+    if (rows_by_score.empty()) {
       context->UpdateRuleStats(
           "TODO symmetry: add symmetry breaking inequalities?");
-      break;
     }
-
-    // If our symmetry group is valid, they cannot be any variable already
-    // fixed to one (or zero if !at_most_one_in_best_rows). Otherwise all would
-    // be fixed to one and the problem would be unsat.
-    for (const int i : best_rows) {
-      for (int j = 0; j < num_cols; ++j) {
-        const int var = orbitope[i][j];
-        if ((at_most_one_in_best_rows && context->LiteralIsTrue(var)) ||
-            (!at_most_one_in_best_rows && context->LiteralIsFalse(var))) {
-          return context->NotifyThatModelIsUnsat("Symmetry and at most one");
+    absl::c_stable_sort(rows_by_score, [](const std::pair<int, int64_t>& p1,
+                                          const std::pair<int, int64_t>& p2) {
+      return p1.second > p2.second;
+    });
+    int num_processed_rows = 0;
+    for (const auto [row, score] : rows_by_score) {
+      if (num_processed_rows + 1 >= num_cols) break;
+      ++num_processed_rows;
+      if (row_has_at_most_one_true[row]) {
+        context->UpdateRuleStats(
+            "symmetry: fixed all but one to false in orbitope row");
+        for (int j = num_processed_rows; j < num_cols; ++j) {
+          if (!context->SetLiteralToFalse(orbitope[row][j])) return false;
+        }
+      } else {
+        CHECK(row_has_at_most_one_false[row]);
+        context->UpdateRuleStats(
+            "symmetry: fixed all but one to true in orbitope row");
+        for (int j = num_processed_rows; j < num_cols; ++j) {
+          if (!context->SetLiteralToTrue(orbitope[row][j])) return false;
         }
       }
     }
 
-    // We have an at most one on a set of rows, we will pick a column, and set
-    // all other entries on these rows to zero.
+    // For correctness of the code below, reduce the orbitope.
     //
-    // TODO(user): All choices should be equivalent, but double check?
-    const int best_col = 0;
-    for (const int i : best_rows) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (j == best_col) continue;
-        const int var = orbitope[i][j];
-        if (at_most_one_in_best_rows) {
-          context->UpdateRuleStats("symmetry: fixed to false");
-          if (!context->SetLiteralToFalse(var)) return false;
-        } else {
-          context->UpdateRuleStats("symmetry: fixed to true");
-          if (!context->SetLiteralToTrue(var)) return false;
-        }
+    // TODO(user): This is probably not needed if we add lexicographic
+    // constraint instead of just breaking a single row below.
+    if (num_processed_rows > 0) {
+      // Remove the first num_processed_rows.
+      int new_size = 0;
+      for (int i = num_processed_rows; i < orbitope.size(); ++i) {
+        orbitope[new_size++] = std::move(orbitope[i]);
       }
-    }
+      CHECK_LT(new_size, orbitope.size());
+      orbitope.resize(new_size);
 
-    // Remove all best rows.
-    for (const int i : best_rows) orbitope[i].clear();
-    int new_size = 0;
-    for (int i = 0; i < orbitope.size(); ++i) {
-      if (!orbitope[i].empty()) orbitope[new_size++] = orbitope[i];
-    }
-    CHECK_LT(new_size, orbitope.size());
-    orbitope.resize(new_size);
-
-    // Remove best_col.
-    for (int i = 0; i < orbitope.size(); ++i) {
-      std::swap(orbitope[i][best_col], orbitope[i].back());
-      orbitope[i].pop_back();
+      // For each of them remove the first num_processed_rows entries.
+      for (int i = 0; i < orbitope.size(); ++i) {
+        CHECK_LT(num_processed_rows, orbitope[i].size());
+        orbitope[i].erase(orbitope[i].begin(),
+                          orbitope[i].begin() + num_processed_rows);
+      }
     }
   }
 

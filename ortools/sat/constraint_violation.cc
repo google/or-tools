@@ -18,10 +18,12 @@
 #include <cstdlib>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -31,11 +33,14 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/dense_set.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
+
+namespace {
 
 int64_t ExprValue(const LinearExpressionProto& expr,
                   absl::Span<const int64_t> solution) {
@@ -59,6 +64,30 @@ LinearExpressionProto ExprDiff(const LinearExpressionProto& a,
   for (int i = 0; i < b.vars().size(); ++i) {
     result.add_vars(b.vars(i));
     result.add_coeffs(-b.coeffs(i));
+  }
+  return result;
+}
+
+LinearExpressionProto LinearExprSum(LinearExpressionProto a,
+                                    LinearExpressionProto b) {
+  LinearExpressionProto result;
+  result.set_offset(a.offset() + b.offset());
+  result.mutable_vars()->Reserve(a.vars().size() + b.vars().size());
+  result.mutable_coeffs()->Reserve(a.vars().size() + b.vars().size());
+  for (const LinearExpressionProto& p : {a, b}) {
+    for (int i = 0; i < p.vars().size(); ++i) {
+      result.add_vars(p.vars(i));
+      result.add_coeffs(p.coeffs(i));
+    }
+  }
+  return result;
+}
+
+LinearExpressionProto NegatedLinearExpression(LinearExpressionProto a) {
+  LinearExpressionProto result = a;
+  result.set_offset(-a.offset());
+  for (int64_t& coeff : *result.mutable_coeffs()) {
+    coeff = -coeff;
   }
   return result;
 }
@@ -96,6 +125,8 @@ bool LiteralValue(int lit, absl::Span<const int64_t> solution) {
     return solution[PositiveRef(lit)] == 0;
   }
 }
+
+}  // namespace
 
 // ---- LinearIncrementalEvaluator -----
 
@@ -927,9 +958,6 @@ bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
 
 // ----- CompiledConstraint -----
 
-CompiledConstraint::CompiledConstraint(const ConstraintProto& ct_proto)
-    : ct_proto_(ct_proto) {}
-
 void CompiledConstraint::InitializeViolation(
     absl::Span<const int64_t> solution) {
   violation_ = ComputeViolation(solution);
@@ -941,16 +969,36 @@ void CompiledConstraint::PerformMove(
   violation_ += ViolationDelta(var, old_value, solution_with_new_value);
 }
 
-int64_t CompiledConstraint::ViolationDelta(int /*var*/, int64_t /*old_value*/,
+int64_t CompiledConstraint::ViolationDelta(int, int64_t,
                                            absl::Span<const int64_t> solution) {
   return ComputeViolation(solution) - violation_;
+}
+
+// ----- CompiledConstraintWithProto -----
+
+CompiledConstraintWithProto::CompiledConstraintWithProto(
+    const ConstraintProto& ct_proto)
+    : ct_proto_(ct_proto) {}
+
+std::vector<int> CompiledConstraintWithProto::UsedVariables(
+    const CpModelProto& model_proto) const {
+  std::vector<int> result = sat::UsedVariables(ct_proto_);
+  for (const int i_var : UsedIntervals(ct_proto_)) {
+    const ConstraintProto& interval_proto = model_proto.constraints(i_var);
+    for (const int var : sat::UsedVariables(interval_proto)) {
+      result.push_back(var);
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
+  return result;
 }
 
 // ----- CompiledBoolXorConstraint -----
 
 CompiledBoolXorConstraint::CompiledBoolXorConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledBoolXorConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -971,7 +1019,7 @@ int64_t CompiledBoolXorConstraint::ViolationDelta(
 
 CompiledLinMaxConstraint::CompiledLinMaxConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledLinMaxConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -989,7 +1037,7 @@ int64_t CompiledLinMaxConstraint::ComputeViolation(
 
 CompiledIntProdConstraint::CompiledIntProdConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledIntProdConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -1006,7 +1054,7 @@ int64_t CompiledIntProdConstraint::ComputeViolation(
 
 CompiledIntDivConstraint::CompiledIntDivConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledIntDivConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -1022,7 +1070,7 @@ int64_t CompiledIntDivConstraint::ComputeViolation(
 
 CompiledIntModConstraint::CompiledIntModConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledIntModConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -1051,7 +1099,7 @@ int64_t CompiledIntModConstraint::ComputeViolation(
 
 CompiledAllDiffConstraint::CompiledAllDiffConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {}
 
 int64_t CompiledAllDiffConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -1078,65 +1126,62 @@ int64_t CompiledAllDiffConstraint::ComputeViolation(
   return violation;
 }
 
-// ----- CompiledNoOverlapConstraint -----
+// ----- NoOverlapBetweenTwoIntervals -----
 
-namespace {
-int64_t ComputeOverloadArea(
-    absl::Span<const int> intervals,
-    absl::Span<const LinearExpressionProto* const> demands,
-    const CpModelProto& cp_model, const absl::Span<const int64_t> solution,
-    int64_t max_capacity, std::vector<std::pair<int64_t, int64_t>>& events) {
-  events.clear();
-  for (int i = 0; i < intervals.size(); ++i) {
-    const int i_var = intervals[i];
-    const ConstraintProto& interval_proto = cp_model.constraints(i_var);
-    if (!interval_proto.enforcement_literal().empty() &&
-        !LiteralValue(interval_proto.enforcement_literal(0), solution)) {
-      continue;
-    }
+NoOverlapBetweenTwoIntervals::NoOverlapBetweenTwoIntervals(
+    int interval_0, int interval_1, const CpModelProto& cp_model) {
+  const ConstraintProto& ct0 = cp_model.constraints(interval_0);
+  const ConstraintProto& ct1 = cp_model.constraints(interval_1);
 
-    const int64_t demand =
-        demands.empty() ? 1 : ExprValue(*demands[i], solution);
-    if (demand == 0) continue;
-
-    const int64_t start =
-        ExprValue(interval_proto.interval().start(), solution);
-    const int64_t size = ExprValue(interval_proto.interval().size(), solution);
-    const int64_t end = ExprValue(interval_proto.interval().end(), solution);
-    const int64_t max_end = std::max(start + size, end);
-    if (start >= max_end) continue;
-
-    events.emplace_back(start, demand);
-    events.emplace_back(max_end, -demand);
+  // The more compact the better, hence the size + int[].
+  num_enforcements_ =
+      ct0.enforcement_literal().size() + ct1.enforcement_literal().size();
+  if (num_enforcements_ > 0) {
+    enforcements_.reset(new int[num_enforcements_]);
+    int i = 0;
+    for (const int lit : ct0.enforcement_literal()) enforcements_[i++] = lit;
+    for (const int lit : ct1.enforcement_literal()) enforcements_[i++] = lit;
   }
 
-  if (events.empty()) return 0;
-  std::sort(events.begin(), events.end(),
-            [](const std::pair<int64_t, int64_t>& e1,
-               const std::pair<int64_t, int64_t>& e2) {
-              return e1.first < e2.first;
-            });
-
-  int64_t overload = 0;
-  int64_t current_load = 0;
-  int64_t previous_time = events.front().first;
-  for (int i = 0; i < events.size();) {
-    // At this point, current_load is the load at previous_time.
-    const int64_t time = events[i].first;
-    if (current_load > max_capacity) {
-      overload = CapAdd(
-          overload, CapProd(current_load - max_capacity, time - previous_time));
-    }
-    while (i < events.size() && events[i].first == time) {
-      current_load += events[i].second;
-      i++;
-    }
-    DCHECK_GE(current_load, 0);
-    previous_time = time;
-  }
-  DCHECK_EQ(current_load, 0);
-  return overload;
+  // We prefer to use start + size instead of end so that moving "start" moves
+  // the whole interval around (for the non-fixed duration case).
+  end_minus_start_1_ =
+      ExprDiff(LinearExprSum(ct0.interval().start(), ct0.interval().size()),
+               ct1.interval().start());
+  end_minus_start_2_ =
+      ExprDiff(LinearExprSum(ct1.interval().start(), ct1.interval().size()),
+               ct0.interval().start());
 }
+
+// Same as NoOverlapMinRepairDistance().
+int64_t NoOverlapBetweenTwoIntervals::ComputeViolationInternal(
+    absl::Span<const int64_t> solution) {
+  for (int i = 0; i < num_enforcements_; ++i) {
+    if (!LiteralValue(enforcements_[i], solution)) return 0;
+  }
+  const int64_t diff1 = ExprValue(end_minus_start_1_, solution);
+  const int64_t diff2 = ExprValue(end_minus_start_2_, solution);
+  return std::max(std::min(diff1, diff2), int64_t{0});
+}
+
+std::vector<int> NoOverlapBetweenTwoIntervals::UsedVariables(
+    const CpModelProto& /*model_proto*/) const {
+  std::vector<int> result;
+  for (int i = 0; i < num_enforcements_; ++i) {
+    result.push_back(PositiveRef(enforcements_[i]));
+  }
+  for (const int var : end_minus_start_1_.vars()) {
+    result.push_back(PositiveRef(var));
+  }
+  for (const int var : end_minus_start_2_.vars()) {
+    result.push_back(PositiveRef(var));
+  }
+  gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
+  return result;
+}
+
+// ----- CompiledNoOverlap2dConstraint -----
 
 int64_t OverlapOfTwoIntervals(const ConstraintProto& interval1,
                               const ConstraintProto& interval2,
@@ -1182,72 +1227,9 @@ int64_t NoOverlapMinRepairDistance(const ConstraintProto& interval1,
   return std::max(std::min(end2 - start1, end1 - start2), int64_t{0});
 }
 
-}  // namespace
-
-CompiledNoOverlapConstraint::CompiledNoOverlapConstraint(
-    const ConstraintProto& ct_proto, const CpModelProto& cp_model)
-    : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
-
-int64_t CompiledNoOverlapConstraint::ComputeViolation(
-    absl::Span<const int64_t> solution) {
-  DCHECK_GE(ct_proto().no_overlap().intervals_size(), 2);
-  return ComputeOverloadArea(ct_proto().no_overlap().intervals(), {}, cp_model_,
-                             solution, 1, events_);
-}
-
-NoOverlapBetweenTwoIntervals::NoOverlapBetweenTwoIntervals(
-    const ConstraintProto& ct_proto, const CpModelProto& cp_model)
-    : CompiledConstraint(ct_proto) {
-  CHECK_EQ(ct_proto.no_overlap().intervals().size(), 2);
-  const ConstraintProto& ct0 =
-      cp_model.constraints(ct_proto.no_overlap().intervals(0));
-  const ConstraintProto& ct1 =
-      cp_model.constraints(ct_proto.no_overlap().intervals(1));
-
-  // The more compact the better, hence the size + int[].
-  num_enforcements_ =
-      ct0.enforcement_literal().size() + ct1.enforcement_literal().size();
-  if (num_enforcements_ > 0) {
-    enforcements_.reset(new int[num_enforcements_]);
-    int i = 0;
-    for (const int lit : ct0.enforcement_literal()) enforcements_[i++] = lit;
-    for (const int lit : ct1.enforcement_literal()) enforcements_[i++] = lit;
-  }
-
-  end_minus_start_1_ = ExprDiff(ct0.interval().end(), ct1.interval().start());
-  end_minus_start_2_ = ExprDiff(ct1.interval().end(), ct0.interval().start());
-}
-
-// Same as NoOverlapMinRepairDistance().
-int64_t NoOverlapBetweenTwoIntervals::ComputeViolationInternal(
-    absl::Span<const int64_t> solution) {
-  for (int i = 0; i < num_enforcements_; ++i) {
-    if (!LiteralValue(enforcements_[i], solution)) return 0;
-  }
-  const int64_t diff1 = ExprValue(end_minus_start_1_, solution);
-  const int64_t diff2 = ExprValue(end_minus_start_2_, solution);
-  return std::max(std::min(diff1, diff2), int64_t{0});
-}
-
-// ----- CompiledCumulativeConstraint -----
-
-CompiledCumulativeConstraint::CompiledCumulativeConstraint(
-    const ConstraintProto& ct_proto, const CpModelProto& cp_model)
-    : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
-
-int64_t CompiledCumulativeConstraint::ComputeViolation(
-    absl::Span<const int64_t> solution) {
-  return ComputeOverloadArea(
-      ct_proto().cumulative().intervals(), ct_proto().cumulative().demands(),
-      cp_model_, solution,
-      ExprValue(ct_proto().cumulative().capacity(), solution), events_);
-}
-
-// ----- CompiledNoOverlap2dConstraint -----
-
 CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
-    : CompiledConstraint(ct_proto), cp_model_(cp_model) {}
+    : CompiledConstraintWithProto(ct_proto), cp_model_(cp_model) {}
 
 int64_t CompiledNoOverlap2dConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
@@ -1295,12 +1277,17 @@ int64_t CompiledNoOverlap2dConstraint::ComputeViolation(
 //
 // The only difference between single and multi circuit is flow balance at the
 // depot, so we use the same compiled constraint for both.
-class CompiledCircuitConstraint : public CompiledConstraint {
+class CompiledCircuitConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledCircuitConstraint(const ConstraintProto& ct_proto);
   ~CompiledCircuitConstraint() override = default;
 
   int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+  void PerformMove(int var, int64_t old_value,
+                   absl::Span<const int64_t> new_solution) override;
+  int64_t ViolationDelta(
+      int var, int64_t old_value,
+      absl::Span<const int64_t> solution_with_new_value) override;
 
  private:
   struct SccOutput {
@@ -1311,16 +1298,20 @@ class CompiledCircuitConstraint : public CompiledConstraint {
     std::vector<bool> skipped;
     std::vector<int> root;
   };
-  void UpdateGraph(absl::Span<const int64_t> solution);
+  void InitGraph(absl::Span<const int64_t> solution);
+  bool UpdateGraph(int var, int64_t value);
+  int64_t ViolationForCurrentGraph();
+
+  absl::flat_hash_map<int, std::vector<int>> arcs_by_lit_;
   absl::Span<const int> literals_;
   absl::Span<const int> tails_;
   absl::Span<const int> heads_;
   // Stores the currently active arcs per tail node.
-  std::vector<std::vector<int>> graph_;
+  std::vector<DenseSet<int>> graph_;
   SccOutput sccs_;
+  SccOutput committed_sccs_;
   std::vector<bool> has_in_arc_;
-  StronglyConnectedComponentsFinder<int, std::vector<std::vector<int>>,
-                                    SccOutput>
+  StronglyConnectedComponentsFinder<int, std::vector<DenseSet<int>>, SccOutput>
       scc_finder_;
 };
 
@@ -1328,13 +1319,12 @@ void CompiledCircuitConstraint::SccOutput::emplace_back(int const* start,
                                                         int const* end) {
   const int root_node = *start;
   const int size = end - start;
-  if (size == 1) {
-    skipped[root_node] = true;
-  } else {
+  if (size > 1) {
     ++num_components;
   }
   for (; start != end; ++start) {
     root[*start] = root_node;
+    skipped[*start] = (size == 1);
   }
 }
 void CompiledCircuitConstraint::SccOutput::reset(int num_nodes) {
@@ -1347,7 +1337,7 @@ void CompiledCircuitConstraint::SccOutput::reset(int num_nodes) {
 
 CompiledCircuitConstraint::CompiledCircuitConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraint(ct_proto) {
+    : CompiledConstraintWithProto(ct_proto) {
   const bool routes = ct_proto.has_routes();
   tails_ = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
   heads_ = absl::MakeConstSpan(routes ? ct_proto.routes().heads()
@@ -1355,23 +1345,73 @@ CompiledCircuitConstraint::CompiledCircuitConstraint(
   literals_ = absl::MakeConstSpan(routes ? ct_proto.routes().literals()
                                          : ct_proto.circuit().literals());
   graph_.resize(*absl::c_max_element(tails_) + 1);
+  for (int i = 0; i < literals_.size(); ++i) {
+    arcs_by_lit_[literals_[i]].push_back(i);
+  }
 }
 
-void CompiledCircuitConstraint::UpdateGraph(
-    absl::Span<const int64_t> solution) {
-  for (std::vector<int>& edges : graph_) {
+void CompiledCircuitConstraint::InitGraph(absl::Span<const int64_t> solution) {
+  for (DenseSet<int>& edges : graph_) {
     edges.clear();
   }
   for (int i = 0; i < tails_.size(); ++i) {
     if (!LiteralValue(literals_[i], solution)) continue;
-    graph_[tails_[i]].push_back(heads_[i]);
+    graph_[tails_[i]].insert(heads_[i]);
   }
 }
+
+bool CompiledCircuitConstraint::UpdateGraph(int var, int64_t value) {
+  bool needs_update = false;
+  const int enabled_lit =
+      value != 0 ? PositiveRef(var) : NegatedRef(PositiveRef(var));
+  const int disabled_lit = NegatedRef(enabled_lit);
+  for (const int arc : arcs_by_lit_[disabled_lit]) {
+    const int tail = tails_[arc];
+    const int head = heads_[arc];
+    // Removing a self arc cannot change violation.
+    needs_update = needs_update || tail != head;
+    graph_[tails_[arc]].erase(heads_[arc]);
+  }
+  for (const int arc : arcs_by_lit_[enabled_lit]) {
+    const int tail = tails_[arc];
+    const int head = heads_[arc];
+    // Adding an arc can only change violation if it connects new SCCs.
+    needs_update = needs_update ||
+                   committed_sccs_.root[tail] != committed_sccs_.root[head];
+    graph_[tails_[arc]].insert(heads_[arc]);
+  }
+  return needs_update;
+}
+
+void CompiledCircuitConstraint::PerformMove(
+    int var, int64_t, absl::Span<const int64_t> new_solution) {
+  UpdateGraph(var, new_solution[var]);
+  violation_ = ViolationForCurrentGraph();
+  std::swap(committed_sccs_, sccs_);
+}
+
 int64_t CompiledCircuitConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
+  InitGraph(solution);
+  int64_t result = ViolationForCurrentGraph();
+  std::swap(committed_sccs_, sccs_);
+  return result;
+}
+
+int64_t CompiledCircuitConstraint::ViolationDelta(
+    int var, int64_t old_value,
+    absl::Span<const int64_t> solution_with_new_value) {
+  int64_t result = 0;
+  if (UpdateGraph(var, solution_with_new_value[var])) {
+    result = ViolationForCurrentGraph() - violation_;
+  }
+  UpdateGraph(var, old_value);
+  return result;
+}
+
+int64_t CompiledCircuitConstraint::ViolationForCurrentGraph() {
   const int num_nodes = graph_.size();
   sccs_.reset(num_nodes);
-  UpdateGraph(solution);
   scc_finder_.FindStronglyConnectedComponents(num_nodes, graph_, &sccs_);
   // Skipping all nodes causes off-by-one errors below, so it's simpler to
   // handle explicitly.
@@ -1480,16 +1520,10 @@ void LsEvaluator::BuildVarConstraintGraph() {
 
   // Build the var <-> constraint graph.
   for (int ct_index = 0; ct_index < constraints_.size(); ++ct_index) {
-    for (const int var : UsedVariables(constraints_[ct_index]->ct_proto())) {
+    constraint_to_vars_[ct_index] =
+        constraints_[ct_index]->UsedVariables(cp_model_);
+    for (const int var : constraint_to_vars_[ct_index]) {
       var_to_constraints_[var].push_back(ct_index);
-      constraint_to_vars_[ct_index].push_back(var);
-    }
-    for (const int i_var : UsedIntervals(constraints_[ct_index]->ct_proto())) {
-      const ConstraintProto& interval_proto = cp_model_.constraints(i_var);
-      for (const int var : UsedVariables(interval_proto)) {
-        var_to_constraints_[var].push_back(ct_index);
-        constraint_to_vars_[ct_index].push_back(var);
-      }
     }
   }
 
@@ -1618,8 +1652,35 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       const int size = ct.no_overlap().intervals_size();
       if (size <= 1) break;
       if (size > params_.feasibility_jump_max_expanded_constraint_size()) {
-        constraints_.emplace_back(
-            new CompiledNoOverlapConstraint(ct, cp_model_));
+        // Similar code to the kCumulative constraint.
+        // The violation will be the area above the capacity.
+        LinearExpressionProto one;
+        one.set_offset(1);
+        std::vector<std::optional<int>> is_active;
+        std::vector<LinearExpressionProto> times;
+        std::vector<LinearExpressionProto> demands;
+        const int num_intervals = ct.no_overlap().intervals().size();
+        for (int i = 0; i < num_intervals; ++i) {
+          const ConstraintProto& interval_ct =
+              cp_model_.constraints(ct.no_overlap().intervals(i));
+          if (interval_ct.enforcement_literal().empty()) {
+            is_active.push_back(std::nullopt);
+            is_active.push_back(std::nullopt);
+          } else {
+            CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+            is_active.push_back(interval_ct.enforcement_literal(0));
+            is_active.push_back(interval_ct.enforcement_literal(0));
+          }
+
+          times.push_back(interval_ct.interval().start());
+          times.push_back(LinearExprSum(interval_ct.interval().start(),
+                                        interval_ct.interval().size()));
+          demands.push_back(one);
+          demands.push_back(NegatedLinearExpression(one));
+        }
+        constraints_.emplace_back(new CompiledReservoirConstraint(
+            std::move(one), std::move(is_active), std::move(times),
+            std::move(demands)));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
@@ -1634,22 +1695,53 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
             const int64_t min_start_j = ExprMin(interval_j.start(), cp_model_);
             const int64_t max_end_j = ExprMax(interval_j.end(), cp_model_);
             if (min_start_i >= max_end_j || min_start_j >= max_end_i) continue;
-            ConstraintProto* disj = expanded_constraints_.add_constraints();
-            disj->mutable_no_overlap()->add_intervals(
-                ct.no_overlap().intervals(i));
-            disj->mutable_no_overlap()->add_intervals(
-                ct.no_overlap().intervals(j));
-            NoOverlapBetweenTwoIntervals* disjunction =
-                new NoOverlapBetweenTwoIntervals(*disj, cp_model_);
-            constraints_.emplace_back(disjunction);
+
+            constraints_.emplace_back(new NoOverlapBetweenTwoIntervals(
+                ct.no_overlap().intervals(i), ct.no_overlap().intervals(j),
+                cp_model_));
           }
         }
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
-      constraints_.emplace_back(
-          new CompiledCumulativeConstraint(ct, cp_model_));
+      LinearExpressionProto capacity = ct.cumulative().capacity();
+      std::vector<std::optional<int>> is_active;
+      std::vector<LinearExpressionProto> times;
+      std::vector<LinearExpressionProto> demands;
+      const int num_intervals = ct.cumulative().intervals().size();
+      for (int i = 0; i < num_intervals; ++i) {
+        const ConstraintProto& interval_ct =
+            cp_model_.constraints(ct.cumulative().intervals(i));
+        if (interval_ct.enforcement_literal().empty()) {
+          is_active.push_back(std::nullopt);
+          is_active.push_back(std::nullopt);
+        } else {
+          CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+          is_active.push_back(interval_ct.enforcement_literal(0));
+          is_active.push_back(interval_ct.enforcement_literal(0));
+        }
+
+        // Start.
+        times.push_back(interval_ct.interval().start());
+        demands.push_back(ct.cumulative().demands(i));
+
+        // End.
+        // I tried 3 alternatives: end, max(end, start+size) and just start +
+        // size. The most performing one was "start + size" on the multi-mode
+        // RCPSP.
+        //
+        // Note that for fixed size, this do not matter. It is easy enough to
+        // try any expression by creating a small wrapper class to use instead
+        // of a LinearExpressionProto for time.
+        times.push_back(LinearExprSum(interval_ct.interval().start(),
+                                      interval_ct.interval().size()));
+        demands.push_back(NegatedLinearExpression(ct.cumulative().demands(i)));
+      }
+
+      constraints_.emplace_back(new CompiledReservoirConstraint(
+          std::move(capacity), std::move(is_active), std::move(times),
+          std::move(demands)));
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
@@ -1956,6 +2048,205 @@ void LsEvaluator::UpdateViolatedList(const int c) {
       num_violated_constraint_per_var_[v] -= 1;
     }
   }
+}
+
+int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
+    absl::Span<const int64_t> solution) {
+  // Starts by filling the cache and profile_.
+  capacity_value_ = ExprValue(capacity_, solution);
+  const int num_events = time_values_.size();
+  profile_.clear();
+  for (int i = 0; i < num_events; ++i) {
+    time_values_[i] = ExprValue(times_[i], solution);
+    if (is_active_[i] != std::nullopt &&
+        LiteralValue(*is_active_[i], solution) == 0) {
+      demand_values_[i] = 0;
+    } else {
+      demand_values_[i] = ExprValue(demands_[i], solution);
+      if (demand_values_[i] != 0) {
+        profile_.push_back({time_values_[i], demand_values_[i]});
+      }
+    }
+  }
+
+  if (profile_.empty()) return 0;
+  absl::c_sort(profile_);
+
+  // Compress the profile for faster incremental evaluation.
+  {
+    int p = 0;
+    for (int i = 1; i < profile_.size(); ++i) {
+      if (profile_[i].time == profile_[p].time) {
+        profile_[p].demand += profile_[i].demand;
+      } else {
+        profile_[++p] = profile_[i];
+      }
+    }
+    profile_.resize(p + 1);
+  }
+
+  int64_t overload = 0;
+  int64_t current_load = 0;
+  int64_t previous_time = std::numeric_limits<int64_t>::min();
+  for (int i = 0; i < profile_.size(); ++i) {
+    // At this point, current_load is the load at previous_time.
+    const int64_t time = profile_[i].time;
+    if (current_load > capacity_value_) {
+      overload = CapAdd(overload, CapProd(current_load - capacity_value_,
+                                          time - previous_time));
+    }
+
+    current_load += profile_[i].demand;
+    previous_time = time;
+  }
+  return overload;
+}
+
+int64_t CompiledReservoirConstraint::IncrementalViolation(
+    int var, absl::Span<const int64_t> solution) {
+  const int64_t capacity = ExprValue(capacity_, solution);
+  profile_delta_.clear();
+  CHECK(RefIsPositive(var));
+  for (const int i : dense_index_to_events_[var_to_dense_index_.at(var)]) {
+    const int64_t time = ExprValue(times_[i], solution);
+    int64_t demand = 0;
+    if (is_active_[i] == std::nullopt ||
+        LiteralValue(*is_active_[i], solution) == 1) {
+      demand = ExprValue(demands_[i], solution);
+    }
+
+    if (time == time_values_[i]) {
+      if (demand != demand_values_[i]) {
+        // Update the demand at time.
+        profile_delta_.push_back({time, demand - demand_values_[i]});
+      }
+    } else {
+      // Remove previous.
+      if (demand_values_[i] != 0) {
+        profile_delta_.push_back({time_values_[i], -demand_values_[i]});
+      }
+      // Add new.
+      if (demand != 0) {
+        profile_delta_.push_back({time, demand});
+      }
+    }
+  }
+
+  // Abort early if there is no change.
+  // This might happen because we use max(start + size, end) for the time and
+  // even if some variable changed there, the time might not have.
+  if (capacity == capacity_value_ && profile_delta_.empty()) {
+    return violation_;
+  }
+  absl::c_sort(profile_delta_);
+
+  // Similar algo, but we scan the two vectors at once.
+  int64_t overload = 0;
+  int64_t current_load = 0;
+  int64_t previous_time = std::numeric_limits<int64_t>::min();
+
+  // TODO(user): This code is the hotspot for our local search on cumulative.
+  // It can probably be slighlty improved. We might also be able to abort early
+  // if we know that capacity is high enough compared to the highest point of
+  // the profile.
+  int i = 0;
+  int j = 0;
+  const absl::Span<const Event> i_profile(profile_);
+  const absl::Span<const Event> j_profile(profile_delta_);
+  while (true) {
+    int64_t time;
+    if (i < i_profile.size() && j < j_profile.size()) {
+      time = std::min(i_profile[i].time, j_profile[j].time);
+    } else if (i < i_profile.size()) {
+      time = i_profile[i].time;
+    } else if (j < j_profile.size()) {
+      time = j_profile[j].time;
+    } else {
+      // End of loop.
+      break;
+    }
+
+    // Update overload if needed.
+    // At this point, current_load is the load at previous_time.
+    if (current_load > capacity) {
+      overload = CapAdd(overload,
+                        CapProd(current_load - capacity, time - previous_time));
+    }
+
+    // Update i and current load.
+    while (i < i_profile.size() && i_profile[i].time == time) {
+      current_load += i_profile[i].demand;
+      i++;
+    }
+
+    // Update j and current load.
+    while (j < j_profile.size() && j_profile[j].time == time) {
+      current_load += j_profile[j].demand;
+      j++;
+    }
+
+    previous_time = time;
+  }
+  return overload;
+}
+
+void CompiledReservoirConstraint::AppendVariablesForEvent(
+    int i, std::vector<int>* result) const {
+  if (is_active_[i] != std::nullopt) {
+    result->push_back(PositiveRef(*is_active_[i]));
+  }
+  for (const int var : times_[i].vars()) {
+    result->push_back(PositiveRef(var));
+  }
+  for (const int var : demands_[i].vars()) {
+    result->push_back(PositiveRef(var));
+  }
+}
+
+void CompiledReservoirConstraint::InitializeDenseIndexToEvents() {
+  // We scan the constraint a few times, but this is called once, so we don't
+  // care too much.
+  CpModelProto unused;
+  int num_dense_indices = 0;
+  for (const int var : UsedVariables(unused)) {
+    var_to_dense_index_[var] = num_dense_indices++;
+  }
+
+  CompactVectorVector<int, int> event_to_dense_indices;
+  event_to_dense_indices.reserve(times_.size());
+  const int num_events = times_.size();
+  std::vector<int> result;
+  for (int i = 0; i < num_events; ++i) {
+    result.clear();
+    AppendVariablesForEvent(i, &result);
+
+    // Remap and add.
+    for (int& var : result) {
+      var = var_to_dense_index_.at(var);
+    }
+    gtl::STLSortAndRemoveDuplicates(&result);
+    event_to_dense_indices.Add(result);
+  }
+
+  // Note that because of the capacity (which might be variable) it is important
+  // to resize this to num_dense_indices.
+  dense_index_to_events_.ResetFromTranspose(event_to_dense_indices,
+                                            num_dense_indices);
+}
+
+std::vector<int> CompiledReservoirConstraint::UsedVariables(
+    const CpModelProto& /*model_proto*/) const {
+  std::vector<int> result;
+  const int num_events = times_.size();
+  for (int i = 0; i < num_events; ++i) {
+    AppendVariablesForEvent(i, &result);
+  }
+  for (const int var : capacity_.vars()) {
+    result.push_back(PositiveRef(var));
+  }
+  gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
+  return result;
 }
 
 }  // namespace sat

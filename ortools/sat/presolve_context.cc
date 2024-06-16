@@ -2225,8 +2225,12 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
     auto* const bool_or = working_model->add_constraints()->mutable_bool_or();
     bool_or->add_literals(result);
     bool_or->add_literals(rev_it->second);
-    bool_or->add_literals(NegatedRef(active_i));
-    bool_or->add_literals(NegatedRef(active_j));
+    if (!LiteralIsTrue(active_i)) {
+      bool_or->add_literals(NegatedRef(active_i));
+    }
+    if (!LiteralIsTrue(active_j)) {
+      bool_or->add_literals(NegatedRef(active_j));
+    }
   }
 
   return result;

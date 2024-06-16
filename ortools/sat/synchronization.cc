@@ -1042,21 +1042,20 @@ int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
 
 UniqueClauseStream::UniqueClauseStream() {
   for (auto& buffer : clauses_by_size_) {
-    buffer.reserve(kMaxBufferedLiteralsPerSize);
+    buffer.reserve(kMaxBufferedLiterals);
   }
 }
 
 bool UniqueClauseStream::Add(absl::Span<const int> clause) {
   absl::MutexLock mutex_lock(&mutex_);
   if (clause.size() > kMaxClauseSize || clause.size() <= 2) return false;
-  const int index = clause.size() - 3;
-  if (clauses_by_size_[index].size() + clause.size() >
-      kMaxBufferedLiteralsPerSize) {
+  // This is just a safety check, the caller should have called CanAccept().
+  if (NumLiteralsOfSize(clause.size()) + clause.size() > kMaxBufferedLiterals) {
     return false;
   }
   if (BlockClause(clause)) {
-    clauses_by_size_[index].insert(clauses_by_size_[index].end(),
-                                   clause.begin(), clause.end());
+    std::vector<int>* buffer = MutableBufferForSize(clause.size());
+    buffer->insert(buffer->end(), clause.begin(), clause.end());
     return true;
   }
   return false;
@@ -1077,13 +1076,12 @@ bool UniqueClauseStream::Delete(absl::Span<const int> clause) {
 
 CompactVectorVector<int> UniqueClauseStream::NextBatch() {
   CompactVectorVector<int> buffer;
-  buffer.reserve(kMaxLiteralsPerBatch / 3, kMaxLiteralsPerBatch);
+  buffer.reserve(kMaxLiteralsPerBatch / kMinClauseSize, kMaxLiteralsPerBatch);
   int to_fill = kMaxLiteralsPerBatch;
   absl::MutexLock mutex_lock(&mutex_);
-  for (int size = 3; size < kMaxClauseSize; ++size) {
-    const int size_index = size - 3;
-    CHECK_EQ(clauses_by_size_[size_index].size() % size, 0);
-    while (to_fill >= size && !clauses_by_size_[size_index].empty()) {
+  for (int size = kMinClauseSize; size <= kMaxClauseSize; ++size) {
+    CHECK_EQ(NumLiteralsOfSize(size) % size, 0);
+    while (to_fill >= size && NumLiteralsOfSize(size) > 0) {
       absl::Span<const int> clause = NextClause(size);
       if (fingerprints_.contains(HashClause(clause))) {
         buffer.Add(NextClause(size));
@@ -1100,8 +1098,7 @@ int UniqueClauseStream::FillUpstreamBuffer(UniqueClauseStream& upstream,
                                            int max_clauses_to_export) {
   int num_exported_clauses = 0;
   absl::MutexLock mutex_lock(&mutex_);
-  const int size_index = size - 3;
-  while (!clauses_by_size_[size_index].empty() &&
+  while (NumLiteralsOfSize(size) > 0 &&
          num_exported_clauses < max_clauses_to_export) {
     absl::Span<const int> clause = NextClause(size);
     // Don't emit deleted clauses.
@@ -1113,20 +1110,44 @@ int UniqueClauseStream::FillUpstreamBuffer(UniqueClauseStream& upstream,
   return num_exported_clauses;
 }
 
-int UniqueClauseStream::NumBufferedLiteralsUpToSize(int max_size) const {
+int UniqueClauseStream::NumBufferedLiterals() const {
   absl::MutexLock mutex_lock(&mutex_);
   int result = 0;
-  for (int index = 0; index < max_size - 2; ++index) {
-    result += clauses_by_size_[index].size();
+  for (const auto& buffer : clauses_by_size_) {
+    result += buffer.size();
   }
   return result;
 }
 
 bool UniqueClauseStream::CanAccept(int size, int lbd) const {
+  if (size <= 2 || size > kMaxClauseSize) return false;
   absl::MutexLock mutex_lock(&mutex_);
-  return size > 2 && size <= kMaxClauseSize && lbd <= lbd_threshold_ &&
-         clauses_by_size_[size - 3].size() + size <=
-             kMaxBufferedLiteralsPerSize;
+  if (lbd > lbd_threshold_) return false;
+  int num_literals_up_to_size = 0;
+  for (int i = kMinClauseSize; i <= size; ++i) {
+    num_literals_up_to_size += NumLiteralsOfSize(i);
+  }
+  return num_literals_up_to_size + size <= kMaxBufferedLiterals;
+}
+
+void UniqueClauseStream::RemoveWorstClauses() {
+  absl::MutexLock mutex_lock(&mutex_);
+  int literals_to_remove = 0;
+  for (const auto& buffer : clauses_by_size_) {
+    literals_to_remove += buffer.size();
+  }
+  literals_to_remove -= kMaxBufferedLiterals;
+  for (int size = kMaxClauseSize; size >= kMinClauseSize; --size) {
+    while (NumLiteralsOfSize(size) > 0) {
+      // Stop if removing one more clause of the current size would
+      // leave the buffer under full. Otherwise we might remove a shorter
+      // clause later!
+      if (literals_to_remove < size) return;
+      fingerprints_.erase(HashClause(NextClause(size)));
+      PopClause(size);
+      literals_to_remove -= size;
+    }
+  }
 }
 
 void UniqueClauseStream::set_lbd_threshold(int lbd) {
@@ -1144,20 +1165,22 @@ size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
 }
 
 absl::Span<const int> UniqueClauseStream::NextClause(int size) const {
-  const int index = size - 3;
-  return absl::MakeConstSpan(clauses_by_size_[index])
-      .subspan(clauses_by_size_[index].size() - size, size);
+  absl::Span<const int> buffer = BufferForSize(size);
+  return buffer.subspan(buffer.size() - size, size);
 }
 
 void UniqueClauseStream::PopClause(int size) {
-  const int index = size - 3;
-  clauses_by_size_[index].erase(clauses_by_size_[index].end() - size,
-                                clauses_by_size_[index].end());
+  std::vector<int>* buffer = MutableBufferForSize(size);
+  buffer->erase(buffer->end() - size, buffer->end());
 }
 
-int UniqueClauseStream::NumClauses(int size) const {
-  return clauses_by_size_[size - 3].size() / size;
-};
+int UniqueClauseStream::NumClausesOfSize(int size) const {
+  return NumLiteralsOfSize(size) / size;
+}
+
+int UniqueClauseStream::NumLiteralsOfSize(int size) const {
+  return BufferForSize(size).size();
+}
 
 SharedClausesManager::SharedClausesManager(bool always_synchronize,
                                            absl::Duration share_frequency)
@@ -1253,21 +1276,41 @@ void SharedClausesManager::Synchronize() {
   if (!share_timer_.IsRunning()) share_timer_.Start();
   if (share_timer_.GetDuration() < share_frequency_) return;
   share_timer_.Restart();
+
+  // Tune LBD threshold for individual workers based on how the worker's buffer
+  // is. We aim to ensure workers can always export their fair share of clauses.
+  for (int id = 0; id < num_workers; ++id) {
+    UniqueClauseStream& stream = id_to_clause_stream_[id];
+    const int lbd_threshold = stream.lbd_threshold();
+    const int num_buffered_literals = stream.NumBufferedLiterals();
+    const bool underfull =
+        num_buffered_literals <
+        UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
+    const bool overfull =
+        num_buffered_literals > UniqueClauseStream::kMaxLiteralsPerBatch;
+    const int new_lbd = std::clamp(lbd_threshold + underfull - overfull, 2,
+                                   UniqueClauseStream::kMaxClauseSize);
+    if (new_lbd != lbd_threshold) {
+      VLOG(2) << id_to_worker_name_[id]
+              << " sharing clauses with lbd <= " << new_lbd;
+      stream.set_lbd_threshold(new_lbd);
+    }
+  }
+
   std::vector<int> ids(num_workers);
-  for (int size = 3; size < UniqueClauseStream::kMaxClauseSize; ++size) {
+  int literals_to_fill = UniqueClauseStream::kMaxLiteralsPerBatch;
+  for (int size = UniqueClauseStream::kMinClauseSize;
+       size <= UniqueClauseStream::kMaxClauseSize; ++size) {
     ids.clear();
     for (int id = 0; id < num_workers; ++id) {
-      if (id_to_clause_stream_[id].NumBufferedLiteralsUpToSize(size) > 0) {
+      if (id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) > 0) {
         ids.push_back(id);
       }
     }
     // Use progressive filling to attempt to fill the batch with clauses of
     // minimum size, this is max-min fair.
     while (!ids.empty()) {
-      const int clauses_to_fill =
-          (UniqueClauseStream::kMaxLiteralsPerBatch -
-           all_clauses_.NumBufferedLiteralsUpToSize(size)) /
-          size;
+      const int clauses_to_fill = literals_to_fill / size;
       if (clauses_to_fill == 0) break;
       // Some workers need to export more clauses to fill the batch due to
       // rounding, but we don't want all workers to round up.
@@ -1279,7 +1322,7 @@ void SharedClausesManager::Synchronize() {
             all_clauses_, size, clauses_to_fill / ids.size() + round_up);
         id_to_clauses_exported_[id] += shared;
         if (shared == 0 ||
-            id_to_clause_stream_[id].NumBufferedLiteralsUpToSize(size) == 0) {
+            id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) == 0) {
           ids[i] = ids.back();
           ids.pop_back();
           --i;
@@ -1287,31 +1330,14 @@ void SharedClausesManager::Synchronize() {
       }
     }
   }
-  // Tune LBD threshold for individual workers based on how full the batch and
-  // worker's buffer is.
-  const bool underfull = all_clauses_.NumBufferedLiterals() <=
-                         UniqueClauseStream::kMaxLiteralsPerBatch -
-                             UniqueClauseStream::kMaxClauseSize;
-  for (int id = 0; id < num_workers; ++id) {
-    UniqueClauseStream& stream = id_to_clause_stream_[id];
-    const int lbd_threshold = stream.lbd_threshold();
-    // Half a batch left after sharing! Focus on lower LBD clauses.
-    const bool overfull = stream.NumBufferedLiterals() >
-                          UniqueClauseStream::kMaxLiteralsPerBatch / 2;
-    const int new_lbd = std::clamp(lbd_threshold + (overfull ? -1 : underfull),
-                                   2, UniqueClauseStream::kMaxClauseSize);
-    if (new_lbd != lbd_threshold) {
-      VLOG(2) << id_to_worker_name_[id]
-              << " sharing clauses with lbd <= " << new_lbd;
-      stream.set_lbd_threshold(new_lbd);
-    }
-  }
-
   if (all_clauses_.NumBufferedLiterals() > 0) {
     batches_.push_back(all_clauses_.NextBatch());
     VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
             << " clauses max size = "
             << batches_.back()[batches_.back().size() - 1].size();
+    for (auto& stream : id_to_clause_stream_) {
+      stream.RemoveWorstClauses();
+    }
   }
   // Delete batches that have been consumed by all workers.
   // Keep a few batches around for startup (min finished batch doesn't count

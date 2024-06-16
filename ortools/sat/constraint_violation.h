@@ -20,17 +20,16 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/dense_set.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
-
-int64_t ExprValue(const LinearExpressionProto& expr,
-                  absl::Span<const int64_t> solution);
 
 class LinearIncrementalEvaluator {
  public:
@@ -242,40 +241,58 @@ class LinearIncrementalEvaluator {
 };
 
 // View of a generic (non linear) constraint for the LsEvaluator.
-//
-// TODO(user): Remove the ct_proto() from here and instead expose a
-// UsedVariables(). It is inefficient to use a proto for compiled constraint not
-// based on one.
 class CompiledConstraint {
  public:
-  explicit CompiledConstraint(const ConstraintProto& ct_proto);
+  CompiledConstraint() = default;
   virtual ~CompiledConstraint() = default;
 
   // Recomputes the violation of the constraint from scratch.
   void InitializeViolation(absl::Span<const int64_t> solution);
 
-  // Update the violation with the new value.
-  void PerformMove(int var, int64_t old_value,
-                   absl::Span<const int64_t> solution_with_new_value);
-
-  // Computes the violation of a constraint.
-  //
-  // A violation is a positive integer value. A zero value means the constraint
-  // is not violated.
-  virtual int64_t ComputeViolation(absl::Span<const int64_t> solution) = 0;
+  // Updates the violation with the new value.
+  virtual void PerformMove(int var, int64_t old_value,
+                           absl::Span<const int64_t> solution_with_new_value);
 
   // Returns the delta if var changes from old_value to solution[var].
   virtual int64_t ViolationDelta(
       int var, int64_t old_value,
       absl::Span<const int64_t> solution_with_new_value);
 
-  // Getters.
-  const ConstraintProto& ct_proto() const { return ct_proto_; }
+  // Returns the sorted vector of variables used by this constraint. This is
+  // used to known when a violation might change, and is only called once during
+  // initialization, so speed is not to much of a concern here.
+  //
+  // The global proto is needed to resolve interval variables reference.
+  virtual std::vector<int> UsedVariables(
+      const CpModelProto& model_proto) const = 0;
+
+  // The cached violation of this constraint.
   int64_t violation() const { return violation_; }
+
+ protected:
+  // Computes the violation of a constraint.
+  //
+  // This is called by InitializeViolation() and also the default implementation
+  // of ViolationDelta().
+  virtual int64_t ComputeViolation(absl::Span<const int64_t> solution) = 0;
+
+  int64_t violation_;
+};
+
+// Intermediate class for all constraints that store directly their proto as
+// part of their implementation.
+class CompiledConstraintWithProto : public CompiledConstraint {
+ public:
+  explicit CompiledConstraintWithProto(const ConstraintProto& ct_proto);
+  ~CompiledConstraintWithProto() override = default;
+
+  const ConstraintProto& ct_proto() const { return ct_proto_; }
+
+  // This just returns the variables used by the stored ct_proto_.
+  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
 
  private:
   const ConstraintProto& ct_proto_;
-  int64_t violation_;
 };
 
 // Evaluation container for the local search.
@@ -444,7 +461,7 @@ class LsEvaluator {
 // ================================
 
 // The violation of a bool_xor constraint is 0 or 1.
-class CompiledBoolXorConstraint : public CompiledConstraint {
+class CompiledBoolXorConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledBoolXorConstraint(const ConstraintProto& ct_proto);
   ~CompiledBoolXorConstraint() override = default;
@@ -459,7 +476,7 @@ class CompiledBoolXorConstraint : public CompiledConstraint {
 // - the sum(max(0, expr_value - target_value) forall expr). This part will be
 //   maintained by the linear part.
 // - target_value - max(expressions) if positive.
-class CompiledLinMaxConstraint : public CompiledConstraint {
+class CompiledLinMaxConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledLinMaxConstraint(const ConstraintProto& ct_proto);
   ~CompiledLinMaxConstraint() override = default;
@@ -469,7 +486,7 @@ class CompiledLinMaxConstraint : public CompiledConstraint {
 
 // The violation of an int_prod constraint is
 //     abs(value(target) - prod(value(expr)).
-class CompiledIntProdConstraint : public CompiledConstraint {
+class CompiledIntProdConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledIntProdConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntProdConstraint() override = default;
@@ -479,7 +496,7 @@ class CompiledIntProdConstraint : public CompiledConstraint {
 
 // The violation of an int_div constraint is
 //     abs(value(target) - value(expr0) / value(expr1)).
-class CompiledIntDivConstraint : public CompiledConstraint {
+class CompiledIntDivConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledIntDivConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntDivConstraint() override = default;
@@ -499,7 +516,7 @@ class CompiledIntDivConstraint : public CompiledConstraint {
 // if target and expr0 have different sign:
 //   abs(target) + abs(expr0)
 // Note: the modulo (expr1) is always fixed.
-class CompiledIntModConstraint : public CompiledConstraint {
+class CompiledIntModConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledIntModConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntModConstraint() override = default;
@@ -509,7 +526,7 @@ class CompiledIntModConstraint : public CompiledConstraint {
 
 // The violation of a all_diff is the number of unordered pairs of expressions
 // with the same value.
-class CompiledAllDiffConstraint : public CompiledConstraint {
+class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledAllDiffConstraint(const ConstraintProto& ct_proto);
   ~CompiledAllDiffConstraint() override = default;
@@ -520,26 +537,12 @@ class CompiledAllDiffConstraint : public CompiledConstraint {
   std::vector<int64_t> values_;
 };
 
-// The violation of a no_overlap is the sum of overloads over time.
-class CompiledNoOverlapConstraint : public CompiledConstraint {
- public:
-  explicit CompiledNoOverlapConstraint(const ConstraintProto& ct_proto,
-                                       const CpModelProto& cp_model);
-  ~CompiledNoOverlapConstraint() override = default;
-
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
-
- private:
-  const CpModelProto& cp_model_;
-  std::vector<std::pair<int64_t, int64_t>> events_;
-};
-
 // Special constraint for no overlap between two intervals.
 // We usually expand small no-overlap in n^2 such constraint, so we want to
 // be compact and efficient here.
 class NoOverlapBetweenTwoIntervals : public CompiledConstraint {
  public:
-  NoOverlapBetweenTwoIntervals(const ConstraintProto& ct_proto,
+  NoOverlapBetweenTwoIntervals(int interval_0, int interval_1,
                                const CpModelProto& cp_model);
   ~NoOverlapBetweenTwoIntervals() override = default;
 
@@ -555,6 +558,8 @@ class NoOverlapBetweenTwoIntervals : public CompiledConstraint {
     return ComputeViolationInternal(solution_with_new_value) - violation();
   }
 
+  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
  private:
   int64_t ComputeViolationInternal(absl::Span<const int64_t> solution);
 
@@ -564,22 +569,7 @@ class NoOverlapBetweenTwoIntervals : public CompiledConstraint {
   LinearExpressionProto end_minus_start_2_;
 };
 
-// The violation of a cumulative is the sum of overloads over time.
-class CompiledCumulativeConstraint : public CompiledConstraint {
- public:
-  explicit CompiledCumulativeConstraint(const ConstraintProto& ct_proto,
-                                        const CpModelProto& cp_model);
-  ~CompiledCumulativeConstraint() override = default;
-
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
-
- private:
-  const CpModelProto& cp_model_;
-  std::vector<std::pair<int64_t, int64_t>> events_;
-};
-
-// The violation of a no_overlap is the sum of overloads over time.
-class CompiledNoOverlap2dConstraint : public CompiledConstraint {
+class CompiledNoOverlap2dConstraint : public CompiledConstraintWithProto {
  public:
   explicit CompiledNoOverlap2dConstraint(const ConstraintProto& ct_proto,
                                          const CpModelProto& cp_model);
@@ -589,6 +579,92 @@ class CompiledNoOverlap2dConstraint : public CompiledConstraint {
 
  private:
   const CpModelProto& cp_model_;
+};
+
+// This can be used to encode reservoir or a cumulative constraints for LS. We
+// have a set of event time, and we use for overal violation the sum of overload
+// over time.
+//
+// This version support an incremental computation when just a few events
+// changes, which is roughly O(n) instead of O(n log n) which makes it
+// significantly faster than recomputing and sorting the profile on each
+// ViolationDelta().
+class CompiledReservoirConstraint : public CompiledConstraint {
+ public:
+  CompiledReservoirConstraint(LinearExpressionProto capacity,
+                              std::vector<std::optional<int>> is_active,
+                              std::vector<LinearExpressionProto> times,
+                              std::vector<LinearExpressionProto> demands)
+      : capacity_(std::move(capacity)),
+        is_active_(std::move(is_active)),
+        times_(std::move(times)),
+        demands_(std::move(demands)) {
+    const int num_events = times_.size();
+    time_values_.resize(num_events, 0);
+    demand_values_.resize(num_events, 0);
+    InitializeDenseIndexToEvents();
+  }
+
+  // Note that since we have our own ViolationDelta() implementation this is
+  // only used for initialization and our PerformMove(). It is why we set
+  // violations_ here.
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
+    violation_ = BuildProfileAndReturnViolation(solution);
+    return violation_;
+  }
+
+  void PerformMove(int /*var*/, int64_t /*old_value*/,
+                   absl::Span<const int64_t> solution_with_new_value) final {
+    // TODO(user): we could probably be more incremental here, but it is a bit
+    // tricky to get right and not too important since the time is dominated by
+    // evaluating moves, not taking them.
+    ComputeViolation(solution_with_new_value);
+  }
+
+  int64_t ViolationDelta(
+      int var, int64_t /*old_value*/,
+      absl::Span<const int64_t> solution_with_new_value) final {
+    return IncrementalViolation(var, solution_with_new_value) - violation_;
+  }
+
+  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
+ private:
+  // This works in O(n log n).
+  int64_t BuildProfileAndReturnViolation(absl::Span<const int64_t> solution);
+
+  // This works in O(n) + O(d log d) where d is the number of modified events
+  // compare to the base solution. In most situation it should be O(1).
+  int64_t IncrementalViolation(int var, absl::Span<const int64_t> solution);
+
+  // This is used to speed up IncrementalViolation().
+  void InitializeDenseIndexToEvents();
+  void AppendVariablesForEvent(int i, std::vector<int>* result) const;
+
+  // The const data from the constructor.
+  // Note that is_active_ might be empty if all events are mandatory.
+  const LinearExpressionProto capacity_;
+  const std::vector<std::optional<int>> is_active_;
+  const std::vector<LinearExpressionProto> times_;
+  const std::vector<LinearExpressionProto> demands_;
+
+  // Remap all UsedVariables() to a dense index in [0, num_used_vars).
+  absl::flat_hash_map<int, int> var_to_dense_index_;
+  CompactVectorVector<int, int> dense_index_to_events_;
+
+  struct Event {
+    int64_t time;
+    int64_t demand;
+    bool operator<(const Event& o) const { return time < o.time; }
+  };
+  std::vector<Event> profile_;
+  std::vector<Event> profile_delta_;
+
+  // This is filled by BuildProfileAndReturnViolation() and correspond to the
+  // value in the current solutions.
+  int64_t capacity_value_;
+  std::vector<int64_t> time_values_;
+  std::vector<int64_t> demand_values_;
 };
 
 }  // namespace sat

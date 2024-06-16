@@ -370,6 +370,9 @@ bool LbTreeSearch::LevelZeroLogic() {
         sat_solver_->NotifyThatModelIsUnsat();
         return false;
       }
+      if (!sat_solver_->FinishPropagation()) {
+        return false;
+      }
     }
   }
 

@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 287
+// NEXT TAG: 291
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -463,6 +463,25 @@ message SatParameters {
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
   optional bool expand_reservoir_constraints = 182 [default = true];
+
+  // Mainly useful for testing.
+  //
+  // If this and expand_reservoir_constraints is true, we use a different
+  // encoding of the reservoir constraint using circuit instead of precedences.
+  // Note that this is usually slower, but can exercise different part of the
+  // solver. Note that contrary to the precedence encoding, this easily support
+  // variable demands.
+  //
+  // WARNING: with this encoding, the constraint take a slighlty different
+  // meaning. The level must be within the reservoir for any permutation of the
+  // events. So we cannot have +100 and -100 at the same time if the maximum
+  // level is 10 (as autorized by the reservoir constraint).
+  optional bool expand_reservoir_using_circuit = 288 [default = false];
+
+  // Encore cumulative with fixed demands and capacity as a reservoir
+  // constraint. The only reason you might want to do that is to test the
+  // reservoir propagation code!
+  optional bool encode_cumulative_as_reservoir = 287 [default = false];
 
   // If the number of expressions in the lin_max is less that the max size
   // parameter, model expansion replaces target = max(xi) by linear constraint
@@ -930,6 +949,12 @@ message SatParameters {
   // bound in the shaving search.
   optional double shaving_search_deterministic_time = 205 [default = 0.001];
 
+  // Specifies the threshold between two modes in the shaving procedure.
+  // If the range of the variable/objective is less than this threshold, then
+  // the shaving procedure will try to remove values one by one. Otherwise, it
+  // will try to remove one range at a time.
+  optional int64 shaving_search_threshold = 290 [default = 64];
+
   // If true, search will search in ascending max objective value (when
   // minimizing) starting from the lower bound of the objective.
   optional bool use_objective_lb_search = 228 [default = false];
@@ -938,6 +963,10 @@ message SatParameters {
   // to bound the objective, and it will recreate a full model with the
   // hardcoded objective value.
   optional bool use_objective_shaving_search = 253 [default = false];
+
+  // This search takes all Boolean or integer variables, and maximize or
+  // minimize them in order to reduce their domain.
+  optional bool use_variables_shaving_search = 289 [default = false];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.
@@ -1015,9 +1044,11 @@ message SatParameters {
   optional bool feasibility_jump_enable_restarts = 250 [default = true];
 
   // Maximum size of no_overlap or no_overlap_2d constraint for a quadratic
-  // expansion.
+  // expansion. This might look a lot, but by expanding such constraint, we get
+  // a linear time evaluation per single variable moves instead of a slow O(n
+  // log n) one.
   optional int32 feasibility_jump_max_expanded_constraint_size = 264
-      [default = 100];
+      [default = 500];
 
   // This will create incomplete subsolvers (that are not LNS subsolvers)
   // that use the feasibility jump code to find improving solution, treating

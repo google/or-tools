@@ -32,7 +32,6 @@
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -41,7 +40,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -100,13 +98,131 @@ void PropagateAutomaton(const AutomatonConstraintProto& proto,
 
 namespace {
 
-void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
-  if (ct->reservoir().min_level() > ct->reservoir().max_level()) {
-    VLOG(1) << "Empty level domain in reservoir constraint.";
-    return (void)context->NotifyThatModelIsUnsat();
+// Different encoding that support general demands. This is usually a pretty bad
+// encoding, at least until we improve the solver on such models.
+void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
+                                 int64_t sum_of_negative_demand,
+                                 ConstraintProto* reservoir_ct,
+                                 PresolveContext* context) {
+  const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
+  const int num_events = reservoir.time_exprs_size();
+
+  // The encoding will create a circuit constraint and on integer variable per
+  // events representing the level a that event time.
+  CircuitConstraintProto* circuit =
+      context->working_model->add_constraints()->mutable_circuit();
+
+  const int64_t var_min =
+      std::max(reservoir.min_level(), sum_of_negative_demand);
+  const int64_t var_max =
+      std::min(reservoir.max_level(), sum_of_positive_demand);
+  std::vector<int> level_vars(num_events);
+  for (int i = 0; i < num_events; ++i) {
+    level_vars[i] = context->NewIntVar(Domain(var_min, var_max));
   }
 
-  const ReservoirConstraintProto& reservoir = ct->reservoir();
+  // For the corner case where all events are absent, we need a potential
+  // self-arc on the start/end circuit node.
+  {
+    circuit->add_tails(num_events);
+    circuit->add_heads(num_events);
+    circuit->add_literals(context->NewBoolVar());
+  }
+
+  for (int i = 0; i < num_events; ++i) {
+    if (!reservoir.active_literals().empty()) {
+      // Add self arc to represent absence.
+      circuit->add_tails(i);
+      circuit->add_heads(i);
+      circuit->add_literals(NegatedRef(reservoir.active_literals(i)));
+    }
+
+    // We need an extra circuit node for start/end of circuit.
+    // We use the available index 'num_events'.
+    {
+      // Circuit starts at i, level_vars[i] == demand_expr[i].
+      const int start_var = context->NewBoolVar();
+      circuit->add_tails(num_events);
+      circuit->add_heads(i);
+      circuit->add_literals(start_var);
+
+      // Add enforced linear for demand.
+      {
+        ConstraintProto* new_ct = context->working_model->add_constraints();
+        new_ct->add_enforcement_literal(start_var);
+        LinearConstraintProto* lin = new_ct->mutable_linear();
+        lin->add_domain(0);
+        lin->add_domain(0);
+        lin->add_vars(level_vars[i]);
+        lin->add_coeffs(1);
+        AddLinearExpressionToLinearConstraint(reservoir.level_changes(i), -1,
+                                              lin);
+        context->CanonicalizeLinearConstraint(new_ct);
+      }
+
+      // Circuit ends at i, no extra constraint there.
+      circuit->add_tails(i);
+      circuit->add_heads(num_events);
+      circuit->add_literals(context->NewBoolVar());
+    }
+
+    for (int j = 0; j < num_events; ++j) {
+      if (i == j) continue;
+
+      // If arc_i_j is true then:
+      // - active_i is true (enforced by circuit).
+      // - active_j is true (enforced by circuit).
+      // - time_i <= time_j
+      // - level_j == level_i + demand_j
+      //
+      // TODO(user): Unfortunately we cannot share these literal between
+      // reservoir except if the set of time point is exactly the same!
+      // otherwise if we miss one, then A "after" B in one circuit do not
+      // implies that there is no C in between in another!
+      const int arc_i_j = context->NewBoolVar();
+      circuit->add_tails(i);
+      circuit->add_heads(j);
+      circuit->add_literals(arc_i_j);
+
+      // Add enforced linear for time.
+      {
+        ConstraintProto* new_ct = context->working_model->add_constraints();
+        new_ct->add_enforcement_literal(arc_i_j);
+        LinearConstraintProto* lin = new_ct->mutable_linear();
+        lin->add_domain(0);
+        lin->add_domain(std::numeric_limits<int64_t>::max());
+        AddLinearExpressionToLinearConstraint(reservoir.time_exprs(j), 1, lin);
+        AddLinearExpressionToLinearConstraint(reservoir.time_exprs(i), -1, lin);
+        context->CanonicalizeLinearConstraint(new_ct);
+      }
+
+      // Add enforced linear for demand.
+      {
+        ConstraintProto* new_ct = context->working_model->add_constraints();
+        new_ct->add_enforcement_literal(arc_i_j);
+        LinearConstraintProto* lin = new_ct->mutable_linear();
+        lin->add_domain(0);
+        lin->add_domain(0);
+        lin->add_vars(level_vars[j]);
+        lin->add_coeffs(1);
+        lin->add_vars(level_vars[i]);
+        lin->add_coeffs(-1);
+        AddLinearExpressionToLinearConstraint(reservoir.level_changes(j), -1,
+                                              lin);
+        context->CanonicalizeLinearConstraint(new_ct);
+      }
+    }
+  }
+
+  reservoir_ct->Clear();
+  context->UpdateRuleStats("reservoir: expanded using circuit.");
+}
+
+void ExpandReservoirUsingPrecedences(int64_t sum_of_positive_demand,
+                                     int64_t sum_of_negative_demand,
+                                     ConstraintProto* reservoir_ct,
+                                     PresolveContext* context) {
+  const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
   const int num_events = reservoir.time_exprs_size();
   const int true_literal = context->GetTrueLiteral();
   const auto is_active_literal = [&reservoir, true_literal](int index) {
@@ -114,101 +230,251 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     return reservoir.active_literals(index);
   };
 
+  // Constrains the running level to be consistent at all time_exprs.
+  // For this we only add a constraint at the time a given demand take place.
+  for (int i = 0; i < num_events; ++i) {
+    const int active_i = is_active_literal(i);
+    if (context->LiteralIsFalse(active_i)) continue;
+
+    const int64_t demand_i = context->FixedValue(reservoir.level_changes(i));
+    if (demand_i == 0) continue;
+
+    // No need for some constraints if the reservoir is just constrained in
+    // one direction.
+    if (demand_i > 0 && sum_of_positive_demand <= reservoir.max_level()) {
+      continue;
+    }
+    if (demand_i < 0 && sum_of_negative_demand >= reservoir.min_level()) {
+      continue;
+    }
+
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    LinearConstraintProto* new_linear = new_ct->mutable_linear();
+
+    // Add contributions from previous events.
+    int64_t offset = 0;
+    const LinearExpressionProto& time_i = reservoir.time_exprs(i);
+    for (int j = 0; j < num_events; ++j) {
+      if (i == j) continue;
+      const int active_j = is_active_literal(j);
+      if (context->LiteralIsFalse(active_j)) continue;
+
+      // Get or create the literal equivalent to
+      // active_i && active_j && time[j] <= time[i].
+      //
+      // TODO(user): we could get rid of active_i in the equivalence above.
+      // Experiments when we have enough benchmarks.
+      const LinearExpressionProto& time_j = reservoir.time_exprs(j);
+      const int j_lesseq_i = context->GetOrCreateReifiedPrecedenceLiteral(
+          time_j, time_i, active_j, active_i);
+      context->working_model->mutable_variables(j_lesseq_i)
+          ->set_name(absl::StrCat(j, " before ", i));
+
+      const int64_t demand = context->FixedValue(reservoir.level_changes(j));
+      if (RefIsPositive(j_lesseq_i)) {
+        new_linear->add_vars(j_lesseq_i);
+        new_linear->add_coeffs(demand);
+      } else {
+        new_linear->add_vars(NegatedRef(j_lesseq_i));
+        new_linear->add_coeffs(-demand);
+        offset -= demand;
+      }
+    }
+
+    // Add contribution from event i.
+    //
+    // TODO(user): Alternatively we can mark the whole constraint as enforced
+    // only if active_i is true. Experiments with both version, right now we
+    // miss enough benchmarks to conclude.
+    if (RefIsPositive(active_i)) {
+      new_linear->add_vars(active_i);
+      new_linear->add_coeffs(demand_i);
+    } else {
+      new_linear->add_vars(NegatedRef(active_i));
+      new_linear->add_coeffs(-demand_i);
+      offset -= demand_i;
+    }
+
+    // Note that according to the sign of demand_i, we only need one side.
+    if (demand_i > 0) {
+      new_linear->add_domain(std::numeric_limits<int64_t>::min());
+      new_linear->add_domain(reservoir.max_level());
+    } else {
+      new_linear->add_domain(reservoir.min_level());
+      new_linear->add_domain(std::numeric_limits<int64_t>::max());
+    }
+
+    context->CanonicalizeLinearConstraint(new_ct);
+  }
+
+  reservoir_ct->Clear();
+  context->UpdateRuleStats("reservoir: expanded using precedences");
+}
+
+void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
+  if (reservoir_ct->reservoir().min_level() >
+      reservoir_ct->reservoir().max_level()) {
+    VLOG(1) << "Empty level domain in reservoir constraint.";
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+
+  const ReservoirConstraintProto& reservoir = reservoir_ct->reservoir();
+  const int num_events = reservoir.time_exprs_size();
+
   int num_positives = 0;
   int num_negatives = 0;
+  bool all_demands_are_fixed = true;
+  int64_t sum_of_positive_demand = 0;
+  int64_t sum_of_negative_demand = 0;
   for (const LinearExpressionProto& demand_expr : reservoir.level_changes()) {
-    const int64_t demand = context->FixedValue(demand_expr);
-    if (demand > 0) {
+    if (!context->IsFixed(demand_expr)) {
+      all_demands_are_fixed = false;
+    }
+    const int64_t max_demand = context->MaxOf(demand_expr);
+    if (max_demand > 0) {
       num_positives++;
-    } else if (demand < 0) {
+      sum_of_positive_demand += max_demand;
+    }
+    const int64_t min_demand = context->MinOf(demand_expr);
+    if (min_demand < 0) {
       num_negatives++;
+      sum_of_negative_demand += min_demand;
     }
   }
 
-  absl::flat_hash_map<std::pair<int, int>, int> precedence_cache;
+  if (sum_of_negative_demand >= reservoir.min_level() &&
+      sum_of_positive_demand <= reservoir.max_level()) {
+    context->UpdateRuleStats("reservoir: always true");
+    reservoir_ct->Clear();
+    return;
+  }
 
-  if (num_positives > 0 && num_negatives > 0) {
-    // Creates Boolean variables equivalent to (start[i] <= start[j]) i != j
-    for (int i = 0; i < num_events - 1; ++i) {
-      const int active_i = is_active_literal(i);
-      if (context->LiteralIsFalse(active_i)) continue;
-      const LinearExpressionProto& time_i = reservoir.time_exprs(i);
-
-      for (int j = i + 1; j < num_events; ++j) {
-        const int active_j = is_active_literal(j);
-        if (context->LiteralIsFalse(active_j)) continue;
-        const LinearExpressionProto& time_j = reservoir.time_exprs(j);
-
-        const int i_lesseq_j = context->GetOrCreateReifiedPrecedenceLiteral(
-            time_i, time_j, active_i, active_j);
-        context->working_model->mutable_variables(i_lesseq_j)
-            ->set_name(absl::StrCat(i, " before ", j));
-        precedence_cache[{i, j}] = i_lesseq_j;
-        const int j_lesseq_i = context->GetOrCreateReifiedPrecedenceLiteral(
-            time_j, time_i, active_j, active_i);
-        context->working_model->mutable_variables(j_lesseq_i)
-            ->set_name(absl::StrCat(j, " before ", i));
-        precedence_cache[{j, i}] = j_lesseq_i;
-      }
-    }
-
-    // Constrains the running level to be consistent at all time_exprs.
-    // For this we only add a constraint at the time a given demand
-    // take place. We also have a constraint for time zero if needed
-    // (added below).
-    for (int i = 0; i < num_events; ++i) {
-      const int active_i = is_active_literal(i);
-      if (context->LiteralIsFalse(active_i)) continue;
-
-      // Accumulates level_changes of all predecessors.
-      ConstraintProto* const level = context->working_model->add_constraints();
-      level->add_enforcement_literal(active_i);
-
-      // Add contributions from previous events.
-      int64_t offset = 0;
-      for (int j = 0; j < num_events; ++j) {
-        if (i == j) continue;
-        const int active_j = is_active_literal(j);
-        if (context->LiteralIsFalse(active_j)) continue;
-
-        const auto prec_it = precedence_cache.find({j, i});
-        CHECK(prec_it != precedence_cache.end());
-        const int prec_lit = prec_it->second;
-        const int64_t demand = context->FixedValue(reservoir.level_changes(j));
-        if (RefIsPositive(prec_lit)) {
-          level->mutable_linear()->add_vars(prec_lit);
-          level->mutable_linear()->add_coeffs(demand);
-        } else {
-          level->mutable_linear()->add_vars(prec_lit);
-          level->mutable_linear()->add_coeffs(-demand);
-          offset -= demand;
-        }
-      }
-
-      // Accounts for own demand in the domain of the sum.
-      const int64_t demand_i = context->FixedValue(reservoir.level_changes(i));
-      level->mutable_linear()->add_domain(
-          CapAdd(CapSub(reservoir.min_level(), demand_i), offset));
-      level->mutable_linear()->add_domain(
-          CapAdd(CapSub(reservoir.max_level(), demand_i), offset));
-      context->CanonicalizeLinearConstraint(level);
-    }
-  } else {
-    // If all level_changes have the same sign, we do not care about the order,
-    // just the sum.
+  // If all level_changes have the same sign, we do not care about the order,
+  // just the sum. We might need to create intermediate variable for quadratic
+  // terms though.
+  if (num_negatives == 0 || num_positives == 0) {
+    const int true_literal = context->GetTrueLiteral();
     ConstraintProto* new_ct = context->working_model->add_constraints();
-    auto* const sum = new_ct->mutable_linear();
+    LinearConstraintProto* sum = new_ct->mutable_linear();
     for (int i = 0; i < num_events; ++i) {
-      sum->add_vars(is_active_literal(i));
-      sum->add_coeffs(context->FixedValue(reservoir.level_changes(i)));
+      const int active = reservoir.active_literals().empty()
+                             ? true_literal
+                             : reservoir.active_literals(i);
+      const LinearExpressionProto& demand = reservoir.level_changes(i);
+      if (context->IsFixed(demand)) {
+        const int64_t change = context->FixedValue(reservoir.level_changes(i));
+        if (RefIsPositive(active)) {
+          sum->add_vars(active);
+          sum->add_coeffs(change);
+        } else {
+          // Add (1 - not(active)) * level_change.
+          sum->add_vars(true_literal);
+          sum->add_coeffs(change);
+          sum->add_vars(NegatedRef(active));
+          sum->add_coeffs(-change);
+        }
+      } else if (context->LiteralIsTrue(active)) {
+        AddLinearExpressionToLinearConstraint(demand, 1, sum);
+      } else {
+        const int new_var = context->NewIntVar(
+            Domain(context->MinOf(demand), context->MaxOf(demand))
+                .UnionWith(Domain(0)));
+        sum->add_vars(new_var);
+        sum->add_coeffs(1);
+
+        // Active => new_var == demand.
+        {
+          ConstraintProto* demand_ct =
+              context->working_model->add_constraints();
+          demand_ct->add_enforcement_literal(active);
+          LinearConstraintProto* lin = demand_ct->mutable_linear();
+          lin->add_domain(0);
+          lin->add_domain(0);
+          lin->add_vars(new_var);
+          lin->add_coeffs(1);
+          AddLinearExpressionToLinearConstraint(demand, -1, lin);
+          context->CanonicalizeLinearConstraint(demand_ct);
+        }
+
+        // not(active) => new_var == 0.
+        context->AddImplyInDomain(NegatedRef(active), new_var, Domain(0));
+      }
     }
     sum->add_domain(reservoir.min_level());
     sum->add_domain(reservoir.max_level());
     context->CanonicalizeLinearConstraint(new_ct);
+
+    context->UpdateRuleStats("reservoir: simple expansion with sum");
+    reservoir_ct->Clear();
+    return;
   }
 
+  // Call the correct expansion according to our parameter.
+  if (context->params().expand_reservoir_using_circuit()) {
+    ExpandReservoirUsingCircuit(sum_of_positive_demand, sum_of_negative_demand,
+                                reservoir_ct, context);
+  } else {
+    // This one is the faster option usually.
+    if (all_demands_are_fixed) {
+      ExpandReservoirUsingPrecedences(sum_of_positive_demand,
+                                      sum_of_negative_demand, reservoir_ct,
+                                      context);
+    } else {
+      context->UpdateRuleStats(
+          "reservoir: skipped expansion due to variable demands");
+    }
+  }
+}
+
+// This is mainly used for testing the reservoir implementation.
+void EncodeCumulativeAsReservoir(ConstraintProto* ct,
+                                 PresolveContext* context) {
+  if (!context->IsFixed(ct->cumulative().capacity())) {
+    context->UpdateRuleStats(
+        "cumulative -> reservoir: expansion is not supported with variable "
+        "capacity.");
+    return;
+  }
+
+  // Note that we know that the min_level can never go below zero, so we can
+  // just ignore this part of the constraint here.
+  ConstraintProto reservoir_ct;
+  auto* reservoir = reservoir_ct.mutable_reservoir();
+  reservoir->set_min_level(std::numeric_limits<int64_t>::min());
+  reservoir->set_max_level(context->FixedValue(ct->cumulative().capacity()));
+
+  const int true_literal = context->GetTrueLiteral();
+  const int num_intervals = ct->cumulative().intervals().size();
+  for (int i = 0; i < num_intervals; ++i) {
+    const auto& interval_ct =
+        context->working_model->constraints(ct->cumulative().intervals(i));
+    const auto& interval = interval_ct.interval();
+    *reservoir->add_time_exprs() = interval.start();
+    *reservoir->add_time_exprs() = interval.end();
+
+    const LinearExpressionProto& demand = ct->cumulative().demands(i);
+    *reservoir->add_level_changes() = demand;
+    LinearExpressionProto& negated = *reservoir->add_level_changes();
+    negated.set_offset(-demand.offset());
+    for (int j = 0; j < demand.vars().size(); ++j) {
+      negated.add_vars(demand.vars(j));
+      negated.add_coeffs(-demand.coeffs(j));
+    }
+
+    if (interval_ct.enforcement_literal().empty()) {
+      reservoir->add_active_literals(true_literal);
+      reservoir->add_active_literals(true_literal);
+    } else {
+      CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+      reservoir->add_active_literals(interval_ct.enforcement_literal(0));
+      reservoir->add_active_literals(interval_ct.enforcement_literal(0));
+    }
+  }
+
+  // Now expand it and clear the cumulative.
   ct->Clear();
-  context->UpdateRuleStats("reservoir: expanded");
+  context->UpdateRuleStats("cumulative: expanded into reservoir");
+  ExpandReservoir(&reservoir_ct, context);
 }
 
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
@@ -2246,20 +2512,12 @@ void ExpandCpModel(PresolveContext* context) {
         break;
       case ConstraintProto::kReservoir:
         if (context->params().expand_reservoir_constraints()) {
-          for (const LinearExpressionProto& demand_expr :
-               ct->reservoir().level_changes()) {
-            if (!context->IsFixed(demand_expr)) {
-              skip = true;
-              break;
-            }
-          }
-          if (skip) {
-            context->UpdateRuleStats(
-                "reservoir: expansion is not supported with  variable level "
-                "changes");
-          } else {
-            ExpandReservoir(ct, context);
-          }
+          ExpandReservoir(ct, context);
+        }
+        break;
+      case ConstraintProto::kCumulative:
+        if (context->params().encode_cumulative_as_reservoir()) {
+          EncodeCumulativeAsReservoir(ct, context);
         }
         break;
       case ConstraintProto::kIntMod:
