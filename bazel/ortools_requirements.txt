@@ -67,7 +67,7 @@ typing-extensions==4.8.0
     # via mypy
 tzdata==2023.3
     # via pandas
-urllib3==2.1.0
+urllib3==2.2.2
     # via requests
 virtualenv==20.24.6
     # via -r ortools_requirements.in
