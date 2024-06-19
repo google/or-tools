@@ -13,6 +13,7 @@
 
 #include "ortools/graph/k_shortest_paths.h"
 
+#include <algorithm>
 #include <random>
 #include <set>
 #include <string>
@@ -25,6 +26,7 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph/graph.h"
@@ -195,16 +197,103 @@ TEST(KShortestPathsYenTest, ReturnsTheRightNumberOfPaths) {
   EXPECT_THAT(paths.distances, ElementsAre(1, 2));
 }
 
+namespace internal {
+
+template <typename Graph, typename NodeIndexType, typename ArcIndexType,
+          typename URBG, bool IsDirected>
+Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
+                           const ArcIndexType num_edges) {
+  // TODO(user): make these utility functions so they can be reused.
+  const auto pick_one_node = [&urbg, num_nodes]() -> NodeIndexType {
+    const NodeIndexType node = absl::Uniform(urbg, 0, num_nodes);
+    CHECK_GE(node, 0);
+    CHECK_LT(node, num_nodes);
+    return node;
+  };
+  const auto pick_two_distinct_nodes =
+      [&pick_one_node]() -> std::pair<NodeIndexType, NodeIndexType> {
+    const NodeIndexType src = pick_one_node();
+    NodeIndexType dst;
+    do {
+      dst = pick_one_node();
+    } while (src == dst);
+    CHECK_NE(src, dst);
+    return {src, dst};
+  };
+
+  // Determine the maximum number of arcs in the graph.
+  const ArcIndexType max_num_arcs = IsDirected
+                                        ? (num_nodes * (num_nodes - 1))
+                                        : (num_nodes * (num_nodes - 1)) / 2;
+
+  // Build a random graph (and not multigraph) with `num_arcs` or `max_num_arcs`
+  // arcs, whichever is lower. The set is useful to ensure the graph does not
+  // contain the same arc more than once (the result would be a multigraph).
+  // TODO(user): this is an awful way to generate a complete graph.
+  StaticGraph<> graph;
+  graph.AddNode(num_nodes - 1);
+
+  std::set<std::pair<NodeIndexType, NodeIndexType>> arcs;
+  for (ArcIndexType i = 0; i < std::min(num_edges, max_num_arcs); ++i) {
+    NodeIndexType src, dst;
+    std::tie(src, dst) = pick_two_distinct_nodes();
+    if (arcs.contains({src, dst})) continue;
+    if (IsDirected && arcs.contains({dst, src})) continue;
+
+    arcs.insert({src, dst});
+    graph.AddArc(src, dst);
+
+    if (IsDirected) {
+      arcs.insert({dst, src});
+      graph.AddArc(dst, src);
+    }
+  }
+
+  // No need to keep the permutation when building, as there are no associated
+  // attributes such as lengths in this function.
+  graph.Build(nullptr);
+
+  return graph;
+}
+
+}  // namespace internal
+
+// Generates a random (un)directed graph with `num_nodes` nodes and up to
+// `num_arcs` arcs / `num_edges` edges, following a uniform probability
+// distribution. `urbg` is a source of randomness, such as an `std::mt19937`
+// object.
+//
+// If the number of arcs that is requested is too large compared to the number
+// of nodes (i.e. greater than the maximum number of arcs for a directed or
+// undirected graph with the specified number of node), this function returns a
+// complete graph.
+template <typename NodeIndexType, typename ArcIndexType,
+          typename Graph = StaticGraph<NodeIndexType, ArcIndexType>,
+          typename URBG>
+Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
+                           const ArcIndexType num_edges) {
+  return internal::GenerateUniformGraph<Graph, NodeIndexType, ArcIndexType,
+                                        URBG, /*IsDirected=*/false>(
+      urbg, num_nodes, num_edges);
+}
+template <typename NodeIndexType, typename ArcIndexType,
+          typename Graph = StaticGraph<NodeIndexType, ArcIndexType>,
+          typename URBG>
+Graph GenerateUniformDirectedGraph(URBG&& urbg, const NodeIndexType num_nodes,
+                                   const ArcIndexType num_arcs) {
+  return internal::GenerateUniformGraph<Graph, NodeIndexType, ArcIndexType,
+                                        URBG, /*IsDirected=*/true>(
+      urbg, num_nodes, num_arcs);
+}
 TEST(KShortestPathsYenTest, RandomTest) {
   std::mt19937 random(12345);
-  const int kNumGraphs = 10;
-  const int kNumQueriesPerGraph = 10;
-  const int kNumNodes = 10;
-  const int kNumArcs = 3 * kNumNodes;
-  const int kMaxNumTrialsPerArc = 1'000;
+  constexpr int kNumGraphs = 10;
+  constexpr int kNumQueriesPerGraph = 10;
+  constexpr int kNumNodes = 10;
+  constexpr int kNumArcs = 3 * kNumNodes;
   // TODO(user): when supported, also test negative weights.
-  const int kMinLength = 0;
-  const int kMaxLength = 1'000;
+  constexpr int kMinLength = 0;
+  constexpr int kMaxLength = 1'000;
 
   const auto pick_one_node = [&random]() -> int {
     int node = absl::Uniform(random, 0, kNumNodes);
@@ -212,7 +301,8 @@ TEST(KShortestPathsYenTest, RandomTest) {
     CHECK_LT(node, kNumNodes);
     return node;
   };
-  const auto pick_two_nodes = [&pick_one_node]() -> std::pair<int, int> {
+  const auto pick_two_distinct_nodes =
+      [&pick_one_node]() -> std::pair<int, int> {
     int src = pick_one_node();
     int dst;
     do {
@@ -229,42 +319,18 @@ TEST(KShortestPathsYenTest, RandomTest) {
   for (int graph_iter = 0; graph_iter < kNumGraphs; ++graph_iter) {
     (void)graph_iter;
 
-    // Build a random graph (and not multigraph).
-    StaticGraph<> graph;
+    StaticGraph<> graph =
+        GenerateUniformDirectedGraph(random, kNumNodes, kNumArcs);
     std::vector<PathDistance> lengths;
-    graph.AddNode(kNumNodes - 1);
-
-    {
-      std::set<std::pair<int, int>> arcs;
-      for (int i = 0; i < kNumArcs; ++i) {
-        // Pick an arc that is not yet known. Do up to some number of trials to
-        // generate an arc before giving up.
-        int src, dst;
-        for (int count = 0; count < kMaxNumTrialsPerArc; ++count) {
-          std::tie(src, dst) = pick_two_nodes();
-          if (!arcs.contains({src, dst})) break;
-          if (!arcs.contains({dst, src})) break;
-        }
-
-        // Double check that this arc is not yet known (or its reverse arc).
-        if (arcs.contains({src, dst})) break;
-        if (arcs.contains({dst, src})) break;
-
-        arcs.insert({src, dst});
-        graph.AddArc(src, dst);
+    for (int i = 0; i < graph.num_arcs(); ++i) {
 
         lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
       }
-    }
-
-    std::vector<int> permutation;
-    graph.Build(&permutation);
-    util::Permute(permutation, &lengths);
 
     // Run random queries, with one source and one destination per query.
     for (int q = 0; q < kNumQueriesPerGraph; ++q) {
       int src, dst;
-      std::tie(src, dst) = pick_two_nodes();
+      std::tie(src, dst) = pick_two_distinct_nodes();
 
       // Determine the set of simple paths between these nodes by brute force.
       // (Simple in the sense that the path does not contain loops.)
@@ -325,6 +391,48 @@ TEST(KShortestPathsYenTest, RandomTest) {
     }
   }
 }
+void BM_Yen(benchmark::State& state) {
+  const int num_nodes = state.range(0);
+  // Use half the maximum number of arcs, so that the graph is a bit sparse.
+  const int num_arcs = num_nodes * (num_nodes - 1) / 4;
+  // TODO(user): when supported, also benchmark negative weights
+  // (separately?).
+  constexpr int kMinLength = 0;
+  constexpr int kMaxLength = 1'000;
+
+  std::mt19937 random(12345);
+  const auto pick_one_node = [&random, num_nodes]() -> int {
+    int node = absl::Uniform(random, 0, num_nodes);
+    CHECK_GE(node, 0);
+    CHECK_LT(node, num_nodes);
+    return node;
+  };
+  const auto pick_two_distinct_nodes =
+      [&pick_one_node]() -> std::pair<int, int> {
+    int src = pick_one_node();
+    int dst;
+    do {
+      dst = pick_one_node();
+    } while (src == dst);
+    CHECK_NE(src, dst);
+    return {src, dst};
+  };
+
+  StaticGraph<> graph =
+      GenerateUniformDirectedGraph(random, num_nodes, num_arcs);
+  std::vector<PathDistance> lengths;
+  for (int i = 0; i < graph.num_arcs(); ++i) {
+    lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
+  }
+
+  for (auto unused : state) {
+    int src, dst;
+    std::tie(src, dst) = pick_two_distinct_nodes();
+    YenKShortestPaths(graph, lengths, src, dst, /*k=*/10);
+  }
+}
+
+BENCHMARK(BM_Yen)->Range(10, 1'000);
 
 }  // namespace
 }  // namespace operations_research
