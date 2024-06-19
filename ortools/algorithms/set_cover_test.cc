@@ -383,8 +383,7 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
     inv.LoadSolution(best_choices);
     auto focus = ClearRandomSubsets(0.1 * model.num_subsets(), &inv);
     SetCoverMip mip(&inv);
-    mip.SetTimeLimitInSeconds(1);
-    mip.NextSolution(focus);
+    mip.NextSolution(focus, true, 1);
     EXPECT_TRUE(inv.CheckConsistency());
     if (inv.cost() < best_cost) {
       best_cost = inv.cost();
@@ -411,8 +410,7 @@ TEST(SetCoverTest, KnightsCoverMip) {
   SetCoverModel model = CreateKnightsCoverModel(BoardSize, BoardSize);
   SetCoverInvariant inv(&model);
   SetCoverMip mip(&inv);
-  mip.SetTimeLimitInSeconds(10);
-  mip.NextSolution();
+  mip.NextSolution(true, 10);
   SubsetBoolVector best_choices = inv.is_selected();
   DisplayKnightsCoverSolution(best_choices, BoardSize, BoardSize);
   LOG(INFO) << "Mip cost: " << inv.cost();

@@ -28,11 +28,15 @@ namespace operations_research {
 template <typename IndexType, typename ValueType>
 using StrictVector = glop::StrictITIVector<IndexType, ValueType>;
 
-bool SetCoverMip::NextSolution() {
-  return NextSolution(inv_->model()->all_subsets());
+bool SetCoverMip::NextSolution(bool use_integers,
+                               double time_limit_in_seconds) {
+  return NextSolution(inv_->model()->all_subsets(), use_integers,
+                      time_limit_in_seconds);
 }
 
-bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
+bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
+                               bool use_integers,
+                               double time_limit_in_seconds) {
   SetCoverModel* model = inv_->model();
   const SubsetIndex num_subsets(model->num_subsets());
   const ElementIndex num_elements(model->num_elements());
@@ -43,10 +47,30 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
       problem_type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
       break;
     case SetCoverMipSolver::GUROBI:
+      if (use_integers) {
       problem_type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+      } else {
+        problem_type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
+      }
       break;
     case SetCoverMipSolver::SAT:
+      if (!use_integers) {
+        LOG(INFO) << "Defaulting to integer variables with SAT";
+        use_integers = true;
+      }
       problem_type = MPSolver::SAT_INTEGER_PROGRAMMING;
+      break;
+    case SetCoverMipSolver::GLOP:
+      LOG(INFO) << "Defaulting to linear relaxation with GLOP";
+      use_integers = false;
+      problem_type = MPSolver::GLOP_LINEAR_PROGRAMMING;
+      break;
+    case SetCoverMipSolver::PDLP:
+      if (use_integers) {
+        LOG(INFO) << "Defaulting to linear relaxation with PDLP";
+        use_integers = false;
+      }
+      problem_type = MPSolver::PDLP_LINEAR_PROGRAMMING;
       break;
     default:
       LOG(WARNING) << "Unknown solver value, defaulting to SCIP";
@@ -65,7 +89,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   StrictVector<ElementIndex, MPConstraint*> constraints(num_elements, nullptr);
   StrictVector<SubsetIndex, MPVariable*> vars(num_subsets, nullptr);
   for (const SubsetIndex subset : focus) {
-    vars[subset] = solver.MakeBoolVar("");
+    vars[subset] = solver.MakeVar(0, 1, use_integers, "");
     objective->SetCoefficient(vars[subset], model->subset_costs()[subset]);
     for (ElementIndex element : model->columns()[subset]) {
       if (inv_->coverage()[element] > 0) continue;
@@ -77,7 +101,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
     }
   }
   // set_time_limit takes milliseconds as a unit.
-  solver.set_time_limit(static_cast<int64_t>(time_limit_in_seconds_ * 1000));
+  solver.set_time_limit(static_cast<int64_t>(time_limit_in_seconds * 1000));
 
   // Call the solver.
   const MPSolver::ResultStatus solve_status = solver.Solve();
@@ -96,10 +120,14 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
       LOG(ERROR) << "Solving resulted in an error.";
       return false;
   }
+  if (use_integers) {
   for (const SubsetIndex subset : focus) {
     choices[subset] = (vars[subset]->solution_value() > 0.9);
   }
   inv_->LoadSolution(choices);
+  } else {
+    lower_bound_ = solver.Objective().Value();
+  }
   return true;
 }
 

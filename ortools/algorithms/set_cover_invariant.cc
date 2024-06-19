@@ -218,7 +218,7 @@ bool SetCoverInvariant::ComputeIsRedundant(SubsetIndex subset) const {
 }
 
 void SetCoverInvariant::Flip(SubsetIndex subset, bool incremental_full_update) {
-  if (is_selected_[subset]) {
+  if (!is_selected_[subset]) {
     Select(subset, incremental_full_update);
   } else {
     Deselect(subset, incremental_full_update);
