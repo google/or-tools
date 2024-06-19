@@ -63,7 +63,11 @@ size_t File::Size() {
 bool File::Flush() { return fflush(f_) == 0; }
 
 bool File::Close() {
-  if (f_ != nullptr && fclose(f_) == 0) {
+  if (f_ == nullptr) {
+    return true;
+  }
+
+  if (fclose(f_) == 0) {
     f_ = nullptr;
     return true;
   } else {
@@ -72,15 +76,17 @@ bool File::Close() {
 }
 
 absl::Status File::Close(int flags) {
-  bool ok = true;
-  if (f_ != nullptr) {
-    ok = (fclose(f_) == 0);
-    f_ = nullptr;
+  if (f_ == nullptr) {
+    return absl::Status();
   }
-  std::string msg = absl::StrCat("Could not close file '", name_, "'");
-  delete this;
-  return ok ? absl::Status()
-            : absl::Status(absl::StatusCode::kInvalidArgument, msg);
+
+  if (fclose(f_) == 0) {
+    f_ = nullptr;
+    return absl::Status();
+  } else {
+    const std::string msg = absl::StrCat("Could not close file '", name_, "'");
+    return absl::Status(absl::StatusCode::kInvalidArgument, msg);
+  }
 }
 
 void File::ReadOrDie(void* buf, size_t size) {
