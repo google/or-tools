@@ -161,7 +161,6 @@ class FileLines {
   ~FileLines() {
     if (file_ != nullptr) {
       file_->Close(file::Defaults()).IgnoreError();
-      delete file_;
       file_ = nullptr;
     }
   }
