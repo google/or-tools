@@ -159,7 +159,11 @@ class FileLines {
   FileLines& operator=(const FileLines&) = delete;
 
   ~FileLines() {
-    if (file_ != nullptr) file_->Close(file::Defaults()).IgnoreError();
+    if (file_ != nullptr) {
+      file_->Close(file::Defaults()).IgnoreError();
+      delete file_;
+      file_ = nullptr;
+    }
   }
 
   FileLineIterator begin() { return FileLineIterator(file_, options_); }
