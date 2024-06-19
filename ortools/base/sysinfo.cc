@@ -48,9 +48,8 @@ int64_t GetProcessMemoryUsage() {
   int64_t resident_memory = t_info.resident_size;
   return resident_memory;
 }
-#elif defined(__GNUC__) && !defined(__FreeBSD__) && \
-    !defined(__OpenBSD__) && !defined(__EMSCRIPTEN__) && \
-    !defined(_WIN32)  // Linux
+#elif defined(__GNUC__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && \
+    !defined(__EMSCRIPTEN__) && !defined(_WIN32)      // Linux
 int64_t GetProcessMemoryUsage() {
   unsigned size = 0;
   char buf[30];
@@ -69,8 +68,8 @@ int64_t GetProcessMemoryUsage() {
   getrusage(who, &rusage);
   return (int64_t)(int64_t{1024} * rusage.ru_maxrss);
 }
-//                               Windows
-#elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+#elif defined(_MSC_VER) || defined(__MINGW32__) || \
+    defined(__MINGW64__)  // Windows
 int64_t GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;

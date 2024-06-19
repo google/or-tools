@@ -64,33 +64,34 @@ bool File::Flush() { return fflush(f_) == 0; }
 
 // Deletes "this" on closing.
 bool File::Close() {
+  bool ok = true;
   if (f_ == nullptr) {
-    return true;
+    return ok;
   }
-
   if (fclose(f_) == 0) {
     f_ = nullptr;
-    delete this;
-    return true;
   } else {
-    return false;
+    ok = false;
   }
+  delete this;
+  return ok;
 }
 
 // Deletes "this" on closing.
 absl::Status File::Close(int flags) {
+  absl::Status status;
   if (f_ == nullptr) {
-    return absl::Status();
+    return status;
   }
-
   if (fclose(f_) == 0) {
     f_ = nullptr;
-    delete this;
-    return absl::Status();
   } else {
-    const std::string msg = absl::StrCat("Could not close file '", name_, "'");
-    return absl::Status(absl::StatusCode::kInvalidArgument, msg);
+    status.Update(
+        absl::Status(absl::StatusCode::kInvalidArgument,
+          absl::StrCat("Could not close file '", name_, "'")));
   }
+  delete this;
+  return status;
 }
 
 void File::ReadOrDie(void* buf, size_t size) {
