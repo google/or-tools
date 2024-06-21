@@ -339,7 +339,7 @@ cc_library(
     hdrs = ["cvrptw_lib.h"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/util:random_engine",
     ],
 )
@@ -351,7 +351,7 @@ cc_library(
     deps = [
         ":capacity_planning_cc_proto",
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/util:random_engine",
     ],
 )

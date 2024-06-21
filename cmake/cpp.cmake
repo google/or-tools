@@ -343,6 +343,7 @@ foreach(SUBPROJECT IN ITEMS
  xpress
  lp_data
  packing
+ routing
  scheduling
  port
  util)
@@ -518,6 +519,10 @@ install(DIRECTORY ortools/sat/docs/
   PATTERN "*.md")
 install(DIRECTORY ortools/constraint_solver/docs/
   DESTINATION "${CMAKE_INSTALL_DOCDIR}/constraint_solver"
+  FILES_MATCHING
+  PATTERN "*.md")
+install(DIRECTORY ortools/routing/docs/
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}/routing"
   FILES_MATCHING
   PATTERN "*.md")
 endif()

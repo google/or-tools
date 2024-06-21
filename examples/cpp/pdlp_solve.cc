@@ -39,6 +39,7 @@
 #include "ortools/pdlp/solvers.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sigint.h"
 
 // TODO: .mps.gz files aren't working. As a workaround, use .mps.
@@ -108,8 +109,9 @@ void Solve(const std::string& input, absl::string_view params_str,
   // TODO: In what format should we write the dual solution?
   if (!sol_file.empty() && convergence_information.has_value()) {
     std::string sol_string;
-    absl::StrAppend(&sol_string,
-                    "=obj= ", convergence_information->primal_objective(),
+    absl::StrAppend(
+        &sol_string, "=obj= ",
+        RoundTripDoubleFormat(convergence_information->primal_objective()),
                     "\n");
     for (int64_t i = 0; i < result.primal_solution.size(); ++i) {
       std::string name;
@@ -118,7 +120,8 @@ void Solve(const std::string& input, absl::string_view params_str,
       } else {
         name = absl::StrCat("var", i);
       }
-      absl::StrAppend(&sol_string, name, " ", result.primal_solution(i), "\n");
+      absl::StrAppend(&sol_string, name, " ",
+                      RoundTripDoubleFormat(result.primal_solution(i)), "\n");
     }
     LOG(INFO) << "Writing .sol solution to '" << sol_file << "'.\n";
     CHECK_OK(file::SetContents(sol_file, sol_string, file::Defaults()));

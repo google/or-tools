@@ -3778,9 +3778,11 @@ int64_t GuidedLocalSearchPenaltiesMap::GetPenalty(
 template <typename P>
 class GuidedLocalSearch : public Metaheuristic {
  public:
-  GuidedLocalSearch(Solver* solver, IntVar* objective, bool maximize,
-                    int64_t step, const std::vector<IntVar*>& vars,
-                    double penalty_factor,
+  GuidedLocalSearch(
+      Solver* solver, IntVar* objective, bool maximize, int64_t step,
+      const std::vector<IntVar*>& vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
                     bool reset_penalties_on_new_best_solution);
   ~GuidedLocalSearch() override {}
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
@@ -3871,6 +3873,8 @@ class GuidedLocalSearch : public Metaheuristic {
   P penalties_;
   DirtyArray<int64_t> penalized_values_;
   bool incremental_;
+  std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+      get_equivalent_pairs_;
   const bool reset_penalties_on_new_best_solution_;
 };
 
@@ -3878,6 +3882,8 @@ template <typename P>
 GuidedLocalSearch<P>::GuidedLocalSearch(
     Solver* solver, IntVar* objective, bool maximize, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : Metaheuristic(solver, {maximize}, {objective}, {step}),
       penalized_objective_(nullptr),
@@ -3888,6 +3894,7 @@ GuidedLocalSearch<P>::GuidedLocalSearch(
       penalties_(vars.size()),
       penalized_values_(vars.size()),
       incremental_(false),
+      get_equivalent_pairs_(std::move(get_equivalent_pairs)),
       reset_penalties_on_new_best_solution_(
           reset_penalties_on_new_best_solution) {
   AddVars(vars);
@@ -4071,7 +4078,15 @@ bool GuidedLocalSearch<P>::LocalOptimum() {
     if (utilities[var] == max_utility) {
       const IntVarElement& element = assignment_.Element(var);
       DCHECK(element.Bound());
-      penalties_.IncrementPenalty({var, element.Value()});
+      const int64_t value = element.Value();
+      if (get_equivalent_pairs_ == nullptr) {
+        penalties_.IncrementPenalty({var, value});
+      } else {
+        for (const auto [other_var, other_value] :
+             get_equivalent_pairs_(var, value)) {
+          penalties_.IncrementPenalty({other_var, other_value});
+        }
+      }
     }
   }
   SetCurrentInternalValue(0, std::numeric_limits<int64_t>::max());
@@ -4085,7 +4100,10 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       Solver* solver, IntVar* objective,
       std::function<int64_t(int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
-      double penalty_factor, bool reset_penalties_on_new_best_solution);
+      double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
+      bool reset_penalties_on_new_best_solution);
   ~BinaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64_t AssignmentElementPenalty(int index) const override;
@@ -4103,11 +4121,16 @@ BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
     std::function<int64_t(int64_t, int64_t)> objective_function, bool maximize,
     int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor,
+                           penalty_factor, std::move(get_equivalent_pairs),
                            reset_penalties_on_new_best_solution),
-      objective_function_(std::move(objective_function)) {}
+      objective_function_(std::move(objective_function)) {
+  solver->SetGuidedLocalSearchPenaltyCallback(
+      [this](int64_t i, int64_t j, int64_t k) { return PenalizedValue(i, j); });
+}
 
 template <typename P>
 IntExpr* BinaryGuidedLocalSearch<P>::MakeElementPenalty(int index) {
@@ -4171,6 +4194,8 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
       std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
       bool maximize, int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs,
       bool reset_penalties_on_new_best_solution);
   ~TernaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
@@ -4192,13 +4217,19 @@ TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
     std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
     bool maximize, int64_t step, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution)
     : GuidedLocalSearch<P>(solver, objective, maximize, step, vars,
-                           penalty_factor,
+                           penalty_factor, std::move(get_equivalent_pairs),
                            reset_penalties_on_new_best_solution),
       objective_function_(std::move(objective_function)),
       secondary_values_(this->NumPrimaryVars(), -1) {
   this->AddVars(secondary_vars);
+  solver->SetGuidedLocalSearchPenaltyCallback(
+      [this](int64_t i, int64_t j, int64_t k) {
+        return PenalizedValue(i, j, k);
+      });
 }
 
 template <typename P>
@@ -4289,16 +4320,20 @@ ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator2 objective_function, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        penalty_factor, reset_penalties_on_new_best_solution));
+        penalty_factor, std::move(get_equivalent_pairs),
+        reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new BinaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
-            vars, penalty_factor, reset_penalties_on_new_best_solution));
+            vars, penalty_factor, std::move(get_equivalent_pairs),
+            reset_penalties_on_new_best_solution));
   }
 }
 
@@ -4307,16 +4342,20 @@ ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
     Solver::IndexEvaluator3 objective_function, int64_t step,
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+    std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+        get_equivalent_pairs,
     bool reset_penalties_on_new_best_solution) {
   if (absl::GetFlag(FLAGS_cp_use_sparse_gls_penalties)) {
     return RevAlloc(new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesMap>(
         this, objective, std::move(objective_function), maximize, step, vars,
-        secondary_vars, penalty_factor, reset_penalties_on_new_best_solution));
+        secondary_vars, penalty_factor, std::move(get_equivalent_pairs),
+        reset_penalties_on_new_best_solution));
   } else {
     return RevAlloc(
         new TernaryGuidedLocalSearch<GuidedLocalSearchPenaltiesTable>(
             this, objective, std::move(objective_function), maximize, step,
             vars, secondary_vars, penalty_factor,
+            std::move(get_equivalent_pairs),
             reset_penalties_on_new_best_solution));
   }
 }

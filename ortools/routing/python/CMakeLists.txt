@@ -11,9 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(routing_pybind11 MODULE routing_model.cc)
+# routing
+pybind11_add_module(routing_pybind11 MODULE model.cc)
 set_target_properties(routing_pybind11 PROPERTIES
-  LIBRARY_OUTPUT_NAME "routing_model")
+  LIBRARY_OUTPUT_NAME "model")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
@@ -36,6 +37,44 @@ target_link_libraries(routing_pybind11 PRIVATE
 )
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
 
+# legacy pywraprouting
+set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
+set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywraprouting)
+set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
+swig_add_library(pywraprouting
+  TYPE MODULE
+  LANGUAGE python
+  OUTPUT_DIR ${PYTHON_PROJECT_DIR}/routing
+  SOURCES routing.i)
+
+target_include_directories(pywraprouting PRIVATE ${Python3_INCLUDE_DIRS})
+set_property(TARGET pywraprouting PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
+target_compile_definitions(pywraprouting PUBLIC "PY3")
+
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(pywraprouting PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../${PROJECT_NAME}/.libs")
+  set_property(TARGET pywraprouting APPEND PROPERTY
+    LINK_FLAGS "-flat_namespace -undefined suppress")
+elseif(UNIX)
+  set_target_properties(pywraprouting PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../${PROJECT_NAME}/.libs")
+endif()
+target_link_libraries(pywraprouting PRIVATE ortools::ortools)
+
+# Variable PYTHON_LIBRARIES can contains keyword `optimized`
+# which won't be interpreted inside a generator expression.
+# i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
+# see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
+if(MSVC)
+  target_link_libraries(pywraprouting PRIVATE ${Python3_LIBRARIES})
+endif()
+
+# Test
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)

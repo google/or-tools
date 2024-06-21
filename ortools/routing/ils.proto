@@ -37,6 +37,13 @@ message RuinStrategy {
 
     // Removes a number of spatially close routes.
     SPATIALLY_CLOSE_ROUTES_REMOVAL = 1;
+    // Removes a number of customers by performing a random walk on the
+    // underlying routing solution. More precisely, starting from a randomly
+    // selected seed visit, the walk is extended by either moving within the
+    // same route or by jumping to a visit served by a different neighboring
+    // route. Every active visit encountered along this random walk is made
+    // unperformed.
+    RANDOM_WALK_REMOVAL = 2;
   }
 }
 
@@ -50,6 +57,12 @@ message RuinRecreateParameters {
 
   // Number of routes removed during a ruin application defined on routes.
   optional uint32 num_ruined_routes = 3;
+  // Number of visits removed during a ruin application defined on visits.
+  // Note that pickup and delivery pairs are considered as a single entity,
+  // i.e., the removal of a pickup (respectively delivery) causes the removal of
+  // the associated delivery (respectively pickup) and it counts as a single
+  // removal.
+  optional uint32 num_removed_visits = 7;
 
   // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
   // identification of routes spatially close to a non start/end seed node.

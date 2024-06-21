@@ -22,7 +22,7 @@
 #include <random>
 
 #include "ortools/base/strong_vector.h"
-#include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/routing.h"
 
 namespace operations_research {
 
@@ -70,7 +70,8 @@ class LocationContainer {
 
   std::mt19937 randomizer_;
   const int64_t speed_;
-  util_intops::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
+  util_intops::StrongVector<RoutingIndexManager::NodeIndex, Location>
+      locations_;
 };
 
 // Random demand.

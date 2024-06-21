@@ -31,11 +31,11 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/types.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/cvrptw_lib.h"
+#include "ortools/routing/routing.h"
 
 using operations_research::Assignment;
 using operations_research::DefaultRoutingSearchParameters;

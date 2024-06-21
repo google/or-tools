@@ -22,7 +22,7 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 # [START import]
 from ortools.routing import enums_pb2
 from ortools.routing import parameters_pb2
-from ortools.routing.python import routing_model
+from ortools.routing.python import model
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
@@ -117,15 +117,15 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = routing_model.RoutingIndexManager(
+    manager = model.RoutingIndexManager(
         len(data["locations"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
-    # [START routing_model]
-    routing = routing_model.RoutingModel(manager)
-    # [END routing_model]
+    # [START model]
+    routing = model.RoutingModel(manager)
+    # [END model]
 
     # Create and register a transit callback.
     # [START transit_callback]
@@ -141,7 +141,7 @@ def main():
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters: parameters_pb2.RoutingSearchParameters = (
-        routing_model.default_routing_search_parameters()
+        model.default_routing_search_parameters()
     )
     search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]

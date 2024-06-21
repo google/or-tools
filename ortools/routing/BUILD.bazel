@@ -16,6 +16,21 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "on_linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "on_macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
+config_setting(
+    name = "on_windows",
+    constraint_values = ["@platforms//os:windows"],
+)
+
 proto_library(
     name = "ils_proto",
     srcs = ["ils.proto"],
@@ -69,3 +84,162 @@ cc_proto_library(
 #    name = "parameters_py_pb2",
 #    deps = [":parameters_proto"],
 #)
+
+cc_library(
+    name = "parameters",
+    srcs = ["parameters.cc"],
+    hdrs = ["parameters.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:protoutil",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/port:proto_utils",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:testing_utils",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:intops",
+    ],
+)
+
+cc_library(
+    name = "utils",
+    srcs = ["utils.cc"],
+    hdrs = ["utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "//ortools/util:saturated_arithmetic",
+    ],
+)
+
+cc_library(
+    name = "neighborhoods",
+    srcs = ["neighborhoods.cc"],
+    hdrs = ["neighborhoods.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":types",
+        ":utils",
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+    ],
+)
+
+cc_library(
+    name = "index_manager",
+    srcs = ["index_manager.cc"],
+    hdrs = ["index_manager.h"],
+    deps = [
+        ":types",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:strong_vector",
+        "@com_google_absl//absl/container:flat_hash_set",
+    ],
+)
+
+cc_library(
+    name = "routing",
+    srcs = [
+        "breaks.cc",
+        "constraints.cc",
+        "decision_builders.cc",
+        "filters.cc",
+        "flow.cc",
+        "ils.cc",
+        "insertion_lns.cc",
+        "lp_scheduling.cc",
+        "routing.cc",
+        "sat.cc",
+        "search.cc",
+    ],
+    hdrs = [
+        "constraints.h",
+        "decision_builders.h",
+        "filters.h",
+        "ils.h",
+        "insertion_lns.h",
+        "lp_scheduling.h",
+        "routing.h",
+        "search.h",
+    ],
+    copts = select({
+        "on_linux": [],
+        "on_macos": [],
+        "on_windows": ["/Zc:preprocessor"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":index_manager",
+        ":neighborhoods",
+        ":parameters",
+        ":types",
+        ":utils",
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:dump_vars",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:murmur",
+        "//ortools/base:protoutil",
+        "//ortools/base:small_map",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/constraint_solver:cp",
+        "//ortools/glop:lp_solver",
+        "//ortools/graph",
+        "//ortools/graph:christofides",
+        "//ortools/graph:connected_components",
+        "//ortools/graph:linear_assignment",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/graph:topologicalsorter",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/sat:boolean_problem",
+        "//ortools/sat:cp_constraints",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_checker",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/sat:integer",
+        "//ortools/sat:integer_expr",
+        "//ortools/sat:model",
+        "//ortools/sat:optimization",
+        "//ortools/sat:theta_tree",
+        "//ortools/util:bitset",
+        "//ortools/util:flat_matrix",
+        "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:range_query_function",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/functional:bind_front",
+        "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf",
+    ],
+)

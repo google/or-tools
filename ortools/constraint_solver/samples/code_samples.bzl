@@ -20,8 +20,6 @@ def code_sample_cc(name):
         deps=[
             "//ortools/base",
             "//ortools/constraint_solver:cp",
-            "//ortools/constraint_solver:routing",
-            "//ortools/routing:enums_cc_proto",
         ],
     )
 
@@ -33,7 +31,5 @@ def code_sample_cc(name):
             ":" + name + "_cc",
             "//ortools/base",
             "//ortools/constraint_solver:cp",
-            "//ortools/constraint_solver:routing",
-            "//ortools/routing:enums_cc_proto",
         ],
     )

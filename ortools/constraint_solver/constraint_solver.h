@@ -1074,6 +1074,16 @@ class Solver {
     optimization_direction_ = direction;
   }
 
+  // An internal method called by Guided Local Search to share current
+  // penalties with the solver.
+  void SetGuidedLocalSearchPenaltyCallback(
+      std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback) {
+    penalty_callback_ = std::move(penalty_callback);
+  }
+  // Returns the current (Guided Local Search)penalty of the given arc tuple.
+  int64_t GetGuidedLocalSearchPenalty(int64_t i, int64_t j, int64_t k) const {
+    return (penalty_callback_ == nullptr) ? 0 : penalty_callback_(i, j, k);
+  }
   // All factories (MakeXXX methods) encapsulate creation of objects
   // through RevAlloc(). Hence, the Solver used for allocating the
   // returned object will retain ownership of the allocated memory.
@@ -2329,15 +2339,21 @@ class Solver {
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
+#ifndef SWIG
   ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator2 objective_function,
       int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs = nullptr,
       bool reset_penalties_on_new_best_solution = false);
   ObjectiveMonitor* MakeGuidedLocalSearch(
       bool maximize, IntVar* objective, IndexEvaluator3 objective_function,
       int64_t step, const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, double penalty_factor,
+      std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
+          get_equivalent_pairs = nullptr,
       bool reset_penalties_on_new_best_solution = false);
+#endif
 
   /// This search monitor will restart the search periodically.
   /// At the iteration n, it will restart after scale_factor * Luby(n) failures
@@ -3305,6 +3321,7 @@ class Solver {
   std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
+  std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback_;
 };
 
 std::ostream& operator<<(std::ostream& out, const Solver* const s);  /// NOLINT

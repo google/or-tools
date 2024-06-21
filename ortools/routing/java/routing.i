@@ -24,7 +24,7 @@
 %import "ortools/constraint_solver/java/constraint_solver.i"
 %import "ortools/util/java/sorted_interval_list.i" // Domain
 
-%include "ortools/routing/java/routing_index_manager.i"
+%include "ortools/routing/java/index_manager.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -39,9 +39,9 @@ class RoutingSearchStatus;
 
 // Include the files we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_types.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/types.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/routing.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/parameters.pb.h"
 #include <memory>
@@ -423,7 +423,7 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 PROTO_ENUM_RETURN(operations_research::RoutingSearchStatus::Value,
                   com.google.ortools.routing.RoutingSearchStatus.Value)
 
-// Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
+// Wrap types.h, parameters.h according to the SWIG style guide.
 %ignoreall
 %unignore RoutingTransitCallback1;
 %unignore RoutingTransitCallback2;
@@ -439,18 +439,18 @@ import com.google.ortools.constraintsolver.IntVar;
 
 namespace operations_research {
 // Globals
-// IMPORTANT(user): These functions from routing_parameters.h are global, so in
-// java they are in the Globals.java (import com.[...].routing.Globals).
+// IMPORTANT(user): These functions from parameters.h are global, so in Java
+// they are in the Globals.java (import com.[...].routing.Globals).
 %rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
 %rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;
 %rename (makeSetValuesFromTargets) MakeSetValuesFromTargets;
 }  // namespace operations_research
 
-%include "ortools/constraint_solver/routing_types.h"
-%include "ortools/constraint_solver/routing_parameters.h"
+%include "ortools/routing/types.h"
+%include "ortools/routing/parameters.h"
 %unignoreall
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
-%include "ortools/constraint_solver/routing.h"
+%include "ortools/routing/routing.h"

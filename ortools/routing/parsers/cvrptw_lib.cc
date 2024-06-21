@@ -18,15 +18,16 @@
 #include <limits>
 #include <memory>
 #include <random>
-#include <set>
 #include <string>
 #include <utility>
 
 #include "absl/container/btree_set.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/routing.h"
 
 namespace operations_research {
 

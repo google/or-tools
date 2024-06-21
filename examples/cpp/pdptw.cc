@@ -57,14 +57,14 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/routing/enums.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/lilim_parser.h"
 #include "ortools/routing/parsers/simple_graph.h"
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 ABSL_FLAG(std::string, pdp_file, "",
           "File containing the Pickup and Delivery Problem to solve.");

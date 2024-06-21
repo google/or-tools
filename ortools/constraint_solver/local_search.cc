@@ -1735,36 +1735,30 @@ class NearestNeighbors {
   NearestNeighbors& operator=(const NearestNeighbors&) = delete;
 
   virtual ~NearestNeighbors() {}
-  void Initialize();
+  void Initialize(const std::vector<int>& path);
   const std::vector<int>& Neighbors(int index) const;
 
   virtual std::string DebugString() const { return "NearestNeighbors"; }
 
  private:
-  void ComputeNearest(int row);
+  void ComputeNearest(int row, const std::vector<int>& path);
 
   std::vector<std::vector<int>> neighbors_;
   Solver::IndexEvaluator3 evaluator_;
   const PathOperator& path_operator_;
   const int size_;
-  bool initialized_;
 };
 
 NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3 evaluator,
                                    const PathOperator& path_operator, int size)
-    : evaluator_(std::move(evaluator)),
+    : neighbors_(path_operator.number_of_nexts()),
+      evaluator_(std::move(evaluator)),
       path_operator_(path_operator),
-      size_(size),
-      initialized_(false) {}
+      size_(size) {}
 
-void NearestNeighbors::Initialize() {
-  // TODO(user): recompute if node changes path ?
-  if (!initialized_) {
-    initialized_ = true;
-    for (int i = 0; i < path_operator_.number_of_nexts(); ++i) {
-      neighbors_.push_back(std::vector<int>());
-      ComputeNearest(i);
-    }
+void NearestNeighbors::Initialize(const std::vector<int>& path) {
+  for (int node : path) {
+    if (node < path_operator_.number_of_nexts()) ComputeNearest(node, path);
   }
 }
 
@@ -1772,25 +1766,26 @@ const std::vector<int>& NearestNeighbors::Neighbors(int index) const {
   return neighbors_[index];
 }
 
-void NearestNeighbors::ComputeNearest(int row) {
+void NearestNeighbors::ComputeNearest(int row,
+                                      const std::vector<int>& path_nodes) {
   // Find size_ nearest neighbors for row of index 'row'.
   const int path = path_operator_.Path(row);
   const IntVar* var = path_operator_.Var(row);
-  const int64_t var_min = var->Min();
-  const int var_size = var->Max() - var_min + 1;
   using ValuedIndex = std::pair<int64_t /*value*/, int /*index*/>;
-  std::vector<ValuedIndex> neighbors(var_size);
-  for (int i = 0; i < var_size; ++i) {
-    const int index = i + var_min;
-    neighbors[i] = std::make_pair(evaluator_(row, index, path), index);
+  std::vector<ValuedIndex> neighbors;
+  for (int index : path_nodes) {
+    if (!var->Contains(index)) continue;
+    neighbors.push_back({evaluator_(row, index, path), index});
   }
-  if (var_size > size_) {
+  const int neighbors_size = neighbors.size();
+  if (neighbors_size > size_) {
     std::nth_element(neighbors.begin(), neighbors.begin() + size_ - 1,
                      neighbors.end());
   }
 
   // Setup global neighbor matrix for row row_index
-  for (int i = 0; i < std::min(size_, var_size); ++i) {
+  neighbors_[row].clear();
+  for (int i = 0; i < std::min(size_, neighbors_size); ++i) {
     neighbors_[row].push_back(neighbors[i].second);
   }
   std::sort(neighbors_[row].begin(), neighbors_[row].end());
@@ -1811,12 +1806,13 @@ class LinKernighan : public PathOperator {
 
   static const int kNeighbors;
 
-  bool InFromOut(int64_t in_i, int64_t in_j, int64_t* out, int64_t* gain);
+  bool GetBestOut(int64_t in_i, int64_t in_j, int64_t* out, int64_t* gain);
 
   Solver::IndexEvaluator3 const evaluator_;
   NearestNeighbors neighbors_;
   absl::flat_hash_set<int64_t> marked_;
   const bool topt_;
+  std::vector<int> old_path_starts_;
 };
 
 // While the accumulated local gain is positive, perform a 2opt or a 3opt move
@@ -1829,11 +1825,40 @@ LinKernighan::LinKernighan(const std::vector<IntVar*>& vars,
     : PathOperator(vars, secondary_vars, 1, true, false, nullptr, nullptr),
       evaluator_(evaluator),
       neighbors_(evaluator, *this, kNeighbors),
-      topt_(topt) {}
+      topt_(topt) {
+  old_path_starts_.resize(number_of_nexts(), -1);
+}
 
 LinKernighan::~LinKernighan() {}
 
-void LinKernighan::OnNodeInitialization() { neighbors_.Initialize(); }
+void LinKernighan::OnNodeInitialization() {
+  absl::flat_hash_set<int> touched_paths;
+  for (int i = 0; i < number_of_nexts(); ++i) {
+    if (IsPathStart(i)) {
+      for (int node = i; !IsPathEnd(node); node = Next(node)) {
+        if (i != old_path_starts_[node]) {
+          touched_paths.insert(old_path_starts_[node]);
+          touched_paths.insert(i);
+          old_path_starts_[node] = i;
+        }
+      }
+    } else if (Next(i) == i) {
+      touched_paths.insert(old_path_starts_[i]);
+      old_path_starts_[i] = -1;
+    }
+  }
+  for (int touched_path_start : touched_paths) {
+    if (touched_path_start == -1) continue;
+    std::vector<int> path;
+    int node = touched_path_start;
+    while (!IsPathEnd(node)) {
+      path.push_back(node);
+      node = Next(node);
+    }
+    path.push_back(node);
+    neighbors_.Initialize(path);
+  }
+}
 
 bool LinKernighan::MakeNeighbor() {
   marked_.clear();
@@ -1846,14 +1871,14 @@ bool LinKernighan::MakeNeighbor() {
   int64_t gain = 0;
   marked_.insert(node);
   if (topt_) {  // Try a 3opt first
-    if (!InFromOut(node, next, &out, &gain)) return false;
+    if (!GetBestOut(node, next, &out, &gain)) return false;
     marked_.insert(next);
     marked_.insert(out);
     const int64_t node1 = out;
     if (IsPathEnd(node1)) return false;
     const int64_t next1 = Next(node1);
     if (IsPathEnd(next1)) return false;
-    if (!InFromOut(node1, next1, &out, &gain)) return false;
+    if (!GetBestOut(node1, next1, &out, &gain)) return false;
     marked_.insert(next1);
     marked_.insert(out);
     if (!CheckChainValidity(out, node1, node) || !MoveChain(out, node1, node)) {
@@ -1869,23 +1894,35 @@ bool LinKernighan::MakeNeighbor() {
     if (IsPathEnd(next)) return false;
   }
   // Try 2opts
-  while (InFromOut(node, next, &out, &gain)) {
+  while (GetBestOut(node, next, &out, &gain)) {
     marked_.insert(next);
     marked_.insert(out);
     int64_t chain_last;
-    if (!ReverseChain(node, out, &chain_last)) {
+    if (Next(base) == out || (!IsPathEnd(out) && Next(out) == base)) {
       return false;
     }
-    int64_t in_cost = evaluator_(base, chain_last, path);
-    int64_t out_cost = evaluator_(chain_last, out, path);
+    const bool success = ReverseChain(base, out, &chain_last) ||
+                         ReverseChain(out, base, &chain_last);
+    if (!success) {
+#ifndef NDEBUG
+      LOG(ERROR) << "ReverseChain failed: " << base << " " << out;
+      for (int node = StartNode(0); !IsPathEnd(node); node = Next(node)) {
+        LOG(ERROR) << "node: " << node;
+      }
+      LOG(ERROR) << "node: " << node;
+      DCHECK(false);
+#endif
+    }
+    const int64_t in_cost = evaluator_(base, chain_last, path);
+    const int64_t out_cost = evaluator_(chain_last, out, path);
     if (CapAdd(CapSub(gain, in_cost), out_cost) > 0) {
       return true;
     }
-    node = chain_last;
+    node = out;
     if (IsPathEnd(node)) {
       return false;
     }
-    next = out;
+    next = chain_last;
     if (IsPathEnd(next)) {
       return false;
     }
@@ -1895,24 +1932,20 @@ bool LinKernighan::MakeNeighbor() {
 
 const int LinKernighan::kNeighbors = 5 + 1;
 
-bool LinKernighan::InFromOut(int64_t in_i, int64_t in_j, int64_t* out,
+bool LinKernighan::GetBestOut(int64_t in_i, int64_t in_j, int64_t* out,
                              int64_t* gain) {
-  const std::vector<int>& nexts = neighbors_.Neighbors(in_j);
   int64_t best_gain = std::numeric_limits<int64_t>::min();
-  int64_t path = Path(in_i);
-  int64_t out_cost = evaluator_(in_i, in_j, path);
+  const int64_t path = Path(in_i);
+  const int64_t out_cost = evaluator_(in_i, in_j, path);
   const int64_t current_gain = CapAdd(*gain, out_cost);
-  for (int k = 0; k < nexts.size(); ++k) {
-    const int64_t next = nexts[k];
-    if (next != in_j) {
-      int64_t in_cost = evaluator_(in_j, next, path);
-      int64_t new_gain = CapSub(current_gain, in_cost);
-      if (new_gain > 0 && next != Next(in_j) && marked_.count(in_j) == 0 &&
-          marked_.count(next) == 0) {
-        if (best_gain < new_gain) {
+  for (int next : neighbors_.Neighbors(in_j)) {
+    if (next != in_j && next != Next(in_j) && !marked_.contains(in_j) &&
+        !marked_.contains(next)) {
+      const int64_t in_cost = evaluator_(in_j, next, path);
+      const int64_t new_gain = CapSub(current_gain, in_cost);
+      if (new_gain > 0 && best_gain < new_gain) {
           *out = next;
           best_gain = new_gain;
-        }
       }
     }
   }

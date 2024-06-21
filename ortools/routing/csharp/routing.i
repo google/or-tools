@@ -43,7 +43,7 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 %import "ortools/constraint_solver/csharp/constraint_solver.i"
 %import "ortools/util/csharp/sorted_interval_list.i" // Domain
 
-%include "ortools/routing/csharp/routing_index_manager.i"
+%include "ortools/routing/csharp/index_manager.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -58,12 +58,12 @@ class RoutingSearchStatus;
 
 // Include the file we want to wrap a first time.
 %{
-#include "ortools/constraint_solver/routing_types.h"
-#include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/routing/types.h"
+#include "ortools/routing/parameters.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/parameters.pb.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/routing.h"
 %}
 
 // RoutingModel methods.
@@ -252,5 +252,5 @@ using Google.OrTools.ConstraintSolver;
 // Wrap routing includes
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
-%include "ortools/constraint_solver/routing_parameters.h"
-%include "ortools/constraint_solver/routing.h"
+%include "ortools/routing/parameters.h"
+%include "ortools/routing/routing.h"

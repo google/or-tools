@@ -30,6 +30,5 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::routing_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::constraint_solver ALIAS ${NAME})
