@@ -156,7 +156,7 @@ cc_library(
 
 git_repository(
     name = "highs",
-    branch = "v1.7.0",
+    branch = "v1.7.1",
     remote = "https://github.com/ERGO-Code/HiGHS.git",
 )
 
