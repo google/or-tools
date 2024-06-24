@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2024 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +16,11 @@
 
 # [START import]
 import argparse
-from ortools.constraint_solver import pywrapcp
 from ortools.routing import enums_pb2
+from ortools.routing import pywraprouting
+
+FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -1036,18 +1040,18 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     # Create the routing index manager.
     # [START index_manager]
     if args["starts_ends"]:
-        manager = pywrapcp.RoutingIndexManager(
+        manager = pywraprouting.RoutingIndexManager(
             len(data.locations), data.num_vehicles, data.starts, data.ends
         )
     else:
-        manager = pywrapcp.RoutingIndexManager(
+        manager = pywraprouting.RoutingIndexManager(
             len(data.locations), data.num_vehicles, data.depot
         )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywrapcp.RoutingModel(manager)
+    routing = pywraprouting.RoutingModel(manager)
 
     # [END routing_model]
 
@@ -1120,11 +1124,11 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             )
         if args["fifo"]:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_FIFO
+                pywraprouting.RoutingModel.PICKUP_AND_DELIVERY_FIFO
             )
         if args["lifo"]:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO
+                pywraprouting.RoutingModel.PICKUP_AND_DELIVERY_LIFO
             )
 
     if args["starts_ends"]:
@@ -1191,15 +1195,15 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         )
 
     # Setting first solution heuristic (cheapest addition).
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
     # pylint: disable=no-member
     if not args["pickup_delivery"]:
         search_parameters.first_solution_strategy = (
-            enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+            FirstSolutionStrategy.PATH_CHEAPEST_ARC
         )
     else:
         search_parameters.first_solution_strategy = (
-            enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+            FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
         )
 
     search_parameters.local_search_metaheuristic = (
