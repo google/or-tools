@@ -103,7 +103,10 @@ setup(
             '$<TARGET_FILE_NAME:pdlp_pybind11>',
             '*.pyi'
         ],
-        '@PYTHON_PROJECT@.routing':['*.pyi'],
+        '@PYTHON_PROJECT@.routing':[
+            '$<TARGET_FILE_NAME:pywraprouting>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.routing.python':[
             '$<TARGET_FILE_NAME:routing_pybind11>',
             '*.pyi'

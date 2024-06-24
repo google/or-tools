@@ -24,7 +24,11 @@
 %include "ortools/util/python/pair.i"
 %include "ortools/util/python/vector.i"
 
-%import "ortools/constraint_solver/python/constraint_solver.i"
+// While the module name will be overridden by the one specified on the cmd line,
+// without this, derived classes (e.g. TypeRequirementChecker) will import base
+// class from the module specified in the following %import.
+%module pywraprouting
+%import(module="ortools.constraint_solver.pywrapcp") "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/routing/python/types.i"
 %include "ortools/routing/python/index_manager.i"
 
@@ -63,6 +67,8 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingResourceClassIndex,
     operations_research::RoutingModel::ResourceClassIndex);
 
+// ============= Type conversions ==============
+
 // See ./constraint_solver_helpers.i.
 PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
 PY_CONVERT_HELPER_PTR(IntervalVar);
@@ -99,9 +105,12 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
 %include "ortools/routing/parameters.h"
 %unignoreall
 
+%unignore operations_research;
+
+namespace operations_research {
+
 // %including a .pb.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
-namespace operations_research {
 enum OptionalBoolean {
   BOOL_UNSPECIFIED = 0,
   BOOL_FALSE = 2,
