@@ -589,7 +589,7 @@ message SatParameters {
   // A number of 1 means no parallelism.
   //
   // Note that 'num_workers' is the preferred name, but if it is set to zero,
-  // we will still read the deprecated 'num_search_worker'.
+  // we will still read the deprecated 'num_search_workers'.
   //
   // As of 2020-04-10, if you're using SAT via MPSolver (to solve integer
   // programs) this field is overridden with a value of 8, if the field is not
