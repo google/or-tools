@@ -27,37 +27,18 @@ def Distance(node_i, node_j):
 
 
 def TransitDistance(manager, i, j):
-    return Distance(manager.IndexToNode(i), manager.IndexToNode(j))
+    return Distance(manager.index_to_node(i), manager.index_to_node(j))
 
 
 def UnaryTransitDistance(manager, i):
-    return Distance(manager.IndexToNode(i), 0)
+    return Distance(manager.index_to_node(i), 0)
 
 
-def One(unused_i, unused_j):
-    return 1
-
-
-def Two(unused_i, unused_j):
-    return 1
-
-
-def Three(unused_i, unused_j):
-    return 1
-
-
-class Callback:
-
-    def __init__(self, model):
-        self.model = model
-        self.costs = []
-
-    def __call__(self):
-        self.costs.append(self.model.CostVar().Max())
 
 class TestRoutingIndexManager(absltest.TestCase):
 
     def test_create_index_manager(self):
+        print("test_create_index_manager")
         manager = model.RoutingIndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
         print(manager)
@@ -68,17 +49,15 @@ class TestRoutingIndexManager(absltest.TestCase):
             self.assertEqual(7, manager.index_to_node(manager.get_start_index(i)))
             self.assertEqual(7, manager.index_to_node(manager.get_end_index(i)))
 
-class ModelTest(absltest.TestCase):
 
-    def test_create_index_manager(self):
-        print("test_create_index_manager")
-        manager = model.RoutingIndexManager(42, 3, 0)
-        print(manager)
+class ModelTest(absltest.TestCase):
 
     def test_create_model(self):
         print("test_create_model")
-        manager = model.RoutingIndexManager(42, 3, 0)
+        manager = model.RoutingIndexManager(42, 3, 7)
+        self.assertIsNotNone(manager)
         routing_model = model.RoutingModel(manager)
+        self.assertIsNotNone(routing_model)
         print(routing_model)
 
 
