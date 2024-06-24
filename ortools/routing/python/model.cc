@@ -35,7 +35,7 @@ using ::operations_research::RoutingIndexManager;
 using ::operations_research::RoutingModel;
 using ::pybind11::arg;
 
-PYBIND11_MODULE(routing_model, m) {
+PYBIND11_MODULE(model, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
   pybind11::module::import(
@@ -56,6 +56,8 @@ PYBIND11_MODULE(routing_model, m) {
            DOC(operations_research, RoutingIndexManager, num_nodes))
       .def("num_vehicles", &RoutingIndexManager::num_vehicles,
            DOC(operations_research, RoutingIndexManager, num_vehicles))
+      .def("num_indices", &RoutingIndexManager::num_indices,
+           DOC(operations_research, RoutingIndexManager, num_indices))
       .def(
           "index_to_node",
           [](RoutingIndexManager* routing_manager, int64_t index) {
