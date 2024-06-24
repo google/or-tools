@@ -27,7 +27,7 @@ from functools import partial
 import random
 
 from ortools.routing import enums_pb2
-from ortools.constraint_solver import pywrapcp
+from ortools.routing import pywraprouting
 
 parser = argparse.ArgumentParser()
 
@@ -91,9 +91,9 @@ def main(args):
         # Second argument = 1 to build a single tour (it's a TSP).
         # Nodes are indexed from 0 to args_tsp_size - 1, by default the start of
         # the route is node 0.
-        manager = pywrapcp.RoutingIndexManager(args.tsp_size, 1, 0)
-        routing = pywrapcp.RoutingModel(manager)
-        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        manager = pywraprouting.RoutingIndexManager(args.tsp_size, 1, 0)
+        routing = pywraprouting.RoutingModel(manager)
+        search_parameters = pywraprouting.DefaultRoutingSearchParameters()
         # Setting first solution heuristic (cheapest addition).
         search_parameters.first_solution_strategy = (
             enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)

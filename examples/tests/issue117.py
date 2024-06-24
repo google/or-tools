@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from collections import namedtuple
-from ortools.constraint_solver import pywrapcp
+from ortools.routing import pywraprouting
 
 VEHICLE_COUNT = 30
 VEHICLE_CAPACITY = 200
@@ -14,8 +14,8 @@ customers.append(Customer(1, 1, 1.0, 1.0))
 customers.append(Customer(1, 1, 2.0, 2.0))
 customer_count = len(customers)
 
-manager = pywrapcp.RoutingIndexManager(3, VEHICLE_COUNT, 0)
-routing = pywrapcp.RoutingModel(manager)
+manager = pywraprouting.RoutingIndexManager(3, VEHICLE_COUNT, 0)
+routing = pywraprouting.RoutingModel(manager)
 
 print('Demand Constraint')
 demands = []
