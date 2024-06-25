@@ -15,7 +15,7 @@
 #define OR_TOOLS_UTIL_ZVECTOR_H_
 
 #if (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && \
-	defined(__GNUC__)
+    defined(__GNUC__)
 #include <machine/endian.h>
 #elif !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
 #include <endian.h>
