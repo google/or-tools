@@ -126,12 +126,14 @@ class LinearIncrementalEvaluator {
     return 5e-9 * static_cast<double>(dtime_);
   }
 
-  int64_t ObjectiveDelta(int var, int64_t delta) const {
-    if (var >= var_entries_.size()) return 0;
-    const std::vector<Entry>& data = var_entries_[var];
-    if (data.empty()) return 0;
-    if (data[0].ct_index != 0) return 0;
-    return data[0].coefficient * delta;
+  int64_t ObjectiveCoefficient(int var) const {
+    if (var >= columns_.size()) return 0.0;
+    const SpanData& data = columns_[var];
+    if (data.num_linear_entries == 0) return 0.0;
+    const int i = data.start + data.num_neg_literal + data.num_pos_literal;
+    const int c = ct_buffer_[i];
+    if (c != 0) return 0.0;
+    return coeff_buffer_[data.linear_start];
   }
 
   absl::Span<const int> ConstraintToVars(int c) const {
@@ -346,9 +348,13 @@ class LsEvaluator {
   // Returns the objective activity in the current state.
   int64_t ObjectiveActivity() const;
 
-  int64_t ObjectiveDelta(int var, int64_t delta) const {
+  bool IsObjectiveConstraint(int c) const {
+    return cp_model_.has_objective() && c == 0;
+  }
+
+  int64_t ObjectiveCoefficient(int var) const {
     return cp_model_.has_objective()
-               ? linear_evaluator_.ObjectiveDelta(var, delta)
+               ? linear_evaluator_.ObjectiveCoefficient(var)
                : 0;
   }
 
@@ -386,10 +392,12 @@ class LsEvaluator {
   absl::Span<const int> ViolatedConstraints() const {
     return violated_constraints_.values();
   }
+
   // Returns the number of constraints in ViolatedConstraints containing `var`.
-  int NumViolatedConstraintsForVar(int var) const {
-    return num_violated_constraint_per_var_[var];
+  int NumViolatedConstraintsForVarIgnoringObjective(int var) const {
+    return num_violated_constraint_per_var_ignoring_objective_[var];
   }
+
   // Indicates if the computed jump value is always the best choice.
   bool VariableOnlyInLinearConstraintWithConvexViolationChange(int var) const;
 
@@ -450,7 +458,7 @@ class LsEvaluator {
   mutable std::vector<int64_t> current_solution_;
 
   UnsafeDenseSet<int> violated_constraints_;
-  std::vector<int> num_violated_constraint_per_var_;
+  std::vector<int> num_violated_constraint_per_var_ignoring_objective_;
 
   // Constraint index and violation delta for the last update.
   std::vector<std::pair<int, int64_t>> last_update_violation_changes_;

@@ -1491,7 +1491,8 @@ LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
     : cp_model_(cp_model), params_(params) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
-  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
+  num_violated_constraint_per_var_ignoring_objective_.assign(
+      cp_model_.variables_size(), 0);
 
   std::vector<bool> ignored_constraints(cp_model_.constraints_size(), false);
   std::vector<ConstraintProto> additional_constraints;
@@ -1507,7 +1508,8 @@ LsEvaluator::LsEvaluator(
     : cp_model_(cp_model), params_(params) {
   var_to_constraints_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
-  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
+  num_violated_constraint_per_var_ignoring_objective_.assign(
+      cp_model_.variables_size(), 0);
   CompileConstraintsAndObjective(ignored_constraints, additional_constraints);
   BuildVarConstraintGraph();
   violated_constraints_.reserve(NumEvaluatorConstraints());
@@ -2024,7 +2026,8 @@ bool LsEvaluator::VariableOnlyInLinearConstraintWithConvexViolationChange(
 }
 
 void LsEvaluator::RecomputeViolatedList(bool linear_only) {
-  num_violated_constraint_per_var_.assign(cp_model_.variables_size(), 0);
+  num_violated_constraint_per_var_ignoring_objective_.assign(
+      cp_model_.variables_size(), 0);
   violated_constraints_.clear();
   const int num_constraints =
       linear_only ? NumLinearConstraints() : NumEvaluatorConstraints();
@@ -2038,14 +2041,16 @@ void LsEvaluator::UpdateViolatedList(const int c) {
     auto [it, inserted] = violated_constraints_.insert(c);
     // The constraint is violated. Add if needed.
     if (!inserted) return;
+    if (IsObjectiveConstraint(c)) return;
     for (const int v : ConstraintToVars(c)) {
-      num_violated_constraint_per_var_[v] += 1;
+      num_violated_constraint_per_var_ignoring_objective_[v] += 1;
     }
     return;
   }
   if (violated_constraints_.erase(c) == 1) {
+    if (IsObjectiveConstraint(c)) return;
     for (const int v : ConstraintToVars(c)) {
-      num_violated_constraint_per_var_[v] -= 1;
+      num_violated_constraint_per_var_ignoring_objective_[v] -= 1;
     }
   }
 }

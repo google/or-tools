@@ -1203,8 +1203,12 @@ class ConstraintChecker {
   bool LinearConstraintIsFeasible(const ConstraintProto& ct) {
     int64_t sum = 0;
     const int num_variables = ct.linear().coeffs_size();
+    const int* const vars = ct.linear().vars().data();
+    const int64_t* const coeffs = ct.linear().coeffs().data();
     for (int i = 0; i < num_variables; ++i) {
-      sum += Value(ct.linear().vars(i)) * ct.linear().coeffs(i);
+      // We know we only have positive reference now.
+      DCHECK(RefIsPositive(vars[i]));
+      sum += variable_values_[vars[i]] * coeffs[i];
     }
     const bool result = DomainInProtoContains(ct.linear(), sum);
     if (!result) {

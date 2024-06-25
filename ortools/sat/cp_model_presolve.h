@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -372,13 +373,18 @@ class ModelCopy {
   // Note(user): If first_copy is true, we will reorder the scheduling
   // constraint so that they only use reference to previously defined intervals.
   // This allow to be more efficient later in a few preprocessing steps.
-  bool ImportAndSimplifyConstraints(const CpModelProto& in_model,
-                                    bool first_copy = false);
+  bool ImportAndSimplifyConstraints(
+      const CpModelProto& in_model, bool first_copy = false,
+      std::function<bool(int)> active_constraints = nullptr);
 
   // Copy variables from the in_model to the working model.
   // It reads the 'ignore_names' parameters from the context, and keeps or
   // deletes names accordingly.
   void ImportVariablesAndMaybeIgnoreNames(const CpModelProto& in_model);
+
+  // Setup new variables from a vector of domains.
+  // Inactive variables will be fixed to their lower bound.
+  void CreateVariablesFromDomains(const std::vector<Domain>& domains);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
@@ -440,6 +446,12 @@ class ModelCopy {
 // user-defined order, but hopefully that should not matter too much.
 bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context);
+
+// Same as ImportModelWithBasicPresolveIntoContext() except that variable
+// domains are read from domains.
+bool ImportModelAndDomainsWithBasicPresolveIntoContext(
+    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    std::function<bool(int)> active_constraints, PresolveContext* context);
 
 // Copies the non constraint, non variables part of the model.
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(

@@ -83,7 +83,8 @@ void SharedLPSolutionRepository::NewLPSolution(
   // We always prefer to keep the solution from the last synchronize batch.
   absl::MutexLock mutex_lock(&mutex_);
   solution.rank = -num_synchronization_;
-  AddInternal(solution);
+  ++num_added_;
+  new_solutions_.push_back(solution);
 }
 
 void SharedIncompleteSolutionManager::AddSolution(
@@ -324,6 +325,14 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   if (ub_change) {
     inner_objective_upper_bound_ = ub.value();
   }
+
+  if (always_synchronize_) {
+    synchronized_inner_objective_lower_bound_ =
+        IntegerValue(inner_objective_lower_bound_);
+    synchronized_inner_objective_upper_bound_ =
+        IntegerValue(inner_objective_upper_bound_);
+  }
+
   if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
     if (best_status_ == CpSolverStatus::FEASIBLE ||
         best_status_ == CpSolverStatus::OPTIMAL) {
@@ -391,12 +400,12 @@ void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
 
 IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
   absl::MutexLock mutex_lock(&mutex_);
-  return IntegerValue(inner_objective_lower_bound_);
+  return synchronized_inner_objective_lower_bound_;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
   absl::MutexLock mutex_lock(&mutex_);
-  return IntegerValue(inner_objective_upper_bound_);
+  return synchronized_inner_objective_upper_bound_;
 }
 
 void SharedResponseManager::Synchronize() {
@@ -410,16 +419,6 @@ void SharedResponseManager::Synchronize() {
     first_solution_solvers_should_stop_ = true;
   }
   logger_->FlushPendingThrottledLogs();
-}
-
-IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return synchronized_inner_objective_lower_bound_;
-}
-
-IntegerValue SharedResponseManager::SynchronizedInnerObjectiveUpperBound() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return synchronized_inner_objective_upper_bound_;
 }
 
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
@@ -635,23 +634,18 @@ void SharedResponseManager::NewSolution(
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-
     solutions_.Add(solution);
-  }
-
-  if (objective_or_null_ != nullptr) {
+  } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
 
     // Add this solution to the pool, even if it is not improving.
-    if (!solution_values.empty()) {
-      SharedSolutionRepository<int64_t>::Solution solution;
-      solution.variable_values.assign(solution_values.begin(),
-                                      solution_values.end());
-      solution.rank = objective_value;
-      solution.info = solution_info;
-      solutions_.Add(solution);
-    }
+    SharedSolutionRepository<int64_t>::Solution solution;
+    solution.variable_values.assign(solution_values.begin(),
+                                    solution_values.end());
+    solution.rank = objective_value;
+    solution.info = solution_info;
+    solutions_.Add(solution);
 
     // Ignore any non-strictly improving solution.
     if (objective_value > inner_objective_upper_bound_) return;

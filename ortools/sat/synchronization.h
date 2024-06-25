@@ -108,9 +108,9 @@ class SharedSolutionRepository {
   Solution GetRandomBiasedSolution(absl::BitGenRef random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
-  // right away. One must call Synchronize for this to happen.
-  //
-  // Works in O(num_solutions_to_keep_).
+  // right away. One must call Synchronize for this to happen. In order to be
+  // deterministic, this will keep all solutions until Synchronize() is called,
+  // so we need to be careful not to generate too many solutions at once.
   void Add(const Solution& solution);
 
   // Updates the current pool of solution with the one recently added. Note that
@@ -124,21 +124,15 @@ class SharedSolutionRepository {
   std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(&mutex_);
     return {FormatName(name_), FormatCounter(num_added_),
-            FormatCounter(num_queried_), FormatCounter(num_ignored_),
-            FormatCounter(num_synchronization_)};
+            FormatCounter(num_queried_), FormatCounter(num_synchronization_)};
   }
 
  protected:
-  // Helper method for adding the solutions once the mutex is acquired.
-  void AddInternal(const Solution& solution)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-
   const std::string name_;
   const int num_solutions_to_keep_;
 
   mutable absl::Mutex mutex_;
   int64_t num_added_ ABSL_GUARDED_BY(mutex_) = 0;
-  int64_t num_ignored_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t num_synchronization_ ABSL_GUARDED_BY(mutex_) = 0;
 
@@ -283,14 +277,12 @@ class SharedResponseManager {
   // Note that these bound correspond to valid bound for the problem of finding
   // a strictly better objective than the current one. Thus the lower bound is
   // always a valid bound for the global problem, but the upper bound is NOT.
+  //
+  // This is always the last bounds in "always_synchronize" mode, otherwise it
+  // correspond to the bounds at the last Synchronize() call.
+  void Synchronize();
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
-
-  // These functions return the same as the non-synchronized() version but
-  // only the values at the last time Synchronize() was called.
-  void Synchronize();
-  IntegerValue SynchronizedInnerObjectiveLowerBound();
-  IntegerValue SynchronizedInnerObjectiveUpperBound();
 
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
@@ -832,29 +824,8 @@ template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Add(const Solution& solution) {
   if (num_solutions_to_keep_ <= 0) return;
   absl::MutexLock mutex_lock(&mutex_);
-  AddInternal(solution);
-}
-
-template <typename ValueType>
-void SharedSolutionRepository<ValueType>::AddInternal(
-    const Solution& solution) {
-  int worse_solution_index = 0;
-  for (int i = 0; i < new_solutions_.size(); ++i) {
-    // Do not add identical solution.
-    if (new_solutions_[i] == solution) return;
-    if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
-      worse_solution_index = i;
-    }
-  }
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    ++num_added_;
-    new_solutions_.push_back(solution);
-  } else if (solution < new_solutions_[worse_solution_index]) {
-    ++num_added_;
-    new_solutions_[worse_solution_index] = solution;
-  } else {
-    ++num_ignored_;
-  }
+  ++num_added_;
+  new_solutions_.push_back(solution);
 }
 
 template <typename ValueType>

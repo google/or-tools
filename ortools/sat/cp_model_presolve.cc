@@ -11572,13 +11572,20 @@ void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
   }
 }
 
+void ModelCopy::CreateVariablesFromDomains(const std::vector<Domain>& domains) {
+  for (const Domain& domain : domains) {
+    FillDomainInProto(domain, context_->working_model->add_variables());
+  }
+}
+
 // TODO(user): Merge with the phase 1 of the presolve code.
 //
 // TODO(user): It seems easy to forget to update this if any new constraint
 // contains an interval or if we add a field to an existing constraint. Find a
 // way to remind contributor to not forget this.
-bool ModelCopy::ImportAndSimplifyConstraints(const CpModelProto& in_model,
-                                             bool first_copy) {
+bool ModelCopy::ImportAndSimplifyConstraints(
+    const CpModelProto& in_model, bool first_copy,
+    std::function<bool(int)> active_constraints) {
   context_->InitializeNewDomains();
   const bool ignore_names = context_->params().ignore_names();
 
@@ -11588,6 +11595,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(const CpModelProto& in_model,
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
+    if (active_constraints != nullptr && !active_constraints(c)) continue;
     const ConstraintProto& ct = in_model.constraints(c);
     if (first_copy) {
       if (!PrepareEnforcementCopyWithDup(ct)) continue;
@@ -12127,6 +12135,21 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
   ModelCopy copier(context);
   copier.ImportVariablesAndMaybeIgnoreNames(in_model);
   if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/true)) {
+    CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
+                                                                 context);
+    return true;
+  }
+  return !context->ModelIsUnsat();
+}
+
+bool ImportModelAndDomainsWithBasicPresolveIntoContext(
+    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    std::function<bool(int)> active_constraints, PresolveContext* context) {
+  CHECK_EQ(domains.size(), in_model.variables_size());
+  ModelCopy copier(context);
+  copier.CreateVariablesFromDomains(domains);
+  if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/false,
+                                          active_constraints)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
                                                                  context);
     return true;

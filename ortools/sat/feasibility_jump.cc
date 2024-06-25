@@ -75,10 +75,6 @@ void JumpTable::SetJump(int var, int64_t delta, double score) {
 
 void JumpTable::Recompute(int var) { needs_recomputation_[var] = true; }
 
-bool JumpTable::PossiblyGood(int var) const {
-  return needs_recomputation_[var] || scores_[var] < 0;
-}
-
 bool JumpTable::JumpIsUpToDate(int var) {
   const auto& [delta, score] = compute_jump_(var);
   if (delta != deltas_[var]) {
@@ -137,12 +133,12 @@ void FeasibilityJumpSolver::Initialize() {
 
   const int num_variables = linear_model_->model_proto().variables().size();
   var_domains_.resize(num_variables);
-  var_has_two_values_.resize(num_variables);
   for (int v = 0; v < num_variables; ++v) {
-    var_domains_[v] =
-        ReadDomainFromProto(linear_model_->model_proto().variables(v));
-    var_has_two_values_[v] = var_domains_[v].HasTwoValues();
+    var_domains_.Set(
+        v, ReadDomainFromProto(linear_model_->model_proto().variables(v)));
   }
+  var_domains_.InitializeObjective(linear_model_->model_proto());
+
   vars_to_scan_.reserve(num_variables);
   in_vars_to_scan_.assign(num_variables, false);
   move_ =
@@ -426,18 +422,13 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // It is okay to be in O(num_variables) here since we only do that between
     // chunks.
     if (shared_bounds_ != nullptr) {
-      shared_bounds_->UpdateDomains(&var_domains_);
-      for (int var = 0; var < var_domains_.size(); ++var) {
-        // We abort if the problem is trivially UNSAT. This might happen while
-        // we are cleaning up all workers at the end of a search.
-        if (var_domains_[var].IsEmpty()) return;
-        var_has_two_values_[var] = var_domains_[var].HasTwoValues();
-      }
+      if (!var_domains_.UpdateFromSharedBounds(shared_bounds_)) return;
     }
 
     // Checks the current solution is compatible with updated domains.
     {
       // Make sure the solution is within the potentially updated domain.
+      // This also initialize var_domains_.CanIncrease()/CanDecrease().
       std::vector<int64_t>& current_solution =
           *evaluator_->mutable_current_solution();
       for (int var = 0; var < current_solution.size(); ++var) {
@@ -447,9 +438,10 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           current_solution[var] = new_value;
           should_recompute_violations = true;
         }
+        var_domains_.OnValueChange(var, new_value);
       }
       // Check if compound move search might backtrack out of the new domains.
-      if (!move_->StackValuesInDomains(var_domains_)) {
+      if (!move_->StackValuesInDomains(var_domains_.AsSpan())) {
         recompute_compound_weights = true;
       }
     }
@@ -481,6 +473,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
         compound_move_max_discrepancy_ = 0;
       }
     }
+
     // Search for feasible solution.
     ++num_batches_;
     if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
@@ -523,21 +516,19 @@ double FeasibilityJumpSolver::ComputeScore(absl::Span<const double> weights,
   if (!linear_only) {
     score += evaluator_->WeightedNonLinearViolationDelta(weights, var, delta);
   }
-  score += kEpsilon * evaluator_->ObjectiveDelta(var, delta);
+  score += kEpsilon * delta * evaluator_->ObjectiveCoefficient(var);
   return score;
 }
 
 std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
+  DCHECK(!var_domains_[var].IsFixed());
   const std::vector<int64_t>& solution = evaluator_->current_solution();
-  if (var_domains_[var].IsFixed()) {
-    return std::make_pair(0l, 0.0);
-  }
 
   ++num_linear_evals_;
   const LinearIncrementalEvaluator& linear_evaluator =
       evaluator_->LinearEvaluator();
 
-  if (var_has_two_values_[var]) {
+  if (var_domains_.HasTwoValues(var)) {
     const int64_t min_value = var_domains_[var].Min();
     const int64_t max_value = var_domains_[var].Max();
     const int64_t delta = solution[var] == min_value ? max_value - min_value
@@ -713,7 +704,7 @@ void FeasibilityJumpSolver::UpdateViolatedConstraintWeights(JumpTable& jumps) {
     // TODO(user): We could compute the minimal bump that would lead to a
     // good move. That might change depending on the jump value though, so
     // we can only do that easily for Booleans.
-    if (!var_has_two_values_[var]) {
+    if (!var_domains_.HasTwoValues(var)) {
       jumps.Recompute(var);
     } else {
       // We may know the correct score for binary vars.
@@ -759,8 +750,9 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
                                      linear_jumps_.Deltas(),
                                      linear_jumps_.MutableScores());
       evaluator_->UpdateVariableValue(best_var, best_value);
+      var_domains_.OnValueChange(best_var, best_value);
 
-      if (var_has_two_values_[best_var]) {
+      if (var_domains_.HasTwoValues(best_var)) {
         // We already know the score of undoing the move we just did, and that
         // this is optimal.
         linear_jumps_.SetJump(best_var, current_value - best_value,
@@ -798,7 +790,7 @@ bool FeasibilityJumpSolver::DoSomeLinearIterations() {
 void FeasibilityJumpSolver::MarkJumpsThatNeedToBeRecomputed(int changed_var,
                                                             JumpTable& jumps) {
   for (const int var : evaluator_->VariablesAffectedByLastLinearUpdate()) {
-    if (var != changed_var && !var_has_two_values_[var]) {
+    if (var != changed_var && !var_domains_.HasTwoValues(var)) {
       jumps.Recompute(var);
     }
     AddVarToScan(jumps, var);
@@ -846,9 +838,12 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
       evaluator_->UpdateLinearScores(var, value, ScanWeights(),
                                      general_jumps_.Deltas(),
                                      general_jumps_.MutableScores());
+
       // Update the non-linear part. Note it also commits the move.
       evaluator_->UpdateNonLinearViolations(var, value);
       evaluator_->UpdateVariableValue(var, value);
+      var_domains_.OnValueChange(var, value);
+
       if (use_compound_moves_ && !backtrack) {
         // `!backtrack` is just an optimisation - we can never break any new
         // constraints on backtrack, so we can never change any
@@ -884,7 +879,7 @@ bool FeasibilityJumpSolver::DoSomeGeneralIterations() {
         DCHECK_EQ(-score,
                   ComputeScore(weights_, var, prev_value - value, false));
       }
-      if (var_has_two_values_[var]) {
+      if (var_domains_.HasTwoValues(var)) {
         // We already know the score of the only possible move (undoing what we
         // just did).
         general_jumps_.SetJump(var, prev_value - value, -score);
@@ -1027,21 +1022,39 @@ bool FeasibilityJumpSolver::ScanRelevantVariables(int num_to_scan,
 
 void FeasibilityJumpSolver::AddVarToScan(const JumpTable& jumps, int var) {
   DCHECK_GE(var, 0);
-  if (in_vars_to_scan_[var] || !ShouldScan(jumps, var)) return;
+  if (in_vars_to_scan_[var]) return;
+  if (!ShouldScan(jumps, var)) return;
   vars_to_scan_.push_back(var);
   in_vars_to_scan_[var] = true;
 }
 
 bool FeasibilityJumpSolver::ShouldScan(const JumpTable& jumps, int var) const {
   DCHECK_GE(var, 0);
-  if (var_domains_[var].IsFixed()) return false;
-  if (!jumps.PossiblyGood(var)) return false;
+
   if (move_->OnStack(var)) return false;
-  if (evaluator_->NumViolatedConstraintsForVar(var) > 0) return true;
-  const int64_t value = evaluator_->current_solution()[var];
+
+  if (!jumps.NeedRecomputation(var)) {
+    // We already have the score/jump of that variable.
+    const double score = jumps.Score(var);
+    return score < 0.0;
+  }
+
+  if (var_domains_.IsFixed(var)) return false;
+
   // Return true iff var is has a better objective value in its domain.
-  return evaluator_->ObjectiveDelta(var, var_domains_[var].Min() - value) < 0 ||
-         evaluator_->ObjectiveDelta(var, var_domains_[var].Max() - value) < 0;
+  if (var_domains_.HasBetterObjectiveValue(var)) return true;
+
+  // We will need to recompute the score. Lets skip variable for which we known
+  // in advance that there will be no good score.
+  //
+  // For the objective, we don't care if it is violated or not, we only want
+  // to scan variable that might improve it (and thus reduce its violation if it
+  // is violated).
+  //
+  // TODO(user): We should generalize the objective logic to all constraint.
+  // There is no point scanning a variable of a violated constraint if it is at
+  // the wrong bound and cannot improve the violation!
+  return evaluator_->NumViolatedConstraintsForVarIgnoringObjective(var) > 0;
 }
 
 void FeasibilityJumpSolver::RecomputeVarsToScan(JumpTable& jumps) {
@@ -1061,12 +1074,14 @@ bool FeasibilityJumpSolver::SlowCheckNumViolatedConstraints() const {
   std::vector<int> result;
   result.assign(var_domains_.size(), 0);
   for (const int c : evaluator_->ViolatedConstraints()) {
+    if (evaluator_->IsObjectiveConstraint(c)) continue;
     for (const int v : evaluator_->ConstraintToVars(c)) {
       ++result[v];
     }
   }
   for (int v = 0; v < result.size(); ++v) {
-    CHECK_EQ(result[v], evaluator_->NumViolatedConstraintsForVar(v));
+    CHECK_EQ(result[v],
+             evaluator_->NumViolatedConstraintsForVarIgnoringObjective(v));
   }
   return true;
 }

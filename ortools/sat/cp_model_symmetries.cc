@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -63,6 +64,19 @@ struct VectorHash {
       hash = util_hash::Hash(value, hash);
     }
     return hash;
+  }
+};
+
+struct NodeExprCompare {
+  bool operator()(const LinearExpressionProto& a,
+                  const LinearExpressionProto& b) const {
+    if (a.offset() != b.offset()) return a.offset() < b.offset();
+    if (a.vars_size() != b.vars_size()) return a.vars_size() < b.vars_size();
+    for (int i = 0; i < a.vars_size(); ++i) {
+      if (a.vars(i) != b.vars(i)) return a.vars(i) < b.vars(i);
+      if (a.coeffs(i) != b.coeffs(i)) return a.coeffs(i) < b.coeffs(i);
+    }
+    return false;
   }
 };
 
@@ -131,6 +145,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     VARIABLE_NODE,
     VAR_COEFFICIENT_NODE,
     CONSTRAINT_NODE,
+    VAR_LIN_EXPR_NODE,
   };
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
@@ -256,6 +271,18 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     return local_node;
   };
 
+  absl::btree_map<LinearExpressionProto, int, NodeExprCompare> expr_nodes;
+  auto shared_linear_expr_node =
+      [&make_linear_expr_node, &expr_nodes](const LinearExpressionProto& expr) {
+        const auto [it, inserted] = expr_nodes.insert({expr, 0});
+        if (inserted) {
+          const std::vector<int64_t> local_color = {VAR_LIN_EXPR_NODE,
+                                                    expr.offset()};
+          it->second = make_linear_expr_node(expr, local_color);
+        }
+        return it->second;
+      };
+
   // We need to keep track of this for scheduling constraints.
   absl::flat_hash_map<int, int> interval_constraint_index_to_node;
 
@@ -295,7 +322,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         CHECK_EQ(constraint_node, new_node(color));
         for (const LinearExpressionProto& expr :
              constraint.all_diff().exprs()) {
-          graph->AddArc(make_linear_expr_node(expr, color), constraint_node);
+          graph->AddArc(shared_linear_expr_node(expr), constraint_node);
         }
         break;
       }
@@ -357,13 +384,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const int target_node = make_linear_expr_node(target_expr, color);
 
         for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
-          // TODO(user): We can create a node per LinearExpressionProto instead.
-          // This will allow to reuse node between constraint, if they share a
-          // common expression.
           const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
-
-          const int local_node = make_linear_expr_node(expr, color);
-          graph->AddArc(local_node, target_node);
+          graph->AddArc(shared_linear_expr_node(expr), target_node);
         }
 
         break;
@@ -447,8 +469,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         std::vector<int64_t> demands_color = color;
         demands_color.push_back(1);
         for (int i = 0; i < ct.intervals().size(); ++i) {
-          const int demand_node =
-              make_linear_expr_node(ct.demands(i), demands_color);
+          const int demand_node = shared_linear_expr_node(ct.demands(i));
           graph->AddArc(demand_node, constraint_node);
           graph->AddArc(demand_node,
                         interval_constraint_index_to_node.at(ct.intervals(i)));

@@ -416,6 +416,8 @@ std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
   };
 }
 
+// TODO(user): Do we need a mechanism to reduce the range of possible gaps
+// when nothing gets proven? This could be a parameter or some adaptative code.
 std::function<BooleanOrIntegerLiteral()> ShaveObjectiveLb(Model* model) {
   auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
   const IntegerVariable obj_var = objective_definition->objective_var;
@@ -1652,6 +1654,7 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
 // Continuous probing procedure.
 // TODO(user):
 //   - sort variables before the iteration (statically or dynamically)
+//   - compress clause databases regularly (especially the implication graph)
 //   - better interleaving of the probing and shaving phases
 //   - move the shaving code directly in the probing class
 //   - probe all variables and not just the model ones

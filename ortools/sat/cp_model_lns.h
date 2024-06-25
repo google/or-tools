@@ -159,7 +159,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   bool DifficultyMeansFullNeighborhood(double difficulty) const {
     absl::ReaderMutexLock lock(&graph_mutex_);
-    const int target_size = std::ceil(difficulty * active_variables_.size());
+    const int target_size =
+        static_cast<int>(std::ceil(difficulty * active_variables_.size()));
     return target_size == active_variables_.size();
   }
 

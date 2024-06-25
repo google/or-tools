@@ -52,13 +52,17 @@ class JumpTable {
 
   // Gets the current jump delta and score, recomputing if necessary.
   std::pair<int64_t, double> GetJump(int var);
+
   // If the new optimum value and score is known, users can update it directly.
   // e.g. after weight rescaling, or after changing a binary variable.
   void SetJump(int var, int64_t delta, double score);
+
   // Recompute the jump for `var` when `GetJump(var)` is next called.
   void Recompute(int var);
-  // Returns true if the jump score for `var` might be negative.
-  bool PossiblyGood(int var) const;
+
+  bool NeedRecomputation(int var) const { return needs_recomputation_[var]; }
+
+  double Score(int var) const { return scores_[var]; }
 
   // Advanced usage, allows users to read possibly stale deltas for incremental
   // score updates.
@@ -86,6 +90,81 @@ class JumpTable {
   std::vector<int64_t> deltas_;
   std::vector<double> scores_;
   std::vector<bool> needs_recomputation_;
+};
+
+// Accessing Domain can be expensive, so we maintain vector of bool for the
+// hot spots.
+class VarDomainWrapper {
+ public:
+  Domain operator[](int var) const { return domains_[var]; }
+  bool HasTwoValues(int var) const { return has_two_values_[var]; }
+  size_t size() const { return domains_.size(); }
+
+  void resize(int num_vars) {
+    domains_.resize(num_vars);
+    has_two_values_.resize(num_vars);
+    is_fixed_.resize(num_vars, false);
+    objective_is_positive_.resize(num_vars, false);
+    objective_is_negative_.resize(num_vars, false);
+    has_better_objective_value_.resize(num_vars, false);
+  }
+
+  void Set(int var, Domain d) {
+    has_two_values_[var] = d.HasTwoValues();
+    is_fixed_[var] = d.IsFixed();
+    domains_[var] = std::move(d);
+  }
+
+  // Return false if one of the domain becomes empty (UNSAT). This might happen
+  // while we are cleaning up all workers at the end of a search.
+  bool UpdateFromSharedBounds(SharedBoundsManager* shared_bounds) {
+    shared_bounds->UpdateDomains(&domains_);
+    for (int var = 0; var < domains_.size(); ++var) {
+      if (domains_[var].IsEmpty()) return false;
+      has_two_values_[var] = domains_[var].HasTwoValues();
+      is_fixed_[var] = domains_[var].IsFixed();
+    }
+    return true;
+  }
+
+  absl::Span<const Domain> AsSpan() const { return domains_; }
+
+  void InitializeObjective(const CpModelProto& cp_model_proto) {
+    if (!cp_model_proto.has_objective()) return;
+    const int num_terms = cp_model_proto.objective().vars().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = cp_model_proto.objective().vars(i);
+      const int coeff = cp_model_proto.objective().coeffs(i);
+      objective_is_positive_[var] = coeff > 0;
+      objective_is_negative_[var] = coeff < 0;
+    }
+  }
+
+  bool IsFixed(int var) const { return is_fixed_[var]; }
+
+  bool HasBetterObjectiveValue(int var) const {
+    return has_better_objective_value_[var];
+  }
+
+  // Tricky: this must be called on solution value change or domains update.
+  void OnValueChange(int var, int64_t value) {
+    has_better_objective_value_[var] =
+        (objective_is_positive_[var] && value > domains_[var].Min()) ||
+        (objective_is_negative_[var] && value < domains_[var].Max());
+  }
+
+ private:
+  // Basically fixed once and for all.
+  std::vector<bool> objective_is_positive_;
+  std::vector<bool> objective_is_negative_;
+
+  // Depends on domain updates.
+  std::vector<Domain> domains_;
+  std::vector<bool> has_two_values_;
+  std::vector<bool> is_fixed_;
+
+  // This is the only one that depends on the current solution value.
+  std::vector<bool> has_better_objective_value_;
 };
 
 // Implements and heuristic similar to the one described in the paper:
@@ -191,8 +270,6 @@ class FeasibilityJumpSolver : public SubSolver {
   // Ensures jumps remains consistent.
   void UpdateViolatedConstraintWeights(JumpTable& jumps);
 
-  void UpdateNumViolatedConstraintsPerVar();
-
   void RecomputeVarsToScan(JumpTable&);
 
   // Returns true if it is possible that `var` may have value that reduces
@@ -236,8 +313,7 @@ class FeasibilityJumpSolver : public SubSolver {
   bool time_limit_crossed_ = false;
 
   std::unique_ptr<LsEvaluator> evaluator_;
-  std::vector<Domain> var_domains_;
-  std::vector<bool> var_has_two_values_;
+  VarDomainWrapper var_domains_;
   std::vector<bool> var_occurs_in_non_linear_constraint_;
 
   JumpTable linear_jumps_;
