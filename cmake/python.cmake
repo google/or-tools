@@ -540,7 +540,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.pywraprouting --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.routing --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.model --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.swig_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .

@@ -126,6 +126,9 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(pybind11::init<const std::string&,
                           const ConstraintSolverParameters&>())
       .def("__str__", &Solver::DebugString)
+      .def("default_solver_parameters", &Solver::DefaultSolverParameters)
+      .def("parameters", &Solver::parameters)
+      .def("local_search_profile", &Solver::LocalSearchProfile)
       .def("new_int_var",
            pybind11::overload_cast<int64_t, int64_t, const std::string&>(
                &Solver::MakeIntVar),
