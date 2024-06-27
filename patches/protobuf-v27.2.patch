@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 312eeb928..3e154785b 100644
+index 9b51e9722..33c1021d4 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -41,7 +41,7 @@ else (BUILD_SHARED_LIBS)
+@@ -42,7 +42,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -11,7 +11,7 @@ index 312eeb928..3e154785b 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -158,24 +158,16 @@ endif()
+@@ -160,24 +160,16 @@ endif()
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -46,7 +46,7 @@ index 312eeb928..3e154785b 100644
  endif (protobuf_WITH_ZLIB)
  
  # We need to link with libatomic on systems that do not have builtin atomics, or
-@@ -277,7 +269,6 @@ else (MSVC)
+@@ -279,7 +271,6 @@ else (MSVC)
  endif (MSVC)
  
  include_directories(
@@ -54,15 +54,15 @@ index 312eeb928..3e154785b 100644
    ${protobuf_BINARY_DIR}
    # Support #include-ing other top-level directories, i.e. upb_generator.
    ${protobuf_SOURCE_DIR}
-diff --git a/cmake/install.cmake b/cmake/install.cmake
-index 52914a8ea..d7dc5f232 100644
---- a/cmake/install.cmake
-+++ b/cmake/install.cmake
-@@ -31,6 +31,7 @@ foreach(_library ${_protobuf_libraries})
-   set_property(TARGET ${_library}
-     PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-     $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}/src>
-+    $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}>
-     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-   if (UNIX AND NOT APPLE)
-     set_property(TARGET ${_library}
+diff --git a/cmake/libprotobuf.cmake b/cmake/libprotobuf.cmake
+index 11c09b1bc..fdea9ce16 100644
+--- a/cmake/libprotobuf.cmake
++++ b/cmake/libprotobuf.cmake
+@@ -28,6 +28,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+ endif()
+ target_include_directories(libprotobuf PUBLIC
+   $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}/src>
++  $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+ )
+ target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})
