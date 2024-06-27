@@ -59,8 +59,8 @@ def print_solution(manager, routing, solution):
         index = solution.Value(routing.NextVar(index))
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
     plan_output += f" {manager.IndexToNode(index)}\n"
-    print(plan_output)
     plan_output += f"Route distance: {route_distance}miles\n"
+    print(plan_output)
     # [END solution_printer]
 
 
