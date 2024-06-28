@@ -60,15 +60,6 @@ diff --git a/cmake/dependencies/CMakeLists.txt b/cmake/dependencies/CMakeLists.t
 index 111b34f..f78e946 100644
 --- a/cmake/dependencies/CMakeLists.txt
 +++ b/cmake/dependencies/CMakeLists.txt
-@@ -7,7 +7,7 @@ if(NOT absl_FOUND)
-   set(ABSL_PROPAGATE_CXX_STD ON)
-   set(ABSL_ENABLE_INSTALL ON)
-   FetchContent_Declare(
--    absl
-+    abseil-cpp
-     GIT_REPOSITORY ${_absl_repository}
-     GIT_TAG ${_absl_tag})
- endif()
 @@ -35,17 +35,17 @@ if(NOT pybind11_FOUND)
  endif()
  
@@ -77,11 +68,11 @@ index 111b34f..f78e946 100644
 +# Make dependencies available
  
 -if(NOT absl_FOUND)
-+if(NOT abseil-cpp_FOUND)
++if(NOT absl_FOUND)
    message(CHECK_START "Fetching Abseil-cpp")
    list(APPEND CMAKE_MESSAGE_INDENT "  ")
 -  FetchContent_MakeAvailable(absl)
-+  FetchContent_MakeAvailable(abseil-cpp)
++  FetchContent_MakeAvailable(absl)
    list(POP_BACK CMAKE_MESSAGE_INDENT)
    message(CHECK_PASS "fetched")
  endif()

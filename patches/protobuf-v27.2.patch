@@ -54,15 +54,3 @@ index 9b51e9722..33c1021d4 100644
    ${protobuf_BINARY_DIR}
    # Support #include-ing other top-level directories, i.e. upb_generator.
    ${protobuf_SOURCE_DIR}
-diff --git a/cmake/libprotobuf.cmake b/cmake/libprotobuf.cmake
-index 11c09b1bc..fdea9ce16 100644
---- a/cmake/libprotobuf.cmake
-+++ b/cmake/libprotobuf.cmake
-@@ -28,6 +28,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
- endif()
- target_include_directories(libprotobuf PUBLIC
-   $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}/src>
-+  $<BUILD_INTERFACE:${protobuf_SOURCE_DIR}>
-   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
- )
- target_link_libraries(libprotobuf PUBLIC ${protobuf_ABSL_USED_TARGETS})

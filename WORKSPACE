@@ -65,7 +65,7 @@ git_repository(
 
 git_repository(
     name = "rules_python",
-    tag = "0.31.0",
+    tag = "0.33.2",
     remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
@@ -193,6 +193,21 @@ new_git_repository(
 load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
+load("@rules_python//python:repositories.bzl", "python_register_multi_toolchains")
+DEFAULT_PYTHON = "3.11"
+python_register_multi_toolchains(
+    name = "python",
+    default_version = DEFAULT_PYTHON,
+    python_versions = [
+      "3.12",
+      "3.11",
+      "3.10",
+      "3.9",
+      "3.8"
+    ],
+    ignore_root_user_error=True,
+)
+
 # Create a central external repo, @pip_deps, that contains Bazel targets for all the
 # third-party packages specified in the bazel/requirements.txt file.
 load("@rules_python//python:pip.bzl", "pip_parse")
@@ -236,7 +251,8 @@ http_archive(
 ## `pybind11_bazel`
 git_repository(
     name = "pybind11_bazel",
-    commit = "23926b00e2b2eb2fc46b17e587cf0c0cfd2f2c4b", # 2023/11/29
+    tag = "v2.12.0", # 2024/04/08
+    #commit = "23926b00e2b2eb2fc46b17e587cf0c0cfd2f2c4b", # 2023/11/29
     patches = ["//patches:pybind11_bazel.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_bazel.git",
@@ -244,14 +260,15 @@ git_repository(
 
 new_git_repository(
     name = "pybind11",
-    build_file = "@pybind11_bazel//:pybind11.BUILD",
-    tag = "v2.12.0",
+    build_file = "@pybind11_bazel//:pybind11-BUILD.bazel",
+    #build_file = "@pybind11_bazel//:pybind11.BUILD",
+    tag = "v2.13.1",
     remote = "https://github.com/pybind/pybind11.git",
 )
 
 new_git_repository(
-    name = "pybind11_abseil",
-    commit = "52f27398876a3177049977249e004770bd869e61", # 2024/01/11
+    name = "org_pybind11_abseil",
+    tag = "v202402.0",
     patches = ["//patches:pybind11_abseil.patch"],
     patch_args = ["-p1"],
     remote = "https://github.com/pybind/pybind11_abseil.git",
@@ -259,16 +276,16 @@ new_git_repository(
 
 new_git_repository(
     name = "pybind11_protobuf",
-    commit = "3b11990a99dea5101799e61d98a82c4737d240cc", # 2024/01/04
+    commit = "e90f33efeb2ae5c4e85ef83b22298f58e1e30894", # 2024/06/21
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
-load("@pybind11_bazel//:python_configure.bzl", "python_configure")
-python_configure(name = "local_config_python", python_version = "3")
-bind(
-    name = "python_headers",
-    actual = "@local_config_python//:python_headers",
-)
+#load("@pybind11_bazel//:python_configure.bzl", "python_configure")
+#python_configure(name = "local_config_python", python_version = "3")
+#bind(
+#    name = "python_headers",
+#    actual = "@local_config_python//:python_headers",
+#)
 
 ## Java support (with junit 5)
 load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")

@@ -82,12 +82,12 @@ if(BUILD_absl)
   set(ABSL_PROPAGATE_CXX_STD ON)
   set(ABSL_BUILD_TESTING OFF)
   FetchContent_Declare(
-    abseil-cpp
+    absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
     GIT_TAG "20240116.2"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20240116.2.patch"
   )
-  FetchContent_MakeAvailable(abseil-cpp)
+  FetchContent_MakeAvailable(absl)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -102,6 +102,7 @@ if(BUILD_Protobuf)
   set(protobuf_BUILD_SHARED_LIBS OFF)
   set(protobuf_BUILD_EXPORT OFF)
   set(protobuf_MSVC_STATIC_RUNTIME OFF)
+  #set(protobuf_BUILD_LIBUPB ON)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
@@ -169,7 +170,7 @@ if(BUILD_PYTHON AND BUILD_pybind11)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-    GIT_TAG "v2.12.0"
+    GIT_TAG "v2.13.1"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11.patch"
   )
   FetchContent_MakeAvailable(pybind11)
@@ -183,7 +184,7 @@ if(BUILD_PYTHON AND BUILD_pybind11_abseil)
   FetchContent_Declare(
     pybind11_abseil
     GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git" # 2024/01/11
-    GIT_TAG "52f27398876a3177049977249e004770bd869e61"
+    GIT_TAG "v202402.0"
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
   )
   FetchContent_MakeAvailable(pybind11_abseil)
@@ -197,7 +198,7 @@ if(BUILD_PYTHON AND BUILD_pybind11_protobuf)
   FetchContent_Declare(
     pybind11_protobuf
     GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
-    GIT_TAG "3b11990a99dea5101799e61d98a82c4737d240cc" # 2024/01/04
+    GIT_TAG "e90f33efeb2ae5c4e85ef83b22298f58e1e30894" # 2024/06/21
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
   )
   FetchContent_MakeAvailable(pybind11_protobuf)
