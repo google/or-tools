@@ -120,7 +120,7 @@ void PrintSolution(const RoutingIndexManager& manager,
     distance += routing.GetArcCostForVehicle(previous_index, index, int64_t{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
-  LOG(INFO) << "Route distance: " << distance << "miles";
+  LOG(INFO) << "Route distance: " << distance << "mm";
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";

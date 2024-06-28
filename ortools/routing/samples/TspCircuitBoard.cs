@@ -122,7 +122,7 @@ public class TspCircuitBoard
             routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
         }
         Console.WriteLine("{0}", manager.IndexToNode((int)index));
-        Console.WriteLine("Route distance: {0}m", routeDistance);
+        Console.WriteLine("Route distance: {0}mm", routeDistance);
     }
     // [END solution_printer]
 
