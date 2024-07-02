@@ -74,13 +74,10 @@ class LinearIncrementalEvaluator {
   void UpdateScoreOnWeightUpdate(int c, absl::Span<const int64_t> jump_deltas,
                                  absl::Span<double> var_to_score_change);
 
-  // Variables whose score might have decreased since the last clear for at
-  // least one jump value.
+  // Variables whose score/jump might have changed since the last clear.
   //
   // Note that because we reason on a per-constraint basis, this is actually
-  // independent of the set of positive constraint weight used. We just list
-  // variable for which the contribution to the violation of one constraint
-  // might have decreased for any jump value.
+  // independent of the set of positive constraint weight used.
   void ClearAffectedVariables();
   absl::Span<const int> VariablesAffectedByLastUpdate() const {
     return last_affected_variables_;
@@ -318,27 +315,24 @@ class LsEvaluator {
   // It returns true if a reduction of the domain took place.
   bool ReduceObjectiveBounds(int64_t lb, int64_t ub);
 
-  // Overwrites the current solution.
-  void OverwriteCurrentSolution(absl::Span<const int64_t> solution);
-
-  // Computes the violations of all constraints.
-  void ComputeAllViolations();
-
-  // Recompute the violations of non linear constraints.
-  void UpdateAllNonLinearViolations();
-
-  // Sets the value of the variable in the current solution.
-  // It must be called after UpdateLinearScores().
-  void UpdateVariableValue(int var, int64_t new_value);
+  // Recomputes the violations of all constraints (resp only non-linear one).
+  void ComputeAllViolations(absl::Span<const int64_t> solution);
+  void ComputeAllNonLinearViolations(absl::Span<const int64_t> solution);
 
   // Recomputes the violations of all impacted non linear constraints.
-  void UpdateNonLinearViolations(int var, int64_t new_value);
+  void UpdateNonLinearViolations(int var, int64_t old_value,
+                                 absl::Span<const int64_t> new_solution);
 
   // Function specific to the linear only feasibility jump.
-  void UpdateLinearScores(int var, int64_t value,
+  void UpdateLinearScores(int var, int64_t old_value, int64_t new_value,
                           absl::Span<const double> weights,
                           absl::Span<const int64_t> jump_deltas,
                           absl::Span<double> jump_scores);
+
+  // Must be called after UpdateLinearScores() / UpdateNonLinearViolations()
+  // in order to update the ViolatedConstraints().
+  void UpdateViolatedList();
+
   absl::Span<const int> VariablesAffectedByLastLinearUpdate() const {
     return linear_evaluator_.VariablesAffectedByLastUpdate();
   }
@@ -371,15 +365,20 @@ class LsEvaluator {
   int64_t Violation(int c) const;
   bool IsViolated(int c) const;
   double WeightedViolation(absl::Span<const double> weights) const;
-  double WeightedViolationDelta(absl::Span<const double> weights, int var,
-                                int64_t delta) const;
-  // Ignores the violations of the linear constraints.
-  double WeightedNonLinearViolationDelta(absl::Span<const double> weights,
-                                         int var, int64_t delta) const;
+
+  // Computes the delta in weighted violation if solution[var] += delta.
+  // We need a temporary mutable solution to evaluate the violation of generic
+  // constraints. If linear_only is true, only the linear violation will be
+  // used.
+  double WeightedViolationDelta(bool linear_only,
+                                absl::Span<const double> weights, int var,
+                                int64_t delta,
+                                absl::Span<int64_t> mutable_solution) const;
 
   const LinearIncrementalEvaluator& LinearEvaluator() {
     return linear_evaluator_;
   }
+
   LinearIncrementalEvaluator* MutableLinearEvaluator() {
     return &linear_evaluator_;
   }
@@ -401,15 +400,6 @@ class LsEvaluator {
 
   // Indicates if the computed jump value is always the best choice.
   bool VariableOnlyInLinearConstraintWithConvexViolationChange(int var) const;
-
-  // Access the solution stored.
-  const std::vector<int64_t>& current_solution() const {
-    return current_solution_;
-  }
-
-  std::vector<int64_t>* mutable_current_solution() {
-    return &current_solution_;
-  }
 
   const std::vector<int>& last_update_violation_changes() const {
     return last_update_violation_changes_;
@@ -453,9 +443,6 @@ class LsEvaluator {
   std::vector<std::vector<int>> var_to_constraints_;
   std::vector<std::vector<int>> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
-
-  // We need the mutable to evaluate a move by temporarily modifying solution.
-  mutable std::vector<int64_t> current_solution_;
 
   UnsafeDenseSet<int> violated_constraints_;
   std::vector<int> num_violated_constraint_per_var_ignoring_objective_;

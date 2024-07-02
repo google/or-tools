@@ -12960,18 +12960,6 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 
 namespace {
 
-ConstraintProto CopyConstraintForDuplicateDetection(const ConstraintProto& ct,
-                                                    bool ignore_enforcement) {
-  ConstraintProto copy = ct;
-  copy.clear_name();
-  if (ignore_enforcement) {
-    copy.mutable_enforcement_literal()->Clear();
-  } else if (ct.constraint_case() == ConstraintProto::kLinear) {
-    copy.mutable_linear()->clear_domain();
-  }
-  return copy;
-}
-
 // We ignore all the fields but the linear expression.
 ConstraintProto CopyObjectiveForDuplicateDetection(
     const CpObjectiveProto& objective) {
@@ -12981,22 +12969,154 @@ ConstraintProto CopyObjectiveForDuplicateDetection(
   return copy;
 }
 
+struct ConstraintHashForDuplicateDetection {
+  const CpModelProto* working_model;
+  bool ignore_enforcement;
+  ConstraintProto objective_constraint;
+
+  ConstraintHashForDuplicateDetection(const CpModelProto* working_model,
+                                      bool ignore_enforcement)
+      : working_model(working_model),
+        ignore_enforcement(ignore_enforcement),
+        objective_constraint(
+            CopyObjectiveForDuplicateDetection(working_model->objective())) {}
+
+  // We hash our mostly frequently used constraint directly without extra memory
+  // allocation. We revert to a generic code using proto serialization for the
+  // others.
+  std::size_t operator()(int ct_idx) const {
+    const ConstraintProto& ct = ct_idx == kObjectiveConstraint
+                                    ? objective_constraint
+                                    : working_model->constraints(ct_idx);
+    const std::pair<ConstraintProto::ConstraintCase, absl::Span<const int>>
+        type_and_enforcement = {ct.constraint_case(),
+                                ignore_enforcement
+                                    ? absl::Span<const int>()
+                                    : absl::MakeSpan(ct.enforcement_literal())};
+    switch (ct.constraint_case()) {
+      case ConstraintProto::kLinear:
+        if (ignore_enforcement) {
+          return absl::HashOf(type_and_enforcement,
+                              absl::MakeSpan(ct.linear().vars()),
+                              absl::MakeSpan(ct.linear().coeffs()),
+                              absl::MakeSpan(ct.linear().domain()));
+        } else {
+          // We ignore domain for linear constraint, because if the rest of the
+          // constraint is the same we can just intersect them.
+          return absl::HashOf(type_and_enforcement,
+                              absl::MakeSpan(ct.linear().vars()),
+                              absl::MakeSpan(ct.linear().coeffs()));
+        }
+      case ConstraintProto::kBoolAnd:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.bool_and().literals()));
+      case ConstraintProto::kBoolOr:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.bool_or().literals()));
+      case ConstraintProto::kAtMostOne:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.at_most_one().literals()));
+      case ConstraintProto::kExactlyOne:
+        return absl::HashOf(type_and_enforcement,
+                            absl::MakeSpan(ct.exactly_one().literals()));
+      default:
+        ConstraintProto copy = ct;
+        copy.clear_name();
+        if (ignore_enforcement) {
+          copy.mutable_enforcement_literal()->Clear();
+        }
+        return absl::HashOf(copy.SerializeAsString());
+    }
+  }
+};
+
+struct ConstraintEqForDuplicateDetection {
+  const CpModelProto* working_model;
+  bool ignore_enforcement;
+  ConstraintProto objective_constraint;
+
+  ConstraintEqForDuplicateDetection(const CpModelProto* working_model,
+                                    bool ignore_enforcement)
+      : working_model(working_model),
+        ignore_enforcement(ignore_enforcement),
+        objective_constraint(
+            CopyObjectiveForDuplicateDetection(working_model->objective())) {}
+
+  bool operator()(int a, int b) const {
+    if (a == b) {
+      return true;
+    }
+    const ConstraintProto& ct_a = a == kObjectiveConstraint
+                                      ? objective_constraint
+                                      : working_model->constraints(a);
+    const ConstraintProto& ct_b = b == kObjectiveConstraint
+                                      ? objective_constraint
+                                      : working_model->constraints(b);
+
+    if (ct_a.constraint_case() != ct_b.constraint_case()) return false;
+    if (!ignore_enforcement) {
+      if (absl::MakeSpan(ct_a.enforcement_literal()) !=
+          absl::MakeSpan(ct_b.enforcement_literal())) {
+        return false;
+      }
+    }
+    switch (ct_a.constraint_case()) {
+      case ConstraintProto::kLinear:
+        // As above, we ignore domain for linear constraint, because if the rest
+        // of the constraint is the same we can just intersect them.
+        if (ignore_enforcement && absl::MakeSpan(ct_a.linear().domain()) !=
+                                      absl::MakeSpan(ct_b.linear().domain())) {
+          return false;
+        }
+        return absl::MakeSpan(ct_a.linear().vars()) ==
+                   absl::MakeSpan(ct_b.linear().vars()) &&
+               absl::MakeSpan(ct_a.linear().coeffs()) ==
+                   absl::MakeSpan(ct_b.linear().coeffs());
+      case ConstraintProto::kBoolAnd:
+        return absl::MakeSpan(ct_a.bool_and().literals()) ==
+               absl::MakeSpan(ct_b.bool_and().literals());
+      case ConstraintProto::kBoolOr:
+        return absl::MakeSpan(ct_a.bool_or().literals()) ==
+               absl::MakeSpan(ct_b.bool_or().literals());
+      case ConstraintProto::kAtMostOne:
+        return absl::MakeSpan(ct_a.at_most_one().literals()) ==
+               absl::MakeSpan(ct_b.at_most_one().literals());
+      case ConstraintProto::kExactlyOne:
+        return absl::MakeSpan(ct_a.exactly_one().literals()) ==
+               absl::MakeSpan(ct_b.exactly_one().literals());
+      default:
+        // Slow (hopefully comparably rare) path.
+        ConstraintProto copy_a = ct_a;
+        ConstraintProto copy_b = ct_b;
+        copy_a.clear_name();
+        copy_b.clear_name();
+        if (ignore_enforcement) {
+          copy_a.mutable_enforcement_literal()->Clear();
+          copy_b.mutable_enforcement_literal()->Clear();
+        }
+        return copy_a.SerializeAsString() == copy_b.SerializeAsString();
+    }
+  }
+};
+
 }  // namespace
 
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
     const CpModelProto& model_proto, bool ignore_enforcement) {
   std::vector<std::pair<int, int>> result;
 
-  // We use a map hash: serialized_constraint_proto hash -> constraint index.
-  ConstraintProto copy;
-  std::string s;
-  absl::flat_hash_map<uint64_t, int> equiv_constraints;
+  // We use a map hash that uses the underlying constraint to compute the hash
+  // and the equality for the indices.
+  absl::flat_hash_map<int, int, ConstraintHashForDuplicateDetection,
+                      ConstraintEqForDuplicateDetection>
+      equiv_constraints(
+          model_proto.constraints_size(),
+          ConstraintHashForDuplicateDetection{&model_proto, ignore_enforcement},
+          ConstraintEqForDuplicateDetection{&model_proto, ignore_enforcement});
 
   // Create a special representative for the linear objective.
   if (model_proto.has_objective() && !ignore_enforcement) {
-    copy = CopyObjectiveForDuplicateDetection(model_proto.objective());
-    s = copy.SerializeAsString();
-    equiv_constraints[absl::Hash<std::string>()(s)] = kObjectiveConstraint;
+    equiv_constraints[kObjectiveConstraint] = kObjectiveConstraint;
   }
 
   const int num_constraints = model_proto.constraints().size();
@@ -13011,26 +13131,10 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
     // Nothing we will presolve in this case.
     if (ignore_enforcement && type == ConstraintProto::kBoolAnd) continue;
 
-    // We ignore names when comparing constraints.
-    //
-    // TODO(user): This is not particularly efficient.
-    copy = CopyConstraintForDuplicateDetection(model_proto.constraints(c),
-                                               ignore_enforcement);
-    s = copy.SerializeAsString();
-
-    const uint64_t hash = absl::Hash<std::string>()(s);
-    const auto [it, inserted] = equiv_constraints.insert({hash, c});
-    if (!inserted) {
+    const auto [it, inserted] = equiv_constraints.insert({c, c});
+    if (it->second != c) {
       // Already present!
-      const int other_c_with_same_hash = it->second;
-      copy = other_c_with_same_hash == kObjectiveConstraint
-                 ? CopyObjectiveForDuplicateDetection(model_proto.objective())
-                 : CopyConstraintForDuplicateDetection(
-                       model_proto.constraints(other_c_with_same_hash),
-                       ignore_enforcement);
-      if (s == copy.SerializeAsString()) {
-        result.push_back({c, other_c_with_same_hash});
-      }
+      result.push_back({c, it->second});
     }
   }
 

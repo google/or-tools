@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
 #define OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
 
+#include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -23,12 +25,21 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
 #include "absl/hash/hash.h"
+#include "absl/log/check.h"
+#include "absl/random/distributions.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/constraint_violation.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_model.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"

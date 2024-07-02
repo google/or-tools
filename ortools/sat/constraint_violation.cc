@@ -218,26 +218,32 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
   num_false_enforcement_.assign(num_constraints_, 0);
 
   // Update these numbers for all columns.
-  for (int var = 0; var < columns_.size(); ++var) {
+  const int num_vars = columns_.size();
+  for (int var = 0; var < num_vars; ++var) {
     const SpanData& data = columns_[var];
     const int64_t value = solution[var];
 
-    int i = data.start;
-    for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
-      const int c = ct_buffer_[i];
-      if (value == 0) num_false_enforcement_[c]++;
-    }
-    for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
-      const int c = ct_buffer_[i];
-      if (value == 1) num_false_enforcement_[c]++;
+    if (value == 0 && data.num_pos_literal > 0) {
+      const int* ct_indices = &ct_buffer_[data.start];
+      for (int k = 0; k < data.num_pos_literal; ++k) {
+        num_false_enforcement_[ct_indices[k]]++;
+      }
     }
 
-    if (value == 0) continue;
-    int j = data.linear_start;
-    for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
-      const int c = ct_buffer_[i];
-      const int64_t coeff = coeff_buffer_[j];
-      activities_[c] += coeff * value;
+    if (value == 1 && data.num_neg_literal > 0) {
+      const int* ct_indices = &ct_buffer_[data.start + data.num_pos_literal];
+      for (int k = 0; k < data.num_neg_literal; ++k) {
+        num_false_enforcement_[ct_indices[k]]++;
+      }
+    }
+
+    if (value != 0 && data.num_linear_entries > 0) {
+      const int* ct_indices =
+          &ct_buffer_[data.start + data.num_pos_literal + data.num_neg_literal];
+      const int64_t* coeffs = &coeff_buffer_[data.linear_start];
+      for (int k = 0; k < data.num_linear_entries; ++k) {
+        activities_[ct_indices[k]] += coeffs[k] * value;
+      }
     }
   }
 
@@ -249,9 +255,15 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
 }
 
 void LinearIncrementalEvaluator::ClearAffectedVariables() {
-  in_last_affected_variables_.resize(columns_.size(), false);
-  for (const int var : last_affected_variables_) {
-    in_last_affected_variables_[var] = false;
+  if (10 * last_affected_variables_.size() < columns_.size()) {
+    // Sparse.
+    in_last_affected_variables_.resize(columns_.size(), false);
+    for (const int var : last_affected_variables_) {
+      in_last_affected_variables_[var] = false;
+    }
+  } else {
+    // Dense.
+    in_last_affected_variables_.assign(columns_.size(), false);
   }
   last_affected_variables_.clear();
   DCHECK(std::all_of(in_last_affected_variables_.begin(),
@@ -315,19 +327,18 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
     };
 
     const int64_t old_distance = distances_[c];
+    const int64_t activity = activities_[c];
     for (int k = 0; k < data.num_linear_entries; ++k) {
       const int var = row_vars[k];
       const int64_t coeff = row_coeffs[k];
-      const int64_t new_distance =
-          violation(activities_[c] + coeff * jump_deltas[var]);
+      const int64_t diff =
+          violation(activity + coeff * jump_deltas[var]) - old_distance;
       if (!in_last_affected_variables_[var]) {
-        var_to_score_change[var] =
-            static_cast<double>(new_distance - old_distance);
+        var_to_score_change[var] = static_cast<double>(diff);
         in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
       } else {
-        var_to_score_change[var] +=
-            static_cast<double>(new_distance - old_distance);
+        var_to_score_change[var] += static_cast<double>(diff);
       }
     }
   }
@@ -1842,65 +1853,55 @@ bool LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
   return false;
 }
 
-void LsEvaluator::OverwriteCurrentSolution(absl::Span<const int64_t> solution) {
-  current_solution_.assign(solution.begin(), solution.end());
-}
-
-void LsEvaluator::ComputeAllViolations() {
+void LsEvaluator::ComputeAllViolations(absl::Span<const int64_t> solution) {
   // Linear constraints.
-  linear_evaluator_.ComputeInitialActivities(current_solution_);
+  linear_evaluator_.ComputeInitialActivities(solution);
 
   // Generic constraints.
   for (const auto& ct : constraints_) {
-    ct->InitializeViolation(current_solution_);
+    ct->InitializeViolation(solution);
   }
 
   RecomputeViolatedList(/*linear_only=*/false);
 }
 
-void LsEvaluator::UpdateAllNonLinearViolations() {
+void LsEvaluator::ComputeAllNonLinearViolations(
+    absl::Span<const int64_t> solution) {
   // Generic constraints.
   for (const auto& ct : constraints_) {
-    ct->InitializeViolation(current_solution_);
+    ct->InitializeViolation(solution);
   }
 }
 
-void LsEvaluator::UpdateNonLinearViolations(int var, int64_t new_value) {
-  const int64_t old_value = current_solution_[var];
-  if (old_value == new_value) return;
-
-  current_solution_[var] = new_value;
+void LsEvaluator::UpdateNonLinearViolations(
+    int var, int64_t old_value, absl::Span<const int64_t> new_solution) {
   for (const int general_ct_index : var_to_constraints_[var]) {
     const int c = general_ct_index + linear_evaluator_.num_constraints();
     const int64_t v0 = constraints_[general_ct_index]->violation();
-    constraints_[general_ct_index]->PerformMove(var, old_value,
-                                                current_solution_);
+    constraints_[general_ct_index]->PerformMove(var, old_value, new_solution);
     const int64_t violation_delta =
         constraints_[general_ct_index]->violation() - v0;
     if (violation_delta != 0) {
       last_update_violation_changes_.push_back(c);
     }
   }
-  current_solution_[var] = old_value;
 }
 
-void LsEvaluator::UpdateLinearScores(int var, int64_t value,
+void LsEvaluator::UpdateLinearScores(int var, int64_t old_value,
+                                     int64_t new_value,
                                      absl::Span<const double> weights,
                                      absl::Span<const int64_t> jump_deltas,
                                      absl::Span<double> jump_scores) {
   DCHECK(RefIsPositive(var));
-  const int64_t old_value = current_solution_[var];
-  if (old_value == value) return;
+  if (old_value == new_value) return;
   last_update_violation_changes_.clear();
   linear_evaluator_.ClearAffectedVariables();
-  linear_evaluator_.UpdateVariableAndScores(var, value - old_value, weights,
+  linear_evaluator_.UpdateVariableAndScores(var, new_value - old_value, weights,
                                             jump_deltas, jump_scores,
                                             &last_update_violation_changes_);
 }
 
-void LsEvaluator::UpdateVariableValue(int var, int64_t new_value) {
-  current_solution_[var] = new_value;
-
+void LsEvaluator::UpdateViolatedList() {
   // Maintain the list of violated constraints.
   dtime_ += 1e-8 * last_update_violation_changes_.size();
   for (const int c : last_update_violation_changes_) {
@@ -1977,22 +1978,26 @@ bool LsEvaluator::IsViolated(int c) const {
 
 double LsEvaluator::WeightedViolation(absl::Span<const double> weights) const {
   DCHECK_EQ(weights.size(), NumEvaluatorConstraints());
-  double violations = linear_evaluator_.WeightedViolation(weights);
+  double result = linear_evaluator_.WeightedViolation(weights);
 
   const int num_linear_constraints = linear_evaluator_.num_constraints();
   for (int c = 0; c < constraints_.size(); ++c) {
-    violations += static_cast<double>(constraints_[c]->violation()) *
-                  weights[num_linear_constraints + c];
+    result += static_cast<double>(constraints_[c]->violation()) *
+              weights[num_linear_constraints + c];
   }
-  return violations;
+  return result;
 }
 
-double LsEvaluator::WeightedNonLinearViolationDelta(
-    absl::Span<const double> weights, int var, int64_t delta) const {
-  const int64_t old_value = current_solution_[var];
-  double violation_delta = 0;
-  // We change the mutable solution here, are restore it after the evaluation.
-  current_solution_[var] += delta;
+double LsEvaluator::WeightedViolationDelta(
+    bool linear_only, absl::Span<const double> weights, int var, int64_t delta,
+    absl::Span<int64_t> mutable_solution) const {
+  double result = linear_evaluator_.WeightedViolationDelta(weights, var, delta);
+  if (linear_only) return result;
+
+  // We change the mutable solution here, and restore it after the evaluation.
+  const int64_t old_value = mutable_solution[var];
+  mutable_solution[var] += delta;
+
   const int num_linear_constraints = linear_evaluator_.num_constraints();
   for (const int ct_index : var_to_constraints_[var]) {
     // We assume linear time delta computation in number of variables.
@@ -2000,21 +2005,15 @@ double LsEvaluator::WeightedNonLinearViolationDelta(
     dtime_ += 1e-8 * static_cast<double>(constraint_to_vars_[ct_index].size());
 
     DCHECK_LT(ct_index, constraints_.size());
-    const int64_t delta = constraints_[ct_index]->ViolationDelta(
-        var, old_value, current_solution_);
-    violation_delta +=
-        static_cast<double>(delta) * weights[ct_index + num_linear_constraints];
+    const int64_t ct_delta = constraints_[ct_index]->ViolationDelta(
+        var, old_value, mutable_solution);
+    result += static_cast<double>(ct_delta) *
+              weights[ct_index + num_linear_constraints];
   }
-  // Restore.
-  current_solution_[var] -= delta;
-  return violation_delta;
-}
 
-double LsEvaluator::WeightedViolationDelta(absl::Span<const double> weights,
-                                           int var, int64_t delta) const {
-  DCHECK_LT(var, current_solution_.size());
-  return linear_evaluator_.WeightedViolationDelta(weights, var, delta) +
-         WeightedNonLinearViolationDelta(weights, var, delta);
+  // Restore.
+  mutable_solution[var] = old_value;
+  return result;
 }
 
 bool LsEvaluator::VariableOnlyInLinearConstraintWithConvexViolationChange(

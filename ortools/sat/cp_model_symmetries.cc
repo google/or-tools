@@ -175,19 +175,21 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   };
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
-  auto new_node = [&initial_equivalence_classes, &graph,
-                   &color_id_generator](const std::vector<int64_t>& color) {
+  auto new_node_from_id = [&initial_equivalence_classes, &graph](int color_id) {
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
-    initial_equivalence_classes->push_back(color_id_generator.GetId(color));
+    initial_equivalence_classes->push_back(color_id);
 
     // In some corner cases, we create a node but never uses it. We still
     // want it to be there.
     graph->AddNode(node);
     return node;
   };
-
+  auto new_node = [&new_node_from_id,
+                   &color_id_generator](const std::vector<int64_t>& color) {
+    return new_node_from_id(color_id_generator.GetId(color));
+  };
   // For two variables to be in the same equivalence class, they need to have
   // the same objective coefficient, and the same possible bounds.
   //
@@ -211,29 +213,43 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     CHECK_EQ(v, new_node(tmp_color));
   }
 
+  const int color_id_for_coeff_one =
+      color_id_generator.GetId({VAR_COEFFICIENT_NODE, 1});
+  const int color_id_for_coeff_minus_one =
+      color_id_generator.GetId({VAR_COEFFICIENT_NODE, -1});
+
   // We will lazily create "coefficient nodes" that correspond to a variable
   // with a given coefficient.
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int> coefficient_nodes;
-  auto get_coefficient_node = [&new_node, &graph, &coefficient_nodes,
-                               &tmp_color](int var, int64_t coeff) {
-    const int var_node = var;
-    DCHECK(RefIsPositive(var));
+  auto get_coefficient_node =
+      [&new_node_from_id, &graph, &coefficient_nodes, &color_id_generator,
+       &tmp_color, color_id_for_coeff_minus_one](int var, int64_t coeff) {
+        const int var_node = var;
+        DCHECK(RefIsPositive(var));
 
-    // For a coefficient of one, which are the most common, we can optimize the
-    // size of the graph by omitting the coefficient node altogether and using
-    // directly the var_node in this case.
-    if (coeff == 1) return var_node;
+        // For a coefficient of one, which are the most common, we can optimize
+        // the size of the graph by omitting the coefficient node altogether and
+        // using directly the var_node in this case.
+        if (coeff == 1) return var_node;
 
-    const auto insert =
-        coefficient_nodes.insert({std::make_pair(var, coeff), 0});
-    if (!insert.second) return insert.first->second;
+        const auto insert =
+            coefficient_nodes.insert({std::make_pair(var, coeff), 0});
+        if (!insert.second) return insert.first->second;
 
-    tmp_color = {VAR_COEFFICIENT_NODE, coeff};
-    const int secondary_node = new_node(tmp_color);
-    graph->AddArc(var_node, secondary_node);
-    insert.first->second = secondary_node;
-    return secondary_node;
-  };
+        int color_id;
+        // Because -1 is really common (also used for negated literal), we have
+        // a fast path for it.
+        if (coeff == -1) {
+          color_id = color_id_for_coeff_minus_one;
+        } else {
+          tmp_color = {VAR_COEFFICIENT_NODE, coeff};
+          color_id = color_id_generator.GetId(tmp_color);
+        }
+        const int secondary_node = new_node_from_id(color_id);
+        graph->AddArc(var_node, secondary_node);
+        insert.first->second = secondary_node;
+        return secondary_node;
+      };
 
   // For a literal we use the same as a coefficient 1 or -1. We can do that
   // because literal and (var, coefficient) never appear together in the same
@@ -255,15 +271,16 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // node. This makes sure that any permutation that touch a variable, must
   // permute its coefficient nodes accordingly.
   absl::flat_hash_set<std::pair<int, int>> implications;
-  auto get_implication_node = [&new_node, &graph, &coefficient_nodes,
-                               &tmp_color](int ref) {
+  auto get_implication_node = [&new_node_from_id, &graph, &coefficient_nodes,
+                               color_id_for_coeff_one,
+                               color_id_for_coeff_minus_one](int ref) {
     const int var = PositiveRef(ref);
     const int64_t coeff = RefIsPositive(ref) ? 1 : -1;
     const auto insert =
         coefficient_nodes.insert({std::make_pair(var, coeff), 0});
     if (!insert.second) return insert.first->second;
-    tmp_color = {VAR_COEFFICIENT_NODE, coeff};
-    const int secondary_node = new_node(tmp_color);
+    const int secondary_node = new_node_from_id(
+        coeff == 1 ? color_id_for_coeff_one : color_id_for_coeff_minus_one);
     graph->AddArc(var, secondary_node);
     insert.first->second = secondary_node;
     return secondary_node;
