@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -57,17 +58,17 @@ class LinearIncrementalEvaluator {
   // and before the class starts to be used. This is DCHECKed.
   void PrecomputeCompactView(absl::Span<const int64_t> var_max_variation);
 
-  // Compute activities and update them.
+  // Compute activities.
   void ComputeInitialActivities(absl::Span<const int64_t> solution);
-  void Update(int var, int64_t delta,
-              std::vector<std::pair<int, int64_t>>* violation_deltas = nullptr);
 
-  // Function specific to the feasibility jump heuristic.
+  // Update the activities of each constraints.
+  // Also update the current score for the given deltas.
+  //
   // Note that the score of the changed variable will not be updated correctly!
   void UpdateVariableAndScores(
       int var, int64_t delta, absl::Span<const double> weights,
       absl::Span<const int64_t> jump_deltas, absl::Span<double> jump_scores,
-      std::vector<std::pair<int, int64_t>>* violation_deltas = nullptr);
+      std::vector<int>* constraints_with_changed_violations);
 
   // Also for feasibility jump.
   void UpdateScoreOnWeightUpdate(int c, absl::Span<const int64_t> jump_deltas,
@@ -81,7 +82,7 @@ class LinearIncrementalEvaluator {
   // variable for which the contribution to the violation of one constraint
   // might have decreased for any jump value.
   void ClearAffectedVariables();
-  const std::vector<int>& VariablesAffectedByLastUpdate() const {
+  absl::Span<const int> VariablesAffectedByLastUpdate() const {
     return last_affected_variables_;
   }
 
@@ -123,7 +124,7 @@ class LinearIncrementalEvaluator {
   bool ViolationChangeIsConvex(int var) const;
 
   double DeterministicTime() const {
-    return 5e-9 * static_cast<double>(dtime_);
+    return 5e-9 * static_cast<double>(num_ops_);
   }
 
   int64_t ObjectiveCoefficient(int var) const {
@@ -237,9 +238,9 @@ class LinearIncrementalEvaluator {
   std::vector<double> cached_scores_;
 
   std::vector<bool> in_last_affected_variables_;
-  std::vector<int> last_affected_variables_;
+  FixedCapacityVector<int> last_affected_variables_;
 
-  mutable size_t dtime_ = 0;
+  mutable size_t num_ops_ = 0;
 };
 
 // View of a generic (non linear) constraint for the LsEvaluator.
@@ -338,7 +339,7 @@ class LsEvaluator {
                           absl::Span<const double> weights,
                           absl::Span<const int64_t> jump_deltas,
                           absl::Span<double> jump_scores);
-  const std::vector<int>& VariablesAffectedByLastLinearUpdate() const {
+  absl::Span<const int> VariablesAffectedByLastLinearUpdate() const {
     return linear_evaluator_.VariablesAffectedByLastUpdate();
   }
 
@@ -410,8 +411,7 @@ class LsEvaluator {
     return &current_solution_;
   }
 
-  const std::vector<std::pair<int, int64_t>>& last_update_violation_changes()
-      const {
+  const std::vector<int>& last_update_violation_changes() const {
     return last_update_violation_changes_;
   }
 
@@ -433,7 +433,7 @@ class LsEvaluator {
 
   // TODO(user): Properly account all big time consumers.
   double DeterministicTime() const {
-    return linear_evaluator_.DeterministicTime();
+    return linear_evaluator_.DeterministicTime() + dtime_;
   }
 
  private:
@@ -460,8 +460,10 @@ class LsEvaluator {
   UnsafeDenseSet<int> violated_constraints_;
   std::vector<int> num_violated_constraint_per_var_ignoring_objective_;
 
-  // Constraint index and violation delta for the last update.
-  std::vector<std::pair<int, int64_t>> last_update_violation_changes_;
+  // Constraint index with changed violations.
+  std::vector<int> last_update_violation_changes_;
+
+  mutable double dtime_ = 0;
 };
 
 // ================================

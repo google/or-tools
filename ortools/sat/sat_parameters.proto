@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 292
+// NEXT TAG: 293
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1018,7 +1018,7 @@ message SatParameters {
 
   // Disable every other type of subsolver, setting this turns CP-SAT into a
   // pure local-search solver.
-  optional bool test_feasibility_jump = 240 [default = false];
+  optional bool use_ls_only = 240 [default = false];
 
   // On each restart, we randomly choose if we use decay (with this parameter)
   // or no decay.
@@ -1028,14 +1028,16 @@ message SatParameters {
   optional int32 feasibility_jump_linearization_level = 257 [default = 2];
 
   // This is a factor that directly influence the work before each restart.
-  // Setting this to zero disable restart, and increasing it lead to longer
-  // restarts.
+  // Increasing it leads to longer restart.
   optional int32 feasibility_jump_restart_factor = 258 [default = 1];
+
+  // How much dtime for each LS batch.
+  optional double feasibility_jump_batch_dtime = 292 [default = 0.1];
 
   // Probability for a variable to have a non default value upon restarts or
   // perturbations.
   optional double feasibility_jump_var_randomization_probability = 247
-      [default = 0.0];
+      [default = 0.05];
 
   // Max distance between the default value and the pertubated value relative to
   // the range of the domain of the variable.
@@ -1294,7 +1296,9 @@ message SatParameters {
   // Whether we try to automatically detect the symmetries in a model and
   // exploit them. Currently, at level 1 we detect them in presolve and try
   // to fix Booleans. At level 2, we also do some form of dynamic symmetry
-  // breaking during search.
+  // breaking during search. At level 3, we also detect symmetries for very
+  // large models, which can be slow. At level 4, we try to break as much
+  // symmetry as possible in presolve.
   optional int32 symmetry_level = 183 [default = 2];
 
   // The new linear propagation code treat all constraints at once and use

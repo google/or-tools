@@ -99,6 +99,10 @@ class SharedSolutionRepository {
   // Returns the solution #i where i must be smaller than NumSolutions().
   Solution GetSolution(int index) const;
 
+  // Returns the rank of the best known solution.
+  // You shouldn't call this if NumSolutions() is zero.
+  int64_t GetBestRank() const;
+
   // Returns the variable value of variable 'var_index' from solution
   // 'solution_index' where solution_index must be smaller than NumSolutions()
   // and 'var_index' must be smaller than number of variables.
@@ -773,6 +777,13 @@ SharedSolutionRepository<ValueType>::GetSolution(int i) const {
   absl::MutexLock mutex_lock(&mutex_);
   ++num_queried_;
   return solutions_[i];
+}
+
+template <typename ValueType>
+int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  CHECK_GT(solutions_.size(), 0);
+  return solutions_[0].rank;
 }
 
 template <typename ValueType>

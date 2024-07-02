@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -25,13 +26,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/affine_relation.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
@@ -347,10 +345,26 @@ class CpModelPresolver {
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
+
+  struct IntervalConstraintEq {
+    const CpModelProto* working_model;
+    bool operator()(int a, int b) const;
+  };
+
+  struct IntervalConstraintHash {
+    const CpModelProto* working_model;
+    std::size_t operator()(int ct_idx) const;
+  };
+
+  // Used by DetectDuplicateIntervals() and RemoveEmptyConstraints(). Note that
+  // changing the interval constraints of the model will change the hash and
+  // invalidate this hash map.
+  absl::flat_hash_map<int, int, IntervalConstraintHash, IntervalConstraintEq>
+      interval_representative_;
 };
 
 // This helper class perform copy with simplification from a model and a
-// partial assignment to another model. The purpose is to miminize the size of
+// partial assignment to another model. The purpose is to minimize the size of
 // the copied model, as well as to reduce the pressure on the memory sub-system.
 //
 // It is currently used by the LNS part, but could be used with any other scheme

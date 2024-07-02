@@ -92,6 +92,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(mip_drop_tolerance);
   TEST_IS_FINITE(shared_tree_worker_objective_split_probability);
   TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
+  TEST_IS_FINITE(feasibility_jump_batch_dtime);
 
   TEST_POSITIVE(at_most_one_max_expansion_size);
 

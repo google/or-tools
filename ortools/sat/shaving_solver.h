@@ -45,13 +45,13 @@ class ObjectiveShavingSolver : public SubSolver {
 
   bool TaskIsAvailable() override;
 
-  std::function<void()> GenerateTask(int64_t /*task_id*/) override;
+  std::function<void()> GenerateTask(int64_t task_id) override;
   void Synchronize() override;
 
  private:
   std::string Info();
 
-  bool ResetModel();
+  bool ResetModel(int64_t task_id);
 
   // This is fixed at construction.
   SatParameters local_params_;
@@ -95,7 +95,7 @@ class VariablesShavingSolver : public SubSolver {
   void ProcessLocalResponse(const CpSolverResponse& local_response,
                             const State& state);
 
-  std::function<void()> GenerateTask(int64_t /*task_id*/) override;
+  std::function<void()> GenerateTask(int64_t task_id) override;
 
   void Synchronize() override;
 
@@ -114,7 +114,7 @@ class VariablesShavingSolver : public SubSolver {
                                CpModelProto* shaving_proto)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  bool ResetModel(State* state, Model* local_sat_model,
+  bool ResetModel(int64_t task_id, State* state, Model* local_sat_model,
                   CpModelProto* shaving_proto);
 
   // This is fixed at construction.

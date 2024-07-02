@@ -114,7 +114,7 @@ class HittingSetOptimizer {
   void TightenMpModel();
 
   // Processes the cores from the SAT solver and add them to the MPModel.
-  void AddCoresToTheMpModel(const std::vector<std::vector<Literal>>& cores);
+  void AddCoresToTheMpModel(absl::Span<const std::vector<Literal>> cores);
 
   // Builds the assumptions from the current MP solution.
   std::vector<Literal> BuildAssumptions(

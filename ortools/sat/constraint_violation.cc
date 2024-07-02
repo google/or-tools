@@ -248,61 +248,6 @@ void LinearIncrementalEvaluator::ComputeInitialActivities(
   }
 }
 
-// Note that the code assumes that a column has no duplicates ct indices.
-void LinearIncrementalEvaluator::Update(
-    int var, int64_t delta,
-    std::vector<std::pair<int, int64_t>>* violation_deltas) {
-  DCHECK(!creation_phase_);
-  DCHECK_NE(delta, 0);
-  if (var >= columns_.size()) return;
-
-  const SpanData& data = columns_[var];
-  int i = data.start;
-  for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
-    const int c = ct_buffer_[i];
-    const int64_t v0 = Violation(c);
-    if (delta == 1) {
-      num_false_enforcement_[c]--;
-      DCHECK_GE(num_false_enforcement_[c], 0);
-    } else {
-      num_false_enforcement_[c]++;
-    }
-    const int64_t v1 = Violation(c);
-    is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back({c, v1 - v0});
-    }
-  }
-  for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
-    const int c = ct_buffer_[i];
-    const int64_t v0 = Violation(c);
-    if (delta == -1) {
-      num_false_enforcement_[c]--;
-      DCHECK_GE(num_false_enforcement_[c], 0);
-    } else {
-      num_false_enforcement_[c]++;
-    }
-    const int64_t v1 = Violation(c);
-    is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back({c, v1 - v0});
-    }
-  }
-  int j = data.linear_start;
-  for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
-    const int c = ct_buffer_[i];
-    const int64_t v0 = Violation(c);
-    const int64_t coeff = coeff_buffer_[j];
-    activities_[c] += coeff * delta;
-    distances_[c] = domains_[c].Distance(activities_[c]);
-    const int64_t v1 = Violation(c);
-    is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back({c, v1 - v0});
-    }
-  }
-}
-
 void LinearIncrementalEvaluator::ClearAffectedVariables() {
   in_last_affected_variables_.resize(columns_.size(), false);
   for (const int var : last_affected_variables_) {
@@ -332,7 +277,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
   if (enforcement_change != 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    dtime_ += end;
+    num_ops_ += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       if (!in_last_affected_variables_[var]) {
@@ -346,23 +291,44 @@ void LinearIncrementalEvaluator::UpdateScoreOnWeightUpdate(
   }
 
   // Update linear part.
-  int i = data.start + data.num_pos_literal + data.num_neg_literal;
-  int j = data.linear_start;
-  dtime_ += 2 * data.num_linear_entries;
-  const int64_t old_distance = distances_[c];
-  for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
-    const int var = row_var_buffer_[i];
-    const int64_t coeff = row_coeff_buffer_[j];
-    const int64_t new_distance =
-        domains_[c].Distance(activities_[c] + coeff * jump_deltas[var]);
-    if (!in_last_affected_variables_[var]) {
-      var_to_score_change[var] =
-          static_cast<double>(new_distance - old_distance);
-      in_last_affected_variables_[var] = true;
-      last_affected_variables_.push_back(var);
-    } else {
-      var_to_score_change[var] +=
-          static_cast<double>(new_distance - old_distance);
+  if (data.num_linear_entries > 0) {
+    const int* row_vars = &row_var_buffer_[data.start + data.num_pos_literal +
+                                           data.num_neg_literal];
+    const int64_t* row_coeffs = &row_coeff_buffer_[data.linear_start];
+    num_ops_ += 2 * data.num_linear_entries;
+
+    // Computing general Domain distance is slow.
+    // TODO(user): optimize even more for one sided constraints.
+    // Note(user): I tried to factor the two usage of this, but it is slower.
+    const Domain& rhs = domains_[c];
+    const int64_t rhs_min = rhs.Min();
+    const int64_t rhs_max = rhs.Max();
+    const bool is_simple = rhs.NumIntervals() == 2;
+    const auto violation = [&rhs, rhs_min, rhs_max, is_simple](int64_t v) {
+      if (v >= rhs_max) {
+        return v - rhs_max;
+      } else if (v <= rhs_min) {
+        return rhs_min - v;
+      } else {
+        return is_simple ? int64_t{0} : rhs.Distance(v);
+      }
+    };
+
+    const int64_t old_distance = distances_[c];
+    for (int k = 0; k < data.num_linear_entries; ++k) {
+      const int var = row_vars[k];
+      const int64_t coeff = row_coeffs[k];
+      const int64_t new_distance =
+          violation(activities_[c] + coeff * jump_deltas[var]);
+      if (!in_last_affected_variables_[var]) {
+        var_to_score_change[var] =
+            static_cast<double>(new_distance - old_distance);
+        in_last_affected_variables_[var] = true;
+        last_affected_variables_.push_back(var);
+      } else {
+        var_to_score_change[var] +=
+            static_cast<double>(new_distance - old_distance);
+      }
     }
   }
 }
@@ -379,7 +345,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
   if (weight_time_violation > 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    dtime_ += end;
+    num_ops_ += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] -= weight_time_violation;
@@ -394,7 +360,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyEnforced(
   {
     int i = data.start + data.num_pos_literal + data.num_neg_literal;
     int j = data.linear_start;
-    dtime_ += 2 * data.num_linear_entries;
+    num_ops_ += 2 * data.num_linear_entries;
     const int64_t old_distance = distances_[c];
     for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
       const int var = row_var_buffer_[i];
@@ -424,7 +390,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   if (weight_time_violation > 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    dtime_ += end;
+    num_ops_ += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] += weight_time_violation;
@@ -435,7 +401,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnNewlyUnenforced(
   {
     int i = data.start + data.num_pos_literal + data.num_neg_literal;
     int j = data.linear_start;
-    dtime_ += 2 * data.num_linear_entries;
+    num_ops_ += 2 * data.num_linear_entries;
     const int64_t old_distance = distances_[c];
     for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
       const int var = row_var_buffer_[i];
@@ -461,7 +427,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
 
   const SpanData& data = rows_[c];
   int i = data.start;
-  dtime_ += data.num_pos_literal;
+  num_ops_ += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == 1) {
@@ -472,7 +438,7 @@ void LinearIncrementalEvaluator::UpdateScoreOfEnforcementIncrease(
       }
     }
   }
-  dtime_ += data.num_neg_literal;
+  num_ops_ += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int var = row_var_buffer_[i];
     if (jump_deltas[var] == -1) {
@@ -523,7 +489,7 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   if (delta != 0.0) {
     int i = data.start;
     const int end = data.num_pos_literal + data.num_neg_literal;
-    dtime_ += end;
+    num_ops_ += end;
     for (int k = 0; k < end; ++k, ++i) {
       const int var = row_var_buffer_[i];
       jump_scores[var] += delta;
@@ -540,29 +506,48 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   if (min_range >= domains_[c].Max() || max_range <= domains_[c].Min()) return;
 
   // Update linear part.
-  {
-    int i = data.start + data.num_pos_literal + data.num_neg_literal;
-    int j = data.linear_start;
-    dtime_ += 2 * data.num_linear_entries;
+  if (data.num_linear_entries > 0) {
+    const int* row_vars = &row_var_buffer_[data.start + data.num_pos_literal +
+                                           data.num_neg_literal];
+    const int64_t* row_coeffs = &row_coeff_buffer_[data.linear_start];
+    num_ops_ += 2 * data.num_linear_entries;
+
+    // Computing general Domain distance is slow.
+    // TODO(user): optimize even more for one sided constraints.
+    // Note(user): I tried to factor the two usage of this, but it is slower.
     const Domain& rhs = domains_[c];
+    const int64_t rhs_min = rhs.Min();
+    const int64_t rhs_max = rhs.Max();
+    const bool is_simple = rhs.NumIntervals() == 2;
+    const auto violation = [&rhs, rhs_min, rhs_max, is_simple](int64_t v) {
+      if (v >= rhs_max) {
+        return v - rhs_max;
+      } else if (v <= rhs_min) {
+        return rhs_min - v;
+      } else {
+        return is_simple ? int64_t{0} : rhs.Distance(v);
+      }
+    };
+
     const int64_t old_a_minus_new_a =
-        distances_[c] - rhs.Distance(new_activity);
-    for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
-      const int var = row_var_buffer_[i];
-      const int64_t impact = row_coeff_buffer_[j] * jump_deltas[var];
-      const int64_t old_b = rhs.Distance(old_activity + impact);
-      const int64_t new_b = rhs.Distance(new_activity + impact);
+        distances_[c] - domains_[c].Distance(new_activity);
+    for (int k = 0; k < data.num_linear_entries; ++k) {
+      const int var = row_vars[k];
+      const int64_t impact = row_coeffs[k] * jump_deltas[var];
+      const int64_t old_b = violation(old_activity + impact);
+      const int64_t new_b = violation(new_activity + impact);
 
       // The old score was:
       //   weight * static_cast<double>(old_b - old_a);
       // the new score is
       //   weight * static_cast<double>(new_b - new_a); so the diff is:
-      //
+      //   weight * static_cast<double>(new_b - new_a - old_b + old_a)
+      const int64_t diff = old_a_minus_new_a + new_b - old_b;
+
       // TODO(user): If a variable is at its lower (resp. upper) bound, then
       // we know that the score will always move in the same direction, so we
       // might skip the last_affected_variables_ update.
-      jump_scores[var] +=
-          weight * static_cast<double>(old_a_minus_new_a + new_b - old_b);
+      jump_scores[var] += weight * static_cast<double>(diff);
       if (!in_last_affected_variables_[var]) {
         in_last_affected_variables_[var] = true;
         last_affected_variables_.push_back(var);
@@ -571,16 +556,18 @@ void LinearIncrementalEvaluator::UpdateScoreOnActivityChange(
   }
 }
 
+// Note that the code assumes that a column has no duplicates ct indices.
 void LinearIncrementalEvaluator::UpdateVariableAndScores(
     int var, int64_t delta, absl::Span<const double> weights,
     absl::Span<const int64_t> jump_deltas, absl::Span<double> jump_scores,
-    std::vector<std::pair<int, int64_t>>* violation_deltas) {
+    std::vector<int>* constraints_with_changed_violation) {
   DCHECK(!creation_phase_);
   DCHECK_NE(delta, 0);
   if (var >= columns_.size()) return;
 
   const SpanData& data = columns_[var];
   int i = data.start;
+  num_ops_ += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -608,10 +595,11 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
     }
     const int64_t v1 = Violation(c);
     is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back(std::make_pair(c, v1 - v0));
+    if (v1 != v0) {
+      constraints_with_changed_violation->push_back(c);
     }
   }
+  num_ops_ += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -639,11 +627,12 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
     }
     const int64_t v1 = Violation(c);
     is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back(std::make_pair(c, v1 - v0));
+    if (v1 != v0) {
+      constraints_with_changed_violation->push_back(c);
     }
   }
   int j = data.linear_start;
+  num_ops_ += 2 * data.num_linear_entries;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     const int64_t v0 = Violation(c);
@@ -669,8 +658,8 @@ void LinearIncrementalEvaluator::UpdateVariableAndScores(
     distances_[c] = domains_[c].Distance(activities_[c]);
     const int64_t v1 = Violation(c);
     is_violated_[c] = v1 > 0;
-    if (violation_deltas != nullptr) {
-      violation_deltas->push_back(std::make_pair(c, v1 - v0));
+    if (v1 != v0) {
+      constraints_with_changed_violation->push_back(c);
     }
   }
 }
@@ -719,7 +708,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
 
   int i = data.start;
   double result = 0.0;
-  dtime_ += data.num_pos_literal;
+  num_ops_ += data.num_pos_literal;
   for (int k = 0; k < data.num_pos_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] == 0) {
@@ -733,7 +722,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
     }
   }
 
-  dtime_ += data.num_neg_literal;
+  num_ops_ += data.num_neg_literal;
   for (int k = 0; k < data.num_neg_literal; ++k, ++i) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] == 0) {
@@ -748,7 +737,7 @@ double LinearIncrementalEvaluator::WeightedViolationDelta(
   }
 
   int j = data.linear_start;
-  dtime_ += 2 * data.num_linear_entries;
+  num_ops_ += 2 * data.num_linear_entries;
   for (int k = 0; k < data.num_linear_entries; ++k, ++i, ++j) {
     const int c = ct_buffer_[i];
     if (num_false_enforcement_[c] > 0) continue;
@@ -947,6 +936,7 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
 
   cached_deltas_.assign(columns_.size(), 0);
   cached_scores_.assign(columns_.size(), 0);
+  last_affected_variables_.ClearAndReserve(columns_.size());
 }
 
 bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
@@ -1887,7 +1877,9 @@ void LsEvaluator::UpdateNonLinearViolations(int var, int64_t new_value) {
                                                 current_solution_);
     const int64_t violation_delta =
         constraints_[general_ct_index]->violation() - v0;
-    last_update_violation_changes_.push_back({c, violation_delta});
+    if (violation_delta != 0) {
+      last_update_violation_changes_.push_back(c);
+    }
   }
   current_solution_[var] = old_value;
 }
@@ -1910,7 +1902,8 @@ void LsEvaluator::UpdateVariableValue(int var, int64_t new_value) {
   current_solution_[var] = new_value;
 
   // Maintain the list of violated constraints.
-  for (const auto [c, delta] : last_update_violation_changes_) {
+  dtime_ += 1e-8 * last_update_violation_changes_.size();
+  for (const int c : last_update_violation_changes_) {
     UpdateViolatedList(c);
   }
 }
@@ -2002,6 +1995,10 @@ double LsEvaluator::WeightedNonLinearViolationDelta(
   current_solution_[var] += delta;
   const int num_linear_constraints = linear_evaluator_.num_constraints();
   for (const int ct_index : var_to_constraints_[var]) {
+    // We assume linear time delta computation in number of variables.
+    // TODO(user): refine on a per constraint basis.
+    dtime_ += 1e-8 * static_cast<double>(constraint_to_vars_[ct_index].size());
+
     DCHECK_LT(ct_index, constraints_.size());
     const int64_t delta = constraints_[ct_index]->ViolationDelta(
         var, old_value, current_solution_);
@@ -2042,6 +2039,7 @@ void LsEvaluator::UpdateViolatedList(const int c) {
     // The constraint is violated. Add if needed.
     if (!inserted) return;
     if (IsObjectiveConstraint(c)) return;
+    dtime_ += 1e-8 * ConstraintToVars(c).size();
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] += 1;
     }
@@ -2049,6 +2047,7 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
   if (violated_constraints_.erase(c) == 1) {
     if (IsObjectiveConstraint(c)) return;
+    dtime_ += 1e-8 * ConstraintToVars(c).size();
     for (const int v : ConstraintToVars(c)) {
       num_violated_constraint_per_var_ignoring_objective_[v] -= 1;
     }

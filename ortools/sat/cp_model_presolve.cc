@@ -105,12 +105,13 @@ bool CpModelPresolver::RemoveConstraint(ConstraintProto* ct) {
   return true;
 }
 
-// Remove all empty constraints. Note that we need to remap the interval
-// references.
+// Remove all empty constraints and duplicated intervals. Note that we need to
+// remap the interval references.
 //
 // Now that they have served their purpose, we also remove dummy constraints,
 // otherwise that causes issue because our model are invalid in tests.
 void CpModelPresolver::RemoveEmptyConstraints() {
+  interval_representative_.clear();
   std::vector<int> interval_mapping(context_->working_model->constraints_size(),
                                     -1);
   int new_num_constraints = 0;
@@ -120,11 +121,22 @@ void CpModelPresolver::RemoveEmptyConstraints() {
     const auto type = context_->working_model->constraints(c).constraint_case();
     if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
     if (type == ConstraintProto::kDummyConstraint) continue;
-    if (type == ConstraintProto::kInterval) {
-      interval_mapping[c] = new_num_constraints;
-    }
-    context_->working_model->mutable_constraints(new_num_constraints++)
+    context_->working_model->mutable_constraints(new_num_constraints)
         ->Swap(context_->working_model->mutable_constraints(c));
+    if (type == ConstraintProto::kInterval) {
+      // Warning: interval_representative_ holds a pointer to the working model
+      // to compute hashes, so we need to be careful about not changing a
+      // constraint after its index is added to the map.
+      const auto [it, inserted] = interval_representative_.insert(
+          {new_num_constraints, new_num_constraints});
+      interval_mapping[c] = it->second;
+      if (it->second != new_num_constraints) {
+        context_->UpdateRuleStats(
+            "intervals: change duplicate index across constraints");
+        continue;
+      }
+    }
+    new_num_constraints++;
   }
   google::protobuf::util::Truncate(
       context_->working_model->mutable_constraints(), new_num_constraints);
@@ -5737,14 +5749,17 @@ LinearExpressionProto ConstantExpressionProto(int64_t value) {
 
 void CpModelPresolver::DetectDuplicateIntervals(
     int c, google::protobuf::RepeatedField<int32_t>* intervals) {
+  interval_representative_.clear();
   bool changed = false;
   const int size = intervals->size();
   for (int i = 0; i < size; ++i) {
     const int index = (*intervals)[i];
-    const int new_index = context_->GetIntervalRepresentative(index);
-    if (index != new_index) {
+    const auto [it, inserted] = interval_representative_.insert({index, index});
+    if (it->second != index) {
       changed = true;
-      intervals->Set(i, new_index);
+      intervals->Set(i, it->second);
+      context_->UpdateRuleStats(
+          "intervals: change duplicate index inside constraint");
     }
   }
   if (changed) context_->UpdateConstraintVariableUsage(c);
@@ -12382,7 +12397,10 @@ CpModelPresolver::CpModelPresolver(PresolveContext* context,
     : postsolve_mapping_(postsolve_mapping),
       context_(context),
       logger_(context->logger()),
-      time_limit_(context->time_limit()) {}
+      time_limit_(context->time_limit()),
+      interval_representative_(context->working_model->constraints_size(),
+                               IntervalConstraintHash{context->working_model},
+                               IntervalConstraintEq{context->working_model}) {}
 
 CpSolverStatus CpModelPresolver::InfeasibleStatus() {
   if (logger_->LoggingIsEnabled()) context_->LogInfo();
@@ -13017,6 +13035,40 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
   }
 
   return result;
+}
+
+namespace {
+bool SimpleLinearExprEq(const LinearExpressionProto& a,
+                        const LinearExpressionProto& b) {
+  return absl::MakeSpan(a.vars()) == absl::MakeSpan(b.vars()) &&
+         absl::MakeSpan(a.coeffs()) == absl::MakeSpan(b.coeffs()) &&
+         a.offset() == b.offset();
+}
+
+std::size_t LinearExpressionHash(const LinearExpressionProto& expr) {
+  return absl::HashOf(absl::MakeSpan(expr.vars()),
+                      absl::MakeSpan(expr.coeffs()), expr.offset());
+}
+
+}  // namespace
+
+bool CpModelPresolver::IntervalConstraintEq::operator()(int a, int b) const {
+  const ConstraintProto& ct_a = working_model->constraints(a);
+  const ConstraintProto& ct_b = working_model->constraints(b);
+  return absl::MakeSpan(ct_a.enforcement_literal()) ==
+             absl::MakeSpan(ct_b.enforcement_literal()) &&
+         SimpleLinearExprEq(ct_a.interval().start(), ct_b.interval().start()) &&
+         SimpleLinearExprEq(ct_a.interval().size(), ct_b.interval().size()) &&
+         SimpleLinearExprEq(ct_a.interval().end(), ct_b.interval().end());
+}
+
+std::size_t CpModelPresolver::IntervalConstraintHash::operator()(
+    int ct_idx) const {
+  const ConstraintProto& ct = working_model->constraints(ct_idx);
+  return absl::HashOf(absl::MakeSpan(ct.enforcement_literal()),
+                      LinearExpressionHash(ct.interval().start()),
+                      LinearExpressionHash(ct.interval().size()),
+                      LinearExpressionHash(ct.interval().end()));
 }
 
 }  // namespace sat

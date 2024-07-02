@@ -65,8 +65,7 @@ bool ObjectiveShavingSolver::TaskIsAvailable() {
   return !task_in_flight_;
 }
 
-std::function<void()> ObjectiveShavingSolver::GenerateTask(
-    int64_t /*task_id*/) {
+std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
   {
     absl::MutexLock mutex_lock(&mutex_);
     stop_current_chunk_.store(false);
@@ -74,8 +73,8 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(
     objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
     objective_ub_ = shared_->response->GetInnerObjectiveUpperBound();
   }
-  return [this]() {
-    if (ResetModel()) {
+  return [this, task_id]() {
+    if (ResetModel(task_id)) {
       SolveLoadedCpModel(local_proto_, local_sat_model_.get());
       const CpSolverResponse local_response =
           local_sat_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
@@ -151,9 +150,11 @@ std::string ObjectiveShavingSolver::Info() {
                       " csts=", local_proto_.constraints().size(), ")");
 }
 
-bool ObjectiveShavingSolver::ResetModel() {
+bool ObjectiveShavingSolver::ResetModel(int64_t task_id) {
   local_sat_model_ = std::make_unique<Model>(name());
   *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
+  local_sat_model_->GetOrCreate<SatParameters>()->set_random_seed(
+      ValidSumSeed(local_params_.random_seed(), task_id));
 
   auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
   shared_->time_limit->UpdateLocalLimit(time_limit);
@@ -310,13 +311,12 @@ void VariablesShavingSolver::ProcessLocalResponse(
   }
 }
 
-std::function<void()> VariablesShavingSolver::GenerateTask(
-    int64_t /*task_id*/) {
-  return [this]() mutable {
+std::function<void()> VariablesShavingSolver::GenerateTask(int64_t task_id) {
+  return [this, task_id]() mutable {
     Model local_sat_model;
     CpModelProto shaving_proto;
     State state;
-    if (ResetModel(&state, &local_sat_model, &shaving_proto)) {
+    if (ResetModel(task_id, &state, &local_sat_model, &shaving_proto)) {
       SolveLoadedCpModel(shaving_proto, &local_sat_model);
       const CpSolverResponse local_response =
           local_sat_model.GetOrCreate<SharedResponseManager>()->GetResponse();
@@ -498,9 +498,12 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
   }
 }
 
-bool VariablesShavingSolver::ResetModel(State* state, Model* local_sat_model,
+bool VariablesShavingSolver::ResetModel(int64_t task_id, State* state,
+                                        Model* local_sat_model,
                                         CpModelProto* shaving_proto) {
   *local_sat_model->GetOrCreate<SatParameters>() = local_params_;
+  local_sat_model->GetOrCreate<SatParameters>()->set_random_seed(
+      ValidSumSeed(local_params_.random_seed(), task_id));
 
   {
     absl::MutexLock lock(&mutex_);

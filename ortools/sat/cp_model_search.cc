@@ -477,18 +477,6 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
   };
 }
 
-// This generates a valid random seed (base_seed + delta) without overflow.
-// We assume |delta| is small.
-int ValidSumSeed(int base_seed, int delta) {
-  CHECK_GE(delta, 0);
-  int64_t result = int64_t{base_seed} + int64_t{delta};
-  const int64_t int32max = int64_t{std::numeric_limits<int>::max()};
-  while (result > int32max) {
-    result -= int32max;
-  }
-  return static_cast<int>(result);
-}
-
 absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters base_params) {
   absl::flat_hash_map<std::string, SatParameters> strategies;

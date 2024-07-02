@@ -1463,14 +1463,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   subsolvers.push_back(std::move(unique_helper));
 
   int num_full_problem_solvers = 0;
-  if (params.use_lns_only() || params.test_feasibility_jump()) {
+  if (params.use_lns_only() || params.use_ls_only()) {
     // Register something to find a first solution. Note that this is mainly
     // used for experimentation, and using no_lp usually result in a faster
     // first solution.
     //
     // TODO(user): merge code with standard solver. Just make sure that all
     // full solvers die after the first solution has been found.
-    if (!params.test_feasibility_jump()) {
+    if (!params.use_ls_only()) {
       SatParameters local_params = params;
       local_params.set_stop_after_first_solution(true);
       local_params.set_linearization_level(0);
@@ -1537,16 +1537,42 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     int num_violation_ls = params.has_num_violation_ls()
                                ? params.num_violation_ls()
                                : num_incomplete_solvers / 8 + 1;
-    if (params.test_feasibility_jump()) {
+    if (params.use_ls_only()) {
       num_violation_ls = params.num_workers();
     }
-    for (int i = 0; i < num_violation_ls; ++i) {
-      SatParameters local_params = params;
-      local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
-      incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-          "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
-          shared->time_limit, shared->response, shared->bounds.get(),
-          shared->stats, &shared->stat_tables));
+
+    const int num_ls_lin = num_violation_ls / 3;
+    const int num_ls_default = num_violation_ls - num_ls_lin;
+
+    if (num_ls_default > 0) {
+      std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
+          "violation_ls", params, num_ls_default, &shared->stat_tables);
+      for (int i = 0; i < num_ls_default; ++i) {
+        SatParameters local_params = params;
+        local_params.set_random_seed(
+            ValidSumSeed(params.random_seed(), incomplete_subsolvers.size()));
+        local_params.set_feasibility_jump_linearization_level(0);
+        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+            "violation_ls", SubSolver::INCOMPLETE, linear_model, local_params,
+            states, shared->time_limit, shared->response, shared->bounds.get(),
+            shared->stats, &shared->stat_tables));
+      }
+    }
+
+    if (num_ls_lin > 0) {
+      std::shared_ptr<SharedLsStates> lin_states =
+          std::make_shared<SharedLsStates>("violation_ls_lin", params,
+                                           num_ls_lin, &shared->stat_tables);
+      for (int i = 0; i < num_ls_lin; ++i) {
+        SatParameters local_params = params;
+        local_params.set_random_seed(
+            ValidSumSeed(params.random_seed(), incomplete_subsolvers.size()));
+        local_params.set_feasibility_jump_linearization_level(2);
+        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+            "violation_ls_lin", SubSolver::INCOMPLETE, linear_model,
+            local_params, lin_states, shared->time_limit, shared->response,
+            shared->bounds.get(), shared->stats, &shared->stat_tables));
+      }
     }
   }
 
@@ -1568,11 +1594,11 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   // TODO(user): Check with interleave_search.
   if (!shared->model_proto.has_objective() ||
       shared->model_proto.objective().vars().empty() ||
-      !params.interleave_search() || params.test_feasibility_jump()) {
+      !params.interleave_search() || params.use_ls_only()) {
     const int max_num_incomplete_solvers_running_before_the_first_solution =
         params.num_workers() <= 16 ? 1 : 2;
     const int num_reserved_incomplete_solvers =
-        params.test_feasibility_jump()
+        params.use_ls_only()
             ? 0
             : std::min(
                   max_num_incomplete_solvers_running_before_the_first_solution,
@@ -1586,56 +1612,48 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const int num_feasibility_jump =
         (!params.use_feasibility_jump() || linear_model == nullptr)
             ? 0
-            : (params.test_feasibility_jump() ? num_available
-                                              : (num_available + 1) / 2);
+            : (params.use_ls_only() ? num_available : (num_available + 1) / 2);
     const int num_first_solution_subsolvers =
         num_available - num_feasibility_jump;
 
-    // TODO(user): Limit number of options by improving restart
-    // heuristic and randomizing other option at each restart?
-    for (int i = 0; i < num_feasibility_jump; ++i) {
-      // We alternate with a bunch of heuristic.
-      SatParameters local_params = params;
-      local_params.set_random_seed(ValidSumSeed(params.random_seed(), i));
-      std::string name = "fj";
+    // We split the "workers" in two because they don't have the same
+    // constraints, so we cannot easily share states.
+    //
+    // Note(user): The lin version seems to perform worse, so we only start
+    // adding some when we have more workers.
+    const int num_fj_lin = num_feasibility_jump / 3;
+    const int num_fj_default = num_feasibility_jump - num_fj_lin;
 
-      // Long restart or quick restart.
-      if (i % 2 == 0) {
-        absl::StrAppend(&name, "_short");
-        local_params.set_feasibility_jump_restart_factor(1);
-      } else {
-        absl::StrAppend(&name, "_long");
-        local_params.set_feasibility_jump_restart_factor(100);
-      }
-
-      // Linear or not.
-      if (i / 2 % 2 == 0) {
+    if (num_fj_default > 0) {
+      std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
+          "fj", params, num_fj_default, &shared->stat_tables);
+      for (int i = 0; i < num_fj_default; ++i) {
+        SatParameters local_params = params;
+        local_params.set_random_seed(
+            ValidSumSeed(params.random_seed(), incomplete_subsolvers.size()));
         local_params.set_feasibility_jump_linearization_level(0);
-      } else {
-        absl::StrAppend(&name, "_lin");
-        local_params.set_feasibility_jump_linearization_level(2);
+        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+            "fj", SubSolver::FIRST_SOLUTION, linear_model, local_params, states,
+            shared->time_limit, shared->response, shared->bounds.get(),
+            shared->stats, &shared->stat_tables));
       }
-
-      // Default restart, random restart, or perturb restart.
-      if (i / 4 % 3 == 0) {
-        absl::StrAppend(&name, "_default");
-        local_params.set_feasibility_jump_enable_restarts(true);
-        local_params.set_feasibility_jump_var_randomization_probability(0.0);
-      } else if (i / 4 % 3 == 1) {
-        absl::StrAppend(&name, "_random");
-        local_params.set_feasibility_jump_enable_restarts(true);
-        local_params.set_feasibility_jump_var_randomization_probability(0.05);
-      } else {
-        absl::StrAppend(&name, "_perturb");
-        local_params.set_feasibility_jump_enable_restarts(false);
-        local_params.set_feasibility_jump_var_randomization_probability(0.05);
-      }
-
-      incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
-          name, SubSolver::FIRST_SOLUTION, linear_model, local_params,
-          shared->time_limit, shared->response, shared->bounds.get(),
-          shared->stats, &shared->stat_tables));
     }
+
+    if (num_fj_lin > 0) {
+      std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
+          "fj_lin", params, num_fj_lin, &shared->stat_tables);
+      for (int i = 0; i < num_fj_lin; ++i) {
+        SatParameters local_params = params;
+        local_params.set_random_seed(
+            ValidSumSeed(params.random_seed(), incomplete_subsolvers.size()));
+        local_params.set_feasibility_jump_linearization_level(2);
+        incomplete_subsolvers.push_back(std::make_unique<FeasibilityJumpSolver>(
+            "fj_lin", SubSolver::FIRST_SOLUTION, linear_model, local_params,
+            states, shared->time_limit, shared->response, shared->bounds.get(),
+            shared->stats, &shared->stat_tables));
+      }
+    }
+
     for (const SatParameters& local_params : GetFirstSolutionParams(
              params, shared->model_proto, num_first_solution_subsolvers)) {
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
@@ -1655,7 +1673,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   //  Add incomplete subsolvers that require an objective.
   if (params.use_lns() && shared->model_proto.has_objective() &&
       !shared->model_proto.objective().vars().empty() &&
-      !params.test_feasibility_jump()) {
+      !params.use_ls_only()) {
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
     subsolvers.push_back(std::make_unique<LnsSolver>(
@@ -2456,7 +2474,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LoadDebugSolution(*new_cp_model_proto, model);
 
   // Linear model (used by feasibility_jump and violation_ls)
-  if (params.num_workers() > 1 || params.test_feasibility_jump() ||
+  if (params.num_workers() > 1 || params.use_ls_only() ||
       params.num_violation_ls() > 0) {
     LinearModel* linear_model = new LinearModel(*new_cp_model_proto);
     model->TakeOwnership(linear_model);
@@ -2469,7 +2487,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
     if (params.num_workers() > 1 || params.interleave_search() ||
-        !params.subsolvers().empty() || params.test_feasibility_jump()) {
+        !params.subsolvers().empty() || params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
 #endif  // __PORTABLE_PLATFORM__
     } else {

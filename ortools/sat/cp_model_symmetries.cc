@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -34,12 +35,14 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
+#include "ortools/algorithms/binary_search.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
@@ -51,6 +54,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -110,6 +114,28 @@ void Append(
   for (const FieldInt64Type value : repeated_field) {
     vector->push_back(value);
   }
+}
+
+bool IsIntervalFixedSize(const IntervalConstraintProto& interval) {
+  if (!interval.size().vars().empty()) {
+    return false;
+  }
+  if (interval.start().vars().size() != interval.end().vars().size()) {
+    return false;
+  }
+  for (int i = 0; i < interval.start().vars().size(); ++i) {
+    if (interval.start().coeffs(i) != interval.end().coeffs(i)) {
+      return false;
+    }
+    if (interval.start().vars(i) != interval.end().vars(i)) {
+      return false;
+    }
+  }
+  if (interval.end().offset() !=
+      interval.start().offset() + interval.size().offset()) {
+    return false;
+  }
+  return true;
 }
 
 // Returns a graph whose automorphisms can be mapped back to the symmetries of
@@ -391,31 +417,44 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kInterval: {
-        // We create 3 constraint nodes (for start, size and end) including the
-        // offset. We connect these to their terms like for a linear constraint.
-        std::vector<int> nodes;
-        for (int indicator = 0; indicator <= 2; ++indicator) {
-          const LinearExpressionProto& expr =
-              indicator == 0   ? constraint.interval().start()
-              : indicator == 1 ? constraint.interval().size()
-                               : constraint.interval().end();
-
+        static constexpr int kFixedIntervalColor = 0;
+        static constexpr int kNonFixedIntervalColor = 1;
+        if (IsIntervalFixedSize(constraint.interval())) {
           std::vector<int64_t> local_color = color;
-          local_color.push_back(indicator);
-          const int local_node = make_linear_expr_node(expr, local_color);
-          nodes.push_back(local_node);
+          local_color.push_back(kFixedIntervalColor);
+          local_color.push_back(constraint.interval().size().offset());
+          const int full_node =
+              make_linear_expr_node(constraint.interval().start(), local_color);
+          CHECK_EQ(full_node, constraint_node);
+        } else {
+          // We create 3 constraint nodes (for start, size and end) including
+          // the offset. We connect these to their terms like for a linear
+          // constraint.
+          std::vector<int64_t> local_color = color;
+          local_color.push_back(kNonFixedIntervalColor);
+
+          local_color.push_back(0);
+          const int start_node =
+              make_linear_expr_node(constraint.interval().start(), local_color);
+          local_color.pop_back();
+          CHECK_EQ(start_node, constraint_node);
+
+          // We can use a shared node for one of the three. Let's use the size
+          // since it has the most chance of being reused.
+          const int size_node =
+              shared_linear_expr_node(constraint.interval().size());
+
+          local_color.push_back(1);
+          const int end_node =
+              make_linear_expr_node(constraint.interval().end(), local_color);
+          local_color.pop_back();
+
+          // Make sure that if one node is mapped to another one, its other two
+          // components are the same.
+          graph->AddArc(start_node, end_node);
+          graph->AddArc(end_node, size_node);
         }
-
-        // We will only map enforcement literal to the start_node below because
-        // it has the same index as the constraint_node.
         interval_constraint_index_to_node[constraint_index] = constraint_node;
-        CHECK_EQ(nodes[0], constraint_node);
-
-        // Make sure that if one node is mapped to another one, its other two
-        // components are the same.
-        graph->AddArc(nodes[0], nodes[1]);
-        graph->AddArc(nodes[1], nodes[2]);
-        graph->AddArc(nodes[2], nodes[0]);  // TODO(user): not needed?
         break;
       }
       case ConstraintProto::kNoOverlap: {
@@ -466,13 +505,43 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         graph->AddArc(constraint_node,
                       make_linear_expr_node(ct.capacity(), capacity_color));
 
-        std::vector<int64_t> demands_color = color;
-        demands_color.push_back(1);
+        std::vector<int64_t> task_color = color;
+        task_color.push_back(1);
         for (int i = 0; i < ct.intervals().size(); ++i) {
-          const int demand_node = shared_linear_expr_node(ct.demands(i));
-          graph->AddArc(demand_node, constraint_node);
-          graph->AddArc(demand_node,
+          const int task_node =
+              make_linear_expr_node(ct.demands(i), task_color);
+          graph->AddArc(task_node, constraint_node);
+          graph->AddArc(task_node,
                         interval_constraint_index_to_node.at(ct.intervals(i)));
+        }
+        break;
+      }
+      case ConstraintProto::kCircuit: {
+        // Note that this implementation will generate the same graph for a
+        // circuit constraint with two disconnected components and two circuit
+        // constraints with one component each.
+        const int num_arcs = constraint.circuit().literals().size();
+        absl::flat_hash_map<int, int> circuit_node_to_symmetry_node;
+        std::vector<int64_t> arc_color = color;
+        arc_color.push_back(1);
+        for (int i = 0; i < num_arcs; ++i) {
+          const int literal = constraint.circuit().literals(i);
+          const int tail = constraint.circuit().tails(i);
+          const int head = constraint.circuit().heads(i);
+          const int arc_node = new_node(arc_color);
+          if (!circuit_node_to_symmetry_node.contains(head)) {
+            circuit_node_to_symmetry_node[head] = new_node(color);
+          }
+          const int head_node = circuit_node_to_symmetry_node[head];
+          if (!circuit_node_to_symmetry_node.contains(tail)) {
+            circuit_node_to_symmetry_node[tail] = new_node(color);
+          }
+          const int tail_node = circuit_node_to_symmetry_node[tail];
+          // To make the graph directed, we add two arcs on the head but not on
+          // the tail.
+          graph->AddArc(tail_node, arc_node);
+          graph->AddArc(arc_node, get_literal_node(literal));
+          graph->AddArc(arc_node, head_node);
         }
         break;
       }
@@ -763,6 +832,52 @@ void OrbitAndPropagation(absl::Span<const int> orbits, int var,
   }
 }
 
+std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
+    const std::vector<int64_t>& maximum_values, int64_t max_linear_size,
+    bool* is_approximated) {
+  std::vector<int64_t> out(maximum_values.size());
+  int64_t range_product = 1;
+  uint64_t greatest_coeff = 0;
+  for (int i = 0; i < maximum_values.size(); ++i) {
+    out[i] = range_product;
+    greatest_coeff =
+        std::max(greatest_coeff, static_cast<uint64_t>(maximum_values[i]));
+    range_product = CapProd(range_product, 1 + maximum_values[i]);
+  }
+
+  if (range_product <= max_linear_size) {
+    // The product of all ranges fit in a int64_t. This is good news, that
+    // means we can interpret each row of the matrix as an integer in a
+    // mixed-radix representation and impose row[i] <= row[i+1].
+    *is_approximated = false;
+    return out;
+  }
+  *is_approximated = true;
+
+  const auto compute_approximate_coeffs =
+      [max_linear_size, &maximum_values](double scaling_factor,
+                                         std::vector<int64_t>* coeffs) -> bool {
+    int64_t max_size = 0;
+    double cumulative_product_double = 1.0;
+    for (int i = 0; i < maximum_values.size(); ++i) {
+      const int64_t max = maximum_values[i];
+      const int64_t coeff = static_cast<int64_t>(cumulative_product_double);
+      (*coeffs)[i] = coeff;
+      cumulative_product_double *= scaling_factor * max + 1;
+      max_size = CapAdd(max_size, CapProd(max, coeff));
+      if (max_size > max_linear_size) return false;
+    }
+    return true;
+  };
+
+  const double scaling = BinarySearch<double>(
+      0.0, 1.0, [&compute_approximate_coeffs, &out](double scaling_factor) {
+        return compute_approximate_coeffs(scaling_factor, &out);
+      });
+  CHECK(compute_approximate_coeffs(scaling, &out));
+  return out;
+}
+
 }  // namespace
 
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
@@ -825,7 +940,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     }
   }
 
-  // We have a few heuristics. The firsts only look at the gobal orbits under
+  // We have a few heuristics. The first only look at the global orbits under
   // the symmetry group and try to infer Boolean variable fixing via symmetry
   // breaking. Note that nothing is fixed yet, we will decide later if we fix
   // these Booleans or not.
@@ -1239,10 +1354,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     // using the at_most_ones to fix known position. Note that we can still add
     // lexicographic symmetry breaking inequality on the columns as long as we
     // do that in the same order as these fixing.
-    if (rows_by_score.empty()) {
-      context->UpdateRuleStats(
-          "TODO symmetry: add symmetry breaking inequalities?");
-    }
     absl::c_stable_sort(rows_by_score, [](const std::pair<int, int64_t>& p1,
                                           const std::pair<int, int64_t>& p2) {
       return p1.second > p2.second;
@@ -1313,6 +1424,44 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
     context->UpdateNewConstraintsVariableUsage();
+  } else if (orbitope.size() > 1 && params.symmetry_level() > 3) {
+    std::vector<int64_t> max_values(orbitope.size());
+    for (int i = 0; i < orbitope.size(); ++i) {
+      const int var = orbitope[i][0];
+      const int64_t max = std::max(std::abs(context->MaxOf(var)),
+                                   std::abs(context->MinOf(var)));
+      max_values[i] = max;
+    }
+    constexpr int kMaxBits = 60;
+    bool is_approximated;
+    const std::vector<int64_t> coeffs = BuildInequalityCoeffsForOrbitope(
+        max_values, (int64_t{1} << kMaxBits), &is_approximated);
+    for (int i = 0; i + 1 < orbitope[0].size(); ++i) {
+      ConstraintProto* ct = context->working_model->add_constraints();
+      auto* arg = ct->mutable_linear();
+      for (int j = 0; j < orbitope.size(); ++j) {
+        const int64_t coeff = coeffs[j];
+        arg->add_vars(orbitope[j][i + 1]);
+        arg->add_coeffs(coeff);
+        arg->add_vars(orbitope[j][i]);
+        arg->add_coeffs(-coeff);
+        DCHECK_EQ(context->MaxOf(orbitope[j][i + 1]),
+                  context->MaxOf(orbitope[j][i]));
+        DCHECK_EQ(context->MinOf(orbitope[j][i + 1]),
+                  context->MinOf(orbitope[j][i]));
+      }
+      arg->add_domain(0);
+      arg->add_domain(std::numeric_limits<int64_t>::max());
+      DCHECK(!PossibleIntegerOverflow(*context->working_model, arg->vars(),
+                                      arg->coeffs()));
+    }
+    context->UpdateRuleStats(
+        absl::StrCat("symmetry: added linear ",
+                     is_approximated ? "approximated " : "",
+                     "inequality ordering orbitope columns"),
+        orbitope[0].size());
+    context->UpdateNewConstraintsVariableUsage();
+    return true;
   }
 
   return true;

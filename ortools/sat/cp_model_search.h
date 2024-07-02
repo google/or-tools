@@ -126,10 +126,6 @@ std::vector<SatParameters> GetWorkSharingParams(
     const SatParameters& base_params, const CpModelProto& cp_model,
     int num_params_to_generate);
 
-// This generates a valid random seed (base_seed + delta) without overflow.
-// We assume |delta| is small.
-int ValidSumSeed(int base_seed, int delta);
-
 }  // namespace sat
 }  // namespace operations_research
 
