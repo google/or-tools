@@ -332,10 +332,10 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
     IntegerValue rev_rhs;  // The current rhs, updated on fixed terms.
   };
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
   static_assert(sizeof(ConstraintInfo) == 24,
                 "ERROR_ConstraintInfo_is_not_well_compacted");
-#endif  // !defined(_MSC_VER)
+#endif  // !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
 
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);
