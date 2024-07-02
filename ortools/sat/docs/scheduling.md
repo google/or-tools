@@ -2326,6 +2326,8 @@ The circuit constraint is used to perform the transitive reduction from
 precedences to successors. Once this is done, it is straightforward to use the
 successor literals to implement the penalties or the delays.
 
+### Python code
+
 ```python
 #!/usr/bin/env python3
 """Code sample to demonstrates how to rank intervals using a circuit."""
