@@ -367,6 +367,13 @@ target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_s
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
 # Dependencies
+if(APPLE)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    INSTALL_RPATH "@loader_path")
+elseif(UNIX)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    INSTALL_RPATH "$ORIGIN")
+endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
