@@ -323,7 +323,8 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
   // initial size and enf_id that are only needed when we push something.
   struct ConstraintInfo {
     unsigned int enf_status : 2;
-    bool all_coeffs_are_one : 1;
+    // With Visual Studio or minGW, using bool here breaks the struct packing.
+    unsigned int all_coeffs_are_one : 1;
     unsigned int initial_size : 29;  // Const. The size including all terms.
 
     EnforcementId enf_id;  // Const. The id in enforcement_propagator_.
@@ -332,10 +333,8 @@ class LinearPropagator : public PropagatorInterface, ReversibleInterface {
     IntegerValue rev_rhs;  // The current rhs, updated on fixed terms.
   };
 
-#if !defined(_MSC_VER)
   static_assert(sizeof(ConstraintInfo) == 24,
                 "ERROR_ConstraintInfo_is_not_well_compacted");
-#endif  // !defined(_MSC_VER)
 
   absl::Span<IntegerValue> GetCoeffs(const ConstraintInfo& info);
   absl::Span<IntegerVariable> GetVariables(const ConstraintInfo& info);

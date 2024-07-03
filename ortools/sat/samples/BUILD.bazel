@@ -95,7 +95,7 @@ code_sample_cc_py(name = "solve_with_time_limit_sample_sat")
 
 code_sample_cc_py(name = "stop_after_n_solutions_sample_sat")
 
-code_sample_py(name = "transitions_in_disjunctive_sample_sat")
+code_sample_py(name = "transitions_in_no_overlap_sample_sat")
 
 code_sample_java(name = "AssignmentGroupsSat")
 

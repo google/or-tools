@@ -750,7 +750,7 @@ class IntegerEncoder {
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
-class IntegerTrail : public SatPropagator {
+class IntegerTrail final : public SatPropagator {
  public:
   explicit IntegerTrail(Model* model)
       : SatPropagator("IntegerTrail"),
@@ -1365,7 +1365,7 @@ class RevIntegerValueRepository : public RevRepository<IntegerValue> {
 // watched Literal or LbVar changes.
 //
 // TODO(user): Move this to its own file. Add unit tests!
-class GenericLiteralWatcher : public SatPropagator {
+class GenericLiteralWatcher final : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(Model* model);
 

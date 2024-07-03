@@ -1096,7 +1096,7 @@ message SatParameters {
   // total number of nodes that may be generated in the shared tree. If the
   // shared tree runs out of unassigned leaves, workers act as portfolio
   // workers. Note: this limit includes interior nodes, not just leaves.
-  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 128];
+  optional int32 shared_tree_max_nodes_per_worker = 238 [default = 100000];
 
   enum SharedTreeSplitStrategy {
     // Uses the default strategy, currently equivalent to

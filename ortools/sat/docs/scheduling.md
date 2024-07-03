@@ -2316,7 +2316,7 @@ def overlapping_interval_sample_sat():
 overlapping_interval_sample_sat()
 ```
 
-## Transitions in a disjunctive resource
+## Transitions in a no_overlap constraint
 
 In some scheduling problems, switching between certain type of tasks on a
 machine implies some penalty, and/or some delay. Implementing these
@@ -2330,14 +2330,14 @@ successor literals to implement the penalties or the delays.
 
 ```python
 #!/usr/bin/env python3
-"""Code sample to demonstrates how to rank intervals using a circuit."""
+"""Implements transition times and costs in a no_overlap constraint."""
 
 from typing import Dict, List, Sequence, Tuple, Union
 
 from ortools.sat.python import cp_model
 
 
-def transitive_reduction_with_circuit(
+def transitive_reduction_with_circuit_delays_and_penalties(
     model: cp_model.CpModel,
     starts: Sequence[cp_model.IntVar],
     durations: Sequence[int],
@@ -2435,7 +2435,7 @@ def transitive_reduction_with_circuit(
     return penalty_terms
 
 
-def transitions_in_disjunctive_sample_sat():
+def transitions_in_no_overlap_sample_sat():
     """Implement transitions in a NoOverlap constraint."""
 
     model = cp_model.CpModel()
@@ -2490,7 +2490,7 @@ def transitions_in_disjunctive_sample_sat():
     model.add_no_overlap(intervals)
 
     # Adds ranking constraint.
-    penalty_terms = transitive_reduction_with_circuit(
+    penalty_terms = transitive_reduction_with_circuit_delays_and_penalties(
         model, starts, durations, presences, penalties, delays
     )
 
@@ -2518,7 +2518,7 @@ def transitions_in_disjunctive_sample_sat():
         print(f"Solver exited with nonoptimal status: {status}")
 
 
-transitions_in_disjunctive_sample_sat()
+transitions_in_no_overlap_sample_sat()
 ```
 
 ## Precedences between intervals
