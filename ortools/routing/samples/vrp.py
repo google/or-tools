@@ -65,7 +65,7 @@ def create_data_model():
 
 # [START solution_printer]
 def print_solution(manager, routing, solution):
-    """Prints assignment on console."""
+    """Prints solution on console."""
     status = routing.status()
     print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
     if (
