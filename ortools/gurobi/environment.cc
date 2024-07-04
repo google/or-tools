@@ -406,7 +406,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
   for (const std::string& version :
-       {"11.0.2", , "11.0.1", "11.0.0", "10.0.3", "10.0.2", "10.0.1", "10.0.0",
+       {"11.0.2", "11.0.1", "11.0.0", "10.0.3", "10.0.2", "10.0.1", "10.0.0",
         "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
