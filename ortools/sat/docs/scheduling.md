@@ -490,7 +490,7 @@ def interval_relations_sample_sat():
     model = cp_model.CpModel()
     horizon = 100
 
-    # An optional interval can be created from three 1-var affine expressions.
+    # An interval can be created from three 1-var affine expressions.
     start_var = model.new_int_var(0, horizon, "start")
     duration = 10  # Python CP-SAT code accept integer variables or constants.
     end_var = model.new_int_var(0, horizon, "end")
