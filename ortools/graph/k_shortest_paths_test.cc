@@ -285,6 +285,7 @@ Graph GenerateUniformDirectedGraph(URBG&& urbg, const NodeIndexType num_nodes,
                                         URBG, /*IsDirected=*/true>(
       urbg, num_nodes, num_arcs);
 }
+
 TEST(KShortestPathsYenTest, RandomTest) {
   std::mt19937 random(12345);
   constexpr int kNumGraphs = 10;
@@ -323,9 +324,8 @@ TEST(KShortestPathsYenTest, RandomTest) {
         GenerateUniformDirectedGraph(random, kNumNodes, kNumArcs);
     std::vector<PathDistance> lengths;
     for (int i = 0; i < graph.num_arcs(); ++i) {
-
-        lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
-      }
+      lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
+    }
 
     // Run random queries, with one source and one destination per query.
     for (int q = 0; q < kNumQueriesPerGraph; ++q) {
@@ -391,6 +391,7 @@ TEST(KShortestPathsYenTest, RandomTest) {
     }
   }
 }
+
 void BM_Yen(benchmark::State& state) {
   const int num_nodes = state.range(0);
   // Use half the maximum number of arcs, so that the graph is a bit sparse.

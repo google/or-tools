@@ -15,25 +15,25 @@
 
 namespace operations_research {
 
-#define DEF_COMMON_LIMITS(Type) \
-const bool MathLimits<Type>::kIsSigned; \
-const bool MathLimits<Type>::kIsInteger; \
-const int MathLimits<Type>::kMin10Exp; \
-const int MathLimits<Type>::kMax10Exp;
+#define DEF_COMMON_LIMITS(Type)            \
+  const bool MathLimits<Type>::kIsSigned;  \
+  const bool MathLimits<Type>::kIsInteger; \
+  const int MathLimits<Type>::kMin10Exp;   \
+  const int MathLimits<Type>::kMax10Exp;
 
-#define DEF_UNSIGNED_INT_LIMITS(Type) \
-DEF_COMMON_LIMITS(Type) \
-const Type MathLimits<Type>::kPosMin; \
-const Type MathLimits<Type>::kPosMax; \
-const Type MathLimits<Type>::kMin; \
-const Type MathLimits<Type>::kMax; \
-const Type MathLimits<Type>::kEpsilon; \
-const Type MathLimits<Type>::kStdError;
+#define DEF_UNSIGNED_INT_LIMITS(Type)    \
+  DEF_COMMON_LIMITS(Type)                \
+  const Type MathLimits<Type>::kPosMin;  \
+  const Type MathLimits<Type>::kPosMax;  \
+  const Type MathLimits<Type>::kMin;     \
+  const Type MathLimits<Type>::kMax;     \
+  const Type MathLimits<Type>::kEpsilon; \
+  const Type MathLimits<Type>::kStdError;
 
-#define DEF_SIGNED_INT_LIMITS(Type) \
-DEF_UNSIGNED_INT_LIMITS(Type) \
-const Type MathLimits<Type>::kNegMin; \
-const Type MathLimits<Type>::kNegMax;
+#define DEF_SIGNED_INT_LIMITS(Type)     \
+  DEF_UNSIGNED_INT_LIMITS(Type)         \
+  const Type MathLimits<Type>::kNegMin; \
+  const Type MathLimits<Type>::kNegMax;
 
 #define DEF_PRECISION_LIMITS(Type) const int MathLimits<Type>::kPrecisionDigits;
 

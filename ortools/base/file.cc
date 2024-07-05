@@ -88,7 +88,7 @@ absl::Status File::Close(int flags) {
   } else {
     status.Update(
         absl::Status(absl::StatusCode::kInvalidArgument,
-          absl::StrCat("Could not close file '", name_, "'")));
+                     absl::StrCat("Could not close file '", name_, "'")));
   }
   delete this;
   return status;

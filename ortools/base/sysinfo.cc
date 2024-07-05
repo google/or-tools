@@ -61,7 +61,7 @@ int64_t GetProcessMemoryUsage() {
   fclose(pf);
   return int64_t{1024} * size;
 }
-#elif (defined(__FreeBSD__) || defined(__OpenBSD__)) // FreeBSD or OpenBSD
+#elif (defined(__FreeBSD__) || defined(__OpenBSD__))  // FreeBSD or OpenBSD
 int64_t GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
@@ -84,7 +84,7 @@ int64_t GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else  // Unknown, returning 0.
+#else                     // Unknown, returning 0.
 int64_t GetProcessMemoryUsage() { return 0; }
 #endif
 

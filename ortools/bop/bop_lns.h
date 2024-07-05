@@ -34,7 +34,7 @@ namespace bop {
 
 // Uses SAT to solve the full problem under the constraint that the new solution
 // should be under a given Hamming distance of the current solution.
-class BopCompleteLNSOptimizer : public BopOptimizerBase {
+class BopCompleteLNSOptimizer final : public BopOptimizerBase {
  public:
   BopCompleteLNSOptimizer(absl::string_view name,
                           const BopConstraintTerms& objective_terms);
@@ -93,7 +93,7 @@ class NeighborhoodGenerator {
 // A generic LNS optimizer which generates neighborhoods according to the given
 // NeighborhoodGenerator and automatically adapt the neighborhood size depending
 // on how easy it is to solve the associated problem.
-class BopAdaptiveLNSOptimizer : public BopOptimizerBase {
+class BopAdaptiveLNSOptimizer final : public BopOptimizerBase {
  public:
   // Takes ownership of the given neighborhood_generator.
   // The sat_propagator is assumed to contains the current problem.
@@ -119,7 +119,7 @@ class BopAdaptiveLNSOptimizer : public BopOptimizerBase {
 
 // Generates a neighborhood by randomly fixing a subset of the objective
 // variables that are currently at their lower cost.
-class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
+class ObjectiveBasedNeighborhood final : public NeighborhoodGenerator {
  public:
   ObjectiveBasedNeighborhood(const BopConstraintTerms* objective_terms,
                              absl::BitGenRef random)
@@ -137,7 +137,7 @@ class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
 // Generates a neighborhood by randomly selecting a subset of constraints and
 // fixing the objective variables that are currently at their lower cost and
 // not in the given subset of constraints.
-class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
+class ConstraintBasedNeighborhood final : public NeighborhoodGenerator {
  public:
   ConstraintBasedNeighborhood(const BopConstraintTerms* objective_terms,
                               absl::BitGenRef random)
@@ -155,7 +155,7 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
 // Generates a neighborhood by taking a random local neighborhood in an
 // undirected graph where the nodes are the variables and two nodes are linked
 // if they appear in the same constraint.
-class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
+class RelationGraphBasedNeighborhood final : public NeighborhoodGenerator {
  public:
   RelationGraphBasedNeighborhood(const sat::LinearBooleanProblem& problem,
                                  absl::BitGenRef random);
