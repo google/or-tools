@@ -359,7 +359,7 @@ H AbslHashValue(H h, const LinearConstraintProto& m) {
 bool ConvertCpModelProtoToCnf(const CpModelProto& cp_mode, std::string* out);
 
 // We assume delta >= 0 and we only use the low bit of delta.
-int ValidSumSeed(int base_seed, int64_t delta);
+int CombineSeed(int base_seed, int64_t delta);
 
 }  // namespace sat
 }  // namespace operations_research

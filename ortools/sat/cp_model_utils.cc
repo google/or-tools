@@ -935,7 +935,7 @@ bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out) {
   return true;
 }
 
-int ValidSumSeed(int base_seed, int64_t delta) {
+int CombineSeed(int base_seed, int64_t delta) {
   CHECK_GE(delta, 0);
   const uint64_t fp = FingerprintSingleField(delta, kDefaultFingerprintSeed);
   return static_cast<int>(FingerprintSingleField(base_seed, fp) & (0x7FFFFFFF));

@@ -351,7 +351,7 @@ class SharedLsStates {
  public:
   // Important: max_parallelism should be greater or equal than the actual
   // number of thread sharing this class, otherwise the code will break.
-  SharedLsStates(const std::string& name, const SatParameters& params,
+  SharedLsStates(absl::string_view name, const SatParameters& params,
                  int max_parallelism, SharedStatTables* stat_tables)
       : name_(name), params_(params), stat_tables_(stat_tables) {
     Initialize(max_parallelism);
@@ -454,7 +454,8 @@ class SharedLsStates {
 // model and its transpose for each FeasibilityJumpSolver.
 class FeasibilityJumpSolver : public SubSolver {
  public:
-  FeasibilityJumpSolver(const std::string name, SubSolver::SubsolverType type,
+  FeasibilityJumpSolver(const absl::string_view name,
+                        SubSolver::SubsolverType type,
                         const LinearModel* linear_model, SatParameters params,
                         std::shared_ptr<SharedLsStates> ls_states,
                         ModelSharedTimeLimit* shared_time_limit,

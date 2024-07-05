@@ -1747,8 +1747,7 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
   //
   // TODO(user): for now this is not deterministic so we disable it on
   // interleave search. Fix.
-  if (params->use_lns_only() || params->use_ls_only() ||
-      params->interleave_search() || params->num_workers() == 1 ||
+  if (params->interleave_search() || params->num_workers() == 1 ||
       !params->use_lns()) {
     params->set_use_rins_lns(false);
     params->set_use_feasibility_pump(false);

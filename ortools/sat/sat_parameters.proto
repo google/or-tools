@@ -23,7 +23,7 @@ option csharp_namespace = "Google.OrTools.Sat";
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 293
+// NEXT TAG: 295
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -602,12 +602,16 @@ message SatParameters {
   optional int32 num_workers = 206 [default = 0];
   optional int32 num_search_workers = 100 [default = 0];
 
-  // Obsolete parameter. No-op.
-  optional int32 min_num_lns_workers = 211 [default = 2];
+  // We distinguish subsolvers that consume a full thread, and the ones that are
+  // always interleaved. If left at zero, we will fix this with a default
+  // formula that depends on num_workers. But if you start modifying what runs,
+  // you might want to fix that to a given value depending on the num_workers
+  // you use.
+  optional int32 num_full_subsolvers = 294 [default = 0];
 
   // In multi-thread, the solver can be mainly seen as a portfolio of solvers
   // with different parameters. This field indicates the names of the parameters
-  // that are used in multithread.
+  // that are used in multithread. This only applies to "full" subsolvers.
   //
   // See cp_model_search.cc to see a list of the names and the default value (if
   // left empty) that looks like:
@@ -628,10 +632,8 @@ message SatParameters {
   // has many terms. If there is no fixed strategy fixed will be ignored. And so
   // on.
   //
-  // The order is important, as only the first usable "num_workers -
-  // min_num_lns_workers" subsolvers will be scheduled. You can see in the log
-  // which one are selected for a given run. All the others will be LNS if there
-  // is an objective, or randomized SAT search for pure satisfiability problems.
+  // The order is important, as only the first num_full_subsolvers will be
+  // scheduled. You can see in the log which one are selected for a given run.
   repeated string subsolvers = 207;
 
   // A convenient way to add more workers types.
@@ -639,8 +641,16 @@ message SatParameters {
   repeated string extra_subsolvers = 219;
 
   // Rather than fully specifying subsolvers, it is often convenient to just
-  // remove the ones that are not useful on a given problem.
+  // remove the ones that are not useful on a given problem or only keep
+  // specific ones for testing. Each string is interpreted as a "glob", so we
+  // support '*' and '?'.
+  //
+  // The way this work is that we will only accept a name that match a filter
+  // pattern (if non-empty) and do not match an ignore pattern. Note also that
+  // these fields work on LNS or LS names even if these are currently not
+  // specified via the subsolvers field.
   repeated string ignore_subsolvers = 209;
+  repeated string filter_subsolvers = 293;
 
   // It is possible to specify additional subsolver configuration. These can be
   // referred by their params.name() in the fields above. Note that only the
@@ -648,9 +658,6 @@ message SatParameters {
   // subsolver_params has the name of an existing subsolver configuration, the
   // named parameters will be merged into the subsolver configuration.
   repeated SatParameters subsolver_params = 210;
-
-  // TODO(user): Also define like for subsolvers the list of "active"
-  // type of neighborhood used.
 
   // Experimental. If this is true, then we interleave all our major search
   // strategy and distribute the work amongst num_workers.

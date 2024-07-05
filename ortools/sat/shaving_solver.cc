@@ -154,7 +154,7 @@ bool ObjectiveShavingSolver::ResetModel(int64_t task_id) {
   local_sat_model_ = std::make_unique<Model>(name());
   *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
   local_sat_model_->GetOrCreate<SatParameters>()->set_random_seed(
-      ValidSumSeed(local_params_.random_seed(), task_id));
+      CombineSeed(local_params_.random_seed(), task_id));
 
   auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
   shared_->time_limit->UpdateLocalLimit(time_limit);
@@ -503,7 +503,7 @@ bool VariablesShavingSolver::ResetModel(int64_t task_id, State* state,
                                         CpModelProto* shaving_proto) {
   *local_sat_model->GetOrCreate<SatParameters>() = local_params_;
   local_sat_model->GetOrCreate<SatParameters>()->set_random_seed(
-      ValidSumSeed(local_params_.random_seed(), task_id));
+      CombineSeed(local_params_.random_seed(), task_id));
 
   {
     absl::MutexLock lock(&mutex_);

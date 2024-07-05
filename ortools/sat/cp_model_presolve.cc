@@ -9538,7 +9538,9 @@ bool CpModelPresolver::RemoveCommonPart(
     }
 
     // We isolated the Boolean in tmp_terms_, use the helper to get
-    // more precise activity bounds.
+    // more precise activity bounds. Note that while tmp_terms_ was built from
+    // a hash map and is in an unspecified order, the Compute*Activity() helpers
+    // will still return a deterministic result.
     if (!tmp_terms_.empty()) {
       min_activity += helper->ComputeMinActivity(tmp_terms_);
       max_activity += helper->ComputeMaxActivity(tmp_terms_);

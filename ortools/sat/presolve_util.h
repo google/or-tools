@@ -188,6 +188,10 @@ class ActivityBoundHelper {
   //
   // Important: We shouldn't have duplicates or a lit and NegatedRef(lit)
   // appearing both.
+
+  // Note: the result of this function is not exact (it uses an heuristic to
+  // detect AMOs), but it does not depend on the order of the input terms, so
+  // passing an input in non-deterministic order is fine.
   //
   // TODO(user): Indicate when the bounds are trivial (i.e. not intersection
   // with any amo) so that we don't waste more time processing the result?
@@ -263,8 +267,14 @@ class ActivityBoundHelper {
   int num_at_most_ones_ = 0;
   util_intops::StrongVector<Index, std::vector<int>> amo_indices_;
 
-  std::vector<std::pair<int, int64_t>> tmp_terms_;
-  std::vector<std::pair<int64_t, int>> to_sort_;
+  std::vector<std::pair<int, int64_t>> tmp_terms_for_compute_activity_;
+
+  struct TermWithIndex {
+    int64_t coeff;
+    Index index;
+    int span_index;
+  };
+  std::vector<TermWithIndex> to_sort_;
 
   // We partition the set of term into disjoint at most one.
   absl::flat_hash_map<int, int> used_amo_to_dense_index_;
