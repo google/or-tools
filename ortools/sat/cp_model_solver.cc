@@ -1489,9 +1489,10 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   subsolvers.push_back(std::move(unique_helper));
 
   // Add shared tree workers if asked.
-  if (shared->model_proto.assumptions().empty()) {
+  if (params.shared_tree_num_workers() > 0 &&
+      shared->model_proto.assumptions().empty()) {
     for (const SatParameters& local_params : RepeatParameters(
-             name_filter.Filter({name_to_params.at("shared_tree_default_lp")}),
+             name_filter.Filter({name_to_params.at("shared_tree")}),
              params.shared_tree_num_workers())) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
@@ -1617,21 +1618,25 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     // Scheduling (no_overlap and cumulative) specific LNS.
     if (has_no_overlap_or_cumulative) {
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
-              helper, "scheduling_intervals_lns"),
-          lns_params, helper, shared));
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-              helper, "scheduling_time_window_lns"),
-          lns_params, helper, shared));
+      if (name_filter.Keep("scheduling_intervals_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("scheduling_time_window_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
-      if (intervals_in_constraints.size() > 2) {
+      if (intervals_in_constraints.size() > 2 &&
+          name_filter.Keep("scheduling_resource_windows_lns")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
-                helper, intervals_in_constraints,
-                "scheduling_resource_windows_lns"),
+                helper, intervals_in_constraints, name_filter.LastName()),
             lns_params, helper, shared));
       }
     }
@@ -1640,26 +1645,34 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const bool has_no_overlap2d =
         !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
     if (has_no_overlap2d) {
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
-              helper, "packing_rectangles_lns"),
-          lns_params, helper, shared));
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
-              helper, "packing_precedences_lns"),
-          lns_params, helper, shared));
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<SlicePackingNeighborhoodGenerator>(
-              helper, "packing_slice_lns"),
-          lns_params, helper, shared));
+      if (name_filter.Keep("packing_rectangles_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("packing_precedences_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("packing_slice_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SlicePackingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
     }
 
     // Generic scheduling/packing LNS.
     if (has_no_overlap_or_cumulative || has_no_overlap2d) {
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
-              helper, "scheduling_precedences_lns"),
-          lns_params, helper, shared));
+      if (name_filter.Keep("scheduling_precedences_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
     }
 
     const int num_circuit = static_cast<int>(
@@ -1667,21 +1680,26 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const int num_routes = static_cast<int>(
         helper->TypeToConstraints(ConstraintProto::kRoutes).size());
     if (num_circuit + num_routes > 0) {
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RoutingRandomNeighborhoodGenerator>(
-              helper, "routing_random_lns"),
-          lns_params, helper, shared));
-
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RoutingPathNeighborhoodGenerator>(
-              helper, "routing_path_lns"),
-          lns_params, helper, shared));
+      if (name_filter.Keep("routing_random_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RoutingRandomNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
+      if (name_filter.Keep("routing_path_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RoutingPathNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
     }
     if (num_routes > 0 || num_circuit > 1) {
-      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-          std::make_unique<RoutingFullPathNeighborhoodGenerator>(
-              helper, "routing_full_path_lns"),
-          lns_params, helper, shared));
+      if (name_filter.Keep("routing_full_path_lns")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<RoutingFullPathNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
+            lns_params, helper, shared));
+      }
     }
   }
 
@@ -1731,7 +1749,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     if (num_ls_default > 0) {
       std::shared_ptr<SharedLsStates> states = std::make_shared<SharedLsStates>(
-          ls_name, params, num_ls_default, &shared->stat_tables);
+          ls_name, params, &shared->stat_tables);
       for (int i = 0; i < num_ls_default; ++i) {
         SatParameters local_params = params;
         local_params.set_random_seed(
@@ -1747,7 +1765,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     if (num_ls_lin > 0) {
       std::shared_ptr<SharedLsStates> lin_states =
-          std::make_shared<SharedLsStates>(lin_ls_name, params, num_ls_lin,
+          std::make_shared<SharedLsStates>(lin_ls_name, params,
                                            &shared->stat_tables);
       for (int i = 0; i < num_ls_lin; ++i) {
         SatParameters local_params = params;
@@ -1785,46 +1803,34 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         RepeatParameters(name_filter.Filter(GetFirstSolutionBaseParams(params)),
                          num_thread_available);
 
-    // This is a bit hacky, but we have to count the number of the different
-    // kind of ls to construct the SharedLsStates.
-    //
-    // TODO(user): Redesign shared state to simplify this. We should also be
-    // able to share the memory between feasibility jump and ls, rather than
-    // allocating both until the first solution is found.
-    int num_fj = 0;
-    int num_fj_lin = 0;
-    for (const SatParameters& local_params : all_params) {
-      if (!local_params.use_feasibility_jump()) continue;
-      if (local_params.feasibility_jump_linearization_level() == 0) {
-        ++num_fj;
-      } else {
-        CHECK_EQ(local_params.feasibility_jump_linearization_level(), 2);
-        ++num_fj_lin;
-      }
-    }
     std::shared_ptr<SharedLsStates> fj_states;
     std::shared_ptr<SharedLsStates> fj_lin_states;
-    if (num_fj > 0) {
-      fj_states = std::make_shared<SharedLsStates>("fj", params, num_fj,
-                                                   &shared->stat_tables);
-    }
-    if (num_fj_lin > 0) {
-      fj_lin_states = std::make_shared<SharedLsStates>(
-          "fj_lin", params, num_fj_lin, &shared->stat_tables);
-    }
 
     // Build the requested subsolvers.
     for (const SatParameters& local_params : all_params) {
       if (local_params.use_feasibility_jump()) {
+        // Create the SharedLsStates if not already done.
+        std::shared_ptr<SharedLsStates> states;
+        if (local_params.feasibility_jump_linearization_level() == 0) {
+          if (fj_states == nullptr) {
+            fj_states = std::make_shared<SharedLsStates>(
+                local_params.name(), params, &shared->stat_tables);
+          }
+          states = fj_states;
+        } else {
+          if (fj_lin_states == nullptr) {
+            fj_lin_states = std::make_shared<SharedLsStates>(
+                local_params.name(), params, &shared->stat_tables);
+          }
+          states = fj_lin_states;
+        }
+
         interleaved_subsolvers.push_back(
             std::make_unique<FeasibilityJumpSolver>(
                 local_params.name(), SubSolver::FIRST_SOLUTION,
-                get_linear_model(), local_params,
-                local_params.feasibility_jump_linearization_level() == 0
-                    ? fj_states
-                    : fj_lin_states,
-                shared->time_limit, shared->response, shared->bounds.get(),
-                shared->stats, &shared->stat_tables));
+                get_linear_model(), local_params, states, shared->time_limit,
+                shared->response, shared->bounds.get(), shared->stats,
+                &shared->stat_tables));
       } else {
         first_solution_full_subsolvers.push_back(
             std::make_unique<FullProblemSolver>(

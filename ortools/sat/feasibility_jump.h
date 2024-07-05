@@ -352,12 +352,24 @@ class SharedLsStates {
   // Important: max_parallelism should be greater or equal than the actual
   // number of thread sharing this class, otherwise the code will break.
   SharedLsStates(absl::string_view name, const SatParameters& params,
-                 int max_parallelism, SharedStatTables* stat_tables)
+                 SharedStatTables* stat_tables)
       : name_(name), params_(params), stat_tables_(stat_tables) {
-    Initialize(max_parallelism);
+    // We always start with at least 8 states.
+    // We will create more if there are more parallel workers as needed.
+    for (int i = 0; i < 8; ++i) CreateNewState();
   }
 
   ~SharedLsStates();
+
+  void CreateNewState() {
+    const int index = states_.size();
+    states_.emplace_back(new LsState());
+    taken_.push_back(false);
+    num_selected_.push_back(0);
+
+    // We add one no-restart per 16 states and put it last.
+    states_.back()->options.use_restart = (index % 16 != 15);
+  }
 
   // Returns the next available state in round-robin fashion.
   // This is thread safe. If we respect the max_parallelism guarantee, then
@@ -365,9 +377,10 @@ class SharedLsStates {
   LsState* GetNextState() {
     absl::MutexLock mutex_lock(&mutex_);
     int next = -1;
-    for (int i = 0; i < states_.size(); ++i) {
+    const int num_states = states_.size();
+    for (int i = 0; i < num_states; ++i) {
       const int index = round_robin_index_;
-      round_robin_index_ = (round_robin_index_ + 1) % states_.size();
+      round_robin_index_ = (round_robin_index_ + 1) % num_states;
       if (taken_[index]) continue;
       if (next == -1 || num_selected_[index] < num_selected_[next]) {
         next = index;
@@ -375,20 +388,21 @@ class SharedLsStates {
     }
 
     if (next == -1) {
-      LOG(FATAL) << "More task in flight than anounced!";
-      return nullptr;
+      // We need more parallelism and create a new state.
+      next = num_states;
+      CreateNewState();
     }
 
-    --states_[next].num_batches_before_change;
+    --states_[next]->num_batches_before_change;
     taken_[next] = true;
     num_selected_[next]++;
-    return &states_[next];
+    return states_[next].get();
   }
 
   void Release(LsState* state) {
     absl::MutexLock mutex_lock(&mutex_);
     for (int i = 0; i < states_.size(); ++i) {
-      if (state == &states_[i]) {
+      if (state == states_[i].get()) {
         taken_[i] = false;
         break;
       }
@@ -424,15 +438,13 @@ class SharedLsStates {
   }
 
  private:
-  void Initialize(int max_parallelism);
-
   const std::string name_;
   const SatParameters& params_;
   SharedStatTables* stat_tables_;
 
   mutable absl::Mutex mutex_;
   int round_robin_index_ = 0;
-  std::vector<LsState> states_;
+  std::vector<std::unique_ptr<LsState>> states_;
   std::vector<bool> taken_;
   std::vector<int> num_selected_;
   int luby_counter_ = 0;

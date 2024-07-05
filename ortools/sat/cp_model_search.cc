@@ -704,13 +704,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_optimize_with_lb_tree_search(false);
     new_params.set_optimize_with_max_hs(false);
 
-    strategies["shared_tree_default_lp"] = new_params;
-
-    new_params.set_linearization_level(0);
-    strategies["shared_tree_no_lp"] = new_params;
-
-    new_params.set_linearization_level(2);
-    strategies["shared_tree_max_lp"] = new_params;
+    strategies["shared_tree"] = new_params;
   }
 
   // Base parameters for LNS worker.

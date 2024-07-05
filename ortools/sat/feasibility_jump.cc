@@ -101,8 +101,8 @@ std::pair<int64_t, double> JumpTable::GetJump(int var) {
 
 SharedLsStates::~SharedLsStates() {
   // Do a final collection.
-  for (const LsState& state : states_) {
-    CollectStatistics(state);
+  for (int i = 0; i < states_.size(); ++i) {
+    CollectStatistics(*states_[i].get());
   }
 
   // Display aggregated states
@@ -114,26 +114,6 @@ SharedLsStates::~SharedLsStates() {
         counters.num_compound_moves, counters.num_backtracks,
         counters.num_weight_updates, counters.num_scores_computed);
   }
-}
-
-void SharedLsStates::Initialize(int max_parallelism) {
-  states_.clear();
-
-  // Note(user): The continuous perturbation/weight_reset do not bring much
-  // currently, it might just need more tuning.
-  const int num_no_restart = max_parallelism / 16;
-  states_.resize(num_no_restart + std::max(8, max_parallelism));
-
-  int i = 0;
-  for (; i + num_no_restart < states_.size(); ++i) {
-    states_[i].options.use_restart = true;
-  }
-  for (; i < states_.size(); ++i) {
-    states_[i].options.use_restart = false;
-  }
-
-  taken_.resize(states_.size(), false);
-  num_selected_.resize(states_.size(), 0);
 }
 
 FeasibilityJumpSolver::~FeasibilityJumpSolver() {
