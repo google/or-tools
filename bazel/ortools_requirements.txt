@@ -8,7 +8,7 @@ absl-py==2.0.0
     # via -r ortools_requirements.in
 black==24.3.0
     # via -r ortools_requirements.in
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
 charset-normalizer==3.3.2
     # via requests
