@@ -66,6 +66,11 @@ absl::StatusOr<std::string> ExportModelAsLpFormat(
     const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
 
+bool WriteModelAsLpFormat(
+    const MPModelProto& model,
+    const std::string& file_path,
+    const MPModelExportOptions& options = MPModelExportOptions());
+
 /**
  * Outputs the current model (variables, constraints, objective) as a string
  * encoded in MPS file format, using the "free" MPS format.
@@ -94,6 +99,11 @@ absl::StatusOr<std::string> ExportModelAsLpFormat(
 absl::StatusOr<std::string> ExportModelAsMpsFormat(
     const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
+
+bool WriteModelAsMpsFormat(
+  const MPModelProto& model,
+  const std::string& file_path,
+  const MPModelExportOptions& options = MPModelExportOptions());
 
 }  // namespace operations_research
 

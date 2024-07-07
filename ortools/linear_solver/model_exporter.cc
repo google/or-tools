@@ -34,6 +34,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/fp_utils.h"
+#include "zlib.h"
 
 ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
@@ -79,6 +80,44 @@ void LineBreaker::Append(absl::string_view s) {
   }
   absl::StrAppend(&output_, s);
 }
+
+class GzFileWrapper : public std::streambuf {
+public:
+    GzFileWrapper(const std::string& file_path, const char* mode) {
+        gz_file = gzopen(file_path.c_str(), mode);
+        if (!gz_file) {
+            throw std::runtime_error("Failed to open file");
+        }
+    }
+
+    ~GzFileWrapper() override {
+        if (gz_file) {
+            gzclose(gz_file);
+        }
+    }
+
+    // Delete copy constructor and assignment operator to prevent copying
+    GzFileWrapper(const GzFileWrapper&) = delete;
+    GzFileWrapper& operator=(const GzFileWrapper&) = delete;
+
+protected:
+    std::streamsize xsputn(const char* s, std::streamsize n) override {
+        return gzwrite(gz_file, s, n);
+    }
+
+    int overflow(int c) override {
+        if (c != EOF) {
+            char z = c;
+            if (gzwrite(gz_file, &z, 1) != 1) {
+                return EOF;
+            }
+        }
+        return c;
+    }
+
+private:
+    gzFile gz_file;
+};
 
 class MPModelProtoExporter {
  public:
@@ -245,6 +284,57 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
     return absl::InvalidArgumentError("Unable to export model.");
   }
   return output.str();
+}
+
+bool WriteModelAsLpFormat(
+  const MPModelProto& model,
+  const std::string& file_path,
+  const MPModelExportOptions& options) {
+  for (const MPGeneralConstraintProto& general_constraint :
+       model.general_constraint()) {
+    if (!general_constraint.has_indicator_constraint()) {
+      std::cerr << "Non-indicator general constraints are not supported.";
+      return false;
+    }
+  }
+
+  try {
+    GzFileWrapper out(file_path, "wb");
+    std::ostream output(&out);
+    MPModelProtoExporter exporter(model);
+    if (exporter.ExportModelAsLpFormat(options, output)) {
+      return true;
+    }
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+  }
+
+  std::cerr << "Unable to export model.";
+  return false;
+}
+
+bool WriteModelAsMpsFormat(
+  const MPModelProto& model,
+  const std::string& file_path,
+  const MPModelExportOptions& options) {
+  if (model.general_constraint_size() > 0) {
+    std::cerr << "General constraints are not supported.";
+    return false;
+  }
+
+  try {
+    GzFileWrapper out(file_path, "wb");
+    std::ostream output(&out);
+    MPModelProtoExporter exporter(model);
+    if (exporter.ExportModelAsMpsFormat(options, output)) {
+      return true;
+    }
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+  }
+
+  std::cerr << "Unable to export model.";
+  return false;
 }
 
 namespace {
