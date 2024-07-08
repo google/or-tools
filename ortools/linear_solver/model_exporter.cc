@@ -601,6 +601,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     if (binary_var_index < 0 || binary_var_index >= proto_.variable_size()) {
       return false;
     }
+    show_variable[binary_var_index] = true;
     line_breaker.Append(absl::StrFormat(
         "%s = %d -> ", exported_variable_names_[binary_var_index],
         binary_var_value));

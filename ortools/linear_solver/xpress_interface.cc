@@ -227,7 +227,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
       : xprsprob_(xprsprob),
         event_(event),
         num_nodes_(num_nodes),
-        variable_values_(0){};
+        variable_values_(0) {};
 
   // Implementation of the interface.
   MPCallbackEvent Event() override { return event_; };
@@ -260,7 +260,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
 // Wraps the MPCallback in order to catch and store exceptions
 class MPCallbackWrapper {
  public:
-  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
+  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback) {};
   MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
   // exceptions thrown in our call-back code are not caught by XPRESS.
@@ -971,8 +971,6 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
 }
 
 // Setup the right-hand side of a constraint.
-// The function is expected to _always_ set rhs, sense, range. So for
-// non-ranged rows it must set range to zero.
 void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                               double& range) {
   if (lb == ub) {
@@ -1246,7 +1244,8 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressToMPSolverBasisStatus(int xpress_basis_status) {
+static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
+    int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
       return MPSolver::AT_LOWER_BOUND;

@@ -29,6 +29,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/commandlineflags.h"
@@ -447,7 +448,7 @@ class LazyMPModelNameToIndexMaps {
 
   absl::StatusOr<int> LookupName(
       MPModelProto::Annotation::TargetType target_type,
-      const std::string& name) {
+      absl::string_view name) {
     const absl::flat_hash_map<std::string, int>* map = nullptr;
     switch (target_type) {
       case MPModelProto::Annotation::VARIABLE_DEFAULT:
@@ -470,7 +471,7 @@ class LazyMPModelNameToIndexMaps {
         map = &general_constraint_name_to_index_.value();
         break;
     }
-    const int index = gtl::FindWithDefault(*map, name, -2);
+    const int index = gtl::FindWithDefault(*map, std::string(name), -2);
     if (index == -2) return absl::NotFoundError("name not found");
     if (index == -1) return absl::InvalidArgumentError("name is not unique");
     return index;
