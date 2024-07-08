@@ -243,6 +243,7 @@ if(BUILD_HIGHS)
   message(CHECK_START "Fetching HiGHS")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(CI OFF) # disable CI tests
+  set(BUILD_EXAMPLES OFF)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
