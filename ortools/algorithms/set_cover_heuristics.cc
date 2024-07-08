@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <limits>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -60,11 +61,11 @@ bool Preprocessor::NextSolution(absl::Span<const SubsetIndex> focus) {
   for (const ElementIndex element : inv_->model()->ElementRange()) {
     if (rows[element].size() == 1) {
       const SubsetIndex subset = rows[element][RowEntryIndex(0)];
-      if (in_focus[subset]) {
+      if (in_focus[subset] && !inv_->is_selected()[subset]) {
         inv_->Select(subset);
-      ++num_columns_fixed_by_singleton_row_;
+        ++num_columns_fixed_by_singleton_row_;
+      }
     }
-  }
   }
   inv_->CompressTrace();
   return true;
@@ -129,7 +130,7 @@ bool GreedySolutionGenerator::NextSolution(
   for (const SubsetIndex subset : focus) {
     elements_per_cost[subset] = 1.0 / costs[subset];
   }
-  std::vector<SubsetIndexWithPriority> subset_priorities;
+  std::vector<std::pair<float, SubsetIndex::ValueType>> subset_priorities;
   DVLOG(1) << "focus.size(): " << focus.size();
   subset_priorities.reserve(focus.size());
   for (const SubsetIndex subset : focus) {
@@ -144,10 +145,11 @@ bool GreedySolutionGenerator::NextSolution(
   // The priority queue maintains the maximum number of elements covered by unit
   // of cost. We chose 16 as the arity of the heap after some testing.
   // TODO(user): research more about the best value for Arity.
-  AdjustableKAryHeap<SubsetIndexWithPriority, 16, true> pq(
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 16, true> pq(
       subset_priorities, inv_->model()->num_subsets());
   while (!pq.IsEmpty()) {
-    const SubsetIndex best_subset(pq.Pop().index());
+    const SubsetIndex best_subset(pq.TopIndex());
+    pq.Pop();
     inv_->Select(best_subset);
     // NOMUTANTS -- reason, for C++
     if (inv_->num_uncovered_elements() == 0) break;
@@ -180,7 +182,7 @@ bool ElementDegreeSolutionGenerator::NextSolution() {
   const SubsetIndex num_subsets(inv_->model()->num_subsets());
   const SubsetBoolVector in_focus(num_subsets, true);
   return NextSolution(in_focus, inv_->model()->subset_costs());
-  }
+}
 
 bool ElementDegreeSolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
@@ -276,7 +278,7 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
 
   // Create priority queue with cost of using a subset, by decreasing order.
   // Do it only for selected AND removable subsets.
-  std::vector<SubsetIndexWithPriority> subset_priorities;
+  std::vector<std::pair<float, SubsetIndex::ValueType>> subset_priorities;
   subset_priorities.reserve(in_focus.size());
   for (const SetCoverDecision& decision : inv_->trace()) {
     const SubsetIndex subset = decision.subset();
@@ -287,11 +289,12 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus,
     }
   }
   DVLOG(1) << "subset_priorities.size(): " << subset_priorities.size();
-  AdjustableKAryHeap<SubsetIndexWithPriority, 16, true> pq(
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 16, true> pq(
       subset_priorities, inv_->model()->num_subsets());
   for (int iteration = 0; iteration < num_iterations && !pq.IsEmpty();
        ++iteration) {
-    const SubsetIndex best_subset(pq.Pop().index());
+    const SubsetIndex best_subset(pq.TopIndex());
+    pq.Pop();
     DCHECK(inv_->is_selected()[best_subset]);
     DCHECK(inv_->ComputeIsRedundant(best_subset));
     DCHECK_GT(costs[best_subset], 0.0);
@@ -482,7 +485,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
   }
   for (int iteration = 0; iteration < num_iterations; ++iteration) {
     // Improve current solution respective to the current penalties.
-    SubsetIndex best_subset = SubsetIndex(priority_heap_.Top().index());
+    const SubsetIndex best_subset(priority_heap_.TopIndex());
 
     if (inv_->is_selected()[best_subset]) {
       utility_heap_.Insert({0, best_subset.value()});
@@ -491,11 +494,12 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
           {static_cast<float>(inv_->model()->subset_costs()[best_subset] /
                               (1 + penalties_[best_subset])),
            best_subset.value()});
-        }
+    }
     inv_->FlipAndFullyUpdate(best_subset);  // Flip the best subset.
 
     // Getting the subset with highest utility.
-    SubsetIndex penalized_subset = SubsetIndex(utility_heap_.Pop().index());
+    const SubsetIndex penalized_subset(utility_heap_.TopIndex());
+    utility_heap_.Pop();
     ++penalties_[penalized_subset];
     utility_heap_.Insert(
         {static_cast<float>(inv_->model()->subset_costs()[penalized_subset] /
@@ -507,7 +511,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus,
       const float delta_selected = (penalization_factor_ * penalties_[subset] +
                                     inv_->model()->subset_costs()[subset]);
       priority_heap_.Insert({delta_selected, subset.value()});
-        }
+    }
     for (const SubsetIndex subset : {penalized_subset, best_subset}) {
       const float delta = ComputeDelta(subset);
       if (delta < kInfinity) {

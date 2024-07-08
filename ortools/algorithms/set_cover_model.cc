@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -205,13 +206,14 @@ void SetCoverModel::ImportModelFromProto(const SetCoverProto& message) {
 namespace {
 // Returns the standard deviation of the vector v, excluding those values that
 // are zero.
-double StandardDeviation(const std::vector<ssize_t>& v) {
-  const ssize_t size = v.size();
+template <typename T>
+double StandardDeviation(const std::vector<T>& values) {
+  const size_t size = values.size();
   double n = 0.0;  // n is used in a calculation involving doubles.
   double sum_of_squares = 0.0;
   double sum = 0.0;
-  for (ssize_t i = 0; i < size; ++i) {
-    double sample = static_cast<double>(v[i]);
+  for (size_t i = 0; i < size; ++i) {
+    double sample = static_cast<double>(values[i]);
     if (sample == 0.0) continue;
     sum_of_squares += sample * sample;
     sum += sample;
@@ -233,18 +235,24 @@ SetCoverModel::Stats ComputeStats(std::vector<T> sizes) {
   return stats;
 }
 
-std::vector<ssize_t> ComputeDeciles(std::vector<ssize_t> values) {
+template <typename T>
+std::vector<T> ComputeDeciles(std::vector<T> values) {
   const int kNumDeciles = 10;
-  std::vector<ssize_t> deciles;
+  std::vector<T> deciles;
   deciles.reserve(kNumDeciles);
   for (int i = 1; i <= kNumDeciles; ++i) {
-    const ssize_t point = values.size() * i / kNumDeciles - 1;
+    const size_t point = values.size() * i / kNumDeciles - 1;
     std::nth_element(values.begin(), values.begin() + point, values.end());
     deciles.push_back(values[point]);
   }
   return deciles;
 }
 }  // namespace
+SetCoverModel::Stats SetCoverModel::ComputeCostStats() {
+  std::vector<Cost> subset_costs(num_subsets());
+  std::copy(subset_costs_.begin(), subset_costs_.end(), subset_costs.begin());
+  return ComputeStats(std::move(subset_costs));
+}
 
 SetCoverModel::Stats SetCoverModel::ComputeRowStats() {
   std::vector<ssize_t> row_sizes(num_elements(), 0);

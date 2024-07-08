@@ -233,6 +233,9 @@ class SetCoverModel {
     }
   };
 
+  // Computes basic statistics on costs and returns a Stats structure.
+  Stats ComputeCostStats();
+
   // Computes basic statistics on rows and returns a Stats structure.
   Stats ComputeRowStats();
 

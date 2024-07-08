@@ -48,7 +48,7 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
       break;
     case SetCoverMipSolver::GUROBI:
       if (use_integers) {
-      problem_type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+        problem_type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
       } else {
         problem_type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
       }
@@ -121,10 +121,10 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus,
       return false;
   }
   if (use_integers) {
-  for (const SubsetIndex subset : focus) {
-    choices[subset] = (vars[subset]->solution_value() > 0.9);
-  }
-  inv_->LoadSolution(choices);
+    for (const SubsetIndex subset : focus) {
+      choices[subset] = (vars[subset]->solution_value() > 0.9);
+    }
+    inv_->LoadSolution(choices);
   } else {
     lower_bound_ = solver.Objective().Value();
   }

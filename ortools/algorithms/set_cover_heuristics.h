@@ -464,11 +464,11 @@ class GuidedLocalSearch {
 
   // The priority heap used to select the subset with the maximum priority to be
   // updated.
-  AdjustableKAryHeap<SubsetIndexWithPriority, 2, true> priority_heap_;
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> priority_heap_;
 
   // The utility heap used to select the subset with the maximum utility to be
   // penalized.
-  AdjustableKAryHeap<SubsetIndexWithPriority, 2, true> utility_heap_;
+  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> utility_heap_;
 };
 
 // Randomly clears a proportion num_subsets variables in the solution.

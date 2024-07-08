@@ -36,6 +36,9 @@ void LogStats(std::string name, SetCoverModel* model) {
             << ", num_subsets, " << model->num_subsets();
   LOG(INFO) << ", " << name << ", num_nonzeros, " << model->num_nonzeros()
             << ", fill rate, " << model->FillRate();
+  LOG(INFO) << ", " << name << ", cost, "
+            << model->ComputeCostStats().DebugString();
+
   LOG(INFO) << ", " << name << ", num_rows, " << model->num_elements()
             << ", rows sizes, " << model->ComputeRowStats().DebugString();
   LOG(INFO) << ", " << name << ", row size deciles, "
@@ -186,7 +189,7 @@ double RunSolver(std::string name, SetCoverModel* model) {
   RunMip(name, model);
   RunChvatalAndGLS(name, model);
   SetCoverInvariant inv = RunElementDegreeGreedyAndSteepest(name, model);
-  // IterateClearAndMip(name, inv);
+  //  IterateClearAndMip(name, inv);
   IterateClearElementDegreeAndSteepest(name, inv);
   return inv.cost();
 }

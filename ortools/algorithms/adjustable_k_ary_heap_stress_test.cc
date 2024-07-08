@@ -45,30 +45,9 @@ ABSL_FLAG(double, fraction_to_remove, 0.001,
 
 namespace operations_research {
 
-class PriorityAggregate {
- public:
-  using Index = int32_t;
-  using Priority = double;
-  PriorityAggregate() = default;
-  PriorityAggregate(Priority priority, Index index)
-      : index_(index), priority_(priority) {}
-  Priority priority() const { return priority_; }
-  Index index() const { return index_; }
-  inline bool operator<(const PriorityAggregate other) const {
-    if (other.priority() != priority()) {
-      return priority() < other.priority();
-    }
-    return index() < other.index();
-  }
-
- private:
-  Index index_;
-  Priority priority_;
-};
-
-template <typename Aggregate, int Arity, bool IsMaxHeap>
+template <typename Priority, typename Index, int Arity, bool IsMaxHeap>
 void StressTest() {
-  AdjustableKAryHeap<Aggregate, Arity, IsMaxHeap> heap;
+  AdjustableKAryHeap<Priority, Index, Arity, IsMaxHeap> heap;
   std::mt19937 rnd(/*seed=*/301);
   const int32_t num_elements = absl::GetFlag(FLAGS_num_elements);
   const double fraction_to_change =
@@ -124,20 +103,24 @@ void StressTest() {
   if (IsMaxHeap) {
     double largest = std::numeric_limits<double>::infinity();
     while (!heap.IsEmpty()) {
-      auto elem = heap.Pop();
-      CHECK_LE(elem.priority(), largest);
-      largest = elem.priority();
-      heap.Remove(elem.index());
+      const auto prio = heap.TopPriority();
+      const auto idx = heap.TopIndex();
+      heap.Pop();
+      CHECK_LE(prio, largest);
+      largest = prio;
+      heap.Remove(idx);
       LOG_EVERY_POW_2(INFO)
           << "heap.Remove, heap.heap_size() = " << heap.heap_size();
     }
   } else {
     double smallest = -std::numeric_limits<double>::infinity();
     while (!heap.IsEmpty()) {
-      auto elem = heap.Pop();
-      CHECK_LE(smallest, elem.priority());
-      smallest = elem.priority();
-      heap.Remove(elem.index());
+      const auto prio = heap.TopPriority();
+      const auto idx = heap.TopIndex();
+      heap.Pop();
+      CHECK_LE(smallest, prio);
+      smallest = prio;
+      heap.Remove(idx);
       LOG_EVERY_POW_2(INFO)
           << "heap.Remove, heap.heap_size() = " << heap.heap_size();
     }
@@ -147,10 +130,10 @@ void StressTest() {
 
 #define ADJUSTABLE_KARY_HEAP_STRESS_TEST(arity)           \
   TEST(AdjustableKAryHeapTest, Stress32Bit##arity##Max) { \
-    StressTest<PriorityAggregate, arity, true>();         \
+    StressTest<double, int32_t, arity, true>();           \
   }                                                       \
   TEST(AdjustableKAryHeapTest, Stress32Bit##arity##Min) { \
-    StressTest<PriorityAggregate, arity, false>();        \
+    StressTest<double, int32_t, arity, false>();          \
   }
 
 ADJUSTABLE_KARY_HEAP_STRESS_TEST(2);
