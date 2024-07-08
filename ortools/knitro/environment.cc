@@ -1402,7 +1402,15 @@ absl::Status LoadKnitroDynamicLibrary(std::string& knitropath) {
     if (knitro_library.LibraryIsLoaded()) {
       LOG(INFO) << "Loading all Knitro functions";
       LoadKnitroFunctions(&knitro_library);
-      knitro_load_status = absl::OkStatus();
+
+      KN_context* kn = nullptr;
+      if (KN_new(&kn) != 0 || kn == nullptr) {
+        knitro_load_status = absl::InternalError(
+            absl::StrFormat("Failed while trying to generate a Knitro solver object"));
+      } else {
+        knitro_load_status = absl::OkStatus();
+        KN_free(&kn);
+      }
     } else {
       knitro_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Knitro shared library. Looked in: [",
@@ -1422,14 +1430,6 @@ bool KnitroIsCorrectlyInstalled() {
     LOG(WARNING) << status << "\n";
     return false;
   }
-
-  KN_context* kn = nullptr;
-  if (KN_new(&kn) != 0 || kn == nullptr) {
-    LOG(WARNING) << "Failed to Init Knitro Env";
-    return false;
-  }
-
-  KN_free(&kn);
 
   return true;
 }
