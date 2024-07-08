@@ -106,37 +106,42 @@ function clean_build() {
 
 function expand_bootlin_config() {
   # ref: https://toolchains.bootlin.com/
-  local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
-
   case "${TARGET}" in
-    "aarch64")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2021.11-1.tar.bz2"
+    "arm64" | "aarch64")
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2024.02-1.tar.bz2"
       local -r GCC_PREFIX="aarch64"
+      local -r GCC_SUFFIX=""
       ;;
-    "aarch64be")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2021.11-1.tar.bz2"
+    "arm64be" | "aarch64be")
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64be/tarballs/aarch64be--glibc--stable-2024.02-1.tar.bz2"
       local -r GCC_PREFIX="aarch64_be"
-      ;;
-    "ppc64le" | "ppc64le-power8")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2021.11-1.tar.bz2"
-      local -r GCC_PREFIX="powerpc64le"
-      ;;
-    "ppc64" | "ppc64-power8")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2021.11-1.tar.bz2"
-      local -r GCC_PREFIX="powerpc64"
-      ;;
-    "ppc-e500mc")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2021.11-1.tar.bz2"
-      local -r GCC_PREFIX="powerpc"
-      QEMU_ARGS+=( -cpu "e500mc" )
+      local -r GCC_SUFFIX=""
       ;;
     "ppc" | "ppc-440fp")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2021.11-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-440fp/tarballs/powerpc-440fp--glibc--stable-2024.02-1.tar.bz2"
       local -r GCC_PREFIX="powerpc"
+      local -r GCC_SUFFIX=""
+      ;;
+    "ppc-e500mc")
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc-e500mc/tarballs/powerpc-e500mc--glibc--stable-2024.02-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc"
+      local -r GCC_SUFFIX=""
+      QEMU_ARGS+=( -cpu "e500mc" )
+      ;;
+    "ppc64" | "ppc64-power8")
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64-power8/tarballs/powerpc64-power8--glibc--stable-2024.02-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc64"
+      local -r GCC_SUFFIX=""
+      ;;
+    "ppc64le" | "ppc64le-power8")
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/powerpc64le-power8/tarballs/powerpc64le-power8--glibc--stable-2024.02-1.tar.bz2"
+      local -r GCC_PREFIX="powerpc64le"
+      local -r GCC_SUFFIX=""
       ;;
     "riscv64")
-      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2022.08-1.tar.bz2"
+      local -r TOOLCHAIN_URL="https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2024.02-1.tar.bz2"
       local -r GCC_PREFIX="riscv64"
+      local -r GCC_SUFFIX=""
       ;;
     *)
       >&2 echo 'unknown power platform'
@@ -152,7 +157,7 @@ function expand_bootlin_config() {
     mv "${EXTRACT_DIR}" "${TOOLCHAIN_DIR}"
   fi
 
-  local -r SYSROOT_DIR="${TOOLCHAIN_DIR}/${GCC_PREFIX}-buildroot-linux-gnu/sysroot"
+  local -r SYSROOT_DIR="${TOOLCHAIN_DIR}/${GCC_PREFIX}-buildroot-linux-gnu${GCC_SUFFIX}/sysroot"
   #local -r STAGING_DIR=${SYSROOT_DIR}-stage
 
   # Write a Toolchain file
@@ -353,9 +358,9 @@ DESCRIPTION
 \t* PROJECT: glop or-tools
 \t* TARGET:
 \t\tx86_64
-\t\taarch64 aarch64be (bootlin)
-\t\tmips64 mips64el (codespace)
-\t\tppc (bootlin)
+\t\taarch64(arm64) aarch64be(arm64be) (bootlin)
+\t\tmips64-r6(mips64) mips64el-r6(mips64el) mips64-r2 mips64el-r2 (codespace)
+\t\tppc-440fp(ppc) ppc-e500mc (bootlin)
 \t\tppc64 ppc64le (bootlin)
 \t\triscv64 (bootlin)
 
@@ -417,27 +422,31 @@ function main() {
   case ${TARGET} in
     x86_64)
       declare -r QEMU_ARCH=x86_64 ;;
-    aarch64)
+    arm64 | aarch64)
       expand_bootlin_config
       declare -r QEMU_ARCH=aarch64 ;;
-    aarch64be)
+    arm64be | aarch64be)
       expand_bootlin_config
       declare -r QEMU_ARCH=aarch64_be ;;
-    mips64)
+
+    mips64 | mips64-r6 | mips64-r2)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64 ;;
-    mips64el)
+    mips64el | mips64el-r6 | mips64el-r2)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
-    ppc64le)
-      expand_bootlin_config
-      declare -r QEMU_ARCH=ppc64le ;;
-    ppc64)
-      expand_bootlin_config
-      declare -r QEMU_ARCH=ppc64 ;;
-    ppc)
+
+    ppc | ppc-440fp | ppc-e500mc )
       expand_bootlin_config
       declare -r QEMU_ARCH=ppc ;;
+    ppc64 | ppc64-power8)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=ppc64 ;;
+    ppc64le | ppc64le-power8)
+      expand_bootlin_config
+      declare -r QEMU_ARCH=ppc64le ;;
+
+
     riscv64)
       expand_bootlin_config
       declare -r QEMU_ARCH=riscv64 ;;

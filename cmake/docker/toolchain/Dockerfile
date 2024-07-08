@@ -25,7 +25,10 @@ ENV PROJECT=or-tools
 ARG TARGET
 ENV TARGET=${TARGET:-unknown}
 
-FROM devel AS build
+FROM devel AS toolchain
+RUN ./tools/cross_compile.sh toolchain
+
+FROM toolchain AS build
 RUN cmake --version
 RUN ./tools/cross_compile.sh build
 
