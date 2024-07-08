@@ -513,6 +513,13 @@ class Solver {
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
     SWAPACTIVE,
 
+    /// Operator which replaces a chain of active nodes by an inactive one.
+    /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    /// (where 1 and 4 are first and last nodes of the path) are:
+    ///   1 -> [5] ->  3  -> 4 with 2 inactive
+    ///   1 ->  2  -> [5] -> 4 with 3 inactive
+    ///   1 -> [5] -> 4 with 2 and 3 inactive
+    SWAPACTIVECHAIN,
     /// Operator which makes an inactive node active and an active one inactive.
     /// It is similar to SwapActiveOperator except that it tries to insert the
     /// inactive node in all possible positions instead of just the position of

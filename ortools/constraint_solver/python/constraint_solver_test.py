@@ -69,6 +69,14 @@ class ConstraintSolverTest(absltest.TestCase):
         except ValueError:
             print("  fail caught")
 
+    def test_rabbits_pheasants(self):
+        print("test_rabbits_pheasants")
+        solver = constraint_solver.Solver("test_rabbits_pheasants")
+        rabbits = solver.new_int_var(0, 20, "rabbits")
+        pheasants = solver.new_int_var(0, 20, "pheasants")
+        solver.add(rabbits + pheasants == 20)
+        solver.add(4 * rabbits + 2 * pheasants == 56)
+        solver.accept(solver.print_model_visitor())
 
 if __name__ == "__main__":
     absltest.main()

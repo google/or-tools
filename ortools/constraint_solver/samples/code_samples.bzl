@@ -15,19 +15,19 @@
 
 def code_sample_cc(name):
     native.cc_binary(
-        name=name + "_cc",
-        srcs=[name + ".cc"],
-        deps=[
+        name = name + "_cc",
+        srcs = [name + ".cc"],
+        deps = [
             "//ortools/base",
             "//ortools/constraint_solver:cp",
         ],
     )
 
     native.cc_test(
-        name=name + "_cc_test",
-        size="small",
-        srcs=[name + ".cc"],
-        deps=[
+        name = name + "_cc_test",
+        size = "small",
+        srcs = [name + ".cc"],
+        deps = [
             ":" + name + "_cc",
             "//ortools/base",
             "//ortools/constraint_solver:cp",

@@ -1709,6 +1709,7 @@ LocalSearchOperator* MakeLocalSearchOperatorWithNeighbors(
 /// class MakeInactiveOperator;
 /// class MakeChainInactiveOperator;
 /// class SwapActiveOperator;
+/// class SwapActiveChainOperator;
 /// class ExtendedSwapActiveOperator;
 /// class MakeActiveAndRelocate;
 /// class RelocateAndMakeActiveOperator;

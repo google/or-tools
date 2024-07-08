@@ -35,9 +35,11 @@ using ::operations_research::AssignmentProto;
 using ::operations_research::BaseObject;
 using ::operations_research::Constraint;
 using ::operations_research::ConstraintSolverParameters;
+using ::operations_research::DecisionBuilder;
 using ::operations_research::IntervalVar;
 using ::operations_research::IntExpr;
 using ::operations_research::IntVar;
+using ::operations_research::ModelVisitor;
 using ::operations_research::PropagationBaseObject;
 using ::operations_research::Solver;
 using ::pybind11::arg;
@@ -147,6 +149,13 @@ PYBIND11_MODULE(constraint_solver, m) {
            pybind11::overload_cast<const std::vector<int64_t>&>(
                &Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar_2),
+           pybind11::return_value_policy::reference_internal)
+      .def("add", &Solver::AddConstraint,
+           DOC(operations_research, Solver, AddConstraint), arg("c"))
+      .def("accept", &Solver::Accept, DOC(operations_research, Solver, Accept),
+           arg("visitor"))
+      .def("print_model_visitor", &Solver::MakePrintModelVisitor,
+           DOC(operations_research, Solver, MakePrintModelVisitor),
            pybind11::return_value_policy::reference_internal);
 
   pybind11::class_<BaseObject>(m, "BaseObject",
@@ -211,6 +220,18 @@ PYBIND11_MODULE(constraint_solver, m) {
           [](IntExpr* e, IntExpr* arg) {
             return e->solver()->MakeProd(e, arg);
           },
+          pybind11::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeEquality(left, right);
+          },
+          pybind11::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeEquality(left, right);
+          },
           pybind11::return_value_policy::reference_internal);
 
   // Note: no ctor.
@@ -222,6 +243,20 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, IntVar, RemoveValue), arg("v"))
       .def("size", &IntVarPythonHelper::Size,
            DOC(operations_research, IntVar, Size));
+  // Note: no ctor.
+  pybind11::class_<Constraint>(m, "Constraint",
+                               DOC(operations_research, Constraint))
+      .def("var", &Constraint::Var, DOC(operations_research, Constraint, Var));
+
+  // Note: no ctor.
+  pybind11::class_<DecisionBuilder, BaseObject>(
+      m, "DecisionBuilder", DOC(operations_research, DecisionBuilder))
+      .def_property("name", &DecisionBuilder::GetName,
+                    &DecisionBuilder::set_name);
+
+  // Note: no ctor.
+  pybind11::class_<ModelVisitor, BaseObject>(
+      m, "ModelVisitor", DOC(operations_research, ModelVisitor));
 
   pybind11::class_<Assignment, PropagationBaseObject>(
       m, "Assignment", DOC(operations_research, Assignment))

@@ -13,14 +13,14 @@
 
 load(":code_samples.bzl", "code_sample_cc")
 
-code_sample_cc(name="minimal_jobshop_cp")
+code_sample_cc(name = "minimal_jobshop_cp")
 
-code_sample_cc(name="nqueens_cp")
+code_sample_cc(name = "nqueens_cp")
 
-code_sample_cc(name="nurses_cp")
+code_sample_cc(name = "nurses_cp")
 
-code_sample_cc(name="rabbits_and_pheasants_cp")
+code_sample_cc(name = "rabbits_and_pheasants_cp")
 
-code_sample_cc(name="simple_cp_program")
+code_sample_cc(name = "simple_cp_program")
 
-code_sample_cc(name="simple_ls_program")
+code_sample_cc(name = "simple_ls_program")

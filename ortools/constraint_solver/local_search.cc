@@ -1312,7 +1312,7 @@ class RelocateAndMakeActiveOperator : public BaseInactiveNodeToPathOperator {
   }
 
   std::string DebugString() const override {
-    return "RelocateAndMakeActiveOpertor";
+    return "RelocateAndMakeActiveOperator";
   }
 };
 
@@ -1467,6 +1467,74 @@ bool SwapActiveOperator::MakeNeighbor() {
   const int64_t base = BaseNode(0);
   return MakeChainInactive(base, Next(base)) &&
          MakeActive(GetInactiveNode(), base);
+}
+
+class SwapActiveChainOperator : public BaseInactiveNodeToPathOperator {
+ public:
+  SwapActiveChainOperator(const std::vector<IntVar*>& vars,
+                          const std::vector<IntVar*>& secondary_vars,
+                          std::function<int(int64_t)> start_empty_path_class)
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
+                                       std::move(start_empty_path_class)),
+        last_before_chain_(-1),
+        last_chain_end_(-1) {}
+  ~SwapActiveChainOperator() override {}
+  bool MakeNeighbor() override;
+  bool IsIncremental() const override { return true; }
+  void Reset() override {
+    PathOperator::Reset();
+    // When using metaheuristics, path operators will reactivate optimal
+    // routes and iterating will start at route starts, which can
+    // potentially be out of sync with the last incremental moves. This requires
+    // resetting incrementalism.
+    last_chain_end_ = -1;
+  }
+
+ protected:
+  bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
+    return true;
+  }
+  // TODO(user): Skip unfeasible chains by forcing the first base node to be
+  // before the second one. Ideally this should be done as follows:
+  // int64_t GetBaseNodeRestartPosition(int base_index) override {
+  //   return (base_index == 0) ? StartNode(base_index) : BaseNode(base_index -
+  //   1);
+  // }
+  // However due to the fact we are iterating over the chains multiple times
+  // (once for each unperformed node), this breaks the ending position of the
+  // neighborhood (causing an infinite iteration).
+
+  std::string DebugString() const override { return "SwapActiveChainOperator"; }
+
+ private:
+  void OnNodeInitialization() override { last_chain_end_ = -1; }
+
+  int64_t last_before_chain_;
+  int64_t last_chain_end_;
+};
+
+bool SwapActiveChainOperator::MakeNeighbor() {
+  const int64_t before_chain = BaseNode(0);
+  const int64_t chain_end = BaseNode(1);
+  if (last_before_chain_ != before_chain || last_chain_end_ == -1) {
+    RevertChanges(/*change_was_incremental=*/false);
+    last_before_chain_ = before_chain;
+    last_chain_end_ = GetInactiveNode();
+    if (!IsPathEnd(chain_end) && before_chain != chain_end &&
+        MakeChainInactive(before_chain, chain_end) &&
+        MakeActive(GetInactiveNode(), before_chain)) {
+      return true;
+    } else {
+      last_chain_end_ = -1;
+      return false;
+    }
+  }
+  if (!IsPathEnd(last_chain_end_) &&
+      MakeChainInactive(last_chain_end_, Next(last_chain_end_))) {
+    return true;
+  }
+  last_chain_end_ = -1;
+  return false;
 }
 
 // ----- ExtendedSwapActiveOperator -----
@@ -1933,7 +2001,7 @@ bool LinKernighan::MakeNeighbor() {
 const int LinKernighan::kNeighbors = 5 + 1;
 
 bool LinKernighan::GetBestOut(int64_t in_i, int64_t in_j, int64_t* out,
-                             int64_t* gain) {
+                              int64_t* gain) {
   int64_t best_gain = std::numeric_limits<int64_t>::min();
   const int64_t path = Path(in_i);
   const int64_t out_cost = evaluator_(in_i, in_j, path);
@@ -1944,8 +2012,8 @@ bool LinKernighan::GetBestOut(int64_t in_i, int64_t in_j, int64_t* out,
       const int64_t in_cost = evaluator_(in_j, next, path);
       const int64_t new_gain = CapSub(current_gain, in_cost);
       if (new_gain > 0 && best_gain < new_gain) {
-          *out = next;
-          best_gain = new_gain;
+        *out = next;
+        best_gain = new_gain;
       }
     }
   }
@@ -2506,6 +2574,7 @@ MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeChainInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveOperator)
+MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveChainOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(ExtendedSwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveAndRelocate)
 MAKE_LOCAL_SEARCH_OPERATOR(RelocateAndMakeActiveOperator)
@@ -2570,6 +2639,10 @@ LocalSearchOperator* Solver::MakeOperator(
     }
     case Solver::SWAPACTIVE: {
       return MakeLocalSearchOperator<SwapActiveOperator>(
+          this, vars, secondary_vars, nullptr);
+    }
+    case Solver::SWAPACTIVECHAIN: {
+      return MakeLocalSearchOperator<SwapActiveChainOperator>(
           this, vars, secondary_vars, nullptr);
     }
     case Solver::EXTENDEDSWAPACTIVE: {

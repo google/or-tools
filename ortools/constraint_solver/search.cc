@@ -3783,7 +3783,7 @@ class GuidedLocalSearch : public Metaheuristic {
       const std::vector<IntVar*>& vars, double penalty_factor,
       std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
           get_equivalent_pairs,
-                    bool reset_penalties_on_new_best_solution);
+      bool reset_penalties_on_new_best_solution);
   ~GuidedLocalSearch() override {}
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void ApplyDecision(Decision* d) override;
