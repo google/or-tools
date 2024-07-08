@@ -104,9 +104,7 @@ class ModelTest(absltest.TestCase):
         self.assertIsNotNone(manager)
         routing_model = model.RoutingModel(manager)
         self.assertIsNotNone(routing_model)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertEqual(RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status())
         self.assertIsNotNone(assignment)
@@ -117,9 +115,7 @@ class ModelTest(absltest.TestCase):
         self.assertIsNotNone(manager)
         routing_model = model.RoutingModel(manager)
         self.assertIsNotNone(routing_model)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertEqual(RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status())
         self.assertIsNotNone(assignment)
@@ -135,9 +131,7 @@ class ModelTest(absltest.TestCase):
         )
         self.assertEqual(1, transit_idx)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertTrue(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -148,12 +142,12 @@ class ModelTest(absltest.TestCase):
         self.assertIsNotNone(manager)
         routing_model = model.RoutingModel(manager)
         self.assertIsNotNone(routing_model)
-        transit_id = routing_model.register_transit_callback(lambda from_index, to_index: 1)
+        transit_id = routing_model.register_transit_callback(
+            lambda from_index, to_index: 1
+        )
         self.assertEqual(1, transit_id)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_id)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
         self.assertIsNotNone(assignment)
@@ -168,9 +162,7 @@ class ModelTest(absltest.TestCase):
         transit_idx = routing_model.register_transit_matrix(matrix)
         self.assertEqual(1, transit_idx)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertTrue(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -186,9 +178,7 @@ class ModelTest(absltest.TestCase):
         )
         self.assertEqual(1, transit_idx)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertTrue(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -202,9 +192,7 @@ class ModelTest(absltest.TestCase):
         transit_id = routing_model.register_unary_transit_callback(lambda from_index: 1)
         self.assertEqual(1, transit_id)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_id)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
         self.assertIsNotNone(assignment)
@@ -219,9 +207,7 @@ class ModelTest(absltest.TestCase):
         transit_idx = routing_model.register_unary_transit_vector(vector)
         self.assertEqual(1, transit_idx)
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
         self.assertTrue(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -238,9 +224,7 @@ class ModelTest(absltest.TestCase):
             functools.partial(TransitDistance, manager)
         )
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         # Solve
         search_parameters = model.default_routing_search_parameters()
         search_parameters.first_solution_strategy = (
@@ -284,7 +268,11 @@ class ModelTest(absltest.TestCase):
             index = assignment.value(routing_model.next_var(index))
             visited_nodes.append(manager.index_to_node(index))
         self.assertEqual(expected_visited_nodes, visited_nodes)
-        self.assertTrue(routing_model.is_end(assignment.value(routing_model.next_var(routing_model.start(0)))))
+        self.assertTrue(
+            routing_model.is_end(
+                assignment.value(routing_model.next_var(routing_model.start(0)))
+            )
+        )
 
     def testDimensionTSP(self):
         # Create routing model
@@ -311,7 +299,9 @@ class ModelTest(absltest.TestCase):
         node = routing_model.start(0)
         cumul = 0
         while not routing_model.is_end(node):
-            self.assertEqual(cumul, assignment.value(distance_dimension.cumul_var(node)))
+            self.assertEqual(
+                cumul, assignment.value(distance_dimension.cumul_var(node))
+            )
             next_node = assignment.value(routing_model.next_var(node))
             cumul += Distance(node, next_node)
             node = next_node
@@ -328,7 +318,9 @@ class ModelTest(absltest.TestCase):
         )
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
         # Add generic dimension
-        routing_model.add_dimension_with_vehicle_capacity(transit_idx, 90, [90], True, "distance")
+        routing_model.add_dimension_with_vehicle_capacity(
+            transit_idx, 90, [90], True, "distance"
+        )
         distance_dimension = routing_model.get_dimension_or_die("distance")
         # Solve
         search_parameters = model.default_routing_search_parameters()
@@ -341,7 +333,9 @@ class ModelTest(absltest.TestCase):
         node = routing_model.start(0)
         cumul = 0
         while not routing_model.is_end(node):
-            self.assertEqual(cumul, assignment.value(distance_dimension.cumul_var(node)))
+            self.assertEqual(
+                cumul, assignment.value(distance_dimension.cumul_var(node))
+            )
             next_node = assignment.value(routing_model.next_var(node))
             cumul += Distance(node, next_node)
             node = next_node
@@ -358,7 +352,9 @@ class ModelTest(absltest.TestCase):
         )
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
         # Add generic dimension
-        routing_model.add_dimension_with_vehicle_transits([transit_idx], 90, 90, True, "distance")
+        routing_model.add_dimension_with_vehicle_transits(
+            [transit_idx], 90, 90, True, "distance"
+        )
         distance_dimension = routing_model.get_dimension_or_die("distance")
         # Solve
         search_parameters = model.default_routing_search_parameters()
@@ -371,7 +367,9 @@ class ModelTest(absltest.TestCase):
         node = routing_model.start(0)
         cumul = 0
         while not routing_model.is_end(node):
-            self.assertEqual(cumul, assignment.value(distance_dimension.cumul_var(node)))
+            self.assertEqual(
+                cumul, assignment.value(distance_dimension.cumul_var(node))
+            )
             next_node = assignment.value(routing_model.next_var(node))
             cumul += Distance(node, next_node)
             node = next_node
@@ -393,7 +391,9 @@ class ModelTest(absltest.TestCase):
             routing_model.register_transit_callback(Two),
             routing_model.register_transit_callback(Three),
         ]
-        routing_model.add_dimension_with_vehicle_transits(distances, 90, 90, True, "distance")
+        routing_model.add_dimension_with_vehicle_transits(
+            distances, 90, 90, True, "distance"
+        )
         distance_dimension = routing_model.get_dimension_or_die("distance")
         # Solve
         search_parameters = model.default_routing_search_parameters()
@@ -428,7 +428,9 @@ class ModelTest(absltest.TestCase):
         )
         routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_idx)
         # Add constant dimension
-        constant_id, success = routing_model.add_constant_dimension(1, 100, True, "count")
+        constant_id, success = routing_model.add_constant_dimension(
+            1, 100, True, "count"
+        )
         self.assertTrue(success)
         self.assertEqual(transit_idx + 1, constant_id)
         count_dimension = routing_model.get_dimension_or_die("count")
@@ -469,15 +471,13 @@ class ModelTest(absltest.TestCase):
         vector_dimension = routing_model.get_dimension_or_die("vector")
         # Solve
         search_parameters: RoutingSearchParameters = (
-                model.default_routing_search_parameters()
+            model.default_routing_search_parameters()
         )
         self.assertIsNotNone(search_parameters)
         search_parameters.first_solution_strategy = (
             FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve_with_parameters(search_parameters)
         self.assertIsNotNone(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -503,7 +503,9 @@ class ModelTest(absltest.TestCase):
         routing_model.set_arc_cost_evaluator_of_all_vehicles(cost)
         # Add matrix dimension
         values = [[j for _ in range(5)] for j in range(5)]
-        transit_id, success = routing_model.add_matrix_dimension(values, 100, True, "matrix")
+        transit_id, success = routing_model.add_matrix_dimension(
+            values, 100, True, "matrix"
+        )
         self.assertTrue(success)
         self.assertEqual(cost + 1, transit_id)
         dimension = routing_model.get_dimension_or_die("matrix")
@@ -512,9 +514,7 @@ class ModelTest(absltest.TestCase):
         search_parameters.first_solution_strategy = (
             FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve_with_parameters(search_parameters)
         self.assertIsNotNone(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -548,9 +548,7 @@ class ModelTest(absltest.TestCase):
         search_parameters.first_solution_strategy = (
             FirstSolutionStrategy.FIRST_UNBOUND_MIN_VALUE
         )
-        self.assertEqual(
-            RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status()
-        )
+        self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve_with_parameters(search_parameters)
         self.assertIsNotNone(assignment)
         self.assertEqual(RoutingSearchStatus.ROUTING_SUCCESS, routing_model.status())
@@ -649,7 +647,8 @@ class ModelTest(absltest.TestCase):
         # Create routing model with parameters
         parameters = model.default_routing_model_parameters()
         parameters.solver_parameters.CopyFrom(
-                constraint_solver.Solver.default_solver_parameters())
+            constraint_solver.Solver.default_solver_parameters()
+        )
         parameters.solver_parameters.trace_propagation = True
         manager = model.RoutingIndexManager(10, 1, 0)
         self.assertIsNotNone(manager)

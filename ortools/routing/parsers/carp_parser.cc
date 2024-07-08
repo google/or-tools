@@ -45,7 +45,7 @@ void CarpParser::Initialize() {
   section_ = METADATA;
 }
 
-bool CarpParser::LoadFile(const std::string& file_name) {
+bool CarpParser::LoadFile(absl::string_view file_name) {
   Initialize();
   return ParseFile(file_name);
 }

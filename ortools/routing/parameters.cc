@@ -56,10 +56,11 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   IteratedLocalSearchParameters ils;
   ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
   RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
-  rr->set_ruin_strategy(RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL);
+  rr->add_ruin_strategies()
+      ->mutable_spatially_close_routes()
+      ->set_num_ruined_routes(2);
+  rr->set_ruin_composition_strategy(RuinCompositionStrategy::UNSET);
   rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
-  rr->set_num_ruined_routes(2);
-  rr->set_num_removed_visits(10);
   rr->set_route_selection_neighbors_ratio(1.0);
   rr->set_route_selection_min_neighbors(10);
   rr->set_route_selection_max_neighbors(100);
@@ -116,6 +117,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_make_inactive(BOOL_TRUE);
   o->set_use_make_chain_inactive(BOOL_TRUE);
   o->set_use_swap_active(BOOL_TRUE);
+  o->set_use_swap_active_chain(BOOL_FALSE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_TRUE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
@@ -202,6 +204,7 @@ RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   o->set_use_make_inactive(BOOL_FALSE);
   o->set_use_make_chain_inactive(BOOL_FALSE);
   o->set_use_swap_active(BOOL_FALSE);
+  o->set_use_swap_active_chain(BOOL_FALSE);
   o->set_use_extended_swap_active(BOOL_FALSE);
   o->set_use_shortest_path_swap_active(BOOL_FALSE);
   o->set_use_node_pair_swap_active(BOOL_FALSE);
@@ -279,41 +282,53 @@ void FindErrorsInIteratedLocalSearchParameters(
 
     const RuinRecreateParameters& rr = ils.ruin_recreate_parameters();
 
-    if (rr.ruin_strategy() == RuinStrategy::UNSET) {
+    if (rr.ruin_strategies().empty()) {
       errors.emplace_back(
-          StrCat("Invalid value for "
-                 "iterated_local_search_parameters.ruin_recreate_parameters."
-                 "ruin_strategy: ",
-                 rr.ruin_strategy()));
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "ruin_strategies is empty"));
     }
 
-    if (rr.ruin_strategy() == RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL) {
-      if (rr.num_ruined_routes() <= 0) {
+    if (rr.ruin_strategies().size() > 1 &&
+        rr.ruin_composition_strategy() == RuinCompositionStrategy::UNSET) {
+      errors.emplace_back(StrCat(
+          "iterated_local_search_parameters.ruin_recreate_parameters."
+          "ruin_composition_strategy cannot be unset when more than one ruin "
+          "strategy is defined"));
+    }
+
+    for (const auto& ruin : rr.ruin_strategies()) {
+      if (ruin.strategy_case() == RuinStrategy::kSpatiallyCloseRoutes &&
+          ruin.spatially_close_routes().num_ruined_routes() == 0) {
+        errors.emplace_back(StrCat(
+            "iterated_local_search_parameters.ruin_recreate_parameters."
+            "ruin is set to SpatiallyCloseRoutesRuinStrategy",
+            " but spatially_close_routes.num_ruined_routes is 0 (should be "
+            "strictly positive)"));
+      } else if (ruin.strategy_case() == RuinStrategy::kRandomWalk &&
+                 ruin.random_walk().num_removed_visits() == 0) {
         errors.emplace_back(
             StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
-                   "ruin_strategy is set to ",
-                   rr.ruin_strategy(),
-                   " but "
-                   "iterated_local_search_parameters.ruin_recreate_parameters."
-                   "num_ruined_routes is ",
-                   rr.num_ruined_routes()));
+                   "ruin is set to RandomWalkRuinStrategy",
+                   " but random_walk.num_removed_visits is 0 (should be "
+                   "strictly positive)"));
       }
-      if (const double ratio = rr.route_selection_neighbors_ratio();
-          std::isnan(ratio) || ratio < 0 || ratio > 1) {
-        errors.emplace_back(
-            StrCat("Invalid "
-                   "iterated_local_search_parameters.ruin_recreate_parameters."
-                   "route_selection_neighbors_ratio: ",
-                   ratio));
-      }
-      if (rr.route_selection_min_neighbors() >
-          rr.route_selection_max_neighbors()) {
-        errors.emplace_back(
-            StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
-                   "route_selection_min_neighbors cannot be greater than "
-                   "iterated_local_search_parameters.ruin_recreate_parameters."
-                   "route_selection_max_neighbors"));
-      }
+    }
+
+    if (const double ratio = rr.route_selection_neighbors_ratio();
+        std::isnan(ratio) || ratio < 0 || ratio > 1) {
+      errors.emplace_back(
+          StrCat("Invalid "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_neighbors_ratio: ",
+                 ratio));
+    }
+    if (rr.route_selection_min_neighbors() >
+        rr.route_selection_max_neighbors()) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_min_neighbors cannot be greater than "
+                 "iterated_local_search_parameters.ruin_recreate_parameters."
+                 "route_selection_max_neighbors"));
     }
 
     if (rr.recreate_strategy() == FirstSolutionStrategy::UNSET) {

@@ -31,6 +31,50 @@
 
 namespace operations_research {
 
+// Wraps a routing assignment providing extra features.
+class RoutingSolution {
+ public:
+  explicit RoutingSolution(const RoutingModel& model);
+
+  // Initializes the routing solution for the given assignment.
+  void Reset(const Assignment* assignment);
+
+  // Initializes next and prev pointers for the route served by the given
+  // vehicle, if not already done.
+  void InitializeRouteInfoIfNeeded(int vehicle);
+
+  // Returns whether node_index belongs to a route that has been initialized.
+  bool BelongsToInitializedRoute(int64_t node_index) const;
+
+  // Returns the next node index of the given node_index.
+  int64_t GetNextNodeIndex(int64_t node_index) const;
+
+  // Returns the previous node index of the given node_index.
+  // This must be called for node_index belonging to initialized routes.
+  int64_t GetInitializedPrevNodeIndex(int64_t node_index) const;
+
+  // Returns whether the route served by the given vehicle contains a single
+  // customer.
+  // This must be called for vehicle which has been previously initialized.
+  bool IsSingleCustomerRoute(int vehicle) const;
+
+  // Returns whether node_index can be removed from the solution.
+  // This must be called for node_index belonging to initialized routes.
+  bool CanBeRemoved(int64_t node_index) const;
+
+  // Removes the node with the given node_index.
+  // This must be called for node_index belonging to initialized routes.
+  void RemoveNode(int64_t node_index);
+
+ private:
+  const RoutingModel& model_;
+  std::vector<int64_t> nexts_;
+  std::vector<int64_t> prevs_;
+
+  // Assignment that the routing solution refers to. It's changed at every
+  // Reset call.
+  const Assignment* assignment_ = nullptr;
+};
 // Ruin interface.
 class RuinProcedure {
  public:
@@ -75,51 +119,6 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
  private:
-  // Wraps a routing assignment providing extra features.
-  class RoutingSolution {
-   public:
-    explicit RoutingSolution(const RoutingModel& model);
-
-    // Initialize the routing solution for the given assignment.
-    // It must be called at the beginning of every ruin application.
-    void Reset(const Assignment* assignment);
-
-    // Initializes next and prev pointers for the route served by the given
-    // vehicle, if not already done.
-    void InitializeRouteInfoIfNeeded(int vehicle);
-
-    // Returns whether node_index belongs to a route that has been initialized.
-    bool BelongsToInitializedRoute(int64_t node_index) const;
-
-    // Returns the next node index of the given node_index.
-    int64_t GetNextNodeIndex(int64_t node_index) const;
-
-    // Returns the previous node index of the given node_index.
-    // This must be called for node_index belonging to initialized routes.
-    int64_t GetInitializedPrevNodeIndex(int64_t node_index) const;
-
-    // Returns whether the route served by the given vehicle contains a single
-    // customer.
-    // This must be called for vehicle which has been previously initialized.
-    bool IsSingleCustomerRoute(int vehicle) const;
-
-    // Returns whether node_index can be removed from the solution.
-    // This must be called for node_index belonging to initialized routes.
-    bool CanBeRemoved(int64_t node_index) const;
-
-    // Removes the node with the given node_index.
-    // This must be called for node_index belonging to initialized routes.
-    void RemoveNode(int64_t node_index);
-
-   private:
-    const RoutingModel& model_;
-    std::vector<int64_t> nexts_;
-    std::vector<int64_t> prevs_;
-
-    // Assignment that the routing solution refers to. It's changed at every
-    // Reset call.
-    const Assignment* assignment_ = nullptr;
-  };
 
   // Removes the sibling pickup or delivery of node, if any.
   void RemovePickupDeliverySiblings(const Assignment* assignment, int node);
@@ -134,6 +133,46 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   const int walk_length_;
   std::uniform_int_distribution<int64_t> customer_dist_;
   std::bernoulli_distribution boolean_dist_;
+};
+
+// Applies one or more ruin procedures according to the selected composition
+// strategy.
+class CompositeRuinProcedure : public RuinProcedure {
+ public:
+  // Composition strategy interface.
+  class CompositionStrategy {
+   public:
+    explicit CompositionStrategy(std::vector<RuinProcedure*> ruin_procedures);
+    virtual ~CompositionStrategy() = default;
+
+    // Returns the selected ruin procedures.
+    virtual const std::vector<RuinProcedure*>& Select() = 0;
+
+   protected:
+    // Contains ptrs to the available ruins.
+    std::vector<RuinProcedure*> ruins_;
+  };
+
+  CompositeRuinProcedure(
+      RoutingModel* model,
+      std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
+      RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd);
+
+  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+
+ private:
+  // Creates a new assignment from the given next accessor.
+  const Assignment* BuildAssignmentFromNextAccessor(
+      const std::function<int64_t(int64_t)>& next_accessor);
+
+  const RoutingModel& model_;
+  std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures_;
+  std::unique_ptr<CompositionStrategy> composition_strategy_;
+
+  // Used by BuildAssignmentFromNextAccessor to rebuild a proper assignment
+  // from next accessors. Stored at the object level to minimize re-allocations.
+  Assignment* ruined_assignment_;
+  Assignment* next_assignment_;
 };
 
 // Returns a DecisionBuilder implementing a perturbation step of an Iterated

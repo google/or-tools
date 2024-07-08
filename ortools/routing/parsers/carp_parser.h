@@ -77,7 +77,7 @@ class CarpParser {
 #endif
 
   // Loads instance from a file into this parser object.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
 
   // Returns the name of the instance being solved.
   const std::string& name() const { return name_; }

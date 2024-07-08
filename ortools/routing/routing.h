@@ -823,7 +823,7 @@ class RoutingModel {
   /// is only used by ArcIsMoreConstrainedThanArc().
   /// "dimension" must be the name of an existing dimension, or be empty, in
   /// which case there will not be a primary dimension after this call.
-  void SetPrimaryConstrainedDimension(const std::string& dimension_name) {
+  void SetPrimaryConstrainedDimension(absl::string_view dimension_name) {
     DCHECK(dimension_name.empty() || HasDimension(dimension_name));
     primary_constrained_dimension_ = dimension_name;
   }
@@ -2049,6 +2049,7 @@ class RoutingModel {
     MAKE_INACTIVE,
     MAKE_CHAIN_INACTIVE,
     SWAP_ACTIVE,
+    SWAP_ACTIVE_CHAIN,
     EXTENDED_SWAP_ACTIVE,
     SHORTEST_PATH_SWAP_ACTIVE,
     NODE_PAIR_SWAP,
@@ -2223,7 +2224,7 @@ class RoutingModel {
   IntVar* CreateSameVehicleCost(int vehicle_index);
   /// Returns the first active variable index in 'indices' starting from index
   /// + 1.
-  int FindNextActive(int index, const std::vector<int64_t>& indices) const;
+  int FindNextActive(int index, absl::Span<const int64_t> indices) const;
 
   /// Checks that all nodes on the route starting at start_index (using the
   /// solution stored in assignment) can be visited by the given vehicle.
@@ -2842,7 +2843,7 @@ void AppendTasksFromPath(absl::Span<const int64_t> path,
                          DisjunctivePropagator::Tasks* tasks);
 void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
                               DisjunctivePropagator::Tasks* tasks);
-void FillPathEvaluation(const std::vector<int64_t>& path,
+void FillPathEvaluation(absl::Span<const int64_t> path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values);
 void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64_t>& path,
@@ -3645,8 +3646,8 @@ class RoutingDimension {
                   int64_t slack_max);
   void InitializeCumuls();
   void InitializeTransits(
-      const std::vector<int>& transit_evaluators,
-      const std::vector<int>& state_dependent_transit_evaluators,
+      absl::Span<const int> transit_evaluators,
+      absl::Span<const int> state_dependent_transit_evaluators,
       int64_t slack_max);
   void InitializeTransitVariables(int64_t slack_max);
   /// Sets up the cost variables related to cumul soft upper bounds.

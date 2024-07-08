@@ -41,7 +41,7 @@ VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 %import "ortools/constraint_solver/csharp/constraint_solver.i"
-%import "ortools/util/csharp/sorted_interval_list.i" // Domain
+%import "ortools/util/csharp/sorted_interval_list.i"  // Domain
 
 %include "ortools/routing/csharp/index_manager.i"
 

@@ -27,6 +27,7 @@
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/time/time.h"
+#include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -78,7 +79,115 @@ SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
   return savings_parameters;
 }
 
-// Returns a ruin procedure based to the given parameters.
+// Returns a ruin procedure based on the given ruin strategy.
+std::unique_ptr<RuinProcedure> MakeRuinProcedure(
+    RoutingModel* model, std::mt19937* rnd, RuinStrategy ruin,
+    int num_neighbors_for_route_selection) {
+  switch (ruin.strategy_case()) {
+    case RuinStrategy::kSpatiallyCloseRoutes:
+      return std::make_unique<CloseRoutesRemovalRuinProcedure>(
+          model, rnd, ruin.spatially_close_routes().num_ruined_routes(),
+          num_neighbors_for_route_selection);
+      break;
+    case RuinStrategy::kRandomWalk:
+      return std::make_unique<RandomWalkRemovalRuinProcedure>(
+          model, rnd, ruin.random_walk().num_removed_visits(),
+          num_neighbors_for_route_selection);
+    default:
+      LOG(DFATAL) << "Unsupported ruin procedure.";
+      return nullptr;
+  }
+}
+
+// Returns the ruin procedures associated with the given ruin strategies.
+std::vector<std::unique_ptr<RuinProcedure>> MakeRuinProcedures(
+    RoutingModel* model, std::mt19937* rnd,
+    const google::protobuf::RepeatedPtrField<
+        ::operations_research::RuinStrategy>& ruin_strategies,
+    int num_neighbors_for_route_selection) {
+  std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures;
+  for (const RuinStrategy& ruin : ruin_strategies) {
+    ruin_procedures.push_back(
+        MakeRuinProcedure(model, rnd, ruin, num_neighbors_for_route_selection));
+  }
+  return ruin_procedures;
+}
+
+class SequentialCompositionStrategy
+    : public CompositeRuinProcedure::CompositionStrategy {
+ public:
+  explicit SequentialCompositionStrategy(
+      std::vector<RuinProcedure*> ruin_procedures)
+      : CompositeRuinProcedure::CompositionStrategy(
+            std::move(ruin_procedures)) {}
+  const std::vector<RuinProcedure*>& Select() override { return ruins_; }
+};
+
+class SequentialRandomizedCompositionStrategy
+    : public CompositeRuinProcedure::CompositionStrategy {
+ public:
+  SequentialRandomizedCompositionStrategy(
+      std::vector<RuinProcedure*> ruin_procedures, std::mt19937* rnd)
+      : CompositeRuinProcedure::CompositionStrategy(std::move(ruin_procedures)),
+        rnd_(*rnd) {}
+  const std::vector<RuinProcedure*>& Select() override {
+    std::shuffle(ruins_.begin(), ruins_.end(), rnd_);
+    return ruins_;
+  }
+
+ private:
+  std::mt19937& rnd_;
+};
+
+class SingleRandomCompositionStrategy
+    : public CompositeRuinProcedure::CompositionStrategy {
+ public:
+  SingleRandomCompositionStrategy(std::vector<RuinProcedure*> ruin_procedures,
+                                  std::mt19937* rnd)
+      : CompositeRuinProcedure::CompositionStrategy(std::move(ruin_procedures)),
+        rnd_(*rnd) {
+    single_ruin_.resize(1);
+  }
+  const std::vector<RuinProcedure*>& Select() override {
+    single_ruin_[0] = ruins_[rnd_() % ruins_.size()];
+    return single_ruin_;
+  }
+
+ private:
+  std::mt19937& rnd_;
+
+  // Stores the single ruin that will be returned.
+  std::vector<RuinProcedure*> single_ruin_;
+};
+
+// Returns a composition strategy based on the input parameters.
+std::unique_ptr<CompositeRuinProcedure::CompositionStrategy>
+MakeRuinCompositionStrategy(
+    const std::vector<std::unique_ptr<RuinProcedure>>& ruins,
+    RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd) {
+  std::vector<RuinProcedure*> ruin_ptrs;
+  ruin_ptrs.reserve(ruins.size());
+  for (const auto& ruin : ruins) {
+    ruin_ptrs.push_back(ruin.get());
+  }
+
+  switch (composition_strategy) {
+    case RuinCompositionStrategy::RUN_ALL_SEQUENTIALLY:
+      return std::make_unique<SequentialCompositionStrategy>(
+          std::move(ruin_ptrs));
+    case RuinCompositionStrategy::RUN_ALL_RANDOMLY:
+      return std::make_unique<SequentialRandomizedCompositionStrategy>(
+          std::move(ruin_ptrs), rnd);
+    case RuinCompositionStrategy::RUN_ONE_RANDOMLY:
+      return std::make_unique<SingleRandomCompositionStrategy>(
+          std::move(ruin_ptrs), rnd);
+    default:
+      LOG(DFATAL) << "Unsupported composition strategy.";
+      return nullptr;
+  }
+}
+
+// Returns a ruin procedure based on the given ruin and recreate parameters.
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
     const RuinRecreateParameters& parameters, RoutingModel* model,
     std::mt19937* rnd) {
@@ -92,20 +201,15 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
       std::min(parameters.route_selection_max_neighbors(),
                std::max(parameters.route_selection_min_neighbors(),
                         preferred_num_neighbors));
-  switch (parameters.ruin_strategy()) {
-    case RuinStrategy::SPATIALLY_CLOSE_ROUTES_REMOVAL:
-      return std::make_unique<CloseRoutesRemovalRuinProcedure>(
-          model, rnd, parameters.num_ruined_routes(),
-          num_neighbors_for_route_selection);
-      break;
-    case RuinStrategy::RANDOM_WALK_REMOVAL:
-      return std::make_unique<RandomWalkRemovalRuinProcedure>(
-          model, rnd, parameters.num_removed_visits(),
-          num_neighbors_for_route_selection);
-    default:
-      LOG(ERROR) << "Unsupported ruin procedure.";
-      return nullptr;
+  if (parameters.ruin_strategies().size() == 1) {
+    return MakeRuinProcedure(model, rnd, *parameters.ruin_strategies().begin(),
+                             num_neighbors_for_route_selection);
   }
+  return std::make_unique<CompositeRuinProcedure>(
+      model,
+      MakeRuinProcedures(model, rnd, parameters.ruin_strategies(),
+                         num_neighbors_for_route_selection),
+      parameters.ruin_composition_strategy(), rnd);
 }
 
 // Returns a recreate procedure based on the given parameters.
@@ -161,7 +265,7 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           filter_manager);
     }
     default:
-      LOG(ERROR) << "Unsupported recreate procedure.";
+      LOG(DFATAL) << "Unsupported recreate procedure.";
       return nullptr;
   }
 
@@ -284,7 +388,7 @@ std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
           std::move(final_search_state), initial_temperature,
           final_temperature);
     default:
-      LOG(ERROR) << "Unsupported cooling schedule strategy.";
+      LOG(DFATAL) << "Unsupported cooling schedule strategy.";
       return nullptr;
   }
 }
@@ -327,6 +431,150 @@ bool HasPerformedNodes(const RoutingModel& model,
 }
 
 }  // namespace
+RoutingSolution::RoutingSolution(const RoutingModel& model) : model_(model) {
+  const int all_nodes = model.Size() + model.vehicles();
+
+  nexts_.resize(all_nodes, -1);
+  prevs_.resize(all_nodes, -1);
+}
+
+void RoutingSolution::Reset(const Assignment* assignment) {
+  assignment_ = assignment;
+
+  // TODO(user): consider resetting only previously set values.
+  nexts_.assign(nexts_.size(), -1);
+  prevs_.assign(prevs_.size(), -1);
+}
+
+void RoutingSolution::InitializeRouteInfoIfNeeded(int vehicle) {
+  const int64_t start = model_.Start(vehicle);
+
+  if (BelongsToInitializedRoute(start)) {
+    return;
+  }
+
+  const int64_t end = model_.End(vehicle);
+
+  int64_t prev = end;
+  int64_t curr = start;
+
+  // Setup the start and inner nodes.
+  while (curr != end) {
+    const int64_t next = assignment_->Value(model_.NextVar(curr));
+
+    nexts_[curr] = next;
+    prevs_[curr] = prev;
+
+    prev = curr;
+    curr = next;
+  }
+
+  // Setup the end node.
+  nexts_[end] = start;
+  prevs_[end] = prev;
+}
+
+bool RoutingSolution::BelongsToInitializedRoute(int64_t node_index) const {
+  DCHECK_EQ(nexts_[node_index] != -1, prevs_[node_index] != -1);
+  return nexts_[node_index] != -1;
+}
+
+int64_t RoutingSolution::GetNextNodeIndex(int64_t node_index) const {
+  return BelongsToInitializedRoute(node_index)
+             ? nexts_[node_index]
+             : assignment_->Value(model_.NextVar(node_index));
+}
+
+int64_t RoutingSolution::GetInitializedPrevNodeIndex(int64_t node_index) const {
+  DCHECK(BelongsToInitializedRoute(node_index));
+  return prevs_[node_index];
+}
+
+bool RoutingSolution::IsSingleCustomerRoute(int vehicle) const {
+  const int64_t start = model_.Start(vehicle);
+  DCHECK(BelongsToInitializedRoute(start));
+
+  return nexts_[nexts_[start]] == model_.End(vehicle);
+}
+
+bool RoutingSolution::CanBeRemoved(int64_t node_index) const {
+  return !model_.IsStart(node_index) && !model_.IsEnd(node_index) &&
+         GetNextNodeIndex(node_index) != node_index;
+}
+
+void RoutingSolution::RemoveNode(int64_t node_index) {
+  DCHECK(BelongsToInitializedRoute(node_index));
+
+  DCHECK_NE(nexts_[node_index], node_index);
+  DCHECK_NE(prevs_[node_index], node_index);
+
+  const int64_t next = nexts_[node_index];
+  const int64_t prev = prevs_[node_index];
+
+  nexts_[prev] = next;
+  prevs_[next] = prev;
+
+  nexts_[node_index] = node_index;
+  prevs_[node_index] = node_index;
+}
+
+CompositeRuinProcedure::CompositionStrategy::CompositionStrategy(
+    std::vector<RuinProcedure*> ruin_procedures)
+    : ruins_(std::move(ruin_procedures)) {}
+
+CompositeRuinProcedure::CompositeRuinProcedure(
+    RoutingModel* model,
+    std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
+    RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd)
+    : model_(*model),
+      ruin_procedures_(std::move(ruin_procedures)),
+      composition_strategy_(MakeRuinCompositionStrategy(
+          ruin_procedures_, composition_strategy, rnd)),
+      ruined_assignment_(model_.solver()->MakeAssignment()),
+      next_assignment_(model_.solver()->MakeAssignment()) {}
+
+std::function<int64_t(int64_t)> CompositeRuinProcedure::Ruin(
+    const Assignment* assignment) {
+  const std::vector<RuinProcedure*>& ruins = composition_strategy_->Select();
+
+  auto next_accessors = ruins[0]->Ruin(assignment);
+  for (int i = 1; i < ruins.size(); ++i) {
+    const Assignment* next_assignment =
+        BuildAssignmentFromNextAccessor(next_accessors);
+    ruined_assignment_->Copy(next_assignment);
+    next_accessors = ruins[i]->Ruin(ruined_assignment_);
+  }
+
+  return next_accessors;
+}
+
+const Assignment* CompositeRuinProcedure::BuildAssignmentFromNextAccessor(
+    const std::function<int64_t(int64_t)>& next_accessors) {
+  next_assignment_->Clear();
+
+  // Setup next variables for nodes and vehicle variables for unperformed nodes.
+  for (int node = 0; node < model_.Size(); node++) {
+    const int64_t next = next_accessors(node);
+    next_assignment_->Add(model_.NextVar(node))->SetValue(next);
+    if (next == node) {
+      // Node is unperformed, we set its vehicle var accordingly.
+      next_assignment_->Add(model_.VehicleVar(node))->SetValue(-1);
+    }
+  }
+
+  // Setup vehicle variables for performed nodes.
+  for (int vehicle = 0; vehicle < model_.vehicles(); ++vehicle) {
+    int64_t node = model_.Start(vehicle);
+    while (!model_.IsEnd(node)) {
+      next_assignment_->Add(model_.VehicleVar(node))->SetValue(vehicle);
+      node = next_accessors(node);
+    }
+    // Also set the vehicle var for the vehicle end.
+    next_assignment_->Add(model_.VehicleVar(node))->SetValue(vehicle);
+  }
+
+  return next_assignment_;
+}
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
     RoutingModel* model, std::mt19937* rnd, size_t num_routes,
@@ -524,104 +772,6 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
   return same_route_closest_neighbor;
 }
 
-RandomWalkRemovalRuinProcedure::RoutingSolution::RoutingSolution(
-    const RoutingModel& model)
-    : model_(model) {
-  const int all_nodes = model.Size() + model.vehicles();
-
-  nexts_.resize(all_nodes, -1);
-  prevs_.resize(all_nodes, -1);
-}
-
-void RandomWalkRemovalRuinProcedure::RoutingSolution::Reset(
-    const Assignment* assignment) {
-  assignment_ = assignment;
-
-  // TODO(user): consider resetting only previously set values.
-  nexts_.assign(nexts_.size(), -1);
-  prevs_.assign(prevs_.size(), -1);
-}
-
-void RandomWalkRemovalRuinProcedure::RoutingSolution::
-    InitializeRouteInfoIfNeeded(int vehicle) {
-  const int64_t start = model_.Start(vehicle);
-
-  if (BelongsToInitializedRoute(start)) {
-    return;
-  }
-
-  const int64_t end = model_.End(vehicle);
-
-  int64_t prev = end;
-  int64_t curr = start;
-
-  // Setup the start and inner nodes.
-  while (curr != end) {
-    const int64_t next = assignment_->Value(model_.NextVar(curr));
-
-    nexts_[curr] = next;
-    prevs_[curr] = prev;
-
-    prev = curr;
-    curr = next;
-  }
-
-  // Setup the end node.
-  nexts_[end] = start;
-  prevs_[end] = prev;
-}
-
-bool RandomWalkRemovalRuinProcedure::RoutingSolution::BelongsToInitializedRoute(
-    int64_t node_index) const {
-  DCHECK_EQ(nexts_[node_index] != -1, prevs_[node_index] != -1);
-  return nexts_[node_index] != -1;
-}
-
-int64_t RandomWalkRemovalRuinProcedure::RoutingSolution::GetNextNodeIndex(
-    int64_t node_index) const {
-  return BelongsToInitializedRoute(node_index)
-             ? nexts_[node_index]
-             : assignment_->Value(model_.NextVar(node_index));
-}
-
-int64_t
-RandomWalkRemovalRuinProcedure::RoutingSolution::GetInitializedPrevNodeIndex(
-    int64_t node_index) const {
-  DCHECK(BelongsToInitializedRoute(node_index));
-  return prevs_[node_index];
-}
-
-bool RandomWalkRemovalRuinProcedure::RoutingSolution::IsSingleCustomerRoute(
-    int vehicle) const {
-  const int64_t start = model_.Start(vehicle);
-  DCHECK(BelongsToInitializedRoute(start));
-
-  return nexts_[nexts_[start]] == model_.End(vehicle);
-}
-
-bool RandomWalkRemovalRuinProcedure::RoutingSolution::CanBeRemoved(
-    int64_t node_index) const {
-  return !model_.IsStart(node_index) && !model_.IsEnd(node_index) &&
-         GetNextNodeIndex(node_index) != node_index;
-}
-
-void RandomWalkRemovalRuinProcedure::RoutingSolution::RemoveNode(
-    int64_t node_index) {
-  DCHECK(BelongsToInitializedRoute(node_index));
-
-  DCHECK_NE(nexts_[node_index], node_index);
-  DCHECK_NE(prevs_[node_index], node_index);
-
-  const int64_t next = nexts_[node_index];
-  const int64_t prev = prevs_[node_index];
-
-  nexts_[prev] = next;
-  prevs_[next] = prev;
-
-  nexts_[node_index] = node_index;
-  prevs_[node_index] = node_index;
-}
-
 class RuinAndRecreateDecisionBuilder : public DecisionBuilder {
  public:
   RuinAndRecreateDecisionBuilder(
@@ -679,7 +829,7 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
           parameters, model, rnd, assignment, std::move(stop_search),
           filter_manager);
     default:
-      LOG(ERROR) << "Unsupported perturbation strategy.";
+      LOG(DFATAL) << "Unsupported perturbation strategy.";
       return nullptr;
   }
 }
@@ -695,7 +845,7 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
       return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
           MakeCoolingSchedule(model, parameters, rnd), rnd);
     default:
-      LOG(ERROR) << "Unsupported acceptance strategy.";
+      LOG(DFATAL) << "Unsupported acceptance strategy.";
       return nullptr;
   }
 }

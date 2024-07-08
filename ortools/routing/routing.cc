@@ -100,6 +100,7 @@ class MakeInactiveOperator;
 class Relocate;
 class RelocateAndMakeActiveOperator;
 class SwapActiveOperator;
+class SwapActiveChainOperator;
 class TwoOpt;
 }  // namespace operations_research
 
@@ -3656,7 +3657,7 @@ Assignment* RoutingModel::CompactAssignmentInternal(
 }
 
 int RoutingModel::FindNextActive(int index,
-                                 const std::vector<int64_t>& indices) const {
+                                 absl::Span<const int64_t> indices) const {
   ++index;
   CHECK_LE(0, index);
   const int size = indices.size();
@@ -4607,6 +4608,8 @@ void RoutingModel::CreateNeighborhoodOperators(
   local_search_operators_[MAKE_CHAIN_INACTIVE] =
       CreateCPOperator<MakeChainInactiveOperator>();
   local_search_operators_[SWAP_ACTIVE] = CreateCPOperator<SwapActiveOperator>();
+  local_search_operators_[SWAP_ACTIVE_CHAIN] =
+      CreateCPOperator<SwapActiveChainOperator>();
   local_search_operators_[EXTENDED_SWAP_ACTIVE] =
       CreateCPOperator<ExtendedSwapActiveOperator>();
   std::vector<std::vector<int64_t>> alternative_sets(disjunctions_.size());
@@ -4835,13 +4838,21 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
                              relocate_and_make_active);
 
     CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active);
+    CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE_CHAIN, swap_active_chain);
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active);
     CP_ROUTING_PUSH_OPERATOR(SHORTEST_PATH_SWAP_ACTIVE,
                              shortest_path_swap_active);
   }
-  operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
+  LocalSearchOperator* main_operator_group =
+      ConcatenateOperators(search_parameters, operators);
 
-  // Second local search loop: LNS-like operators.
+  // We concatenate heuristic LNS operators consecutively with the main group,
+  // (by increasing complexity of the operators), replacing the main group with
+  // this concatenation at each step.
+  // These successive concatenations guarantee that adding the more complex
+  // heuristic-LNS operators will always improve (or at least not degrade) the
+  // quality of the local minimum solution, though they will increase the time
+  // to reach it.
   operators.clear();
   if (vehicles() > 1) {
     // NOTE: The following heuristic path LNS with a single vehicle are
@@ -4854,11 +4865,26 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(
         RELOCATE_PATH_GLOBAL_CHEAPEST_INSERTION_INSERT_UNPERFORMED,
         relocate_path_global_cheapest_insertion_insert_unperformed);
+    // NOTE: A subtlety here is that the path-LNS operators are concatenated
+    // into one single group before concatenating it with the main group. This
+    // is because the path-LNS operators are considerably faster than the arc
+    // and node-based versions and are very effective at reducing the number of
+    // routes, so we put them in a separate group to iterate on them as much as
+    // possible before moving on to other operators (going back to the faster
+    // main operators).
+    LocalSearchOperator* path_lns_operator_group =
+        ConcatenateOperators(search_parameters, operators);
+    operators.assign({main_operator_group, path_lns_operator_group});
+    main_operator_group = ConcatenateOperators(search_parameters, operators);
   }
+  operators.assign({main_operator_group});
   CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
                            global_cheapest_insertion_expensive_chain_lns);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
                            local_cheapest_insertion_expensive_chain_lns);
+  main_operator_group = ConcatenateOperators(search_parameters, operators);
+
+  operators.assign({main_operator_group});
   CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
                            global_cheapest_insertion_close_nodes_lns);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
@@ -4895,7 +4921,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
 
 namespace {
 
-void ConvertVectorInt64ToVectorInt(const std::vector<int64_t>& input,
+void ConvertVectorInt64ToVectorInt(absl::Span<const int64_t> input,
                                    std::vector<int>* output) {
   const int n = input.size();
   output->resize(n);
@@ -6434,8 +6460,8 @@ void RoutingDimension::InitializeTransitVariables(int64_t slack_max) {
 }
 
 void RoutingDimension::InitializeTransits(
-    const std::vector<int>& transit_evaluators,
-    const std::vector<int>& state_dependent_transit_evaluators,
+    absl::Span<const int> transit_evaluators,
+    absl::Span<const int> state_dependent_transit_evaluators,
     int64_t slack_max) {
   CHECK_EQ(model_->vehicles(), transit_evaluators.size());
   CHECK(base_dimension_ == nullptr ||
@@ -6457,7 +6483,7 @@ void RoutingDimension::InitializeTransits(
 }
 
 // TODO(user): Apply -pointer-following.
-void FillPathEvaluation(const std::vector<int64_t>& path,
+void FillPathEvaluation(absl::Span<const int64_t> path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values) {
   const int num_nodes = path.size();
