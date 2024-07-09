@@ -1253,6 +1253,11 @@ TEST(XpressInterface, setInt64Control) {
   }
 }
 
+TEST(XpressInterface, getInfinity) {
+  MPSolver solver("XPRESS_MIP", MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
+  EXPECT_EQ(std::max(XPRS_PLUSINFINITY, -XPRS_MINUSINFINITY), solver.solver_infinity());
+}
+
 TEST_F(XpressFixtureMIP, SolveMIP) {
   // max   x + 2y
   // st.  -x +  y <= 1
