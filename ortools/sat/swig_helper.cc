@@ -19,6 +19,7 @@
 #include <functional>
 #include <string>
 
+#include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -138,6 +139,19 @@ void SolveWrapper::AddLogCallbackFromClass(LogCallback* log_callback) {
       [log_callback](const std::string& message) {
         log_callback->NewMessage(message);
       });
+}
+
+void SolveWrapper::AddBestBoundCallback(
+    std::function<void(double)> best_bound_callback) {
+  if (best_bound_callback != nullptr) {
+    model_.Add(NewBestBoundCallback(best_bound_callback));
+  }
+}
+
+void SolveWrapper::AddBestBoundCallbackFromClass(BestBoundCallback* callback) {
+  DCHECK(callback != nullptr);
+  model_.Add(NewBestBoundCallback(
+      [callback](double bound) { callback->NewBestBound(bound); }));
 }
 
 operations_research::sat::CpSolverResponse SolveWrapper::Solve(

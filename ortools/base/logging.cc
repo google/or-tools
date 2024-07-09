@@ -20,8 +20,6 @@
 #include "absl/log/globals.h"
 #include "absl/log/initialize.h"
 
-ABSL_FLAG(bool, logtostderr, false, "no op compatibility flag");
-
 namespace operations_research {
 
 namespace {

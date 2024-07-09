@@ -15,7 +15,6 @@
 #define OR_TOOLS_UTIL_QAP_READER_H_
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
 #include "absl/strings/string_view.h"

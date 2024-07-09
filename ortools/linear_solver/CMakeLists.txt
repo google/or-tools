@@ -45,7 +45,7 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_HIGHS}>:highs::highs>
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:libscip>
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::linear_solver ALIAS ${NAME})
 
 # solve
@@ -82,9 +82,11 @@ if(BUILD_TESTING)
     set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN:$ORIGIN/../lib:$ORIGIN")
   endif ()
 
-  add_executable(test_xprs_interface xpress_interface_test.cc)
-  target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
-  target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
+  if(USE_XPRESS)
+    add_executable(test_xprs_interface xpress_interface_test.cc)
+    target_compile_features(test_xprs_interface PRIVATE cxx_std_17)
+    target_link_libraries(test_xprs_interface PRIVATE ortools::ortools GTest::gtest_main)
 
-  add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
+    add_test(NAME cxx_unittests_xpress_interface COMMAND test_xprs_interface)
+  endif()
 endif ()

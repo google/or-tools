@@ -24,6 +24,7 @@
 #ifndef OR_TOOLS_GRAPH_CLIQUES_H_
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -275,7 +276,7 @@ class BronKerboschAlgorithm {
     // clique.
     // NOTE(user): We could store the delta between the iterations; however,
     // we need to evaluate the impact this would have on the performance.
-    absl::StrongVector<CandidateIndex, NodeIndex> candidates;
+    util_intops::StrongVector<CandidateIndex, NodeIndex> candidates;
     // The index of the first actual candidate in 'candidates'. This number is
     // also the number of elements of the "not" set stored at the beginning of
     // 'candidates'.
@@ -451,7 +452,7 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
   DCHECK(time_limit_ != nullptr);
   DVLOG(2) << "PushState: New depth = " << states_.size() + 1
            << ", selected node = " << selected;
-  absl::StrongVector<CandidateIndex, NodeIndex> new_candidates;
+  util_intops::StrongVector<CandidateIndex, NodeIndex> new_candidates;
 
   State* const previous_state = &states_.back();
   const double deterministic_time =

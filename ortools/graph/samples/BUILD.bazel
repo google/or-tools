@@ -37,6 +37,16 @@ code_sample_cc(name = "dag_shortest_path_sequential")
 
 code_sample_cc(name = "dag_simple_shortest_path")
 
+code_sample_cc(name = "dag_multiple_shortest_paths_one_to_all")
+
+code_sample_cc(name = "dag_multiple_shortest_paths_sequential")
+
+code_sample_cc(name = "dag_simple_multiple_shortest_paths")
+
+code_sample_cc(name = "dag_constrained_shortest_path_sequential")
+
+code_sample_cc(name = "dag_simple_constrained_shortest_path")
+
 code_sample_cc(name = "dijkstra_all_pairs_shortest_paths")
 
 code_sample_cc(name = "dijkstra_directed")
@@ -46,6 +56,10 @@ code_sample_cc(name = "dijkstra_one_to_all")
 code_sample_cc(name = "dijkstra_sequential")
 
 code_sample_cc(name = "dijkstra_undirected")
+
+code_sample_cc(name = "root_a_tree")
+
+code_sample_cc(name = "rooted_tree_paths")
 
 code_sample_java(name = "SimpleMaxFlowProgram")
 

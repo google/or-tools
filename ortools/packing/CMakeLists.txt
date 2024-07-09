@@ -28,7 +28,7 @@ target_include_directories(${NAME} PRIVATE
 target_link_libraries(${NAME} PRIVATE
   absl::flags
   absl::strings
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::packing ALIAS ${NAME})
 
 # Vector Bin Packing

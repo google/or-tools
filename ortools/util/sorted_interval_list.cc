@@ -239,6 +239,15 @@ int64_t Domain::SmallestValue() const {
   return result;
 }
 
+Domain Domain::PartAroundZero() const {
+  for (const ClosedInterval interval : intervals_) {
+    if (interval.start <= 0 && interval.end >= 0) {
+      return Domain(interval.start, interval.end);
+    }
+  }
+  return Domain();
+}
+
 // TODO(user): Use std::upper_bound() like in ValueAtOrBefore() ?
 int64_t Domain::ClosestValue(int64_t wanted) const {
   DCHECK(!IsEmpty());
@@ -621,7 +630,7 @@ Domain Domain::SquareSuperset() const {
     for (const int64_t value : abs_domain.Values()) {
       values.push_back(CapProd(value, value));
     }
-    return Domain::FromValues(values);
+    return Domain::FromValues(std::move(values));
   }
 }
 

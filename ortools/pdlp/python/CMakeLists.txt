@@ -30,7 +30,7 @@ target_link_libraries(pdlp_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
   protobuf::libprotobuf
-  )
+)
 target_include_directories(pdlp_pybind11 PRIVATE ${protobuf_SOURCE_DIR})
 add_library(${PROJECT_NAMESPACE}::pdlp_pybind11 ALIAS pdlp_pybind11)
 

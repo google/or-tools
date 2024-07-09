@@ -164,7 +164,7 @@ LinearExpression LinearConstraintBuilder::BuildExpression() {
 
 double ComputeActivity(
     const LinearConstraint& constraint,
-    const absl::StrongVector<IntegerVariable, double>& values) {
+    const util_intops::StrongVector<IntegerVariable, double>& values) {
   int i = 0;
   const int size = constraint.num_terms;
   const int shifted_size = size - 3;
@@ -215,21 +215,28 @@ IntegerValue ComputeInfinityNorm(const LinearConstraint& ct) {
 }
 
 double ScalarProduct(const LinearConstraint& ct1, const LinearConstraint& ct2) {
+  if (ct1.num_terms == 0 || ct2.num_terms == 0) return 0.0;
   DCHECK(std::is_sorted(ct1.vars.get(), ct1.vars.get() + ct1.num_terms));
   DCHECK(std::is_sorted(ct2.vars.get(), ct2.vars.get() + ct2.num_terms));
   double scalar_product = 0.0;
   int index_1 = 0;
   int index_2 = 0;
-  while (index_1 < ct1.num_terms && index_2 < ct2.num_terms) {
-    if (ct1.vars[index_1] == ct2.vars[index_2]) {
-      scalar_product +=
-          ToDouble(ct1.coeffs[index_1]) * ToDouble(ct2.coeffs[index_2]);
-      index_1++;
-      index_2++;
-    } else if (ct1.vars[index_1] > ct2.vars[index_2]) {
-      index_2++;
+  IntegerVariable var1 = ct1.vars[index_1];
+  IntegerVariable var2 = ct2.vars[index_2];
+  while (true) {
+    if (var1 == var2) {
+      scalar_product += static_cast<double>(ct1.coeffs[index_1].value()) *
+                        static_cast<double>(ct2.coeffs[index_2].value());
+      if (++index_1 == ct1.num_terms) break;
+      if (++index_2 == ct2.num_terms) break;
+      var1 = ct1.vars[index_1];
+      var2 = ct2.vars[index_2];
+    } else if (var1 > var2) {
+      if (++index_2 == ct2.num_terms) break;
+      var2 = ct2.vars[index_2];
     } else {
-      index_1++;
+      if (++index_1 == ct1.num_terms) break;
+      var1 = ct1.vars[index_1];
     }
   }
   return scalar_product;
@@ -303,7 +310,7 @@ void MakeAllVariablesPositive(LinearConstraint* constraint) {
 }
 
 double LinearExpression::LpValue(
-    const absl::StrongVector<IntegerVariable, double>& lp_values) const {
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) const {
   double result = ToDouble(offset);
   for (int i = 0; i < vars.size(); ++i) {
     result += ToDouble(coeffs[i]) * lp_values[vars[i]];

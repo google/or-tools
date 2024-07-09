@@ -15,11 +15,11 @@
 #define OR_TOOLS_UTIL_AFFINE_RELATION_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 

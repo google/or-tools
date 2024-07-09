@@ -220,8 +220,8 @@ class CpModelMapping {
   // Recover from a IntervalVariable/BooleanVariable its associated CpModelProto
   // index. The value of -1 is used to indicate that there is no correspondence
   // (i.e. this variable is only used internally).
-  absl::StrongVector<BooleanVariable, int> reverse_boolean_map_;
-  absl::StrongVector<IntegerVariable, int> reverse_integer_map_;
+  util_intops::StrongVector<BooleanVariable, int> reverse_boolean_map_;
+  util_intops::StrongVector<IntegerVariable, int> reverse_integer_map_;
 
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().

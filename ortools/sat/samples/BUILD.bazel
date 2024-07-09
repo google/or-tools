@@ -13,6 +13,8 @@
 
 load(":code_samples.bzl", "code_sample_cc_py", "code_sample_java", "code_sample_py")
 
+code_sample_py(name = "all_different_except_zero_sample_sat")
+
 code_sample_cc_py(name = "assignment_sat")
 
 code_sample_cc_py(name = "assignment_groups_sat")
@@ -26,6 +28,8 @@ code_sample_cc_py(name = "assumptions_sample_sat")
 code_sample_cc_py(name = "binpacking_problem_sat")
 
 code_sample_py(name = "bin_packing_sat")
+
+code_sample_py(name = "bool_and_int_var_product_sample_sat")
 
 code_sample_cc_py(name = "bool_or_sample_sat")
 
@@ -44,6 +48,8 @@ code_sample_py(name = "cumulative_variable_profile_sample_sat")
 code_sample_cc_py(name = "earliness_tardiness_cost_sample_sat")
 
 code_sample_py(name = "index_first_boolvar_true_sample_sat")
+
+code_sample_py(name = "interval_relations_sample_sat")
 
 code_sample_cc_py(name = "interval_sample_sat")
 
@@ -90,6 +96,8 @@ code_sample_cc_py(name = "step_function_sample_sat")
 code_sample_cc_py(name = "solve_with_time_limit_sample_sat")
 
 code_sample_cc_py(name = "stop_after_n_solutions_sample_sat")
+
+code_sample_py(name = "transitions_in_no_overlap_sample_sat")
 
 code_sample_java(name = "AssignmentGroupsSat")
 

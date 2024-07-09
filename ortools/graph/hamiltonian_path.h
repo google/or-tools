@@ -77,21 +77,19 @@
 // Keywords: Traveling Salesman, Hamiltonian Path, Dynamic Programming,
 //           Held, Karp.
 
-#include <math.h>
 #include <stddef.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <stack>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_or_function.h"
@@ -562,7 +560,7 @@ class HamiltonianPathSolver {
   std::vector<int> ComputePath(CostType cost, NodeSet set, int end);
 
   // Returns true if the path covers all nodes, and its cost is equal to cost.
-  bool PathIsValid(const std::vector<int>& path, CostType cost);
+  bool PathIsValid(absl::Span<const int> path, CostType cost);
 
   // Cost function used to build Hamiltonian paths.
   MatrixOrFunction<CostType, CostFunction, true> cost_;
@@ -765,7 +763,7 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::ComputePath(
 
 template <typename CostType, typename CostFunction>
 bool HamiltonianPathSolver<CostType, CostFunction>::PathIsValid(
-    const std::vector<int>& path, CostType cost) {
+    absl::Span<const int> path, CostType cost) {
   NodeSet coverage(0);
   for (int node : path) {
     coverage = coverage.AddElement(node);

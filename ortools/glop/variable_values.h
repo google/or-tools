@@ -111,7 +111,7 @@ class VariableValues {
   // update_basic_variables is true. The update is done in an incremental way
   // and is thus more efficient than calling afterwards
   // RecomputeBasicVariableValues() and RecomputeDualPrices().
-  void UpdateGivenNonBasicVariables(const std::vector<ColIndex>& cols_to_update,
+  void UpdateGivenNonBasicVariables(absl::Span<const ColIndex> cols_to_update,
                                     bool update_basic_variables);
 
   // Functions dealing with the primal-infeasible basic variables. A basic

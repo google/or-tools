@@ -66,7 +66,7 @@ TspTWParser::TspTWParser()
       distance_function_(nullptr),
       time_function_(nullptr) {}
 
-bool TspTWParser::LoadFile(const std::string& file_name) {
+bool TspTWParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   coords_.clear();
@@ -81,7 +81,7 @@ bool TspTWParser::LoadFile(const std::string& file_name) {
   return ParseLopezIbanezBlum(file_name) || ParseDaSilvaUrrutia(file_name);
 }
 
-bool TspTWParser::ParseLopezIbanezBlum(const std::string& file_name) {
+bool TspTWParser::ParseLopezIbanezBlum(absl::string_view file_name) {
   int section = 0;
   int entry_count = 0;
   for (const std::string& line :

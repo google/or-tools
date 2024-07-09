@@ -41,6 +41,10 @@ public class CpSolver
         {
             solve_wrapper_.AddLogCallbackFromClass(log_callback_);
         }
+        if (best_bound_callback_ is not null)
+        {
+            solve_wrapper_.AddBestBoundCallbackFromClass(best_bound_callback_);
+        }
         if (cb is not null)
         {
             solve_wrapper_.AddSolutionCallback(cb);
@@ -139,6 +143,21 @@ public class CpSolver
     public void SetLogCallback(StringToVoidDelegate del)
     {
         log_callback_ = new LogCallbackDelegate(del);
+    }
+
+    public void ClearLogCallback()
+    {
+        log_callback_ = null;
+    }
+
+    public void SetBestBoundCallback(DoubleToVoidDelegate del)
+    {
+        best_bound_callback_ = new BestBoundCallbackDelegate(del);
+    }
+
+    public void ClearBestBoundCallback()
+    {
+        best_bound_callback_ = null;
     }
 
     public CpSolverResponse Response
@@ -283,6 +302,7 @@ public class CpSolver
 
     private CpSolverResponse response_;
     private LogCallback log_callback_;
+    private BestBoundCallback best_bound_callback_;
     private string string_parameters_;
     private SolveWrapper solve_wrapper_;
     private Queue<Term> terms_;
@@ -301,6 +321,21 @@ class LogCallbackDelegate : LogCallback
     }
 
     private StringToVoidDelegate delegate_;
+}
+
+class BestBoundCallbackDelegate : BestBoundCallback
+{
+    public BestBoundCallbackDelegate(DoubleToVoidDelegate del)
+    {
+        this.delegate_ = del;
+    }
+
+    public override void NewBestBound(double bound)
+    {
+        delegate_(bound);
+    }
+
+    private DoubleToVoidDelegate delegate_;
 }
 
 } // namespace Google.OrTools.Sat

@@ -16,18 +16,18 @@
 #ifndef OR_TOOLS_LP_DATA_LP_TYPES_H_
 #define OR_TOOLS_LP_DATA_LP_TYPES_H_
 
-#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
+#include <memory>
 #include <ostream>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
@@ -279,31 +279,37 @@ class StrictITISpan {
   const IntType size_;
 };
 
-// Wrapper around an ITIVector to allow (and enforce) creation/resize/assign
+// Wrapper around a StrongVector to allow (and enforce) creation/resize/assign
 // to use the index type for the size.
 //
-// TODO(user): This should probably move into ITIVector, but note that this
-// version is more strict and does not allow any other size types.
-template <typename IntType, typename T>
-class StrictITIVector : public absl::StrongVector<IntType, T> {
+// TODO(user): This should probably move to StrongVector, but note that this
+// version is stricter and does not allow any other size types.
+template <typename IntType, typename T, typename Alloc = std::allocator<T>>
+class StrictITIVector : public util_intops::StrongVector<IntType, T, Alloc> {
  public:
-  typedef IntType IndexType;
-  typedef absl::StrongVector<IntType, T> ParentType;
+  using IndexType = IntType;
+  using ParentType = util_intops::StrongVector<IntType, T, Alloc>;
   using View = StrictITISpan<IntType, T>;
   using ConstView = StrictITISpan<IntType, const T>;
 
-// This allows for brace initialization, which is really useful in tests.
-// It is not 'explicit' by design, so one can do vector = {...};
+  StrictITIVector() = default;
+  explicit StrictITIVector(IntType size) : ParentType(size) {}
+  explicit StrictITIVector(const Alloc& a) : ParentType(a) {}
+  StrictITIVector(IntType n, const T& v, const Alloc& a = Alloc())
+      : ParentType(n, v, a) {}
+
+  // This allows for brace initialization, which is really useful in tests.
+  // It is not 'explicit' by design, so one can do vector = {...};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
-  StrictITIVector(std::initializer_list<T> init_list)  // NOLINT
-      : ParentType(init_list.begin(), init_list.end()) {}
+  StrictITIVector(std::initializer_list<T> init_list,
+                  const Alloc& a = Alloc())  // NOLINT
+      : ParentType(init_list.begin(), init_list.end(), a) {}
 #endif
-  StrictITIVector() : ParentType() {}
-  explicit StrictITIVector(IntType size) : ParentType(size.value()) {}
-  StrictITIVector(IntType size, const T& v) : ParentType(size.value(), v) {}
+
   template <typename InputIteratorType>
-  StrictITIVector(InputIteratorType first, InputIteratorType last)
-      : ParentType(first, last) {}
+  StrictITIVector(InputIteratorType first, InputIteratorType last,
+                  const Alloc& a = Alloc())
+      : ParentType(first, last, a) {}
 
   void resize(IntType size) { ParentType::resize(size.value()); }
   void resize(IntType size, const T& v) { ParentType::resize(size.value(), v); }

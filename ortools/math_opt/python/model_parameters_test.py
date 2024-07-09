@@ -100,9 +100,6 @@ class ModelParametersTest(compare_proto.MathOptProtoAssertions, absltest.TestCas
         expected.initial_basis.variable_status.values.append(
             solution_pb2.BASIS_STATUS_AT_UPPER_BOUND
         )
-        expected.initial_basis.basic_dual_feasibility = (
-            solution_pb2.SOLUTION_STATUS_UNDETERMINED
-        )
         self.assert_protos_equiv(expected, actual)
 
 

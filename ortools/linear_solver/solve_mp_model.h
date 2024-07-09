@@ -18,7 +18,6 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
 #define OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
 
-#include <atomic>
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -43,7 +42,7 @@ namespace operations_research {
  * MPSOLVER_INCOMPATIBLE_OPTIONS error.
  */
 MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                SolveInterrupter* interrupter = nullptr);
+                                const SolveInterrupter* interrupter = nullptr);
 
 bool SolverTypeSupportsInterruption(MPModelRequest::SolverType solver);
 

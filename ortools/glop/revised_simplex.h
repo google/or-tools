@@ -729,9 +729,9 @@ class RevisedSimplex {
   // non-deterministic behavior and avoid client depending on a golden optimal
   // solution which prevent us from easily changing the solver.
   random_engine_t deterministic_random_;
-#ifndef NDEBUG
   absl::BitGen absl_random_;
-#endif
+
+  // A reference to one of the above random generators. Fixed at construction.
   absl::BitGenRef random_;
 
   // Helpers for logging the solve progress.

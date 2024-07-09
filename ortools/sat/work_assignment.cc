@@ -213,21 +213,6 @@ int SharedTreeManager::NumNodes() const {
   return nodes_.size();
 }
 
-int SharedTreeManager::SplitsToGeneratePerWorker() const {
-  absl::MutexLock mutex_lock(&mu_);
-  const int max_additional_nodes = max_nodes_ - static_cast<int>(nodes_.size());
-  const int total_splits_wanted =
-      std::min(num_splits_wanted_,
-               // Each split generates 2 nodes, so divide by 2, rounding up.
-               CeilOfRatio(max_additional_nodes, 2));
-  // We want workers to propose too many splits as we expect to reject some,
-  // and it's more efficient to generate several splits on the same worker
-  // restart so we don't want to divide by num_workers_.
-  // But we also don't want more than half the splits to come from a single
-  // restart on a single worker so we divide by 2.
-  return CeilOfRatio(total_splits_wanted, 2);
-}
-
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   absl::MutexLock mutex_lock(&mu_);
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
@@ -280,7 +265,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
         << "/" << nodes.size();
     return;
   }
-  if (nodes_.size() >= max_nodes_) {
+  if (nodes_.size() + 2 > max_nodes_) {
     VLOG(2) << "Too many nodes to accept split";
     return;
   }
@@ -631,6 +616,8 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const auto& decision_policy =
       heuristics_->decision_policies[heuristics_->policy_index];
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
+  new_split_available_ = next_level == assigned_tree_.MaxLevel() + 1;
+
   CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   if (next_level <= assigned_tree_.MaxLevel()) {
     VLOG(2) << "Following shared trail depth=" << next_level << " "
@@ -675,10 +662,11 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
 }
 
 void SharedTreeWorker::MaybeProposeSplit() {
-  if (splits_wanted_ == 0 ||
+  if (!new_split_available_ ||
       sat_solver_->CurrentDecisionLevel() != assigned_tree_.MaxLevel() + 1) {
     return;
   }
+  new_split_available_ = false;
   const Literal split_decision =
       sat_solver_->Decisions()[assigned_tree_.MaxLevel()].literal;
   const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
@@ -686,7 +674,6 @@ void SharedTreeWorker::MaybeProposeSplit() {
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
-      --splits_wanted_;
       assigned_tree_literals_.push_back(split_decision);
     }
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
@@ -705,8 +692,6 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
 }
 
 void SharedTreeWorker::SyncWithSharedTree() {
-  splits_wanted_ = manager_->SplitsToGeneratePerWorker();
-  VLOG(2) << "Splits wanted: " << splits_wanted_ << " " << parameters_->name();
   manager_->SyncTree(assigned_tree_);
   if (ShouldReplaceSubtree()) {
     ++num_trees_;

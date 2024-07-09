@@ -52,7 +52,7 @@ void SolveInterrupter::Interrupt() {
 }
 
 SolveInterrupter::CallbackId SolveInterrupter::AddInterruptionCallback(
-    Callback callback) {
+    Callback callback) const {
   const absl::MutexLock lock(&mutex_);
 
   // We must make this call while holding the lock since we want to be sure that
@@ -73,13 +73,14 @@ SolveInterrupter::CallbackId SolveInterrupter::AddInterruptionCallback(
   return id;
 }
 
-void SolveInterrupter::RemoveInterruptionCallback(CallbackId id) {
+void SolveInterrupter::RemoveInterruptionCallback(CallbackId id) const {
   const absl::MutexLock lock(&mutex_);
   CHECK_EQ(callbacks_.erase(id), 1) << "unregistered callback id: " << id;
 }
 
 ScopedSolveInterrupterCallback::ScopedSolveInterrupterCallback(
-    SolveInterrupter* const interrupter, SolveInterrupter::Callback callback)
+    const SolveInterrupter* const interrupter,
+    SolveInterrupter::Callback callback)
     : interrupter_(interrupter),
       callback_id_(
           interrupter != nullptr

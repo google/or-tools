@@ -37,8 +37,9 @@ class SolverResources:
     MOE:begin_intracomment_strip
 
     The go/uoss server will use these parameters to do a bin-packing of all
-    requests. They are generally used as soft-limits though instead of
-    hard-limits and a solve may be able to consume more resources than requested.
+    requests. Parameter cpu is a soft-limit, the solve may still be able to use
+    more CPUs.  The ram parameter is an hard-limit, an out-of-memory error will
+    occur if the solve attempts to use more memory.
 
     MOE:end_intracomment_strip
 
@@ -58,9 +59,12 @@ class SolverResources:
         better to consult each solver documentation to set this parameter.  Note
         that if the SolveParameters.threads is not set then this parameter should
         also be left unset.
+      ram: The limit of RAM for the solve in bytes. Must be finite and >=1.0 (even
+        though it should in practice be much larger).
     """
 
     cpu: Optional[float] = None
+    ram: Optional[float] = None
 
     def to_proto(self) -> rpc_pb2.SolverResourcesProto:
-        return rpc_pb2.SolverResourcesProto(cpu=self.cpu)
+        return rpc_pb2.SolverResourcesProto(cpu=self.cpu, ram=self.ram)

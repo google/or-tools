@@ -28,5 +28,5 @@ target_include_directories(${NAME} PRIVATE
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::port ALIAS ${NAME})

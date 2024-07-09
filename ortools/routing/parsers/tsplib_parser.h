@@ -45,9 +45,9 @@ class TspLibParser final {
 
   TspLibParser();
   // Loads and parses a routing problem from a given file.
-  bool LoadFile(const std::string& file_name);
+  bool LoadFile(absl::string_view file_name);
   // Returns the number of nodes in the routing problem stored in a given file.
-  int SizeFromFile(const std::string& file_name) const;
+  int SizeFromFile(absl::string_view file_name) const;
   // Returns a function returning edge weights between nodes.
   EdgeWeights GetEdgeWeights() const { return distance_function_; }
   // Returns the index of the depot.

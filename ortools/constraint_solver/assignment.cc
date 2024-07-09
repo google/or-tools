@@ -23,11 +23,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/file.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/recordio.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
@@ -952,6 +950,7 @@ void SetAssignmentFromAssignment(Assignment* target_assignment,
   const int vars_size = target_vars.size();
   CHECK_EQ(source_vars.size(), vars_size);
   CHECK(target_assignment != nullptr);
+  CHECK(source_assignment != nullptr);
 
   target_assignment->Clear();
   const Solver* const target_solver = target_assignment->solver();

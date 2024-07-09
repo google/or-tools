@@ -227,7 +227,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
       : xprsprob_(xprsprob),
         event_(event),
         num_nodes_(num_nodes),
-        variable_values_(0){};
+        variable_values_(0) {};
 
   // Implementation of the interface.
   MPCallbackEvent Event() override { return event_; };
@@ -260,7 +260,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
 // Wraps the MPCallback in order to catch and store exceptions
 class MPCallbackWrapper {
  public:
-  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback){};
+  explicit MPCallbackWrapper(MPCallback* callback) : callback_(callback) {};
   MPCallback* GetCallback() const { return callback_; }
   // Since our (C++) call-back functions are called from the XPRESS (C) code,
   // exceptions thrown in our call-back code are not caught by XPRESS.
@@ -277,12 +277,13 @@ class MPCallbackWrapper {
     for (const std::exception_ptr& ex : caught_exceptions_) {
       try {
         std::rethrow_exception(ex);
-      } catch (std::exception &ex) {
+      } catch (std::exception& ex) {
         // We don't want the interface to throw exceptions, plus it causes
         // SWIG issues in Java & Python. Instead, we'll only log them.
         // (The use cases where the user has to raise an exception inside their
         // call-back does not seem to be frequent, anyway.)
-        LOG(ERROR) << "Caught exception during user-defined call-back: " << ex.what();
+        LOG(ERROR) << "Caught exception during user-defined call-back: "
+                   << ex.what();
       }
     }
     caught_exceptions_.clear();
@@ -1243,7 +1244,7 @@ int64_t XpressInterface::nodes() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressToMPSolverBasisStatus(
+static MPSolver::BasisStatus XpressToMPSolverBasisStatus(
     int xpress_basis_status) {
   switch (xpress_basis_status) {
     case XPRS_AT_LOWER:
@@ -1540,8 +1541,6 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-      unique_ptr<int[]> rngind(new int[chunk]);
-      bool haveRanges = false;
 
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
@@ -1563,8 +1562,6 @@ void XpressInterface::ExtractNewConstraints() {
           // Setup right-hand side of constraint.
           MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow],
                   rngval[nextRow]);
-          haveRanges = haveRanges || (rngval[nextRow] != 0.0);
-          rngind[nextRow] = offset + c;
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
@@ -1584,11 +1581,6 @@ void XpressInterface::ExtractNewConstraints() {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
                                    rngval.get(), rmatbeg.get(), rmatind.get(),
                                    rmatval.get()));
-
-          if (haveRanges) {
-            CHECK_STATUS(
-                XPRSchgrhsrange(mLp, nextRow, rngind.get(), rngval.get()));
-          }
         }
       }
     } catch (...) {
@@ -1728,13 +1720,14 @@ std::vector<int> XpressBasisStatusesFrom(
 
 void XpressInterface::SetStartingLpBasis(
     const std::vector<MPSolver::BasisStatus>& variable_statuses,
-    const std::vector<MPSolver::BasisStatus>& constraint_statuses){
+    const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
   if (mMip) {
     LOG(DFATAL) << __FUNCTION__ << " is only available for LP problems";
     return;
   }
   initial_variables_basis_status_ = XpressBasisStatusesFrom(variable_statuses);
-  initial_constraint_basis_status_ = XpressBasisStatusesFrom(constraint_statuses);
+  initial_constraint_basis_status_ =
+      XpressBasisStatusesFrom(constraint_statuses);
 }
 
 bool XpressInterface::readParameters(std::istream& is, char sep) {
@@ -1830,13 +1823,15 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   // Set log level.
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1);
   // Set parameters.
-  // NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
-  //       Its current implementation invokes ReadParameterFile() which in
-  //       turn invokes XPRSreadcopyparam(). The latter will _overwrite_
-  //       all current parameter settings in the environment.
+  // We first set our internal MPSolverParameters from 'param' and then set
+  // any user-specified internal solver parameters via
+  // solver_specific_parameter_string_.
+  // Default MPSolverParameters can override custom parameters while specific
+  // parameters allow a higher level of customization (for example for
+  // presolving) and therefore we apply MPSolverParameters first.
+  SetParameters(param);
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
-  SetParameters(param);
   if (solver_->time_limit()) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a
@@ -1847,7 +1842,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   // Load basis if present
   // TODO : check number of variables / constraints
-  if (!mMip && !initial_variables_basis_status_.empty() && !initial_constraint_basis_status_.empty()) {
+  if (!mMip && !initial_variables_basis_status_.empty() &&
+      !initial_constraint_basis_status_.empty()) {
     CHECK_STATUS(XPRSloadbasis(mLp, initial_constraint_basis_status_.data(),
                                initial_variables_basis_status_.data()));
   }
@@ -1871,10 +1867,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
 
   int xpress_stat = 0;
   if (mMip) {
-    status = XPRSmipoptimize(mLp,"");
+    status = XPRSmipoptimize(mLp, "");
     XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpress_stat);
   } else {
-    status = XPRSlpoptimize(mLp,"");
+    status = XPRSlpoptimize(mLp, "");
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpress_stat);
   }
 
@@ -2087,8 +2083,8 @@ void XpressInterface::Write(const std::string& filename) {
   }
   ExtractModel();
 
-  ExtractNames(mLp, solver_->constraints_);
   ExtractNames(mLp, solver_->variables_);
+  ExtractNames(mLp, solver_->constraints_);
 
   VLOG(1) << "Writing Xpress MPS \"" << filename << "\".";
   const int status = XPRSwriteprob(mLp, filename.c_str(), "");

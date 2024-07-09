@@ -29,27 +29,64 @@ import "ortools/routing/enums.proto";
 
 package operations_research;
 
+// Ruin strategy that removes a number of spatially close routes.
+message SpatiallyCloseRoutesRuinStrategy {
+  // Number of spatially close routes ruined at each ruin application.
+  optional uint32 num_ruined_routes = 3;
+}
+
+// Ruin strategy that removes a number of customers by performing a random walk
+// on the underlying routing solution. More precisely, starting from a randomly
+// selected seed visit, the walk is extended by either moving within the
+// same route or by jumping to a visit served by a different neighboring
+// route. Every active visit encountered along this random walk is made
+// unperformed.
+message RandomWalkRuinStrategy {
+  // Number of visits removed during a ruin application defined on visits.
+  // Note that pickup and delivery pairs are considered as a single entity,
+  // i.e., the removal of a pickup (respectively delivery) causes the removal of
+  // the associated delivery (respectively pickup) and it counts as a single
+  // removal.
+  optional uint32 num_removed_visits = 7;
+}
 // Ruin strategies, used in perturbation based on ruin and recreate approaches.
 message RuinStrategy {
+  oneof strategy {
+    SpatiallyCloseRoutesRuinStrategy spatially_close_routes = 1;
+    RandomWalkRuinStrategy random_walk = 2;
+  }
+}
+
+// The ruin composition strategies specifies how ruin are selected at every ILS
+// iteration.
+message RuinCompositionStrategy {
   enum Value {
     // Unspecified value.
     UNSET = 0;
 
-    // Removes a number of spatially close routes.
-    SPATIALLY_CLOSE_ROUTES_REMOVAL = 1;
+    // Execute all ruin strategies sequentially in the same order provided in
+    // input.
+    RUN_ALL_SEQUENTIALLY = 1;
+
+    // Execute all ruin strategies in a random order.
+    RUN_ALL_RANDOMLY = 2;
+
+    // Execute a randomly selected ruin.
+    RUN_ONE_RANDOMLY = 3;
   }
 }
 
 // Parameters to configure a perturbation based on a ruin and recreate approach.
 message RuinRecreateParameters {
-  // Strategy defining how a reference solution is ruined.
-  RuinStrategy.Value ruin_strategy = 1;
+  // List of ruin strategies determining how a reference solution is ruined.
+  repeated RuinStrategy ruin_strategies = 1;
+
+  // The composition strategy to use when combining the given 'ruin_strategies'.
+  // Has no effect when ruin_strategies is composed of a single strategy.
+  RuinCompositionStrategy.Value ruin_composition_strategy = 2;
 
   // Strategy defining how a reference solution is recreated.
-  FirstSolutionStrategy.Value recreate_strategy = 2;
-
-  // Number of routes removed during a ruin application defined on routes.
-  optional uint32 num_ruined_routes = 3;
+  FirstSolutionStrategy.Value recreate_strategy = 3;
 
   // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
   // identification of routes spatially close to a non start/end seed node.
@@ -131,8 +168,17 @@ message SimulatedAnnealingParameters {
   // The final temperature. See CoolingScheduleStrategy for its usage.
   optional double final_temperature = 3;
 
-  // TODO(user): support automatic definition of initial and final
-  // temperatures.
+  // Automatically define the value for the temperatures as follows.
+  // First, a  reference temperature t is defined as
+  //           w1 * c1 + w2 * c2 + ... + wK * cK
+  // where 0 < wJ <= 1 is the fraction of vehicles of cost class J and cJ is the
+  // average arc cost for the cost class J.
+  // The value of cJ is identified by randomly sampling N arc costs for the cost
+  // class J, where N is equal to the number of instance nodes.
+  // The initial and final temperatures are then defined as
+  // - initial_temperature: 0.1 * t
+  // - final_temperature: 0.001 * t
+  optional bool automatic_temperatures = 4;
 }
 
 // Determines when a neighbor solution, obtained by the application of a

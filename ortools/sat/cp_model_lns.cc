@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -207,10 +208,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   {
     Model local_model;
     CpModelProto mapping_proto;
-    simplied_model_proto_.Clear();
-    *simplied_model_proto_.mutable_variables() =
+    simplified_model_proto_.Clear();
+    *simplified_model_proto_.mutable_variables() =
         model_proto_with_only_variables_.variables();
-    PresolveContext context(&local_model, &simplied_model_proto_,
+    PresolveContext context(&local_model, &simplified_model_proto_,
                             &mapping_proto);
     ModelCopy copier(&context);
 
@@ -222,7 +223,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Compute the constraint <-> variable graph.
   //
   // TODO(user): Remove duplicate constraints?
-  const auto& constraints = simplied_model_proto_.constraints();
+  const auto& constraints = simplified_model_proto_.constraints();
   constraint_to_var_.clear();
   constraint_to_var_.reserve(constraints.size());
   for (int ct_index = 0; ct_index < constraints.size(); ++ct_index) {
@@ -361,10 +362,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // nothing else is done for a while, we will never see the "latest" size
   // in the log until it is reduced again.
   shared_response_->LogMessageWithThrottling(
-      "Model",
-      absl::StrCat("var:", active_variables_.size(), "/", num_variables,
-                   " constraints:", simplied_model_proto_.constraints().size(),
-                   "/", model_proto_.constraints().size(), compo_message));
+      "Model", absl::StrCat("var:", active_variables_.size(), "/",
+                            num_variables, " constraints:",
+                            simplified_model_proto_.constraints().size(), "/",
+                            model_proto_.constraints().size(), compo_message));
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {

@@ -23,11 +23,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/util/logging.h"
-#include "ortools/util/string_array.h"
 
 namespace operations_research {
 namespace fz {
@@ -390,7 +387,22 @@ class Model {
 #endif
   bool maximize() const { return maximize_; }
   Variable* objective() const { return objective_; }
+  const std::vector<Variable*>& float_objective_variables() const {
+    return float_objective_variables_;
+  }
+  const std::vector<double>& float_objective_coefficients() const {
+    return float_objective_coefficients_;
+  }
+  double float_objective_offset() const { return float_objective_offset_; }
   void SetObjective(Variable* obj) { objective_ = obj; }
+  void ClearObjective() { objective_ = nullptr; }
+  void AddFloatingPointObjectiveTerm(Variable* var, double coeff) {
+    float_objective_variables_.push_back(var);
+    float_objective_coefficients_.push_back(coeff);
+  }
+  void SetFloatingPointObjectiveOffset(double offset) {
+    float_objective_offset_ = offset;
+  }
 
   // Services.
   std::string DebugString() const;
@@ -408,6 +420,9 @@ class Model {
   // The objective variable (it belongs to variables_).
   Variable* objective_;
   bool maximize_;
+  std::vector<Variable*> float_objective_variables_;
+  std::vector<double> float_objective_coefficients_;
+  double float_objective_offset_ = 0.0;
   // All search annotations are stored as a vector of Annotation.
   std::vector<Annotation> search_annotations_;
   std::vector<SolutionOutputSpecs> output_;

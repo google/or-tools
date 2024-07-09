@@ -110,6 +110,15 @@ class LogToString:
         return self.__log
 
 
+class BestBoundCallback:
+
+    def __init__(self):
+        self.best_bound: float = 0.0
+
+    def new_best_bound(self, bb: float):
+        self.best_bound = bb
+
+
 class CpModelTest(absltest.TestCase):
 
     def testCreateIntegerVariable(self):
@@ -1252,6 +1261,25 @@ class CpModelTest(absltest.TestCase):
         status = solver.solve(model, solution_sum)
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(6, solution_sum.sum)
+
+    def testBestBoundCallback(self):
+        print("testBestBoundCallback")
+        model = cp_model.CpModel()
+        x0 = model.new_bool_var("x0")
+        x1 = model.new_bool_var("x1")
+        x2 = model.new_bool_var("x2")
+        x3 = model.new_bool_var("x3")
+        model.add_bool_or(x0, x1, x2, x3)
+        model.minimize(3 * x0 + 2 * x1 + 4 * x2 + 5 * x3 + 0.6)
+
+        solver = cp_model.CpSolver()
+        best_bound_callback = BestBoundCallback()
+        solver.best_bound_callback = best_bound_callback.new_best_bound
+        solver.parameters.num_workers = 1
+        solver.parameters.linearization_level = 2
+        status = solver.solve(model)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertEqual(2.6, best_bound_callback.best_bound)
 
     def testValue(self):
         print("testValue")

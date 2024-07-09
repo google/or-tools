@@ -28,7 +28,6 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -418,8 +417,7 @@ class Bitset64 {
  public:
   using value_type = IndexType;
 
-  // When speed matter, caching the base pointer like this to access this class
-  // in a read only mode help.
+  // When speed matter, caching the base pointer helps.
   class ConstView {
    public:
     explicit ConstView(const Bitset64* bitset) : data_(bitset->data_.data()) {}
@@ -434,6 +432,26 @@ class Bitset64 {
     const uint64_t* const data_;
   };
 
+  class View {
+   public:
+    explicit View(Bitset64* bitset) : data_(bitset->data_.data()) {}
+
+    bool operator[](IndexType i) const {
+      return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
+    }
+
+    void Clear(IndexType i) {
+      data_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
+    }
+
+    void Set(IndexType i) {
+      data_[BitOffset64(Value(i))] |= OneBit64(BitPos64(Value(i)));
+    }
+
+   private:
+    uint64_t* const data_;
+  };
+
   Bitset64() : size_(), data_() {}
   explicit Bitset64(IndexType size)
       : size_(Value(size) > 0 ? size : IndexType(0)),
@@ -444,6 +462,7 @@ class Bitset64 {
   Bitset64& operator=(const Bitset64&) = delete;
 
   ConstView const_view() const { return ConstView(this); }
+  View view() { return View(this); }
 
   // Returns how many bits this Bitset64 can hold.
   IndexType size() const { return size_; }

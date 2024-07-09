@@ -372,30 +372,32 @@ bool FindHeuristicSchedulingSolution(
 
 }  // namespace
 
+// We want to find the minimum set of values of `k` that would always find a
+// conflict if there is a `k` for which it exists. In the literature it is
+// often implied (but not stated) that it is sufficient to test the values of
+// `k` that correspond to the size of an item. This is not true. To find the
+// minimum set of values of `k` we look for all values of `k` that are
+// "extreme": ie., the rounding on the division truncates the most (or the
+// least) amount, depending on the sign it appears in the formula.
+//
+// To find these extreme values, we look for all local minima of the energy
+// slack after applying the DFF (we multiply by `k` for convenience):
+//    k * f_k(H) * W - sum_i k * f_k(h_i) * w_i
+// If this value ever becomes negative for a value of `k`, it must happen in a
+// local minimum. Then we use the fact that
+//    k * floor(x / k) = x - x % k
+// and that x%k has a local minimum when k=x/i and a local maximum when k=1+x/i
+// for every integer i. The final finer point in the calculation is
+// realizing that if
+//   sum_{i, h_i > H/2} w_i > W
+// then you have more "large" objects than it fits in the box, and you will
+// have a conflict using the DFF f_0 for l=H/2. So we can safely ignore this
+// case for the more expensive DFF f_2 calculation.
 void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
-    absl::Span<const IntegerValue> sizes_x,
-    absl::Span<const IntegerValue> sizes_y, IntegerValue x_bb_size,
-    IntegerValue sqrt_bb_size, IntegerValue y_bb_size,
-    Bitset64<IntegerValue>& candidates) {
-  // We want to find the minimum set of values of `k` that would always find a
-  // conflict if there is a `k` for which it exists. In the literature it is
-  // often implied (but not stated) that it is sufficient to test the values of
-  // `k` that correspond to the size of an item. This is not true. To find the
-  // minimum set of values of `k` we look for all values of `k` that are
-  // "extreme": ie., the rounding on the division truncates the most (or the
-  // least) amount, depending on the sign it appears in the formula.
-  IntegerValue sum_widths = 0;
-  for (int i = 0; i < sizes_x.size(); i++) {
-    const IntegerValue x_size = sizes_x[i];
-    if (2 * x_size > x_bb_size) {
-      sum_widths += 2 * sizes_y[i];
-    } else if (2 * x_size == x_bb_size) {
-      sum_widths += sizes_y[i];
-    }
-  }
-  const IntegerValue round_up = sum_widths > 2 * y_bb_size ? 0 : 1;
+    absl::Span<const IntegerValue> sizes, IntegerValue bb_size,
+    IntegerValue sqrt_bb_size, Bitset64<IntegerValue>& candidates) {
   // x_bb_size is less than 65536, so this fits in only 4kib.
-  candidates.ClearAndResize(x_bb_size / 2 + 2);
+  candidates.ClearAndResize(bb_size / 2 + 2);
 
   // `sqrt_bb_size` is lower than 256.
   for (IntegerValue i = 2; i <= sqrt_bb_size; i++) {
@@ -404,15 +406,14 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
   for (int i = 1; i <= sqrt_bb_size; i++) {
     const QuickSmallDivision div(i);
     if (i > 1) {
-      candidates.Set(div.DivideByDivisor(x_bb_size.value() + round_up.value()));
+      candidates.Set(div.DivideByDivisor(bb_size.value()));
     }
-    for (int k = 0; k < sizes_x.size(); k++) {
-      IntegerValue x_size = sizes_x[k];
-      if (2 * x_size > x_bb_size && x_size < x_bb_size) {
-        candidates.Set(
-            div.DivideByDivisor(x_bb_size.value() - x_size.value() + 1));
-      } else if (2 * x_size < x_bb_size) {
-        candidates.Set(div.DivideByDivisor(x_size.value()));
+    for (int k = 0; k < sizes.size(); k++) {
+      IntegerValue size = sizes[k];
+      if (2 * size > bb_size && size < bb_size) {
+        candidates.Set(div.DivideByDivisor(bb_size.value() - size.value() + 1));
+      } else if (2 * size < bb_size) {
+        candidates.Set(div.DivideByDivisor(size.value()));
       }
     }
   }
@@ -430,11 +431,11 @@ void OrthogonalPackingInfeasibilityDetector::GetAllCandidatesForKForDff2(
   // composing several times each.
   //
   // [1] F. Clautiaux, PhD thesis, hal/tel-00749411.
-  candidates.Resize(x_bb_size / 4 + 1);  // Erase all >= C/4
-  candidates.Resize(x_bb_size / 3 + 2);  // Make room for the two special values
-  candidates.Set(x_bb_size / 4 + 1);
-  if (x_bb_size > 3) {
-    candidates.Set(x_bb_size / 3 + 1);
+  candidates.Resize(bb_size / 4 + 1);  // Erase all >= C/4
+  candidates.Resize(bb_size / 3 + 2);  // Make room for the two special values
+  candidates.Set(bb_size / 4 + 1);
+  if (bb_size > 3) {
+    candidates.Set(bb_size / 3 + 1);
   }
 }
 
@@ -495,8 +496,7 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
       }
     }
   } else {
-    GetAllCandidatesForKForDff2(sizes_x, sizes_y, x_bb_size, sqrt_bb_size,
-                                y_bb_size, candidates);
+    GetAllCandidatesForKForDff2(sizes_x, x_bb_size, sqrt_bb_size, candidates);
 
     if (max_number_of_parameters_to_check < max_possible_number_of_parameters) {
       // We might have produced too many candidates. Let's count them and if it
@@ -561,9 +561,14 @@ OrthogonalPackingInfeasibilityDetector::CheckFeasibilityWithDualFunction2(
 
 bool OrthogonalPackingInfeasibilityDetector::RelaxConflictWithBruteForce(
     OrthogonalPackingResult& result,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    int brute_force_threshold) {
   const int num_items_originally =
       result.items_participating_on_conflict_.size();
+  if (num_items_originally > 2 * brute_force_threshold) {
+    // Don't even try on problems too big.
+    return false;
+  }
   std::vector<IntegerValue> sizes_x;
   std::vector<IntegerValue> sizes_y;
   std::vector<int> indexes;
@@ -582,9 +587,9 @@ bool OrthogonalPackingInfeasibilityDetector::RelaxConflictWithBruteForce(
       sizes_x.push_back(result.items_participating_on_conflict_[j].size_x);
       sizes_y.push_back(result.items_participating_on_conflict_[j].size_y);
     }
-    const auto solution =
-        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
-    if (solution.empty()) {
+    const auto solution = BruteForceOrthogonalPacking(
+        sizes_x, sizes_y, bounding_box_size, brute_force_threshold);
+    if (solution.status == BruteForceResult::Status::kNoSolutionExists) {
       // We still have a conflict if we remove the i-th item!
       to_be_removed[i] = true;
     }
@@ -791,28 +796,26 @@ OrthogonalPackingInfeasibilityDetector::TestFeasibilityImpl(
     }
   }
 
-  if (result.result_ == OrthogonalPackingResult::Status::UNKNOWN &&
-      num_items <= options.brute_force_threshold) {
-    num_brute_force_calls_++;
-    auto solution =
-        BruteForceOrthogonalPacking(sizes_x, sizes_y, bounding_box_size);
-    if (solution.empty()) {
+  if (result.result_ == OrthogonalPackingResult::Status::UNKNOWN) {
+    auto solution = BruteForceOrthogonalPacking(
+        sizes_x, sizes_y, bounding_box_size, options.brute_force_threshold);
+    num_brute_force_calls_ +=
+        (solution.status != BruteForceResult::Status::kTooBig);
+    if (solution.status == BruteForceResult::Status::kNoSolutionExists) {
       result.conflict_type_ = ConflictType::BRUTE_FORCE;
       result.result_ = OrthogonalPackingResult::Status::INFEASIBLE;
       result.items_participating_on_conflict_.resize(num_items);
       for (int i = 0; i < num_items; i++) {
         result.items_participating_on_conflict_[i] = make_item(i);
       }
-    } else {
+    } else if (solution.status == BruteForceResult::Status::kFoundSolution) {
       result.result_ = OrthogonalPackingResult::Status::FEASIBLE;
     }
   }
 
-  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE &&
-      result.items_participating_on_conflict_.size() <=
-          options.brute_force_threshold) {
-    num_brute_force_relaxation_ +=
-        RelaxConflictWithBruteForce(result, bounding_box_size);
+  if (result.result_ == OrthogonalPackingResult::Status::INFEASIBLE) {
+    num_brute_force_relaxation_ += RelaxConflictWithBruteForce(
+        result, bounding_box_size, options.brute_force_threshold);
   }
 
   return result;

@@ -33,10 +33,10 @@
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools//routing/parameters.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/routing.h"
 #include "ortools/util/random_engine.h"
 
 ABSL_FLAG(int, tsp_size, 10, "Size of Traveling Salesman Problem instance.");

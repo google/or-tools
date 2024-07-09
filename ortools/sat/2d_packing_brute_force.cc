@@ -16,11 +16,13 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
@@ -350,45 +352,47 @@ bool BruteForceOrthogonalPackingImpl(
   return !has_unplaced_item;
 }
 
-}  // namespace
-
-std::vector<Rectangle> BruteForceOrthogonalPacking(
-    absl::Span<const IntegerValue> sizes_x,
-    absl::Span<const IntegerValue> sizes_y,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size) {
+bool BruteForceOrthogonalPackingNoPreprocessing(
+    const absl::Span<PermutableItem> items,
+    const std::pair<IntegerValue, IntegerValue> bounding_box_size) {
   IntegerValue smallest_x = std::numeric_limits<IntegerValue>::max();
   IntegerValue smallest_y = std::numeric_limits<IntegerValue>::max();
-  int num_items = sizes_x.size();
+  const int num_items = items.size();
   CHECK_LE(num_items, kMaxProblemSize);
-  std::vector<int> item_index_sorted_by_area_desc(num_items);
+  IntegerValue slack = bounding_box_size.first * bounding_box_size.second;
+
+  for (const PermutableItem& item : items) {
+    smallest_x = std::min(smallest_x, item.size_x);
+    smallest_y = std::min(smallest_y, item.size_y);
+    slack -= item.size_x * item.size_y;
+    if (item.size_x > bounding_box_size.first ||
+        item.size_y > bounding_box_size.second) {
+      return false;
+    }
+  }
+  if (slack < 0) {
+    return false;
+  }
+
+  std::sort(items.begin(), items.end(),
+            [](const PermutableItem& a, const PermutableItem& b) {
+              return std::make_tuple(a.size_x * a.size_y, a.index) >
+                     std::make_tuple(b.size_x * b.size_y, b.index);
+            });
+
+  std::array<IntegerValue, kMaxProblemSize> new_sizes_x_storage,
+      new_sizes_y_storage;
+  absl::Span<IntegerValue> new_sizes_x(new_sizes_x_storage.data(), num_items);
+  absl::Span<IntegerValue> new_sizes_y(new_sizes_y_storage.data(), num_items);
   std::array<absl::InlinedVector<PotentialPositionForItem, 16>, kMaxProblemSize>
       potential_item_positions_storage;
   absl::Span<absl::InlinedVector<PotentialPositionForItem, 16>>
       potential_item_positions(potential_item_positions_storage.data(),
                                num_items);
   for (int i = 0; i < num_items; ++i) {
-    smallest_x = std::min(smallest_x, sizes_x[i]);
-    smallest_y = std::min(smallest_y, sizes_y[i]);
-    item_index_sorted_by_area_desc[i] = i;
+    new_sizes_x[i] = items[i].size_x;
+    new_sizes_y[i] = items[i].size_y;
     potential_item_positions[i].push_back({0, 0, false});
-  }
-  std::sort(item_index_sorted_by_area_desc.begin(),
-            item_index_sorted_by_area_desc.end(),
-            [sizes_x, sizes_y](int a, int b) {
-              return sizes_x[a] * sizes_y[a] > sizes_x[b] * sizes_y[b];
-            });
-  std::array<IntegerValue, kMaxProblemSize> new_sizes_x_storage,
-      new_sizes_y_storage;
-  absl::Span<IntegerValue> new_sizes_x(new_sizes_x_storage.data(), num_items);
-  absl::Span<IntegerValue> new_sizes_y(new_sizes_y_storage.data(), num_items);
-  IntegerValue slack = bounding_box_size.first * bounding_box_size.second;
-  for (int i = 0; i < num_items; ++i) {
-    new_sizes_x[i] = sizes_x[item_index_sorted_by_area_desc[i]];
-    new_sizes_y[i] = sizes_y[item_index_sorted_by_area_desc[i]];
-    slack -= sizes_x[i] * sizes_y[i];
-  }
-  if (slack < 0) {
-    return {};
   }
   std::array<Rectangle, kMaxProblemSize> item_positions_storage;
   absl::Span<Rectangle> item_positions(item_positions_storage.data(),
@@ -398,15 +402,289 @@ std::vector<Rectangle> BruteForceOrthogonalPacking(
       new_sizes_x, new_sizes_y, bounding_box_size, smallest_x, smallest_y,
       item_positions, placed_item_indexes, potential_item_positions, slack);
   if (!found_solution) {
-    return {};
+    return false;
+  }
+  for (int i = 0; i < num_items; ++i) {
+    items[i].position = item_positions[i];
+  }
+  return true;
+}
+
+// This function tries to pack a set of "tall" items with all the "shallow"
+// items that can fit in the area around them. See discussion about
+// the identically-feasible function v_1 in [1]. For example, for the packing:
+//
+// +----------------------------+
+// |------+                     |
+// |888888+----|                |
+// |888888|&&&&|                |
+// |------+&&&&|                |
+// |####| |&&&&|                |
+// |####| +----+                |
+// |####|         +------+      |
+// |####|         |......|      |
+// |####|         |......|@@@   |
+// |####+---------+......|@@@   |
+// |####|OOOOOOOOO|......|@@@   |
+// |####|OOOOOOOOO|......|@@@   |
+// |####|OOOOOOOOO|......|@@@   |
+// |####|OOOOOOOOO|......|@@@   |
+// |####|OOOOOOOOO|......|@@@   |
+// +----+---------+------+------+
+//
+// We can move all "tall" and "shallow" items to the left and pack all the
+// shallow items on the space remaining on the top of the tall items:
+//
+// +----------------------------+
+// |------+                     |
+// |888888+----|                |
+// |888888|&&&&|                |
+// |------+&&&&|                |
+// |####| |&&&&|                |
+// |####| +----+                |
+// |####+------+                |
+// |####|......|                |
+// |####|......|          @@@   |
+// |####|......+---------+@@@   |
+// |####|......|OOOOOOOOO|@@@   |
+// |####|......|OOOOOOOOO|@@@   |
+// |####|......|OOOOOOOOO|@@@   |
+// |####|......|OOOOOOOOO|@@@   |
+// |####|......|OOOOOOOOO|@@@   |
+// +----+------+---------+------+
+//
+// If the packing is successful, we can remove both set from the problem:
+// +----------------+
+// |                |
+// |                |
+// |                |
+// |                |
+// |                |
+// |                |
+// |                |
+// |                |
+// |          @@@   |
+// |---------+@@@   |
+// |OOOOOOOOO|@@@   |
+// |OOOOOOOOO|@@@   |
+// |OOOOOOOOO|@@@   |
+// |OOOOOOOOO|@@@   |
+// |OOOOOOOOO|@@@   |
+// +---------+------+
+//
+// [1] Carlier, Jacques, François Clautiaux, and Aziz Moukrim. "New reduction
+// procedures and lower bounds for the two-dimensional bin packing problem with
+// fixed orientation." Computers & Operations Research 34.8 (2007): 2223-2250.
+//
+// See Preprocess() for the API documentation.
+bool PreprocessLargeWithSmallX(
+    absl::Span<PermutableItem>& items,
+    std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+    int max_complexity) {
+  // The simplest way to implement this is to sort the shallow items alongside
+  // their corresponding tall items. More precisely, the smallest and largest
+  // items are at the end of the list. The reason we put the most interesting
+  // values in the end even if this means we want to iterate on the list
+  // backward is that if the heuristic is successful we will trim them from the
+  // back of the list of unfixed items.
+  std::sort(
+      items.begin(), items.end(),
+      [&bounding_box_size](const PermutableItem& a, const PermutableItem& b) {
+        const bool a_is_small = 2 * a.size_x <= bounding_box_size.first;
+        const bool b_is_small = 2 * b.size_x <= bounding_box_size.first;
+        const IntegerValue a_size_for_comp =
+            a_is_small ? a.size_x : bounding_box_size.first - a.size_x;
+        const IntegerValue b_size_for_comp =
+            b_is_small ? b.size_x : bounding_box_size.first - b.size_x;
+        return std::make_tuple(a_size_for_comp, !a_is_small, a.index) >
+               std::make_tuple(b_size_for_comp, !b_is_small, b.index);
+      });
+  IntegerValue total_large_item_width = 0;
+  IntegerValue largest_small_item_height = 0;
+  for (int i = items.size() - 1; i >= 1; --i) {
+    if (2 * items[i].size_x <= bounding_box_size.first) {
+      largest_small_item_height = items[i].size_x;
+      continue;
+    }
+    DCHECK_LE(items[i].size_x + largest_small_item_height,
+              bounding_box_size.first);
+    // We found a big item. So all values that we visited before are either
+    // taller than it or shallow enough to fit on top of it. Try to fit all that
+    // together!
+    if (items.subspan(i).size() > max_complexity) {
+      return false;
+    }
+    total_large_item_width += items[i].size_y;
+    if (BruteForceOrthogonalPackingNoPreprocessing(
+            items.subspan(i),
+            {bounding_box_size.first, total_large_item_width})) {
+      bounding_box_size.second -= total_large_item_width;
+      for (auto& item : items.subspan(i)) {
+        item.position.y_min += bounding_box_size.second;
+        item.position.y_max += bounding_box_size.second;
+      }
+      items = items.subspan(0, i);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Same API as Preprocess().
+bool PreprocessLargeWithSmallY(
+    absl::Span<PermutableItem>& items,
+    std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+    int max_complexity) {
+  absl::Span<PermutableItem> orig_items = items;
+  for (PermutableItem& item : orig_items) {
+    std::swap(item.size_x, item.size_y);
+    std::swap(item.position.x_min, item.position.y_min);
+    std::swap(item.position.x_max, item.position.y_max);
+  }
+  std::swap(bounding_box_size.first, bounding_box_size.second);
+  const bool ret =
+      PreprocessLargeWithSmallX(items, bounding_box_size, max_complexity);
+  std::swap(bounding_box_size.first, bounding_box_size.second);
+  for (PermutableItem& item : orig_items) {
+    std::swap(item.size_x, item.size_y);
+    std::swap(item.position.x_min, item.position.y_min);
+    std::swap(item.position.x_max, item.position.y_max);
+  }
+  return ret;
+}
+
+}  // namespace
+
+// Try to find an equivalent smaller OPP problem by fixing large items.
+// The API is a bit unusual: it takes a reference to a mutable Span of sizes and
+// rectangles. When this function finds an item that can be fixed, it sets
+// the position of the PermutableItem, reorders `items` to put that item in the
+// end of the span and then resizes the span so it contain only non-fixed items.
+//
+// Note that the position of input items is not used and the position of
+// non-fixed items will not be modified by this function.
+bool Preprocess(absl::Span<PermutableItem>& items,
+                std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+                int max_complexity) {
+  const int num_items = items.size();
+  if (num_items == 1) {
+    return false;
+  }
+  IntegerValue smallest_x = std::numeric_limits<IntegerValue>::max();
+  IntegerValue largest_x = std::numeric_limits<IntegerValue>::min();
+  IntegerValue smallest_y = std::numeric_limits<IntegerValue>::max();
+  IntegerValue largest_y = std::numeric_limits<IntegerValue>::min();
+  int largest_x_idx = -1;
+  int largest_y_idx = -1;
+  for (int i = 0; i < num_items; ++i) {
+    if (items[i].size_x > largest_x) {
+      largest_x = items[i].size_x;
+      largest_x_idx = i;
+    }
+    if (items[i].size_y > largest_y) {
+      largest_y = items[i].size_y;
+      largest_y_idx = i;
+    }
+    smallest_x = std::min(smallest_x, items[i].size_x);
+    smallest_y = std::min(smallest_y, items[i].size_y);
+  }
+
+  if (largest_x > bounding_box_size.first ||
+      largest_y > bounding_box_size.second) {
+    // No point in optimizing obviously infeasible instance.
+    return false;
+  }
+  const auto remove_item = [&items](int index_to_remove) {
+    std::swap(items[index_to_remove], items.back());
+    items.remove_suffix(1);
+  };
+  if (largest_x + smallest_x > bounding_box_size.first) {
+    // No item (not even the narrowest one) fit alongside the widest item. So we
+    // care only about fitting the remaining items in the remaining space.
+    bounding_box_size.second -= items[largest_x_idx].size_y;
+    items[largest_x_idx].position = {
+        .x_min = 0,
+        .x_max = largest_x,
+        .y_min = bounding_box_size.second,
+        .y_max = bounding_box_size.second + items[largest_x_idx].size_y};
+    remove_item(largest_x_idx);
+    Preprocess(items, bounding_box_size, max_complexity);
+    return true;
+  }
+  if (largest_y + smallest_y > bounding_box_size.second) {
+    bounding_box_size.first -= items[largest_y_idx].size_x;
+    items[largest_y_idx].position = {
+        .x_min = bounding_box_size.first,
+        .x_max = bounding_box_size.first + items[largest_y_idx].size_x,
+        .y_min = 0,
+        .y_max = largest_y};
+    remove_item(largest_y_idx);
+    Preprocess(items, bounding_box_size, max_complexity);
+    return true;
+  }
+
+  if (PreprocessLargeWithSmallX(items, bounding_box_size, max_complexity)) {
+    Preprocess(items, bounding_box_size, max_complexity);
+    return true;
+  }
+
+  if (PreprocessLargeWithSmallY(items, bounding_box_size, max_complexity)) {
+    Preprocess(items, bounding_box_size, max_complexity);
+    return true;
+  }
+
+  return false;
+}
+
+BruteForceResult BruteForceOrthogonalPacking(
+    absl::Span<const IntegerValue> sizes_x,
+    absl::Span<const IntegerValue> sizes_y,
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    int max_complexity) {
+  const int num_items = sizes_x.size();
+
+  if (num_items > 2 * max_complexity) {
+    // It is unlikely that preprocessing will remove half of the items, so don't
+    // lose time trying.
+    return {.status = BruteForceResult::Status::kTooBig};
+  }
+  CHECK_LE(num_items, kMaxProblemSize);
+
+  std::array<PermutableItem, kMaxProblemSize> items_storage;
+  absl::Span<PermutableItem> items(items_storage.data(), num_items);
+  for (int i = 0; i < num_items; ++i) {
+    items[i] = {
+        .size_x = sizes_x[i], .size_y = sizes_y[i], .index = i, .position = {}};
+  }
+  absl::Span<PermutableItem> post_processed_items = items;
+  std::pair<IntegerValue, IntegerValue> post_processed_bounding_box_size =
+      bounding_box_size;
+  const bool post_processed =
+      Preprocess(post_processed_items, post_processed_bounding_box_size,
+                 max_complexity - 1);
+  if (post_processed_items.size() > max_complexity) {
+    return {.status = BruteForceResult::Status::kTooBig};
+  }
+  const bool is_feasible = BruteForceOrthogonalPackingNoPreprocessing(
+      post_processed_items, post_processed_bounding_box_size);
+  VLOG_EVERY_N_SEC(2, 3)
+      << "Solved by brute force a problem of " << num_items << " items"
+      << (post_processed ? absl::StrCat(" (", post_processed_items.size(),
+                                        " after preprocessing)")
+                         : "")
+      << ": solution " << (is_feasible ? "found" : "not found") << ".";
+  if (!is_feasible) {
+    return {.status = BruteForceResult::Status::kNoSolutionExists};
   }
   std::vector<Rectangle> result(num_items);
-  for (int i = 0; i < num_items; ++i) {
-    result[item_index_sorted_by_area_desc[i]] = item_positions[i];
+  for (const PermutableItem& item : items) {
+    result[item.index] = item.position;
   }
-  VLOG_EVERY_N_SEC(2, 3) << "Found a feasible packing by brute force. Dot:\n "
+  VLOG_EVERY_N_SEC(3, 3) << "Found a feasible packing by brute force. Dot:\n "
                          << RenderDot(bounding_box_size, result);
-  return result;
+  return {.status = BruteForceResult::Status::kFoundSolution,
+          .positions_for_solution = result};
 }
 
 }  // namespace sat

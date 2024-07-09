@@ -28,6 +28,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/random/seed_sequences.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -93,6 +94,12 @@ class Cleanup {
 
 constexpr const uint64_t kDeterministicSeed = 42;
 
+namespace {
+
+bool UseAbslRandom() { return false; }
+
+}  // namespace
+
 RevisedSimplex::RevisedSimplex()
     : problem_status_(ProblemStatus::INIT),
       objective_(),
@@ -100,8 +107,8 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
-      deterministic_random_(kDeterministicSeed),
-      random_(deterministic_random_),
+      random_(UseAbslRandom() ? absl::BitGenRef(absl_random_)
+                              : absl::BitGenRef(deterministic_random_)),
       basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_),
       primal_edge_norms_(compact_matrix_, variables_info_,
@@ -132,7 +139,12 @@ void RevisedSimplex::ClearStateForNextSolve() {
 }
 
 void RevisedSimplex::LoadStateForNextSolve(const BasisState& state) {
-  SCOPED_TIME_STAT(&function_stats_);
+  // We avoid marking the state as set externally if it is the same as the
+  // current one.
+  //
+  // TODO(user): Add comparison operator.
+  if (state.statuses == solution_state_.statuses) return;
+
   solution_state_ = state;
   solution_state_has_been_set_externally_ = true;
 }
@@ -3617,7 +3629,7 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
   deterministic_random_.seed(parameters.random_seed());
-
+  absl_random_ = absl::BitGen(absl::SeedSeq({parameters.random_seed()}));
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();
@@ -3639,7 +3651,7 @@ void RevisedSimplex::DisplayIterationInfo(bool primal,
   const std::string first_word = primal ? "Primal " : "Dual ";
 
   // We display the info on each re-factorization, and it is nice to show what
-  // trigerred the issue. Note that we don't display normal refactorization when
+  // triggered the issue. Note that we don't display normal refactorization when
   // we decide that it is worth it for the solve time or we reach the fixed
   // refactorization period.
   std::string info;
@@ -3813,9 +3825,9 @@ void RevisedSimplex::DisplayVariableBounds() {
   }
 }
 
-absl::StrongVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
-    const DenseRow* column_scales) {
-  absl::StrongVector<RowIndex, SparseRow> dictionary(num_rows_.value());
+util_intops::StrongVector<RowIndex, SparseRow>
+RevisedSimplex::ComputeDictionary(const DenseRow* column_scales) {
+  util_intops::StrongVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
     for (const auto e : direction_) {

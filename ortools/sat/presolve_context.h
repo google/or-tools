@@ -185,6 +185,15 @@ class PresolveContext {
     }
   }
 
+  // Canonicalization of linear constraint. This might also be needed when
+  // creating new constraint to make sure there are no duplicate variables.
+  // Returns true if the set of variables in the expression changed.
+  //
+  // This uses affine relation and regroup duplicate/fixed terms.
+  bool CanonicalizeLinearConstraint(ConstraintProto* ct);
+  bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
+                                    LinearExpressionProto* expr);
+
   // This methods only works for affine expressions (checked).
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const;
 
@@ -356,7 +365,7 @@ class PresolveContext {
   // Clears the "rules" statistics.
   void ClearStats();
 
-  // Inserts the given literal to encode ref == value.
+  // Inserts the given literal to encode var == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
   //
@@ -367,9 +376,9 @@ class PresolveContext {
   // Returns false if the model become UNSAT.
   //
   // TODO(user): This function is not always correct if
-  // !context->DomainOf(ref).contains(value), we could make it correct but it
+  // !context->DomainOf(var).contains(value), we could make it correct but it
   // might be a bit expansive to do so. For now we just have a DCHECK().
-  bool InsertVarValueEncoding(int literal, int ref, int64_t value);
+  bool InsertVarValueEncoding(int literal, int var, int64_t value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.
@@ -561,9 +570,6 @@ class PresolveContext {
   // Logs stats to the logger.
   void LogInfo();
 
-  // Return the given index, or the index of an interval with the same data.
-  int GetIntervalRepresentative(int index);
-
   // This should be called only once after InitializeNewDomains() to load
   // the hint, in order to maintain it as best as possible during presolve.
   void LoadSolutionHint();
@@ -609,6 +615,15 @@ class PresolveContext {
 
   // Advanced presolve. See this class comment.
   DomainDeductions deductions;
+
+  // Adds a new constraint to the mapping proto. The version with the base
+  // constraint will copy that constraint to the new constraint.
+  //
+  // If the flag --cp_model_debug_postsolve is set, we will use the caller
+  // file/line number to add debug info in the constraint name() field.
+  ConstraintProto* NewMappingConstraint(absl::string_view file, int line);
+  ConstraintProto* NewMappingConstraint(const ConstraintProto& base_ct,
+                                        absl::string_view file, int line);
 
  private:
   void MaybeResizeIntervalData();
@@ -728,8 +743,8 @@ class PresolveContext {
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name_;
 
-  // Serialized proto (should be small) to index.
-  absl::flat_hash_map<std::string, int> interval_representative_;
+  // Used by CanonicalizeLinearExpressionInternal().
+  std::vector<std::pair<int, int64_t>> tmp_terms_;
 
   bool model_is_expanded_ = false;
 };

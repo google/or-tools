@@ -698,7 +698,7 @@ enum CpSolverStatus {
   // An optimal feasible solution has been found.
   //
   // More generally, this status represent a success. So we also return OPTIMAL
-  // if we find a solution for a pure feasiblity problem or if a gap limit has
+  // if we find a solution for a pure feasibility problem or if a gap limit has
   // been specified and we return a solution within this limit. In the case
   // where we need to return all the feasible solution, this status will only be
   // returned if we enumerated all of them; If we stopped before, we will return
@@ -752,10 +752,14 @@ message CpSolverResponse {
   // is only filled with the info derived during a normal search and we do not
   // have any dedicated algorithm to improve it.
   //
-  // If the problem is a feasibility problem, then these bounds will be valid
-  // for any feasible solution. If the problem is an optimization problem, then
-  // these bounds will only be valid for any OPTIMAL solutions, it can exclude
-  // sub-optimal feasible ones.
+  // Warning: if you didn't set keep_all_feasible_solutions_in_presolve, then
+  // these domains might exclude valid feasible solution. Otherwise for a
+  // feasibility problem, all feasible solution should be there.
+  //
+  // Warning: For an optimization problem, these will correspond to valid bounds
+  // for the problem of finding an improving solution to the best one found so
+  // far. It might be better to solve a feasibility version if one just want to
+  // explore the feasible region.
   repeated IntegerVariableProto tightened_variables = 21;
 
   // A subset of the model "assumptions" field. This will only be filled if the

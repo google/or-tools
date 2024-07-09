@@ -25,7 +25,6 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -276,6 +275,12 @@ class Domain {
    */
   int64_t ValueAtOrBefore(int64_t input) const;
   int64_t ValueAtOrAfter(int64_t input) const;
+
+  /**
+   * If the domain contains zero, this return the simple interval around it.
+   * Otherwise, this returns an empty domain.
+   */
+  Domain PartAroundZero() const;
 
   /**
    * Returns true iff the domain is reduced to a single value.

@@ -31,6 +31,7 @@ list(REMOVE_ITEM _SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/multi_dijkstra_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/one_tree_lower_bound_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/perfect_matching_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/rooted_tree_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_test.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
@@ -54,6 +55,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::${PROJECT_NAME}_proto
+  ${PROJECT_NAMESPACE}::ortools_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::graph ALIAS ${NAME})

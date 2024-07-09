@@ -25,14 +25,10 @@
 #include <string>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "scip/scip_sol.h"
-#include "scip/type_cons.h"
 #include "scip/type_scip.h"
 #include "scip/type_sol.h"
-#include "scip/type_var.h"
 
 namespace operations_research {
 

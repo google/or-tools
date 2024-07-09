@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -66,8 +67,8 @@ int64_t FindRationalFactor(double x, int64_t limit = 1e4,
 // an exact definition for the max_absolute_activity allowed.
 double FindBestScalingAndComputeErrors(
     const std::vector<double>& coefficients,
-    const std::vector<double>& lower_bounds,
-    const std::vector<double>& upper_bounds, int64_t max_absolute_activity,
+    absl::Span<const double> lower_bounds,
+    absl::Span<const double> upper_bounds, int64_t max_absolute_activity,
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error);
 

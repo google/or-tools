@@ -14,7 +14,6 @@
 #include "ortools/linear_solver/samples/network_design_ilph.h"
 
 #include "absl/base/log_severity.h"
-#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
@@ -29,11 +28,11 @@ namespace {
 
 TEST(ProtoToProblemTest, TransformC33) {
   CapacityPlanningInstance request;
-  ::absl::Status status = ReadFile(
-      file::JoinPathRespectAbsolute(
-          absl::GetFlag(FLAGS_test_srcdir), "operations_research_data/",
-          "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
-      &request);
+  ::absl::Status status =
+      ReadFile(file::JoinPathRespectAbsolute(
+                   ::testing::SrcDir(), "operations_research_data/",
+                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
+               &request);
   EXPECT_OK(status);
   CapacityPlanningProblem problem;
   status = Convert(request, &problem);

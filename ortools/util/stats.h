@@ -68,6 +68,7 @@
 #ifndef OR_TOOLS_UTIL_STATS_H_
 #define OR_TOOLS_UTIL_STATS_H_
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>

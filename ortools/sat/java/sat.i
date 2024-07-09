@@ -82,6 +82,10 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %}
 
 %typemap(in) std::function<void(const std::string&)> %{
+  // Catch nullptr inputs.
+  jclass $input_object_class = jenv->GetObjectClass($input);
+  if (nullptr == $input_object_class) return $null;
+
   // $input will be deleted once this function return.
   // So we create a JNI global reference to keep it alive.
   jobject $input_object = jenv->NewGlobalRef($input);
@@ -91,8 +95,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
   jenv->GetJavaVM(&jvm);
   auto $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
 
-  jclass $input_object_class = jenv->GetObjectClass($input);
-  if (nullptr == $input_object_class) return $null;
   jmethodID $input_method_id = jenv->GetMethodID(
     $input_object_class, "accept", "(Ljava/lang/Object;)V");
   assert($input_method_id != nullptr);
@@ -115,6 +117,51 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %typemap(jstype) std::function<void(const std::string&)> "java.util.function.Consumer<String>" // Type used in the Proxy class.
 %typemap(javain) std::function<void(const std::string&)> "$javainput" // passing the Callback to JNI java class.
 
+%typemap(in) std::function<void(double)> %{
+  // Catch nullptr inputs.
+  jclass $input_object_class = jenv->GetObjectClass($input);
+  if (nullptr == $input_object_class) return $null;
+
+  // $input will be deleted once this function return.
+  // So we create a JNI global reference to keep it alive.
+  jobject $input_object = jenv->NewGlobalRef($input);
+  // and we wrap it in a GlobalRefGuard object which will call the
+  // JNI global reference deleter to avoid leak at destruction.
+  JavaVM* jvm;
+  jenv->GetJavaVM(&jvm);
+  auto $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
+
+  jmethodID $input_method_id = jenv->GetMethodID(
+    $input_object_class, "accept", "(Ljava/lang/Double;)V");
+  assert($input_method_id != nullptr);
+
+  // We will need to box double before calling the java method.
+  jclass $input_doubleClass = jenv->FindClass("java/lang/Double");
+  jmethodID $input_doubleConstructor =
+    jenv->GetMethodID($input_doubleClass, "<init>", "(D)V");
+
+  // When the lambda will be destroyed, input_guard's destructor will be called.
+  $1 = [jvm, $input_object, $input_method_id, $input_guard, $input_doubleClass,
+        $input_doubleConstructor](double bound) -> void {
+        JNIEnv *jenv = NULL;
+        JavaVMAttachArgs args;
+        args.version = JNI_VERSION_1_2;
+        args.name = NULL;
+        args.group = NULL;
+        jvm->AttachCurrentThread((void**)&jenv, &args);
+
+        jobject doubleObj = jenv->NewObject(
+          $input_doubleClass, $input_doubleConstructor, (jdouble)bound);
+
+        jenv->CallVoidMethod($input_object, $input_method_id, doubleObj);
+        jvm->DetachCurrentThread();
+  };
+%}
+%typemap(jni) std::function<void(double)> "jobject" // Type used in the JNI.java.
+%typemap(jtype) std::function<void(double)> "java.util.function.Consumer<Double>" // Type used in the JNI.java.
+%typemap(jstype) std::function<void(double)> "java.util.function.Consumer<Double>" // Type used in the Proxy class.
+%typemap(javain) std::function<void(double)> "$javainput" // passing the Callback to JNI java class.
+
 %ignoreall
 
 %unignore operations_research;
@@ -122,6 +169,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 // Wrap the SolveWrapper class.
 %unignore operations_research::sat::SolveWrapper;
+%rename (addBestBoundCallback) operations_research::sat::SolveWrapper::AddBestBoundCallback;
 %rename (addLogCallback) operations_research::sat::SolveWrapper::AddLogCallback;
 %rename (addSolutionCallback) operations_research::sat::SolveWrapper::AddSolutionCallback;
 %rename (clearSolutionCallback) operations_research::sat::SolveWrapper::ClearSolutionCallback;

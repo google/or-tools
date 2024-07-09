@@ -39,7 +39,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from collections import namedtuple
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import routing_enums_pb2
+from ortools.routing import enums_pb2
 from datetime import datetime, timedelta
 
 
@@ -624,7 +624,7 @@ def main():
     parameters = pywrapcp.DefaultRoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
     parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     # Routing: forbids use of TSPOpt neighborhood, (this is the default behaviour)
     parameters.local_search_operators.use_tsp_opt = pywrapcp.BOOL_FALSE
     # Disabling Large Neighborhood Search, (this is the default behaviour)

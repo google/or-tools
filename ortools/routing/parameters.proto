@@ -36,7 +36,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 61
+// Next ID: 63
 message RoutingSearchParameters {
   reserved 19;
 
@@ -146,7 +146,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 35
+  // Next ID: 36
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -329,6 +329,13 @@ message RoutingSearchParameters {
     //   1 -> [5] ->  3  -> 4 with 2 inactive
     //   1 ->  2  -> [5] -> 4 with 3 inactive
     OptionalBoolean use_swap_active = 14;
+    // Operator which replaces a chain of active nodes by an inactive one.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    //   1 -> [5] -> 4 with 2 and 3 inactive
+    OptionalBoolean use_swap_active_chain = 35;
     // Operator which makes an inactive node active and an active one inactive.
     // It is similar to SwapActiveOperator excepts that it tries to insert the
     // inactive node in all possible positions instead of just the position of
@@ -460,6 +467,13 @@ message RoutingSearchParameters {
   // Whether to reset penalties when a new best solution is found. The effect is
   // that a greedy descent is started before the next penalization phase.
   bool guided_local_search_reset_penalties_on_new_best_solution = 51;
+  // When an arc leaving a vehicle start or arriving at a vehicle end is
+  // penalized, this field controls whether to penalize all other equivalent
+  // arcs with starts or ends in the same vehicle class.
+  bool guided_local_search_penalize_with_vehicle_classes = 61;
+  // Whether to consider arc penalties in cost functions used in local search
+  // operators using arc costs.
+  bool use_guided_local_search_penalties_in_local_search_operators = 62;
 
   // --- Search control ---
   //

@@ -1013,7 +1013,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
-    SolveInterrupter* const interrupter) {
+    const SolveInterrupter* const interrupter) {
   const absl::Time start = absl::Now();
 
   GScip::Interrupter gscip_interrupter;
@@ -1352,7 +1352,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GScipSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        SolveInterrupter* const) {
+                                        const SolveInterrupter*) {
   return absl::UnimplementedError(
       "SCIP does not provide a method to compute an infeasible subsystem");
 }

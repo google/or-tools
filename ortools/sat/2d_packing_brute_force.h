@@ -25,14 +25,43 @@ namespace operations_research {
 namespace sat {
 
 // Try to solve the Orthogonal Packing Problem by enumeration of all possible
-// solutions. Returns an empty vector if the problem is infeasible, otherwise
-// returns the items in the positions they appear in the solution in the same
-// order as the input arguments.
-// Warning: do not call this with too many item as it will run forever.
-std::vector<Rectangle> BruteForceOrthogonalPacking(
+// solutions. It will try to preprocess the problem into a smaller one and will
+// only try to solve it if it the reduced problem has `max_complexity` or less
+// items.
+// Warning: do not call this with a too many items and a large value of
+// `max_complexity` or it will run forever.
+struct BruteForceResult {
+  enum class Status {
+    kFoundSolution,
+    kNoSolutionExists,
+    kTooBig,
+  };
+
+  Status status;
+  // Only non-empty if status==kFoundSolution.
+  std::vector<Rectangle> positions_for_solution;
+};
+
+BruteForceResult BruteForceOrthogonalPacking(
     absl::Span<const IntegerValue> sizes_x,
     absl::Span<const IntegerValue> sizes_y,
-    std::pair<IntegerValue, IntegerValue> bounding_box_size);
+    std::pair<IntegerValue, IntegerValue> bounding_box_size,
+    int max_complexity);
+
+// Note that functions taking a Span<PermutableItems> are free to permute them
+// as they see fit unless documented otherwise.
+struct PermutableItem {
+  IntegerValue size_x;
+  IntegerValue size_y;
+  // Position of the item in the original input.
+  int index;
+  Rectangle position;
+};
+
+// Exposed for testing
+bool Preprocess(absl::Span<PermutableItem>& items,
+                std::pair<IntegerValue, IntegerValue>& bounding_box_size,
+                int max_complexity);
 
 }  // namespace sat
 }  // namespace operations_research

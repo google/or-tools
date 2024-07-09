@@ -168,15 +168,12 @@
 #ifndef OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
 #define OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
 
-#include <algorithm>
 #include <cstdint>
 #include <stack>
 #include <string>
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"

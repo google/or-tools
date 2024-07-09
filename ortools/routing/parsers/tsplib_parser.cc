@@ -171,7 +171,7 @@ TspLibParser::TspLibParser()
       edge_column_(0),
       to_read_(0) {}
 
-bool TspLibParser::LoadFile(const std::string& file_name) {
+bool TspLibParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   for (const std::string& line :
@@ -182,7 +182,7 @@ bool TspLibParser::LoadFile(const std::string& file_name) {
   return true;
 }
 
-int TspLibParser::SizeFromFile(const std::string& file_name) const {
+int TspLibParser::SizeFromFile(absl::string_view file_name) const {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   int size = 0;

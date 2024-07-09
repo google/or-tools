@@ -1,4 +1,4 @@
-[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html)
+[home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
 ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
 # Integer arithmetic recipes for the CP-SAT solver.
 
@@ -512,6 +512,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
@@ -570,7 +571,7 @@ public class EarlinessTardinessCostSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.solve(model, new CpSolverSolutionCallback() {
+    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
         return this;
@@ -949,6 +950,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
@@ -1012,7 +1014,7 @@ public class StepFunctionSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    solver.solve(model, new CpSolverSolutionCallback() {
+    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
         return this;
@@ -1209,4 +1211,183 @@ func main() {
 		glog.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }
+```
+
+## Product of a Boolean variable and an integer variable
+
+This sample implements an helper function that will take two variables (Boolean
+and integer), and will return a new integer variable that is constrained to be
+equal to the product of the two variables.
+
+The following samples output:
+
+```
+x=1 b=0 p=0
+x=2 b=0 p=0
+x=3 b=0 p=0
+x=5 b=0 p=0
+x=6 b=0 p=0
+x=7 b=0 p=0
+x=9 b=0 p=0
+x=10 b=0 p=0
+x=1 b=1 p=1
+x=2 b=1 p=2
+x=3 b=1 p=3
+x=5 b=1 p=5
+x=6 b=1 p=6
+x=7 b=1 p=7
+x=9 b=1 p=9
+x=10 b=1 p=10
+```
+
+### Python code
+
+```python
+#!/usr/bin/env python3
+"""Code sample that encodes the product of a Boolean and an integer variable."""
+
+from ortools.sat.python import cp_model
+
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions."""
+
+    def __init__(self, variables: list[cp_model.IntVar]):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+
+    def on_solution_callback(self) -> None:
+        for v in self.__variables:
+            print(f"{v}={self.value(v)}", end=" ")
+        print()
+
+
+def build_product_var(
+    model: cp_model.CpModel, b: cp_model.IntVar, x: cp_model.IntVar, name: str
+) -> cp_model.IntVar:
+    """Builds the product of a Boolean variable and an integer variable."""
+    p = model.new_int_var_from_domain(
+        cp_model.Domain.from_flat_intervals(x.proto.domain).union_with(
+            cp_model.Domain(0, 0)
+        ),
+        name,
+    )
+    model.add(p == x).only_enforce_if(b)
+    model.add(p == 0).only_enforce_if(~b)
+    return p
+
+
+def bool_and_int_var_product_sample_sat():
+    """Encoding of the product of two Boolean variables.
+
+    p == x * y, which is the same as p <=> x and y
+    """
+    model = cp_model.CpModel()
+    b = model.new_bool_var("b")
+    x = model.new_int_var_from_domain(
+        cp_model.Domain.from_values([1, 2, 3, 5, 6, 7, 9, 10]), "x"
+    )
+    p = build_product_var(model, b, x, "p")
+
+    # Search for x and b values in increasing order.
+    model.add_decision_strategy(
+        [b, x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+    )
+
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    solution_printer = VarArraySolutionPrinter([x, b, p])
+    solver.parameters.enumerate_all_solutions = True
+    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    solver.solve(model, solution_printer)
+
+
+bool_and_int_var_product_sample_sat()
+```
+
+## Scanning the domain of variables.
+
+In this example, we will implement the all_different_except_0 constraint. This
+constraint is useful as it expresses that 2 active assignment should be
+different, but we do not care when they are inactive (represented by being
+assigned a zero value).
+
+To implement this constraint, we will collect all values in the initial domain
+of all variables and attach Boolean variables for each of them. This requires
+reading back the values from the model.
+
+### Python code
+
+```python
+#!/usr/bin/env python3
+"""Implements AllDifferentExcept0 using atomic constraints."""
+
+import collections
+
+from ortools.sat.python import cp_model
+
+
+def all_different_except_0():
+    """Encode the AllDifferentExcept0 constraint."""
+
+    # Model.
+    model = cp_model.CpModel()
+
+    # Declare our primary variable.
+    x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+
+    # Expand the AllDifferentExcept0 constraint.
+    variables_per_value = collections.defaultdict(list)
+    all_values = set()
+
+    for var in x:
+        all_encoding_literals = []
+        # Domains of variables are represented by flat intervals.
+        for i in range(0, len(var.proto.domain), 2):
+            start = var.proto.domain[i]
+            end = var.proto.domain[i + 1]
+            for value in range(start, end + 1):  # Intervals are inclusive.
+                # Create the literal attached to var == value.
+                bool_var = model.new_bool_var(f"{var} == {value}")
+                model.add(var == value).only_enforce_if(bool_var)
+
+                # Collect all encoding literals for a given variable.
+                all_encoding_literals.append(bool_var)
+
+                # Collect all encoding literals for a given value.
+                variables_per_value[value].append(bool_var)
+
+                # Collect all different values.
+                all_values.add(value)
+
+        # One variable must have exactly one value.
+        model.add_exactly_one(all_encoding_literals)
+
+    # Add the all_different constraints.
+    for value, literals in variables_per_value.items():
+        if value == 0:
+            continue
+        model.add_at_most_one(literals)
+
+    model.add(x[0] == 0)
+    model.add(x[1] == 0)
+
+    model.maximize(sum(x))
+
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    status = solver.solve(model)
+
+    # Checks and prints the output.
+    if status == cp_model.OPTIMAL:
+        print(f"Optimal solution: {solver.objective_value}, expected: 27.0")
+    elif status == cp_model.FEASIBLE:
+        print(f"Feasible solution: {solver.objective_value}, optimal 27.0")
+    elif status == cp_model.INFEASIBLE:
+        print("The model is infeasible")
+    else:
+        print("Something went wrong. Please check the status and the log")
+
+
+all_different_except_0()
 ```

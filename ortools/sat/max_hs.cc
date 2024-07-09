@@ -290,7 +290,7 @@ HittingSetOptimizer::ComputeAdditionalVariablesToExtract() {
 }
 
 void HittingSetOptimizer::ProjectAndAddAtMostOne(
-    const std::vector<Literal>& literals) {
+    absl::Span<const Literal> literals) {
   LinearConstraintBuilder builder(model_, 0, 1);
   for (const Literal& literal : literals) {
     if (!builder.AddLiteralTerm(literal, 1)) {
@@ -441,7 +441,7 @@ bool HittingSetOptimizer::ProcessSolution() {
 }
 
 void HittingSetOptimizer::AddCoresToTheMpModel(
-    const std::vector<std::vector<Literal>>& cores) {
+    absl::Span<const std::vector<Literal>> cores) {
   MPModelProto* hs_model = request_.mutable_model();
 
   for (const std::vector<Literal>& core : cores) {

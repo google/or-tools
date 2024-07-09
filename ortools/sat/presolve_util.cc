@@ -20,6 +20,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -302,27 +303,27 @@ void ActivityBoundHelper::AddAllAtMostOnes(const CpModelProto& proto) {
 int64_t ActivityBoundHelper::ComputeActivity(
     bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
     std::vector<std::array<int64_t, 2>>* conditional) {
-  tmp_terms_.clear();
-  tmp_terms_.reserve(terms.size());
+  tmp_terms_for_compute_activity_.clear();
+  tmp_terms_for_compute_activity_.reserve(terms.size());
   int64_t offset = 0;
   for (auto [lit, coeff] : terms) {
     if (compute_min) coeff = -coeff;  // Negate.
     if (coeff >= 0) {
-      tmp_terms_.push_back({lit, coeff});
+      tmp_terms_for_compute_activity_.push_back({lit, coeff});
     } else {
       // l is the same as 1 - (1 - l)
-      tmp_terms_.push_back({NegatedRef(lit), -coeff});
+      tmp_terms_for_compute_activity_.push_back({NegatedRef(lit), -coeff});
       offset += coeff;
     }
   }
   const int64_t internal_result =
-      ComputeMaxActivityInternal(tmp_terms_, conditional);
+      ComputeMaxActivityInternal(tmp_terms_for_compute_activity_, conditional);
 
   // Correct everything.
   if (conditional != nullptr) {
     const int num_terms = terms.size();
     for (int i = 0; i < num_terms; ++i) {
-      if (tmp_terms_[i].first != terms[i].first) {
+      if (tmp_terms_for_compute_activity_[i].first != terms[i].first) {
         // The true/false meaning is swapped
         std::swap((*conditional)[i][0], (*conditional)[i][1]);
       }
@@ -357,17 +358,23 @@ void ActivityBoundHelper::PartitionIntoAmo(
         amo_sums_[a] += coeff;
       }
     }
-    to_sort_.push_back({terms[i].second, i});
+    to_sort_.push_back(
+        TermWithIndex{.coeff = coeff, .index = index, .span_index = i});
   }
-  std::sort(to_sort_.begin(), to_sort_.end(), std::greater<>());
+  std::sort(to_sort_.begin(), to_sort_.end(),
+            [](const TermWithIndex& a, const TermWithIndex& b) {
+              // We take into account the index to make the result
+              // deterministic.
+              return std::tie(a.coeff, a.index) > std::tie(b.coeff, b.index);
+            });
 
   int num_parts = 0;
   partition_.resize(num_terms);
   used_amo_to_dense_index_.clear();
-  for (int i = 0; i < num_terms; ++i) {
-    const int original_i = to_sort_[i].second;
-    const Index index = IndexFromLiteral(terms[original_i].first);
-    const int64_t coeff = terms[original_i].second;
+  for (const TermWithIndex& term : to_sort_) {
+    const int original_i = term.span_index;
+    const Index index = term.index;
+    const int64_t coeff = term.coeff;
     int best = -1;
     int64_t best_sum = 0;
     bool done = false;

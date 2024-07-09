@@ -39,6 +39,7 @@
 #include "ortools/sat/sat_cnf_reader.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(
     std::string, input, "",
@@ -50,6 +51,10 @@ ABSL_FLAG(
     std::string, hint_file, "",
     "Protobuf file containing a CpModelResponse. The solution will be used as a"
     " hint to bootstrap the search.");
+
+ABSL_FLAG(std::string, domain_file, "",
+          "Protobuf file containing a CpModelResponse. If present, the "
+          "tightened models will be used to reduce the domain of variables.");
 
 ABSL_FLAG(std::string, output, "",
           "If non-empty, write the response there. By default it uses the "
@@ -88,7 +93,7 @@ std::string ExtractName(absl::string_view full_filename) {
 }
 
 bool LoadProblem(const std::string& filename, absl::string_view hint_file,
-                 CpModelProto* cp_model) {
+                 absl::string_view domain_file, CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -108,22 +113,48 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
   } else {
-    LOG(INFO) << "Reading a CpModelProto.";
     CHECK_OK(ReadFileToProto(filename, cp_model));
   }
 
   // Read the hint file.
   if (!hint_file.empty()) {
     CpSolverResponse response;
-    LOG(INFO) << "Reading a CpSolverResponse.";
     CHECK_OK(ReadFileToProto(hint_file, &response));
-    CHECK_EQ(response.solution_size(), cp_model->variables_size())
-        << "The hint proto is not compatible with the model proto";
+    if (!response.solution().empty()) {
+      CHECK_EQ(response.solution_size(), cp_model->variables_size())
+          << "The hint from the response proto is not compatible with the "
+             "model proto";
 
-    cp_model->clear_solution_hint();
-    for (int i = 0; i < cp_model->variables_size(); ++i) {
-      cp_model->mutable_solution_hint()->add_vars(i);
-      cp_model->mutable_solution_hint()->add_values(response.solution(i));
+      cp_model->clear_solution_hint();
+      for (int i = 0; i < cp_model->variables_size(); ++i) {
+        cp_model->mutable_solution_hint()->add_vars(i);
+        cp_model->mutable_solution_hint()->add_values(response.solution(i));
+      }
+    } else {
+      LOG(INFO) << "The response proto has no solutions, ignoring.";
+    }
+  }
+
+  // Read the tightened domain file.
+  if (!domain_file.empty()) {
+    CpSolverResponse response;
+    CHECK_OK(ReadFileToProto(domain_file, &response));
+    if (!response.tightened_variables().empty()) {
+      CHECK_EQ(response.tightened_variables_size(), cp_model->variables_size())
+          << "The tighened variables from the response proto is not "
+             "compatible with the model proto";
+
+      for (int i = 0; i < cp_model->variables_size(); ++i) {
+        IntegerVariableProto* var_proto = cp_model->mutable_variables(i);
+        const Domain tightened_domain =
+            ReadDomainFromProto(response.tightened_variables(i));
+        const Domain new_domain =
+            ReadDomainFromProto(*var_proto).IntersectionWith(tightened_domain);
+        FillDomainInProto(new_domain, var_proto);
+      }
+    } else {
+      LOG(INFO) << "The response proto has no tightened variable domains, "
+                   "ignoring.";
     }
   }
 
@@ -154,7 +185,7 @@ int Run() {
   CpModelProto* cp_model =
       google::protobuf::Arena::Create<CpModelProto>(&arena);
   if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
-                   cp_model)) {
+                   absl::GetFlag(FLAGS_domain_file), cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
     return EXIT_SUCCESS;

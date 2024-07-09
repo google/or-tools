@@ -137,7 +137,7 @@ class DomainDeductions {
   std::vector<int> tmp_num_occurrences_;
 
   SparseBitset<Index> something_changed_;
-  absl::StrongVector<Index, std::vector<int>> enforcement_to_vars_;
+  util_intops::StrongVector<Index, std::vector<int>> enforcement_to_vars_;
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
 
@@ -188,6 +188,10 @@ class ActivityBoundHelper {
   //
   // Important: We shouldn't have duplicates or a lit and NegatedRef(lit)
   // appearing both.
+
+  // Note: the result of this function is not exact (it uses an heuristic to
+  // detect AMOs), but it does not depend on the order of the input terms, so
+  // passing an input in non-deterministic order is fine.
   //
   // TODO(user): Indicate when the bounds are trivial (i.e. not intersection
   // with any amo) so that we don't waste more time processing the result?
@@ -261,10 +265,16 @@ class ActivityBoundHelper {
   // We use an unique index by at most one, and just stores for each literal
   // the at most one to which it belong.
   int num_at_most_ones_ = 0;
-  absl::StrongVector<Index, std::vector<int>> amo_indices_;
+  util_intops::StrongVector<Index, std::vector<int>> amo_indices_;
 
-  std::vector<std::pair<int, int64_t>> tmp_terms_;
-  std::vector<std::pair<int64_t, int>> to_sort_;
+  std::vector<std::pair<int, int64_t>> tmp_terms_for_compute_activity_;
+
+  struct TermWithIndex {
+    int64_t coeff;
+    Index index;
+    int span_index;
+  };
+  std::vector<TermWithIndex> to_sort_;
 
   // We partition the set of term into disjoint at most one.
   absl::flat_hash_map<int, int> used_amo_to_dense_index_;
@@ -305,7 +315,7 @@ class ClauseWithOneMissingHasher {
   }
 
   absl::BitGenRef random_;
-  absl::StrongVector<Index, uint64_t> literal_to_hash_;
+  util_intops::StrongVector<Index, uint64_t> literal_to_hash_;
   std::vector<uint64_t> clause_to_hash_;
 };
 

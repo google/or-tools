@@ -14,10 +14,7 @@
 #ifndef OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
 #define OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
 
-#include <stdbool.h>
-
 #include <cmath>
-#include <concepts>
 #include <limits>
 #include <vector>
 
@@ -82,23 +79,6 @@ PathWithLength ConstrainedShortestPathsOnDag(
 // -----------------------------------------------------------------------------
 // Advanced API.
 // -----------------------------------------------------------------------------
-#if __cplusplus >= 202002L
-template <class GraphType>
-concept DagGraphType = requires(GraphType graph) {
-  { typename GraphType::NodeIndex{} };
-  { typename GraphType::ArcIndex{} };
-  { graph.num_nodes() } -> std::same_as<typename GraphType::NodeIndex>;
-  { graph.num_arcs() } -> std::same_as<typename GraphType::ArcIndex>;
-  { graph.OutgoingArcs(typename GraphType::NodeIndex{}) };
-  {
-    graph.Tail(typename GraphType::ArcIndex{})
-  } -> std::same_as<typename GraphType::NodeIndex>;
-  {
-    graph.Head(typename GraphType::ArcIndex{})
-  } -> std::same_as<typename GraphType::NodeIndex>;
-};
-#endif
-
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
 // `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
@@ -183,6 +163,7 @@ class ConstrainedShortestPathsOnDagWrapper {
       std::vector<double>& lengths_from_sources,
       std::vector<std::vector<double>>& resources_from_sources,
       std::vector<ArcIndex>& incoming_arc_indices_from_sources,
+      std::vector<int>& incoming_label_indices_from_sources,
       std::vector<int>& first_label, std::vector<int>& num_labels);
 
   // Returns the arc index linking two nodes from each pass forming the best
@@ -202,12 +183,9 @@ class ConstrainedShortestPathsOnDagWrapper {
   // `sources` (if `direction` iS FORWARD) or `destinations` (if `direction` is
   // BACKWARD) and ends in node represented by `best_label_index`.
   std::vector<ArcIndex> ArcPathTo(
-      int best_label_index, const GraphType& reverse_graph,
-      absl::Span<const double> arc_lengths,
-      absl::Span<const double> lengths_from_sources,
+      int best_label_index,
       absl::Span<const ArcIndex> incoming_arc_indices_from_sources,
-      absl::Span<const int> first_label,
-      absl::Span<const int> num_labels) const;
+      absl::Span<const int> incoming_label_indices_from_sources) const;
 
   // Returns the list of all the nodes implied by a given `arc_path`.
   std::vector<NodeIndex> NodePathImpliedBy(absl::Span<const ArcIndex> arc_path,
@@ -275,6 +253,7 @@ class ConstrainedShortestPathsOnDagWrapper {
   std::vector<double> lengths_from_sources_[2];
   std::vector<std::vector<double>> resources_from_sources_[2];
   std::vector<ArcIndex> incoming_arc_indices_from_sources_[2];
+  std::vector<int> incoming_label_indices_from_sources_[2];
   std::vector<int> node_first_label_[2];
   std::vector<int> node_num_labels_[2];
 };
@@ -565,21 +544,23 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
   {
     ThreadPool search_threads(2);
     search_threads.StartWorkers();
-  for (const Direction dir : {FORWARD, BACKWARD}) {
+    for (const Direction dir : {FORWARD, BACKWARD}) {
       search_threads.Schedule([this, dir, &sub_arc_lengths]() {
-    RunHalfConstrainedShortestPathOnDag(
-        /*reverse_graph=*/sub_reverse_graph_[dir],
-        /*arc_lengths=*/sub_arc_lengths[dir],
-        /*arc_resources=*/sub_arc_resources_[dir],
-        /*min_arc_resources=*/sub_min_arc_resources_[dir],
-        /*max_resources=*/*max_resources_,
-        /*max_num_created_labels=*/max_num_created_labels_[dir],
-        /*lengths_from_sources=*/lengths_from_sources_[dir],
-        /*resources_from_sources=*/resources_from_sources_[dir],
-        /*incoming_arc_indices_from_sources=*/
-        incoming_arc_indices_from_sources_[dir],
-        /*first_label=*/node_first_label_[dir],
-        /*num_labels=*/node_num_labels_[dir]);
+        RunHalfConstrainedShortestPathOnDag(
+            /*reverse_graph=*/sub_reverse_graph_[dir],
+            /*arc_lengths=*/sub_arc_lengths[dir],
+            /*arc_resources=*/sub_arc_resources_[dir],
+            /*min_arc_resources=*/sub_min_arc_resources_[dir],
+            /*max_resources=*/*max_resources_,
+            /*max_num_created_labels=*/max_num_created_labels_[dir],
+            /*lengths_from_sources=*/lengths_from_sources_[dir],
+            /*resources_from_sources=*/resources_from_sources_[dir],
+            /*incoming_arc_indices_from_sources=*/
+            incoming_arc_indices_from_sources_[dir],
+            /*incoming_label_indices_from_sources=*/
+            incoming_label_indices_from_sources_[dir],
+            /*first_label=*/node_first_label_[dir],
+            /*num_labels=*/node_num_labels_[dir]);
       });
     }
   }
@@ -626,13 +607,10 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
   for (const Direction dir : {FORWARD, BACKWARD}) {
     for (const ArcIndex sub_arc_index : ArcPathTo(
              /*best_label_index=*/best_label_pair.label_index[dir],
-             /*reverse_graph=*/sub_reverse_graph_[dir],
-             /*arc_lengths=*/sub_arc_lengths[dir],
-             /*lengths_from_sources=*/lengths_from_sources_[dir],
              /*incoming_arc_indices_from_sources=*/
              incoming_arc_indices_from_sources_[dir],
-             /*first_label=*/node_first_label_[dir],
-             /*num_labels=*/node_num_labels_[dir])) {
+             /*incoming_label_indices_from_sources=*/
+             incoming_label_indices_from_sources_[dir])) {
       const ArcIndex arc_index = sub_full_arc_indices_[dir][sub_arc_index];
       if (arc_index == -1) {
         break;
@@ -652,6 +630,7 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
       resources_from_sources_[dir][r].clear();
     }
     incoming_arc_indices_from_sources_[dir].clear();
+    incoming_label_indices_from_sources_[dir].clear();
   }
   return {.length = best_label_pair.length,
           .arc_path = arc_path,
@@ -672,6 +651,7 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
         std::vector<double>& lengths_from_sources,
         std::vector<std::vector<double>>& resources_from_sources,
         std::vector<ArcIndex>& incoming_arc_indices_from_sources,
+        std::vector<int>& incoming_label_indices_from_sources,
         std::vector<int>& first_label, std::vector<int>& num_labels) {
   // Initialize source node.
   const NodeIndex source_node = reverse_graph.num_nodes() - 1;
@@ -682,10 +662,12 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
     resources_from_sources[r].push_back(0);
   }
   incoming_arc_indices_from_sources.push_back(-1);
+  incoming_label_indices_from_sources.push_back(-1);
 
   std::vector<double> lengths_to;
   std::vector<std::vector<double>> resources_to(num_resources_);
   std::vector<ArcIndex> incoming_arc_indices_to;
+  std::vector<int> incoming_label_indices_to;
   std::vector<int> label_indices_to;
   std::vector<double> resources(num_resources_);
   for (NodeIndex to = 0; to < source_node; ++to) {
@@ -694,6 +676,7 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
       resources_to[r].clear();
     }
     incoming_arc_indices_to.clear();
+    incoming_label_indices_to.clear();
     for (const ArcIndex reverse_arc_index : reverse_graph.OutgoingArcs(to)) {
       const NodeIndex from = reverse_graph.Head(reverse_arc_index);
       const double arc_length = arc_lengths[reverse_arc_index];
@@ -721,6 +704,7 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
           resources_to[r].push_back(resources[r]);
         }
         incoming_arc_indices_to.push_back(reverse_arc_index);
+        incoming_label_indices_to.push_back(label_index);
       }
     }
     // Sort labels lexicographically with lengths then resources.
@@ -771,6 +755,8 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
       }
       incoming_arc_indices_from_sources.push_back(
           incoming_arc_indices_to[label_i_index]);
+      incoming_label_indices_from_sources.push_back(
+          incoming_label_indices_to[label_i_index]);
       ++num_labels_to;
       if (lengths_from_sources.size() >= max_num_created_labels) {
         return;
@@ -875,37 +861,19 @@ template <class GraphType>
 #endif
 std::vector<typename GraphType::ArcIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
-    const int best_label_index, const GraphType& reverse_graph,
-    absl::Span<const double> arc_lengths,
-    absl::Span<const double> lengths_from_sources,
+    const int best_label_index,
     absl::Span<const ArcIndex> incoming_arc_indices_from_sources,
-    absl::Span<const int> first_label, absl::Span<const int> num_labels) const {
-  if (best_label_index == -1) {
-    return {};
-  }
+    absl::Span<const int> incoming_label_indices_from_sources) const {
   int current_label_index = best_label_index;
   std::vector<ArcIndex> arc_path;
-  for (int i = 0; i < reverse_graph.num_nodes(); ++i) {
-    const ArcIndex current_arc_index =
-        incoming_arc_indices_from_sources[current_label_index];
-    if (current_arc_index == -1) {
+  for (int i = 0; i < graph_->num_nodes(); ++i) {
+    if (current_label_index == -1) {
       break;
     }
-    arc_path.push_back(current_arc_index);
-    const NodeIndex sub_node = reverse_graph.Head(current_arc_index);
-    const double current_length = lengths_from_sources[current_label_index];
-    for (int label_index = first_label[sub_node];
-         label_index < first_label[sub_node] + num_labels[sub_node];
-         ++label_index) {
-      if (std::abs(lengths_from_sources[label_index] +
-                   arc_lengths[current_arc_index] - current_length) <=
-          kTolerance) {
-        current_label_index = label_index;
-        break;
-      }
-    }
+    arc_path.push_back(incoming_arc_indices_from_sources[current_label_index]);
+    current_label_index =
+        incoming_label_indices_from_sources[current_label_index];
   }
-  CHECK_EQ(incoming_arc_indices_from_sources[current_label_index], -1);
   return arc_path;
 }
 

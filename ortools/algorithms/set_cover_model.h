@@ -14,60 +14,109 @@
 #ifndef OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 #define OR_TOOLS_ALGORITHMS_SET_COVER_MODEL_H_
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#include <sys/types.h>
+#endif  // defined(_MSC_VER)
+
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/algorithms/set_cover.pb.h"
-#include "ortools/lp_data/lp_types.h"  // For StrictITIVector.
-#include "ortools/util/strong_integers.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
+#include "ortools/util/aligned_memory.h"
 
 // Representation class for the weighted set-covering problem.
 //
-// Let S be a set, let (T_j) be a family (j in J) of subsets of S, and c_j costs
-// associated to each T_j.
+// Let E be a "universe" set, let (S_j) be a family (j in J) of subsets of E,
+// and c_j costs associated to each S_j. Note that J = {j in 1..|S|}.
 //
-// The minimum-cost set-covering problem consists in finding K, a subset of J
-// such that the union of all the T_j for k in K is equal to S (the subsets
-// indexed by K "cover" S), with the minimal total cost sum c_k (k in K).
+// The minimum-cost set-covering problem consists in finding K (for covering),
+// a subset of J such that the union of all the S_j for k in K is equal to E
+// (the subsets indexed by K "cover" E), while minimizing total cost sum c_k (k
+// in K).
 //
 // In Mixed-Integer Programming and matrix terms, the goal is to find values
-// of binary variables x_j, where x_j is 1 when subset T_j is in K, 0
+// of binary variables x_j, where x_j is 1 when subset S_j is in K, 0
 // otherwise, that minimize the sum of c_j * x_j subject to M.x >= 1. Each row
-// corresponds to an element in S.
+// corresponds to an element in E.
 //
 // The matrix M for linear constraints is defined as follows:
-// - it has as many rows as there are elements in S.
-// - its columns are such that M(i, j) = 1 iff the i-th element of S is present
-//   in T_j.
+// - it has as many rows as there are elements in E.
+// - its columns are such that M(i, j) = 1 iff the i-th element of E is present
+//   in S_j.
+//
+// We alse use m to denote |E|, the number of elements, and n to denote |S|, the
+// number of subsets.
+// Finally, nnz or #nz denotes the numbers of non-zeros, i.e. the sum of the
+// cardinalities of all the subsets.
 
 namespace operations_research {
-// Basic non-strict type for cost.
-typedef double Cost;
+// Basic non-strict type for cost. The speed penalty for using double is ~2%.
+using Cost = double;
+
+// Base non-strict integer type for counting elements and subsets.
+// Using ints makes it possible to represent problems with more than 2 billion
+// (2e9) elements and subsets. If need arises one day, BaseInt can be split
+// into SubsetBaseInt and ElementBaseInt.
+// Quick testing has shown a slowdown of about 20-25% when using int64_t.
+using BaseInt = int;
 
 // We make heavy use of strong typing to avoid obvious mistakes.
 // Subset index.
-DEFINE_STRONG_INDEX_TYPE(SubsetIndex);
+DEFINE_STRONG_INT_TYPE(SubsetIndex, BaseInt);
 
 // Element index.
-DEFINE_STRONG_INDEX_TYPE(ElementIndex);
+DEFINE_STRONG_INT_TYPE(ElementIndex, BaseInt);
 
 // Position in a vector. The vector may either represent a column, i.e. a
 // subset with all its elements, or a row, i,e. the list of subsets which
 // contain a given element.
-DEFINE_STRONG_INDEX_TYPE(EntryIndex);
+DEFINE_STRONG_INT_TYPE(ColumnEntryIndex, BaseInt);
+DEFINE_STRONG_INT_TYPE(RowEntryIndex, BaseInt);
 
-// TODO(user): consider replacing with StrongVectors, which behave differently.
-// The return type for size() is a simple size_t and not an Index as in
-// StrictITIVector, which makes the code less elegant.
-using SubsetCostVector = glop::StrictITIVector<SubsetIndex, Cost>;
-using ElementCostVector = glop::StrictITIVector<ElementIndex, Cost>;
-using SparseColumn = glop::StrictITIVector<EntryIndex, ElementIndex>;
-using SparseRow = glop::StrictITIVector<EntryIndex, SubsetIndex>;
+using SubsetRange = util_intops::StrongIntRange<SubsetIndex>;
+using ElementRange = util_intops::StrongIntRange<ElementIndex>;
+using ColumnEntryRange = util_intops::StrongIntRange<ColumnEntryIndex>;
 
-using SparseColumnView = glop::StrictITIVector<SubsetIndex, SparseColumn>;
-using SparseRowView = glop::StrictITIVector<ElementIndex, SparseRow>;
-using ElementToSubsetVector = glop::StrictITIVector<ElementIndex, SubsetIndex>;
-using SubsetToElementVector = glop::StrictITIVector<SubsetIndex, ElementIndex>;
+// SIMD operations require vectors to be aligned at 64-bytes on x86-64
+// processors as of 2024-05-03.
+// TODO(user): improve the code to make it possible to use unaligned memory.
+constexpr int kSetCoverAlignmentInBytes = 64;
+
+using CostAllocator = AlignedAllocator<Cost, kSetCoverAlignmentInBytes>;
+using ElementAllocator =
+    AlignedAllocator<ElementIndex, kSetCoverAlignmentInBytes>;
+using SubsetAllocator =
+    AlignedAllocator<SubsetIndex, kSetCoverAlignmentInBytes>;
+
+using SubsetCostVector =
+    util_intops::StrongVector<SubsetIndex, Cost, CostAllocator>;
+using ElementCostVector =
+    util_intops::StrongVector<ElementIndex, Cost, CostAllocator>;
+
+using SparseColumn =
+    util_intops::StrongVector<ColumnEntryIndex, ElementIndex, ElementAllocator>;
+using SparseRow =
+    util_intops::StrongVector<RowEntryIndex, SubsetIndex, SubsetAllocator>;
+
+using IntAllocator = AlignedAllocator<BaseInt, kSetCoverAlignmentInBytes>;
+using ElementToIntVector =
+    util_intops::StrongVector<ElementIndex, BaseInt, IntAllocator>;
+using SubsetToIntVector =
+    util_intops::StrongVector<SubsetIndex, BaseInt, IntAllocator>;
+
+// Views of the sparse vectors. These need not be aligned as it's their contents
+// that need to be aligned.
+using SparseColumnView = util_intops::StrongVector<SubsetIndex, SparseColumn>;
+using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
+
+using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
 
 // Main class for describing a weighted set-covering problem.
 class SetCoverModel {
@@ -75,6 +124,8 @@ class SetCoverModel {
   // Constructs an empty weighted set-covering problem.
   SetCoverModel()
       : num_elements_(0),
+        num_subsets_(0),
+        num_nonzeros_(0),
         row_view_is_valid_(false),
         subset_costs_(),
         columns_(),
@@ -83,11 +134,18 @@ class SetCoverModel {
 
   // Current number of elements to be covered in the model, i.e. the number of
   // elements in S. In matrix terms, this is the number of rows.
-  ElementIndex num_elements() const { return num_elements_; }
+  BaseInt num_elements() const { return num_elements_; }
 
   // Current number of subsets in the model. In matrix terms, this is the
   // number of columns.
-  SubsetIndex num_subsets() const { return columns_.size(); }
+  BaseInt num_subsets() const { return num_subsets_; }
+
+  // Current number of nonzeros in the matrix.
+  ssize_t num_nonzeros() const { return num_nonzeros_; }
+
+  double FillRate() const {
+    return 1.0 * num_nonzeros() / (1.0 * num_elements() * num_subsets());
+  }
 
   // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
@@ -104,6 +162,16 @@ class SetCoverModel {
   // Returns true if rows_ and columns_ represent the same problem.
   bool row_view_is_valid() const { return row_view_is_valid_; }
 
+  // Access to the ranges of subsets and elements.
+  util_intops::StrongIntRange<SubsetIndex> SubsetRange() const {
+    return util_intops::StrongIntRange<SubsetIndex>(SubsetIndex(num_subsets_));
+  }
+
+  util_intops::StrongIntRange<ElementIndex> ElementRange() const {
+    return util_intops::StrongIntRange<ElementIndex>(
+        ElementIndex(num_elements_));
+  }
+
   // Returns the list of indices for all the subsets in the model.
   std::vector<SubsetIndex> all_subsets() const { return all_subsets_; }
 
@@ -113,15 +181,18 @@ class SetCoverModel {
 
   // Adds an element to the last subset created. In matrix terms, this adds a
   // 1 on row 'element' of the current last column of the matrix.
-  void AddElementToLastSubset(int element);
+  void AddElementToLastSubset(BaseInt element);
   void AddElementToLastSubset(ElementIndex element);
 
   // Sets 'cost' to an already existing 'subset'.
   // This will CHECK-fail if cost is infinite or a NaN.
-  void SetSubsetCost(int subset, Cost cost);
+  void SetSubsetCost(BaseInt subset, Cost cost);
+  void SetSubsetCost(SubsetIndex subset, Cost cost);
 
-  // Adds 'element' to and already existing 'subset'.
-  void AddElementToSubset(int element, int subset);
+  // Adds 'element' to an already existing 'subset'.
+  // No check is done if element is already in the subset.
+  void AddElementToSubset(BaseInt element, BaseInt subset);
+  void AddElementToSubset(ElementIndex element, SubsetIndex subset);
 
   // Creates the sparse ("dual") representation of the problem.
   void CreateSparseRowView();
@@ -131,10 +202,13 @@ class SetCoverModel {
   bool ComputeFeasibility() const;
 
   // Reserves num_subsets columns in the model.
-  void ReserveNumSubsets(int num_subsets);
+  void ReserveNumSubsets(BaseInt number_of_subsets);
+  void ReserveNumSubsets(SubsetIndex num_subsets);
 
   // Reserves num_elements rows in the column indexed by subset.
-  void ReserveNumElementsInSubset(int num_elements, int subset);
+  void ReserveNumElementsInSubset(BaseInt num_elements, BaseInt subset);
+  void ReserveNumElementsInSubset(ElementIndex num_elements,
+                                  SubsetIndex subset);
 
   // Returns the model as a SetCoverProto. The function is not const because
   // the element indices in the columns need to be sorted for the representation
@@ -144,33 +218,153 @@ class SetCoverModel {
   // Imports the model from a SetCoverProto.
   void ImportModelFromProto(const SetCoverProto& message);
 
+  // A struct enabling to show basic statistics on rows and columns.
+  // The meaning of the fields is obvious.
+  struct Stats {
+    double min;
+    double max;
+    double median;
+    double mean;
+    double stddev;
+
+    std::string DebugString() const {
+      return absl::StrCat("min = ", min, ", max = ", max, ", mean = ", mean,
+                          ", median = ", median, ", stddev = ", stddev, ", ");
+    }
+  };
+
+  // Computes basic statistics on costs and returns a Stats structure.
+  Stats ComputeCostStats();
+
+  // Computes basic statistics on rows and returns a Stats structure.
+  Stats ComputeRowStats();
+
+  // Computes basic statistics on columns and returns a Stats structure.
+  Stats ComputeColumnStats();
+
+  // Computes deciles on rows and returns a vector of deciles.
+  std::vector<ssize_t> ComputeRowDeciles() const;
+
+  // Computes deciles on columns and returns a vector of deciles.
+  std::vector<ssize_t> ComputeColumnDeciles() const;
+
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
   // columns.size() - 1
   void UpdateAllSubsetsList();
 
   // Number of elements.
-  ElementIndex num_elements_;
+  BaseInt num_elements_;
+
+  // Number of subsets. Maintained for ease of access.
+  BaseInt num_subsets_;
+
+  // Number of nonzeros in the matrix.
+  ssize_t num_nonzeros_;
 
   // True when the SparseRowView is up-to-date.
   bool row_view_is_valid_;
 
   // Costs for each subset.
+
   SubsetCostVector subset_costs_;
 
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
+  // This takes nnz (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
+  // On classical benchmarks, the fill rate is in the 2 to 5% range.
+  // Some synthetic benchmarks have fill rates of 20%, while benchmarks for
+  // rail rotations have a fill rate of 0.2 to 0.4%.
+  // TODO(user): try using a compressed representation like Protocol Buffers,
+  // since the data is only iterated upon.
   SparseColumnView columns_;
 
   // Vector of rows. Each row corresponds to an element and contains the
   // subsets containing the element.
+  // The size is exactly the same as for columns_.
   SparseRowView rows_;
 
   // Vector of indices from 0 to columns.size() - 1. (Like std::iota, but built
   // incrementally.) Used to (un)focus optimization algorithms on the complete
   // problem.
+  // This takes |S| BaseInts.
   // TODO(user): use this to enable deletion and recycling of columns/subsets.
+  // TODO(user): replace this with an iterator?
   std::vector<SubsetIndex> all_subsets_;
+};
+
+// The IntersectingSubsetsIterator is a forward iterator that returns the next
+// intersecting subset for a fixed seed_subset.
+// The iterator is initialized with a model and a seed_subset and
+// allows a speedup in getting the intersecting subsets
+// by not storing them in memory.
+// The iterator is at the end when the last intersecting subset has been
+// returned.
+// TODO(user): Add the possibility for range-for loops.
+class IntersectingSubsetsIterator {
+ public:
+  IntersectingSubsetsIterator(const SetCoverModel& model,
+                              SubsetIndex seed_subset)
+      : intersecting_subset_(-1),
+        element_entry_(0),
+        subset_entry_(0),
+        seed_subset_(seed_subset),
+        model_(model),
+        subset_seen_(model_.columns().size(), false) {
+    CHECK(model_.row_view_is_valid());
+    subset_seen_[seed_subset] = true;  // Avoid iterating on `seed_subset`.
+    ++(*this);                         // Move to the first intersecting subset.
+  }
+
+  // Returns (true) whether the iterator is at the end.
+  bool at_end() const {
+    return element_entry_.value() == model_.columns()[seed_subset_].size();
+  }
+
+  // Returns the intersecting subset.
+  SubsetIndex operator*() const { return intersecting_subset_; }
+
+  // Move the iterator to the next intersecting subset.
+  IntersectingSubsetsIterator& operator++() {
+    DCHECK(model_.row_view_is_valid());
+    DCHECK(!at_end());
+    const SparseRowView& rows = model_.rows();
+    const SparseColumn& column = model_.columns()[seed_subset_];
+    for (; element_entry_ < ColumnEntryIndex(column.size()); ++element_entry_) {
+      const ElementIndex current_element = column[element_entry_];
+      const SparseRow& current_row = rows[current_element];
+      for (; subset_entry_ < RowEntryIndex(current_row.size());
+           ++subset_entry_) {
+        intersecting_subset_ = current_row[subset_entry_];
+        if (!subset_seen_[intersecting_subset_]) {
+          subset_seen_[intersecting_subset_] = true;
+          return *this;
+        }
+      }
+      subset_entry_ = RowEntryIndex(0);  // 'carriage-return'
+    }
+    return *this;
+  }
+
+ private:
+  // The intersecting subset.
+  SubsetIndex intersecting_subset_;
+
+  // The position of the entry in the column corresponding to `seed_subset_`.
+  ColumnEntryIndex element_entry_;
+
+  // The position of the entry in the row corresponding to `element_entry`.
+  RowEntryIndex subset_entry_;
+
+  // The seed subset.
+  SubsetIndex seed_subset_;
+
+  // The model to which the iterator is applying.
+  const SetCoverModel& model_;
+
+  // A vector of Booleans indicating whether the current subset has been
+  // already seen by the iterator.
+  SubsetBoolVector subset_seen_;
 };
 
 }  // namespace operations_research

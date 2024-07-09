@@ -27,7 +27,7 @@ _OUTPUT_PROTO = flags.DEFINE_string(
 )
 _PARAMS = flags.DEFINE_string(
     "params",
-    "num_search_workers:16,log_search_progress:true,max_time_in_seconds:45",
+    "num_search_workers:16,log_search_progress:false,max_time_in_seconds:45",
     "Sat solver parameters.",
 )
 _PREPROCESS = flags.DEFINE_bool(
@@ -503,6 +503,7 @@ def single_machine_scheduling():
     if parameters:
         text_format.Parse(parameters, solver.parameters)
     solution_printer = SolutionPrinter()
+    solver.best_bound_callback = lambda a : print(f"New objective lower bound: {a}")
     solver.solve(model, solution_printer)
     for job_id in all_jobs:
         print(

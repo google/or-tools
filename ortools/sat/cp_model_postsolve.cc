@@ -23,6 +23,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -404,6 +405,128 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
   for (int i = 0; i < num_variables_in_original_model; ++i) {
     solution->push_back(domains[i].SmallestValue());
   }
+}
+
+void FillTightenedDomainInResponse(const CpModelProto& original_model,
+                                   const CpModelProto& mapping_proto,
+                                   const std::vector<int>& postsolve_mapping,
+                                   const std::vector<Domain>& search_domains,
+                                   CpSolverResponse* response,
+                                   SolverLogger* logger) {
+  // The [0, num_vars) part will contain the tightened domains.
+  const int num_original_vars = original_model.variables().size();
+  const int num_expanded_vars = mapping_proto.variables().size();
+  CHECK_LE(num_original_vars, num_expanded_vars);
+  std::vector<Domain> domains(num_expanded_vars);
+
+  // Start with the domain from the mapping proto. Note that by construction
+  // this should be tighter than the original variable domains.
+  for (int i = 0; i < num_expanded_vars; ++i) {
+    domains[i] = ReadDomainFromProto(mapping_proto.variables(i));
+    if (i < num_original_vars) {
+      CHECK(domains[i].IsIncludedIn(
+          ReadDomainFromProto(original_model.variables(i))));
+    }
+  }
+
+  // The first test is for the corner case of presolve closing the problem,
+  // in which case there is no more info to process.
+  int num_common_vars = 0;
+  int num_affine_reductions = 0;
+  if (!search_domains.empty()) {
+    if (postsolve_mapping.empty()) {
+      // Currently no mapping should mean all variables are in common. This
+      // happen when presolve is disabled, but we might still have more
+      // variables due to expansion for instance.
+      //
+      // There is also the corner case of presolve closing the problem,
+      CHECK_GE(search_domains.size(), num_original_vars);
+      num_common_vars = num_original_vars;
+      for (int i = 0; i < num_original_vars; ++i) {
+        domains[i] = domains[i].IntersectionWith(search_domains[i]);
+      }
+    } else {
+      // This is the normal presolve case.
+      // Intersect the domain of the variables in common.
+      CHECK_EQ(postsolve_mapping.size(), search_domains.size());
+      for (int search_i = 0; search_i < postsolve_mapping.size(); ++search_i) {
+        const int i_in_mapping_model = postsolve_mapping[search_i];
+        if (i_in_mapping_model < num_original_vars) {
+          ++num_common_vars;
+        }
+        domains[i_in_mapping_model] =
+            domains[i_in_mapping_model].IntersectionWith(
+                search_domains[search_i]);
+      }
+
+      // Look for affine relation, and do more intersection.
+      for (const ConstraintProto& ct : mapping_proto.constraints()) {
+        if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+        const LinearConstraintProto& lin = ct.linear();
+        if (lin.vars().size() != 2) continue;
+        if (lin.domain().size() != 2) continue;
+        if (lin.domain(0) != lin.domain(1)) continue;
+        int v1 = lin.vars(0);
+        int v2 = lin.vars(1);
+        int c1 = lin.coeffs(0);
+        int c2 = lin.coeffs(1);
+        if (v2 < num_original_vars && v1 >= num_original_vars) {
+          std::swap(v1, v2);
+          std::swap(c1, c2);
+        }
+        if (v1 < num_original_vars && v2 >= num_original_vars) {
+          // We can reduce the domain of v1 by using the affine relation
+          // and the domain of v2.
+          // We have c1 * v2 + c2 * v2 = offset;
+          const int64_t offset = lin.domain(0);
+          const Domain restriction =
+              Domain(offset)
+                  .AdditionWith(domains[v2].ContinuousMultiplicationBy(-c2))
+                  .InverseMultiplicationBy(c1);
+          if (!domains[v1].IsIncludedIn(restriction)) {
+            ++num_affine_reductions;
+            domains[v1] = domains[v1].IntersectionWith(restriction);
+          }
+        }
+      }
+    }
+  }
+
+  // Copy the names and replace domains.
+  *response->mutable_tightened_variables() = original_model.variables();
+  int num_tigher_domains = 0;
+  int num_empty = 0;
+  int num_fixed = 0;
+  for (int i = 0; i < num_original_vars; ++i) {
+    FillDomainInProto(domains[i], response->mutable_tightened_variables(i));
+    if (domains[i].IsEmpty()) {
+      ++num_empty;
+      continue;
+    }
+
+    if (domains[i].IsFixed()) num_fixed++;
+    const Domain original = ReadDomainFromProto(original_model.variables(i));
+    if (domains[i] != original) {
+      DCHECK(domains[i].IsIncludedIn(original));
+      ++num_tigher_domains;
+    }
+  }
+
+  // Some stats.
+  if (num_empty > 0) {
+    SOLVER_LOG(logger, num_empty,
+               " tightened domains are empty. This should not happen except if "
+               "we proven infeasibility or optimality.");
+  }
+  SOLVER_LOG(logger, "Filled tightened domains in the response.");
+  SOLVER_LOG(logger, "[TighteningInfo] num_tighter:", num_tigher_domains,
+             " num_fixed:", num_fixed,
+             " num_affine_reductions:", num_affine_reductions);
+  SOLVER_LOG(logger,
+             "[TighteningInfo] original_num_variables:", num_original_vars,
+             " during_presolve:", num_expanded_vars,
+             " after:", search_domains.size(), " in_common:", num_common_vars);
+  SOLVER_LOG(logger, "");
 }
 
 }  // namespace sat

@@ -19,6 +19,18 @@ from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
 
 
+class SolutionStatusTest(absltest.TestCase):
+
+    def test_optional_status_round_trip(self):
+        for status in solution_pb2.SolutionStatusProto.values():
+            self.assertEqual(
+                status,
+                solution.optional_solution_status_to_proto(
+                    solution.parse_optional_solution_status(status)
+                ),
+            )
+
+
 class ParsePrimalSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_empty_primal_solution_proto_round_trip(self) -> None:
@@ -164,13 +176,11 @@ class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         empty_basis = solution.Basis()
         empty_proto = empty_basis.to_proto()
         expected_proto = solution_pb2.BasisProto()
-        expected_proto.basic_dual_feasibility = (
-            solution_pb2.SOLUTION_STATUS_UNDETERMINED
-        )
         self.assert_protos_equiv(expected_proto, empty_proto)
         round_trip_basis = solution.parse_basis(empty_proto, mod)
         self.assertEmpty(round_trip_basis.constraint_status)
         self.assertEmpty(round_trip_basis.variable_status)
+        self.assertIsNone(round_trip_basis.basic_dual_feasibility)
 
     def test_basis_proto_round_trip(self) -> None:
         mod = model.Model(name="test_model")
@@ -252,24 +262,9 @@ class BasisTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
     def test_basic_dual_feasibility_unspecified(self) -> None:
         mod = model.Model(name="test_model")
-        mod.add_binary_variable(name="x")
-        mod.add_binary_variable(name="y")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="c")
-        mod.add_linear_constraint(lb=0.0, ub=1.0, name="d")
         basis_proto = solution_pb2.BasisProto()
-        basis_proto.constraint_status.ids[:] = [0, 1]
-        basis_proto.constraint_status.values[:] = [
-            solution_pb2.BASIS_STATUS_BASIC,
-            solution_pb2.BASIS_STATUS_AT_UPPER_BOUND,
-        ]
-        basis_proto.variable_status.ids[:] = [0, 1]
-        basis_proto.variable_status.values[:] = [
-            solution_pb2.BASIS_STATUS_AT_UPPER_BOUND,
-            solution_pb2.BASIS_STATUS_BASIC,
-        ]
-        basis_proto.basic_dual_feasibility = solution_pb2.SOLUTION_STATUS_UNSPECIFIED
-        with self.assertRaisesRegex(ValueError, "Basic dual feasibility.*UNSPECIFIED"):
-            solution.parse_basis(basis_proto, mod)
+        basis = solution.parse_basis(basis_proto, mod)
+        self.assertIsNone(basis.basic_dual_feasibility)
 
 
 class ParseSolutionTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):

@@ -15,8 +15,10 @@
 #define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -24,13 +26,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/affine_relation.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
@@ -91,6 +90,11 @@ class CpModelPresolver {
   // A simple helper that logs the rules applied so far and return INFEASIBLE.
   CpSolverStatus InfeasibleStatus();
 
+  // At the end of presolve, the mapping model is initialized to contains all
+  // the variable from the original model + the one created during presolve
+  // expand. It also contains the tightened domains.
+  void InitializeMappingModelVariables();
+
   // Runs the inner loop of the presolver.
   bool ProcessChangedVariables(std::vector<bool>* in_queue,
                                std::deque<int>* queue);
@@ -146,12 +150,8 @@ class CpModelPresolver {
 
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
-  template <typename ProtoWithVarsAndCoeffs>
-  bool CanonicalizeLinearExpressionInternal(const ConstraintProto& ct,
-                                            ProtoWithVarsAndCoeffs* proto,
-                                            int64_t* offset);
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* exp);
+                                    LinearExpressionProto* proto);
   bool CanonicalizeLinearArgument(const ConstraintProto& ct,
                                   LinearArgumentProto* proto);
 
@@ -345,10 +345,26 @@ class CpModelPresolver {
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
+
+  struct IntervalConstraintEq {
+    const CpModelProto* working_model;
+    bool operator()(int a, int b) const;
+  };
+
+  struct IntervalConstraintHash {
+    const CpModelProto* working_model;
+    std::size_t operator()(int ct_idx) const;
+  };
+
+  // Used by DetectDuplicateIntervals() and RemoveEmptyConstraints(). Note that
+  // changing the interval constraints of the model will change the hash and
+  // invalidate this hash map.
+  absl::flat_hash_map<int, int, IntervalConstraintHash, IntervalConstraintEq>
+      interval_representative_;
 };
 
 // This helper class perform copy with simplification from a model and a
-// partial assignment to another model. The purpose is to miminize the size of
+// partial assignment to another model. The purpose is to minimize the size of
 // the copied model, as well as to reduce the pressure on the memory sub-system.
 //
 // It is currently used by the LNS part, but could be used with any other scheme
@@ -371,13 +387,18 @@ class ModelCopy {
   // Note(user): If first_copy is true, we will reorder the scheduling
   // constraint so that they only use reference to previously defined intervals.
   // This allow to be more efficient later in a few preprocessing steps.
-  bool ImportAndSimplifyConstraints(const CpModelProto& in_model,
-                                    bool first_copy = false);
+  bool ImportAndSimplifyConstraints(
+      const CpModelProto& in_model, bool first_copy = false,
+      std::function<bool(int)> active_constraints = nullptr);
 
   // Copy variables from the in_model to the working model.
   // It reads the 'ignore_names' parameters from the context, and keeps or
   // deletes names accordingly.
   void ImportVariablesAndMaybeIgnoreNames(const CpModelProto& in_model);
+
+  // Setup new variables from a vector of domains.
+  // Inactive variables will be fixed to their lower bound.
+  void CreateVariablesFromDomains(const std::vector<Domain>& domains);
 
  private:
   // Overwrites the out_model to be unsat. Returns false.
@@ -439,6 +460,12 @@ class ModelCopy {
 // user-defined order, but hopefully that should not matter too much.
 bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context);
+
+// Same as ImportModelWithBasicPresolveIntoContext() except that variable
+// domains are read from domains.
+bool ImportModelAndDomainsWithBasicPresolveIntoContext(
+    const CpModelProto& in_model, const std::vector<Domain>& domains,
+    std::function<bool(int)> active_constraints, PresolveContext* context);
 
 // Copies the non constraint, non variables part of the model.
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(

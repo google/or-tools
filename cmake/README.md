@@ -43,11 +43,11 @@ Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
 [![Build Status][mips_toolchain_status]][mips_toolchain_link]
 [![Build Status][powerpc_toolchain_status]][powerpc_toolchain_link]
 
-[aarch64_toolchain_status]: ./../../../actions/workflows/aarch64_toolchain.yml/badge.svg
+[aarch64_toolchain_status]: ./../../../actions/workflows/aarch64_toolchain.yml/badge.svg?branch=main
 [aarch64_toolchain_link]: ./../../../actions/workflows/aarch64_toolchain.yml
-[mips_toolchain_status]: ./../../../actions/workflows/mips_toolchain.yml/badge.svg
+[mips_toolchain_status]: ./../../../actions/workflows/mips_toolchain.yml/badge.svg?branch=main
 [mips_toolchain_link]: ./../../../actions/workflows/mips_toolchain.yml
-[powerpc_toolchain_status]: ./../../../actions/workflows/powerpc_toolchain.yml/badge.svg
+[powerpc_toolchain_status]: ./../../../actions/workflows/powerpc_toolchain.yml/badge.svg?branch=main
 [powerpc_toolchain_link]: ./../../../actions/workflows/powerpc_toolchain.yml
 
 ## Introduction

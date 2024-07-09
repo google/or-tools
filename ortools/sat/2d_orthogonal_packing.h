@@ -148,7 +148,8 @@ class OrthogonalPackingInfeasibilityDetector {
  private:
   bool RelaxConflictWithBruteForce(
       OrthogonalPackingResult& result,
-      std::pair<IntegerValue, IntegerValue> bounding_box_size);
+      std::pair<IntegerValue, IntegerValue> bounding_box_size,
+      int brute_force_threshold);
 
   OrthogonalPackingResult TestFeasibilityImpl(
       absl::Span<const IntegerValue> sizes_x,
@@ -170,11 +171,9 @@ class OrthogonalPackingInfeasibilityDetector {
   // All sizes must be positive values less than UINT16_MAX.
   // The returned bitset will contain less elements than
   // min(sqrt_bb_size * num_items, x_bb_size/4+1).
-  void GetAllCandidatesForKForDff2(absl::Span<const IntegerValue> sizes_x,
-                                   absl::Span<const IntegerValue> sizes_y,
-                                   IntegerValue x_bb_size,
+  void GetAllCandidatesForKForDff2(absl::Span<const IntegerValue> sizes,
+                                   IntegerValue bb_size,
                                    IntegerValue sqrt_bb_size,
-                                   IntegerValue y_bb_size,
                                    Bitset64<IntegerValue>& candidates);
 
   OrthogonalPackingResult CheckFeasibilityWithDualFunction2(

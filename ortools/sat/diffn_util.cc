@@ -342,10 +342,10 @@ absl::Span<int> FilterBoxesAndRandomize(
 }
 
 absl::Span<int> FilterBoxesThatAreTooLarge(
-    const std::vector<Rectangle>& cached_rectangles,
-    const std::vector<IntegerValue>& energies, absl::Span<int> boxes) {
+    absl::Span<const Rectangle> cached_rectangles,
+    absl::Span<const IntegerValue> energies, absl::Span<int> boxes) {
   // Sort the boxes by increasing area.
-  std::sort(boxes.begin(), boxes.end(), [&cached_rectangles](int a, int b) {
+  std::sort(boxes.begin(), boxes.end(), [cached_rectangles](int a, int b) {
     return cached_rectangles[a].Area() < cached_rectangles[b].Area();
   });
 

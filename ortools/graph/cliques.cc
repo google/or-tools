@@ -188,7 +188,9 @@ class FindAndEliminate {
  public:
   FindAndEliminate(std::function<bool(int, int)> graph, int node_count,
                    std::function<bool(const std::vector<int>&)> callback)
-      : graph_(graph), node_count_(node_count), callback_(callback) {}
+      : graph_(std::move(graph)),
+        node_count_(node_count),
+        callback_(std::move(callback)) {}
 
   bool GraphCallback(int node1, int node2) {
     if (visited_.find(
@@ -233,13 +235,13 @@ void FindCliques(std::function<bool(int, int)> graph, int node_count,
   }
 
   bool stop = false;
-  Search(graph, callback, initial_candidates.get(), 0, node_count, &actual,
-         &stop);
+  Search(std::move(graph), std::move(callback), initial_candidates.get(), 0,
+         node_count, &actual, &stop);
 }
 
 void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
                         std::function<bool(const std::vector<int>&)> callback) {
-  FindAndEliminate cache(graph, node_count, callback);
+  FindAndEliminate cache(std::move(graph), node_count, std::move(callback));
   std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
@@ -256,8 +258,8 @@ void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
   }
 
   bool stop = false;
-  Search(cached_graph, cached_callback, initial_candidates.get(), 0, node_count,
-         &actual, &stop);
+  Search(std::move(cached_graph), std::move(cached_callback),
+         initial_candidates.get(), 0, node_count, &actual, &stop);
 }
 
 }  // namespace operations_research

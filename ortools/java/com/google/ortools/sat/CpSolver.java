@@ -30,12 +30,13 @@ public final class CpSolver {
   public CpSolver() {
     this.solveParameters = SatParameters.newBuilder();
     this.logCallback = null;
+    this.bestBoundCallback = null;
     this.solveWrapper = null;
   }
 
   /** Solves the given model, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
-    return solveWithSolutionCallback(model, null);
+    return solve(model, null);
   }
 
   /**
@@ -51,6 +52,9 @@ public final class CpSolver {
     }
     if (logCallback != null) {
       solveWrapper.addLogCallback(logCallback);
+    }
+    if (bestBoundCallback != null) {
+      solveWrapper.addBestBoundCallback(bestBoundCallback);
     }
 
     solveResponse = solveWrapper.solve(model.model());
@@ -93,9 +97,9 @@ public final class CpSolver {
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     boolean oldValue = solveParameters.getEnumerateAllSolutions();
     solveParameters.setEnumerateAllSolutions(true);
-    solve(model, cb);
+    CpSolverStatus status = solve(model, cb);
     solveParameters.setEnumerateAllSolutions(oldValue);
-    return solveResponse.getStatus();
+    return status;
   }
 
   private synchronized void createSolveWrapper() {
@@ -185,6 +189,21 @@ public final class CpSolver {
     this.logCallback = cb;
   }
 
+  /** Clears the log callback. */
+  public void clearLogCallback() {
+    this.logCallback = null;
+  }
+
+  /** Sets the best bound callback for the solver. */
+  public void setBestBoundCallback(Consumer<Double> cb) {
+    this.bestBoundCallback = cb;
+  }
+
+  /** Clears the best bound callback. */
+  public void clearBestBoundCallback() {
+    this.bestBoundCallback = null;
+  }
+
   /** Returns some statistics on the solution found as a string. */
   public String responseStats() {
     return CpSatHelper.solverResponseStats(solveResponse);
@@ -201,5 +220,6 @@ public final class CpSolver {
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
   private Consumer<String> logCallback;
+  private Consumer<Double> bestBoundCallback;
   private SolveWrapper solveWrapper;
 }

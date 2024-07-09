@@ -46,7 +46,7 @@ setup(
         'absl-py >= 2.0.0',
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
-        'protobuf >= 5.26.1',
+        'protobuf >= 5.27.2',
         'immutabledict >= 3.0.0',
     ],
     package_data={
@@ -69,6 +69,10 @@ setup(
         '@PYTHON_PROJECT@.gscip':['*.pyi'],
         '@PYTHON_PROJECT@.constraint_solver':[
             '$<TARGET_FILE_NAME:pywrapcp>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.constraint_solver.python':[
+            '$<TARGET_FILE_NAME:constraint_solver_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.linear_solver':[
@@ -99,7 +103,14 @@ setup(
             '$<TARGET_FILE_NAME:pdlp_pybind11>',
             '*.pyi'
         ],
-        '@PYTHON_PROJECT@.routing':['*.pyi'],
+        '@PYTHON_PROJECT@.routing':[
+            '$<TARGET_FILE_NAME:pywraprouting>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.routing.python':[
+            '$<TARGET_FILE_NAME:routing_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.sat':['*.pyi'],
         '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
         '@PYTHON_PROJECT@.sat.python':[
@@ -137,6 +148,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX :: Linux',
         'Operating System :: POSIX :: BSD :: FreeBSD',
+        'Operating System :: POSIX :: BSD :: OpenBSD',
         'Operating System :: MacOS',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',

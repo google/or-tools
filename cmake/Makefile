@@ -38,12 +38,13 @@ help:
 	@echo -e "\t${BOLD}clean_<distro>_<stage>${RESET}: Remove a <stage> docker image for a specific distro."
 	@echo
 	@echo -e "\tWith ${BOLD}<distro>${RESET}:"
+	@echo -e "\t\t${BOLD}almalinux${RESET} (latest)"
 	@echo -e "\t\t${BOLD}alpine${RESET} (edge)"
 	@echo -e "\t\t${BOLD}archlinux${RESET} (latest)"
-	@echo -e "\t\t${BOLD}centos${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian${RESET} (latest)"
 	@echo -e "\t\t${BOLD}fedora${RESET} (latest)"
 	@echo -e "\t\t${BOLD}opensuse${RESET} (tumbleweed)"
+	@echo -e "\t\t${BOLD}rockylinux${RESET} (9)"
 	@echo -e "\t\t${BOLD}ubuntu${RESET} (rolling)"
 	@echo -e "\t\t${BOLD}system_deps${RESET} (archlinux with all deps from pacman)"
 	@echo -e "\t\t${BOLD}all${RESET}: ALL DISTROS"
@@ -103,12 +104,15 @@ help:
 	@echo -e "\t${BOLD}clean_toolchains${RESET}: Remove ALL cache and docker image."
 	@echo
 	@echo -e "\tWith ${BOLD}<toolchain>${RESET}:"
-	@echo -e "\t\t${BOLD}aarch64${RESET} (bootlin toolchain)"
-	@echo -e "\t\t${BOLD}aarch64be${RESET} (bootlin toolchain)"
-	@echo -e "\t\t${BOLD}mips64${RESET} (codespace toolchain)"
-	@echo -e "\t\t${BOLD}mips64el${RESET} (codespace toolchain)"
-	@echo -e "\t\t${BOLD}ppc64${RESET} (bootlin toolchain)"
-	@echo -e "\t\t${BOLD}ppc64le${RESET} (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}aarch64${RESET} (alias: arm64) (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}aarch64be${RESET} (alias: arm64be) (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}mips64-r6${RESET} (alias: mips64) (codespace toolchain)"
+	@echo -e "\t\t${BOLD}mips64el-r6${RESET} (alias: mips64el) (codespace toolchain)"
+	@echo -e "\t\t${BOLD}mips64-r2${RESET} (codespace toolchain)"
+	@echo -e "\t\t${BOLD}mips64el-r2${RESET} (codespace toolchain)"
+	@echo -e "\t\t${BOLD}ppc64-power8${RESET} (alias: ppc64) (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}ppc64le-power8${RESET} (alias: ppc64le) (bootlin toolchain)"
+	@echo -e "\t\t${BOLD}riscv64${RESET} (bootlin toolchain)"
 	@echo
 	@echo -e "\tWith ${BOLD}<toolchain_stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -116,7 +120,7 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\te.g. 'make toolchain_mips64_build'"
-	@echo -e "\te.g. 'make toolchain_aarch64_test'"
+	@echo -e "\te.g. 'make toolchain_arm64_test'"
 	@echo
 	@echo -e "\tBuild for web using emscripten."
 	@echo -e "\t${BOLD}web_<web_stage>${RESET}: build the emscripten <web_stage>."
@@ -187,7 +191,7 @@ endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
 # Currently supported distro
-DISTROS := alpine archlinux centos debian fedora opensuse ubuntu system_deps
+DISTROS := almalinux alpine archlinux debian fedora opensuse rockylinux ubuntu system_deps
 
 # $* stem
 # $< first prerequist
@@ -605,10 +609,14 @@ clean_platforms: $(addprefix clean_, $(PLATFORMS))
 ## TOOLCHAIN ##
 ###############
 TOOLCHAIN_TARGETS := \
- aarch64 aarch64be \
- mips64 mips64el \
- ppc64 ppc64le
-TOOLCHAIN_STAGES := env devel build test
+ arm64 aarch64 \
+ arm64be aarch64be \
+ mips64 mips64-r6 mips64-r2 \
+ mips64el mips64el-r6 mips64el-r2 \
+ ppc64 ppc64-power8 \
+ ppc64le ppc64le-power8 \
+ riscv64
+TOOLCHAIN_STAGES := env devel toolchain build test
 
 define toolchain-stage-target =
 #$$(info STAGE: $1)

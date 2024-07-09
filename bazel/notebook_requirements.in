@@ -2,7 +2,7 @@
 absl-py==2.0.0
 immutabledict==3.0.0
 numpy==1.26.1
-protobuf==5.26.1
+protobuf==5.27.2
 requests==2.31.0
 scipy==1.11.3
 
@@ -10,7 +10,7 @@ scipy==1.11.3
 mypy==1.6.1
 mypy-protobuf==3.5.0
 virtualenv==20.24.6
-black==23.10.1
+black==24.3.0
 
 # Example dependencies
 pandas==2.1.2
@@ -22,6 +22,6 @@ plotly==5.15.0
 # Notebook
 jupyter==1.0.0
 jupyter-server==2.12.5
-tornado==6.3.3
+tornado==6.4.1
 Pygments==2.15.0
 jsonschema==4.19.0

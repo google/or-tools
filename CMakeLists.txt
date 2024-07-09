@@ -196,8 +196,13 @@ if(BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Build googletest: ${BUILD_googletest}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build benchmark: ${BUILD_benchmark}")
 else()
   set(BUILD_googletest OFF)
+  set(BUILD_benchmark OFF)
 endif()
 
 # Optional third party solvers (enabled by default)

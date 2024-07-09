@@ -19,10 +19,8 @@
 #include <random>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
-#include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/stl_util.h"
@@ -32,7 +30,6 @@ namespace {
 
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
-using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::StartsWith;
 using ::testing::UnorderedElementsAre;
@@ -142,13 +139,13 @@ TEST(DynamicPartitionTest, Accessors) {
                                                   UnorderedElementsAre(0, 1, 5),
                                                   UnorderedElementsAre(2)));
 
-  // Test DebugString(SORT_LEXICOGRAPHICALLY).
+  // Test DebugString(true).
   EXPECT_EQ("0 1 5 | 2 | 3 4 6",
-            partition.DebugString(DynamicPartition::SORT_LEXICOGRAPHICALLY));
+            partition.DebugString(/*sort_parts_lexicographically=*/true));
 
-  // Test DebugString(SORT_BY_PART).
+  // Test DebugString(false).
   EXPECT_EQ("3 4 6 | 0 1 5 | 2",
-            partition.DebugString(DynamicPartition::SORT_BY_PART));
+            partition.DebugString(/*sort_parts_lexicographically=*/false));
 
   // Test PartOf().
   EXPECT_EQ(1, partition.PartOf(0));
@@ -172,22 +169,15 @@ TEST(DynamicPartitionTest, Accessors) {
 
 TEST(DynamicPartitionTest, ConstructWithEmptyPartition) {
   DynamicPartition partition(std::vector<int>(0));
-  EXPECT_EQ("", partition.DebugString(DynamicPartition::SORT_BY_PART));
+  EXPECT_EQ("", partition.DebugString(/*sort_parts_lexicographically=*/false));
 }
 
 TEST(DynamicPartitionTest, ConstructWithPartition) {
   DynamicPartition partition({2, 1, 0, 1, 0, 3, 0});
   EXPECT_EQ("0 | 1 3 | 2 4 6 | 5",
-            partition.DebugString(DynamicPartition::SORT_LEXICOGRAPHICALLY));
+            partition.DebugString(/*sort_parts_lexicographically=*/true));
   EXPECT_EQ("2 4 6 | 1 3 | 0 | 5",
-            partition.DebugString(DynamicPartition::SORT_BY_PART));
-}
-
-TEST(DynamicPartitionTest, DebugStringWithUnknownSorting) {
-  DynamicPartition partition(4);
-  EXPECT_THAT(partition.DebugString(
-                  static_cast<DynamicPartition::DebugStringSorting>(987)),
-              HasSubstr("Unsupported sorting"));
+            partition.DebugString(/*sort_parts_lexicographically=*/false));
 }
 
 TEST(DynamicPartitionTest, FingerprintBasic) {
@@ -200,8 +190,8 @@ TEST(DynamicPartitionTest, FingerprintBasic) {
   // We have to rely on all the other methods working as expected: if any of
   // the other unit tests failed, then this one probably will, too.
   ASSERT_EQ("1 3 | 2 4 | 0 | 5",
-            p2.DebugString(DynamicPartition::SORT_BY_PART));
-  ASSERT_THAT(p1.DebugString(DynamicPartition::SORT_BY_PART),
+            p2.DebugString(/*sort_parts_lexicographically=*/false));
+  ASSERT_THAT(p1.DebugString(/*sort_parts_lexicographically=*/false),
               StartsWith("1 3 | 2 4 | 0 | 5 |"));
 
   for (int p = 0; p < 3; ++p) {
@@ -310,7 +300,7 @@ TEST(DynamicPartitionTest, ElementsInHierarchicalOrder) {
   partition.Refine({0});     // Now: (((2 | 0) | 1) | (3 | 4))
   // The parts are sorted differently than the natural order.
   ASSERT_EQ("2 | 3 | 1 | 4 | 0",
-            partition.DebugString(DynamicPartition::SORT_BY_PART));
+            partition.DebugString(/*sort_parts_lexicographically=*/false));
   EXPECT_THAT(partition.ElementsInHierarchicalOrder(),
               ElementsAre(2, 0, 1, 3, 4));
   partition.UndoRefineUntilNumPartsEqual(1);

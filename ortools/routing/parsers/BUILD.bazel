@@ -59,6 +59,7 @@ cc_library(
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@com_google_absl//absl/strings",
+        "@com_google_re2//:re2",
     ],
 )
 
@@ -66,11 +67,15 @@ cc_test(
     name = "solomon_parser_test",
     size = "small",
     srcs = ["solomon_parser_test.cc"],
-    data = ["//ortools/routing/parsers/testdata:solomon.zip"],
+    data = [
+        "//ortools/routing/parsers/testdata:c1_10_2-90-42222.96.txt",
+        "//ortools/routing/parsers/testdata:solomon.zip",
+    ],
     deps = [
         ":solomon_parser",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:gmock",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -334,7 +339,7 @@ cc_library(
     hdrs = ["cvrptw_lib.h"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/util:random_engine",
     ],
 )
@@ -346,7 +351,7 @@ cc_library(
     deps = [
         ":capacity_planning_cc_proto",
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/util:random_engine",
     ],
 )

@@ -20,6 +20,7 @@
 #include "absl/log/check.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
+#include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
 
@@ -71,7 +72,7 @@ std::vector<Rectangle> GenerateNonConflictingRectangles(
 }
 
 std::vector<RectangleInRange> MakeItemsFromRectangles(
-    const std::vector<Rectangle>& rectangles, double slack_factor,
+    absl::Span<const Rectangle> rectangles, double slack_factor,
     absl::BitGenRef random) {
   IntegerValue size_max_x = 0;
   IntegerValue size_max_y = 0;

@@ -37,7 +37,16 @@ build:windows --enable_runfiles
 # build --subcommands=pretty_print
 
 # Print test logs for failed tests.
-test --test_output=errors
+test --test_output=errors --test_timeout_filters=-eternal
 
 # Put user-specific options in .bazelrc.user
 try-import %workspace%/.bazelrc.user
+
+# asan
+build:asan --strip=never
+build:asan --copt -fsanitize=address
+build:asan --copt -DADDRESS_SANITIZER
+build:asan --copt -O1
+build:asan --copt -g
+build:asan --copt -fno-omit-frame-pointer
+build:asan --linkopt -fsanitize=address

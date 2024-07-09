@@ -13,11 +13,15 @@
 
 #include "ortools/sat/synchronization.h"
 
+#include <sys/types.h>
+
 #include <algorithm>
 #include <atomic>
 #include <cctype>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <ctime>
 #include <deque>
 #include <functional>
 #include <limits>
@@ -25,6 +29,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/hash/hash.h"
+#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -77,7 +83,8 @@ void SharedLPSolutionRepository::NewLPSolution(
   // We always prefer to keep the solution from the last synchronize batch.
   absl::MutexLock mutex_lock(&mutex_);
   solution.rank = -num_synchronization_;
-  AddInternal(solution);
+  ++num_added_;
+  new_solutions_.push_back(solution);
 }
 
 void SharedIncompleteSolutionManager::AddSolution(
@@ -302,9 +309,11 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     return;
   }
 
-  const bool change =
-      (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
-  if (lb > inner_objective_lower_bound_) {
+  const bool ub_change = ub < inner_objective_upper_bound_;
+  const bool lb_change = lb > inner_objective_lower_bound_;
+  if (!lb_change && !ub_change) return;
+
+  if (lb_change) {
     // When the improving problem is infeasible, it is possible to report
     // arbitrary high inner_objective_lower_bound_. We make sure it never cross
     // the current best solution, so that we always report globally valid lower
@@ -313,9 +322,17 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     inner_objective_lower_bound_ =
         std::min(best_solution_objective_value_, lb.value());
   }
-  if (ub < inner_objective_upper_bound_) {
+  if (ub_change) {
     inner_objective_upper_bound_ = ub.value();
   }
+
+  if (always_synchronize_) {
+    synchronized_inner_objective_lower_bound_ =
+        IntegerValue(inner_objective_lower_bound_);
+    synchronized_inner_objective_upper_bound_ =
+        IntegerValue(inner_objective_upper_bound_);
+  }
+
   if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
     if (best_status_ == CpSolverStatus::FEASIBLE ||
         best_status_ == CpSolverStatus::OPTIMAL) {
@@ -328,21 +345,28 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
                SatProgressMessage("Done", wall_timer_.Get(), update_info));
     return;
   }
-  if (logger_->LoggingIsEnabled() && change) {
+  if (logger_->LoggingIsEnabled() || !best_bound_callbacks_.empty()) {
     const CpObjectiveProto& obj = *objective_or_null_;
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-    double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
-    if (obj.scaling_factor() < 0) {
-      std::swap(new_lb, new_ub);
+    if (lb_change) {
+      for (const auto& callback_entry : best_bound_callbacks_) {
+        callback_entry.second(new_lb);
+      }
     }
-    RegisterObjectiveBoundImprovement(update_info);
-    logger_->ThrottledLog(bounds_logging_id_,
-                          ProgressMessage("Bound", wall_timer_.Get(), best,
-                                          new_lb, new_ub, update_info));
+    if (logger_->LoggingIsEnabled()) {
+      double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
+      if (obj.scaling_factor() < 0) {
+        std::swap(new_lb, new_ub);
+      }
+      RegisterObjectiveBoundImprovement(update_info);
+      logger_->ThrottledLog(bounds_logging_id_,
+                            ProgressMessage("Bound", wall_timer_.Get(), best,
+                                            new_lb, new_ub, update_info));
+    }
   }
-  if (change) TestGapLimitsIfNeeded();
+  TestGapLimitsIfNeeded();
 }
 
 // Invariant: the status always start at UNKNOWN and can only evolve as follow:
@@ -376,12 +400,12 @@ void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
 
 IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
   absl::MutexLock mutex_lock(&mutex_);
-  return IntegerValue(inner_objective_lower_bound_);
+  return synchronized_inner_objective_lower_bound_;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
   absl::MutexLock mutex_lock(&mutex_);
-  return IntegerValue(inner_objective_upper_bound_);
+  return synchronized_inner_objective_upper_bound_;
 }
 
 void SharedResponseManager::Synchronize() {
@@ -395,16 +419,6 @@ void SharedResponseManager::Synchronize() {
     first_solution_solvers_should_stop_ = true;
   }
   logger_->FlushPendingThrottledLogs();
-}
-
-IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return synchronized_inner_objective_lower_bound_;
-}
-
-IntegerValue SharedResponseManager::SynchronizedInnerObjectiveUpperBound() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return synchronized_inner_objective_upper_bound_;
 }
 
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
@@ -467,6 +481,25 @@ void SharedResponseManager::UnregisterLogCallback(int callback_id) {
   for (int i = 0; i < search_log_callbacks_.size(); ++i) {
     if (search_log_callbacks_[i].first == callback_id) {
       search_log_callbacks_.erase(search_log_callbacks_.begin() + i);
+      return;
+    }
+  }
+  LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
+}
+
+int SharedResponseManager::AddBestBoundCallback(
+    std::function<void(double)> callback) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = next_best_bound_callback_id_++;
+  best_bound_callbacks_.emplace_back(id, std::move(callback));
+  return id;
+}
+
+void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < best_bound_callbacks_.size(); ++i) {
+    if (best_bound_callbacks_[i].first == callback_id) {
+      best_bound_callbacks_.erase(best_bound_callbacks_.begin() + i);
       return;
     }
   }
@@ -601,23 +634,18 @@ void SharedResponseManager::NewSolution(
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-
     solutions_.Add(solution);
-  }
-
-  if (objective_or_null_ != nullptr) {
+  } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
 
     // Add this solution to the pool, even if it is not improving.
-    if (!solution_values.empty()) {
-      SharedSolutionRepository<int64_t>::Solution solution;
-      solution.variable_values.assign(solution_values.begin(),
-                                      solution_values.end());
-      solution.rank = objective_value;
-      solution.info = solution_info;
-      solutions_.Add(solution);
-    }
+    SharedSolutionRepository<int64_t>::Solution solution;
+    solution.variable_values.assign(solution_values.begin(),
+                                    solution_values.end());
+    solution.rank = objective_value;
+    solution.info = solution_info;
+    solutions_.Add(solution);
 
     // Ignore any non-strictly improving solution.
     if (objective_value > inner_objective_upper_bound_) return;
@@ -1006,14 +1034,161 @@ int SharedBoundsManager::NumBoundsExported(const std::string& worker_name) {
   return it->second;
 }
 
-SharedClausesManager::SharedClausesManager(bool always_synchronize)
-    : always_synchronize_(always_synchronize) {}
+UniqueClauseStream::UniqueClauseStream() {
+  for (auto& buffer : clauses_by_size_) {
+    buffer.reserve(kMaxBufferedLiterals);
+  }
+}
+
+bool UniqueClauseStream::Add(absl::Span<const int> clause) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (clause.size() > kMaxClauseSize || clause.size() <= 2) return false;
+  // This is just a safety check, the caller should have called CanAccept().
+  if (NumLiteralsOfSize(clause.size()) + clause.size() > kMaxBufferedLiterals) {
+    return false;
+  }
+  if (BlockClause(clause)) {
+    std::vector<int>* buffer = MutableBufferForSize(clause.size());
+    buffer->insert(buffer->end(), clause.begin(), clause.end());
+    return true;
+  }
+  return false;
+}
+
+bool UniqueClauseStream::BlockClause(absl::Span<const int> clause) {
+  if (clause.size() > kMaxClauseSize) return false;
+  if (clause.size() <= 2) return false;
+  return fingerprints_.emplace(HashClause(clause)).second;
+}
+
+bool UniqueClauseStream::Delete(absl::Span<const int> clause) {
+  const size_t fingerprint = HashClause(clause);
+  absl::MutexLock mutex_lock(&mutex_);
+  // Note a clause with this hash may be buffered, but not yet exported.
+  return fingerprints_.erase(fingerprint) == 1;
+}
+
+CompactVectorVector<int> UniqueClauseStream::NextBatch() {
+  CompactVectorVector<int> buffer;
+  buffer.reserve(kMaxLiteralsPerBatch / kMinClauseSize, kMaxLiteralsPerBatch);
+  int to_fill = kMaxLiteralsPerBatch;
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int size = kMinClauseSize; size <= kMaxClauseSize; ++size) {
+    CHECK_EQ(NumLiteralsOfSize(size) % size, 0);
+    while (to_fill >= size && NumLiteralsOfSize(size) > 0) {
+      absl::Span<const int> clause = NextClause(size);
+      if (fingerprints_.contains(HashClause(clause))) {
+        buffer.Add(NextClause(size));
+        to_fill -= size;
+      }
+      PopClause(size);
+    }
+  }
+  return buffer;
+}
+
+int UniqueClauseStream::FillUpstreamBuffer(UniqueClauseStream& upstream,
+                                           int size,
+                                           int max_clauses_to_export) {
+  int num_exported_clauses = 0;
+  absl::MutexLock mutex_lock(&mutex_);
+  while (NumLiteralsOfSize(size) > 0 &&
+         num_exported_clauses < max_clauses_to_export) {
+    absl::Span<const int> clause = NextClause(size);
+    // Don't emit deleted clauses.
+    if (fingerprints_.contains(HashClause(clause)) && upstream.Add(clause)) {
+      ++num_exported_clauses;
+    }
+    PopClause(size);
+  }
+  return num_exported_clauses;
+}
+
+int UniqueClauseStream::NumBufferedLiterals() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  int result = 0;
+  for (const auto& buffer : clauses_by_size_) {
+    result += buffer.size();
+  }
+  return result;
+}
+
+bool UniqueClauseStream::CanAccept(int size, int lbd) const {
+  if (size <= 2 || size > kMaxClauseSize) return false;
+  absl::MutexLock mutex_lock(&mutex_);
+  if (lbd > lbd_threshold_) return false;
+  int num_literals_up_to_size = 0;
+  for (int i = kMinClauseSize; i <= size; ++i) {
+    num_literals_up_to_size += NumLiteralsOfSize(i);
+  }
+  return num_literals_up_to_size + size <= kMaxBufferedLiterals;
+}
+
+void UniqueClauseStream::RemoveWorstClauses() {
+  absl::MutexLock mutex_lock(&mutex_);
+  int literals_to_remove = 0;
+  for (const auto& buffer : clauses_by_size_) {
+    literals_to_remove += buffer.size();
+  }
+  literals_to_remove -= kMaxBufferedLiterals;
+  for (int size = kMaxClauseSize; size >= kMinClauseSize; --size) {
+    while (NumLiteralsOfSize(size) > 0) {
+      // Stop if removing one more clause of the current size would
+      // leave the buffer under full. Otherwise we might remove a shorter
+      // clause later!
+      if (literals_to_remove < size) return;
+      fingerprints_.erase(HashClause(NextClause(size)));
+      PopClause(size);
+      literals_to_remove -= size;
+    }
+  }
+}
+
+void UniqueClauseStream::set_lbd_threshold(int lbd) {
+  absl::MutexLock mutex_lock(&mutex_);
+  lbd_threshold_ = lbd;
+}
+
+size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
+                                      size_t hash_seed) {
+  size_t hash = absl::HashOf(hash_seed, clause.size());
+  for (int i = 0; i < clause.size(); ++i) {
+    hash ^= absl::HashOf(clause[i], hash_seed);
+  }
+  return hash;
+}
+
+absl::Span<const int> UniqueClauseStream::NextClause(int size) const {
+  absl::Span<const int> buffer = BufferForSize(size);
+  return buffer.subspan(buffer.size() - size, size);
+}
+
+void UniqueClauseStream::PopClause(int size) {
+  std::vector<int>* buffer = MutableBufferForSize(size);
+  buffer->erase(buffer->end() - size, buffer->end());
+}
+
+int UniqueClauseStream::NumClausesOfSize(int size) const {
+  return NumLiteralsOfSize(size) / size;
+}
+
+int UniqueClauseStream::NumLiteralsOfSize(int size) const {
+  return BufferForSize(size).size();
+}
+
+SharedClausesManager::SharedClausesManager(bool always_synchronize,
+                                           absl::Duration share_frequency)
+    : always_synchronize_(always_synchronize),
+      share_frequency_(share_frequency) {}
 
 int SharedClausesManager::RegisterNewId() {
   absl::MutexLock mutex_lock(&mutex_);
   const int id = id_to_last_processed_binary_clause_.size();
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
+  id_to_last_returned_batch_.resize(id + 1, 0);
+  id_to_last_finished_batch_.resize(id + 1, 0);
   id_to_clauses_exported_.resize(id + 1, 0);
+  id_to_clause_stream_.emplace_back();
   return id;
 }
 
@@ -1031,7 +1206,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
   if (inserted) {
     added_binary_clauses_.push_back(p);
-    if (always_synchronize_) ++last_visible_clause_;
+    if (always_synchronize_) ++last_visible_binary_clause_;
     id_to_clauses_exported_[id]++;
 
     // Small optim. If the worker is already up to date with clauses to import,
@@ -1043,16 +1218,31 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   }
 }
 
+std::vector<absl::Span<const int>> SharedClausesManager::GetUnseenClauses(
+    int id) {
+  std::vector<absl::Span<const int>> result;
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = id_to_last_returned_batch_[id]; i < batches_.size(); ++i) {
+    for (int j = 0; j < batches_[i].size(); ++j) {
+      result.push_back(batches_[i][j]);
+    }
+  }
+  id_to_last_finished_batch_[id] = id_to_last_returned_batch_[id];
+  id_to_last_returned_batch_[id] = batches_.size();
+  return result;
+}
+
 void SharedClausesManager::GetUnseenBinaryClauses(
     int id, std::vector<std::pair<int, int>>* new_clauses) {
   new_clauses->clear();
   absl::MutexLock mutex_lock(&mutex_);
   const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
-  if (last_binary_clause_seen >= last_visible_clause_) return;
+  if (last_binary_clause_seen >= last_visible_binary_clause_) return;
 
-  new_clauses->assign(added_binary_clauses_.begin() + last_binary_clause_seen,
-                      added_binary_clauses_.begin() + last_visible_clause_);
-  id_to_last_processed_binary_clause_[id] = last_visible_clause_;
+  new_clauses->assign(
+      added_binary_clauses_.begin() + last_binary_clause_seen,
+      added_binary_clauses_.begin() + last_visible_binary_clause_);
+  id_to_last_processed_binary_clause_[id] = last_visible_binary_clause_;
 }
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
@@ -1074,8 +1264,97 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
 
 void SharedClausesManager::Synchronize() {
   absl::MutexLock mutex_lock(&mutex_);
-  last_visible_clause_ = added_binary_clauses_.size();
-  // TODO(user): We could cleanup added_binary_clauses_ periodically.
+  last_visible_binary_clause_ = added_binary_clauses_.size();
+  const int num_workers = id_to_clause_stream_.size();
+  if (num_workers <= 1) return;
+  if (!share_timer_.IsRunning()) share_timer_.Start();
+  if (share_timer_.GetDuration() < share_frequency_) return;
+  share_timer_.Restart();
+
+  // Tune LBD threshold for individual workers based on how the worker's buffer
+  // is. We aim to ensure workers can always export their fair share of clauses.
+  for (int id = 0; id < num_workers; ++id) {
+    UniqueClauseStream& stream = id_to_clause_stream_[id];
+    const int lbd_threshold = stream.lbd_threshold();
+    const int num_buffered_literals = stream.NumBufferedLiterals();
+    const bool underfull =
+        num_buffered_literals <
+        UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
+    const bool overfull =
+        num_buffered_literals > UniqueClauseStream::kMaxLiteralsPerBatch;
+    const int new_lbd = std::clamp(lbd_threshold + underfull - overfull, 2,
+                                   UniqueClauseStream::kMaxClauseSize);
+    if (new_lbd != lbd_threshold) {
+      VLOG(2) << id_to_worker_name_[id]
+              << " sharing clauses with lbd <= " << new_lbd;
+      stream.set_lbd_threshold(new_lbd);
+    }
+  }
+
+  std::vector<int> ids(num_workers);
+  int literals_to_fill = UniqueClauseStream::kMaxLiteralsPerBatch;
+  for (int size = UniqueClauseStream::kMinClauseSize;
+       size <= UniqueClauseStream::kMaxClauseSize; ++size) {
+    ids.clear();
+    for (int id = 0; id < num_workers; ++id) {
+      if (id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) > 0) {
+        ids.push_back(id);
+      }
+    }
+    // Use progressive filling to attempt to fill the batch with clauses of
+    // minimum size, this is max-min fair.
+    while (!ids.empty()) {
+      const int clauses_to_fill = literals_to_fill / size;
+      if (clauses_to_fill == 0) break;
+      // Some workers need to export more clauses to fill the batch due to
+      // rounding, but we don't want all workers to round up.
+      const int num_to_round_up = clauses_to_fill % ids.size();
+      for (int i = 0; i < ids.size(); ++i) {
+        const bool round_up = i < num_to_round_up;
+        const int id = ids[i];
+        const int shared = id_to_clause_stream_[id].FillUpstreamBuffer(
+            all_clauses_, size, clauses_to_fill / ids.size() + round_up);
+        id_to_clauses_exported_[id] += shared;
+        if (shared == 0 ||
+            id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) == 0) {
+          ids[i] = ids.back();
+          ids.pop_back();
+          --i;
+        }
+      }
+    }
+  }
+  if (all_clauses_.NumBufferedLiterals() > 0) {
+    batches_.push_back(all_clauses_.NextBatch());
+    VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
+            << " clauses max size = "
+            << batches_.back()[batches_.back().size() - 1].size();
+    for (auto& stream : id_to_clause_stream_) {
+      stream.RemoveWorstClauses();
+    }
+  }
+  // Delete batches that have been consumed by all workers.
+  // Keep a few batches around for startup (min finished batch doesn't count
+  // workers that haven't registered yet).
+  // This also ensures that our fingerprint table always contains the last few
+  // batches, so we reduce the chance of an old buffered duplicate clause on
+  // a worker being emitted from the global stream multiple times.
+  if (batches_.size() < kMinBatches) return;
+  const int min_finished_batch =
+      std::min<int>(batches_.size() - kMinBatches,
+                    *absl::c_min_element(id_to_last_finished_batch_));
+  for (int i = 0; i < min_finished_batch; ++i) {
+    VLOG(2) << "Erasing batch";
+    for (int i = 0; i < batches_.front().size(); ++i) {
+      all_clauses_.Delete(batches_.front()[i]);
+    }
+    batches_.pop_front();
+  }
+  for (int id = 0; id < id_to_last_finished_batch_.size(); ++id) {
+    id_to_last_returned_batch_[id] -= min_finished_batch;
+    id_to_last_finished_batch_[id] -= min_finished_batch;
+  }
+  // TODO(user): We could cleanup binary clauses that have been consumed.
 }
 
 void SharedStatistics::AddStats(
@@ -1090,7 +1369,6 @@ void SharedStatistics::Log(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
   if (stats_.empty()) return;
 
-  SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Stats across workers (summed):");
   std::vector<std::pair<std::string, int64_t>> to_sort_;
   for (const auto& [key, count] : stats_) {
@@ -1100,6 +1378,7 @@ void SharedStatistics::Log(SolverLogger* logger) {
   for (const auto& [key, count] : to_sort_) {
     SOLVER_LOG(logger, "  ", key, ": ", FormatCounter(count));
   }
+  SOLVER_LOG(logger, "");
 }
 
 }  // namespace sat

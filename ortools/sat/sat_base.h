@@ -28,11 +28,9 @@
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
@@ -67,9 +65,7 @@ const LiteralIndex kFalseLiteralIndex(-3);
 // same number XOR 1 encode its negation.
 class Literal {
  public:
-  // Not explicit for tests so we can write:
-  // vector<literal> literal = {+1, -3, +4, -9};
-  Literal(int signed_value)  // NOLINT
+  explicit Literal(int signed_value)
       : index_(signed_value > 0 ? ((signed_value - 1) << 1)
                                 : ((-signed_value - 1) << 1) ^ 1) {
     CHECK_NE(signed_value, 0);
@@ -137,6 +133,17 @@ inline std::ostream& operator<<(std::ostream& os,
   }
   os << "]";
   return os;
+}
+
+// Only used for testing to use the classical SAT notation for a literal. This
+// allows to write Literals({+1, -4, +3}) for the clause with BooleanVariable 0
+// and 2 appearing positively and 3 negatively.
+inline std::vector<Literal> Literals(absl::Span<const int> input) {
+  std::vector<Literal> result(input.size());
+  for (int i = 0; i < result.size(); ++i) {
+    result[i] = Literal(input[i]);
+  }
+  return result;
 }
 
 // Holds the current variable assignment of the solver.
@@ -465,11 +472,11 @@ class Trail {
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
   std::vector<Literal> conflict_;
-  absl::StrongVector<BooleanVariable, AssignmentInfo> info_;
+  util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
   SatClause* failing_sat_clause_;
 
   // Data used by EnqueueWithSameReasonAs().
-  absl::StrongVector<BooleanVariable, BooleanVariable>
+  util_intops::StrongVector<BooleanVariable, BooleanVariable>
       reference_var_with_same_reason_as_;
 
   // Reason cache. Mutable since we want the API to be the same whether the
@@ -496,9 +503,9 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable absl::StrongVector<BooleanVariable, absl::Span<const Literal>>
+  mutable util_intops::StrongVector<BooleanVariable, absl::Span<const Literal>>
       reasons_;
-  mutable absl::StrongVector<BooleanVariable, int> old_type_;
+  mutable util_intops::StrongVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
   std::vector<SatPropagator*> propagators_;
@@ -542,7 +549,7 @@ class SatPropagator {
   // TODO(user): It is not yet 100% the case, but this can be guaranteed to be
   // called with a trail index that will always be the start of a new decision
   // level.
-  virtual void Untrail(const Trail& trail, int trail_index) {
+  virtual void Untrail(const Trail& /*trail*/, int trail_index) {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }
 
@@ -556,7 +563,7 @@ class SatPropagator {
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
-  virtual absl::Span<const Literal> Reason(const Trail& trail,
+  virtual absl::Span<const Literal> Reason(const Trail& /*trail*/,
                                            int /*trail_index*/) const {
     LOG(FATAL) << "Not implemented.";
     return {};

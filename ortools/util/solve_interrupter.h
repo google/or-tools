@@ -17,11 +17,9 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <optional>
 
 #include "absl/base/thread_annotations.h"
-#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/strong_int.h"
@@ -72,7 +70,11 @@ class SolveInterrupter {
   // The callback function can't make calls to AddInterruptionCallback(),
   // RemoveInterruptionCallback() and Interrupt(). This would result is a
   // deadlock. Calling IsInterrupted() is fine though.
-  CallbackId AddInterruptionCallback(Callback callback);
+  //
+  // This method is `const` since it does not modify the state of the
+  // interrupter (the result of IsInterrupted()). This enables passing a
+  // const-ref to solvers, making sure they can't call Interrupt() by mistake.
+  CallbackId AddInterruptionCallback(Callback callback) const;
 
   // Unregisters a callback previously registered. It fails (with a CHECK) if
   // the callback was already unregistered or unkonwn. After this calls returns,
@@ -80,7 +82,7 @@ class SolveInterrupter {
   //
   // This function can't be called from a callback since this would result in a
   // deadlock.
-  void RemoveInterruptionCallback(CallbackId id);
+  void RemoveInterruptionCallback(CallbackId id) const;
 
  private:
   // This atomic must never be reset to false!
@@ -88,21 +90,22 @@ class SolveInterrupter {
   // The mutex_ should be held when setting it to true.
   std::atomic<bool> interrupted_ = false;
 
-  absl::Mutex mutex_;
+  mutable absl::Mutex mutex_;
 
   // The id to use for the next registered callback.
-  CallbackId next_callback_id_ ABSL_GUARDED_BY(mutex_) = {};
+  mutable CallbackId next_callback_id_ ABSL_GUARDED_BY(mutex_) = {};
 
   // The list of callbacks. We use a linked_hash_map to make sure the order of
   // calls to callback when the interrupter is triggered is stable.
-  gtl::linked_hash_map<CallbackId, Callback> callbacks_ ABSL_GUARDED_BY(mutex_);
+  mutable gtl::linked_hash_map<CallbackId, Callback> callbacks_
+      ABSL_GUARDED_BY(mutex_);
 };
 
 // Class implementing RAII for interruption callbacks.
 //
 // Usage:
 //
-//   SolveInterrupter* const interrupter = ...;
+//   const SolveInterrupter* const interrupter = ...;
 //   {
 //     const ScopedSolveInterrupterCallback scoped_intr_cb(interrupter, [](){
 //       // Do something when/if interrupter is not nullptr and is triggered.
@@ -117,7 +120,7 @@ class ScopedSolveInterrupterCallback {
  public:
   // Adds a callback to the interrupter if it is not nullptr. Does nothing when
   // interrupter is nullptr.
-  ScopedSolveInterrupterCallback(SolveInterrupter* interrupter,
+  ScopedSolveInterrupterCallback(const SolveInterrupter* interrupter,
                                  SolveInterrupter::Callback callback);
 
   ScopedSolveInterrupterCallback(const ScopedSolveInterrupterCallback&) =
@@ -134,11 +137,11 @@ class ScopedSolveInterrupterCallback {
   void RemoveCallbackIfNecessary();
 
   // Returns the optional interrupter.
-  SolveInterrupter* interrupter() const { return interrupter_; }
+  const SolveInterrupter* interrupter() const { return interrupter_; }
 
  private:
   // Optional interrupter.
-  SolveInterrupter* const interrupter_;
+  const SolveInterrupter* const interrupter_;
 
   // Unset after the callback has been reset.
   std::optional<SolveInterrupter::CallbackId> callback_id_;

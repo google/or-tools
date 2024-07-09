@@ -19,13 +19,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
 
-#if defined(_MSC_VER)
-#define ROOT_DIR "../../../../../../../"
-#else
-#define ROOT_DIR
-#endif  // _MSC_VER
-
-ABSL_FLAG(std::string, test_srcdir, "", "REQUIRED: src dir");
+#define ROOT_DIR "com_google_ortools/"
 
 namespace operations_research {
 namespace {
@@ -55,10 +49,9 @@ TEST(LiLimParserTest, LoadNonExistingFile) {
 
 TEST(LiLimParserTest, LoadExistingFile) {
   LiLimParser parser;
-  EXPECT_TRUE(
-      parser.LoadFile(file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), ROOT_DIR
-                                     "ortools/routing/parsers"
-                                     "/testdata/pdptw_LRC2_10_6.txt")));
+  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                             "ortools/routing/parsers"
+                                             "/testdata/pdptw_LRC2_10_6.txt")));
   CheckData(parser);
   // Load a non-existing file to check the parser was cleaned.
   EXPECT_FALSE(parser.LoadFile("doesnotexist.txt"));
@@ -78,10 +71,9 @@ TEST(LiLimParserTest, LoadNonExistingArchive) {
 
 TEST(LiLimParserTest, LoadNonExistingInstance) {
   LiLimParser parser;
-  EXPECT_FALSE(
-      parser.LoadFile("doesnotexist.txt",
-                      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir),
-                                     ROOT_DIR "ortools/routing/"
+  EXPECT_FALSE(parser.LoadFile("doesnotexist.txt",
+                               file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                                              "ortools/routing/"
                                               "/parsers/testdata/lilim.zip")));
 }
 

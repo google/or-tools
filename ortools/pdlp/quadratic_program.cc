@@ -27,6 +27,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
@@ -74,6 +75,22 @@ absl::Status ValidateQuadraticProgramDimensions(const QuadraticProgram& qp) {
         "Inconsistent dimensions: constraint lower bound vector has size ",
         con_lb_size, " while constraint matrix has ",
         qp.constraint_matrix.rows(), " rows "));
+  }
+
+  if (qp.variable_names.has_value() &&
+      var_lb_size != qp.variable_names->size()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Inconsistent dimensions: variable lower bound vector has size ",
+        var_lb_size, " while variable names has size ",
+        qp.variable_names->size()));
+  }
+
+  if (qp.constraint_names.has_value() &&
+      con_lb_size != qp.constraint_names->size()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Inconsistent dimensions: constraint lower bound vector has size ",
+        con_lb_size, " while constraint names has size ",
+        qp.constraint_names->size()));
   }
 
   return absl::OkStatus();
@@ -300,6 +317,115 @@ absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp) {
   }
 
   return proto;
+}
+
+std::string ToString(const QuadraticProgram& qp, int64_t max_size) {
+  auto object_name = [](int64_t index,
+                        const std::optional<std::vector<std::string>>& names,
+                        absl::string_view prefix) {
+    if (names.has_value()) {
+      CHECK_LT(index, names->size());
+      return (*names)[index];
+    }
+    return absl::StrCat(prefix, index);
+  };
+  auto variable_name = [&qp, &object_name](int64_t var_index) {
+    return object_name(var_index, qp.variable_names, "x");
+  };
+  auto constraint_name = [&qp, &object_name](int64_t con_index) {
+    return object_name(con_index, qp.constraint_names, "c");
+  };
+
+  if (auto status = ValidateQuadraticProgramDimensions(qp); !status.ok()) {
+    return absl::StrCat("Quadratic program with inconsistent dimensions: ",
+                        status.message());
+  }
+
+  std::string result;
+  if (qp.problem_name.has_value()) {
+    absl::StrAppend(&result, *qp.problem_name, ":\n");
+  }
+  absl::StrAppend(
+      &result, (qp.objective_scaling_factor < 0.0 ? "maximize " : "minimize "),
+      qp.objective_scaling_factor, " * (", qp.objective_offset);
+  for (int64_t i = 0; i < qp.objective_vector.size(); ++i) {
+    if (qp.objective_vector[i] != 0.0) {
+      absl::StrAppend(&result, " + ", qp.objective_vector[i], " ",
+                      variable_name(i));
+      if (result.size() >= max_size) break;
+    }
+  }
+  if (qp.objective_matrix.has_value()) {
+    result.append(" + 1/2 * (");
+    auto obj_diagonal = qp.objective_matrix->diagonal();
+    for (int64_t i = 0; i < obj_diagonal.size(); ++i) {
+      if (obj_diagonal[i] != 0.0) {
+        absl::StrAppend(&result, " + ", obj_diagonal[i], " ", variable_name(i),
+                        "^2");
+        if (result.size() >= max_size) break;
+      }
+    }
+    // Closes the objective matrix expression.
+    result.append(")");
+  }
+  // Closes the objective scaling factor expression.
+  result.append(")\n");
+
+  Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t>
+      constraint_matrix_transpose = qp.constraint_matrix.transpose();
+  for (int64_t constraint_idx = 0;
+       constraint_idx < constraint_matrix_transpose.outerSize();
+       ++constraint_idx) {
+    absl::StrAppend(&result, constraint_name(constraint_idx), ":");
+    if (qp.constraint_lower_bounds[constraint_idx] !=
+        -std::numeric_limits<double>::infinity()) {
+      absl::StrAppend(&result, " ", qp.constraint_lower_bounds[constraint_idx],
+                      " <=");
+    }
+    for (decltype(constraint_matrix_transpose)::InnerIterator it(
+             constraint_matrix_transpose, constraint_idx);
+         it; ++it) {
+      absl::StrAppend(&result, " + ", it.value(), " ",
+                      variable_name(it.index()));
+      if (result.size() >= max_size) break;
+    }
+    if (qp.constraint_upper_bounds[constraint_idx] !=
+        std::numeric_limits<double>::infinity()) {
+      absl::StrAppend(&result,
+                      " <= ", qp.constraint_upper_bounds[constraint_idx]);
+    }
+    result.append("\n");
+  }
+  result.append("Bounds\n");
+  for (int64_t i = 0; i < qp.variable_lower_bounds.size(); ++i) {
+    if (qp.variable_lower_bounds[i] ==
+        -std::numeric_limits<double>::infinity()) {
+      if (qp.variable_upper_bounds[i] ==
+          std::numeric_limits<double>::infinity()) {
+        absl::StrAppend(&result, variable_name(i), " free\n");
+      } else {
+        absl::StrAppend(&result, variable_name(i),
+                        " <= ", qp.variable_upper_bounds[i], "\n");
+      }
+    } else {
+      if (qp.variable_upper_bounds[i] ==
+          std::numeric_limits<double>::infinity()) {
+        absl::StrAppend(&result, variable_name(i),
+                        " >= ", qp.variable_lower_bounds[i], "\n");
+
+      } else {
+        absl::StrAppend(&result, qp.variable_lower_bounds[i],
+                        " <= ", variable_name(i),
+                        " <= ", qp.variable_upper_bounds[i], "\n");
+      }
+    }
+    if (result.size() >= max_size) break;
+  }
+  if (result.size() > max_size) {
+    result.resize(max_size - 4);
+    result.append("...\n");
+  }
+  return result;
 }
 
 void SetEigenMatrixFromTriplets(

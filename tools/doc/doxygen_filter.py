@@ -35,8 +35,8 @@ import re
 import sys
 
 
-class DoxygenFormatter(object):
-  """Transforms lines of a source file to make them doxygen-friendly."""
+class DoxygenFormatter:
+  """Transforms lines of a source file to make them Doxygen-friendly."""
 
   ANYWHERE = 'anywhere'
   COMMENT = 'comment'

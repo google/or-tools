@@ -114,7 +114,7 @@ class SymmetryPropagator : public SatPropagator {
     int permutation_index;
     Literal image;
   };
-  absl::StrongVector<LiteralIndex, std::vector<ImageInfo>> images_;
+  util_intops::StrongVector<LiteralIndex, std::vector<ImageInfo>> images_;
 
   // For each permutation p, we maintain the list of all assigned literals
   // affected by p whose trail index is < propagation_trail_index_; sorted by
@@ -145,7 +145,7 @@ class SymmetryPropagator : public SatPropagator {
   // The identity permutation over all the literals.
   // This is temporary modified to encode a sparse permutation and then always
   // restored to the identity.
-  mutable absl::StrongVector<LiteralIndex, Literal> tmp_literal_mapping_;
+  mutable util_intops::StrongVector<LiteralIndex, Literal> tmp_literal_mapping_;
 
   // Symmetry reason indexed by trail_index.
   struct ReasonInfo {

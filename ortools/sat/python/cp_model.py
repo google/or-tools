@@ -2768,6 +2768,10 @@ class CpModel:
             self.assert_is_boolean_variable(arg.negated())
             return arg.index
         if isinstance(arg, IntegralTypes):
+            if arg == ~False:  # -1
+                return self.get_or_make_index_from_constant(1)
+            if arg == ~True:  # -2
+                return self.get_or_make_index_from_constant(0)
             arg = cmh.assert_is_zero_or_one(arg)
             return self.get_or_make_index_from_constant(arg)
         if cmh.is_boolean(arg):
@@ -3132,6 +3136,7 @@ class CpSolver:
             sat_parameters_pb2.SatParameters()
         )
         self.log_callback: Optional[Callable[[str], None]] = None
+        self.best_bound_callback: Optional[Callable[[float], None]] = None
         self.__solve_wrapper: Optional[swig_helper.SolveWrapper] = None
         self.__lock: threading.Lock = threading.Lock()
 
@@ -3150,6 +3155,9 @@ class CpSolver:
 
         if self.log_callback is not None:
             self.__solve_wrapper.add_log_callback(self.log_callback)
+
+        if self.best_bound_callback is not None:
+            self.__solve_wrapper.add_best_bound_callback(self.best_bound_callback)
 
         solution: cp_model_pb2.CpSolverResponse = self.__solve_wrapper.solve(
             model.proto

@@ -1040,6 +1040,15 @@ void SchedulingDemandHelper::AddDemandMinReason(int t) {
   }
 }
 
+void SchedulingDemandHelper::AddDemandMinReason(int t,
+                                                IntegerValue min_demand) {
+  DCHECK_LT(t, demands_.size());
+  if (demands_[t].var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        demands_[t].GreaterOrEqual(min_demand));
+  }
+}
+
 void SchedulingDemandHelper::AddEnergyMinReason(int t) {
   // We prefer these reason in order.
   const IntegerValue value = cached_energies_min_[t];

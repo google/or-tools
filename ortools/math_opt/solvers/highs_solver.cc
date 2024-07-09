@@ -907,7 +907,7 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb, const CallbackRegistrationProto&, Callback,
-    SolveInterrupter* const) {
+    const SolveInterrupter* const) {
   const absl::Time start = absl::Now();
   auto set_solve_time = [&start](SolveResultProto& result) -> absl::Status {
     const absl::Duration solve_time = absl::Now() - start;
@@ -1008,7 +1008,7 @@ absl::StatusOr<bool> HighsSolver::Update(const ModelUpdateProto&) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 HighsSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        SolveInterrupter* const) {
+                                        const SolveInterrupter*) {
   return absl::UnimplementedError(
       "HiGHS does not provide a method to compute an infeasible subsystem");
 }

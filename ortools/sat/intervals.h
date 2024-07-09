@@ -201,12 +201,12 @@ class IntervalsRepository {
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
-  absl::StrongVector<IntervalVariable, LiteralIndex> is_present_;
+  util_intops::StrongVector<IntervalVariable, LiteralIndex> is_present_;
 
   // The integer variables for each tasks.
-  absl::StrongVector<IntervalVariable, AffineExpression> starts_;
-  absl::StrongVector<IntervalVariable, AffineExpression> ends_;
-  absl::StrongVector<IntervalVariable, AffineExpression> sizes_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> starts_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> ends_;
+  util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
 
   // We can share the helper for all the propagators that work on the same set
   // of intervals.
@@ -316,6 +316,9 @@ class SchedulingConstraintHelper : public PropagatorInterface,
   }
   IntegerValue LevelZeroStartMax(int t) const {
     return integer_trail_->LevelZeroUpperBound(starts_[t]);
+  }
+  IntegerValue LevelZeroEndMax(int t) const {
+    return integer_trail_->LevelZeroUpperBound(ends_[t]);
   }
 
   // In the presence of tasks with a variable size, we do not necessarily
@@ -612,8 +615,12 @@ class SchedulingDemandHelper {
   // this.
   IntegerValue DemandMin(int t) const;
   IntegerValue DemandMax(int t) const;
+  IntegerValue LevelZeroDemandMin(int t) const {
+    return integer_trail_->LevelZeroLowerBound(demands_[t]);
+  }
   bool DemandIsFixed(int t) const;
   void AddDemandMinReason(int t);
+  void AddDemandMinReason(int t, IntegerValue min_demand);
   const std::vector<AffineExpression>& Demands() const { return demands_; }
 
   // Adds the linearized demand (either the affine demand expression, or the

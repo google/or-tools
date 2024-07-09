@@ -1204,8 +1204,9 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
 // The format is fixed in the flatzinc specification.
 std::string SolutionString(
     const fz::SolutionOutputSpecs& output,
-    const std::function<int64_t(fz::Variable*)>& value_func) {
-  if (output.variable != nullptr) {
+    const std::function<int64_t(fz::Variable*)>& value_func,
+    double objective_value) {
+  if (output.variable != nullptr && !output.variable->domain.is_float) {
     const int64_t value = value_func(output.variable);
     if (output.display_as_boolean) {
       return absl::StrCat(output.name, " = ", value == 1 ? "true" : "false",
@@ -1213,6 +1214,8 @@ std::string SolutionString(
     } else {
       return absl::StrCat(output.name, " = ", value, ";");
     }
+  } else if (output.variable != nullptr && output.variable->domain.is_float) {
+    return absl::StrCat(output.name, " = ", objective_value, ";");
   } else {
     const int bound_size = output.bounds.size();
     std::string result =
@@ -1245,10 +1248,12 @@ std::string SolutionString(
 
 std::string SolutionString(
     const fz::Model& model,
-    const std::function<int64_t(fz::Variable*)>& value_func) {
+    const std::function<int64_t(fz::Variable*)>& value_func,
+    double objective_value) {
   std::string solution_string;
   for (const auto& output_spec : model.output()) {
-    solution_string.append(SolutionString(output_spec, value_func));
+    solution_string.append(
+        SolutionString(output_spec, value_func, objective_value));
     solution_string.append("\n");
   }
   return solution_string;
@@ -1338,6 +1343,15 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       objective->add_coeffs(1);
       objective->add_vars(m.fz_var_to_index[fz_model.objective()]);
     }
+  } else if (!fz_model.float_objective_variables().empty()) {
+    FloatObjectiveProto* objective = m.proto.mutable_floating_point_objective();
+    for (int i = 0; i < fz_model.float_objective_variables().size(); ++i) {
+      objective->add_vars(
+          m.fz_var_to_index[fz_model.float_objective_variables()[i]]);
+      objective->add_coeffs(fz_model.float_objective_coefficients()[i]);
+    }
+    objective->set_offset(fz_model.float_objective_offset());
+    objective->set_maximize(fz_model.maximize());
   }
 
   // Fill the search order.
@@ -1427,10 +1441,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (p.display_all_solutions || p.search_all_solutions) {
     solution_observer = [&fz_model, &m, &p,
                          solution_logger](const CpSolverResponse& r) {
-      const std::string solution_string =
-          SolutionString(fz_model, [&m, &r](fz::Variable* v) {
+      const std::string solution_string = SolutionString(
+          fz_model,
+          [&m, &r](fz::Variable* v) {
             return r.solution(m.fz_var_to_index.at(v));
-          });
+          },
+          r.objective_value());
       SOLVER_LOG(solution_logger, solution_string);
       if (p.display_statistics) {
         OutputFlatzincStats(r, solution_logger);
@@ -1440,12 +1456,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   Model sat_model;
+
+  // Setup logging.
+  // Note that we need to do that before we start calling the sat functions
+  // below that might create a SolverLogger() themselves.
+  sat_model.Register<SolverLogger>(logger);
+
   sat_model.Add(NewSatParameters(m.parameters));
   if (solution_observer != nullptr) {
     sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
   }
-  // Setup logging.
-  sat_model.Register<SolverLogger>(logger);
 
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
 
@@ -1465,10 +1485,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.display_all_solutions) {  // Already printed otherwise.
-        const std::string solution_string =
-            SolutionString(fz_model, [&response, &m](fz::Variable* v) {
+        const std::string solution_string = SolutionString(
+            fz_model,
+            [&response, &m](fz::Variable* v) {
               return response.solution(m.fz_var_to_index.at(v));
-            });
+            },
+            response.objective_value());
         SOLVER_LOG(solution_logger, solution_string);
         SOLVER_LOG(solution_logger, "----------");
       }

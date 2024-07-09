@@ -15,377 +15,341 @@
 
 #include <algorithm>
 #include <limits>
+#include <tuple>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/types/span.h"
 #include "ortools/algorithms/set_cover_model.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
+
+namespace {
+bool SupportsAvx512() { return false; }
+}  // namespace
+
 // Note: in many of the member functions, variables have "crypterse" names
 // to avoid confusing them with member data. For example mrgnl_impcts is used
-// to avoid confusion with marginal_impacts_.
+// to avoid confusion with num_free_elements_.
 void SetCoverInvariant::Initialize() {
   DCHECK(model_->ComputeFeasibility());
   model_->CreateSparseRowView();
 
-  const SubsetIndex num_subsets(model_->num_subsets());
+  cost_ = 0.0;
+
+  const BaseInt num_subsets = model_->num_subsets();
+  const BaseInt num_elements = model_->num_elements();
+
   is_selected_.assign(num_subsets, false);
-  is_removable_.assign(num_subsets, false);
-  marginal_impacts_.assign(num_subsets, ElementIndex(0));
+  num_free_elements_.assign(num_subsets, 0);
+  num_non_overcovered_elements_.assign(num_subsets, 0);
+  is_redundant_.assign(num_subsets, false);
 
   const SparseColumnView& columns = model_->columns();
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    marginal_impacts_[subset] = columns[subset].size().value();
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    num_free_elements_[subset] = columns[subset].size();
+    num_non_overcovered_elements_[subset] = columns[subset].size();
   }
-  const ElementIndex num_elements(model_->num_elements());
-  coverage_.assign(num_elements, SubsetIndex(0));
-  cost_ = 0.0;
-  num_elements_covered_ = ElementIndex(0);
+
+  coverage_.assign(num_elements, 0);
+
+  // No need to reserve for trace_ and other vectors as extending with
+  // push_back is fast enough.
+
+  num_uncovered_elements_ = num_elements;
+  supports_avx512_ = SupportsAvx512();
+  is_fully_updated_ = true;
 }
 
 bool SetCoverInvariant::CheckConsistency() const {
-  CHECK(CheckCoverageAndMarginalImpacts(is_selected_));
-  CHECK(CheckIsRemovable());
+  auto [cst, cvrg] = ComputeCostAndCoverage(is_selected_);
+  CHECK_EQ(cost_, cst);
+  for (ElementIndex element : model_->ElementRange()) {
+    CHECK_EQ(cvrg[element], coverage_[element]);
+  }
+  auto [num_uncvrd_elts, num_free_elts] =
+      ComputeNumUncoveredAndFreeElements(cvrg);
+  auto [num_non_ovrcvrd_elts, is_rdndnt] =
+      ComputeNumNonOvercoveredElementsAndIsRedundant(cvrg);
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    CHECK_EQ(num_free_elts[subset], num_free_elements_[subset]);
+    if (is_fully_updated_) {
+      CHECK_EQ(is_rdndnt[subset], is_redundant_[subset]);
+      CHECK_EQ(is_rdndnt[subset], num_non_ovrcvrd_elts[subset] == 0);
+    }
+  }
   return true;
 }
 
-void SetCoverInvariant::LoadSolution(const SubsetBoolVector& c) {
-  is_selected_ = c;
-  MakeDataConsistent();
+void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
+  is_selected_ = solution;
+  RecomputeInvariant();
 }
 
-bool SetCoverInvariant::CheckSolution() const {
-  bool is_ok = true;
-
-  const ElementToSubsetVector cvrg = ComputeCoverage(is_selected_);
-  const ElementIndex num_elements(model_->num_elements());
-  for (ElementIndex element(0); element < num_elements; ++element) {
-    if (cvrg[element] == 0) {
-      LOG(ERROR) << "Recomputed coverage_ for element " << element << " = 0";
-      is_ok = false;
-    }
-  }
-
-  const Cost recomputed_cost = ComputeCost(is_selected_);
-  if (cost_ != recomputed_cost) {
-    LOG(ERROR) << "Cost = " << cost_
-               << ", while recomputed cost_ = " << recomputed_cost;
-    is_ok = false;
-  }
-  return is_ok;
+void SetCoverInvariant::RecomputeInvariant() {
+  std::tie(cost_, coverage_) = ComputeCostAndCoverage(is_selected_);
+  std::tie(num_uncovered_elements_, num_free_elements_) =
+      ComputeNumUncoveredAndFreeElements(coverage_);
+  std::tie(num_non_overcovered_elements_, is_redundant_) =
+      ComputeNumNonOvercoveredElementsAndIsRedundant(coverage_);
+  is_fully_updated_ = true;
 }
 
-bool SetCoverInvariant::CheckCoverageAgainstSolution(
+void SetCoverInvariant::MakeFullyUpdated() {
+  std::tie(num_non_overcovered_elements_, is_redundant_) =
+      ComputeNumNonOvercoveredElementsAndIsRedundant(coverage_);
+  is_fully_updated_ = true;
+}
+
+std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
     const SubsetBoolVector& choices) const {
-  const SubsetIndex num_subsets(model_->num_subsets());
-  DCHECK_EQ(num_subsets, choices.size());
-  const ElementToSubsetVector cvrg = ComputeCoverage(choices);
-  bool is_ok = true;
-  const ElementIndex num_elements(model_->num_elements());
-  for (ElementIndex element(0); element < num_elements; ++element) {
-    if (coverage_[element] != cvrg[element]) {
-      LOG(ERROR) << "Recomputed coverage_ for element " << element << " = "
-                 << cvrg[element]
-                 << ", while updated coverage_ = " << coverage_[element];
-      is_ok = false;
-    }
-  }
-  return is_ok;
-}
-
-bool SetCoverInvariant::CheckCoverageAndMarginalImpacts(
-    const SubsetBoolVector& choices) const {
-  const SubsetIndex num_subsets(model_->num_subsets());
-  DCHECK_EQ(num_subsets, choices.size());
-  const ElementToSubsetVector cvrg = ComputeCoverage(choices);
-  bool is_ok = CheckCoverageAgainstSolution(choices);
-  const SubsetToElementVector mrgnl_impcts = ComputeMarginalImpacts(cvrg);
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    if (marginal_impacts_[subset] != mrgnl_impcts[subset]) {
-      LOG(ERROR) << "Recomputed marginal impact for subset " << subset << " = "
-                 << mrgnl_impcts[subset] << ", while updated marginal impact = "
-                 << marginal_impacts_[subset];
-      is_ok = false;
-    }
-  }
-  return is_ok;
-}
-
-// Used only once, for testing. TODO(user): Merge with
-// CheckCoverageAndMarginalImpacts.
-SubsetToElementVector SetCoverInvariant::ComputeMarginalImpacts(
-    const ElementToSubsetVector& cvrg) const {
-  const ElementIndex num_elements(model_->num_elements());
-  DCHECK_EQ(num_elements, cvrg.size());
+  Cost cst = 0.0;
+  ElementToIntVector cvrg(model_->num_elements(), 0);
   const SparseColumnView& columns = model_->columns();
-  const SubsetIndex num_subsets(model_->num_subsets());
-  SubsetToElementVector mrgnl_impcts(num_subsets, ElementIndex(0));
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    for (ElementIndex element : columns[subset]) {
-      if (cvrg[element] == 0) {
-        ++mrgnl_impcts[subset];
-      }
-    }
-    DCHECK_LE(mrgnl_impcts[subset], columns[subset].size().value());
-    DCHECK_GE(mrgnl_impcts[subset], 0);
-  }
-  return mrgnl_impcts;
-}
-
-Cost SetCoverInvariant::ComputeCost(const SubsetBoolVector& c) const {
-  DCHECK_EQ(c.size(), model_->num_subsets());
-  Cost recomputed_cost = 0;
+  // Initialize coverage, update cost, and compute the coverage for
+  // all the elements covered by the selected subsets.
   const SubsetCostVector& subset_costs = model_->subset_costs();
-  for (SubsetIndex subset(0); bool b : c) {
+  for (SubsetIndex subset(0); bool b : choices) {
     if (b) {
-      recomputed_cost += subset_costs[subset];
+      cst += subset_costs[subset];
+      for (ElementIndex element : columns[subset]) {
+        ++cvrg[element];
+      }
     }
     ++subset;
   }
-  return recomputed_cost;
+  return {cst, cvrg};
 }
 
-ElementIndex SetCoverInvariant::ComputeNumElementsCovered(
-    const ElementToSubsetVector& cvrg) const {
-  // Use "crypterse" naming to avoid confusing with num_elements_.
-  int num_elmnts_cvrd = 0;
-  for (ElementIndex element(0); element < model_->num_elements(); ++element) {
+std::tuple<BaseInt, SubsetToIntVector>
+SetCoverInvariant::ComputeNumUncoveredAndFreeElements(
+    const ElementToIntVector& cvrg) const {
+  BaseInt num_uncvrd_elts = model_->num_elements();
+
+  const BaseInt num_subsets(model_->num_subsets());
+  SubsetToIntVector num_free_elts(num_subsets, 0);
+
+  const SparseColumnView& columns = model_->columns();
+  // Initialize number of free elements and number of elements covered 0 or 1.
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    num_free_elts[subset] = columns[subset].size();
+  }
+
+  const SparseRowView& rows = model_->rows();
+  for (const ElementIndex element : model_->ElementRange()) {
     if (cvrg[element] >= 1) {
-      ++num_elmnts_cvrd;
-    }
-  }
-  return ElementIndex(num_elmnts_cvrd);
-}
-
-ElementToSubsetVector SetCoverInvariant::ComputeCoverage(
-    const SubsetBoolVector& choices) const {
-  const ElementIndex num_elements(model_->num_elements());
-  const SparseRowView& rows = model_->rows();
-  // Use "crypterse" naming to avoid confusing with coverage_.
-  ElementToSubsetVector cvrg(num_elements, SubsetIndex(0));
-  for (ElementIndex element(0); element < num_elements; ++element) {
-    for (SubsetIndex subset : rows[element]) {
-      if (choices[subset]) {
-        ++cvrg[element];
+      --num_uncvrd_elts;
+      for (SubsetIndex subset : rows[element]) {
+        --num_free_elts[subset];
       }
     }
-    DCHECK_LE(cvrg[element], rows[element].size().value());
-    DCHECK_GE(cvrg[element], 0);
   }
-  return cvrg;
+  return {num_uncvrd_elts, num_free_elts};
 }
 
-bool SetCoverInvariant::CheckSingleSubsetCoverage(SubsetIndex subset) const {
-  ElementToSubsetVector cvrg = ComputeSingleSubsetCoverage(subset);
+std::tuple<SubsetToIntVector, SubsetBoolVector>
+SetCoverInvariant::ComputeNumNonOvercoveredElementsAndIsRedundant(
+    const ElementToIntVector& cvrg) const {
+  const BaseInt num_subsets(model_->num_subsets());
+  SubsetToIntVector num_cvrg_le_1_elts(num_subsets, 0);
+  SubsetBoolVector is_rdndnt(num_subsets, false);
+
   const SparseColumnView& columns = model_->columns();
-  for (const ElementIndex element : columns[subset]) {
-    DCHECK_EQ(coverage_[element], cvrg[element]) << " Element = " << element;
+  // Initialize number of free elements and number of elements covered 0 or 1.
+  for (const SubsetIndex subset : model_->SubsetRange()) {
+    num_cvrg_le_1_elts[subset] = columns[subset].size();
+  }
+
+  const SparseRowView& rows = model_->rows();
+  for (const ElementIndex element : model_->ElementRange()) {
+    if (cvrg[element] >= 2) {
+      for (SubsetIndex subset : rows[element]) {
+        --num_cvrg_le_1_elts[subset];
+        if (num_cvrg_le_1_elts[subset] == 0) {
+          is_rdndnt[subset] = true;
+        }
+      }
+    }
+  }
+  return {num_cvrg_le_1_elts, is_rdndnt};
+}
+
+void SetCoverInvariant::CompressTrace() {
+  // As of 2024-05-14, this is as fast as "smarter" alternatives that try to
+  // avoid some memory writes by keeping track of already visited subsets.
+  // We also tried to use is_selected_ as a helper, which slowed down
+  // everything.
+  const SubsetIndex num_subsets(model_->num_subsets());
+  SubsetBoolVector last_value_seen(num_subsets, false);
+  for (BaseInt i = 0; i < trace_.size(); ++i) {
+    const SubsetIndex subset(trace_[i].subset());
+    last_value_seen[subset] = trace_[i].decision();
+  }
+  BaseInt w = 0;  // Write index.
+  for (BaseInt i = 0; i < trace_.size(); ++i) {
+    const SubsetIndex subset(trace_[i].subset());
+    if (last_value_seen[subset]) {
+      last_value_seen[subset] = false;
+      trace_[w] = SetCoverDecision(subset, true);
+      ++w;
+    }
+  }
+  trace_.resize(w);
+}
+
+bool SetCoverInvariant::ComputeIsRedundant(SubsetIndex subset) const {
+  if (is_fully_updated_) {
+    return is_redundant_[subset];
+  }
+  if (is_selected_[subset]) {
+    for (const ElementIndex element : model_->columns()[subset]) {
+      if (coverage_[element] <= 1) {  // If deselected, it will be <= 0...
+        return false;
+      }
+    }
+  } else {
+    for (const ElementIndex element : model_->columns()[subset]) {
+      if (coverage_[element] == 0) {  // Cannot be removed from the problem.
+        return false;
+      }
+    }
   }
   return true;
 }
 
-// Used only once, for testing. TODO(user): Merge with
-// CheckSingleSubsetCoverage.
-ElementToSubsetVector SetCoverInvariant::ComputeSingleSubsetCoverage(
-    SubsetIndex subset) const {
-  const SparseColumnView& columns = model_->columns();
-  const ElementIndex num_elements(model_->num_elements());
-  // Use "crypterse" naming to avoid confusing with cvrg.
-  ElementToSubsetVector cvrg(num_elements, SubsetIndex(0));
-  const SparseRowView& rows = model_->rows();
-  for (const ElementIndex element : columns[subset]) {
-    for (SubsetIndex subset : rows[element]) {
-      if (is_selected_[subset]) {
-        ++cvrg[element];
-      }
-    }
-    DCHECK_LE(cvrg[element], rows[element].size().value());
-    DCHECK_GE(cvrg[element], 0);
+void SetCoverInvariant::Flip(SubsetIndex subset, bool incremental_full_update) {
+  if (!is_selected_[subset]) {
+    Select(subset, incremental_full_update);
+  } else {
+    Deselect(subset, incremental_full_update);
   }
-  return cvrg;
 }
 
-std::vector<SubsetIndex> SetCoverInvariant::Toggle(SubsetIndex subset,
-                                                   bool value) {
-  // Note: "if p then q" is also "not(p) or q", or p <= q (p LE q).
-  // If selected, then is_removable, to make sure we still have a solution.
-  DCHECK(is_selected_[subset] <= is_removable_[subset]);
-  // If value, then marginal_impact > 0, to not increase the cost.
-  DCHECK((value <= (marginal_impacts_[subset] > 0)));
-  return UnsafeToggle(subset, value);
-}
-
-std::vector<SubsetIndex> SetCoverInvariant::UnsafeToggle(SubsetIndex subset,
-                                                         bool value) {
-  // We allow to deselect a non-removable subset, but at least the
-  // Toggle should be a real change.
-  DCHECK_NE(is_selected_[subset], value);
-  // If selected, then marginal_impact == 0.
-  DCHECK(is_selected_[subset] <= (marginal_impacts_[subset] == 0));
-  DVLOG(1) << (value ? "S" : "Des") << "electing subset " << subset;
+void SetCoverInvariant::Select(SubsetIndex subset,
+                               bool incremental_full_update) {
+  if (incremental_full_update) {
+    ClearRemovabilityInformation();
+  } else {
+    is_fully_updated_ = false;
+  }
+  DVLOG(1) << "Selecting subset " << subset;
+  DCHECK(!is_selected_[subset]);
+  DCHECK(CheckConsistency());
+  trace_.push_back(SetCoverDecision(subset, true));
+  is_selected_[subset] = true;
   const SubsetCostVector& subset_costs = model_->subset_costs();
-  cost_ += value ? subset_costs[subset] : -subset_costs[subset];
-  is_selected_[subset] = value;
-  UpdateCoverage(subset, value);
-  const std::vector<SubsetIndex> impacted_subsets =
-      ComputeImpactedSubsets(subset);
-  UpdateIsRemovable(impacted_subsets);
-  UpdateMarginalImpacts(impacted_subsets);
-  DCHECK((is_selected_[subset] <= (marginal_impacts_[subset] == 0)));
-  return impacted_subsets;
-}
-
-void SetCoverInvariant::UpdateCoverage(SubsetIndex subset, bool value) {
+  cost_ += subset_costs[subset];
+  if (supports_avx512_) {
+    SelectAvx512(subset);
+    return;
+  }
   const SparseColumnView& columns = model_->columns();
   const SparseRowView& rows = model_->rows();
-  const int delta = value ? 1 : -1;
   for (const ElementIndex element : columns[subset]) {
-    DVLOG(2) << "Coverage of element " << element << " changed from "
-             << coverage_[element] << " to " << coverage_[element] + delta;
-    coverage_[element] += delta;
-    DCHECK_GE(coverage_[element], 0);
-    DCHECK_LE(coverage_[element], rows[element].size().value());
-    if (coverage_[element] == 1) {
-      ++num_elements_covered_;
-    } else if (coverage_[element] == 0) {
-      --num_elements_covered_;
+    if (coverage_[element] == 0) {
+      // `element` will be newly covered.
+      --num_uncovered_elements_;
+      for (const SubsetIndex impacted_subset : rows[element]) {
+        --num_free_elements_[impacted_subset];
+      }
+    } else if (incremental_full_update && coverage_[element] == 1) {
+      // `element` will be newly overcovered.
+      for (const SubsetIndex impacted_subset : rows[element]) {
+        --num_non_overcovered_elements_[impacted_subset];
+        if (num_non_overcovered_elements_[impacted_subset] == 0) {
+          // All the elements in impacted_subset are now overcovered, so it
+          // is removable. Note that this happens only when the last element
+          // of impacted_subset becomes overcovered.
+          DCHECK(!is_redundant_[impacted_subset]);
+          if (is_selected_[impacted_subset]) {
+            new_removable_subsets_.push_back(impacted_subset);
+          }
+          is_redundant_[impacted_subset] = true;
+        }
+      }
+    }
+    // Update coverage. Notice the asymmetry with Deselect where coverage is
+    // **decremented** before being tested. This allows to have more symmetrical
+    // code for conditions.
+    ++coverage_[element];
+  }
+  if (incremental_full_update) {
+    if (is_redundant_[subset]) {
+      new_removable_subsets_.push_back(subset);
+    } else {
+      new_non_removable_subsets_.push_back(subset);
     }
   }
-  DCHECK(CheckSingleSubsetCoverage(subset));
+  DCHECK(CheckConsistency());
 }
 
-// Compute the impact of the change in the assignment for each subset
-// containing element. Be careful to add the elements only once.
-std::vector<SubsetIndex> SetCoverInvariant::ComputeImpactedSubsets(
-    SubsetIndex subset) const {
+void SetCoverInvariant::Deselect(SubsetIndex subset,
+                                 bool incremental_full_update) {
+  if (incremental_full_update) {
+    ClearRemovabilityInformation();
+  } else {
+    is_fully_updated_ = false;
+  }
+  DVLOG(1) << "Deselecting subset " << subset;
+  // If already selected, then num_free_elements == 0.
+  DCHECK(is_selected_[subset]);
+  DCHECK_EQ(num_free_elements_[subset], 0);
+  DCHECK(CheckConsistency());
+  trace_.push_back(SetCoverDecision(subset, false));
+  is_selected_[subset] = false;
+  const SubsetCostVector& subset_costs = model_->subset_costs();
+  cost_ -= subset_costs[subset];
+  if (supports_avx512_) {
+    DeselectAvx512(subset);
+    return;
+  }
   const SparseColumnView& columns = model_->columns();
   const SparseRowView& rows = model_->rows();
-  SubsetBoolVector subset_seen(columns.size(), false);
-  std::vector<SubsetIndex> impacted_subsets;
-  impacted_subsets.reserve(columns.size().value());
   for (const ElementIndex element : columns[subset]) {
-    for (const SubsetIndex subset : rows[element]) {
-      if (!subset_seen[subset]) {
-        subset_seen[subset] = true;
-        impacted_subsets.push_back(subset);
+    // Update coverage. Notice the asymmetry with Select where coverage is
+    // incremented after being tested.
+    --coverage_[element];
+    if (coverage_[element] == 0) {
+      // `element` is no longer covered.
+      ++num_uncovered_elements_;
+      for (const SubsetIndex impacted_subset : rows[element]) {
+        ++num_free_elements_[impacted_subset];
+      }
+    } else if (incremental_full_update && coverage_[element] == 1) {
+      // `element` will be no longer overcovered.
+      for (const SubsetIndex impacted_subset : rows[element]) {
+        if (num_non_overcovered_elements_[impacted_subset] == 0) {
+          // There is one element of impacted_subset which is not overcovered.
+          // impacted_subset has just become non-removable.
+          DCHECK(is_redundant_[impacted_subset]);
+          if (is_selected_[impacted_subset]) {
+            new_non_removable_subsets_.push_back(impacted_subset);
+          }
+          is_redundant_[impacted_subset] = false;
+        }
+        ++num_non_overcovered_elements_[impacted_subset];
       }
     }
   }
-  DCHECK_LE(impacted_subsets.size(), model_->num_subsets());
-  // Testing has shown there is no gain in sorting impacted_subsets.
-  return impacted_subsets;
+  // Since subset is now deselected, there is no need
+  // nor meaning in adding it a list of removable or non-removable subsets.
+  // This is a dissymmetry with Select.
+  DCHECK(CheckConsistency());
 }
 
-bool SetCoverInvariant::ComputeIsRemovable(SubsetIndex subset) const {
-  DCHECK(CheckSingleSubsetCoverage(subset));
-  const SparseColumnView& columns = model_->columns();
-  for (const ElementIndex element : columns[subset]) {
-    if (coverage_[element] <= 1) {
-      return false;
-    }
-  }
-  return true;
+void SetCoverInvariant::SelectAvx512(SubsetIndex) {
+  LOG(FATAL) << "SelectAvx512 is not implemented";
 }
 
-void SetCoverInvariant::UpdateIsRemovable(
-    absl::Span<const SubsetIndex> impacted_subsets) {
-  for (const SubsetIndex subset : impacted_subsets) {
-    is_removable_[subset] = ComputeIsRemovable(subset);
-  }
-}
-
-SubsetBoolVector SetCoverInvariant::ComputeIsRemovable(
-    const ElementToSubsetVector& cvrg) const {
-  DCHECK(CheckCoverageAgainstSolution(is_selected_));
-  const SubsetIndex num_subsets(model_->num_subsets());
-  SubsetBoolVector is_rmvble(num_subsets, true);
-  const SparseRowView& rows = model_->rows();
-  for (ElementIndex element(0); element < rows.size(); ++element) {
-    if (cvrg[element] <= 1) {
-      for (const SubsetIndex subset : rows[element]) {
-        is_rmvble[subset] = false;
-      }
-    }
-  }
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    DCHECK_EQ(is_rmvble[subset], ComputeIsRemovable(subset));
-  }
-  return is_rmvble;
-}
-
-bool SetCoverInvariant::CheckIsRemovable() const {
-  const SubsetBoolVector is_rmvble = ComputeIsRemovable(coverage_);
-  const SubsetIndex num_subsets(model_->num_subsets());
-  for (SubsetIndex subset(0); subset < num_subsets; ++subset) {
-    DCHECK_EQ(is_rmvble[subset], ComputeIsRemovable(subset));
-  }
-  return true;
-}
-
-void SetCoverInvariant::UpdateMarginalImpacts(
-    absl::Span<const SubsetIndex> impacted_subsets) {
-  const SparseColumnView& columns = model_->columns();
-  for (const SubsetIndex subset : impacted_subsets) {
-    ElementIndex impact(0);
-    for (const ElementIndex element : columns[subset]) {
-      if (coverage_[element] == 0) {
-        ++impact;
-      }
-    }
-    DVLOG(2) << "Changing impact of subset " << subset << " from "
-             << marginal_impacts_[subset] << " to " << impact;
-    marginal_impacts_[subset] = impact;
-    DCHECK_LE(marginal_impacts_[subset], columns[subset].size().value());
-    DCHECK_GE(marginal_impacts_[subset], 0);
-  }
-  DCHECK(CheckCoverageAndMarginalImpacts(is_selected_));
-}
-
-std::vector<SubsetIndex> SetCoverInvariant::ComputeSettableSubsets() const {
-  SubsetBoolVector subset_seen(model_->num_subsets(), false);
-  std::vector<SubsetIndex> focus;
-  focus.reserve(model_->num_subsets().value());
-  const SparseRowView& rows = model_->rows();
-  for (ElementIndex element(0); element < rows.size(); ++element) {
-    if (coverage_[element] >= 1) continue;
-    for (const SubsetIndex subset : rows[element]) {
-      if (!is_selected_[subset]) continue;
-      if (subset_seen[subset]) continue;
-      subset_seen[subset] = true;
-      focus.push_back(subset);
-    }
-  }
-  DCHECK_LE(focus.size(), model_->num_subsets());
-  // Testing has shown there is no gain in sorting focus.
-  return focus;
-}
-
-std::vector<SubsetIndex> SetCoverInvariant::ComputeResettableSubsets() const {
-  SubsetBoolVector subset_seen(model_->num_subsets(), false);
-  std::vector<SubsetIndex> focus;
-  focus.reserve(model_->num_subsets().value());
-  const SparseRowView& rows = model_->rows();
-  for (ElementIndex element(0); element < rows.size(); ++element) {
-    if (coverage_[element] < 1) continue;
-    for (const SubsetIndex subset : rows[element]) {
-      if (!is_selected_[subset]) continue;
-      if (subset_seen[subset]) continue;
-      subset_seen[subset] = true;
-      focus.push_back(subset);
-    }
-  }
-  DCHECK_LE(focus.size(), model_->num_subsets());
-  // Testing has shown there is no gain in sorting focus.
-  return focus;
+void SetCoverInvariant::DeselectAvx512(SubsetIndex) {
+  LOG(FATAL) << "DeselectAvx512 is not implemented";
 }
 
 SetCoverSolutionResponse SetCoverInvariant::ExportSolutionAsProto() const {
   SetCoverSolutionResponse message;
-  message.set_num_subsets(is_selected_.size().value());
+  message.set_num_subsets(is_selected_.size());
   Cost lower_bound = std::numeric_limits<Cost>::max();
-  for (SubsetIndex subset(0); subset < model_->num_subsets(); ++subset) {
+  for (const SubsetIndex subset : model_->SubsetRange()) {
     if (is_selected_[subset]) {
       message.add_subset(subset.value());
     }
@@ -402,7 +366,7 @@ void SetCoverInvariant::ImportSolutionFromProto(
   for (auto s : message.subset()) {
     is_selected_[SubsetIndex(s)] = true;
   }
-  MakeDataConsistent();
+  RecomputeInvariant();
   Cost cost = message.cost();
   CHECK_EQ(cost, cost_);
 }

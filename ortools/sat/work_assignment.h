@@ -146,9 +146,6 @@ class SharedTreeManager {
   int NumWorkers() const { return num_workers_; }
   int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
 
-  // Returns the number of splits each worker should propose this restart.
-  int SplitsToGeneratePerWorker() const;
-
   // Syncs the state of path with the shared search tree.
   // Clears `path` and returns false if the assigned subtree is closed or a
   // restart has invalidated the path.
@@ -278,7 +275,11 @@ class SharedTreeWorker {
   // How many restarts had happened when the current tree was assigned?
   int64_t tree_assignment_restart_ = -1;
 
-  int splits_wanted_ = 1;
+  // True if the last decision may split the assigned tree and has not yet been
+  // proposed to the SharedTreeManager.
+  // We propagate the decision before sharing with the SharedTreeManager so we
+  // don't share any decision that immediately leads to conflict.
+  bool new_split_available_ = false;
 
   std::vector<Literal> reason_;
   // Stores the average LBD of learned clauses for each tree assigned since it

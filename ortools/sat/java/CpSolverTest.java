@@ -169,10 +169,56 @@ public final class CpSolverTest {
     assertNotNull(solver);
     solver.getParameters().setEnumerateAllSolutions(true);
     final SolutionCounter cb = new SolutionCounter();
-    solver.solve(model, cb);
+    CpSolverStatus status = solver.solve(model, cb);
 
+    assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
     assertThat(cb.getSolutionCount()).isEqualTo(18);
     assertThat(solver.numBranches()).isGreaterThan(0L);
+  }
+
+  static class BestBoundCallback implements Consumer<Double> {
+    public BestBoundCallback() {
+      bestBound = 0.0;
+    }
+
+    @Override
+    public void accept(Double bound) {
+      bestBound = bound;
+    }
+
+    public double getBestBound() {
+      return bestBound;
+    }
+
+    double bestBound;
+  }
+
+  @Test
+  public void testCpSolver_bestBoundCallback() throws Exception {
+    System.out.println("testCpSolver_bestBoundCallback");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    // Creates the variables.
+    final BoolVar b0 = model.newBoolVar("x0");
+    final BoolVar b1 = model.newBoolVar("x1");
+    final BoolVar b2 = model.newBoolVar("x2");
+    final BoolVar b3 = model.newBoolVar("x3");
+
+    model.addBoolOr(new Literal[] {b0, b1, b2, b3});
+    model.minimize(DoubleLinearExpr.weightedSumWithOffset(
+        new Literal[] {b0, b1, b2, b3}, new double[] {3, 2, 4, 5}, 0.6));
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    assertNotNull(solver);
+    solver.getParameters().setNumWorkers(1);
+    solver.getParameters().setLinearizationLevel(2);
+    BestBoundCallback cb = new BestBoundCallback();
+    solver.setBestBoundCallback(cb);
+    CpSolverStatus status = solver.solve(model);
+
+    assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
+    assertThat(cb.getBestBound()).isEqualTo(2.6);
   }
 
   @Test
@@ -314,8 +360,6 @@ public final class CpSolverTest {
     final IntervalVar[] tasksIntervals = new IntervalVar[numTasks + capacities[0].length];
 
     final Domain domainT = Domain.fromValues(domainArr);
-    final Domain intervalRange =
-        Domain.fromFlatIntervals(new long[] {domainT.min() + 1, domainT.max() + 1});
     final int unitIntervalSize = 1;
     for (int i = 0; i < numTasks; i++) {
       final BoolVar presence = model.newBoolVar("");

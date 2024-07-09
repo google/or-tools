@@ -7,7 +7,7 @@ jobs:
   cmake:
     strategy:
       matrix:
-        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        distro: [almalinux, alpine, archlinux, debian, fedora, opensuse, rockylinux, ubuntu]
         lang: [cpp, python, dotnet, java]
       fail-fast: false
     name: ${{ matrix.distro }} • CMake • ${{ matrix.lang }}

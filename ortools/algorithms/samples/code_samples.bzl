@@ -14,6 +14,7 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
 
 def code_sample_cc(name):
     native.cc_binary(
@@ -35,33 +36,36 @@ def code_sample_cc(name):
     )
 
 def code_sample_py(name):
-    native.py_binary(
+    py_binary(
         name = name + "_py3",
         srcs = [name + ".py"],
         main = name + ".py",
         deps = [
-            requirement("absl-py"),
             "//ortools/algorithms/python:knapsack_solver",
-        ],
-        python_version = "PY3",
-        srcs_version = "PY3",
-    )
-
-    native.py_test(
-        name = name + "_py_test",
-        size = "small",
-        srcs = [name + ".py"],
-        main = name + ".py",
-        data = [
-            "//ortools/algorithms/python:knapsack_solver",
-        ],
-        deps = [
             requirement("absl-py"),
             requirement("numpy"),
         ],
         python_version = "PY3",
         srcs_version = "PY3",
     )
+
+    py_test(
+        name = name + "_py_test",
+        size = "small",
+        srcs = [name + ".py"],
+        main = name + ".py",
+        deps = [
+            "//ortools/algorithms/python:knapsack_solver",
+            requirement("absl-py"),
+            requirement("numpy"),
+        ],
+        python_version = "PY3",
+        srcs_version = "PY3",
+    )
+
+def code_sample_cc_py(name):
+    code_sample_cc(name = name)
+    code_sample_py(name = name)
 
 def code_sample_java(name):
     native.java_test(
@@ -75,7 +79,3 @@ def code_sample_java(name):
             "//ortools/java/com/google/ortools:Loader",
         ],
     )
-
-def code_sample_cc_py(name):
-    code_sample_cc(name = name)
-    code_sample_py(name = name)

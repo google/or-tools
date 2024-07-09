@@ -14,7 +14,8 @@
 #ifndef OR_TOOLS_UTIL_ZVECTOR_H_
 #define OR_TOOLS_UTIL_ZVECTOR_H_
 
-#if (defined(__APPLE__) || defined(__FreeBSD__)) && defined(__GNUC__)
+#if (defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && \
+    defined(__GNUC__)
 #include <machine/endian.h>
 #elif !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
 #include <endian.h>
@@ -73,7 +74,7 @@ class ZVector {
     return base_[index];
   }
 
-  const T operator[](int64_t index) const {
+  T operator[](int64_t index) const {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
     DCHECK(base_ != nullptr);
